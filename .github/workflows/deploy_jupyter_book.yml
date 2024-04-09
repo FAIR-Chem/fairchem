@@ -9,15 +9,12 @@ on:
     paths:
       - 'docs/*'
       - '.github/workflows/deploy_jupyter_book.yml'
-  
+
 # This job installs dependencies, build the book, and pushes it to `gh-pages`
 jobs:
   build-and-deploy-book:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: [3.11]
+    runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v4
 
@@ -25,10 +22,10 @@ jobs:
       run: sudo apt-get install pandoc
 
     # Install dependencies
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: 3.11
 
     - name: Install dependencies
       run: |
