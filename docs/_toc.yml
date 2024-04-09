@@ -1,0 +1,34 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: core/README
+parts:
+- caption: Core Installation/Usage
+  chapters:
+  - file: core/DATASET
+  - file: core/FAQ
+  - file: core/INSTALL
+  - file: core/LICENSE
+  - file: core/MODELS
+  - file: core/TRAIN
+- caption: Tutorial
+  chapters:
+  - file: tutorial/intro
+  - file: tutorial/OCP-introduction
+  - file: tutorial/fine-tuning/fine-tuning-oxides
+  - file: tutorial/gotchas
+  - file: tutorial/advanced/fine-tuning-toc
+    sections:
+    - file: tutorial/advanced/fine-tuning-in-python
+    - file: tutorial/advanced/embedding-monkeypatch
+    - file: tutorial/advanced/embeddings
+    - file: tutorial/advanced/mass-inference
+  - file: tutorial/NRR/NRR_toc
+    sections:
+    - file: tutorial/NRR/NRR_example
+    - file: tutorial/NRR/NRR_example-gemnet
+
+- caption: ocpmodels documentation
+  chapters:
+  - file: api.rst
