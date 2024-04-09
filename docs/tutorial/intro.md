@@ -55,18 +55,17 @@ To use a pre-trained model you need to have [ocp](https://github.com/Open-Cataly
 We will focus on the ASE compatible calculator here. To facilitate using the checkpoints, there is a set of [utilities](./ocp-tutorial) for this tutorial. You can list the checkpoints that are readily available here:
 
 ```{code-cell} ipython3
-%run ocp-tutorial.ipynb
-```
-
-```{code-cell} ipython3
-list_checkpoints()
+from ocpmodels.common.model_registry import MODEL_REGISTRY
+print(MODEL_REGISTRY.keys())
 ```
 
 You can get a checkpoint file with one of the keys listed above like this. The resulting string is the name of the file downloaded, and you use that when creating an OCP calculator later.
 
 ```{code-cell} ipython3
-checkpoint = get_checkpoint('GemNet-OC OC20+OC22')
-checkpoint
+from ocpmodels.common.model_registry import model_name_to_local_file
+
+checkpoint_path = model_name_to_local_file('GemNet-OC OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path
 ```
 
 # Goals for this tutorial
@@ -77,9 +76,10 @@ This tutorial will start by using OCP in a Jupyter notebook to setup some simple
 
 # About the compute environment
 
-[ocp-tutorial.ipynb](./ocp-tutorial) provides `describe_ocp` to output information that might be helpful in debugging.
+[ocp-tutorial.ipynb](./ocp_tutorial_helper.py) provides `describe_ocp` to output information that might be helpful in debugging.
 
 ```{code-cell} ipython3
+from ocp_tutorial_helper import describe_ocp
 describe_ocp()
 ```
 
