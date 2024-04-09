@@ -106,8 +106,8 @@ To train a SchNet model for the IS2RE task on the 10k split, run:
 python main.py --mode train --config-yml configs/is2re/10k/schnet/schnet.yml
 ```
 
-Training logs are stored in `logs/tensorboard/[TIMESTAMP]` where `[TIMESTAMP]` is
-the starting time-stamp of the run. You can monitor the training process by running:
+Training logs are stored in `logs/wandb/[TIMESTAMP]` or `logs/tensorboard/[TIMESTAMP]` where `[TIMESTAMP]` is
+the starting time-stamp of the run. For tensorboard, you can monitor the training process by running:
 ```bash
 tensorboard --logdir logs/tensorboard/[TIMESTAMP]
 ```
@@ -187,7 +187,7 @@ To train a SchNet model for the S2EF task on the 2M split using 2 GPUs, run:
 python -u -m torch.distributed.launch --nproc_per_node=2 main.py \
         --mode train --config-yml configs/s2ef/2M/schnet/schnet.yml --num-gpus 2 --distributed
 ```
-Similar to the IS2RE task, tensorboard logs are stored in `logs/tensorboard/[TIMESTAMP]` and the
+Similar to the IS2RE task, logs are stored in `logs/wandb/[TIMESTAMP]` or `logs/tensorboard/[TIMESTAMP]` and the
 checkpoint is stored in `checkpoints/[TIMESTAMP]/checkpoint.pt`.
 
 Next, run this model on the test data:
