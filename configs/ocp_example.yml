@@ -112,7 +112,7 @@ task:
   # since this can be significantly slower.
   set_deterministic_scatter: False                                              # True or False
 
-logger: tensorboard                                                             # 'wandb' or 'tensorboard'
+logger: wandb                                                             # 'wandb' or 'tensorboard'
 
 loss_functions:
 # Specify the different terms in the loss function. For each term, the target property must
