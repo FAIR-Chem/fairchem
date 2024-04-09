@@ -1,27 +1,9 @@
----
-jupytext:
-  text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
-    jupytext_version: 1.16.1
-kernelspec:
-  display_name: Python 3 (ipykernel)
-  language: python
-  name: python3
----
-
-Embedding monkeypatching
--------------------------------
-
-
-```{code-cell} ipython3
 from ocpmodels.models.gemnet_oc.gemnet_oc import GemNetOC
 
 import torch
 from ocpmodels.common.utils import conditional_grad, scatter_det
-    
-    
+
+
 @conditional_grad(torch.enable_grad())
 def newforward(self, data):
     pos = data.pos
@@ -160,14 +142,12 @@ def newforward(self, data):
         out["energy"] = E_t.squeeze(1)  # (num_molecules)
 
     # This is the section I adapted from abishek's code
-    if hasattr(self, 'return_embedding') and self.return_embedding:
+    if hasattr(self, "return_embedding") and self.return_embedding:
         nMolecules = (torch.max(batch) + 1).item()
 
         # This seems to be an earlier block
-        out["h sum"] = scatter_det(
-            h, batch, dim=0, dim_size=nMolecules, reduce="add"
-        )
-        
+        out["h sum"] = scatter_det(h, batch, dim=0, dim_size=nMolecules, reduce="add")
+
         # These embedding are closer to energy output
         out["x_E sum"] = scatter_det(
             x_E, batch, dim=0, dim_size=nMolecules, reduce="add"
@@ -176,11 +156,10 @@ def newforward(self, data):
         # This is an embedding related to forces.
         # Something seems off on I couldn't do the same thing as above with scatter_det.
         out["x_F sum"] = torch.sum(x_F, axis=0)[None, :]
-        
 
         # tuples with nMolecules tensors of size nAtoms x embedding_size.
         out["x_E"] = x_E.split(data.natoms.tolist(), dim=0)
-        
+
         out["h"] = h.split(data.natoms.tolist(), dim=0)
 
         return out
@@ -190,10 +169,10 @@ def newforward(self, data):
         else:
             return out["energy"]
 
-GemNetOC.forward = newforward
-```
 
-```{code-cell} ipython3
+GemNetOC.forward = newforward
+
+# +
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 from ocpmodels.datasets import data_list_collater
 
@@ -212,21 +191,14 @@ def embed(self, atoms):
         with torch.no_grad():
             out = self.trainer.model([batch_list])
 
-    if (
-        self.trainer.normalizers is not None
-        and "target" in self.trainer.normalizers
-    ):
-        out["energy"] = self.trainer.normalizers["target"].denorm(
-            out["energy"]
-        )
-        out["forces"] = self.trainer.normalizers["grad_target"].denorm(
-            out["forces"]
-        )
+    if self.trainer.normalizers is not None and "target" in self.trainer.normalizers:
+        out["energy"] = self.trainer.normalizers["target"].denorm(out["energy"])
+        out["forces"] = self.trainer.normalizers["grad_target"].denorm(out["forces"])
 
     if self.trainer.ema:
         self.trainer.ema.restore()
 
     return out
 
+
 OCPCalculator.embed = embed
-```

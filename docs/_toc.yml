@@ -31,7 +31,6 @@ parts:
   - file: tutorials/advanced/fine-tuning-toc
     sections:
     - file: tutorials/advanced/fine-tuning-in-python
-    - file: tutorials/advanced/embedding-monkeypatch
     - file: tutorials/advanced/embeddings
     - file: tutorials/advanced/mass-inference
   - file: tutorials/NRR/NRR_toc

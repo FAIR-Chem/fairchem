@@ -33,20 +33,25 @@ You can retrieve the dataset below. In this notebook we learn how to do "mass in
 You have to choose a checkpoint to start with. The newer checkpoints may require too much memory for this environment. 
 
 ```{code-cell} ipython3
-%run ../ocp-tutorial.ipynb
-list_checkpoints()
+from ocpmodels.common.model_registry import MODEL_REGISTRY
+print(MODEL_REGISTRY.keys())
 
 ```
 
 ```{code-cell} ipython3
-checkpoint = get_checkpoint('GemNet-dT OC22')
-checkpoint
+from ocpmodels.common.model_registry import model_name_to_local_file
+
+checkpoint_path = model_name_to_local_file('GemNet-dT OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path
+
 ```
 
 We have to update our configuration yml file with the dataset. It is necessary to specify the train and test set for some reason. 
 
 ```{code-cell} ipython3
-yml = generate_yml_config(checkpoint, 'config.yml',
+
+from ocpmodels.common.tutorial_utils import generate_yml_config
+yml = generate_yml_config(checkpoint_path, 'config.yml',
                    delete=['cmd', 'logger', 'task', 'model_attributes',
                            'dataset', 'slurm'],
                    update={'amp': True,
@@ -75,7 +80,7 @@ It is a good idea to redirect the output to a file. If the output gets too large
 %%capture inference
 import time
 t0 = time.time()
-! python {ocp_main()} --mode predict --config-yml {yml} --checkpoint {checkpoint} --amp
+! python {ocp_main()} --mode predict --config-yml {yml} --checkpoint {checkpoint_path} --amp
 print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
 ```
 
@@ -138,7 +143,7 @@ We include this here just to show that:
 
 ```{code-cell} ipython3
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-calc = OCPCalculator(checkpoint=os.path.expanduser(checkpoint), cpu=False)
+calc = OCPCalculator(checkpoint=os.path.expanduser(checkpoint_path), cpu=False)
 ```
 
 ```{code-cell} ipython3
