@@ -1,5 +1,6 @@
 ---
 jupytext:
+  formats: md:myst,ipynb
   text_representation:
     extension: .md
     format_name: myst
@@ -54,30 +55,30 @@ Based on https://atct.anl.gov/Thermochemical%20Data/version%201.118/species/?spe
 
 The first step is getting a checkpoint for the model we want to use. eSCN is currently the state of the art model [`arXiv`](https://arxiv.org/abs/2302.03655). This next cell will download the checkpoint if you don't have it already.
 
-The different models have different compute requirements. If you find your kernel is crashing, it probably means you have exceeded the allowed amount of memory. This checkpoint works fine in this example, but it may crash your kernel if you use it in the NRR example. 
+The different models have different compute requirements. If you find your kernel is crashing, it probably means you have exceeded the allowed amount of memory. This checkpoint works fine in this example, but it may crash your kernel if you use it in the NRR example.
 
-```{code-cell} ipython3
-%run ocp-tutorial.ipynb
+```{code-cell}
+from ocpmodels.common.model_registry import model_name_to_local_file
 
-checkpoint = get_checkpoint('eSCN-L6-M3-Lay20 All+MD')
+checkpoint_path = model_name_to_local_file('eSCN-L6-M3-Lay20All+MD', local_cache='/tmp/ocp_checkpoints/')
 ```
 
-Next we load the checkpoint. The output is somewhat verbose, but it can be informative for debugging purposes. 
+Next we load the checkpoint. The output is somewhat verbose, but it can be informative for debugging purposes.
 
-```{code-cell} ipython3
+```{code-cell}
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-calc = OCPCalculator(checkpoint_path=os.path.expanduser(checkpoint), cpu=False)
+calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
 # calc = OCPCalculator(checkpoint_path=os.path.expanduser(checkpoint), cpu=True)
 ```
 
 Next we can build a slab with an adsorbate on it. Here we use the ASE module to build a Pt slab. We use the experimental lattice constant that is the default. This can introduce some small errors with DFT since the lattice constant can differ by a few percent, and it is common to use DFT lattice constants. In this example, we do not constrain any layers.
 
-```{code-cell} ipython3
+```{code-cell}
 from ase.build import fcc111, add_adsorbate
 from ase.optimize import BFGS
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 re1 = -3.03
 
 slab = fcc111('Pt', size=(2, 2, 5), vacuum=10.0)
@@ -92,7 +93,7 @@ slab_e + re1
 
 It is good practice to look at your geometries to make sure they are what you expect.
 
-```{code-cell} ipython3
+```{code-cell}
 import matplotlib.pyplot as plt
 from ase.visualize.plot import plot_atoms
 
@@ -156,7 +157,7 @@ Next we get the structures and compute their energies. Some subtle points are th
 
 First we get a reference energy from the paper (PBE, 0.25 ML O on Pt(111)).
 
-```{code-cell} ipython3
+```{code-cell}
 import json
 
 with open('energies.json') as f:
@@ -170,7 +171,7 @@ edata['Pt']['O']['fcc']['0.25']
 
 Next, we load data from the SI to get the geometry to start from.
 
-```{code-cell} ipython3
+```{code-cell}
 with open('structures.json') as f:
     s = json.load(f)
     
@@ -179,7 +180,7 @@ sfcc = s['Pt']['O']['fcc']['0.25']
 
 Next, we construct the atomic geometry, run the geometry optimization, and compute the energy.
 
-```{code-cell} ipython3
+```{code-cell}
 re3 = -2.58  # O -> 1/2 O2         re3 = -2.58 eV
 
 from ase import Atoms
@@ -210,7 +211,7 @@ This cell reproduces a portion of a figure in the paper. We compare oxygen adsor
 
 At higher coverages, the agreement is not as good. This is likely because the model is extrapolating and needs to be fine-tuned.
 
-```{code-cell} ipython3
+```{code-cell}
 from tqdm import tqdm
 import time
 
@@ -257,7 +258,7 @@ f'Elapsed time = {time.time() - t0} seconds'
 
 First, we compare the computed data and reference data. There is a systematic difference of about 0.5 eV due to the difference between RPBE and PBE functionals, and other subtle differences like lattice constant differences and reference energy differences. This is pretty typical, and an expected deviation.
 
-```{code-cell} ipython3
+```{code-cell}
 plt.plot(refdata['fcc'], data['fcc'], 'r.', label='fcc')
 plt.plot(refdata['hcp'], data['hcp'], 'b.', label='hcp')
 plt.plot([-5.5, -3.5], [-5.5, -3.5], 'k-')
@@ -267,7 +268,7 @@ plt.ylabel('OCP prediction');
 
 Next we compare the correlation between the hcp and fcc sites. Here we see the same trends. The data falls below the parity line because the hcp sites tend to be a little weaker binding than the fcc sites.
 
-```{code-cell} ipython3
+```{code-cell}
 plt.plot(refdata['hcp'], refdata['fcc'], 'r.')
 plt.plot(data['hcp'], data['fcc'], '.')
 plt.plot([-6, -1], [-6, -1], 'k-')
@@ -301,7 +302,7 @@ In this section, the energies refer to the reaction 1/2 O2 -> O*.
 
 Slab thickness could be a factor. Here we relax the whole slab, and see by about 4 layers the energy is converged to ~0.02 eV.
 
-```{code-cell} ipython3
+```{code-cell}
 for nlayers in [3, 4, 5, 6, 7, 8]:
     slab = fcc111('Pt', size=(2, 2, nlayers), vacuum=10.0)
     add_adsorbate(slab, 'O', height=1.2, position='fcc')
@@ -319,7 +320,7 @@ It is common to only relax a few layers, and constrain lower layers to bulk coor
 
 This has a small effect (0.1 eV).
 
-```{code-cell} ipython3
+```{code-cell}
 from ase.constraints import FixAtoms
 
 for nlayers in [3, 4, 5, 6, 7, 8]:
@@ -339,7 +340,7 @@ for nlayers in [3, 4, 5, 6, 7, 8]:
 
 Coverage effects are quite noticeable with oxygen. Here we consider larger unit cells. This effect is large, and the results don't look right, usually adsorption energies get more favorable at lower coverage, not less. This suggests fine-tuning could be important even at low coverages.
 
-```{code-cell} ipython3
+```{code-cell}
 for size in [1, 2, 3, 4, 5]:
     slab = fcc111('Pt', size=(size, size, 5), vacuum=10.0)
     add_adsorbate(slab, 'O', height=1.2, position='fcc')

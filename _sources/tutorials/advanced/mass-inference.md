@@ -35,6 +35,7 @@ You have to choose a checkpoint to start with. The newer checkpoints may require
 ```{code-cell} ipython3
 %run ../ocp-tutorial.ipynb
 list_checkpoints()
+
 ```
 
 ```{code-cell} ipython3

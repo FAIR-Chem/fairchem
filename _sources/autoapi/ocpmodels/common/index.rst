@@ -36,6 +36,7 @@ Submodules
    model_registry/index.rst
    registry/index.rst
    transforms/index.rst
+   tutorial_utils/index.rst
    typing/index.rst
    utils/index.rst
 
