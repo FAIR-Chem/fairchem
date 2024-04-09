@@ -11,6 +11,8 @@ kernelspec:
   name: python3
 ---
 
+### OCP Data Visualization
+
 ```{code-cell} ipython3
 import matplotlib
 matplotlib.use('Agg')

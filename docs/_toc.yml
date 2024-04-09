@@ -38,8 +38,6 @@ parts:
     sections:
     - file: tutorials/NRR/NRR_example
     - file: tutorials/NRR/NRR_example-gemnet
-- caption: Legacy Tutorials
-  chapters:
   - file: legacy_tutorials/legacy_tutorials
     sections:
     - file: legacy_tutorials/OCP_Tutorial
@@ -49,3 +47,6 @@ parts:
 - caption: ocpmodels documentation
   chapters:
   - file: autoapi/index
+- caption: Notebook execution times
+  chapters:
+  - file: execution_time
