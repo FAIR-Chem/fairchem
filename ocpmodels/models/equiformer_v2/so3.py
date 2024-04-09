@@ -129,10 +129,14 @@ class CoefficientMappingModule(torch.nn.Module):
 
     # Return mask containing coefficients less than or equal to degree (lval) and order (m)
     def coefficient_idx(self, lmax: int, mmax: int):
-        if (self.lmax_cache is not None) and (self.mmax_cache is not None):
-            if (self.lmax_cache == lmax) and (self.mmax_cache == mmax):
-                if self.mask_indices_cache is not None:
-                    return self.mask_indices_cache
+        if (
+            (self.lmax_cache is not None)
+            and (self.mmax_cache is not None)
+            and (self.lmax_cache == lmax)
+            and (self.mmax_cache == mmax)
+            and self.mask_indices_cache is not None
+        ):
+            return self.mask_indices_cache
 
         mask = torch.bitwise_and(self.l_harmonic.le(lmax), self.m_harmonic.le(mmax))
         self.device = mask.device
@@ -145,10 +149,14 @@ class CoefficientMappingModule(torch.nn.Module):
     # Return the re-scaling for rotating back to original frame
     # this is required since we only use a subset of m components for SO(2) convolution
     def get_rotate_inv_rescale(self, lmax: int, mmax: int):
-        if (self.lmax_cache is not None) and (self.mmax_cache is not None):
-            if (self.lmax_cache == lmax) and (self.mmax_cache == mmax):
-                if self.rotate_inv_rescale_cache is not None:
-                    return self.rotate_inv_rescale_cache
+        if (
+            (self.lmax_cache is not None)
+            and (self.mmax_cache is not None)
+            and (self.lmax_cache == lmax)
+            and (self.mmax_cache == mmax)
+            and self.rotate_inv_rescale_cache is not None
+        ):
+            return self.rotate_inv_rescale_cache
 
         if self.mask_indices_cache is None:
             self.coefficient_idx(lmax, mmax)

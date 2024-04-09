@@ -262,7 +262,7 @@ class LMDBDatabase(Database):
 
             if limit:
                 rows = rows[offset : offset + limit]
-            for key, row in rows:
+            for _, row in rows:
                 yield row
             return
 

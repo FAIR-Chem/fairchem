@@ -116,8 +116,10 @@ lint.ignore = [
   "PT012",  # pytest.raises"
   "E741",  # ambigous variable naming, i.e. one letter
   "FBT003",  # boolean positional variable in function call
-  "PERF203"  # `try`-`except` within a loop incurs performance overhead (no overhead in Py 3.11+)
+  "PERF203",  # `try`-`except` within a loop incurs performance overhead (no overhead in Py 3.11+)
+  "EXE002",  # The file is executable but no shebang is present (not sure why some files come up as this)
 ]
+
 lint.typing-modules = ["mypackage._compat.typing"]
 src = ["src"]
 lint.unfixable = [
