@@ -4,20 +4,26 @@
 format: jb-book
 root: core/README
 parts:
-- caption: Core Installation/Usage
+- caption: Installation
   chapters:
-  - file: core/DATASET
-  - file: core/FAQ
   - file: core/INSTALL
-  - file: core/LICENSE
+- caption: Released Datasets & Models
+  chapters:
+  - file: core/datasets/oc20
+  - file: core/datasets/oc22
+  - file: core/datasets/odac
   - file: core/MODELS
+  - file: core/LICENSE
+- caption: Training your own models
+  chapters:
   - file: core/TRAIN
-- caption: Tutorial
+  - file: core/FAQ
+  - file: tutorial/gotchas
+- caption: Catalysis Tutorials
   chapters:
   - file: tutorial/intro
   - file: tutorial/OCP-introduction
   - file: tutorial/fine-tuning/fine-tuning-oxides
-  - file: tutorial/gotchas
   - file: tutorial/advanced/fine-tuning-toc
     sections:
     - file: tutorial/advanced/fine-tuning-in-python
