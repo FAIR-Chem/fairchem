@@ -46,7 +46,7 @@ def main(*, num_batches: int = 16) -> None:
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
     _config = build_config(args, override_args)
-    _config["logger"] = "tensorboard"
+    _config["logger"] = "wandb"
     # endregion
 
     assert not args.distributed, "This doesn't work with DDP"

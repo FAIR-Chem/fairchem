@@ -20,6 +20,7 @@ from typing import Any, Callable, Optional
 
 import ase
 import numpy as np
+import torch.nn
 from torch import tensor
 from torch.utils.data import Dataset
 from tqdm import tqdm
@@ -97,6 +98,13 @@ class AseAtomsDataset(Dataset, ABC):
         self.key_mapping = self.config.get("key_mapping", None)
         self.transforms = DataTransforms(self.config.get("transforms", {}))
 
+        self.lin_ref = None
+        if self.config.get("lin_ref", False):
+            lin_ref = torch.tensor(
+                np.load(self.config["lin_ref"], allow_pickle=True)["coeff"]
+            )
+            self.lin_ref = torch.nn.Parameter(lin_ref, requires_grad=False)
+
         self.atoms_transform = atoms_transform
 
         if self.config.get("keep_in_memory", False):
@@ -134,6 +142,12 @@ class AseAtomsDataset(Dataset, ABC):
         data_object = self.a2g.convert(atoms, sid)
         data_object.fid = fid
         data_object.natoms = len(atoms)
+
+        # apply linear reference
+        if self.a2g.r_energy is True and self.lin_ref is not None:
+            data_object.energy -= sum(
+                self.lin_ref[data_object.atomic_numbers.long()]
+            )
 
         if self.key_mapping is not None:
             data_object = rename_data_object_keys(
