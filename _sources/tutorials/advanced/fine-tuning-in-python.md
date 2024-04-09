@@ -62,6 +62,9 @@ calc = OCPCalculator(checkpoint=checkpoint, trainer='forces', cpu=False)
 
 ```{code-cell} ipython3
 ! rm -fr train.db test.db val.db
+
+from ocpmodels.common.tutorial_utils import train_test_val_split
+
 train, test, val = train_test_val_split('../fine-tuning/oxides.db')
 train, test, val
 ```
@@ -71,6 +74,8 @@ train, test, val
 We start by making the config.yml. We build this from the calculator checkpoint.
 
 ```{code-cell} ipython3
+from ocpmodels.common.tutorial_utils import generate_yml_config
+
 yml = generate_yml_config(checkpoint, 'config.yml',
                    delete=['slurm', 'cmd', 'logger', 'task', 'model_attributes',
                            'optim.loss_force', # the checkpoint setting causes an error

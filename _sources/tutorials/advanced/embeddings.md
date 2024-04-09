@@ -32,13 +32,12 @@ We provide 5 different kinds of embeddings:
 4. 'x_E sum' - summed over atoms
 5. 'x_F sum' - This is related to the forces
 
-In principle other models could be adapted in a similar way. See [embedding-monkeypatch.ipynb](./embedding-monkeypatch) for details on the patch. We simply run this notebook below to load it.
+In principle other models could be adapted in a similar way. See [embedding-monkeypatch.ipynb](./embedding-monkeypatch.py) for details on the patch. We simply run this notebook below to load it.
 
 The OCP project is still under active development, and it is not yet clear what the best way to access these embeddings are, so this code is not yet part of the main development branch. This code was adapted from a branch at https://github.com/Open-Catalyst-Project/ocp/blob/gnoc-embeddings.
 
 ```{code-cell} ipython3
-%run embedding-monkeypatch.ipynb
-%run ../ocp-tutorial.ipynb
+import embedding-monkeypatch
 ```
 
 # A diagnostic example
