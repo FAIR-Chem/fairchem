@@ -6,9 +6,9 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.16.1
 kernelspec:
-  display_name: ocp-091622
+  display_name: Python 3 (ipykernel)
   language: python
-  name: ocp-091622
+  name: python3
 ---
 
 +++ {"colab_type": "text", "id": "view-in-github"}

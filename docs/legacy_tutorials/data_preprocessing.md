@@ -6,9 +6,9 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.16.1
 kernelspec:
-  display_name: ocp-models
+  display_name: Python 3 (ipykernel)
   language: python
-  name: ocp-models
+  name: python3
 ---
 
 ### OCP Data Preprocessing Tutorial
