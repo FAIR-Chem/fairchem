@@ -2,6 +2,7 @@ from ocpmodels.models.gemnet_oc.gemnet_oc import GemNetOC
 
 import torch
 from ocpmodels.common.utils import conditional_grad, scatter_det
+from ocpmodels.models.gemnet_oc.utils import repeat_blocks
 
 
 @conditional_grad(torch.enable_grad())
