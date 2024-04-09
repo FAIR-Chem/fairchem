@@ -32,10 +32,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install jupyter-book jupytext sphinx
-        pip install torch==1.13.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu # install CPU torch
-        pip install pyg_lib torch_scatter torch_sparse -f https://data.pyg.org/whl/torch-1.13.1+cpu.html
-        pip install -e .
+        pip install -e .[docs]
 
     # Build the book
     - name: Build the book
