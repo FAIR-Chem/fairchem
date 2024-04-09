@@ -39,7 +39,7 @@ jobs:
 #    if: github.event.inputs.release-pypi == 'true' && startsWith(github.ref, 'refs/tags/')
 #    environment:
 #      name: pypi
-#      url: https://pypi.org/p/ocpmodels
+#      url: https://pypi.org/p/ocp-models
 #
 #    permissions:
 #      id-token: write  # IMPORTANT: mandatory for trusted publishing
@@ -63,7 +63,7 @@ jobs:
 
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/ocpmodels
+      url: https://test.pypi.org/p/ocp-models
 
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
