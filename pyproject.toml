@@ -114,8 +114,9 @@ lint.ignore = [
   "B017",   # pytest.raises
   "PT011",  # pytest.raises
   "PT012",  # pytest.raises"
-    "E741",  # ambigous variable naming, i.e. one letter
-    "FBT003",  # boolean positional variable in function call
+  "E741",  # ambigous variable naming, i.e. one letter
+  "FBT003",  # boolean positional variable in function call
+  "PERF203"  # `try`-`except` within a loop incurs performance overhead (no overhead in Py 3.11+)
 ]
 lint.typing-modules = ["mypackage._compat.typing"]
 src = ["src"]

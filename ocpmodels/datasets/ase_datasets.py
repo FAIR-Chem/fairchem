@@ -355,8 +355,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             ids = []
             for line in index:
                 filename = line.split(" ", maxsplit=1)[0]
-                for i in range(int(line.split(" ")[1])):
-                    ids.append(f"{filename} {i}")
+                ids = [f"{filename} {i}" for i in range(int(line.split(" ")[1]))]
 
             return ids
 
