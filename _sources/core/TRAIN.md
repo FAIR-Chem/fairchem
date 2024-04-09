@@ -1,33 +1,9 @@
 # Training and evaluating models on OCP datasets
 
-- [Getting Started](#getting-started)
-- [OC20](#oc20)
-  - [Initial Structure to Relaxed Energy (IS2RE)](#initial-structure-to-relaxed-energy-prediction-is2re)
-    - [IS2RE Relaxations](#is2re-relaxations)
-  - [Structure to Energy and Forces (S2EF)](#structure-to-energy-and-forces-s2ef)
-  - [Training OC20 models with total energies (IS2RE/S2EF)](#training-oc20-models-with-total-energies-is2res2ef)
-  - [Overriding YAML config parameters from the command line](#overriding-yaml-config-parameters-from-the-command-line)
-  - [Initial Structure to Relaxed Structure (IS2RS)](#initial-structure-to-relaxed-structure-is2rs)
-  - [Create EvalAI submission files](#create-evalai-oc20-submission-files)
-    - [S2EF/IS2RE](#s2efis2re)
-    - [IS2RS](#is2rs)
-- [OC22](#oc22)
-  - [Initial Structure to Total Relaxed Energy (IS2RE-Total)](#initial-structure-to-total-relaxed-energy-is2re-total)
-  - [Structure to Total Energy and Forces (S2EF-Total)](#structure-to-total-energy-and-forces-s2ef-total)
-  - [Joint Training](#joint-training)
-  - [Create EvalAI submission files](#create-evalai-oc22-submission-files)
-    - [S2EF-Total/IS2RE-Total](#s2ef-totalis2re-total)
-- [Using Your Own Data](#using-your-own-data)
-  - [Writing an LMDB](#writing-an-lmdb)
-  - [Using an ASE Database](#using-an-ase-database)
-  - [Using ASE-Readable Files](#using-ase-readable-files)
-    - [Single-Structure Files](#single-structure-files)
-    - [Multi-Structure Files](#multi-structure-files)
 
 ## Getting Started
 
-The [Open Catalyst Project](https://opencatalystproject.org/) consists of three
-distinct tasks:
+The [Open Catalyst Project](https://opencatalystproject.org/) consists of three distinct tasks:
 - Initial Structure to Relaxed Energy prediction (IS2RE)
 - Structure to Energy and Forces (S2EF)
 - Initial Structure to Relaxed Structure (IS2RS)
