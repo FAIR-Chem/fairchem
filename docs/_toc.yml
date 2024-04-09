@@ -2,7 +2,7 @@
 # Learn more at https://jupyterbook.org/customize/toc.html
 
 format: jb-book
-root: core/README
+root: index
 parts:
 - caption: Installation & License
   chapters:
