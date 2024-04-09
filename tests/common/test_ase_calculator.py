@@ -121,5 +121,5 @@ class TestCalculatoreSCNSeeds:
                     results_by_seed[seed] = energy
             # make sure different seeds give slightly different results , expected due to discretization error in grid
             for seed_a in set(seeds):
-                for seed_b in set(seeds) - set([seed_a]):
+                for seed_b in set(seeds) - {seed_a}:
                     assert results_by_seed[seed_a] != results_by_seed[seed_b]

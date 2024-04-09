@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import argparse
 import glob
 import os
@@ -64,7 +66,7 @@ def write_predictions(args) -> None:
             res = np.load(vars(args)[split], allow_pickle=True)
             contents = res.files
             for i in contents:
-                key = "_".join([split, i])
+                key = f"{split}_{i}"
                 submission_file[key] = res[i]
 
         np.savez_compressed(args.out_path, **submission_file)
@@ -72,9 +74,7 @@ def write_predictions(args) -> None:
 
 def main(args: argparse.Namespace) -> None:
     for split in SPLITS[args.dataset]:
-        assert vars(args).get(
-            split
-        ), f"Missing {split} split for {args.dataset}"
+        assert vars(args).get(split), f"Missing {split} split for {args.dataset}"
 
     if not args.out_path.endswith(".npz"):
         args.out_path = args.out_path + ".npz"
@@ -110,9 +110,7 @@ if __name__ == "__main__":
     """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--id", help="Path to ID results. Required for OC20 and OC22."
-    )
+    parser.add_argument("--id", help="Path to ID results. Required for OC20 and OC22.")
     parser.add_argument(
         "--ood-ads", help="Path to OOD-Ads results. Required only for OC20."
     )

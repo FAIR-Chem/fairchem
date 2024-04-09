@@ -7,7 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
@@ -27,10 +27,10 @@ class Approx:
 
     def __init__(
         self,
-        data: Union[np.ndarray, list],
+        data: np.ndarray | list,
         *,
-        rtol: Optional[float] = None,
-        atol: Optional[float] = None,
+        rtol: float | None = None,
+        atol: float | None = None,
     ) -> None:
         if isinstance(data, list):
             self.data = np.array(data)
@@ -64,7 +64,7 @@ class _ApproxNumpyFormatter:
         ).__repr__()
 
 
-def _try_parse_approx(data: SerializableData) -> Optional[Approx]:
+def _try_parse_approx(data: SerializableData) -> Approx | None:
     """
     Parse the string representation of an Approx object.
     We can just use eval here, since we know the string is safe.

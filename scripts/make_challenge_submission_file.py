@@ -9,6 +9,8 @@ ONLY for use in the NeurIPS 2021 Open Catalyst Challenge. For all other submissi
 please use make_submission_file.py.
 """
 
+from __future__ import annotations
+
 import argparse
 import glob
 import os
@@ -56,7 +58,7 @@ def write_predictions(path: str, filename: str) -> None:
     res = np.load(path, allow_pickle=True)
     contents = res.files
     for i in contents:
-        key = "_".join(["challenge", i])
+        key = f"challenge_{i}"
         submission_file[key] = res[i]
 
     np.savez_compressed(filename, **submission_file)
@@ -71,9 +73,7 @@ def main(args: argparse.Namespace) -> None:
     if not args.is2re_relaxations:
         write_predictions(path, filename=args.out_path)
     else:
-        write_is2re_relaxations(
-            path, filename=args.out_path, hybrid=args.hybrid
-        )
+        write_is2re_relaxations(path, filename=args.out_path, hybrid=args.hybrid)
     print(f"Results saved to {args.out_path} successfully.")
 
 

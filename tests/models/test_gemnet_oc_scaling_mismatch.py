@@ -93,7 +93,7 @@ class TestGemNetOC:
         try:
             load_state_dict(model, new_dict)
         except ValueError as e:
-            assert False, f"'load_state_dict' raised an exception {e}"
+            raise AssertionError(f"'load_state_dict' raised an exception {e}")
 
     def test_scaling_mismatch(self) -> None:
         torch.manual_seed(4)
