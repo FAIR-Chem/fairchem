@@ -4,26 +4,45 @@ import logging
 import os
 import shutil
 from importlib import resources
+from typing import TYPE_CHECKING
 
 import urllib3
 import yaml
 
 from ocpmodels import models
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
+
 with (resources.files(models) / "pretrained_models.yml").open("rt") as f:
     MODEL_REGISTRY = yaml.safe_load(f)
 
 
-def model_name_to_local_file(model_name: str, local_cache: str) -> str | None:
+available_pretrained_models = tuple(MODEL_REGISTRY.keys())
+
+
+def model_name_to_local_file(model_name: str, local_cache: str | Path) -> str:
+    """Download a pretrained checkpoint if it does not exist already
+
+    Args:
+        model_name (str): the model name. See available_pretrained_checkpoints.
+        local_cache (str):
+
+    Returns:
+
+    """
     logging.info(f"Checking local cache: {local_cache} for model {model_name}")
     if model_name not in MODEL_REGISTRY:
         logging.error(f"Not a valid model name '{model_name}'")
-        return None
+        raise ValueError(
+            f"Not a valid model name '{model_name}'. Model name must be one of {available_pretrained_models}"
+        )
     if not os.path.exists(local_cache):
         os.makedirs(local_cache, exist_ok=True)
     if not os.path.exists(local_cache):
         logging.error(f"Failed to create local cache folder '{local_cache}'")
-        return None
+        raise RuntimeError(f"Failed to create local cache folder '{local_cache}'")
     model_url = MODEL_REGISTRY[model_name]
     local_path = os.path.join(local_cache, os.path.basename(model_url))
 
