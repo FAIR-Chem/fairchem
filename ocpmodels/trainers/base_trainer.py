@@ -12,7 +12,7 @@ import errno
 import logging
 import os
 import random
-from abc import ABC
+from abc import ABC, abstractmethod
 from collections import defaultdict
 
 import numpy as np
@@ -174,6 +174,10 @@ class BaseTrainer(ABC):
             logging.info(yaml.dump(self.config, default_flow_style=False))
 
         self.load()
+
+    @abstractmethod
+    def train(self, disable_eval_tqdm: bool = False) -> None:
+        """Run model training iterations."""
 
     @staticmethod
     def _get_timestamp(device: torch.device, suffix: str | None) -> str:
