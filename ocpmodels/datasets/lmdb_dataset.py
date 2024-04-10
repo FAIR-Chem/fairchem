@@ -231,8 +231,8 @@ class SinglePointLmdbDataset(LmdbDataset[BaseData]):
 
 
 class TrajectoryLmdbDataset(LmdbDataset[BaseData]):
-    def __init__(self, config, transform=None) -> None:
-        super(TrajectoryLmdbDataset, self).__init__(config, transform)
+    def __init__(self, config) -> None:
+        super(TrajectoryLmdbDataset, self).__init__(config)
         warnings.warn(
             "TrajectoryLmdbDataset is deprecated and will be removed in the future."
             "Please use 'LmdbDataset' instead.",
