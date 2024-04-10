@@ -9,6 +9,9 @@ LICENSE file in the root directory of this source tree.
 Utilities to interface OCP models/trainers with the Atomic Simulation
 Environment (ASE)
 """
+
+from __future__ import annotations
+
 import copy
 import logging
 from typing import Dict, Optional
@@ -19,7 +22,6 @@ from ase.calculators.calculator import Calculator
 from ase.calculators.singlepoint import SinglePointCalculator as sp
 from ase.constraints import FixAtoms
 
-from ocpmodels.common.model_registry import model_name_to_local_file
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import (
     load_config,
@@ -28,6 +30,7 @@ from ocpmodels.common.utils import (
     update_config,
 )
 from ocpmodels.datasets import data_list_collater
+from ocpmodels.models.model_registry import model_name_to_local_file
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -102,7 +105,7 @@ class OCPCalculator(Calculator):
         if model_name is not None:
             if local_cache is None:
                 logging.error("Local cahce must be set when using model name")
-                return None
+                return
             checkpoint_path = model_name_to_local_file(
                 model_name=model_name, local_cache=local_cache
             )
@@ -113,9 +116,7 @@ class OCPCalculator(Calculator):
         checkpoint = None
         if config_yml is not None:
             if isinstance(config_yml, str):
-                config, duplicates_warning, duplicates_error = load_config(
-                    config_yml
-                )
+                config, duplicates_warning, duplicates_error = load_config(config_yml)
                 if len(duplicates_warning) > 0:
                     logging.warning(
                         f"Overwritten config parameters from included configs "
@@ -136,9 +137,7 @@ class OCPCalculator(Calculator):
                 config["dataset"] = config["dataset"].get("train", None)
         else:
             # Loads the config from the checkpoint directly (always on CPU).
-            checkpoint = torch.load(
-                checkpoint_path, map_location=torch.device("cpu")
-            )
+            checkpoint = torch.load(checkpoint_path, map_location=torch.device("cpu"))
             config = checkpoint["config"]
 
         if trainer is not None:
@@ -181,9 +180,7 @@ class OCPCalculator(Calculator):
         )
 
         if checkpoint_path is not None:
-            self.load_checkpoint(
-                checkpoint_path=checkpoint_path, checkpoint=checkpoint
-            )
+            self.load_checkpoint(checkpoint_path=checkpoint_path, checkpoint=checkpoint)
 
         seed = seed if seed is not None else self.trainer.config["cmd"]["seed"]
         if seed is None:
@@ -203,9 +200,7 @@ class OCPCalculator(Calculator):
             r_pbc=True,
         )
 
-    def load_checkpoint(
-        self, checkpoint_path: str, checkpoint: Dict = {}
-    ) -> None:
+    def load_checkpoint(self, checkpoint_path: str, checkpoint: Dict = {}) -> None:
         """
         Load existing trained model
 
@@ -223,9 +218,7 @@ class OCPCalculator(Calculator):
         data_object = self.a2g.convert(atoms)
         batch = data_list_collater([data_object], otf_graph=True)
 
-        predictions = self.trainer.predict(
-            batch, per_image=False, disable_tqdm=True
-        )
+        predictions = self.trainer.predict(batch, per_image=False, disable_tqdm=True)
 
         for key in predictions:
             _pred = predictions[key]
