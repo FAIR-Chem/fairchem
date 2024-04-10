@@ -1,6 +1,7 @@
 name: release
 
 on:
+  push:
   release:
     types: [published]
     inputs:
@@ -32,28 +33,28 @@ jobs:
     uses: ./.github/workflows/docs.yml
     secrets: inherit
 
-  release-pypi:
-    needs: [build]
-    runs-on: ubuntu-latest
-    if: github.event.inputs.release-pypi == 'true' && startsWith(github.ref, 'refs/tags/')
-    environment:
-      name: pypi
-      url: https://pypi.org/p/ocp-models
-
-    permissions:
-      id-token: write  # IMPORTANT: mandatory for trusted publishing
-
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: artifact
-          path: dist
-
-      - uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          verbose: true
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+#  release-pypi:
+#    needs: [build]
+#    runs-on: ubuntu-latest
+#    if: github.event.inputs.release-pypi == 'true' && startsWith(github.ref, 'refs/tags/')
+#    environment:
+#      name: pypi
+#      url: https://pypi.org/p/ocp-models
+#
+#    permissions:
+#      id-token: write  # IMPORTANT: mandatory for trusted publishing
+#
+#    steps:
+#      - uses: actions/download-artifact@v4
+#        with:
+#          name: artifact
+#          path: dist
+#
+#      - uses: pypa/gh-action-pypi-publish@release/v1
+#        with:
+#          verbose: true
+#          user: __token__
+#          password: ${{ secrets.PYPI_API_TOKEN }}
 
   release-test-pypi:
     needs: [build]

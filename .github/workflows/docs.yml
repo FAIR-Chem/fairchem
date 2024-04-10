@@ -3,12 +3,12 @@ name: documentation
 on:
   workflow_call:
   workflow_dispatch:
-  push:
-    branches:
-      - ocp_documentation
-    paths:
-      - 'docs/*'
-      - '.github/workflows/deploy_jupyter_book.yml'
+#  push:
+#    branches:
+#      - ocp_documentation
+#    paths:
+#      - 'docs/*'
+#      - '.github/workflows/deploy_jupyter_book.yml'
 
 # This job installs dependencies, build the book, and pushes it to `gh-pages`
 jobs:
