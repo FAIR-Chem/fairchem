@@ -13,8 +13,8 @@ def pyg_data():
 
 
 def test_rename_data_object_keys(pyg_data):
-    assert "rand_tensor" in pyg_data.keys
+    assert "rand_tensor" in pyg_data
     key_mapping = {"rand_tensor": "random_tensor"}
     pyg_data = rename_data_object_keys(pyg_data, key_mapping)
-    assert "rand_tensor" not in pyg_data.keys
-    assert "random_tensor" in pyg_data.keys
+    assert "rand_tensor" not in pyg_data
+    assert "random_tensor" in pyg_data
