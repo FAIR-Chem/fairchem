@@ -27,7 +27,7 @@ First we get the checkpoint that we want. According to the [MODELS](../../core/M
 We get this checkpoint here.
 
 ```{code-cell} ipython3
-from ocpmodels.common.model_registry import model_name_to_local_file
+from ocpmodels.models.model_registry import model_name_to_local_file
 
 checkpoint_path = model_name_to_local_file('GemNet-OC OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 ```

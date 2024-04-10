@@ -10,6 +10,9 @@ library of state-of-the-art machine learning algorithms for catalysis.
     <img src="https://user-images.githubusercontent.com/1156489/170388229-642c6619-dece-4c88-85ef-b46f4d5f1031.gif">
 </div>
 
+Full documentation, released data/checkpoints, and tutorials are now available at the [OCP Documentation](https://open-catalyst-project.github.io/ocp/):
+* https://open-catalyst-project.github.io/ocp/
+
 It provides training and evaluation code for tasks and models that take arbitrary
 chemical structures as input to predict energies / forces / positions / stresses,
 and can be used as a base scaffold for research projects. For an overview of
@@ -37,33 +40,6 @@ Older model implementations that are no longer supported:
 - DimeNet [[`arXiv`](https://arxiv.org/abs/2003.03123)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/dimenet.py)]
 - SpinConv [[`arXiv`](https://arxiv.org/abs/2106.09575)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/spinconv.py)]
 - ForceNet [[`arXiv`](https://arxiv.org/abs/2103.01436)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/forcenet.py)]
-
-
-## Installation
-
-See [installation instructions](https://github.com/Open-Catalyst-Project/ocp/blob/main/INSTALL.md).
-
-## Download data
-
-Dataset download links and instructions are in [DATASET.md](https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md).
-
-## Train and evaluate models
-
-A detailed description of how to train and evaluate models, run ML-based
-relaxations, and generate EvalAI submission files can be found in
-[TRAIN.md](https://github.com/Open-Catalyst-Project/ocp/blob/main/TRAIN.md).
-
-Our evaluation server is [hosted on EvalAI](https://eval.ai/web/challenges/challenge-page/712/overview).
-Numbers (in papers, etc.) should be reported from the evaluation server.
-
-Interactive tutorial notebooks can be found
-[here](https://github.com/Open-Catalyst-Project/ocp/tree/main/tutorials) to
-get familiar with various components of the codebase.
-
-## Pretrained model weights
-
-We provide several pretrained model weights for download
-[here](https://github.com/Open-Catalyst-Project/ocp/blob/main/MODELS.md).
 
 ## Discussion
 
