@@ -15,12 +15,12 @@ commands:
   install_deps_ubuntu:
     steps:
       - checkout
-      - restore_cache:
-          key: conda-ubuntu-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
+      #- restore_cache:
+      #    key: conda-ubuntu-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
       - run:
           name: Install conda and environment
           command: |
-            if [ ! -d "/home/circleci/miniconda" ]; then
+            if [ 1 -eq 1 -o ! -d "/home/circleci/miniconda" ]; then
               wget https://repo.anaconda.com/miniconda/Miniconda3-py39_23.11.0-2-Linux-x86_64.sh -O miniconda.sh
               bash miniconda.sh -b -p "$HOME"/miniconda
               source /home/circleci/miniconda/etc/profile.d/conda.sh
