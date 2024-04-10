@@ -7,11 +7,12 @@ import numpy as np
 import pytest
 
 from ocpmodels.common.utils import setup_logging
-from ocpmodels.datasets import TrajectoryLmdbDataset
+from ocpmodels.datasets.lmdb_dataset import LmdbDataset
 from ocpmodels.trainers import OCPTrainer
 
 from ocpmodels import models  # isort: skip
 from ocpmodels.common import logger  # isort: skip
+from ocpmodels.models.gemnet.gemnet import GemNetT  # isort: skip
 
 setup_logging()
 
@@ -22,7 +23,7 @@ def test_e2e_s2ef(
     train_src = tutorial_dataset_path / "s2ef/train_100"
     val_src = tutorial_dataset_path / "s2ef/val_20"
 
-    train_dataset = TrajectoryLmdbDataset({"src": train_src})
+    train_dataset = LmdbDataset({"src": train_src})
 
     target_energies: List[float] = []
     for data in train_dataset:
@@ -176,11 +177,5 @@ def test_e2e_s2ef(
     assert snapshot == energies.shape
     assert snapshot == forces.shape
 
-    # with open("/z/out", "a") as fout:
-    #     fout.write("######\n")
-    #     fout.write(f"{energies}\n\n")
-    #     fout.write(f"{forces}\n\n")
-
-    print("#ENERGIES", energies)
     assert snapshot == pytest.approx(energies)
     assert snapshot == pytest.approx(forces)
