@@ -81,11 +81,11 @@ def test_e2e_s2ef(
     optimizer = {
         "batch_size": 1,  # originally 32
         "eval_batch_size": 1,  # originally 32
-        "num_workers": 2,
+        "num_workers": 0,
         "lr_initial": 5.0e-4,
         "optimizer": "AdamW",
         "optimizer_params": {"amsgrad": True},
-        "scheduler": "ReduceLROnPlateau",
+        "scheduler": "Null",
         "mode": "min",
         "factor": 0.8,
         "patience": 3,
@@ -125,7 +125,7 @@ def test_e2e_s2ef(
         eval_metrics={},
         name="s2ef",
         print_every=5,
-        seed=0,  # random seed to use
+        seed=1000,  # random seed to use
         logger="tensorboard",  # logger of choice (tensorboard and wandb supported)
         local_rank=0,
         cpu=True,
@@ -156,7 +156,7 @@ def test_e2e_s2ef(
         loss_fns={},
         eval_metrics={},
         name="s2ef",
-        seed=0,  # random seed to use
+        seed=10,  # random seed to use
         logger="tensorboard",  # logger of choice (tensorboard and wandb supported)
         local_rank=0,
         cpu=True,
