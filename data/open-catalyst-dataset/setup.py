@@ -12,5 +12,6 @@ setup(
     description="Code for generating adsorbate-catalyst input configurations",
     url="http://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset",
     packages=find_packages(),
+    package_data={"ocdata.databases.pkls": ["*pkl"]},
     include_package_data=True,
 )
