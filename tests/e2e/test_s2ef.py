@@ -91,7 +91,7 @@ def test_e2e_s2ef(
         "patience": 3,
         "max_epochs": 1,  # used for demonstration purposes
         "force_coefficient": 100,
-        "ema_decay": 0.999,
+        # "ema_decay": 0.999,
         "clip_grad_norm": 10,
         "loss_energy": "mae",
         "loss_force": "l2mae",
