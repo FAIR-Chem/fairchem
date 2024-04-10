@@ -123,8 +123,8 @@ Attributes
 
           from ocpmodels.common.registry import registry
 
-          @registry.register_logger("tensorboard")
-          class WandB():
+          @registry.register_logger("wandb")
+          class WandBLogger():
               ...
 
 

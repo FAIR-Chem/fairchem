@@ -1,28 +1,17 @@
-# Pretrained OCP models
+# Pretrained OCP model checkpoints
 
 This page summarizes all the pretrained models released as part of the [Open Catalyst Project](https://opencatalystproject.org/). All models were trained using this codebase.
-
-
-* [Open Catalyst 2020 (OC20)](#open-catalyst-2020-oc20)
-    * [S2EF models optimized for EFwT](#s2ef-models-optimized-for-efwt)
-    * [S2EF models optimized for force](#s2ef-models-optimized-for-force-only)
-    * [IS2RE models](#is2re-models)
-* [Open Catalyst 2022 (OC22)](#open-catalyst-2022-oc22)
-    * [S2EF total models](#s2ef-total-models)
-* [Open Direct Air Capture 2023 (ODAC23)](#open-direct-air-capture-2023-odac23)
-    * [S2EF models](#s2ef-models)
-    * [IS2RE Direct models](#is2re-direct-models)
 
 * * *
 
 
-# Open Catalyst 2020 (OC20)
+## Open Catalyst 2020 (OC20)
 
 * All configurations for these models are available in the [`configs/`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs) directory.
 * All of these models are trained on various splits of the OC20 S2EF / IS2RE datasets. For details, see [https://arxiv.org/abs/2010.09990](https://arxiv.org/abs/2010.09990) and https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md.
 * All OC20 models are trained on adsorption energies, i.e. the DFT total energies minus the clean surface and gas phase adsorbate energies. For details on how to train models on OC20 total energies, please read the [referencing section here](https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md#oc20-reference-information).
 
-## S2EF models: optimized for EFwT
+### S2EF models: optimized for EFwT
 
 |Model	|Split	|Download	|val ID force MAE (eV / Å)	|val ID EFwT	|
 |---	|---	|---	|---	|---	|
@@ -60,7 +49,7 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 |EquiformerV2 (31M)     |All+MD     |[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_31M_ec4_allmd.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/s2ef/all/equiformer_v2/equiformer_v2_N@8_L@4_M@2_31M.yml)  |0.0142  |6.20%  |
 |EquiformerV2 (153M)    |All+MD     |[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_153M_ec4_allmd.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/s2ef/all/equiformer_v2/equiformer_v2_N@20_L@6_M@3_153M.yml)    |0.0126     |8.90%  |
 
-## S2EF models: optimized for force only
+### S2EF models: optimized for force only
 
 |Model	|Split	|Download	|val ID force MAE	|
 |---	|---	|---	|---	|
@@ -70,7 +59,7 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 |DimeNet++	|20M+Rattled    |[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/s2ef/dimenetpp_20M_rattled_forceonly.pt)	|0.0614	|
 |DimeNet++	|20M+MD         |[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/s2ef/dimenetpp_20M_md_forceonly.pt)	|0.0594	|
 
-## IS2RE models
+### IS2RE models
 
 |Model	|Split	|Download	|val ID energy MAE	|
 |---	|---	|---	|---	|
@@ -103,14 +92,14 @@ OC20 dataset or pretrained models, as well as the original paper for each model:
 }
 ```
 
-# Open Catalyst 2022 (OC22)
+## Open Catalyst 2022 (OC22)
 
 * All configurations for these models are available in the [`configs/oc22`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/oc22) directory.
 * All of these models are trained on various splits of the OC22 S2EF / IS2RE datasets. For details, see [https://arxiv.org/abs/2206.08917](https://arxiv.org/abs/2206.08917) and https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md.
 * All OC22 models released here are trained on DFT total energies, in contrast to the OC20 models listed above, which are trained on adsorption energies.
 
 
-## S2EF-Total models
+### S2EF-Total models
 
 |Model	|Training	|Download	|val ID force MAE	|val ID energy MAE	|
 |---	|---	|---	|---	|---	|
@@ -139,7 +128,7 @@ OC22 dataset or pretrained models, as well as the original paper for each model:
 
 * All config files for the ODAC23 models are available in the [`configs/odac`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac) directory.
 
-## S2EF models
+### S2EF models
 
 |Model	|Checkpoint	| Config |
 |---	|---	|---	|
@@ -151,7 +140,7 @@ OC22 dataset or pretrained models, as well as the original paper for each model:
 |EquiformerV2 | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231116/eqv2_31M.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_31M.yml) |
 |EquiformerV2 (Large) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Large.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_153M.yml) |
 
-## IS2RE Direct models
+### IS2RE Direct models
 
 |Model	|Checkpoint	| Config |
 |---	|---	| --- |
@@ -161,7 +150,7 @@ OC22 dataset or pretrained models, as well as the original paper for each model:
 
 The models in the table above were trained to predict relaxed energy directly. Relaxed energies can also be predicted by running structural relaxations using the S2EF models from the previous section.
 
-## IS2RS
+### IS2RS
 
 The IS2RS is solved by running structural relaxations using the S2EF models from the prior section.
 

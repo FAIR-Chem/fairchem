@@ -28,7 +28,7 @@ Classes
 
 
 
-.. py:class:: BaseTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier: str, timestamp_id: Optional[str] = None, run_dir: Optional[str] = None, is_debug: bool = False, print_every: int = 100, seed: Optional[int] = None, logger: str = 'tensorboard', local_rank: int = 0, amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm={}, noddp: bool = False)
+.. py:class:: BaseTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier: str, timestamp_id: Optional[str] = None, run_dir: Optional[str] = None, is_debug: bool = False, print_every: int = 100, seed: Optional[int] = None, logger: str = 'wandb', local_rank: int = 0, amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm={}, noddp: bool = False)
 
 
    Bases: :py:obj:`abc.ABC`
@@ -98,7 +98,7 @@ Classes
 
 
 
-.. py:class:: OCPTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='tensorboard', local_rank=0, amp=False, cpu=False, slurm={}, noddp=False, name='ocp')
+.. py:class:: OCPTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm={}, noddp=False, name='ocp')
 
 
    Bases: :py:obj:`ocpmodels.trainers.base_trainer.BaseTrainer`
@@ -141,7 +141,7 @@ Classes
                 (default: :obj:`None`)
    :type seed: int, optional
    :param logger: Type of logger to be used.
-                  (default: :obj:`tensorboard`)
+                  (default: :obj:`wandb`)
    :type logger: str, optional
    :param local_rank: Local rank of the process, only applicable for distributed training.
                       (default: :obj:`0`)

@@ -25,7 +25,7 @@ Classes
 
 
 
-.. py:class:: EquiformerV2EnergyTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='tensorboard', local_rank=0, amp=False, cpu=False, slurm={}, noddp=False, name='ocp')
+.. py:class:: EquiformerV2EnergyTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm={}, noddp=False, name='ocp')
 
 
    Bases: :py:obj:`ocpmodels.trainers.OCPTrainer`
@@ -68,7 +68,7 @@ Classes
                 (default: :obj:`None`)
    :type seed: int, optional
    :param logger: Type of logger to be used.
-                  (default: :obj:`tensorboard`)
+                  (default: :obj:`wandb`)
    :type logger: str, optional
    :param local_rank: Local rank of the process, only applicable for distributed training.
                       (default: :obj:`0`)

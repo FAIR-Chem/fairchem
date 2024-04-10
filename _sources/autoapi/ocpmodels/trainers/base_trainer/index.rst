@@ -25,7 +25,7 @@ Classes
 
 
 
-.. py:class:: BaseTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier: str, timestamp_id: Optional[str] = None, run_dir: Optional[str] = None, is_debug: bool = False, print_every: int = 100, seed: Optional[int] = None, logger: str = 'tensorboard', local_rank: int = 0, amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm={}, noddp: bool = False)
+.. py:class:: BaseTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier: str, timestamp_id: Optional[str] = None, run_dir: Optional[str] = None, is_debug: bool = False, print_every: int = 100, seed: Optional[int] = None, logger: str = 'wandb', local_rank: int = 0, amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm={}, noddp: bool = False)
 
 
    Bases: :py:obj:`abc.ABC`
