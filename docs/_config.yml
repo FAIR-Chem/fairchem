@@ -14,6 +14,7 @@ logo                        : logo.png  # A path to the book logo
 # See https://jupyterbook.org/content/execute.html
 execute:
   execute_notebooks: off
+  timeout: 600
 
 # Define the name of the latex output file for PDF builds
 latex:
@@ -45,12 +46,8 @@ parse:
     
 sphinx:
   extra_extensions:
-  # - 'sphinx.ext.autodoc'
-  # - 'sphinx.ext.autosummary'
-  #- 'sphinx.ext.autoapi'
   - 'sphinx.ext.napoleon'
   - 'autoapi.extension'
   config:
     autosummary_generate: True
     autoapi_dirs: ['../ocpmodels']
-    # autoapi_root: '_api'

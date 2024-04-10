@@ -114,3 +114,10 @@ Local
 
 docs/_autosummary/
 env.yml
+
+docs/legacy_tutorials/videos/
+
+# No ASE dbs, or OCP LMDBs!
+*.db
+*.lmdb
+*.lmdb-lock
