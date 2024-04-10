@@ -135,5 +135,6 @@ lint.isort.required-imports = ["from __future__ import annotations"]
 "__init__.py" = ["I002"]
 "conf.py" = ["I002"]
 "ocpmodels/common/*" = ["PLW0603"]  # Using the global statement to update [] is discouraged
+"scripts/*" = ["PLW0603"]  # Using the global statement to update [] is discouraged
 "ocpmodels/models/*" = ["PERF401"]  # Use a list comprehension to create a transformed list
 "ocpmodels/models/gemnet*" = ["B023"]  # Function definition does not bind loop variable `first_sph`

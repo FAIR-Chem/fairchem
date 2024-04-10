@@ -120,7 +120,8 @@ def verify_count(output_path: str, task: str, split: str) -> None:
     paths = glob.glob(os.path.join(output_path, "*.txt"))
     count = 0
     for path in paths:
-        lines = open(path).read().splitlines()
+        with open(path) as fp:
+            lines = fp.read().splitlines()
         count += len(lines)
     assert (
         count == S2EF_COUNTS[task][split]

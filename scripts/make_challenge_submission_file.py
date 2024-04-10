@@ -42,8 +42,7 @@ def write_is2re_relaxations(path: str, filename: str, hybrid) -> None:
         ids = []
         energies = []
         for sid, energy in zip(preds["ids"], preds["energy"]):
-            sid = sid.split("_")[0]
-            ids.append(sid)
+            ids.append(sid.split("_")[0])
             energies.append(energy)
 
         submission_file["challenge_ids"] = np.array(ids)

@@ -60,10 +60,7 @@ if __name__ == "__main__":
 
     if args.submit:  # Run on cluster
         slurm_add_params = config.get("slurm", None)  # additional slurm arguments
-        if args.sweep_yml:  # Run grid search
-            configs = create_grid(config, args.sweep_yml)
-        else:
-            configs = [config]
+        configs = create_grid(config, args.sweep_yml) if args.sweep_yml else [config]
 
         logging.info(f"Submitting {len(configs)} jobs")
         executor = submitit.AutoExecutor(
