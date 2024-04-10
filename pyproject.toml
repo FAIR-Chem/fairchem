@@ -134,4 +134,6 @@ lint.isort.required-imports = ["from __future__ import annotations"]
 # Ignore `E402` (import violations) in all `__init__.py` files, and in `path/to/file.py`.
 "__init__.py" = ["I002"]
 "conf.py" = ["I002"]
-"ocpmodels/common/data_parallel.py" = ["PLW0603"]
+"ocpmodels/common/*" = ["PLW0603"]  # Using the global statement to update [] is discouraged
+"ocpmodels/models/*" = ["PERF401"]  # Use a list comprehension to create a transformed list
+"ocpmodels/models/gemnet*" = ["B023"]  # Function definition does not bind loop variable `first_sph`

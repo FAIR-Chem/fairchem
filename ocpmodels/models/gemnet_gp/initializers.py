@@ -15,12 +15,7 @@ def _standardize(kernel):
     Makes sure that N*Var(W) = 1 and E[W] = 0
     """
     eps = 1e-6
-
-    if len(kernel.shape) == 3:
-        axis = [0, 1]  # last dimension is output dimension
-    else:
-        axis = 1
-
+    axis = [0, 1] if len(kernel.shape) == 3 else 1
     var, mean = torch.var_mean(kernel, dim=axis, unbiased=True, keepdim=True)
     return (kernel - mean) / (var + eps) ** 0.5
 

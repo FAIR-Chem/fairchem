@@ -40,11 +40,8 @@ class EquiformerV2EnergyTrainer(OCPTrainer):
         n_iter_per_epoch = len(self.train_loader)
         scheduler_params = self.config["optim"]["scheduler_params"]
         for k in scheduler_params:
-            if "epochs" in k:
-                if isinstance(scheduler_params[k], (int, float, list)):
-                    scheduler_params[k] = multiply(
-                        scheduler_params[k], n_iter_per_epoch
-                    )
+            if "epochs" in k and isinstance(scheduler_params[k], (int, float, list)):
+                scheduler_params[k] = multiply(scheduler_params[k], n_iter_per_epoch)
 
         self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
         self.clip_grad_norm = self.config["optim"].get("clip_grad_norm")

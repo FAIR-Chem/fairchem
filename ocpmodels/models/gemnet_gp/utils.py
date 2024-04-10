@@ -255,10 +255,7 @@ def calculate_interatomic_vectors(
     Rs = R[id_s]
     Rt = R[id_t]
     # ReLU prevents negative numbers in sqrt
-    if offsets_st is None:
-        V_st = Rt - Rs  # s -> t
-    else:
-        V_st = Rt - Rs + offsets_st  # s -> t
+    V_st = Rt - Rs if offsets_st is None else Rt - Rs + offsets_st
     D_st = torch.sqrt(torch.sum(V_st**2, dim=1))
     V_st = V_st / D_st[..., None]
     return D_st, V_st
