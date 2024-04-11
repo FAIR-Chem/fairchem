@@ -36,6 +36,9 @@ namespaces = false
 
 [tool.setuptools_scm]  # for version instrospection based on tags + commit
 
+[project.scripts]
+ocp = "ocpmodels._cli:main"
+
 [project.urls]
 repository = "https://github.com/Open-Catalyst-Project/ocp"
 home = "https://opencatalystproject.org/"
