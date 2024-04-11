@@ -22,4 +22,4 @@ jobs:
           pip install -e .[dev]
       - name: black
         run: |
-          black --check --color
+          black --check --color ocpdata
