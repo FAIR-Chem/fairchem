@@ -20,8 +20,8 @@ setup_logging()
 def test_e2e_s2ef(
     tutorial_dataset_path: Path, snapshot, torch_deterministic: None
 ) -> None:
-    train_src = tutorial_dataset_path / "s2ef/train_100"
-    val_src = tutorial_dataset_path / "s2ef/val_20"
+    train_src = tutorial_dataset_path / "s2ef/val_20"
+    val_src = tutorial_dataset_path / "s2ef/train_100"
 
     train_dataset = LmdbDataset({"src": train_src})
 
@@ -82,19 +82,20 @@ def test_e2e_s2ef(
         "batch_size": 1,  # originally 32
         "eval_batch_size": 1,  # originally 32
         "num_workers": 0,
-        "lr_initial": 5.0e-4,
+        "lr_initial": 0.001,
         "optimizer": "AdamW",
         "optimizer_params": {"amsgrad": True},
         "scheduler": "Null",
         "mode": "min",
         "factor": 0.8,
         "patience": 3,
-        "max_epochs": 1,  # used for demonstration purposes
+        "max_epochs": 10,  # used for demonstration purposes
         "force_coefficient": 100,
         # "ema_decay": 0.999,
         "clip_grad_norm": 10,
         "loss_energy": "mae",
         "loss_force": "l2mae",
+        "eval_every": 200,
     }
 
     # Dataset
@@ -140,7 +141,7 @@ def test_e2e_s2ef(
 
     # # Dataset
     dataset.append(
-        {"src": val_src},  # test set (optional)
+        {"src": train_src},  # test set (optional)
     )
 
     pretrained_trainer = OCPTrainer(
@@ -156,7 +157,7 @@ def test_e2e_s2ef(
         loss_fns={},
         eval_metrics={},
         name="s2ef",
-        seed=10,  # random seed to use
+        seed=990,  # random seed to use
         logger="tensorboard",  # logger of choice (tensorboard and wandb supported)
         local_rank=0,
         cpu=True,
@@ -174,6 +175,7 @@ def test_e2e_s2ef(
     energies = predictions["energy"]
     forces = predictions["forces"]
 
+    # breakpoint()
     assert snapshot == energies.shape
     assert snapshot == forces.shape
 
