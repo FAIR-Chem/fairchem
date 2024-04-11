@@ -99,7 +99,7 @@ jobs:
           command: |
             source /home/circleci/miniconda/etc/profile.d/conda.sh
             conda activate ocp-models
-            pip install -e .
+            pip install -e . 
             pre-commit install
             pytest -vv --cov-report=xml --cov=ocpmodels/ /home/circleci/project/tests
       - codecov/upload:
