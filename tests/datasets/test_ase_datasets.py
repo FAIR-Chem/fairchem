@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 import numpy as np
@@ -35,7 +37,6 @@ structures[2].set_pbc(True)
 
 
 @pytest.fixture(
-    scope="function",
     params=[
         "db_dataset",
         "db_dataset_folder",
@@ -56,18 +57,15 @@ def ase_dataset(request, tmp_path_factory):
     }
     if request.param == "db_dataset":
         with db.connect(tmp_path / "asedb.db") as database:
-            for i, atoms in enumerate(structures):
+            for _i, atoms in enumerate(structures):
                 database.write(atoms, data=atoms.info)
         dataset = AseDBDataset(
             config={"src": str(tmp_path / "asedb.db"), "a2g_args": a2g_args}
         )
-    elif (
-        request.param == "db_dataset_folder"
-        or request.param == "db_dataset_list"
-    ):
+    elif request.param == "db_dataset_folder" or request.param == "db_dataset_list":
         for db_name in ("asedb1.db", "asedb2.db"):
             with db.connect(tmp_path / db_name) as database:
-                for i, atoms in enumerate(structures):
+                for _i, atoms in enumerate(structures):
                     database.write(atoms, data=atoms.info)
         mult = 2
         src = (
@@ -83,7 +81,7 @@ def ase_dataset(request, tmp_path_factory):
         for dir_name in ("dir1", "dir2"):
             for db_name in ("asedb1.db", "asedb2.db"):
                 with db.connect(tmp_path / dir_name / db_name) as database:
-                    for i, atoms in enumerate(structures):
+                    for _i, atoms in enumerate(structures):
                         database.write(atoms, data=atoms.info)
         mult = 4
         dataset = AseDBDataset(
@@ -94,7 +92,7 @@ def ase_dataset(request, tmp_path_factory):
         )
     elif request.param == "lmbd_dataset":
         with LMDBDatabase(str(tmp_path / "asedb.lmdb")) as database:
-            for i, atoms in enumerate(structures):
+            for _i, atoms in enumerate(structures):
                 database.write(atoms, data=atoms.info)
 
         dataset = AseDBDataset(
@@ -102,7 +100,7 @@ def ase_dataset(request, tmp_path_factory):
         )
     else:  # "aselmbd_dataset" with .aselmdb file extension
         with LMDBDatabase(str(tmp_path / "asedb.lmdb")) as database:
-            for i, atoms in enumerate(structures):
+            for _i, atoms in enumerate(structures):
                 database.write(atoms, data=atoms.info)
 
         dataset = AseDBDataset(
@@ -165,9 +163,7 @@ def test_ase_metadata_guesser(ase_dataset) -> None:
     # Confirm extensive_property metadata guessed properly
     assert metadata["targets"]["info.extensive_property"]["extensive"] is True
     assert metadata["targets"]["info.extensive_property"]["shape"] == ()
-    assert (
-        metadata["targets"]["info.extensive_property"]["type"] == "per-image"
-    )
+    assert metadata["targets"]["info.extensive_property"]["type"] == "per-image"
 
     # Confirm tensor_property metadata guessed properly
     assert metadata["targets"]["info.tensor_property"]["extensive"] is False
@@ -177,7 +173,7 @@ def test_ase_metadata_guesser(ase_dataset) -> None:
 
 def test_db_add_delete(tmp_path) -> None:
     database = db.connect(tmp_path / "asedb.db")
-    for i, atoms in enumerate(structures):
+    for _i, atoms in enumerate(structures):
         database.write(atoms, data=atoms.info)
 
     dataset = AseDBDataset(config={"src": str(tmp_path / "asedb.db")})
@@ -191,7 +187,7 @@ def test_db_add_delete(tmp_path) -> None:
         build.bulk("Al"),
     ]
 
-    for i, atoms in enumerate(new_structures):
+    for _i, atoms in enumerate(new_structures):
         database.write(atoms, data=atoms.info)
 
     dataset = AseDBDataset(config={"src": str(tmp_path / "asedb.db")})
@@ -207,9 +203,7 @@ def test_ase_multiread_dataset(tmp_path) -> None:
     traj = Trajectory(tmp_path / "test.traj", mode="w")
 
     for atoms, energy in zip(atoms_objects, energies):
-        calc = SinglePointCalculator(
-            atoms, energy=energy, forces=atoms.positions
-        )
+        calc = SinglePointCalculator(atoms, energy=energy, forces=atoms.positions)
         atoms.calc = calc
         traj.write(atoms)
 
