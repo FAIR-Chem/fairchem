@@ -16,7 +16,6 @@ dependencies = [
     "syrupy==3.0.6",
     "ase==3.22.1",
     "pymatgen", #==2023.5.10"  let this be determined based on numpy version for now
-    "fastapi<1.0",
     "pyyaml",
     "tensorboard",
     "wandb",
@@ -28,7 +27,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]  # add optional dependencies to be installed as pip install ocpmodels[dev]
-dev = ["pre-commit", "black", "isort", "pytest", "pytest-cov", "coverage", "ruff"]
+dev = ["pre-commit", "isort", "pytest", "pytest-cov", "coverage", "ruff"]
 # docs = []
 
 [tool.setuptools.packages.find]
