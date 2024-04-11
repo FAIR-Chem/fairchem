@@ -6,6 +6,8 @@ root: index
 parts:
 - caption: Quickstart & Installation 
   chapters:
+  - url: https://open-catalyst.metademolab.com/
+    title: OCP Demo (no install required!)
   - file: core/INSTALL
   - file: core/QUICKSTART
   - file: core/LICENSE
