@@ -13,9 +13,9 @@ dependencies = [
     "torch",
     "numpy==1.23.5",
     "lmdb",
-    "syrupy==3.0.6",
-    "ase==3.22.1",
-    "pymatgen", #==2023.5.10"  let this be determined based on numpy version for now
+    "syrupy",
+    "ase",
+    "pymatgen",
     "pyyaml",
     "tensorboard",
     "wandb",
