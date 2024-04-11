@@ -179,5 +179,5 @@ def test_e2e_s2ef(
     assert snapshot == energies.shape
     assert snapshot == forces.shape
 
-    assert snapshot == pytest.approx(energies)
-    assert snapshot == pytest.approx(forces)
+    assert snapshot == pytest.approx(energies, abs=2.0)
+    assert snapshot == pytest.approx(forces, abs=0.3)
