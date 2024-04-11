@@ -17,10 +17,6 @@ Fine-tuning with Python
 The recommended way to do training is with the `main.py` script in ocp. One of the reasons for that is training often takes a long time and is better suited for queue systems like slurm. However, you can submit Python scripts too, and it is possible to run notebooks in Slurm too. Here we work out a proof of concept in training from Python and a Jupyter notebook.
 
 ```{code-cell} ipython3
-%run ../ocp-tutorial.ipynb
-```
-
-```{code-cell} ipython3
 import logging
 from ocpmodels.common.utils import SeverityLevelBetween
 
@@ -53,9 +49,11 @@ root.addHandler(handler_err)
 ```
 
 ```{code-cell} ipython3
-checkpoint = get_checkpoint('GemNet-OC OC20+OC22')
+from ocpmodels.models.model_registry import model_name_to_local_file
+
+checkpoint_path = model_name_to_local_file('GemNet-OC OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-calc = OCPCalculator(checkpoint=checkpoint, trainer='forces', cpu=False)
+calc = OCPCalculator(checkpoint=checkpoint_path, trainer='forces', cpu=False)
 ```
 
 ## Split the data into train, test, val sets
@@ -116,7 +114,7 @@ from ocpmodels.common.flags import flags
 parser = flags.get_parser()
 args, args_override = parser.parse_known_args(["--mode=train",                                            
                                                "--config-yml=config.yml", 
-                                               f"--checkpoint={checkpoint}",
+                                               f"--checkpoint={checkpoint_path}",
                                                "--amp"])
 args, args_override
 ```

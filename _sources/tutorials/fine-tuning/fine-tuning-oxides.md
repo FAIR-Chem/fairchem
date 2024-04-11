@@ -185,9 +185,10 @@ The train set is used for training. The test and val sets are used to check for 
 
 You choose the splits you want, 80:10:10 is common. We take a simple approach to split the database here. We make an array of integers that correspond to the ids, randomly shuffle them, and then get each row in the randomized order and write them to a new db.
 
-We provide some helper functions in [../ocp-tutorial.ipynb](../ocp-tutorial) to streamline this process. 
+We provide some helper functions in `ocpmodels.common.tutorial_utils` to streamline this process. 
 
 ```{code-cell} ipython3
+from ocpmodels.common.tutorial_utils import train_test_val_split
 ! rm -fr train.db test.db val.db
 
 train, test, val = train_test_val_split('oxides.db')
@@ -199,6 +200,8 @@ train, test, val
 We have to create a yaml configuration file for the model we are using. The pre-trained checkpoints contain their config data, so we use this to get the base configuration, and then remove pieces we don't need, and update pieces we do need.
 
 ```{code-cell} ipython3
+from ocpmodels.common.tutorial_utils import generate_yml_config
+
 yml = generate_yml_config(checkpoint, 'config.yml',
                    delete=['slurm', 'cmd', 'logger', 'task', 'model_attributes',
                            'optim.loss_force', # the checkpoint setting causes an error

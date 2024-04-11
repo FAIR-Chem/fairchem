@@ -80,10 +80,10 @@ This tutorial will start by using OCP in a Jupyter notebook to setup some simple
 
 ## About the compute environment
 
-[ocp-tutorial.ipynb](./ocp_tutorial_helper.py) provides `describe_ocp` to output information that might be helpful in debugging.
+`ocpmodels.common.tutorial_utils`  provides `describe_ocp` to output information that might be helpful in debugging.
 
 ```{code-cell} ipython3
-from ocp_tutorial_helper import describe_ocp
+from ocpmodels.common.tutorial_utils import describe_ocp
 describe_ocp()
 ```
 

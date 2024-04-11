@@ -34,10 +34,10 @@ from ocdata.utils import DetectTrajAnomaly
 ```
 
 ```{code-cell} ipython3
-%run ../ocp-tutorial.ipynb
+from ocpmodels.models.model_registry import model_name_to_local_file
 
-checkpoint = get_checkpoint('GemNet-OC-Large All+MD')
-checkpoint
+checkpoint_path = model_name_to_local_file('GemNet-OC-Large All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path
 ```
 
 # Introduction
@@ -123,7 +123,7 @@ Running the model with BFGS prints at each relaxation step which is a lot to pri
 os.makedirs(f"data/{bulk_src_id}_{adsorbate_smiles_h}", exist_ok=True)
 
 # Define the calculator
-calc = OCPCalculator(checkpoint=checkpoint, cpu=False)   # if you have a GPU
+calc = OCPCalculator(checkpoint=checkpoint_path, cpu=False)   # if you have a GPU
 # calc = OCPCalculator(checkpoint=checkpoint_path, cpu=True)  # If you have CPU only
 ```
 
@@ -427,4 +427,4 @@ f.set_figheight(7)
 
 # Next steps
 
-Next we consider [fine-tuning](../fine-tuning/fine-tuning-oxides.ipynb).
+Next we consider [fine-tuning](../fine-tuning/fine-tuning-oxides).
