@@ -49,7 +49,8 @@ class Runner(submitit.helpers.Checkpointable):
         return submitit.helpers.DelayedSubmission(new_runner, self.config)
 
 
-if __name__ == "__main__":
+def main():
+    """Run the main ocp-models program."""
     setup_logging()
 
     parser: argparse.ArgumentParser = flags.get_parser()
