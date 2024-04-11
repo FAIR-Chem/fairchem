@@ -1,13 +1,13 @@
 import os
 import pickle
-from typing import Any, Dict, List
 import warnings
+from typing import Any, Dict, List
 
 import ase
 import numpy as np
 
-from ocdata.configs.paths import BULK_PKL_PATH
 from ocdata.core.slab import Slab
+from ocdata.databases.pkls import BULK_PKL_PATH
 
 
 class Bulk:
