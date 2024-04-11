@@ -28,6 +28,9 @@ repository = "http://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset"
 [tool.setuptools.package-data]
 "ocdata.databases.pkls" = ["*pkl"]
 
+[project.optional-dependencies]
+dev = ["pre-commit", "pytest", "pytest-cov", "coverage", "black"]
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts  =  "-p no:warnings --import-mode importlib -x --quiet -rxXs --color yes"
@@ -39,7 +42,7 @@ filterwarnings  = [
 testpaths = ["tests"]
 
 [tool.coverage.run]
-source = ["ocpmodels"]
+source = ["ocpdata"]
 
 [tool.isort]
 profile = 'black'
@@ -49,64 +52,3 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 line_length = 88
-
-
-[tool.ruff]
-line-length = 88
-lint.select = [
-  "B",      # flake8-bugbear
-  "C4",     # flake8-comprehensions
-  "E",      # pycodestyle error
-  "EXE",    # flake8-executable
-  "F",      # pyflakes
-  "FA",     # flake8-future-annotations
-  "FBT003", # boolean-positional-value-in-call
-  "FLY",    # flynt
-  "I",      # isort
-  "ICN",    # flake8-import-conventions
-  "PD",     # pandas-vet
-  "PERF",   # perflint
-  "PIE",    # flake8-pie
-  "PL",     # pylint
-  "PT",     # flake8-pytest-style
-  "PYI",    # flakes8-pyi
-  "Q",      # flake8-quotes
-  "RET",    # flake8-return
-  "RSE",    # flake8-raise
-  "RUF",    # Ruff-specific rules
-  "SIM",    # flake8-simplify
-  "SLOT",   # flake8-slots
-  "TCH",    # flake8-type-checking
-  "TID",    # tidy imports
-  "TID",    # flake8-tidy-imports
-  "UP",     # pyupgrade
-  "W",      # pycodestyle warning
-  "YTT",    # flake8-2020
-]
-lint.ignore = [
-  "PLR",    # Design related pylint codes
-  "E501",   # Line too long
-  "B028",   # No explicit stacklevel
-  "EM101",  # Exception must not use a string literal
-  "EM102",  # Exception must not use an f-string literal
-  "G004",   # f-string in Logging statement
-  "RUF015", # Prefer next(iter())
-  "RET505", # Unnecessary `elif` after `return`
-  "PT004",  # Fixture does not return anthing
-  "B017",   # pytest.raises
-  "PT011",  # pytest.raises
-  "PT012",  # pytest.raises"
-  "E741",  # ambigous variable naming, i.e. one letter
-  "FBT003",  # boolean positional variable in function call
-  "PERF203",  # `try`-`except` within a loop incurs performance overhead (no overhead in Py 3.11+)
-  "EXE002",  # The file is executable but no shebang is present (not sure why some files come up as this)
-]
-
-lint.typing-modules = ["mypackage._compat.typing"]
-src = ["src"]
-lint.unfixable = [
-  "T20",  # Removes print statements
-  "F841", # Removes unused variables
-]
-lint.pydocstyle.convention = "google"
-lint.isort.known-first-party = ["ocdata"]
