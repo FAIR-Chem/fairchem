@@ -33,13 +33,13 @@ You can retrieve the dataset below. In this notebook we learn how to do "mass in
 You have to choose a checkpoint to start with. The newer checkpoints may require too much memory for this environment. 
 
 ```{code-cell} ipython3
-from ocpmodels.common.model_registry import MODEL_REGISTRY
-print(MODEL_REGISTRY.keys())
+from ocpmodels.models.model_registry import available_pretrained_models
+print(available_pretrained_models)
 
 ```
 
 ```{code-cell} ipython3
-from ocpmodels.common.model_registry import model_name_to_local_file
+from ocpmodels.models.model_registry import model_name_to_local_file
 
 checkpoint_path = model_name_to_local_file('GemNet-dT OC22', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path

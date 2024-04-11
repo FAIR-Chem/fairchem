@@ -121,7 +121,7 @@ You need to provide the calculator with a path to a model checkpoint file. That 
 Running the model with BFGS prints at each relaxation step is a lot to print. So we will just run one to demonstrate what happens on each iteration.
 
 ```{code-cell} ipython3
-from ocpmodels.common.model_registry import model_name_to_local_file
+from ocpmodels.models.model_registry import model_name_to_local_file
 
 checkpoint_path = model_name_to_local_file('eSCN-L6-M3-Lay20All+MD', local_cache='/tmp/ocp_checkpoints/')
 

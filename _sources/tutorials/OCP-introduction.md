@@ -58,7 +58,7 @@ The first step is getting a checkpoint for the model we want to use. eSCN is cur
 The different models have different compute requirements. If you find your kernel is crashing, it probably means you have exceeded the allowed amount of memory. This checkpoint works fine in this example, but it may crash your kernel if you use it in the NRR example.
 
 ```{code-cell}
-from ocpmodels.common.model_registry import model_name_to_local_file
+from ocpmodels.models.model_registry import model_name_to_local_file
 
 checkpoint_path = model_name_to_local_file('eSCN-L6-M3-Lay20All+MD', local_cache='/tmp/ocp_checkpoints/')
 ```
