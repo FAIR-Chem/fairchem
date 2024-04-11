@@ -13,9 +13,7 @@ if typing.TYPE_CHECKING:
     from torch_geometric.data import Data
 
 
-def rename_data_object_keys(
-    data_object: Data, key_mapping: dict[str, str]
-) -> Data:
+def rename_data_object_keys(data_object: Data, key_mapping: dict[str, str]) -> Data:
     """Rename data object keys
 
     Args:

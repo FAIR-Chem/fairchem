@@ -16,7 +16,6 @@ dependencies = [
     "syrupy==3.0.6",
     "ase==3.22.1",
     "pymatgen", #==2023.5.10"  let this be determined based on numpy version for now
-    "fastapi<1.0",
     "pyyaml",
     "tensorboard",
     "wandb",
@@ -28,11 +27,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]  # add optional dependencies to be installed as pip install ocpmodels[dev]
-dev = ["pre-commit", "black", "isort", "pytest", "pytest-cov", "coverage", "ruff"]
+dev = ["pre-commit", "isort", "pytest", "pytest-cov", "coverage", "ruff"]
 docs = ["jupyter-book", "jupytext", "sphinx","sphinx-autoapi"]
 
-[tool.setuptools]  # need to set this since we have multiple top level packates (should consider using a src layout!)
-packages = ["ocpmodels"]
+[tool.setuptools.packages.find]
+include = ["ocpmodels", "experimental"]  # alternatively: `exclude = ["additional*"]`
+namespaces = false
 
 [tool.setuptools_scm]  # for version instrospection based on tags + commit
 
@@ -112,8 +112,13 @@ lint.ignore = [
   "PT004",  # Fixture does not return anthing
   "B017",   # pytest.raises
   "PT011",  # pytest.raises
-  "PT012",  # pytest.raises
+  "PT012",  # pytest.raises"
+  "E741",  # ambigous variable naming, i.e. one letter
+  "FBT003",  # boolean positional variable in function call
+  "PERF203",  # `try`-`except` within a loop incurs performance overhead (no overhead in Py 3.11+)
+  "EXE002",  # The file is executable but no shebang is present (not sure why some files come up as this)
 ]
+
 lint.typing-modules = ["mypackage._compat.typing"]
 src = ["src"]
 lint.unfixable = [
@@ -123,3 +128,12 @@ lint.unfixable = [
 lint.pydocstyle.convention = "google"
 lint.isort.known-first-party = ["ocpmodels"]
 lint.isort.required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore `E402` (import violations) in all `__init__.py` files, and in `path/to/file.py`.
+"__init__.py" = ["I002"]
+"conf.py" = ["I002"]
+"ocpmodels/common/*" = ["PLW0603"]  # Using the global statement to update [] is discouraged
+"scripts/*" = ["PLW0603"]  # Using the global statement to update [] is discouraged
+"ocpmodels/models/*" = ["PERF401"]  # Use a list comprehension to create a transformed list
+"ocpmodels/models/gemnet*" = ["B023"]  # Function definition does not bind loop variable `first_sph`

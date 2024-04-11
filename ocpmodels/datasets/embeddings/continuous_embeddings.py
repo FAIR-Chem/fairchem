@@ -14,6 +14,9 @@ Properties:
 
 NaN stored for unavaialable parameters.
 """
+
+from __future__ import annotations
+
 CONTINUOUS_EMBEDDINGS = {
     0: [
         float("NaN"),

@@ -1,21 +1,19 @@
+from __future__ import annotations
+
 import logging
 import math
 import readline
 import sys
 from itertools import islice
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Literal
+from typing import TYPE_CHECKING, Literal
 
 import torch
 import torch.nn as nn
 from torch.nn.parallel.distributed import DistributedDataParallel
 
 from ocpmodels.common.flags import flags
-from ocpmodels.common.utils import (
-    build_config,
-    new_trainer_context,
-    setup_logging,
-)
+from ocpmodels.common.utils import build_config, new_trainer_context, setup_logging
 from ocpmodels.modules.scaling import ScaleFactor
 from ocpmodels.modules.scaling.compat import load_scales_compat
 
@@ -31,7 +29,7 @@ def _prefilled_input(prompt: str, prefill: str = "") -> str:
         readline.set_startup_hook()
 
 
-def _train_batch(trainer: "BaseTrainer", batch) -> None:
+def _train_batch(trainer: BaseTrainer, batch) -> None:
     with torch.no_grad():
         with torch.cuda.amp.autocast(enabled=trainer.scaler is not None):
             out = trainer._forward(batch)
@@ -60,15 +58,11 @@ def main(*, num_batches: int = 16) -> None:
         ), "Checkpoint file not specified. Please specify --checkpoint <path>"
         ckpt_file = Path(ckpt_file)
 
-        logging.info(
-            f"Input checkpoint path: {ckpt_file}, {ckpt_file.exists()=}"
-        )
+        logging.info(f"Input checkpoint path: {ckpt_file}, {ckpt_file.exists()=}")
 
         model: nn.Module = trainer.model
         val_loader = trainer.val_loader
-        assert (
-            val_loader is not None
-        ), "Val dataset is required for making predictions"
+        assert val_loader is not None, "Val dataset is required for making predictions"
 
         if ckpt_file.exists():
             trainer.load_checkpoint(checkpoint_path=str(ckpt_file))
@@ -78,16 +72,14 @@ def main(*, num_batches: int = 16) -> None:
         unwrapped_model = model
         while isinstance(unwrapped_model, DistributedDataParallel):
             unwrapped_model = unwrapped_model.module
-        assert isinstance(
-            unwrapped_model, nn.Module
-        ), "Model is not a nn.Module"
+        assert isinstance(unwrapped_model, nn.Module), "Model is not a nn.Module"
         load_scales_compat(unwrapped_model, config.get("scale_file", None))
         # endregion
 
         model.eval()
 
         # recursively go through the submodules and get the ScaleFactor modules
-        scale_factors: Dict[str, ScaleFactor] = {
+        scale_factors: dict[str, ScaleFactor] = {
             name: module
             for name, module in model.named_modules()
             if isinstance(module, ScaleFactor)
@@ -166,7 +158,7 @@ def main(*, num_batches: int = 16) -> None:
         # endregion
 
         # region we do a single pass through the network to get the correct execution order of the scale factors
-        scale_factor_indices: Dict[str, int] = {}
+        scale_factor_indices: dict[str, int] = {}
         max_idx = 0
 
         # initialize all scale factors

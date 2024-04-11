@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import copy
 import logging
-from typing import Dict, Optional
+from typing import ClassVar
 
 import torch
 from ase import Atoms
@@ -67,19 +67,19 @@ def batch_to_atoms(batch):
 
 
 class OCPCalculator(Calculator):
-    implemented_properties = ["energy", "forces"]
+    implemented_properties: ClassVar[list[str]] = ["energy", "forces"]
 
     def __init__(
         self,
-        config_yml: Optional[str] = None,
-        checkpoint_path: Optional[str] = None,
-        model_name: Optional[str] = None,
-        local_cache: Optional[str] = None,
-        trainer: Optional[str] = None,
+        config_yml: str | None = None,
+        checkpoint_path: str | None = None,
+        model_name: str | None = None,
+        local_cache: str | None = None,
+        trainer: str | None = None,
         cutoff: int = 6,
         max_neighbors: int = 50,
         cpu: bool = True,
-        seed: Optional[int] = None,
+        seed: int | None = None,
     ) -> None:
         """
         OCP-ASE Calculator
@@ -200,7 +200,9 @@ class OCPCalculator(Calculator):
             r_pbc=True,
         )
 
-    def load_checkpoint(self, checkpoint_path: str, checkpoint: Dict = {}) -> None:
+    def load_checkpoint(
+        self, checkpoint_path: str, checkpoint: dict | None = None
+    ) -> None:
         """
         Load existing trained model
 
@@ -208,6 +210,8 @@ class OCPCalculator(Calculator):
             checkpoint_path: string
                 Path to trained model
         """
+        if checkpoint is None:
+            checkpoint = {}
         try:
             self.trainer.load_checkpoint(checkpoint_path, checkpoint)
         except NotImplementedError:

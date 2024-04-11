@@ -3,6 +3,8 @@ Creates LMDB files with extracted graph features from provided *.extxyz files
 for the S2EF task.
 """
 
+from __future__ import annotations
+
 import argparse
 import glob
 import multiprocessing as mp
@@ -34,7 +36,8 @@ def write_images_to_lmdb(mp_arg):
         desc="Preprocessing data into LMDBs",
     )
     for sample in samples:
-        traj_logs = open(sample, "r").read().splitlines()
+        with open(sample) as fp:
+            traj_logs = fp.read().splitlines()
         xyz_idx = os.path.splitext(os.path.basename(sample))[0]
         traj_path = os.path.join(args.data_path, f"{xyz_idx}.extxyz")
         traj_frames = ase.io.read(traj_path, ":")
@@ -125,10 +128,8 @@ def main(args: argparse.Namespace) -> None:
 
     # Log sampled image, trajectory trace
     for j, i in enumerate(range(args.num_workers)):
-        ids_log = open(
-            os.path.join(args.out_path, "data_log.%04d.txt" % i), "w"
-        )
-        ids_log.writelines(sampled_ids[j])
+        with open(os.path.join(args.out_path, "data_log.%04d.txt" % i), "w") as ids_log:
+            ids_log.writelines(sampled_ids[j])
 
 
 def get_parser() -> argparse.ArgumentParser:

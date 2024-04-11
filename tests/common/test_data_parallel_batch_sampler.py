@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import functools
-import itertools
 import tempfile
 from contextlib import contextmanager
 from pathlib import Path
@@ -7,7 +8,7 @@ from typing import TypeVar
 
 import numpy as np
 import pytest
-from torch.utils.data import BatchSampler, Dataset, DistributedSampler, Sampler
+from torch.utils.data import Dataset, DistributedSampler
 
 from ocpmodels.common.data_parallel import (
     BalancedBatchSampler,
@@ -27,7 +28,7 @@ def _temp_file(name: str):
         yield Path(tmpdir) / name
 
 
-@pytest.fixture
+@pytest.fixture()
 def valid_path_dataset():
     class _Dataset(Dataset[T_co]):
         def __init__(self, data, fpath: Path) -> None:
@@ -49,7 +50,7 @@ def valid_path_dataset():
         yield _Dataset(DATA, file)
 
 
-@pytest.fixture
+@pytest.fixture()
 def invalid_path_dataset():
     class _Dataset(Dataset):
         def __init__(self, data) -> None:
@@ -65,7 +66,7 @@ def invalid_path_dataset():
     return _Dataset(DATA)
 
 
-@pytest.fixture
+@pytest.fixture()
 def invalid_dataset():
     class _Dataset(Dataset):
         def __init__(self, data) -> None:
@@ -303,9 +304,7 @@ def test_stateful_distributed_sampler(valid_path_dataset) -> None:
             num_replicas=1,
         )
         loaded_sampler.set_epoch_and_start_iteration(0, offset_step)
-        assert (
-            list(loaded_sampler) == original_order[offset_step * batch_size :]
-        )
+        assert list(loaded_sampler) == original_order[offset_step * batch_size :]
 
         diff_sampler = StatefulDistributedSampler(
             dataset=valid_path_dataset,
@@ -335,9 +334,7 @@ def test_stateful_distributed_sampler_numreplicas(valid_path_dataset) -> None:
                 ]
 
                 # make sure each subset only differs by at most one element in size
-                len_samplers = np.array(
-                    [len(list(sampler)) for sampler in samplers]
-                )
+                len_samplers = np.array([len(list(sampler)) for sampler in samplers])
                 assert ((len_samplers - len_samplers.min()) <= 1).all()
 
                 concat_idxs = functools.reduce(
@@ -369,9 +366,7 @@ def test_stateful_distributed_sampler_numreplicas_drop_last(
             ]
 
             # make sure each subset only differs by at most one element in size
-            len_samplers = np.array(
-                [len(list(sampler)) for sampler in samplers]
-            )
+            len_samplers = np.array([len(list(sampler)) for sampler in samplers])
             assert ((len_samplers - len_samplers.min()) <= 1).all()
 
             # make sure each subset is mutually exclusive and union covers the fullset
@@ -379,7 +374,4 @@ def test_stateful_distributed_sampler_numreplicas_drop_last(
                 lambda x, y: x + y, [list(sampler) for sampler in samplers]
             )
             assert len(concat_idxs) == len(np.unique(concat_idxs))
-            assert (
-                len(concat_idxs)
-                == (len(fullset) // num_replicas) * num_replicas
-            )
+            assert len(concat_idxs) == (len(fullset) // num_replicas) * num_replicas
