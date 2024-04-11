@@ -267,10 +267,9 @@ def setup_experimental_imports(project_root: Path) -> None:
     """
     Import selected directories of modules from the "experimental" subdirectory.
 
-    By default, if present, a directory which matches $USER will automatically
-    be included. If a file named ".include" is present in the "experimental"
-    subdirectory, this will override that behavior and only those directories
-    named in the .include will be imported.
+    If a file named ".include" is present in the "experimental" subdirectory,
+    this will be read as a list of experimental subdirectories whose module
+    (including in any subsubdirectories) should be imported.
 
     :param project_root: The root directory of the project (i.e., the "ocp" folder)
     """
@@ -280,7 +279,6 @@ def setup_experimental_imports(project_root: Path) -> None:
 
     experimental_files = []
     include_file = experimental_dir / ".include"
-    curr_user = os.environ.get("USER")
 
     if include_file.exists():
         with open(include_file, "r") as f:
@@ -291,15 +289,6 @@ def setup_experimental_imports(project_root: Path) -> None:
                 f.resolve().absolute()
                 for f in (experimental_dir / inc_dir).rglob("*.py")
             )
-
-    # DSL: How do we feel about this default behavior below? Happy to remove this logic, but
-    # it felt simple and like a reasonable default. In any case, it's no more extra work than
-    # if it's not here (where everyone needs to make a .include anyway) so figured I'd throw it in...
-    elif curr_user is not None and (experimental_dir / curr_user).exists():
-        experimental_files.extend(
-            f.resolve().absolute()
-            for f in (experimental_dir / curr_user).rglob("*.py")
-        )
 
     for f in experimental_files:
         _import_local_file(f, project_root=project_root)
