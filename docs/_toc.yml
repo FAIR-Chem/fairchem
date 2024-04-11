@@ -4,9 +4,10 @@
 format: jb-book
 root: index
 parts:
-- caption: Installation & License
+- caption: Quickstart & Installation 
   chapters:
   - file: core/INSTALL
+  - file: core/QUICKSTART
   - file: core/LICENSE
 - caption: Released Datasets & Models
   chapters:
