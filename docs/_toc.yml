@@ -11,6 +11,7 @@ parts:
   - file: core/INSTALL
   - file: core/QUICKSTART
   - file: core/LICENSE
+  - file: tutorials/gotchas
 - caption: Released Datasets & Models
   chapters:
   - file: core/datasets/oc20
@@ -21,7 +22,6 @@ parts:
   chapters:
   - file: core/TRAIN
   - file: core/FAQ
-  - file: tutorial/gotchas
 - caption: Videos and Talks
   chapters:
   - file: videos/intro_series
@@ -31,15 +31,15 @@ parts:
   - file: tutorials/intro
   - file: tutorials/OCP-introduction
   - file: tutorials/fine-tuning/fine-tuning-oxides
+  - file: tutorials/NRR/NRR_toc
+    sections:
+    - file: tutorials/NRR/NRR_example
+    - file: tutorials/NRR/NRR_example-gemnet
   - file: tutorials/advanced/fine-tuning-toc
     sections:
     - file: tutorials/advanced/fine-tuning-in-python
     - file: tutorials/advanced/embeddings
     - file: tutorials/advanced/mass-inference
-  - file: tutorials/NRR/NRR_toc
-    sections:
-    - file: tutorials/NRR/NRR_example
-    - file: tutorials/NRR/NRR_example-gemnet
   - file: legacy_tutorials/legacy_tutorials
     sections:
     - file: legacy_tutorials/OCP_Tutorial
