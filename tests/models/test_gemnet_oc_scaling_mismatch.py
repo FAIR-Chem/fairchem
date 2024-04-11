@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import io
 
 import pytest
@@ -30,9 +32,7 @@ class TestGemNetOC:
         # and then load it with torch.load
         r = requests.get(checkpoint_url, stream=True)
         r.raise_for_status()
-        checkpoint = torch.load(
-            io.BytesIO(r.content), map_location=torch.device("cpu")
-        )
+        checkpoint = torch.load(io.BytesIO(r.content), map_location=torch.device("cpu"))
 
         model = registry.get_model_class("gemnet_oc")(
             None,
@@ -87,14 +87,15 @@ class TestGemNetOC:
         )
 
         new_dict = {
-            k[len("module.") * 2 :]: v
-            for k, v in checkpoint["state_dict"].items()
+            k[len("module.") * 2 :]: v for k, v in checkpoint["state_dict"].items()
         }
 
         try:
             load_state_dict(model, new_dict)
-        except ValueError as e:
-            assert False, f"'load_state_dict' raised an exception {e}"
+        except ValueError as err:
+            raise AssertionError(
+                f"'load_state_dict' raised an exception {err}"
+            ) from err
 
     def test_scaling_mismatch(self) -> None:
         torch.manual_seed(4)
@@ -107,9 +108,7 @@ class TestGemNetOC:
         # and then load it with torch.load
         r = requests.get(checkpoint_url, stream=True)
         r.raise_for_status()
-        checkpoint = torch.load(
-            io.BytesIO(r.content), map_location=torch.device("cpu")
-        )
+        checkpoint = torch.load(io.BytesIO(r.content), map_location=torch.device("cpu"))
 
         model = registry.get_model_class("gemnet_oc")(
             None,
@@ -173,8 +172,7 @@ class TestGemNetOC:
             load_scales_compat(model, checkpoint["scale_dict"])
 
             new_dict = {
-                k[len("module.") * 2 :]: v
-                for k, v in checkpoint["state_dict"].items()
+                k[len("module.") * 2 :]: v for k, v in checkpoint["state_dict"].items()
             }
             param_key = f"{key}.scale_factor"
             new_dict[param_key] = checkpoint["scale_dict"][key] - 10.0

@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import argparse
 import glob
 import logging
 import os
-from typing import Dict, Optional
 
 import ocpmodels
 
@@ -11,7 +12,7 @@ This script provides users with an automated way to download, preprocess (where
 applicable), and organize data to readily be used by the existing config files.
 """
 
-DOWNLOAD_LINKS_s2ef: Dict[str, Dict[str, str]] = {
+DOWNLOAD_LINKS_s2ef: dict[str, dict[str, str]] = {
     "s2ef": {
         "200k": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_200K.tar",
         "2M": "https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_2M.tar",
@@ -27,7 +28,7 @@ DOWNLOAD_LINKS_s2ef: Dict[str, Dict[str, str]] = {
     },
 }
 
-DOWNLOAD_LINKS_is2re: Dict[str, str] = {
+DOWNLOAD_LINKS_is2re: dict[str, str] = {
     "is2re": "https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_val_test_lmdbs.tar.gz",
 }
 
@@ -47,19 +48,15 @@ S2EF_COUNTS = {
 }
 
 
-def get_data(
-    datadir: str, task: str, split: Optional[str], del_intmd_files: bool
-) -> None:
+def get_data(datadir: str, task: str, split: str | None, del_intmd_files: bool) -> None:
     os.makedirs(datadir, exist_ok=True)
 
     if task == "s2ef" and split is None:
         raise NotImplementedError("S2EF requires a split to be defined.")
 
-    download_link: Optional[str] = None
+    download_link: str | None = None
     if task == "s2ef":
-        assert (
-            split is not None
-        ), "Split must be defined for the s2ef dataset task"
+        assert split is not None, "Split must be defined for the s2ef dataset task"
         assert (
             split in DOWNLOAD_LINKS_s2ef[task]
         ), f'S2EF "{split}" split not defined, please specify one of the following: {list(DOWNLOAD_LINKS_s2ef["s2ef"].keys())}'
@@ -79,9 +76,7 @@ def get_data(
         os.path.basename(filename).split(".")[0],
     )
     if task == "s2ef" and split != "test":
-        assert (
-            split is not None
-        ), "Split must be defined for the s2ef dataset task"
+        assert split is not None, "Split must be defined for the s2ef dataset task"
         compressed_dir = os.path.join(dirname, os.path.basename(dirname))
         if split in ["200k", "2M", "20M", "all", "rattled", "md"]:
             output_path = os.path.join(datadir, task, split, "train")
@@ -125,7 +120,8 @@ def verify_count(output_path: str, task: str, split: str) -> None:
     paths = glob.glob(os.path.join(output_path, "*.txt"))
     count = 0
     for path in paths:
-        lines = open(path, "r").read().splitlines()
+        with open(path) as fp:
+            lines = fp.read().splitlines()
         count += len(lines)
     assert (
         count == S2EF_COUNTS[task][split]

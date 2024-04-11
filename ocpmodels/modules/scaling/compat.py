@@ -1,17 +1,19 @@
+from __future__ import annotations
+
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Union
 
 import torch
 import torch.nn as nn
 
 from .scale_factor import ScaleFactor
 
-ScaleDict = Union[Dict[str, float], Dict[str, torch.Tensor]]
+ScaleDict = Union[dict[str, float], dict[str, torch.Tensor]]
 
 
-def _load_scale_dict(scale_file: Optional[Union[str, ScaleDict]]):
+def _load_scale_dict(scale_file: str | ScaleDict | None):
     """
     Loads scale factors from either:
     - a JSON file mapping scale factor names to scale values
@@ -30,11 +32,11 @@ def _load_scale_dict(scale_file: Optional[Union[str, ScaleDict]]):
     if not path.exists():
         raise ValueError(f"Scale file {path} does not exist.")
 
-    scale_dict: Optional[ScaleDict] = None
+    scale_dict: ScaleDict | None = None
     if path.suffix == ".pt":
         scale_dict = torch.load(path)
     elif path.suffix == ".json":
-        with open(path, "r") as f:
+        with open(path) as f:
             scale_dict = json.load(f)
 
         if isinstance(scale_dict, dict):
@@ -49,9 +51,7 @@ def _load_scale_dict(scale_file: Optional[Union[str, ScaleDict]]):
     return scale_dict
 
 
-def load_scales_compat(
-    module: nn.Module, scale_file: Optional[Union[str, ScaleDict]]
-) -> None:
+def load_scales_compat(module: nn.Module, scale_file: str | ScaleDict | None) -> None:
     scale_dict = _load_scale_dict(scale_file)
     if not scale_dict:
         return
@@ -70,7 +70,5 @@ def load_scales_compat(
             continue
 
         scale_module, module_name = scale_factors[name]
-        logging.debug(
-            f"Loading scale factor {scale} for ({name} => {module_name})"
-        )
+        logging.debug(f"Loading scale factor {scale} for ({name} => {module_name})")
         scale_module.set_(scale)

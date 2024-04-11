@@ -3,12 +3,13 @@ Uncompresses downloaded S2EF datasets to be used by the LMDB preprocessing
 script - preprocess_ef.py
 """
 
+from __future__ import annotations
+
 import argparse
 import glob
 import lzma
 import multiprocessing as mp
 import os
-from typing import List, Tuple
 
 from tqdm import tqdm
 
@@ -20,7 +21,7 @@ def read_lzma(inpfile: str, outfile: str) -> None:
             op.write(contents)
 
 
-def decompress_list_of_files(ip_op_pair: Tuple[str, str]) -> None:
+def decompress_list_of_files(ip_op_pair: tuple[str, str]) -> None:
     ip_file, op_file = ip_op_pair
     read_lzma(ip_file, op_file)
 
@@ -45,12 +46,10 @@ def main(args: argparse.Namespace) -> None:
     filelist = glob.glob(os.path.join(args.ipdir, "*txt.xz")) + glob.glob(
         os.path.join(args.ipdir, "*extxyz.xz")
     )
-    ip_op_pairs: List[Tuple[str, str]] = []
+    ip_op_pairs: list[tuple[str, str]] = []
     for filename in filelist:
         fname_base = os.path.basename(filename)
-        ip_op_pairs.append(
-            (filename, os.path.join(args.opdir, fname_base[:-3]))
-        )
+        ip_op_pairs.append((filename, os.path.join(args.opdir, fname_base[:-3])))
 
     pool = mp.Pool(args.num_workers)
     list(

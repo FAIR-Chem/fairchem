@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import torch
 
 
@@ -23,29 +25,19 @@ class GaussianRadialBasisLayer(torch.nn.Module):
         self.std_init_min = 1.0 / self.num_basis
         self.mean_init_max = 1.0
         self.mean_init_min = 0
-        torch.nn.init.uniform_(
-            self.mean, self.mean_init_min, self.mean_init_max
-        )
+        torch.nn.init.uniform_(self.mean, self.mean_init_min, self.mean_init_max)
         torch.nn.init.uniform_(self.std, self.std_init_min, self.std_init_max)
         torch.nn.init.constant_(self.weight, 1)
         torch.nn.init.constant_(self.bias, 0)
 
-    def forward(
-        self, dist: torch.Tensor, node_atom=None, edge_src=None, edge_dst=None
-    ):
+    def forward(self, dist: torch.Tensor, node_atom=None, edge_src=None, edge_dst=None):
         x = dist / self.cutoff
         x = x.unsqueeze(-1)
         x = self.weight * x + self.bias
         x = x.expand(-1, self.num_basis)
         mean = self.mean
         std = self.std.abs() + 1e-5
-        x = gaussian(x, mean, std)
-        return x
+        return gaussian(x, mean, std)
 
     def extra_repr(self):
-        return "mean_init_max={}, mean_init_min={}, std_init_max={}, std_init_min={}".format(
-            self.mean_init_max,
-            self.mean_init_min,
-            self.std_init_max,
-            self.std_init_min,
-        )
+        return f"mean_init_max={self.mean_init_max}, mean_init_min={self.mean_init_min}, std_init_max={self.std_init_max}, std_init_min={self.std_init_min}"

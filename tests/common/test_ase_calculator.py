@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import io
 import random
 
@@ -81,9 +83,7 @@ class TestCalculatorRelaxation:
 
         with get_with_retry(equiformerv2_url) as r:
             r.raise_for_status()
-            calc = OCPCalculator(
-                checkpoint_path=io.BytesIO(r.content), cpu=True
-            )
+            calc = OCPCalculator(checkpoint_path=io.BytesIO(r.content), cpu=True)
 
         atoms = self.atoms
         atoms.set_calculator(calc)
@@ -121,5 +121,5 @@ class TestCalculatoreSCNSeeds:
                     results_by_seed[seed] = energy
             # make sure different seeds give slightly different results , expected due to discretization error in grid
             for seed_a in set(seeds):
-                for seed_b in set(seeds) - set([seed_a]):
+                for seed_b in set(seeds) - {seed_a}:
                     assert results_by_seed[seed_a] != results_by_seed[seed_b]

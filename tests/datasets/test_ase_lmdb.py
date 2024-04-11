@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 import pytest
 from ase import build
@@ -52,7 +54,7 @@ def generate_random_structure():
     return slab
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def ase_lmbd_path(tmp_path_factory):
     tmp_path = tmp_path_factory.mktemp("dataset")
     with LMDBDatabase(tmp_path / "ase_lmdb.lmdb") as db:
@@ -79,7 +81,7 @@ def test_aselmdb_count(ase_lmbd_path) -> None:
 
 def test_aselmdb_delete(ase_lmbd_path) -> None:
     with LMDBDatabase(ase_lmbd_path) as db:
-        for i in range(5):
+        for _i in range(5):
             # Note the available ids list is updating
             # but the ids themselves are fixed.
             db.delete([db.ids[0]])
