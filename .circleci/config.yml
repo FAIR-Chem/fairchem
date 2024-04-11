@@ -15,8 +15,8 @@ commands:
   install_deps_ubuntu:
     steps:
       - checkout
-      #- restore_cache:
-      #    key: conda-ubuntu-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
+      - restore_cache:
+          key: conda-ubuntu-{{ checksum ".circleci/config.yml" }}-{{ checksum "env.common.yml" }}-{{ checksum "env.cpu.yml" }}
       - run:
           name: Install conda and environment
           command: |
