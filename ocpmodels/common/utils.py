@@ -41,7 +41,6 @@ import ocpmodels
 from ocpmodels.modules.loss import AtomwiseL2Loss, L2MAELoss
 
 if TYPE_CHECKING:
-    from argparse import Namespace
     from collections.abc import Mapping
 
     from torch.nn.modules.module import _IncompatibleKeys
@@ -939,7 +938,7 @@ def check_traj_files(batch, traj_dir) -> bool:
 
 
 @contextmanager
-def new_trainer_context(*, config: dict[str, Any], args: Namespace):
+def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
     from ocpmodels.common import distutils, gp_utils
     from ocpmodels.common.registry import registry
 
@@ -957,7 +956,7 @@ def new_trainer_context(*, config: dict[str, Any], args: Namespace):
     original_config = config
     config = copy.deepcopy(original_config)
 
-    if args.distributed:
+    if distributed:
         distutils.setup(config)
         if config["gp_gpus"] is not None:
             gp_utils.setup_gp(config)
@@ -988,7 +987,7 @@ def new_trainer_context(*, config: dict[str, Any], args: Namespace):
             is_debug=config.get("is_debug", False),
             print_every=config.get("print_every", 10),
             seed=config.get("seed", 0),
-            logger=config.get("logger", "wandb"),
+            logger=config.get("logger", "tensorboard"),
             local_rank=config["local_rank"],
             amp=config.get("amp", False),
             cpu=config.get("cpu", False),
@@ -1007,7 +1006,7 @@ def new_trainer_context(*, config: dict[str, Any], args: Namespace):
         if distutils.is_master():
             logging.info(f"Total time taken: {time.time() - start_time}")
     finally:
-        if args.distributed:
+        if distributed:
             distutils.cleanup()
 
 
