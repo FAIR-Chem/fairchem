@@ -1,4 +1,4 @@
 import os
 
-BULK_PKL = os.path.join(__path__[0], "bulks.pkl")
-ADSORBATE_PKL = os.path.join(__path__[0], "adsorbates.pkl")
+BULK_PKL_PATH = os.path.join(__path__[0], "bulks.pkl")
+ADSORBATES_PKL_PATH = os.path.join(__path__[0], "adsorbates.pkl")
