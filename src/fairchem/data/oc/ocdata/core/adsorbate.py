@@ -1,11 +1,11 @@
 import pickle
-from typing import Any, Dict, Tuple
 import warnings
+from typing import Any, Dict, Tuple
 
 import ase
 import numpy as np
 
-from ocdata.configs.paths import ADSORBATES_PKL_PATH
+from ocdata.databases.pkls import ADSORBATES_PKL_PATH
 
 
 class Adsorbate:
