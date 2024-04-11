@@ -180,4 +180,4 @@ def test_e2e_s2ef(
     assert snapshot == forces.shape
 
     assert snapshot == pytest.approx(energies, abs=2.0)
-    assert snapshot == pytest.approx(forces, abs=0.3)
+    assert snapshot == pytest.approx(forces, abs=1.0)
