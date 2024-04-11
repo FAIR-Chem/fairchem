@@ -11,8 +11,8 @@ requires-python = ">=3.9, <3.13"
 dependencies = [
     "scipy",
     "numpy",
-    "ase",
-    "pymatgen",
+    "ase==3.22.1",
+    "pymatgen==2023.5.10",
     "tqdm"
 ]
 
