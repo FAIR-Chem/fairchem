@@ -1,20 +1,18 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-import io
 import os
 
 import pytest
-import requests
 import torch
 from ase.io import read
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import load_state_dict, setup_imports
+from ocpmodels.common.utils import setup_imports
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.models.equiformer_v2.so3 import (
     CoefficientMappingModule,
@@ -45,19 +43,30 @@ def load_model(request):
     torch.manual_seed(4)
     setup_imports()
 
-    # download and load weights.
-    checkpoint_url = "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_31M_ec4_allmd.pt"
+    # TODO: can switch to loading checkpoint when S2EFS models become available
+    # # download and load weights.
+    # checkpoint_url = TOADD
 
-    # load buffer into memory as a stream
-    # and then load it with torch.load
-    r = requests.get(checkpoint_url, stream=True)
-    r.raise_for_status()
-    checkpoint = torch.load(
-        io.BytesIO(r.content), map_location=torch.device("cpu")
-    )
+    # # load buffer into memory as a stream
+    # # and then load it with torch.load
+    # r = requests.get(checkpoint_url, stream=True)
+    # r.raise_for_status()
+    # checkpoint = torch.load(
+    #     io.BytesIO(r.content), map_location=torch.device("cpu")
+    # )
 
     model = registry.get_model_class("equiformer_v2")(
-        {"energy": {}, "forces": {}},
+        {
+            "energy": {},
+            "energy_arb": {"default_head": True, "shape": 1},
+            "forces": {},
+            "forces_arb": {
+                "default_head": True,
+                "irrep_dim": 1,
+                "level": "atom",
+            },
+            "stress_anisotropic": {"default_head": True, "irrep_dim": 2},
+        },
         use_pbc=True,
         regress_forces=True,
         otf_graph=True,
@@ -91,10 +100,10 @@ def load_model(request):
         weight_init="uniform",
     )
 
-    new_dict = {
-        k[len("module.") * 2 :]: v for k, v in checkpoint["state_dict"].items()
-    }
-    load_state_dict(model, new_dict)
+    # new_dict = {
+    #     k[len("module.") * 2 :]: v for k, v in checkpoint["state_dict"].items()
+    # }
+    # load_state_dict(model, new_dict)
 
     # Precision errors between mac vs. linux compound with multiple layers,
     # so we explicitly set the number of layers to 1 (instead of all 8).
@@ -112,6 +121,8 @@ class TestEquiformerV2:
 
         # Pass it through the model.
         outputs = self.model(data_list_collater([data]))
+
+        # hard-coded outputs
         energy, forces = outputs["energy"], outputs["forces"]
 
         assert snapshot == energy.shape
@@ -119,6 +130,19 @@ class TestEquiformerV2:
 
         assert snapshot == forces.shape
         assert snapshot == pytest.approx(forces.detach().mean(0))
+
+        # arbitrary output heads
+        energy_arb, forces_arb = outputs["energy_arb"], outputs["forces_arb"]
+        stress_anisotropic = outputs["stress_anisotropic"]
+
+        assert snapshot == energy_arb.shape
+        assert snapshot == pytest.approx(energy_arb.detach())
+
+        assert snapshot == forces_arb.shape
+        assert snapshot == pytest.approx(forces_arb.detach().mean(0))
+
+        assert snapshot == stress_anisotropic.shape
+        assert snapshot == pytest.approx(stress_anisotropic.detach())
 
 
 class TestMPrimaryLPrimary:
