@@ -12,7 +12,7 @@ from ocpmodels.trainers import OCPTrainer
 
 from ocpmodels import models  # isort: skip
 from ocpmodels.common import logger  # isort: skip
-from ocpmodels.models.gemnet.gemnet import GemNetT  # isort: skip
+from ocpmodels.models.gemnet_oc.gemnet_oc import GemNetOC  # isort: skip
 
 setup_logging()
 
@@ -46,56 +46,73 @@ def test_e2e_s2ef(
 
     # Model
     model = {
-        "name": "gemnet_t",
+        "name": "gemnet_oc",
         "num_spherical": 7,
-        "num_radial": 8,
-        "num_blocks": 3,
-        "emb_size_atom": 8,
-        "emb_size_edge": 8,
-        "emb_size_trip": 4,
-        "emb_size_rbf": 4,
-        "emb_size_cbf": 4,
-        "emb_size_bil_trip": 8,
-        "num_before_skip": 1,
+        "num_radial": 4,
+        "num_blocks": 4,
+        "emb_size_atom": 4,
+        "emb_size_edge": 4,
+        "emb_size_trip_in": 4,
+        "emb_size_trip_out": 4,
+        "emb_size_quad_in": 4,
+        "emb_size_quad_out": 4,
+        "emb_size_aint_in": 4,
+        "emb_size_aint_out": 4,
+        "emb_size_rbf": 2,
+        "emb_size_cbf": 2,
+        "emb_size_sbf": 4,
+        "num_before_skip": 2,
         "num_after_skip": 2,
-        "num_concat": 1,
+        "num_concat": 1,  #
         "num_atom": 3,
-        "cutoff": 6.0,
-        "max_neighbors": 50,
-        "rbf": {"name": "gaussian"},
-        "envelope": {
-            "name": "polynomial",
-            "exponent": 5,
-        },
-        "cbf": {"name": "spherical_harmonics"},
-        "extensive": True,
-        "otf_graph": False,
-        "output_init": "HeOrthogonal",
-        "activation": "silu",
-        "scale_file": "configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json",
+        "num_output_afteratom": 3,
+        "num_atom_emb_layers": 2,
+        "num_global_out_layers": 2,
         "regress_forces": True,
         "direct_forces": True,
+        "use_pbc": True,
+        "cutoff": 12.0,
+        "cutoff_qint": 12.0,
+        "cutoff_aeaint": 12.0,
+        "cutoff_aint": 12.0,
+        "max_neighbors": 7,
+        "max_neighbors_qint": 8,
+        "max_neighbors_aeaint": 20,
+        "max_neighbors_aint": 1000,
+        "rbf": {"name": "gaussian"},
+        "envelope": {"name": "polynomial", "exponent": 5},
+        "cbf": {"name": "spherical_harmonics"},
+        "sbf": {"name": "legendre_outer"},
+        "extensive": True,
+        "forces_coupled": False,
+        "output_init": "HeOrthogonal",
+        "activation": "silu",
+        "quad_interaction": True,
+        "atom_edge_interaction": True,
+        "edge_atom_interaction": True,
+        "atom_interaction": True,
+        "qint_tags": [1, 2],
+        "scale_file": "configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt",
     }
 
     # Optimizer
     optimizer = {
-        "batch_size": 1,  # originally 32
-        "eval_batch_size": 1,  # originally 32
+        "batch_size": 10,  # originally 32
+        "eval_batch_size": 10,  # originally 32
         "num_workers": 0,
-        "lr_initial": 0.001,
+        "lr_initial": 0.01,
         "optimizer": "AdamW",
         "optimizer_params": {"amsgrad": True},
         "scheduler": "Null",
         "mode": "min",
         "factor": 0.8,
         "patience": 3,
-        "max_epochs": 10,  # used for demonstration purposes
-        "force_coefficient": 100,
-        # "ema_decay": 0.999,
-        "clip_grad_norm": 10,
+        "max_epochs": 100,  # used for demonstration purposes
+        "force_coefficient": 0,
+        "clip_grad_norm": 50,
         "loss_energy": "mae",
         "loss_force": "l2mae",
-        "eval_every": 200,
+        "eval_every": 100,
     }
 
     # Dataset
@@ -175,9 +192,8 @@ def test_e2e_s2ef(
     energies = predictions["energy"]
     forces = predictions["forces"]
 
-    # breakpoint()
     assert snapshot == energies.shape
     assert snapshot == forces.shape
 
     assert snapshot == pytest.approx(energies, abs=2.0)
-    assert snapshot == pytest.approx(forces, abs=1.0)
+    assert snapshot == pytest.approx(forces, abs=0.3)

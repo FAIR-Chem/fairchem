@@ -4,6 +4,7 @@ Copyright (c) Facebook, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
 import datetime
 import errno
 import logging
@@ -424,11 +425,13 @@ class BaseTrainer(ABC):
 
         loader = self.train_loader or self.val_loader or self.test_loader
         self.model = registry.get_model_class(self.config["model"])(
-            loader.dataset[0].x.shape[-1]
-            if loader
-            and hasattr(loader.dataset[0], "x")
-            and loader.dataset[0].x is not None
-            else None,
+            (
+                loader.dataset[0].x.shape[-1]
+                if loader
+                and hasattr(loader.dataset[0], "x")
+                and loader.dataset[0].x is not None
+                else None
+            ),
             bond_feat_dim,
             1,
             **self.config["model_attributes"],
@@ -638,9 +641,11 @@ class BaseTrainer(ABC):
                         "step": self.step,
                         "state_dict": self.model.state_dict(),
                         "optimizer": self.optimizer.state_dict(),
-                        "scheduler": self.scheduler.scheduler.state_dict()
-                        if self.scheduler.scheduler_type != "Null"
-                        else None,
+                        "scheduler": (
+                            self.scheduler.scheduler.state_dict()
+                            if self.scheduler.scheduler_type != "Null"
+                            else None
+                        ),
                         "normalizers": {
                             key: value.state_dict()
                             for key, value in self.normalizers.items()
@@ -648,9 +653,9 @@ class BaseTrainer(ABC):
                         "config": self.config,
                         "val_metrics": metrics,
                         "ema": self.ema.state_dict() if self.ema else None,
-                        "amp": self.scaler.state_dict()
-                        if self.scaler
-                        else None,
+                        "amp": (
+                            self.scaler.state_dict() if self.scaler else None
+                        ),
                         "best_val_metric": self.best_val_metric,
                         "primary_metric": self.evaluation_metrics.get(
                             "primary_metric",
@@ -673,9 +678,9 @@ class BaseTrainer(ABC):
                         },
                         "config": self.config,
                         "val_metrics": metrics,
-                        "amp": self.scaler.state_dict()
-                        if self.scaler
-                        else None,
+                        "amp": (
+                            self.scaler.state_dict() if self.scaler else None
+                        ),
                     },
                     checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
@@ -747,6 +752,7 @@ class BaseTrainer(ABC):
                 batch.to(self.device)
                 out = self._forward(batch)
             loss = self._compute_loss(out, batch)
+            breakpoint()
 
             # Compute metrics.
             metrics = self._compute_metrics(out, batch, evaluator, metrics)
@@ -840,9 +846,9 @@ class BaseTrainer(ABC):
 
         distutils.synchronize()
         if distutils.is_master():
-            gather_results: DefaultDict[
-                str, npt.NDArray[np.float_]
-            ] = defaultdict(list)
+            gather_results: DefaultDict[str, npt.NDArray[np.float_]] = (
+                defaultdict(list)
+            )
             full_path = os.path.join(
                 self.config["cmd"]["results_dir"],
                 f"{self.name}_{results_file}.npz",
