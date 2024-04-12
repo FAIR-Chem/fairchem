@@ -739,7 +739,7 @@ from ocpmodels.trainers import OCPTrainer
 from ocpmodels.datasets import LmdbDataset
 from ocpmodels import models
 from ocpmodels.common import logger
-from ocpmodels.common.utils import setup_logging, setup_imports()
+from ocpmodels.common.utils import setup_logging, setup_imports
 setup_logging()
 setup_imports()
 
@@ -891,6 +891,21 @@ dataset = [
    }, # train set 
   {'src': val_src}, # val set (optional)
 ]
+```
+
+The above config references a scale file `configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.json`. We usually train in the root directory of the ocpmodels install, so this would be local to that directory. We'll link that folder into the current one to make it happy and keep things consistent as if you were running from the root directory!
+
+```{code-cell} ipython3
+---
+colab:
+  base_uri: https://localhost:8080/
+id: 5KZvPu4hogkR
+outputId: fdbbfa5c-0d7c-449f-8be5-ef2e5d17860d
+---
+import ocpmodels
+from ocpmodels.common.tutorial_utils import ocp_root
+
+! ln -s {ocp_root()}/configs ./configs
 ```
 
 +++ {"id": "8AsZpLjIQg-W"}
@@ -1377,8 +1392,10 @@ relax_dataset = "data/is2re/val_20/data.lmdb"
 ```{code-cell} ipython3
 :id: MiOeqFN-d-7K
 
-!wget -q https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_08/s2ef/gemnet_t_direct_h512_all.pt
-checkpoint_path = "/content/ocp/gemnet_t_direct_h512_all.pt"
+from ocpmodels.models.model_registry import model_name_to_local_file
+
+checkpoint_path = model_name_to_local_file('GemNet-dT All', local_cache='/tmp/ocp_checkpoints/')
+
 ```
 
 +++ {"id": "fp1Ab8TGltP6"}
@@ -1483,6 +1500,8 @@ dataset = [
   {'src': val_src}, # val set (optional)
 ]
 ```
+
+
 
 +++ {"id": "IsOqQIjnogkQ"}
 
@@ -2001,13 +2020,15 @@ For those interested in using our pretrained models for other applications, we p
 
 We have released checkpoints of all the models on the leaderboard [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/MODELS.md). These trained models can be used as an ASE calculator for various calculations.
 
-For this tutorial we download our current best model checkpoint: GemNet-T
+For this tutorial we download one of our earlier model checkpoints: GemNet-T
 
 ```{code-cell} ipython3
 :id: MBCRi69284Ve
 
-!wget -q https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_08/s2ef/gemnet_t_direct_h512_all.pt
-checkpoint_path = "/content/ocp/gemnet_t_direct_h512_all.pt"
+from ocpmodels.models.model_registry import model_name_to_local_file
+
+checkpoint_path = model_name_to_local_file('GemNet-dT All', local_cache='/tmp/ocp_checkpoints/')
+
 ```
 
 +++ {"id": "TNQ1dNVG93kH"}
