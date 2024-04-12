@@ -39,7 +39,6 @@ optim:
   warmup_steps: 100
   warmup_factor: 0.2
   max_epochs: 24
-  energy_coefficient: 4
   clip_grad_norm: 20
   ema_decay: 0.999
   loss_energy: mae

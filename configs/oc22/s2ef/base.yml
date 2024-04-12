@@ -27,8 +27,8 @@ loss_functions:
       fn: mae
       coefficient: 1
   - forces:
-      fn: atomwisel2
-      coefficient: 1
+      fn: l2mae
+      coefficient: 100
 
 evaluation_metrics:
   metrics:

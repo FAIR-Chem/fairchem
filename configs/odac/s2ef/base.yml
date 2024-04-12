@@ -1,4 +1,4 @@
-Ztrainer: ocp
+trainer: ocp
 
 dataset:
   train:
@@ -33,8 +33,10 @@ outputs:
 loss_functions:
   - energy:
       fn: mae
+      coefficient: 4
   - forces:
       fn: l2mae
+      coefficient: 100
 
 evaluation_metrics:
   metrics:

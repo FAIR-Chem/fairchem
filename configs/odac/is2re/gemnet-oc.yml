@@ -1,6 +1,11 @@
 includes:
   - configs/odac/is2re/base.yml
 
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 4
+
 trainer: energy
 
 model:

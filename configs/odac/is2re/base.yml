@@ -24,6 +24,7 @@ outputs:
 loss_functions:
   - energy:
       fn: mae
+      coefficient: 4
 
 evaluation_metrics:
   metrics:

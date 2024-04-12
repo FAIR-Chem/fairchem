@@ -33,7 +33,7 @@ outputs:
 loss_functions:
   - energy:
       fn: mae
-      coefficient: 1
+      coefficient: 2
   - forces:
       fn: l2mae
       coefficient: 100

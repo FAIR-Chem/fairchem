@@ -24,6 +24,7 @@ outputs:
 loss_functions:
   - energy:
       fn: mae
+      coefficient: 100
 
 evaluation_metrics:
   metrics:
@@ -69,5 +70,3 @@ optim:
   warmup_steps: 130794
   warmup_factor: 0.2
   max_epochs: 7
-  energy_coefficient: 100
-  force_coefficient: 0

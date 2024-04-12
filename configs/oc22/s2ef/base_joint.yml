@@ -28,8 +28,10 @@ outputs:
 loss_functions:
   - energy:
       fn: mae
+      coefficient: 1
   - forces:
       fn: atomwisel2
+      coefficient: 1
 
 evaluation_metrics:
   metrics:

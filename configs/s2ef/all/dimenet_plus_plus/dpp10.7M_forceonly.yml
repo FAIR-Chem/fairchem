@@ -30,6 +30,7 @@ outputs:
 loss_functions:
   - forces:
       fn: l2mae
+      coefficient: 100
 
 evaluation_metrics:
   metrics:
@@ -72,5 +73,3 @@ optim:
   warmup_steps: 174393
   warmup_factor: 0.2
   max_epochs: 5
-  energy_coefficient: 0
-  force_coefficient: 100

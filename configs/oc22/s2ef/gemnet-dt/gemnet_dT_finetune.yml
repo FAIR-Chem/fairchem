@@ -71,5 +71,3 @@ optim:
   clip_grad_norm: 10
   loss_energy: mae
   loss_force: l2mae
-  force_coefficient: 100
-  energy_coefficient: 1

@@ -33,7 +33,7 @@ outputs:
 loss_functions:
   - energy:
       fn: mae
-      coefficient: 1
+      coefficient: 4
   - forces:
       fn: l2mae
       coefficient: 100
@@ -114,8 +114,6 @@ optim:
     lr_min_factor: 0.01         #
 
   max_epochs: 1
-  force_coefficient: 100
-  energy_coefficient: 4
   clip_grad_norm: 100
   ema_decay: 0.999
   loss_energy: mae

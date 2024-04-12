@@ -1,5 +1,13 @@
 trainer: ocp
 
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 2
+  - forces:
+      fn: l2mae
+      coefficient: 50
+
 dataset:
   train:
     format: lmdb
@@ -74,4 +82,3 @@ optim:
   warmup_steps: 10416
   warmup_factor: 0.2
   max_epochs: 15
-  force_coefficient: 50
