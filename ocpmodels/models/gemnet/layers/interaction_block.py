@@ -161,7 +161,6 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
             m: torch.Tensor, shape=(nEdges, emb_size_edge)
                 Edge embeddings (c->a).
         """
-
         # Initial transformation
         x_ca_skip = self.dense_ca(m)  # (nEdges, emb_size_edge)
 
