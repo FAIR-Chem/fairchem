@@ -149,7 +149,7 @@ def generate_yml_config(checkpoint_path, yml="run.yml", delete=(), update=()):
     # see the output though, so I capture it.
 
     with contextlib.redirect_stdout(StringIO()) as _:
-        config = OCPCalculator(checkpoint=checkpoint_path).config
+        config = OCPCalculator(checkpoint_path=checkpoint_path).config
 
     for key in delete:
         if key in config and len(key.split(".")) == 1:

@@ -157,7 +157,7 @@ from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 from ocpmodels.models.model_registry import model_name_to_local_file
 import os
 
-checkpoint_path = model_name_to_local_file('GemNet-OC OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 
 calc = OCPCalculator(checkpoint=checkpoint_path)
 ```
@@ -180,7 +180,7 @@ from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 from ocpmodels.models.model_registry import model_name_to_local_file
 import os
 
-checkpoint_path = model_name_to_local_file('GemNet-OC OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 calc = OCPCalculator(checkpoint=checkpoint_path)
 ```
 

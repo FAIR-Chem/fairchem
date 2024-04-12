@@ -54,7 +54,7 @@ import numpy as np
 %%capture
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 import os
-cp = checkpoint = get_checkpoint('GemNet-OC OC20+OC22')
+cp = checkpoint = get_checkpoint('GemNet-OCOC20+OC22')
 calc = OCPCalculator(checkpoint=cp)
 ```
 

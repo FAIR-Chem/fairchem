@@ -29,7 +29,7 @@ We get this checkpoint here.
 ```{code-cell} ipython3
 from ocpmodels.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-OC OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 ```
 
 The data we need is provided in `supporting-information.json`. That file is embedded in the supporting information for the article, and is provided here in the tutorial. We load this data and explore it a little. The json file provides a dictionary with the structure:
@@ -75,7 +75,7 @@ Next, we will create an OCP calculator that we can use to get predictions from.
 
 ```{code-cell} ipython3
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-calc = OCPCalculator(checkpoint=checkpoint_path, trainer='forces', cpu=False)
+calc = OCPCalculator(checkpoint_path=checkpoint_path, trainer='forces', cpu=False)
 ```
 
 Now, we loop through each structure and accumulate the OCP predictions. Then, we plot the parity results.
@@ -200,9 +200,9 @@ train, test, val
 We have to create a yaml configuration file for the model we are using. The pre-trained checkpoints contain their config data, so we use this to get the base configuration, and then remove pieces we don't need, and update pieces we do need.
 
 ```{code-cell} ipython3
-from ocpmodels.common.tutorial_utils import generate_yml_config
+from ocpmodels.common.tutorial_utils import generate_yml_config 
 
-yml = generate_yml_config(checkpoint, 'config.yml',
+yml = generate_yml_config(checkpoint_path, 'config.yml',
                    delete=['slurm', 'cmd', 'logger', 'task', 'model_attributes',
                            'optim.loss_force', # the checkpoint setting causes an error
                            'dataset', 'test_dataset', 'val_dataset'],

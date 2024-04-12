@@ -26,7 +26,7 @@ print(available_pretrained_models)
 
 ```{code-cell} ipython3
 from ocpmodels.models.model_registry import model_name_to_local_file
-checkpoint_path = model_name_to_local_file('GemNet-OC OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path
 ```
 

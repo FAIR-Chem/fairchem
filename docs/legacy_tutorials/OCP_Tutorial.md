@@ -60,31 +60,6 @@ CMU - Carnegie Mellon University
 
 NERSC - National Energy Research Scientific Computing Center
 
-+++ {"id": "E_qIKf8erkfC"}
-
-## Table of Contents
-
-*   [Background](#background)
-*   [Objective](#objective)
-*   [Climate Impact](#climate-impact)
-*   [Target Audience](#target-audience)
-*   [Background & Prerequisites](#background-and-prereqs)
-*   [Software Requirements](#software-requirements)
-*   [Dataset Overview & Visualization](#data-description)
-    *    [Download](#download)
-    *    [Visualization](#visual)
-    *    [Data contents](#contents)
-*   [Tasks](#tasks)
-    *    [S2EF](#s2ef)
-    *    [IS2RE](#is2re)
-    *    [IS2RS](#is2rs)
-*   [OCP Calculator](#calc)
-*   [Model development](#model-dev)
-*   [Running on command line](#cmd)
-*   [Limitations](#limit)
-*   [Next steps](#steps)
-*   [References](#references)
-
 +++ {"id": "JkjKcVJ47hSN"}
 
 ## Background <a name="background"></a>
