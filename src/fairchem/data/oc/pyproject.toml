@@ -2,7 +2,7 @@
 requires = ["setuptools>=69"]
 
 [project]
-name = "ocp-data"
+name = "oc-data"
 description = "Code for generating adsorbate-catalyst input configurations"
 readme = "README.md"
 license = {text = "MIT License"}
@@ -42,7 +42,7 @@ filterwarnings  = [
 testpaths = ["tests"]
 
 [tool.coverage.run]
-source = ["ocpdata"]
+source = ["ocdata"]
 
 [tool.isort]
 profile = 'black'
