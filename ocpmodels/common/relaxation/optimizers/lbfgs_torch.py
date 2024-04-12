@@ -87,7 +87,7 @@ class LBFGS:
         # (batch_size) -> (nAtoms)
         max_forces = max_forces_[self.batch.batch]
 
-        return max_forces.ge(self.fmax), energy, forces
+        return ~max_forces.ge(self.fmax), energy, forces
 
     def run(self, fmax, steps):
         self.fmax = fmax
@@ -108,9 +108,17 @@ class LBFGS:
 
         iteration = 0
         converged = False
+        converged_mask = torch.zeros_like(
+            self.batch.atomic_numbers, device=self.device
+        ).bool()
         while iteration < steps and not converged:
-            update_mask, energy, forces = self.check_convergence(iteration)
-            converged = torch.all(torch.logical_not(update_mask))
+            _converged_mask, energy, forces = self.check_convergence(iteration)
+            # Models like GemNet-OC can have random noise in their predictions.
+            # Here we ensure atom positions are not being updated after already
+            # hitting the desired convergence criteria.
+            converged_mask = torch.logical_or(converged_mask, _converged_mask)
+            converged = torch.all(converged_mask)
+            update_mask = torch.logical_not(converged_mask)
 
             if self.trajectories is not None:
                 if (
