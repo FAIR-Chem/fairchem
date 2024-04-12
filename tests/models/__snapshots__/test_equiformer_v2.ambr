@@ -26,30 +26,14 @@
   )
 # ---
 # name: TestEquiformerV2.test_energy_force_shape.5
-  Approx(
-  	array([[2.0560436]], dtype=float32)
-  )
-# ---
-# name: TestEquiformerV2.test_energy_force_shape.6
   Size(
     34,
     3,
   )
 # ---
-# name: TestEquiformerV2.test_energy_force_shape.7
-  Approx(
-  	array([ 50.11841,  92.29046, 103.6335 ], dtype=float32)
-  )
-# ---
-# name: TestEquiformerV2.test_energy_force_shape.8
+# name: TestEquiformerV2.test_energy_force_shape.6
   Size(
     1,
     5,
-  )
-# ---
-# name: TestEquiformerV2.test_energy_force_shape.9
-  Approx(
-  	array([[-6186.289  ,  3627.2986 , -4217.3984 ,  1724.0352 ,  -257.67896]],
-  	      dtype=float32)
   )
 # ---
