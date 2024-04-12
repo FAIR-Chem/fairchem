@@ -215,6 +215,10 @@ print(f'Elapsed time: {time.time() - tinit:1.1f} seconds')
 This cell runs all the examples. I don't recommend you run this during the workshop. Instead, we have saved the results for the subsequent analyses so you can skip this one.
 
 ```{code-cell} ipython3
+---
+mystnb:
+  tags: ["skip-execution"]
+---
 :tags: [hide-output]
 
 import time

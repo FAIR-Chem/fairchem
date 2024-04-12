@@ -45,7 +45,8 @@ The problem here is that no neighbors are found for the single atom which causes
 ```{code-cell} ipython3
 %%capture
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-cp = "gnoc_oc22_oc20_all_s2ef.pt"
+from ocpmodels.models.model_registry import model_name_to_local_file
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 calc = OCPCalculator(checkpoint_path=cp)
 ```
 
