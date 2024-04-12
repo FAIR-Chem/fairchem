@@ -53,7 +53,7 @@ from ocpmodels.models.model_registry import model_name_to_local_file
 
 checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-calc = OCPCalculator(checkpoint=checkpoint_path, trainer='forces', cpu=False)
+calc = OCPCalculator(checkpoint_path=checkpoint_path, trainer='forces', cpu=False)
 ```
 
 ## Split the data into train, test, val sets

@@ -13,8 +13,6 @@ kernelspec:
 
 +++ {"colab_type": "text", "id": "view-in-github"}
 
-<a href="https://colab.research.google.com/github/Open-Catalyst-Project/ocp/blob/tutorials_01_11/tutorials/OCP_Tutorial.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-
 ```{code-cell} ipython3
 :id: dzeHYa5GCxN7
 
@@ -146,32 +144,7 @@ To gain an even better understanding of the Open Catalyst Project and the proble
 <a name="software-requirements"></a>
 # Software Requirements
 
-All required dependencies can be found here - https://github.com/Open-Catalyst-Project/ocp#installation.
-
-For the following Colab Notebook, we manually install the dependencies below.
-
-For the purpose of the demo, we hihgly recommend you use a GPU. Google Colab provides access to 1 GPU (Runtime -> Change runtime type -> select GPU). The tutorial will function without a GPU, but will be slower for training times.
-
-```{code-cell} ipython3
-:id: 58AKzWydvkVu
-
-# %%bash
-pip install torch==1.7.1+cu110 -f https://download.pytorch.org/whl/torch_stable.html 
-pip install demjson==2.2.4 lmdb==1.1.1 ase==3.21 pymatgen==2020.12.31 pyyaml==5.4 tensorboard==2.4 wandb==0.11.2
-pip install torch-scatter==2.0.6 torch-sparse==0.6.9 torch-cluster==1.5.9 torch-spline-conv==1.2.1 torch-geometric==1.6.3 -f https://data.pyg.org/whl/torch-1.7.1+cu110.html
-git clone https://github.com/Open-Catalyst-Project/ocp.git
-```
-
-```{code-cell} ipython3
----
-colab:
-  base_uri: https://localhost:8080/
-id: 0NDOYuyAvmtO
-outputId: e3508b8f-8ade-4000-cdd8-7c5f75865a96
----
-%cd ocp
-!pip install -e .
-```
+See [installation](../core/INSTALL.md) for installation instructions! 
 
 ```{code-cell} ipython3
 ---

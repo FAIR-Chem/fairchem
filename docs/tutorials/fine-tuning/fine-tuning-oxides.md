@@ -279,7 +279,7 @@ The `best_checkpoint.pt` is the one that performs best on the validation dataset
 
 ```{code-cell} ipython3
 newckpt = cpdir + '/checkpoint.pt'
-newcalc = OCPCalculator(checkpoint=newckpt, cpu=False)
+newcalc = OCPCalculator(checkpoint_path=newckpt, cpu=False)
 ```
 
 ```{code-cell} ipython3

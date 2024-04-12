@@ -128,8 +128,8 @@ checkpoint_path = model_name_to_local_file('eSCN-L6-M3-Lay20All+MD', local_cache
 os.makedirs(f"data/{bulk_src_id}_{adsorbate_smiles_h}", exist_ok=True)
 
 # Define the calculator
-calc = OCPCalculator(checkpoint=checkpoint_path, cpu=False)   # if you have a GPU
-# calc = OCPCalculator(checkpoint=checkpoint_path, cpu=True)  # If you have CPU only
+calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)   # if you have a GPU
+# calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)  # If you have CPU only
 ```
 
 Now we setup and run the relaxation.
@@ -174,12 +174,18 @@ These steps are embarrassingly parallel, and can be launched that way to speed t
 
 The goal here is to relax each candidate adsorption geometry and save the results in a trajectory file we will analyze later. Each trajectory file will have the geometry and final energy of the relaxed structure. This is a quite time-consuming task.
 
+It is somewhat time consuming to run this, so in this cell we only run one example.
+
 ```{code-cell} ipython3
 import time
 from tqdm import tqdm
 tinit = time.time()
 
-for bulk_src_id in tqdm(bulk_ids): 
+# Just do the very first one to keep this fast and demonstrate the approach
+# Drop the [:1] to recalculate for all adsorbates!
+bulk_ids_to_run = bulk_ids[:1]
+
+for bulk_src_id in tqdm(bulk_ids_to_run):   
     # Enumerate slabs and establish adsorbates
     bulk = Bulk(bulk_src_id_from_db=bulk_src_id, bulk_db_path="NRR_example_bulks.pkl")
     slab = Slab.from_bulk_get_specific_millers(bulk= bulk, specific_millers=(1, 1, 1))

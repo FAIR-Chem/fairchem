@@ -123,8 +123,8 @@ Running the model with BFGS prints at each relaxation step which is a lot to pri
 os.makedirs(f"data/{bulk_src_id}_{adsorbate_smiles_h}", exist_ok=True)
 
 # Define the calculator
-calc = OCPCalculator(checkpoint=checkpoint_path, cpu=False)   # if you have a GPU
-# calc = OCPCalculator(checkpoint=checkpoint_path, cpu=True)  # If you have CPU only
+calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)   # if you have a GPU
+# calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)  # If you have CPU only
 ```
 
 Now we setup and run the relaxation.

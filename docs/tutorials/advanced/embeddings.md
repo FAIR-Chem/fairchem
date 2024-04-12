@@ -55,7 +55,7 @@ import numpy as np
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 import os
 cp = checkpoint = get_checkpoint('GemNet-OCOC20+OC22')
-calc = OCPCalculator(checkpoint=cp)
+calc = OCPCalculator(checkpoint_path=cp)
 ```
 
 ## Bulk Cu equation of state example
