@@ -10,11 +10,14 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
+from typing import TypeVar
 
 import torch
 import torch.distributed as dist
 
 from ocpmodels.common.typing import none_throws
+
+T = TypeVar("T")
 
 
 def os_environ_get_or_throw(x: str) -> str:
@@ -169,3 +172,13 @@ def all_gather(data, group=dist.group.WORLD, device=None) -> list[torch.Tensor]:
     else:
         result = tensor_list
     return result
+
+
+def gather_objects(data: T, group: dist.ProcessGroup = dist.group.WORLD) -> list[T]:
+    """Gather a list of pickleable objects into rank 0"""
+    if get_world_size() == 1:
+        return [data]
+
+    output = [None for _ in range(get_world_size())] if is_master() else None
+    dist.gather_object(data, output, group=group, dst=0)
+    return output
