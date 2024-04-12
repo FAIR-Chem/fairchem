@@ -98,7 +98,7 @@ jobs:
           name: install ocp and run tests
           command: |
             source /home/circleci/miniconda/etc/profile.d/conda.sh
-            conda activate ocp-models
+            conda activate ocp-models 
             pip install -e . 
             pre-commit install
             pytest -vv --cov-report=xml --cov=ocpmodels/ /home/circleci/project/tests
