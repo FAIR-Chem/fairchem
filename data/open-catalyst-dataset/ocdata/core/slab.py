@@ -21,8 +21,8 @@ class Slab:
     """
     Initializes a slab object, i.e. a particular slab tiled along xyz, in
     one of 2 ways:
-    - Pass in a Bulk object and a slab 4-tuple containing
-    (atoms, miller, shift, top).
+    - Pass in a Bulk object and a slab 5-tuple containing
+    (atoms, miller, shift, top, oriented bulk).
     - Pass in a Bulk object and randomly sample a slab.
 
     Arguments
@@ -48,6 +48,7 @@ class Slab:
         millers: tuple = None,
         shift: float = None,
         top: bool = None,
+        oriented_bulk: Structure = None,
         min_ab: float = 0.8,
     ):
         assert bulk is not None
@@ -57,6 +58,7 @@ class Slab:
         self.millers = millers
         self.shift = shift
         self.top = top
+        self.oriented_bulk = oriented_bulk
 
         assert (
             Composition(self.atoms.get_chemical_formula()).reduced_formula
@@ -87,10 +89,12 @@ class Slab:
                 max_miller=max_miller,
             )
             slab_idx = np.random.randint(len(untiled_slabs))
-            unit_slab_struct, millers, shift, top = untiled_slabs[slab_idx]
+            unit_slab_struct, millers, shift, top, oriented_bulk = untiled_slabs[
+                slab_idx
+            ]
             slab_atoms = tile_and_tag_atoms(unit_slab_struct, bulk.atoms, min_ab=min_ab)
 
-            return cls(bulk, slab_atoms, millers, shift, top)
+            return cls(bulk, slab_atoms, millers, shift, top, oriented_bulk)
 
     @classmethod
     def from_bulk_get_specific_millers(
@@ -123,10 +127,11 @@ class Slab:
                         s[1],
                         s[2],
                         s[3],
+                        s[4],
                     )
                 )
 
-            return [cls(bulk, s[0], s[1], s[2], s[3]) for s in slabs]
+            return [cls(bulk, s[0], s[1], s[2], s[3], s[4]) for s in slabs]
 
     @classmethod
     def from_bulk_get_all_slabs(
@@ -141,7 +146,13 @@ class Slab:
         slabs = []
         for s in untiled_slabs:
             slabs.append(
-                (tile_and_tag_atoms(s[0], bulk.atoms, min_ab=min_ab), s[1], s[2], s[3])
+                (
+                    tile_and_tag_atoms(s[0], bulk.atoms, min_ab=min_ab),
+                    s[1],
+                    s[2],
+                    s[3],
+                    s[4],
+                )
             )
 
         # if path is provided, save out the pkl
@@ -150,7 +161,7 @@ class Slab:
             with open(save_path, "wb") as f:
                 pickle.dump(slabs, f)
 
-        return [cls(bulk, s[0], s[1], s[2], s[3]) for s in slabs]
+        return [cls(bulk, s[0], s[1], s[2], s[3], s[4]) for s in slabs]
 
     @classmethod
     def from_precomputed_slabs_pkl(
@@ -173,7 +184,7 @@ class Slab:
             return slabs
         else:
             assert np.all(np.array([s[1] for s in slabs]) <= max_miller)
-            return [cls(bulk, s[0], s[1], s[2], s[3]) for s in slabs]
+            return [cls(bulk, s[0], s[1], s[2], s[3], s[4]) for s in slabs]
 
     @classmethod
     def from_atoms(cls, atoms: ase.Atoms = None, bulk=None, **kwargs):
@@ -193,6 +204,7 @@ class Slab:
                 "millers": self.millers,
                 "shift": self.shift,
                 "top": self.top,
+                "oriented_bulk": self.oriented_bulk,
             },
         }
 
@@ -211,6 +223,7 @@ class Slab:
             and self.millers == other.millers
             and self.shift == other.shift
             and self.top == other.top
+            and self.oriented_bulk == other.oriented_bulk
         )
 
 
@@ -496,8 +509,9 @@ def compute_slabs(
     Returns
     -------
     all_slabs_info: list
-        A list of 4-tuples containing pymatgen structure objects for enumerated
-        slabs, the Miller indices, floats for the shifts, and booleans for top.
+        A list of 5-tuples containing pymatgen structure objects for enumerated
+        slabs, the Miller indices, floats for the shifts, booleans for top, and
+        the oriented bulk structure.
     """
     assert bulk_atoms is not None
     bulk_struct = standardize_bulk(bulk_atoms)
@@ -527,13 +541,16 @@ def compute_slabs(
         # want to consider them too.
         if len(slabs) != 0:
             flipped_slabs_info = [
-                (flip_struct(slab), millers, slab.shift, False)
+                (flip_struct(slab), millers, slab.shift, False, slab.oriented_unit_cell)
                 for slab in slabs
                 if is_structure_invertible(slab) is False
             ]
 
             # Concatenate all the results together
-            slabs_info = [(slab, millers, slab.shift, True) for slab in slabs]
+            slabs_info = [
+                (slab, millers, slab.shift, True, slab.oriented_unit_cell)
+                for slab in slabs
+            ]
             all_slabs_info.extend(slabs_info + flipped_slabs_info)
 
     return all_slabs_info
