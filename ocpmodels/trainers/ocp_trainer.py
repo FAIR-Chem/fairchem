@@ -506,9 +506,6 @@ class OCPTrainer(BaseTrainer):
 
             predictions["ids"].extend(systemids)
 
-        for key in predictions:
-            predictions[key] = np.array(predictions[key])
-
         self.save_results(predictions, results_file)
 
         if self.ema:
