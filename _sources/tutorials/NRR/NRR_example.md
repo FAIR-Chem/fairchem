@@ -36,7 +36,7 @@ from ocdata.utils import DetectTrajAnomaly
 ```{code-cell} ipython3
 from ocpmodels.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-OC-Large All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path
 ```
 

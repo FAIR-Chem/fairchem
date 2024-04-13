@@ -23,12 +23,15 @@ from ocpapi import find_adsorbate_binding_sites
 results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
     bulk="mp-126",
+    model="gemnet_oc_base_s2ef_all_md",
 )
+print([
+    slab.ui_url
+    for slab in results.slabs
+])
+
 ------------------
 
------ stderr -----
-/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
-  from .autonotebook import tqdm as notebook_tqdm
 ----- stdout -----
 
 ----- stdout -----
@@ -52,12 +55,17 @@ results = await find_adsorbate_binding_sites(
 
 [0;31m---------------------------------------------------------------------------[0m
 [0;31merror[0m                                     Traceback (most recent call last)
-Cell [0;32mIn[2], line 3[0m
+Cell [0;32mIn[8], line 3[0m
 [1;32m      1[0m [38;5;28;01mfrom[39;00m [38;5;21;01mocpapi[39;00m [38;5;28;01mimport[39;00m find_adsorbate_binding_sites
 [0;32m----> 3[0m results [38;5;241m=[39m [38;5;28;01mawait[39;00m find_adsorbate_binding_sites(
 [1;32m      4[0m     adsorbate[38;5;241m=[39m[38;5;124m"[39m[38;5;124m*OH[39m[38;5;124m"[39m,
 [1;32m      5[0m     bulk[38;5;241m=[39m[38;5;124m"[39m[38;5;124mmp-126[39m[38;5;124m"[39m,
-[1;32m      6[0m )
+[1;32m      6[0m     model[38;5;241m=[39m[38;5;124m"[39m[38;5;124mgemnet_oc_base_s2ef_all_md[39m[38;5;124m"[39m,
+[1;32m      7[0m )
+[1;32m      8[0m [38;5;28mprint[39m([
+[1;32m      9[0m     slab[38;5;241m.[39mui_url
+[1;32m     10[0m     [38;5;28;01mfor[39;00m slab [38;5;129;01min[39;00m results[38;5;241m.[39mslabs
+[1;32m     11[0m ])
 
 File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ocpapi/workflows/adsorbates.py:905[0m, in [0;36mfind_adsorbate_binding_sites[0;34m(adsorbate, bulk, model, adslab_filter, client, lifetime)[0m
 [1;32m    898[0m adslabs: List[AdsorbateSlabConfigs] [38;5;241m=[39m [38;5;28;01mawait[39;00m _get_adsorbate_configs_on_slabs(

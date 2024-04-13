@@ -18,66 +18,94 @@ Traceback (most recent call last):
     raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
 nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
 ------------------
-! rm -fr train.db test.db val.db
-
-from ocpmodels.common.tutorial_utils import train_test_val_split
-
-train, test, val = train_test_val_split('../fine-tuning/oxides.db')
-train, test, val
+with new_trainer_context(config=config, args=args) as ctx:
+    config = ctx.config
+    task = ctx.task
+    trainer = ctx.trainer
+    task.setup(trainer)
+    task.run()
 ------------------
 
+----- stderr -----
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch/cuda/amp/grad_scaler.py:126: UserWarning: torch.cuda.amp.GradScaler is enabled, but CUDA is not available.  Disabling.
+  warnings.warn(
+----- stderr -----
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch_geometric/data/collate.py:145: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  storage = elem.storage()._new_shared(numel)
+----- stderr -----
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch_geometric/data/collate.py:145: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  storage = elem.storage()._new_shared(numel)
+----- stderr -----
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch/amp/autocast_mode.py:250: UserWarning: User provided device_type of 'cuda', but CUDA is not available. Disabling
+  warnings.warn(
+----- stderr -----
+device 0:   0%|          | 0/2 [00:00<?, ?it/s]
+----- stderr -----
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch_geometric/data/collate.py:145: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  storage = elem.storage()._new_shared(numel)
+----- stderr -----
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch_geometric/data/collate.py:145: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  storage = elem.storage()._new_shared(numel)
+----- stderr -----
+device 0:  50%|█████     | 1/2 [00:04<00:04,  4.01s/it]
+----- stderr -----
+device 0: 100%|██████████| 2/2 [00:06<00:00,  3.08s/it]
+----- stderr -----
+device 0: 100%|██████████| 2/2 [00:06<00:00,  3.24s/it]
+----- stderr -----
+
+------------------
 
 [0;31m---------------------------------------------------------------------------[0m
-[0;31mOperationalError[0m                          Traceback (most recent call last)
-Cell [0;32mIn[4], line 5[0m
-[1;32m      1[0m get_ipython()[38;5;241m.[39msystem([38;5;124m'[39m[38;5;124m rm -fr train.db test.db val.db[39m[38;5;124m'[39m)
-[1;32m      3[0m [38;5;28;01mfrom[39;00m [38;5;21;01mocpmodels[39;00m[38;5;21;01m.[39;00m[38;5;21;01mcommon[39;00m[38;5;21;01m.[39;00m[38;5;21;01mtutorial_utils[39;00m [38;5;28;01mimport[39;00m train_test_val_split
-[0;32m----> 5[0m train, test, val [38;5;241m=[39m [43mtrain_test_val_split[49m[43m([49m[38;5;124;43m'[39;49m[38;5;124;43m../fine-tuning/oxides.db[39;49m[38;5;124;43m'[39;49m[43m)[49m
-[1;32m      6[0m train, test, val
+[0;31mTypeError[0m                                 Traceback (most recent call last)
+Cell [0;32mIn[9], line 6[0m
+[1;32m      4[0m trainer [38;5;241m=[39m ctx[38;5;241m.[39mtrainer
+[1;32m      5[0m task[38;5;241m.[39msetup(trainer)
+[0;32m----> 6[0m [43mtask[49m[38;5;241;43m.[39;49m[43mrun[49m[43m([49m[43m)[49m
 
-File [0;32m~/work/ocp/ocp/ocpmodels/common/tutorial_utils.py:103[0m, in [0;36mtrain_test_val_split[0;34m(ase_db, ttv, files, seed)[0m
-[1;32m    100[0m         [38;5;28;01mraise[39;00m [38;5;167;01mException[39;00m([38;5;124m"[39m[38;5;132;01m{db}[39;00m[38;5;124m exists. Please delete it before proceeding.[39m[38;5;124m"[39m)
-[1;32m    102[0m src [38;5;241m=[39m connect(ase_db)
-[0;32m--> 103[0m N [38;5;241m=[39m [43msrc[49m[38;5;241;43m.[39;49m[43mcount[49m[43m([49m[43m)[49m
-[1;32m    105[0m ttv [38;5;241m=[39m np[38;5;241m.[39marray(ttv)
-[1;32m    106[0m ttv [38;5;241m/[39m[38;5;241m=[39m ttv[38;5;241m.[39msum()
+File [0;32m~/work/ocp/ocp/ocpmodels/tasks/task.py:51[0m, in [0;36mTrainTask.run[0;34m(self)[0m
+[1;32m     49[0m [38;5;28;01mdef[39;00m [38;5;21mrun[39m([38;5;28mself[39m) [38;5;241m-[39m[38;5;241m>[39m [38;5;28;01mNone[39;00m:
+[1;32m     50[0m     [38;5;28;01mtry[39;00m:
+[0;32m---> 51[0m         [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mtrainer[49m[38;5;241;43m.[39;49m[43mtrain[49m[43m([49m
+[1;32m     52[0m [43m            [49m[43mdisable_eval_tqdm[49m[38;5;241;43m=[39;49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mhide_eval_progressbar[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;28;43;01mFalse[39;49;00m[43m)[49m
+[1;32m     53[0m [43m        [49m[43m)[49m
+[1;32m     54[0m     [38;5;28;01mexcept[39;00m [38;5;167;01mRuntimeError[39;00m [38;5;28;01mas[39;00m e:
+[1;32m     55[0m         [38;5;28mself[39m[38;5;241m.[39m_process_error(e)
 
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/parallel.py:244[0m, in [0;36mparallel_function.<locals>.new_func[0;34m(*args, **kwargs)[0m
-[1;32m    238[0m [38;5;129m@functools[39m[38;5;241m.[39mwraps(func)
-[1;32m    239[0m [38;5;28;01mdef[39;00m [38;5;21mnew_func[39m([38;5;241m*[39margs, [38;5;241m*[39m[38;5;241m*[39mkwargs):
-[1;32m    240[0m     [38;5;28;01mif[39;00m (world[38;5;241m.[39msize [38;5;241m==[39m [38;5;241m1[39m [38;5;129;01mor[39;00m
-[1;32m    241[0m         args [38;5;129;01mand[39;00m [38;5;28mgetattr[39m(args[[38;5;241m0[39m], [38;5;124m'[39m[38;5;124mserial[39m[38;5;124m'[39m, [38;5;28;01mFalse[39;00m) [38;5;129;01mor[39;00m
-[1;32m    242[0m         [38;5;129;01mnot[39;00m kwargs[38;5;241m.[39mpop([38;5;124m'[39m[38;5;124mparallel[39m[38;5;124m'[39m, [38;5;28;01mTrue[39;00m)):
-[1;32m    243[0m         [38;5;66;03m# Disable:[39;00m
-[0;32m--> 244[0m         [38;5;28;01mreturn[39;00m [43mfunc[49m[43m([49m[38;5;241;43m*[39;49m[43margs[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
-[1;32m    246[0m     ex [38;5;241m=[39m [38;5;28;01mNone[39;00m
-[1;32m    247[0m     result [38;5;241m=[39m [38;5;28;01mNone[39;00m
+File [0;32m~/work/ocp/ocp/ocpmodels/trainers/ocp_trainer.py:200[0m, in [0;36mOCPTrainer.train[0;34m(self, disable_eval_tqdm)[0m
+[1;32m    195[0m [38;5;28;01mif[39;00m [38;5;28mself[39m[38;5;241m.[39mval_loader [38;5;129;01mis[39;00m [38;5;129;01mnot[39;00m [38;5;28;01mNone[39;00m:
+[1;32m    196[0m     val_metrics [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mvalidate(
+[1;32m    197[0m         split[38;5;241m=[39m[38;5;124m"[39m[38;5;124mval[39m[38;5;124m"[39m,
+[1;32m    198[0m         disable_tqdm[38;5;241m=[39mdisable_eval_tqdm,
+[1;32m    199[0m     )
+[0;32m--> 200[0m     [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mupdate_best[49m[43m([49m
+[1;32m    201[0m [43m        [49m[43mprimary_metric[49m[43m,[49m
+[1;32m    202[0m [43m        [49m[43mval_metrics[49m[43m,[49m
+[1;32m    203[0m [43m        [49m[43mdisable_eval_tqdm[49m[38;5;241;43m=[39;49m[43mdisable_eval_tqdm[49m[43m,[49m
+[1;32m    204[0m [43m    [49m[43m)[49m
+[1;32m    206[0m [38;5;28;01mif[39;00m [38;5;28mself[39m[38;5;241m.[39mconfig[[38;5;124m"[39m[38;5;124mtask[39m[38;5;124m"[39m][38;5;241m.[39mget([38;5;124m"[39m[38;5;124meval_relaxations[39m[38;5;124m"[39m, [38;5;28;01mFalse[39;00m):
+[1;32m    207[0m     [38;5;28;01mif[39;00m [38;5;124m"[39m[38;5;124mrelax_dataset[39m[38;5;124m"[39m [38;5;129;01mnot[39;00m [38;5;129;01min[39;00m [38;5;28mself[39m[38;5;241m.[39mconfig[[38;5;124m"[39m[38;5;124mtask[39m[38;5;124m"[39m]:
 
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/db/sqlite.py:727[0m, in [0;36mSQLite3Database.count[0;34m(self, selection, **kwargs)[0m
-[1;32m    724[0m keys, cmps [38;5;241m=[39m parse_selection(selection, [38;5;241m*[39m[38;5;241m*[39mkwargs)
-[1;32m    725[0m sql, args [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mcreate_select_statement(keys, cmps, what[38;5;241m=[39m[38;5;124m'[39m[38;5;124mCOUNT(*)[39m[38;5;124m'[39m)
-[0;32m--> 727[0m [43m[49m[38;5;28;43;01mwith[39;49;00m[43m [49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mmanaged_connection[49m[43m([49m[43m)[49m[43m [49m[38;5;28;43;01mas[39;49;00m[43m [49m[43mcon[49m[43m:[49m
-[1;32m    728[0m [43m    [49m[43mcur[49m[43m [49m[38;5;241;43m=[39;49m[43m [49m[43mcon[49m[38;5;241;43m.[39;49m[43mcursor[49m[43m([49m[43m)[49m
-[1;32m    729[0m [43m    [49m[43mcur[49m[38;5;241;43m.[39;49m[43mexecute[49m[43m([49m[43msql[49m[43m,[49m[43m [49m[43margs[49m[43m)[49m
+File [0;32m~/work/ocp/ocp/ocpmodels/trainers/base_trainer.py:667[0m, in [0;36mBaseTrainer.update_best[0;34m(self, primary_metric, val_metrics, disable_eval_tqdm)[0m
+[1;32m    660[0m [38;5;28;01mdef[39;00m [38;5;21mupdate_best[39m(
+[1;32m    661[0m     [38;5;28mself[39m,
+[1;32m    662[0m     primary_metric,
+[1;32m    663[0m     val_metrics,
+[1;32m    664[0m     disable_eval_tqdm: [38;5;28mbool[39m [38;5;241m=[39m [38;5;28;01mTrue[39;00m,
+[1;32m    665[0m ) [38;5;241m-[39m[38;5;241m>[39m [38;5;28;01mNone[39;00m:
+[1;32m    666[0m     [38;5;28;01mif[39;00m (
+[0;32m--> 667[0m         [38;5;124;43m"[39;49m[38;5;124;43mmae[39;49m[38;5;124;43m"[39;49m[43m [49m[38;5;129;43;01min[39;49;00m[43m [49m[43mprimary_metric[49m
+[1;32m    668[0m         [38;5;129;01mand[39;00m val_metrics[primary_metric][[38;5;124m"[39m[38;5;124mmetric[39m[38;5;124m"[39m] [38;5;241m<[39m [38;5;28mself[39m[38;5;241m.[39mbest_val_metric
+[1;32m    669[0m     ) [38;5;129;01mor[39;00m (
+[1;32m    670[0m         [38;5;124m"[39m[38;5;124mmae[39m[38;5;124m"[39m [38;5;129;01mnot[39;00m [38;5;129;01min[39;00m primary_metric
+[1;32m    671[0m         [38;5;129;01mand[39;00m val_metrics[primary_metric][[38;5;124m"[39m[38;5;124mmetric[39m[38;5;124m"[39m] [38;5;241m>[39m [38;5;28mself[39m[38;5;241m.[39mbest_val_metric
+[1;32m    672[0m     ):
+[1;32m    673[0m         [38;5;28mself[39m[38;5;241m.[39mbest_val_metric [38;5;241m=[39m val_metrics[primary_metric][[38;5;124m"[39m[38;5;124mmetric[39m[38;5;124m"[39m]
+[1;32m    674[0m         [38;5;28mself[39m[38;5;241m.[39msave(
+[1;32m    675[0m             metrics[38;5;241m=[39mval_metrics,
+[1;32m    676[0m             checkpoint_file[38;5;241m=[39m[38;5;124m"[39m[38;5;124mbest_checkpoint.pt[39m[38;5;124m"[39m,
+[1;32m    677[0m             training_state[38;5;241m=[39m[38;5;28;01mFalse[39;00m,
+[1;32m    678[0m         )
 
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/contextlib.py:137[0m, in [0;36m_GeneratorContextManager.__enter__[0;34m(self)[0m
-[1;32m    135[0m [38;5;28;01mdel[39;00m [38;5;28mself[39m[38;5;241m.[39margs, [38;5;28mself[39m[38;5;241m.[39mkwds, [38;5;28mself[39m[38;5;241m.[39mfunc
-[1;32m    136[0m [38;5;28;01mtry[39;00m:
-[0;32m--> 137[0m     [38;5;28;01mreturn[39;00m [38;5;28mnext[39m([38;5;28mself[39m[38;5;241m.[39mgen)
-[1;32m    138[0m [38;5;28;01mexcept[39;00m [38;5;167;01mStopIteration[39;00m:
-[1;32m    139[0m     [38;5;28;01mraise[39;00m [38;5;167;01mRuntimeError[39;00m([38;5;124m"[39m[38;5;124mgenerator didn[39m[38;5;124m'[39m[38;5;124mt yield[39m[38;5;124m"[39m) [38;5;28;01mfrom[39;00m [38;5;28;01mNone[39;00m
-
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/db/sqlite.py:192[0m, in [0;36mSQLite3Database.managed_connection[0;34m(self, commit_frequency)[0m
-[1;32m    189[0m [38;5;129m@contextmanager[39m
-[1;32m    190[0m [38;5;28;01mdef[39;00m [38;5;21mmanaged_connection[39m([38;5;28mself[39m, commit_frequency[38;5;241m=[39m[38;5;241m5000[39m):
-[1;32m    191[0m     [38;5;28;01mtry[39;00m:
-[0;32m--> 192[0m         con [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mconnection [38;5;129;01mor[39;00m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43m_connect[49m[43m([49m[43m)[49m
-[1;32m    193[0m         [38;5;28mself[39m[38;5;241m.[39m_initialize(con)
-[1;32m    194[0m         [38;5;28;01myield[39;00m con
-
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/db/sqlite.py:173[0m, in [0;36mSQLite3Database._connect[0;34m(self)[0m
-[1;32m    172[0m [38;5;28;01mdef[39;00m [38;5;21m_connect[39m([38;5;28mself[39m):
-[0;32m--> 173[0m     [38;5;28;01mreturn[39;00m [43msqlite3[49m[38;5;241;43m.[39;49m[43mconnect[49m[43m([49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mfilename[49m[43m,[49m[43m [49m[43mtimeout[49m[38;5;241;43m=[39;49m[38;5;241;43m20[39;49m[43m)[49m
-
-[0;31mOperationalError[0m: unable to open database file
+[0;31mTypeError[0m: argument of type 'NoneType' is not iterable
 

@@ -92,7 +92,7 @@ slab.get_potential_energy()
 
 ```{code-cell} ipython3
 # An OC22 checkpoint - trained on total energy
-checkpoint_path = model_name_to_local_file('GemNet-OC OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OCOC22', local_cache='/tmp/ocp_checkpoints/')
 
 with contextlib.redirect_stdout(StringIO()) as _:
     calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
@@ -198,7 +198,7 @@ atoms.set_calculator(calc)
 atoms.get_potential_energy()
 ```
 
-Not all models require tags though. This eSCN model does not use them. This is another detail that is important to keep in mind.
+Not all models require tags though. This EquiformerV2 model does not use them. This is another detail that is important to keep in mind.
 
 ```{code-cell} ipython3
 %%capture
@@ -206,7 +206,7 @@ from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 from ocpmodels.models.model_registry import model_name_to_local_file
 import os
 
-checkpoint_path = model_name_to_local_file('eSCN-L6-M3-Lay20 All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
 
 calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
@@ -220,13 +220,13 @@ atoms.get_potential_energy()
 
 # Stochastic simulation results
 
-Some models are not deterministic (SCN/eSCN.EqV2), i.e. you can get slightly different answers each time you run it. An example is shown below. See https://github.com/Open-Catalyst-Project/ocp/issues/563 for more discussion. This happens because a random selection of is made to sample edges, and a different selection is made each time you run it. 
+Some models are not deterministic (SCN/eSCN/EqV2), i.e. you can get slightly different answers each time you run it. An example is shown below. See https://github.com/Open-Catalyst-Project/ocp/issues/563 for more discussion. This happens because a random selection of is made to sample edges, and a different selection is made each time you run it. 
 
 ```{code-cell} ipython3
 from ocpmodels.models.model_registry import model_name_to_local_file
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 
-checkpoint_path = model_name_to_local_file('eSCN-L6-M3-Lay20 All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
 calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
 
 from ase.build import fcc111, add_adsorbate
@@ -253,7 +253,7 @@ In DFT, the forces on all the atoms should sum to zero; otherwise, there is a ne
 
 ```{code-cell} ipython3
 from ocpmodels.models.model_registry import model_name_to_local_file
-checkpoint_path = model_name_to_local_file('eSCN-L6-M3-Lay20 All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
 
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)

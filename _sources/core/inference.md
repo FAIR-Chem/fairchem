@@ -41,7 +41,7 @@ import numpy as np
 with ase.db.connect('full_data.db') as full_db:
   with ase.db.connect('data.db') as subset_db:
     for i in range(100):
-      subset_db.write(full_db.get_atoms(i)))
+      subset_db.write(full_db.get_atoms(i))
 
 ```
 
@@ -73,7 +73,7 @@ yml = generate_yml_config(checkpoint_path, 'config.yml',
                            'gpus': 1,
                            'task.dataset': 'ase_db',
                            'task.prediction_dtype': 'float32',
-                        
+                           'logger':'tensorboard', # don't use wandb!
                            # Train data
                            'dataset.train.src': 'data.db',
                            'dataset.train.a2g_args.r_energy': False,

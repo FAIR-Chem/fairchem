@@ -25,14 +25,36 @@ import numpy as np
 with ase.db.connect('full_data.db') as full_db:
   with ase.db.connect('data.db') as subset_db:
     for i in range(100):
-      subset_db.write(full_db.get_atoms(i)))
+      subset_db.write(full_db.get_atoms(i))
 
 ------------------
 
 
-[0;36m  Cell [0;32mIn[3], line 8[0;36m[0m
-[0;31m    subset_db.write(full_db.get_atoms(i)))[0m
-[0m                                         ^[0m
-[0;31mSyntaxError[0m[0;31m:[0m unmatched ')'
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mKeyError[0m                                  Traceback (most recent call last)
+Cell [0;32mIn[3], line 8[0m
+[1;32m      6[0m [38;5;28;01mwith[39;00m ase[38;5;241m.[39mdb[38;5;241m.[39mconnect([38;5;124m'[39m[38;5;124mdata.db[39m[38;5;124m'[39m) [38;5;28;01mas[39;00m subset_db:
+[1;32m      7[0m   [38;5;28;01mfor[39;00m i [38;5;129;01min[39;00m [38;5;28mrange[39m([38;5;241m100[39m):
+[0;32m----> 8[0m     subset_db[38;5;241m.[39mwrite([43mfull_db[49m[38;5;241;43m.[39;49m[43mget_atoms[49m[43m([49m[43mi[49m[43m)[49m)
 
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/db/core.py:418[0m, in [0;36mDatabase.get_atoms[0;34m(self, selection, attach_calculator, add_additional_information, **kwargs)[0m
+[1;32m    402[0m [38;5;28;01mdef[39;00m [38;5;21mget_atoms[39m([38;5;28mself[39m, selection[38;5;241m=[39m[38;5;28;01mNone[39;00m, attach_calculator[38;5;241m=[39m[38;5;28;01mFalse[39;00m,
+[1;32m    403[0m               add_additional_information[38;5;241m=[39m[38;5;28;01mFalse[39;00m, [38;5;241m*[39m[38;5;241m*[39mkwargs):
+[1;32m    404[0m [38;5;250m    [39m[38;5;124;03m"""Get Atoms object.[39;00m
+[1;32m    405[0m 
+[1;32m    406[0m [38;5;124;03m    selection: int, str or list[39;00m
+[0;32m   (...)[0m
+[1;32m    415[0m [38;5;124;03m    key-value pairs.[39;00m
+[1;32m    416[0m [38;5;124;03m    """[39;00m
+[0;32m--> 418[0m     row [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[43mselection[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
+[1;32m    419[0m     [38;5;28;01mreturn[39;00m row[38;5;241m.[39mtoatoms(attach_calculator, add_additional_information)
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/db/core.py:432[0m, in [0;36mDatabase.get[0;34m(self, selection, **kwargs)[0m
+[1;32m    430[0m rows [38;5;241m=[39m [38;5;28mlist[39m([38;5;28mself[39m[38;5;241m.[39mselect(selection, limit[38;5;241m=[39m[38;5;241m2[39m, [38;5;241m*[39m[38;5;241m*[39mkwargs))
+[1;32m    431[0m [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m rows:
+[0;32m--> 432[0m     [38;5;28;01mraise[39;00m [38;5;167;01mKeyError[39;00m([38;5;124m'[39m[38;5;124mno match[39m[38;5;124m'[39m)
+[1;32m    433[0m [38;5;28;01massert[39;00m [38;5;28mlen[39m(rows) [38;5;241m==[39m [38;5;241m1[39m, [38;5;124m'[39m[38;5;124mmore than one row matched[39m[38;5;124m'[39m
+[1;32m    434[0m [38;5;28;01mreturn[39;00m rows[[38;5;241m0[39m]
+
+[0;31mKeyError[0m: 'no match'
 

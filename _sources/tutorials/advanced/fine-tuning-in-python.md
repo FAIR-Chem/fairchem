@@ -45,7 +45,7 @@ root.addHandler(handler_err)
 ```
 
 ```{code-cell} ipython3
-! ase db ../fine-tuning/oxides.db
+! ase db ../../core/fine-tuning/oxides.db
 ```
 
 ```{code-cell} ipython3
@@ -63,7 +63,7 @@ calc = OCPCalculator(checkpoint_path=checkpoint_path, trainer='forces', cpu=Fals
 
 from ocpmodels.common.tutorial_utils import train_test_val_split
 
-train, test, val = train_test_val_split('../fine-tuning/oxides.db')
+train, test, val = train_test_val_split('../../core/fine-tuning/oxides.db')
 train, test, val
 ```
 
@@ -82,6 +82,7 @@ yml = generate_yml_config(checkpoint_path, 'config.yml',
                            'task.dataset': 'ase_db',
                            'optim.eval_every': 1,
                            'optim.max_epochs': 5,
+                           'logger': 'tensorboard', # don't use wandb unless you already are logged in 
                            # Train data
                            'dataset.train.src': 'train.db',
                            'dataset.train.a2g_args.r_energy': True,
