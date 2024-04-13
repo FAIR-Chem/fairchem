@@ -53,9 +53,12 @@ import numpy as np
 ```{code-cell} ipython3
 %%capture
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from ocpmodels.models.model_registry import model_name_to_local_file
+
 import os
-cp = checkpoint = get_checkpoint('GemNet-OCOC20+OC22')
-calc = OCPCalculator(checkpoint_path=cp)
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+
+calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
 
 ## Bulk Cu equation of state example

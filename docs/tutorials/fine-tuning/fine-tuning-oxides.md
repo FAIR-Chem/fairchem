@@ -262,8 +262,7 @@ import time
 from ocpmodels.common.tutorial_utils import ocp_main
 
 t0 = time.time()
-! python {ocp_main()} --mode train --config-yml $yml --checkpoint $checkpoint \
-  --run-dir fine-tuning --identifier ft-oxides --amp > train.txt 2>&1 
+! python {ocp_main()} --mode train --config-yml $yml --checkpoint $checkpoint_path --run-dir fine-tuning --identifier ft-oxides --amp > train.txt 2>&1 
 print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
 ```
 

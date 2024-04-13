@@ -43,14 +43,14 @@ RuntimeError: cannot reshape tensor of 0 elements into shape [0, -1] because the
 The problem here is that no neighbors are found for the single atom which causes an error. This may be model dependent. There is currently no way to get atomic energies for some models.
 
 ```{code-cell} ipython3
-%%capture
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 from ocpmodels.models.model_registry import model_name_to_local_file
 checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
-calc = OCPCalculator(checkpoint_path=cp)
+calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
 
 ```{code-cell} ipython3
+%%capture
 from ase.build import bulk
 atoms = bulk('Cu', a=10)
 atoms.set_calculator(calc)

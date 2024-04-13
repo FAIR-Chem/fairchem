@@ -216,10 +216,8 @@ This cell runs all the examples. I don't recommend you run this during the works
 
 ```{code-cell} ipython3
 ---
-mystnb:
-  tags: ["skip-execution"]
+tags: ["skip-execution"]
 ---
-:tags: [hide-output]
 
 import time
 from tqdm import tqdm
