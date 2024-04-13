@@ -1,0 +1,55 @@
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/jupyter_cache/executors/utils.py", line 58, in single_nb_execution
+    executenb(
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 1314, in execute
+    return NotebookClient(nb=nb, resources=resources, km=km, **kwargs).execute()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 709, in async_execute
+    await self.async_execute_cell(
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+# An OC22 checkpoint - trained on total energy
+checkpoint_path = model_name_to_local_file('GemNet-OC OC22', local_cache='/tmp/ocp_checkpoints/')
+
+with contextlib.redirect_stdout(StringIO()) as _:
+    calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
+    
+
+
+slab.set_calculator(calc)
+slab.get_potential_energy()
+------------------
+
+----- stderr -----
+ERROR:root:Not a valid model name 'GemNet-OC OC22'
+------------------
+
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mValueError[0m                                Traceback (most recent call last)
+Cell [0;32mIn[6], line 2[0m
+[1;32m      1[0m [38;5;66;03m# An OC22 checkpoint - trained on total energy[39;00m
+[0;32m----> 2[0m checkpoint_path [38;5;241m=[39m [43mmodel_name_to_local_file[49m[43m([49m[38;5;124;43m'[39;49m[38;5;124;43mGemNet-OC OC22[39;49m[38;5;124;43m'[39;49m[43m,[49m[43m [49m[43mlocal_cache[49m[38;5;241;43m=[39;49m[38;5;124;43m'[39;49m[38;5;124;43m/tmp/ocp_checkpoints/[39;49m[38;5;124;43m'[39;49m[43m)[49m
+[1;32m      4[0m [38;5;28;01mwith[39;00m contextlib[38;5;241m.[39mredirect_stdout(StringIO()) [38;5;28;01mas[39;00m _:
+[1;32m      5[0m     calc [38;5;241m=[39m OCPCalculator(checkpoint_path[38;5;241m=[39mcheckpoint_path, cpu[38;5;241m=[39m[38;5;28;01mFalse[39;00m)
+
+File [0;32m~/work/ocp/ocp/ocpmodels/models/model_registry.py:38[0m, in [0;36mmodel_name_to_local_file[0;34m(model_name, local_cache)[0m
+[1;32m     36[0m [38;5;28;01mif[39;00m model_name [38;5;129;01mnot[39;00m [38;5;129;01min[39;00m MODEL_REGISTRY:
+[1;32m     37[0m     logging[38;5;241m.[39merror([38;5;124mf[39m[38;5;124m"[39m[38;5;124mNot a valid model name [39m[38;5;124m'[39m[38;5;132;01m{[39;00mmodel_name[38;5;132;01m}[39;00m[38;5;124m'[39m[38;5;124m"[39m)
+[0;32m---> 38[0m     [38;5;28;01mraise[39;00m [38;5;167;01mValueError[39;00m(
+[1;32m     39[0m         [38;5;124mf[39m[38;5;124m"[39m[38;5;124mNot a valid model name [39m[38;5;124m'[39m[38;5;132;01m{[39;00mmodel_name[38;5;132;01m}[39;00m[38;5;124m'[39m[38;5;124m. Model name must be one of [39m[38;5;132;01m{[39;00mavailable_pretrained_models[38;5;132;01m}[39;00m[38;5;124m"[39m
+[1;32m     40[0m     )
+[1;32m     41[0m [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m os[38;5;241m.[39mpath[38;5;241m.[39mexists(local_cache):
+[1;32m     42[0m     os[38;5;241m.[39mmakedirs(local_cache, exist_ok[38;5;241m=[39m[38;5;28;01mTrue[39;00m)
+
+[0;31mValueError[0m: Not a valid model name 'GemNet-OC OC22'. Model name must be one of ('CGCNN 200k', 'CGCNN 2M', 'CGCNN 20M', 'CGCNN All', 'DimeNet 200k', 'DimeNet 2M', 'SchNet 200k', 'SchNet 2M', 'SchNet 20M', 'SchNet All', 'DimeNet++ 200k', 'DimeNet++ 2M', 'DimeNet++ 20M', 'DimeNet++ All', 'SpinConv 2M', 'SpinConv All', 'GemNet-dT 2M', 'GemNet-dT All', 'PaiNN All', 'GemNet-OC 2M', 'GemNet-OC All', 'GemNet-OC All+MD', 'GemNet-OC-Large All+MD', 'SCN 2M', 'SCN-t4-b2 2M', 'SCN All+MD', 'eSCN-L4-M2-Lay12 2M', 'eSCN-L6-M2-Lay12 2M', 'eSCN-L6-M2-Lay12All+MD', 'eSCN-L6-M3-Lay20All+MD', 'EquiformerV2 (83M) 2M', 'EquiformerV2 (31M) All+MD', 'EquiformerV2 (153M) All+MD', 'SchNet All forceonly', 'DimeNet++ All forceonly', 'DimeNet++-Large All', 'DimeNet++ 20M+Rattled', 'DimeNet++ 20M+MD', 'CGCNN 10k is2re', 'CGCNN 100k is2re', 'CGCNN All is2re', 'DimeNet 10k is2re', 'DimeNet 100k is2re', 'DimeNet All is2re', 'SchNet 10k is2re', 'SchNet 100k is2re', 'SchNet All is2re', 'DimeNet++ 10k is2re', 'DimeNet++ 100k is2re', 'DimeNet++ All is2re', 'PaiNNAll', 'GemNet-dTOC22', 'GemNet-OCOC22', 'GemNet-OCOC20+OC22', 'GemNet-OC enforce_max_neighbors_strictly=False', 'GemNet-OCOC20->OC22', 'EquiformerV2 lambda_E$=4 lambda_F$=100 OC22', 'SchNet', 'DimeNet++', 'PaiNN', 'GemNet-OC', 'eSCN', 'EquiformerV2', 'EquiformerV2 (Large)', 'Gemnet-OC (Direct)', 'eSCN (Direct)', 'EquiformerV2 (Direct)')
+

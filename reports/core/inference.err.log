@@ -18,29 +18,21 @@ Traceback (most recent call last):
     raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
 nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
 ------------------
-from ocpmodels.models.model_registry import model_name_to_local_file
+! cp data.db full_data.db
+import ase.db
+import numpy as np
 
-# OC20 model - trained on adsorption energies
-checkpoint_path = model_name_to_local_file('GemNet-OC All', local_cache='/tmp/ocp_checkpoints/')
+with ase.db.connect('full_data.db') as full_db:
+  with ase.db.connect('data.db') as subset_db:
+    for i in range(100):
+      subset_db.write(full_db.get_atoms(i)))
 
-with contextlib.redirect_stdout(StringIO()) as _:
-    calc = OCPCalculator(checkpoint_path=os.path.expanduser(checkpoint_path), cpu=False)
-    
-
-
-slab.set_calculator(calc)
-slab.get_potential_energy()
 ------------------
 
 
-[0;31m---------------------------------------------------------------------------[0m
-[0;31mNameError[0m                                 Traceback (most recent call last)
-Cell [0;32mIn[5], line 7[0m
-[1;32m      4[0m checkpoint_path [38;5;241m=[39m model_name_to_local_file([38;5;124m'[39m[38;5;124mGemNet-OC All[39m[38;5;124m'[39m, local_cache[38;5;241m=[39m[38;5;124m'[39m[38;5;124m/tmp/ocp_checkpoints/[39m[38;5;124m'[39m)
-[1;32m      6[0m [38;5;28;01mwith[39;00m contextlib[38;5;241m.[39mredirect_stdout(StringIO()) [38;5;28;01mas[39;00m _:
-[0;32m----> 7[0m     calc [38;5;241m=[39m OCPCalculator(checkpoint_path[38;5;241m=[39m[43mos[49m[38;5;241m.[39mpath[38;5;241m.[39mexpanduser(checkpoint_path), cpu[38;5;241m=[39m[38;5;28;01mFalse[39;00m)
-[1;32m     11[0m slab[38;5;241m.[39mset_calculator(calc)
-[1;32m     12[0m slab[38;5;241m.[39mget_potential_energy()
+[0;36m  Cell [0;32mIn[3], line 8[0;36m[0m
+[0;31m    subset_db.write(full_db.get_atoms(i)))[0m
+[0m                                         ^[0m
+[0;31mSyntaxError[0m[0;31m:[0m unmatched ')'
 
-[0;31mNameError[0m: name 'os' is not defined
 
