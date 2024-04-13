@@ -23,7 +23,8 @@ dependencies = [
     "e3nn",
     "urllib3",
     "orjson",
-    "tqdm"
+    "tqdm",
+    "submitit"
 ]
 
 [project.optional-dependencies]  # add optional dependencies to be installed as pip install ocpmodels[dev]

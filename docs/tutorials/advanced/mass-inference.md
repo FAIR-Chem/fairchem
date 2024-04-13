@@ -87,12 +87,12 @@ print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
 ```
 
 ```{code-cell} ipython3
-! grep "Total time taken:" 'mass-inference.txt'
+with open('mass-inference.txt', 'wb') as f:
+    f.write(inference.stdout.encode('utf-8')) 
 ```
 
 ```{code-cell} ipython3
-with open('mass-inference.txt', 'wb') as f:
-    f.write(inference.stdout.encode('utf-8')) 
+! grep "Total time taken:" 'mass-inference.txt'
 ```
 
 The mass inference approach takes 1-2 minutes to run. See the output [here](./mass-inference.txt).
