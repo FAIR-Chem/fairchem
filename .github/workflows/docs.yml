@@ -8,7 +8,7 @@ on:
       - ocp_documentation
     paths:
       - 'docs/*'
-      - '.github/workflows/deploy_jupyter_book.yml'
+      - '.github/workflows/docs.yml'
 
 # This job installs dependencies, build the book, and pushes it to `gh-pages`
 jobs:
