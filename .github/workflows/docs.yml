@@ -29,7 +29,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install torch==1.13.1 torchvision torchaudio==0.13.1 --index-url https://download.pytorch.org/whl/cpu # install CPU torch
+        pip install torch==1.13.1 torchvision torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cpu # install CPU torch
         pip install pyg_lib torch_scatter torch_sparse --no-index -f https://data.pyg.org/whl/torch-1.13.1+cpu.html
         pip install -e .[docs]
         pip install git+ https://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset.git
