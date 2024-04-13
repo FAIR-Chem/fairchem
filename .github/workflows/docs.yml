@@ -33,6 +33,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         if [ -f requirements-optional.txt ]; then pip install -r requirements-optional.txt; fi
         pip install -e .[docs]
+        pip install git+https://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset.git
 
     # Build the book
     - name: Build the book

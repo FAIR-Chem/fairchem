@@ -11,7 +11,7 @@ kernelspec:
   name: python3
 ---
 
-Hello World with OCP models!
+Using pre-trained models in ASE
 ----------
 
 1. First, install OCP in a fresh python environment using one of the approaches in [installation documentation](INSTALL).

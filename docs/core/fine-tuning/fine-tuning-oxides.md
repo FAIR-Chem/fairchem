@@ -22,7 +22,7 @@ This data set shows equations of state for several oxide/polymorph combinations.
 
 +++
 
-First we get the checkpoint that we want. According to the [MODELS](../../core/MODELS.md) the GemNet-OC	OC20+OC22 combination has an energy MAE of 0.483 which seems like a good place to start. This model was trained on oxides.
+First we get the checkpoint that we want. According to the [MODELS](../../core/models) the GemNet-OC	OC20+OC22 combination has an energy MAE of 0.483 which seems like a good place to start. This model was trained on oxides.
 
 We get this checkpoint here.
 

@@ -42,7 +42,7 @@ The [Open Catalyst Project (OCP)](https://github.com/Open-Catalyst-Project) is a
 
 ### Models
 
-OCP provides several [models](../core/MODELS). Each model represents a different approach to featurization, and a different machine learning architecture. The models can be used for different tasks, and you will find different checkpoints associated with different datasets and tasks. 
+OCP provides several [models](../core/models). Each model represents a different approach to featurization, and a different machine learning architecture. The models can be used for different tasks, and you will find different checkpoints associated with different datasets and tasks. 
 
 +++
 

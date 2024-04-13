@@ -82,7 +82,7 @@ from ocpmodels.models.model_registry import model_name_to_local_file
 checkpoint_path = model_name_to_local_file('GemNet-OC All', local_cache='/tmp/ocp_checkpoints/')
 
 with contextlib.redirect_stdout(StringIO()) as _:
-    calc = OCPCalculator(checkpoint_path=os.path.expanduser(checkpoint_path), cpu=False)
+    calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
     
 
 
@@ -227,7 +227,7 @@ from ocpmodels.models.model_registry import model_name_to_local_file
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 
 checkpoint_path = model_name_to_local_file('eSCN-L6-M3-Lay20 All+MD', local_cache='/tmp/ocp_checkpoints/')
-calc = OCPCalculator(checkpoint_path=os.path.expanduser(checkpoint_path), cpu=True)
+calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
 
 from ase.build import fcc111, add_adsorbate
 from ase.optimize import BFGS
@@ -256,7 +256,7 @@ from ocpmodels.models.model_registry import model_name_to_local_file
 checkpoint_path = model_name_to_local_file('eSCN-L6-M3-Lay20 All+MD', local_cache='/tmp/ocp_checkpoints/')
 
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-calc = OCPCalculator(checkpoint_path=os.path.expanduser(checkpoint_path), cpu=True)
+calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
 
 from ase.build import fcc111, add_adsorbate
 from ase.optimize import BFGS
