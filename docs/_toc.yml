@@ -7,11 +7,14 @@ parts:
 - file: core/license
 - caption: Quickstart & Installation 
   chapters:
-  - url: https://open-catalyst.metademolab.com/
-    title: OCP Demo (no install required!)
   - file: core/install
   - file: core/quickstart
   - file: core/gotchas
+- caption: OCP API & Demo
+  chapters:
+  - url: https://open-catalyst.metademolab.com/
+    title: OCP Demo (no install required!)
+  - file: core/ocpapi
 - caption: Released Datasets & Models
   chapters:
   - file: core/datasets/oc20
@@ -34,6 +37,8 @@ parts:
   - file: videos/technical_talks
 - caption: Case Studies & Tutorials
   chapters:
+  - file: tutorials/adsorbml_walkthrough
+  - file: core/papers_using_models
   - file: tutorials/intro
   - file: tutorials/OCP-introduction
   - file: tutorials/NRR/NRR_toc
