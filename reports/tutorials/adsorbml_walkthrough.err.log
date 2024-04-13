@@ -39,12 +39,10 @@ from x3dase.visualize import view_x3d_n
 
 [0;31m---------------------------------------------------------------------------[0m
 [0;31mModuleNotFoundError[0m                       Traceback (most recent call last)
-Cell [0;32mIn[1], line 14[0m
-[1;32m     12[0m [38;5;66;03m# Optional - see below[39;00m
-[1;32m     13[0m [38;5;28;01mimport[39;00m [38;5;21;01mnumpy[39;00m [38;5;28;01mas[39;00m [38;5;21;01mnp[39;00m
-[0;32m---> 14[0m [38;5;28;01mfrom[39;00m [38;5;21;01mdscribe[39;00m[38;5;21;01m.[39;00m[38;5;21;01mdescriptors[39;00m [38;5;28;01mimport[39;00m SOAP
+Cell [0;32mIn[1], line 16[0m
+[1;32m     14[0m [38;5;28;01mfrom[39;00m [38;5;21;01mdscribe[39;00m[38;5;21;01m.[39;00m[38;5;21;01mdescriptors[39;00m [38;5;28;01mimport[39;00m SOAP
 [1;32m     15[0m [38;5;28;01mfrom[39;00m [38;5;21;01mscipy[39;00m[38;5;21;01m.[39;00m[38;5;21;01mspatial[39;00m[38;5;21;01m.[39;00m[38;5;21;01mdistance[39;00m [38;5;28;01mimport[39;00m pdist, squareform
-[1;32m     16[0m [38;5;28;01mfrom[39;00m [38;5;21;01mx3dase[39;00m[38;5;21;01m.[39;00m[38;5;21;01mvisualize[39;00m [38;5;28;01mimport[39;00m view_x3d_n
+[0;32m---> 16[0m [38;5;28;01mfrom[39;00m [38;5;21;01mx3dase[39;00m[38;5;21;01m.[39;00m[38;5;21;01mvisualize[39;00m [38;5;28;01mimport[39;00m view_x3d_n
 
-[0;31mModuleNotFoundError[0m: No module named 'dscribe'
+[0;31mModuleNotFoundError[0m: No module named 'x3dase'
 
