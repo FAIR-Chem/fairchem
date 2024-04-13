@@ -60,7 +60,7 @@ The different models have different compute requirements. If you find your kerne
 ```{code-cell}
 from ocpmodels.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-OC-Large All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
 ```
 
 Next we load the checkpoint. The output is somewhat verbose, but it can be informative for debugging purposes.
@@ -68,7 +68,7 @@ Next we load the checkpoint. The output is somewhat verbose, but it can be infor
 ```{code-cell}
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
-# calc = OCPCalculator(checkpoint_path=os.path.expanduser(checkpoint), cpu=True)
+# calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
 ```
 
 Next we can build a slab with an adsorbate on it. Here we use the ASE module to build a Pt slab. We use the experimental lattice constant that is the default. This can introduce some small errors with DFT since the lattice constant can differ by a few percent, and it is common to use DFT lattice constants. In this example, we do not constrain any layers.

@@ -43,7 +43,7 @@ parts:
   - file: tutorials/OCP-introduction
   - file: tutorials/NRR/NRR_toc
     sections:
-    - file: tutorials/NRR/NRR_example-gemnet
+    - file: tutorials/NRR/NRR_example
   - file: tutorials/advanced/fine-tuning-toc
     sections:
     - file: tutorials/advanced/fine-tuning-in-python

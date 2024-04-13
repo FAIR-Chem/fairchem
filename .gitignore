@@ -119,10 +119,10 @@ docs/legacy_tutorials/videos/
 
 # No ASE dbs, or OCP LMDBs!
 *.pt
-*.db
 *.lmdb
 *.lmdb-lock
 out.txt
 config.yml
 
 docs/autoapi/
+docs/tutorial/advanced/*.db
