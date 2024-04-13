@@ -14,7 +14,7 @@ import pytest
 from syrupy.extensions.amber import AmberSnapshotExtension
 
 if TYPE_CHECKING:
-    from syrupy.types import SerializableData, SerializedData, SnapshotIndex
+    from syrupy.types import SerializableData
 
 DEFAULT_RTOL = 1.0e-03
 DEFAULT_ATOL = 1.0e-03
@@ -132,17 +132,6 @@ class ApproxExtension(AmberSnapshotExtension):
         elif isinstance(data, type(pytest.approx(0.0))):
             raise NotImplementedError("Scalar approx not implemented yet")
         return super().serialize(data, **kwargs)
-
-    def write_snapshot(self, *, data: SerializedData, index: SnapshotIndex) -> None:
-        # Right before writing to file, we update the serialized snapshot data
-        # and remove the atol/rtol from the string representation.
-        # This is an implementation detail, and is not necessary for the extension to work.
-        # It just makes the snapshot files a bit cleaner.
-        approx = _try_parse_approx(data)
-        if approx is not None:
-            approx.tol_repr = False
-            data = self.serialize(approx)
-        return super().write_snapshot(data=data, index=index)
 
 
 @pytest.fixture()
