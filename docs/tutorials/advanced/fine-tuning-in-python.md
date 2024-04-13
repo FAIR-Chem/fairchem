@@ -51,9 +51,9 @@ root.addHandler(handler_err)
 ```{code-cell} ipython3
 from ocpmodels.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-OC OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-calc = OCPCalculator(checkpoint=checkpoint_path, trainer='forces', cpu=False)
+calc = OCPCalculator(checkpoint_path=checkpoint_path, trainer='forces', cpu=False)
 ```
 
 ## Split the data into train, test, val sets
@@ -74,7 +74,7 @@ We start by making the config.yml. We build this from the calculator checkpoint.
 ```{code-cell} ipython3
 from ocpmodels.common.tutorial_utils import generate_yml_config
 
-yml = generate_yml_config(checkpoint, 'config.yml',
+yml = generate_yml_config(checkpoint_path, 'config.yml',
                    delete=['slurm', 'cmd', 'logger', 'task', 'model_attributes',
                            'optim.loss_force', # the checkpoint setting causes an error
                            'dataset', 'test_dataset', 'val_dataset'],

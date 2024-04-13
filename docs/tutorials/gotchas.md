@@ -43,13 +43,14 @@ RuntimeError: cannot reshape tensor of 0 elements into shape [0, -1] because the
 The problem here is that no neighbors are found for the single atom which causes an error. This may be model dependent. There is currently no way to get atomic energies for some models.
 
 ```{code-cell} ipython3
-%%capture
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-cp = "gnoc_oc22_oc20_all_s2ef.pt"
-calc = OCPCalculator(checkpoint=cp)
+from ocpmodels.models.model_registry import model_name_to_local_file
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
 
 ```{code-cell} ipython3
+%%capture
 from ase.build import bulk
 atoms = bulk('Cu', a=10)
 atoms.set_calculator(calc)
@@ -81,7 +82,7 @@ from ocpmodels.models.model_registry import model_name_to_local_file
 checkpoint_path = model_name_to_local_file('GemNet-OC All', local_cache='/tmp/ocp_checkpoints/')
 
 with contextlib.redirect_stdout(StringIO()) as _:
-    calc = OCPCalculator(checkpoint=os.path.expanduser(checkpoint_path), cpu=False)
+    calc = OCPCalculator(checkpoint_path=os.path.expanduser(checkpoint_path), cpu=False)
     
 
 
@@ -94,7 +95,7 @@ slab.get_potential_energy()
 checkpoint_path = model_name_to_local_file('GemNet-OC OC22', local_cache='/tmp/ocp_checkpoints/')
 
 with contextlib.redirect_stdout(StringIO()) as _:
-    calc = OCPCalculator(checkpoint=checkpoint_path, cpu=False)
+    calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
     
 
 
@@ -107,7 +108,7 @@ slab.get_potential_energy()
 checkpoint_path = model_name_to_local_file('eSCN-L4-M2-Lay12 2M', local_cache='/tmp/ocp_checkpoints/')
 
 with contextlib.redirect_stdout(StringIO()) as _:
-    calc = OCPCalculator(checkpoint=checkpoint_path, cpu=False)
+    calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
 
 slab.set_calculator(calc)
 slab.get_potential_energy()
@@ -157,9 +158,9 @@ from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 from ocpmodels.models.model_registry import model_name_to_local_file
 import os
 
-checkpoint_path = model_name_to_local_file('GemNet-OC OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 
-calc = OCPCalculator(checkpoint=checkpoint_path)
+calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
 
 ```{code-cell} ipython3
@@ -180,8 +181,8 @@ from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 from ocpmodels.models.model_registry import model_name_to_local_file
 import os
 
-checkpoint_path = model_name_to_local_file('GemNet-OC OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
-calc = OCPCalculator(checkpoint=checkpoint_path)
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
 
 ```{code-cell} ipython3
@@ -207,7 +208,7 @@ import os
 
 checkpoint_path = model_name_to_local_file('eSCN-L6-M3-Lay20 All+MD', local_cache='/tmp/ocp_checkpoints/')
 
-calc = OCPCalculator(checkpoint=checkpoint_path)
+calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
 
 ```{code-cell} ipython3
@@ -226,7 +227,7 @@ from ocpmodels.models.model_registry import model_name_to_local_file
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 
 checkpoint_path = model_name_to_local_file('eSCN-L6-M3-Lay20 All+MD', local_cache='/tmp/ocp_checkpoints/')
-calc = OCPCalculator(checkpoint=os.path.expanduser(checkpoint_path), cpu=True)
+calc = OCPCalculator(checkpoint_path=os.path.expanduser(checkpoint_path), cpu=True)
 
 from ase.build import fcc111, add_adsorbate
 from ase.optimize import BFGS
@@ -255,7 +256,7 @@ from ocpmodels.models.model_registry import model_name_to_local_file
 checkpoint_path = model_name_to_local_file('eSCN-L6-M3-Lay20 All+MD', local_cache='/tmp/ocp_checkpoints/')
 
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-calc = OCPCalculator(checkpoint=os.path.expanduser(checkpoint_path), cpu=True)
+calc = OCPCalculator(checkpoint_path=os.path.expanduser(checkpoint_path), cpu=True)
 
 from ase.build import fcc111, add_adsorbate
 from ase.optimize import BFGS
