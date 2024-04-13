@@ -29,9 +29,10 @@ jobs:
 
     - name: Install dependencies
       run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements-optional.txt ]; then pip install -r requirements-optional.txt; fi
         pip install -e .[docs]
-        pip install pyg_lib torch_scatter torch_sparse --no-index -f https://data.pyg.org/whl/torch-1.13.1+cpu.html
-        pip install git+ https://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset.git
 
     # Build the book
     - name: Build the book
