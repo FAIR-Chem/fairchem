@@ -14,7 +14,7 @@ kernelspec:
 Using pre-trained models in ASE
 ----------
 
-1. First, install OCP in a fresh python environment using one of the approaches in [installation documentation](INSTALL).
+1. First, install OCP in a fresh python environment using one of the approaches in [installation documentation](install).
 2. See what pre-trained potentials are available 
 
 ```{code-cell} ipython3
