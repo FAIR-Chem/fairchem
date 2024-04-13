@@ -53,7 +53,7 @@ Classes
 
 
 
-.. py:class:: OutputBlock(emb_size_atom: int, emb_size_edge: int, emb_size_rbf: int, nHidden: int, nHidden_afteratom: int, activation: Optional[str] = None, direct_forces: bool = True)
+.. py:class:: OutputBlock(emb_size_atom: int, emb_size_edge: int, emb_size_rbf: int, nHidden: int, nHidden_afteratom: int, activation: str | None = None, direct_forces: bool = True)
 
 
    Bases: :py:obj:`AtomUpdateBlock`

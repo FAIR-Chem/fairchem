@@ -1,0 +1,121 @@
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/jupyter_cache/executors/utils.py", line 58, in single_nb_execution
+    executenb(
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 1314, in execute
+    return NotebookClient(nb=nb, resources=resources, km=km, **kwargs).execute()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 709, in async_execute
+    await self.async_execute_cell(
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+#calc.trainer._unwrapped_model.return_embedding = False
+a0 = 3.63
+E = []
+
+LC = np.linspace(0.95 * a0, 1.05 * a0, 20)
+
+for a in LC:
+    atoms = Atoms([Atom('Cu', (0, 0, 0))],
+                  cell=0.5 * a * np.array([[1.0, 1.0, 0.0],
+                                           [0.0, 1.0, 1.0],
+                                           [1.0, 0.0, 1.0]]),
+                 pbc=True)
+    atoms = atoms.repeat((2, 2, 2))
+    atoms.set_tags(np.ones(len(atoms)))
+    atoms.set_calculator(calc)
+    E += [atoms.get_potential_energy()]
+    
+plt.plot(LC, E)
+plt.xlabel('Lattice constant (A)')
+plt.ylabel('Energy (eV)');
+------------------
+
+----- stderr -----
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch/amp/autocast_mode.py:250: UserWarning: User provided device_type of 'cuda', but CUDA is not available. Disabling
+  warnings.warn(
+------------------
+
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mKeyError[0m                                  Traceback (most recent call last)
+Cell [0;32mIn[4], line 16[0m
+[1;32m     14[0m     atoms[38;5;241m.[39mset_tags(np[38;5;241m.[39mones([38;5;28mlen[39m(atoms)))
+[1;32m     15[0m     atoms[38;5;241m.[39mset_calculator(calc)
+[0;32m---> 16[0m     E [38;5;241m+[39m[38;5;241m=[39m [[43matoms[49m[38;5;241;43m.[39;49m[43mget_potential_energy[49m[43m([49m[43m)[49m]
+[1;32m     18[0m plt[38;5;241m.[39mplot(LC, E)
+[1;32m     19[0m plt[38;5;241m.[39mxlabel([38;5;124m'[39m[38;5;124mLattice constant (A)[39m[38;5;124m'[39m)
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/atoms.py:731[0m, in [0;36mAtoms.get_potential_energy[0;34m(self, force_consistent, apply_constraint)[0m
+[1;32m    728[0m     energy [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39m_calc[38;5;241m.[39mget_potential_energy(
+[1;32m    729[0m         [38;5;28mself[39m, force_consistent[38;5;241m=[39mforce_consistent)
+[1;32m    730[0m [38;5;28;01melse[39;00m:
+[0;32m--> 731[0m     energy [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43m_calc[49m[38;5;241;43m.[39;49m[43mget_potential_energy[49m[43m([49m[38;5;28;43mself[39;49m[43m)[49m
+[1;32m    732[0m [38;5;28;01mif[39;00m apply_constraint:
+[1;32m    733[0m     [38;5;28;01mfor[39;00m constraint [38;5;129;01min[39;00m [38;5;28mself[39m[38;5;241m.[39mconstraints:
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/calculators/calculator.py:709[0m, in [0;36mCalculator.get_potential_energy[0;34m(self, atoms, force_consistent)[0m
+[1;32m    708[0m [38;5;28;01mdef[39;00m [38;5;21mget_potential_energy[39m([38;5;28mself[39m, atoms[38;5;241m=[39m[38;5;28;01mNone[39;00m, force_consistent[38;5;241m=[39m[38;5;28;01mFalse[39;00m):
+[0;32m--> 709[0m     energy [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mget_property[49m[43m([49m[38;5;124;43m'[39;49m[38;5;124;43menergy[39;49m[38;5;124;43m'[39;49m[43m,[49m[43m [49m[43matoms[49m[43m)[49m
+[1;32m    710[0m     [38;5;28;01mif[39;00m force_consistent:
+[1;32m    711[0m         [38;5;28;01mif[39;00m [38;5;124m'[39m[38;5;124mfree_energy[39m[38;5;124m'[39m [38;5;129;01mnot[39;00m [38;5;129;01min[39;00m [38;5;28mself[39m[38;5;241m.[39mresults:
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/calculators/calculator.py:737[0m, in [0;36mCalculator.get_property[0;34m(self, name, atoms, allow_calculation)[0m
+[1;32m    735[0m     [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m allow_calculation:
+[1;32m    736[0m         [38;5;28;01mreturn[39;00m [38;5;28;01mNone[39;00m
+[0;32m--> 737[0m     [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mcalculate[49m[43m([49m[43matoms[49m[43m,[49m[43m [49m[43m[[49m[43mname[49m[43m][49m[43m,[49m[43m [49m[43msystem_changes[49m[43m)[49m
+[1;32m    739[0m [38;5;28;01mif[39;00m name [38;5;129;01mnot[39;00m [38;5;129;01min[39;00m [38;5;28mself[39m[38;5;241m.[39mresults:
+[1;32m    740[0m     [38;5;66;03m# For some reason the calculator was not able to do what we want,[39;00m
+[1;32m    741[0m     [38;5;66;03m# and that is OK.[39;00m
+[1;32m    742[0m     [38;5;28;01mraise[39;00m PropertyNotImplementedError([38;5;124m'[39m[38;5;132;01m{}[39;00m[38;5;124m not present in this [39m[38;5;124m'[39m
+[1;32m    743[0m                                       [38;5;124m'[39m[38;5;124mcalculation[39m[38;5;124m'[39m[38;5;241m.[39mformat(name))
+
+File [0;32m~/work/ocp/ocp/ocpmodels/common/relaxation/ase_utils.py:225[0m, in [0;36mOCPCalculator.calculate[0;34m(self, atoms, properties, system_changes)[0m
+[1;32m    222[0m data_object [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39ma2g[38;5;241m.[39mconvert(atoms)
+[1;32m    223[0m batch [38;5;241m=[39m data_list_collater([data_object], otf_graph[38;5;241m=[39m[38;5;28;01mTrue[39;00m)
+[0;32m--> 225[0m predictions [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mtrainer[49m[38;5;241;43m.[39;49m[43mpredict[49m[43m([49m[43mbatch[49m[43m,[49m[43m [49m[43mper_image[49m[38;5;241;43m=[39;49m[38;5;28;43;01mFalse[39;49;00m[43m,[49m[43m [49m[43mdisable_tqdm[49m[38;5;241;43m=[39;49m[38;5;28;43;01mTrue[39;49;00m[43m)[49m
+[1;32m    227[0m [38;5;28;01mfor[39;00m key [38;5;129;01min[39;00m predictions:
+[1;32m    228[0m     _pred [38;5;241m=[39m predictions[key]
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch/utils/_contextlib.py:115[0m, in [0;36mcontext_decorator.<locals>.decorate_context[0;34m(*args, **kwargs)[0m
+[1;32m    112[0m [38;5;129m@functools[39m[38;5;241m.[39mwraps(func)
+[1;32m    113[0m [38;5;28;01mdef[39;00m [38;5;21mdecorate_context[39m([38;5;241m*[39margs, [38;5;241m*[39m[38;5;241m*[39mkwargs):
+[1;32m    114[0m     [38;5;28;01mwith[39;00m ctx_factory():
+[0;32m--> 115[0m         [38;5;28;01mreturn[39;00m [43mfunc[49m[43m([49m[38;5;241;43m*[39;49m[43margs[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
+
+File [0;32m~/work/ocp/ocp/ocpmodels/trainers/ocp_trainer.py:433[0m, in [0;36mOCPTrainer.predict[0;34m(self, data_loader, per_image, results_file, disable_tqdm)[0m
+[1;32m    425[0m [38;5;28;01mfor[39;00m _i, batch [38;5;129;01min[39;00m tqdm(
+[1;32m    426[0m     [38;5;28menumerate[39m(data_loader),
+[1;32m    427[0m     total[38;5;241m=[39m[38;5;28mlen[39m(data_loader),
+[0;32m   (...)[0m
+[1;32m    430[0m     disable[38;5;241m=[39mdisable_tqdm,
+[1;32m    431[0m ):
+[1;32m    432[0m     [38;5;28;01mwith[39;00m torch[38;5;241m.[39mcuda[38;5;241m.[39mamp[38;5;241m.[39mautocast(enabled[38;5;241m=[39m[38;5;28mself[39m[38;5;241m.[39mscaler [38;5;129;01mis[39;00m [38;5;129;01mnot[39;00m [38;5;28;01mNone[39;00m):
+[0;32m--> 433[0m         out [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43m_forward[49m[43m([49m[43mbatch[49m[43m)[49m
+[1;32m    435[0m     [38;5;28;01mfor[39;00m target_key [38;5;129;01min[39;00m [38;5;28mself[39m[38;5;241m.[39mconfig[[38;5;124m"[39m[38;5;124moutputs[39m[38;5;124m"[39m]:
+[1;32m    436[0m         pred [38;5;241m=[39m out[target_key]
+
+File [0;32m~/work/ocp/ocp/ocpmodels/trainers/ocp_trainer.py:248[0m, in [0;36mOCPTrainer._forward[0;34m(self, batch)[0m
+[1;32m    244[0m [38;5;66;03m## Target property is a derived output of the model. Construct the[39;00m
+[1;32m    245[0m [38;5;66;03m## parent property[39;00m
+[1;32m    246[0m [38;5;28;01melse[39;00m:
+[1;32m    247[0m     _max_rank [38;5;241m=[39m [38;5;241m0[39m
+[0;32m--> 248[0m     [38;5;28;01mfor[39;00m subtarget_key [38;5;129;01min[39;00m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43moutput_targets[49m[43m[[49m[43mtarget_key[49m[43m][49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43mdecomposition[39;49m[38;5;124;43m"[39;49m[43m][49m:
+[1;32m    249[0m         _max_rank [38;5;241m=[39m [38;5;28mmax[39m(
+[1;32m    250[0m             _max_rank,
+[1;32m    251[0m             [38;5;28mself[39m[38;5;241m.[39moutput_targets[subtarget_key][[38;5;124m"[39m[38;5;124mirrep_dim[39m[38;5;124m"[39m],
+[1;32m    252[0m         )
+[1;32m    254[0m     pred_irreps [38;5;241m=[39m torch[38;5;241m.[39mzeros(
+[1;32m    255[0m         (batch_size, irreps_sum(_max_rank)), device[38;5;241m=[39m[38;5;28mself[39m[38;5;241m.[39mdevice
+[1;32m    256[0m     )
+
+[0;31mKeyError[0m: 'decomposition'
+

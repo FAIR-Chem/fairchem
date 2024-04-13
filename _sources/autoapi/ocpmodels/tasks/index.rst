@@ -22,7 +22,7 @@ Classes
 .. autoapisummary::
 
    ocpmodels.tasks.PredictTask
-   ocpmodels.tasks.RelxationTask
+   ocpmodels.tasks.RelaxationTask
    ocpmodels.tasks.TrainTask
    ocpmodels.tasks.ValidateTask
 
@@ -38,7 +38,7 @@ Classes
 
 
 
-.. py:class:: RelxationTask(config)
+.. py:class:: RelaxationTask(config)
 
 
    Bases: :py:obj:`BaseTask`

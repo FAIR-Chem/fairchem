@@ -65,6 +65,6 @@ Functions
 .. py:function:: all_reduce(data, group=dist.group.WORLD, average: bool = False, device=None) -> torch.Tensor
 
 
-.. py:function:: all_gather(data, group=dist.group.WORLD, device=None) -> List[torch.Tensor]
+.. py:function:: all_gather(data, group=dist.group.WORLD, device=None) -> list[torch.Tensor]
 
 

@@ -4,14 +4,16 @@
 
 Installing the OCP package and necessary dependencies is now as easy as:
 
-(GPU)
+### GPU enabled machines
 ```
 pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
-pip install pyg_lib torch_scatter torch_sparse -f https://data.pyg.org/whl/torch-1.13.1+cu117.html
+pip install pyg_lib torch_scatter torch_sparse --no-index -f https://data.pyg.org/whl/torch-1.13.1+cu117.html
 pip install -i https://test.pypi.org/simple/ ocp-models
 ```
 
-or if you want the CPU-only install (no cuda/etc):
+Note the `--no-index` in the second line - it seems unnecessary, but is important to make sure the versions come from that file and not the main pip index!
+
+### CPU-only install (slower training/inference!)
 ```
 pip install torch==1.13.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu # install CPU torch
 pip install pyg_lib torch_scatter torch_sparse -f https://data.pyg.org/whl/torch-1.13.1+cpu.html

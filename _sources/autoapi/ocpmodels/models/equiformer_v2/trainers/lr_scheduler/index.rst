@@ -91,7 +91,7 @@ Functions
    .. py:method:: filter_kwargs(config)
 
 
-   .. py:method:: get_lr() -> Optional[float]
+   .. py:method:: get_lr() -> float | None
 
 
 

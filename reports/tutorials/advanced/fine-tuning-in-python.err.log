@@ -1,0 +1,181 @@
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/jupyter_cache/executors/utils.py", line 58, in single_nb_execution
+    executenb(
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 1314, in execute
+    return NotebookClient(nb=nb, resources=resources, km=km, **kwargs).execute()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 709, in async_execute
+    await self.async_execute_cell(
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+with new_trainer_context(config=config, args=args) as ctx:
+    config = ctx.config
+    task = ctx.task
+    trainer = ctx.trainer
+    task.setup(trainer)
+    task.run()
+------------------
+
+----- stderr -----
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch/cuda/amp/grad_scaler.py:126: UserWarning: torch.cuda.amp.GradScaler is enabled, but CUDA is not available.  Disabling.
+  warnings.warn(
+------------------
+
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mUsageError[0m                                Traceback (most recent call last)
+Cell [0;32mIn[9], line 1[0m
+[0;32m----> 1[0m [38;5;28;43;01mwith[39;49;00m[43m [49m[43mnew_trainer_context[49m[43m([49m[43mconfig[49m[38;5;241;43m=[39;49m[43mconfig[49m[43m,[49m[43m [49m[43margs[49m[38;5;241;43m=[39;49m[43margs[49m[43m)[49m[43m [49m[38;5;28;43;01mas[39;49;00m[43m [49m[43mctx[49m[43m:[49m
+[1;32m      2[0m [43m    [49m[43mconfig[49m[43m [49m[38;5;241;43m=[39;49m[43m [49m[43mctx[49m[38;5;241;43m.[39;49m[43mconfig[49m
+[1;32m      3[0m [43m    [49m[43mtask[49m[43m [49m[38;5;241;43m=[39;49m[43m [49m[43mctx[49m[38;5;241;43m.[39;49m[43mtask[49m
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/contextlib.py:137[0m, in [0;36m_GeneratorContextManager.__enter__[0;34m(self)[0m
+[1;32m    135[0m [38;5;28;01mdel[39;00m [38;5;28mself[39m[38;5;241m.[39margs, [38;5;28mself[39m[38;5;241m.[39mkwds, [38;5;28mself[39m[38;5;241m.[39mfunc
+[1;32m    136[0m [38;5;28;01mtry[39;00m:
+[0;32m--> 137[0m     [38;5;28;01mreturn[39;00m [38;5;28mnext[39m([38;5;28mself[39m[38;5;241m.[39mgen)
+[1;32m    138[0m [38;5;28;01mexcept[39;00m [38;5;167;01mStopIteration[39;00m:
+[1;32m    139[0m     [38;5;28;01mraise[39;00m [38;5;167;01mRuntimeError[39;00m([38;5;124m"[39m[38;5;124mgenerator didn[39m[38;5;124m'[39m[38;5;124mt yield[39m[38;5;124m"[39m) [38;5;28;01mfrom[39;00m [38;5;28;01mNone[39;00m
+
+File [0;32m~/work/ocp/ocp/ocpmodels/common/utils.py:977[0m, in [0;36mnew_trainer_context[0;34m(config, args)[0m
+[1;32m    975[0m trainer_cls [38;5;241m=[39m registry[38;5;241m.[39mget_trainer_class(trainer_name)
+[1;32m    976[0m [38;5;28;01massert[39;00m trainer_cls [38;5;129;01mis[39;00m [38;5;129;01mnot[39;00m [38;5;28;01mNone[39;00m, [38;5;124m"[39m[38;5;124mTrainer not found[39m[38;5;124m"[39m
+[0;32m--> 977[0m trainer [38;5;241m=[39m [43mtrainer_cls[49m[43m([49m
+[1;32m    978[0m [43m    [49m[43mtask[49m[38;5;241;43m=[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mtask[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[43m{[49m[43m}[49m[43m)[49m[43m,[49m
+[1;32m    979[0m [43m    [49m[43mmodel[49m[38;5;241;43m=[39;49m[43mconfig[49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43mmodel[39;49m[38;5;124;43m"[39;49m[43m][49m[43m,[49m
+[1;32m    980[0m [43m    [49m[43moutputs[49m[38;5;241;43m=[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43moutputs[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[43m{[49m[43m}[49m[43m)[49m[43m,[49m
+[1;32m    981[0m [43m    [49m[43mdataset[49m[38;5;241;43m=[39;49m[43mconfig[49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43mdataset[39;49m[38;5;124;43m"[39;49m[43m][49m[43m,[49m
+[1;32m    982[0m [43m    [49m[43moptimizer[49m[38;5;241;43m=[39;49m[43mconfig[49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43moptim[39;49m[38;5;124;43m"[39;49m[43m][49m[43m,[49m
+[1;32m    983[0m [43m    [49m[43mloss_fns[49m[38;5;241;43m=[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mloss_functions[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[43m{[49m[43m}[49m[43m)[49m[43m,[49m
+[1;32m    984[0m [43m    [49m[43meval_metrics[49m[38;5;241;43m=[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mevaluation_metrics[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[43m{[49m[43m}[49m[43m)[49m[43m,[49m
+[1;32m    985[0m [43m    [49m[43midentifier[49m[38;5;241;43m=[39;49m[43mconfig[49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43midentifier[39;49m[38;5;124;43m"[39;49m[43m][49m[43m,[49m
+[1;32m    986[0m [43m    [49m[43mtimestamp_id[49m[38;5;241;43m=[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mtimestamp_id[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;28;43;01mNone[39;49;00m[43m)[49m[43m,[49m
+[1;32m    987[0m [43m    [49m[43mrun_dir[49m[38;5;241;43m=[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mrun_dir[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;124;43m"[39;49m[38;5;124;43m./[39;49m[38;5;124;43m"[39;49m[43m)[49m[43m,[49m
+[1;32m    988[0m [43m    [49m[43mis_debug[49m[38;5;241;43m=[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mis_debug[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;28;43;01mFalse[39;49;00m[43m)[49m[43m,[49m
+[1;32m    989[0m [43m    [49m[43mprint_every[49m[38;5;241;43m=[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mprint_every[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;241;43m10[39;49m[43m)[49m[43m,[49m
+[1;32m    990[0m [43m    [49m[43mseed[49m[38;5;241;43m=[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mseed[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;241;43m0[39;49m[43m)[49m[43m,[49m
+[1;32m    991[0m [43m    [49m[43mlogger[49m[38;5;241;43m=[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mlogger[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;124;43m"[39;49m[38;5;124;43mwandb[39;49m[38;5;124;43m"[39;49m[43m)[49m[43m,[49m
+[1;32m    992[0m [43m    [49m[43mlocal_rank[49m[38;5;241;43m=[39;49m[43mconfig[49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43mlocal_rank[39;49m[38;5;124;43m"[39;49m[43m][49m[43m,[49m
+[1;32m    993[0m [43m    [49m[43mamp[49m[38;5;241;43m=[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mamp[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;28;43;01mFalse[39;49;00m[43m)[49m[43m,[49m
+[1;32m    994[0m [43m    [49m[43mcpu[49m[38;5;241;43m=[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mcpu[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;28;43;01mFalse[39;49;00m[43m)[49m[43m,[49m
+[1;32m    995[0m [43m    [49m[43mslurm[49m[38;5;241;43m=[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mslurm[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[43m{[49m[43m}[49m[43m)[49m[43m,[49m
+[1;32m    996[0m [43m    [49m[43mnoddp[49m[38;5;241;43m=[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mnoddp[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;28;43;01mFalse[39;49;00m[43m)[49m[43m,[49m
+[1;32m    997[0m [43m    [49m[43mname[49m[38;5;241;43m=[39;49m[43mtask_name[49m[43m,[49m
+[1;32m    998[0m [43m[49m[43m)[49m
+[1;32m   1000[0m task_cls [38;5;241m=[39m registry[38;5;241m.[39mget_task_class(config[[38;5;124m"[39m[38;5;124mmode[39m[38;5;124m"[39m])
+[1;32m   1001[0m [38;5;28;01massert[39;00m task_cls [38;5;129;01mis[39;00m [38;5;129;01mnot[39;00m [38;5;28;01mNone[39;00m, [38;5;124m"[39m[38;5;124mTask not found[39m[38;5;124m"[39m
+
+File [0;32m~/work/ocp/ocp/ocpmodels/trainers/ocp_trainer.py:95[0m, in [0;36mOCPTrainer.__init__[0;34m(self, task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier, timestamp_id, run_dir, is_debug, print_every, seed, logger, local_rank, amp, cpu, slurm, noddp, name)[0m
+[1;32m     93[0m [38;5;28;01mif[39;00m slurm [38;5;129;01mis[39;00m [38;5;28;01mNone[39;00m:
+[1;32m     94[0m     slurm [38;5;241m=[39m {}
+[0;32m---> 95[0m [38;5;28;43msuper[39;49m[43m([49m[43m)[49m[38;5;241;43m.[39;49m[38;5;21;43m__init__[39;49m[43m([49m
+[1;32m     96[0m [43m    [49m[43mtask[49m[38;5;241;43m=[39;49m[43mtask[49m[43m,[49m
+[1;32m     97[0m [43m    [49m[43mmodel[49m[38;5;241;43m=[39;49m[43mmodel[49m[43m,[49m
+[1;32m     98[0m [43m    [49m[43moutputs[49m[38;5;241;43m=[39;49m[43moutputs[49m[43m,[49m
+[1;32m     99[0m [43m    [49m[43mdataset[49m[38;5;241;43m=[39;49m[43mdataset[49m[43m,[49m
+[1;32m    100[0m [43m    [49m[43moptimizer[49m[38;5;241;43m=[39;49m[43moptimizer[49m[43m,[49m
+[1;32m    101[0m [43m    [49m[43mloss_fns[49m[38;5;241;43m=[39;49m[43mloss_fns[49m[43m,[49m
+[1;32m    102[0m [43m    [49m[43meval_metrics[49m[38;5;241;43m=[39;49m[43meval_metrics[49m[43m,[49m
+[1;32m    103[0m [43m    [49m[43midentifier[49m[38;5;241;43m=[39;49m[43midentifier[49m[43m,[49m
+[1;32m    104[0m [43m    [49m[43mtimestamp_id[49m[38;5;241;43m=[39;49m[43mtimestamp_id[49m[43m,[49m
+[1;32m    105[0m [43m    [49m[43mrun_dir[49m[38;5;241;43m=[39;49m[43mrun_dir[49m[43m,[49m
+[1;32m    106[0m [43m    [49m[43mis_debug[49m[38;5;241;43m=[39;49m[43mis_debug[49m[43m,[49m
+[1;32m    107[0m [43m    [49m[43mprint_every[49m[38;5;241;43m=[39;49m[43mprint_every[49m[43m,[49m
+[1;32m    108[0m [43m    [49m[43mseed[49m[38;5;241;43m=[39;49m[43mseed[49m[43m,[49m
+[1;32m    109[0m [43m    [49m[43mlogger[49m[38;5;241;43m=[39;49m[43mlogger[49m[43m,[49m
+[1;32m    110[0m [43m    [49m[43mlocal_rank[49m[38;5;241;43m=[39;49m[43mlocal_rank[49m[43m,[49m
+[1;32m    111[0m [43m    [49m[43mamp[49m[38;5;241;43m=[39;49m[43mamp[49m[43m,[49m
+[1;32m    112[0m [43m    [49m[43mcpu[49m[38;5;241;43m=[39;49m[43mcpu[49m[43m,[49m
+[1;32m    113[0m [43m    [49m[43mslurm[49m[38;5;241;43m=[39;49m[43mslurm[49m[43m,[49m
+[1;32m    114[0m [43m    [49m[43mnoddp[49m[38;5;241;43m=[39;49m[43mnoddp[49m[43m,[49m
+[1;32m    115[0m [43m    [49m[43mname[49m[38;5;241;43m=[39;49m[43mname[49m[43m,[49m
+[1;32m    116[0m [43m[49m[43m)[49m
+
+File [0;32m~/work/ocp/ocp/ocpmodels/trainers/base_trainer.py:176[0m, in [0;36mBaseTrainer.__init__[0;34m(self, task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier, timestamp_id, run_dir, is_debug, print_every, seed, logger, local_rank, amp, cpu, name, slurm, noddp)[0m
+[1;32m    173[0m [38;5;28;01mif[39;00m distutils[38;5;241m.[39mis_master():
+[1;32m    174[0m     logging[38;5;241m.[39minfo(yaml[38;5;241m.[39mdump([38;5;28mself[39m[38;5;241m.[39mconfig, default_flow_style[38;5;241m=[39m[38;5;28;01mFalse[39;00m))
+[0;32m--> 176[0m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mload[49m[43m([49m[43m)[49m
+
+File [0;32m~/work/ocp/ocp/ocpmodels/trainers/base_trainer.py:197[0m, in [0;36mBaseTrainer.load[0;34m(self)[0m
+[1;32m    195[0m [38;5;28;01mdef[39;00m [38;5;21mload[39m([38;5;28mself[39m) [38;5;241m-[39m[38;5;241m>[39m [38;5;28;01mNone[39;00m:
+[1;32m    196[0m     [38;5;28mself[39m[38;5;241m.[39mload_seed_from_config()
+[0;32m--> 197[0m     [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mload_logger[49m[43m([49m[43m)[49m
+[1;32m    198[0m     [38;5;28mself[39m[38;5;241m.[39mload_datasets()
+[1;32m    199[0m     [38;5;28mself[39m[38;5;241m.[39mload_task()
+
+File [0;32m~/work/ocp/ocp/ocpmodels/trainers/base_trainer.py:229[0m, in [0;36mBaseTrainer.load_logger[0;34m(self)[0m
+[1;32m    226[0m logger_name [38;5;241m=[39m logger [38;5;28;01mif[39;00m [38;5;28misinstance[39m(logger, [38;5;28mstr[39m) [38;5;28;01melse[39;00m logger[[38;5;124m"[39m[38;5;124mname[39m[38;5;124m"[39m]
+[1;32m    227[0m [38;5;28;01massert[39;00m logger_name, [38;5;124m"[39m[38;5;124mSpecify logger name[39m[38;5;124m"[39m
+[0;32m--> 229[0m [38;5;28mself[39m[38;5;241m.[39mlogger [38;5;241m=[39m [43mregistry[49m[38;5;241;43m.[39;49m[43mget_logger_class[49m[43m([49m[43mlogger_name[49m[43m)[49m[43m([49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mconfig[49m[43m)[49m
+
+File [0;32m~/work/ocp/ocp/ocpmodels/common/logger.py:65[0m, in [0;36mWandBLogger.__init__[0;34m(self, config)[0m
+[1;32m     58[0m [38;5;28msuper[39m()[38;5;241m.[39m[38;5;21m__init__[39m(config)
+[1;32m     59[0m project [38;5;241m=[39m (
+[1;32m     60[0m     [38;5;28mself[39m[38;5;241m.[39mconfig[[38;5;124m"[39m[38;5;124mlogger[39m[38;5;124m"[39m][38;5;241m.[39mget([38;5;124m"[39m[38;5;124mproject[39m[38;5;124m"[39m, [38;5;28;01mNone[39;00m)
+[1;32m     61[0m     [38;5;28;01mif[39;00m [38;5;28misinstance[39m([38;5;28mself[39m[38;5;241m.[39mconfig[[38;5;124m"[39m[38;5;124mlogger[39m[38;5;124m"[39m], [38;5;28mdict[39m)
+[1;32m     62[0m     [38;5;28;01melse[39;00m [38;5;28;01mNone[39;00m
+[1;32m     63[0m )
+[0;32m---> 65[0m [43mwandb[49m[38;5;241;43m.[39;49m[43minit[49m[43m([49m
+[1;32m     66[0m [43m    [49m[43mconfig[49m[38;5;241;43m=[39;49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mconfig[49m[43m,[49m
+[1;32m     67[0m [43m    [49m[38;5;28;43mid[39;49m[38;5;241;43m=[39;49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mconfig[49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43mcmd[39;49m[38;5;124;43m"[39;49m[43m][49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43mtimestamp_id[39;49m[38;5;124;43m"[39;49m[43m][49m[43m,[49m
+[1;32m     68[0m [43m    [49m[43mname[49m[38;5;241;43m=[39;49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mconfig[49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43mcmd[39;49m[38;5;124;43m"[39;49m[43m][49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43midentifier[39;49m[38;5;124;43m"[39;49m[43m][49m[43m,[49m
+[1;32m     69[0m [43m    [49m[38;5;28;43mdir[39;49m[38;5;241;43m=[39;49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mconfig[49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43mcmd[39;49m[38;5;124;43m"[39;49m[43m][49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43mlogs_dir[39;49m[38;5;124;43m"[39;49m[43m][49m[43m,[49m
+[1;32m     70[0m [43m    [49m[43mproject[49m[38;5;241;43m=[39;49m[43mproject[49m[43m,[49m
+[1;32m     71[0m [43m    [49m[43mresume[49m[38;5;241;43m=[39;49m[38;5;124;43m"[39;49m[38;5;124;43mallow[39;49m[38;5;124;43m"[39;49m[43m,[49m
+[1;32m     72[0m [43m[49m[43m)[49m
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/wandb/sdk/wandb_init.py:1200[0m, in [0;36minit[0;34m(job_type, dir, config, project, entity, reinit, tags, group, name, notes, magic, config_exclude_keys, config_include_keys, anonymous, mode, allow_val_change, resume, force, tensorboard, sync_tensorboard, monitor_gym, save_code, id, fork_from, settings)[0m
+[1;32m   1198[0m     [38;5;28;01mif[39;00m logger [38;5;129;01mis[39;00m [38;5;129;01mnot[39;00m [38;5;28;01mNone[39;00m:
+[1;32m   1199[0m         logger[38;5;241m.[39mexception([38;5;28mstr[39m(e))
+[0;32m-> 1200[0m     [38;5;28;01mraise[39;00m e
+[1;32m   1201[0m [38;5;28;01mexcept[39;00m [38;5;167;01mKeyboardInterrupt[39;00m [38;5;28;01mas[39;00m e:
+[1;32m   1202[0m     [38;5;28;01massert[39;00m logger
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/wandb/sdk/wandb_init.py:1177[0m, in [0;36minit[0;34m(job_type, dir, config, project, entity, reinit, tags, group, name, notes, magic, config_exclude_keys, config_include_keys, anonymous, mode, allow_val_change, resume, force, tensorboard, sync_tensorboard, monitor_gym, save_code, id, fork_from, settings)[0m
+[1;32m   1175[0m [38;5;28;01mtry[39;00m:
+[1;32m   1176[0m     wi [38;5;241m=[39m _WandbInit()
+[0;32m-> 1177[0m     [43mwi[49m[38;5;241;43m.[39;49m[43msetup[49m[43m([49m[43mkwargs[49m[43m)[49m
+[1;32m   1178[0m     [38;5;28;01massert[39;00m wi[38;5;241m.[39msettings
+[1;32m   1179[0m     except_exit [38;5;241m=[39m wi[38;5;241m.[39msettings[38;5;241m.[39m_except_exit
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/wandb/sdk/wandb_init.py:301[0m, in [0;36m_WandbInit.setup[0;34m(self, kwargs)[0m
+[1;32m    298[0m     settings[38;5;241m.[39mupdate(init_settings, source[38;5;241m=[39mSource[38;5;241m.[39mINIT)
+[1;32m    300[0m [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m settings[38;5;241m.[39m_offline [38;5;129;01mand[39;00m [38;5;129;01mnot[39;00m settings[38;5;241m.[39m_noop:
+[0;32m--> 301[0m     [43mwandb_login[49m[38;5;241;43m.[39;49m[43m_login[49m[43m([49m
+[1;32m    302[0m [43m        [49m[43manonymous[49m[38;5;241;43m=[39;49m[43mkwargs[49m[38;5;241;43m.[39;49m[43mpop[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43manonymous[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;28;43;01mNone[39;49;00m[43m)[49m[43m,[49m
+[1;32m    303[0m [43m        [49m[43mforce[49m[38;5;241;43m=[39;49m[43mkwargs[49m[38;5;241;43m.[39;49m[43mpop[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mforce[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;28;43;01mNone[39;49;00m[43m)[49m[43m,[49m
+[1;32m    304[0m [43m        [49m[43m_disable_warning[49m[38;5;241;43m=[39;49m[38;5;28;43;01mTrue[39;49;00m[43m,[49m
+[1;32m    305[0m [43m        [49m[43m_silent[49m[38;5;241;43m=[39;49m[43msettings[49m[38;5;241;43m.[39;49m[43mquiet[49m[43m [49m[38;5;129;43;01mor[39;49;00m[43m [49m[43msettings[49m[38;5;241;43m.[39;49m[43msilent[49m[43m,[49m
+[1;32m    306[0m [43m        [49m[43m_entity[49m[38;5;241;43m=[39;49m[43mkwargs[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mentity[39;49m[38;5;124;43m"[39;49m[43m)[49m[43m [49m[38;5;129;43;01mor[39;49;00m[43m [49m[43msettings[49m[38;5;241;43m.[39;49m[43mentity[49m[43m,[49m
+[1;32m    307[0m [43m    [49m[43m)[49m
+[1;32m    309[0m [38;5;66;03m# apply updated global state after login was handled[39;00m
+[1;32m    310[0m wl [38;5;241m=[39m wandb[38;5;241m.[39msetup()
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/wandb/sdk/wandb_login.py:334[0m, in [0;36m_login[0;34m(anonymous, key, relogin, host, force, timeout, _backend, _silent, _disable_warning, _entity)[0m
+[1;32m    331[0m     [38;5;28;01mreturn[39;00m logged_in
+[1;32m    333[0m [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m key:
+[0;32m--> 334[0m     [43mwlogin[49m[38;5;241;43m.[39;49m[43mprompt_api_key[49m[43m([49m[43m)[49m
+[1;32m    336[0m [38;5;66;03m# make sure login credentials get to the backend[39;00m
+[1;32m    337[0m wlogin[38;5;241m.[39mpropogate_login()
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/wandb/sdk/wandb_login.py:263[0m, in [0;36m_WandbLogin.prompt_api_key[0;34m(self)[0m
+[1;32m    257[0m [38;5;28;01mif[39;00m status [38;5;241m==[39m ApiKeyStatus[38;5;241m.[39mNOTTY:
+[1;32m    258[0m     directive [38;5;241m=[39m (
+[1;32m    259[0m         [38;5;124m"[39m[38;5;124mwandb login [your_api_key][39m[38;5;124m"[39m
+[1;32m    260[0m         [38;5;28;01mif[39;00m [38;5;28mself[39m[38;5;241m.[39m_settings[38;5;241m.[39m_cli_only_mode
+[1;32m    261[0m         [38;5;28;01melse[39;00m [38;5;124m"[39m[38;5;124mwandb.login(key=[your_api_key])[39m[38;5;124m"[39m
+[1;32m    262[0m     )
+[0;32m--> 263[0m     [38;5;28;01mraise[39;00m UsageError([38;5;124m"[39m[38;5;124mapi_key not configured (no-tty). call [39m[38;5;124m"[39m [38;5;241m+[39m directive)
+[1;32m    265[0m [38;5;28mself[39m[38;5;241m.[39mupdate_session(key, status[38;5;241m=[39mstatus)
+[1;32m    266[0m [38;5;28mself[39m[38;5;241m.[39m_key [38;5;241m=[39m key
+
+[0;31mUsageError[0m: api_key not configured (no-tty). call wandb.login(key=[your_api_key])
+

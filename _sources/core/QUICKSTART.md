@@ -11,7 +11,7 @@ kernelspec:
   name: python3
 ---
 
-Quickstart simulation using pre-trained models
+Hello World with OCP models!
 ----------
 
 1. First, install OCP in a fresh python environment using one of the approaches in [installation documentation](INSTALL).
@@ -26,7 +26,7 @@ print(available_pretrained_models)
 
 ```{code-cell} ipython3
 from ocpmodels.models.model_registry import model_name_to_local_file
-checkpoint_path = model_name_to_local_file('GemNet-OC OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path
 ```
 
@@ -59,4 +59,4 @@ axs[0].set_axis_off()
 axs[1].set_axis_off()
 ```
 
-To learn more about what this simulation means and how it fits into catalysis, see the [catalysis tutorial](tutorials/intro)!
+To learn more about what this simulation means and how it fits into catalysis, see the [catalysis tutorial](../tutorials/intro)!

@@ -149,7 +149,7 @@ Attributes
    .. py:method:: reset_parameters() -> None
 
 
-   .. py:method:: forward(x, rbf, i, num_nodes: Optional[int] = None)
+   .. py:method:: forward(x, rbf, i, num_nodes: int | None = None)
 
 
 

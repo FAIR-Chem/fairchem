@@ -30,9 +30,9 @@ Attributes
 
    
 
-.. py:function:: assert_is_instance(obj: object, cls: Type[_T]) -> _T
+.. py:function:: assert_is_instance(obj: object, cls: type[_T]) -> _T
 
 
-.. py:function:: none_throws(x: Optional[_T], msg: Optional[str] = None) -> _T
+.. py:function:: none_throws(x: _T | None, msg: str | None = None) -> _T
 
 

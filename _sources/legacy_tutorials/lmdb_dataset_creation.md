@@ -237,7 +237,7 @@ data
 ```
 
 ```{code-cell} ipython3
-energies = torch.tensor([data.y for data in dataset])
+energies = torch.tensor([data.energy for data in dataset])
 energies
 ```
 

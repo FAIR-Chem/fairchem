@@ -41,7 +41,7 @@ print(available_pretrained_models)
 ```{code-cell} ipython3
 from ocpmodels.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-dT OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-dTOC22', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path
 
 ```
@@ -79,18 +79,20 @@ It is a good idea to redirect the output to a file. If the output gets too large
 ```{code-cell} ipython3
 %%capture inference
 import time
+from ocpmodels.common.tutorial_utils import ocp_main
+
 t0 = time.time()
 ! python {ocp_main()} --mode predict --config-yml {yml} --checkpoint {checkpoint_path} --amp
 print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
 ```
 
 ```{code-cell} ipython3
-! grep "Total time taken:" 'mass-inference.txt'
+with open('mass-inference.txt', 'wb') as f:
+    f.write(inference.stdout.encode('utf-8')) 
 ```
 
 ```{code-cell} ipython3
-with open('mass-inference.txt', 'wb') as f:
-    f.write(inference.stdout.encode('utf-8')) 
+! grep "Total time taken:" 'mass-inference.txt'
 ```
 
 The mass inference approach takes 1-2 minutes to run. See the output [here](./mass-inference.txt).
@@ -143,7 +145,7 @@ We include this here just to show that:
 
 ```{code-cell} ipython3
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-calc = OCPCalculator(checkpoint=os.path.expanduser(checkpoint_path), cpu=False)
+calc = OCPCalculator(checkpoint_path=os.path.expanduser(checkpoint_path), cpu=False)
 ```
 
 ```{code-cell} ipython3

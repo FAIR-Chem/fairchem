@@ -23,7 +23,7 @@ Classes
 
 
 
-.. py:class:: ExponentialMovingAverage(parameters: Iterable[torch.nn.Parameter], decay: float, use_num_updates: bool = False)
+.. py:class:: ExponentialMovingAverage(parameters: collections.abc.Iterable[torch.nn.Parameter], decay: float, use_num_updates: bool = False)
 
 
    Maintains (exponential) moving average of a set of parameters.
@@ -34,10 +34,10 @@ Classes
    :param use_num_updates: Whether to use number of updates when computing
                            averages.
 
-   .. py:method:: _get_parameters(parameters: Optional[Iterable[torch.nn.Parameter]]) -> Iterable[torch.nn.Parameter]
+   .. py:method:: _get_parameters(parameters: collections.abc.Iterable[torch.nn.Parameter] | None) -> collections.abc.Iterable[torch.nn.Parameter]
 
 
-   .. py:method:: update(parameters: Optional[Iterable[torch.nn.Parameter]] = None) -> None
+   .. py:method:: update(parameters: collections.abc.Iterable[torch.nn.Parameter] | None = None) -> None
 
       Update currently maintained parameters.
 
@@ -50,7 +50,7 @@ Classes
                          initialized will be used.
 
 
-   .. py:method:: copy_to(parameters: Optional[Iterable[torch.nn.Parameter]] = None) -> None
+   .. py:method:: copy_to(parameters: collections.abc.Iterable[torch.nn.Parameter] | None = None) -> None
 
       Copy current parameters into given collection of parameters.
 
@@ -60,7 +60,7 @@ Classes
                          initialized will be used.
 
 
-   .. py:method:: store(parameters: Optional[Iterable[torch.nn.Parameter]] = None) -> None
+   .. py:method:: store(parameters: collections.abc.Iterable[torch.nn.Parameter] | None = None) -> None
 
       Save the current parameters for restoring later.
 
@@ -69,7 +69,7 @@ Classes
                          `ExponentialMovingAverage` was initialized will be used.
 
 
-   .. py:method:: restore(parameters: Optional[Iterable[torch.nn.Parameter]] = None) -> None
+   .. py:method:: restore(parameters: collections.abc.Iterable[torch.nn.Parameter] | None = None) -> None
 
       Restore the parameters stored with the `store` method.
       Useful to validate the model with EMA parameters without affecting the

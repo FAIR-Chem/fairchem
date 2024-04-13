@@ -37,7 +37,7 @@ In principle other models could be adapted in a similar way. See [embedding-monk
 The OCP project is still under active development, and it is not yet clear what the best way to access these embeddings are, so this code is not yet part of the main development branch. This code was adapted from a branch at https://github.com/Open-Catalyst-Project/ocp/blob/gnoc-embeddings.
 
 ```{code-cell} ipython3
-import embedding-monkeypatch
+import embedding_monkeypatch
 ```
 
 # A diagnostic example
@@ -53,9 +53,12 @@ import numpy as np
 ```{code-cell} ipython3
 %%capture
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from ocpmodels.models.model_registry import model_name_to_local_file
+
 import os
-cp = checkpoint = get_checkpoint('GemNet-OC OC20+OC22')
-calc = OCPCalculator(checkpoint=cp)
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+
+calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
 
 ## Bulk Cu equation of state example

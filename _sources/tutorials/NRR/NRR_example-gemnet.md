@@ -123,8 +123,8 @@ Running the model with BFGS prints at each relaxation step which is a lot to pri
 os.makedirs(f"data/{bulk_src_id}_{adsorbate_smiles_h}", exist_ok=True)
 
 # Define the calculator
-calc = OCPCalculator(checkpoint=checkpoint_path, cpu=False)   # if you have a GPU
-# calc = OCPCalculator(checkpoint=checkpoint_path, cpu=True)  # If you have CPU only
+calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)   # if you have a GPU
+# calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)  # If you have CPU only
 ```
 
 Now we setup and run the relaxation.
@@ -215,7 +215,9 @@ print(f'Elapsed time: {time.time() - tinit:1.1f} seconds')
 This cell runs all the examples. I don't recommend you run this during the workshop. Instead, we have saved the results for the subsequent analyses so you can skip this one.
 
 ```{code-cell} ipython3
-:tags: [hide-output]
+---
+tags: ["skip-execution"]
+---
 
 import time
 from tqdm import tqdm

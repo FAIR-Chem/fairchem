@@ -30,7 +30,7 @@ Attributes
 
    
 
-.. py:function:: _load_scale_dict(scale_file: Optional[Union[str, ScaleDict]])
+.. py:function:: _load_scale_dict(scale_file: str | ScaleDict | None)
 
    Loads scale factors from either:
    - a JSON file mapping scale factor names to scale values
@@ -38,6 +38,6 @@ Attributes
    - a dictionary mapping scale factor names to scale values
 
 
-.. py:function:: load_scales_compat(module: torch.nn.Module, scale_file: Optional[Union[str, ScaleDict]]) -> None
+.. py:function:: load_scales_compat(module: torch.nn.Module, scale_file: str | ScaleDict | None) -> None
 
 

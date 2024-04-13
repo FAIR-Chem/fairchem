@@ -25,7 +25,7 @@ Classes
 
 
 
-.. py:class:: BasisEmbedding(num_radial: int, emb_size_interm: int, num_spherical: Optional[int] = None)
+.. py:class:: BasisEmbedding(num_radial: int, emb_size_interm: int, num_spherical: int | None = None)
 
 
    Bases: :py:obj:`torch.nn.Module`

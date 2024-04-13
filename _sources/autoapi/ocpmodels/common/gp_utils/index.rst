@@ -107,10 +107,10 @@ Attributes
 .. py:function:: get_gp_world_size() -> int
 
 
-.. py:function:: pad_tensor(tensor: torch.Tensor, dim: int = -1, target_size: Optional[int] = None) -> torch.Tensor
+.. py:function:: pad_tensor(tensor: torch.Tensor, dim: int = -1, target_size: int | None = None) -> torch.Tensor
 
 
-.. py:function:: trim_tensor(tensor: torch.Tensor, sizes: Optional[torch.Tensor] = None, dim: int = 0)
+.. py:function:: trim_tensor(tensor: torch.Tensor, sizes: torch.Tensor | None = None, dim: int = 0)
 
 
 .. py:function:: _split_tensor(tensor: torch.Tensor, num_parts: int, dim: int = -1, contiguous_chunks: bool = False)

@@ -25,7 +25,7 @@ Classes
 
 
 
-.. py:class:: Normalizer(tensor: Optional[torch.Tensor] = None, mean=None, std=None, device=None)
+.. py:class:: Normalizer(tensor: torch.Tensor | None = None, mean=None, std=None, device=None)
 
 
    Normalize a Tensor and restore it later.

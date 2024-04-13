@@ -26,7 +26,7 @@ Classes
 
 
 
-.. py:class:: LBFGS(batch: torch_geometric.data.Batch, model: TorchCalc, maxstep: float = 0.01, memory: int = 100, damping: float = 0.25, alpha: float = 100.0, force_consistent=None, device: str = 'cuda:0', save_full_traj: bool = True, traj_dir: Optional[pathlib.Path] = None, traj_names=None, early_stop_batch: bool = False)
+.. py:class:: LBFGS(batch: torch_geometric.data.Batch, model: TorchCalc, maxstep: float = 0.01, memory: int = 100, damping: float = 0.25, alpha: float = 100.0, force_consistent=None, device: str = 'cuda:0', save_full_traj: bool = True, traj_dir: pathlib.Path | None = None, traj_names=None, early_stop_batch: bool = False)
 
 
    .. py:method:: get_energy_and_forces(apply_constraint: bool = True)
@@ -41,7 +41,7 @@ Classes
    .. py:method:: run(fmax, steps)
 
 
-   .. py:method:: step(iteration: int, forces: Optional[torch.Tensor], update_mask: torch.Tensor) -> None
+   .. py:method:: step(iteration: int, forces: torch.Tensor | None, update_mask: torch.Tensor) -> None
 
 
    .. py:method:: write(energy, forces, update_mask) -> None

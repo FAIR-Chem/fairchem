@@ -34,12 +34,12 @@ Functions
 
 
 
-.. py:function:: scatter_sum(src: torch.Tensor, index: torch.Tensor, dim: int = -1, out: Optional[torch.Tensor] = None, dim_size: Optional[int] = None) -> torch.Tensor
+.. py:function:: scatter_sum(src: torch.Tensor, index: torch.Tensor, dim: int = -1, out: torch.Tensor | None = None, dim_size: int | None = None) -> torch.Tensor
 
    Clone of torch_scatter.scatter_sum but without in-place operations
 
 
-.. py:class:: AtomUpdateBlock(emb_size_atom: int, emb_size_edge: int, emb_size_rbf: int, nHidden: int, activation: Optional[str] = None, name: str = 'atom_update')
+.. py:class:: AtomUpdateBlock(emb_size_atom: int, emb_size_edge: int, emb_size_rbf: int, nHidden: int, activation: str | None = None, name: str = 'atom_update')
 
 
    Bases: :py:obj:`torch.nn.Module`
@@ -55,7 +55,7 @@ Functions
    :param activation: Name of the activation function to use in the dense layers.
    :type activation: callable/str
 
-   .. py:method:: get_mlp(units_in: int, units: int, nHidden: int, activation: Optional[str])
+   .. py:method:: get_mlp(units_in: int, units: int, nHidden: int, activation: str | None)
 
 
    .. py:method:: forward(nAtoms: int, m: int, rbf, id_j)
@@ -65,7 +65,7 @@ Functions
 
 
 
-.. py:class:: OutputBlock(emb_size_atom: int, emb_size_edge: int, emb_size_rbf: int, nHidden: int, num_targets: int, activation: Optional[str] = None, direct_forces: bool = True, output_init: str = 'HeOrthogonal', name: str = 'output', **kwargs)
+.. py:class:: OutputBlock(emb_size_atom: int, emb_size_edge: int, emb_size_rbf: int, nHidden: int, num_targets: int, activation: str | None = None, direct_forces: bool = True, output_init: str = 'HeOrthogonal', name: str = 'output', **kwargs)
 
 
    Bases: :py:obj:`AtomUpdateBlock`
