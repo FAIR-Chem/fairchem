@@ -7,7 +7,7 @@ on:
     branches:
       - ocp_documentation
     paths:
-      - 'docs/*'
+      - 'docs/**'
       - '.github/workflows/docs.yml'
 
 # This job installs dependencies, build the book, and pushes it to `gh-pages`
