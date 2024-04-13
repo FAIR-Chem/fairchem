@@ -32,7 +32,7 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         if [ -f requirements-optional.txt ]; then pip install -r requirements-optional.txt; fi
-        pip install -e .[docs]
+        pip install -e .[docs,adsorbml]
         pip install git+https://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset.git
         pip install git+https://github.com/Open-Catalyst-Project/ocpapi.git
 

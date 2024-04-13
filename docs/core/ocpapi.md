@@ -12,8 +12,6 @@ jupytext:
 
 # ocpapi
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/Open-Catalyst-Project/ocpapi/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/Open-Catalyst-Project/ocpapi/tree/main) [![codecov](https://codecov.io/gh/Open-Catalyst-Project/ocpapi/graph/badge.svg?token=66Z7Y7QUUW)](https://codecov.io/gh/Open-Catalyst-Project/ocpapi)
-
 Python library for programmatic use of the [Open Catalyst Demo](https://open-catalyst.metademolab.com/). Users unfamiliar with the Open Catalyst Demo are encouraged to read more about it before continuing.
 
 ## Installation
@@ -34,6 +32,9 @@ The following examples are used to search for *OH binding sites on Pt surfaces. 
 This package relies heavily on [asyncio](https://docs.python.org/3/library/asyncio.html). The examples throughout this document can be copied to a python repl launched with:
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 %%sh
 $ python -m asyncio
 ```
@@ -41,11 +42,16 @@ $ python -m asyncio
 Alternatively, an async function can be run in a script by wrapping it with [asyncio.run()](https://docs.python.org/3/library/asyncio-runner.html#asyncio.run):
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 import asyncio
 from ocpapi import find_adsorbate_binding_sites
 
 asyncio.run(find_adsorbate_binding_sites(...))
 ```
+
+Since this is being evaluated as a jupyter notebook, ipython will handle this for you automatically!
 
 ### Search over all surfaces
 
