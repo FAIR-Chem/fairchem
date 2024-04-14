@@ -11,7 +11,7 @@ kernelspec:
   name: python3
 ---
 
-Mass inference
+Fast batched inference
 ------------------
 
 The ASE calculator is not necessarily the most efficient way to run a lot of computations. It is better to do a "mass inference" using a command line utility. We illustrate how to do that here. 

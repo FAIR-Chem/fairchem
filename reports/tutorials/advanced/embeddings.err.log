@@ -28,18 +28,53 @@ atoms = atoms.repeat((2, 2, 2))
 atoms.set_tags(np.ones(len(atoms)))
 atoms.calc = calc
 
-atoms.get_potential_energy()
+out = calc.embed(atoms)
 
-x1, x2, x3 = atoms.calc.results['h sum'], atoms.calc.results['x_E sum'], atoms.calc.results['x_F sum']
+x1, x2, x3 = out['h sum'], out['x_E sum'], out['x_F sum']
 ------------------
 
 
 [0;31m---------------------------------------------------------------------------[0m
-[0;31mKeyError[0m                                  Traceback (most recent call last)
-Cell [0;32mIn[4], line 13[0m
+[0;31mAttributeError[0m                            Traceback (most recent call last)
+Cell [0;32mIn[5], line 11[0m
+[1;32m      8[0m atoms[38;5;241m.[39mset_tags(np[38;5;241m.[39mones([38;5;28mlen[39m(atoms)))
 [1;32m      9[0m atoms[38;5;241m.[39mcalc [38;5;241m=[39m calc
-[1;32m     11[0m atoms[38;5;241m.[39mget_potential_energy()
-[0;32m---> 13[0m x1, x2, x3 [38;5;241m=[39m [43matoms[49m[38;5;241;43m.[39;49m[43mcalc[49m[38;5;241;43m.[39;49m[43mresults[49m[43m[[49m[38;5;124;43m'[39;49m[38;5;124;43mh sum[39;49m[38;5;124;43m'[39;49m[43m][49m, atoms[38;5;241m.[39mcalc[38;5;241m.[39mresults[[38;5;124m'[39m[38;5;124mx_E sum[39m[38;5;124m'[39m], atoms[38;5;241m.[39mcalc[38;5;241m.[39mresults[[38;5;124m'[39m[38;5;124mx_F sum[39m[38;5;124m'[39m]
+[0;32m---> 11[0m out [38;5;241m=[39m [43mcalc[49m[38;5;241;43m.[39;49m[43membed[49m[43m([49m[43matoms[49m[43m)[49m
+[1;32m     13[0m x1, x2, x3 [38;5;241m=[39m out[[38;5;124m'[39m[38;5;124mh sum[39m[38;5;124m'[39m], out[[38;5;124m'[39m[38;5;124mx_E sum[39m[38;5;124m'[39m], out[[38;5;124m'[39m[38;5;124mx_F sum[39m[38;5;124m'[39m]
 
-[0;31mKeyError[0m: 'h sum'
+File [0;32m~/work/ocp/ocp/docs/tutorials/advanced/embedding_monkeypatch.py:188[0m, in [0;36membed[0;34m(self, atoms)[0m
+[1;32m    186[0m [38;5;28;01mwith[39;00m torch[38;5;241m.[39mcuda[38;5;241m.[39mamp[38;5;241m.[39mautocast(enabled[38;5;241m=[39m[38;5;28mself[39m[38;5;241m.[39mtrainer[38;5;241m.[39mscaler [38;5;129;01mis[39;00m [38;5;129;01mnot[39;00m [38;5;28;01mNone[39;00m):
+[1;32m    187[0m     [38;5;28;01mwith[39;00m torch[38;5;241m.[39mno_grad():
+[0;32m--> 188[0m         out [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mtrainer[49m[38;5;241;43m.[39;49m[43mmodel[49m[43m([49m[43m[[49m[43mbatch_list[49m[43m][49m[43m)[49m
+[1;32m    190[0m [38;5;28;01mif[39;00m [38;5;28mself[39m[38;5;241m.[39mtrainer[38;5;241m.[39mnormalizers [38;5;129;01mis[39;00m [38;5;129;01mnot[39;00m [38;5;28;01mNone[39;00m [38;5;129;01mand[39;00m [38;5;124m"[39m[38;5;124mtarget[39m[38;5;124m"[39m [38;5;129;01min[39;00m [38;5;28mself[39m[38;5;241m.[39mtrainer[38;5;241m.[39mnormalizers:
+[1;32m    191[0m     out[[38;5;124m"[39m[38;5;124menergy[39m[38;5;124m"[39m] [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mtrainer[38;5;241m.[39mnormalizers[[38;5;124m"[39m[38;5;124mtarget[39m[38;5;124m"[39m][38;5;241m.[39mdenorm(out[[38;5;124m"[39m[38;5;124menergy[39m[38;5;124m"[39m])
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch/nn/modules/module.py:1511[0m, in [0;36mModule._wrapped_call_impl[0;34m(self, *args, **kwargs)[0m
+[1;32m   1509[0m     [38;5;28;01mreturn[39;00m [38;5;28mself[39m[38;5;241m.[39m_compiled_call_impl([38;5;241m*[39margs, [38;5;241m*[39m[38;5;241m*[39mkwargs)  [38;5;66;03m# type: ignore[misc][39;00m
+[1;32m   1510[0m [38;5;28;01melse[39;00m:
+[0;32m-> 1511[0m     [38;5;28;01mreturn[39;00m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43m_call_impl[49m[43m([49m[38;5;241;43m*[39;49m[43margs[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch/nn/modules/module.py:1520[0m, in [0;36mModule._call_impl[0;34m(self, *args, **kwargs)[0m
+[1;32m   1515[0m [38;5;66;03m# If we don't have any hooks, we want to skip the rest of the logic in[39;00m
+[1;32m   1516[0m [38;5;66;03m# this function, and just call forward.[39;00m
+[1;32m   1517[0m [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m ([38;5;28mself[39m[38;5;241m.[39m_backward_hooks [38;5;129;01mor[39;00m [38;5;28mself[39m[38;5;241m.[39m_backward_pre_hooks [38;5;129;01mor[39;00m [38;5;28mself[39m[38;5;241m.[39m_forward_hooks [38;5;129;01mor[39;00m [38;5;28mself[39m[38;5;241m.[39m_forward_pre_hooks
+[1;32m   1518[0m         [38;5;129;01mor[39;00m _global_backward_pre_hooks [38;5;129;01mor[39;00m _global_backward_hooks
+[1;32m   1519[0m         [38;5;129;01mor[39;00m _global_forward_hooks [38;5;129;01mor[39;00m _global_forward_pre_hooks):
+[0;32m-> 1520[0m     [38;5;28;01mreturn[39;00m [43mforward_call[49m[43m([49m[38;5;241;43m*[39;49m[43margs[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
+[1;32m   1522[0m [38;5;28;01mtry[39;00m:
+[1;32m   1523[0m     result [38;5;241m=[39m [38;5;28;01mNone[39;00m
+
+File [0;32m~/work/ocp/ocp/ocpmodels/common/utils.py:141[0m, in [0;36mconditional_grad.<locals>.decorator.<locals>.cls_method[0;34m(self, *args, **kwargs)[0m
+[1;32m    139[0m [38;5;28;01mif[39;00m [38;5;28mself[39m[38;5;241m.[39mregress_forces [38;5;129;01mand[39;00m [38;5;129;01mnot[39;00m [38;5;28mgetattr[39m([38;5;28mself[39m, [38;5;124m"[39m[38;5;124mdirect_forces[39m[38;5;124m"[39m, [38;5;241m0[39m):
+[1;32m    140[0m     f [38;5;241m=[39m dec(func)
+[0;32m--> 141[0m [38;5;28;01mreturn[39;00m [43mf[49m[43m([49m[38;5;28;43mself[39;49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[43margs[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
+
+File [0;32m~/work/ocp/ocp/docs/tutorials/advanced/embedding_monkeypatch.py:10[0m, in [0;36mnewforward[0;34m(self, data)[0m
+[1;32m      8[0m [38;5;129m@conditional_grad[39m(torch[38;5;241m.[39menable_grad())
+[1;32m      9[0m [38;5;28;01mdef[39;00m [38;5;21mnewforward[39m([38;5;28mself[39m, data):
+[0;32m---> 10[0m     pos [38;5;241m=[39m [43mdata[49m[38;5;241;43m.[39;49m[43mpos[49m
+[1;32m     11[0m     batch [38;5;241m=[39m data[38;5;241m.[39mbatch
+[1;32m     12[0m     atomic_numbers [38;5;241m=[39m data[38;5;241m.[39matomic_numbers[38;5;241m.[39mlong()
+
+[0;31mAttributeError[0m: 'list' object has no attribute 'pos'
 
