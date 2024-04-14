@@ -20,11 +20,7 @@ OCP works by computing an *embedding*, aka a high dimensional vector representat
 
 We used them to search for similar atomic structures.
 
-We can use them for diagnostic purposes, or clustering.
-
-In this example, we patch the GemNetOC model to save the embeddings so you can easily access them. This requires two changes. The first is in the GemNetOC model where the embeddings are saved, and the second is in the OCPCalculator to retrieve them.
-
-We provide 5 different kinds of embeddings:
+We can use them for diagnostic purposes, or clustering. For GemNet-OC, we provide 5 different kinds of embeddings:
 
 1. 'h' - This is an early block in the embedding calculation. You get the h-embedding for each atom
 2. 'h sum' - This is an early block in the embedding calculation. You get the h-embedding summed over each atom
@@ -32,13 +28,7 @@ We provide 5 different kinds of embeddings:
 4. 'x_E sum' - summed over atoms
 5. 'x_F sum' - This is related to the forces
 
-In principle other models could be adapted in a similar way. See [embedding-monkeypatch.py](./embedding-monkeypatch.py) for details on the patch. We simply run this notebook below to load it.
-
-The OCP project is still under active development, and it is not yet clear what the best way to access these embeddings are, so this code is not yet part of the main development branch. This code was adapted from a branch at https://github.com/Open-Catalyst-Project/ocp/blob/gnoc-embeddings.
-
-```{code-cell} ipython3
-import embedding_monkeypatch
-```
+In principle other models could be adapted in a similar way.
 
 # A diagnostic example
 

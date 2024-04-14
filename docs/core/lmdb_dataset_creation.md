@@ -34,7 +34,7 @@ import torch
 import os
 ```
 
-### Generate toy dataset: Relaxation of CO on Cu
+## Generate toy dataset: Relaxation of CO on Cu
 
 ```{code-cell} ipython3
 adslab = fcc100("Cu", size=(2, 2, 3))
@@ -54,7 +54,7 @@ raw_data = ase.io.read("CuCO_adslab.traj", ":")
 len(raw_data)
 ```
 
-### Initial Structure to Relaxed Energy/Structure (IS2RE/IS2RS) LMDBs
+## Initial Structure to Relaxed Energy/Structure (IS2RE/IS2RS) LMDBs
 
 IS2RE/IS2RS LMDBs utilize the SinglePointLmdb dataset. This dataset expects the data to be contained in a SINGLE LMDB file. In addition to the attributes defined by AtomsToGraph, the following attributes must be added for the IS2RE/IS2RS tasks:
 
@@ -69,7 +69,7 @@ As a demo, we will use the above generated data to create an IS2R* LMDB file.
 
 +++
 
-#### Initialize AtomsToGraph feature extractor
+### Initialize AtomsToGraph feature extractor
 
 ```{code-cell} ipython3
 a2g = AtomsToGraphs(
@@ -82,7 +82,7 @@ a2g = AtomsToGraphs(
 )
 ```
 
-#### Initialize LMDB file
+### Initialize LMDB file
 
 ```{code-cell} ipython3
 db = lmdb.open(
@@ -94,7 +94,7 @@ db = lmdb.open(
 )
 ```
 
-#### Write data to LMDB
+### Write data to LMDB
 
 ```{code-cell} ipython3
 def read_trajectory_extract_features(a2g, traj_path):
@@ -151,7 +151,7 @@ len(dataset)
 dataset[0]
 ```
 
-### Structure to Energy and Forces (S2EF) LMDBs
+## Structure to Energy and Forces (S2EF) LMDBs
 
 S2EF LMDBs utilize the TrajectoryLmdb dataset. This dataset expects a directory of LMDB files. In addition to the attributes defined by AtomsToGraph, the following attributes must be added for the S2EF task:
 
@@ -219,13 +219,13 @@ len(dataset)
 dataset[0]
 ```
 
-#### Advanced usage
+### Advanced usage
 
 TrajectoryLmdbDataset supports multiple LMDB files because the need to highly parallelize the dataset construction process. With OCP's largest split containing 135M+ frames, the need to parallelize the LMDB generation process for these was necessary. If you find yourself needing to deal with very large datasets we recommend parallelizing this process.
 
 +++
 
-### Interacting with the LMDBs
+## Interacting with the LMDBs
 
 Below we demonstrate how to interact with an LMDB to extract particular information.
 

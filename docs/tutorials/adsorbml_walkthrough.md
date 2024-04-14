@@ -80,7 +80,7 @@ checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_ca
 os.makedirs(f"data/{bulk}_{adsorbate}", exist_ok=True)
 
 # Define the calculator
-calc = OCPCalculator(checkpoint=checkpoint_path) # if you have a gpu, add `cpu=False` to speed up calculations
+calc = OCPCalculator(checkpoint_path=checkpoint_path) # if you have a gpu, add `cpu=False` to speed up calculations
 
 adslabs = [*heuristic_adslabs.atoms_list, *random_adslabs.atoms_list]
 # Set up the calculator
