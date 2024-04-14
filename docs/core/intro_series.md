@@ -1,4 +1,4 @@
-# Open Catalyst Intro Series
+# Why model atoms for climate?
 
 New to chemistry but excited to know how ML can help? Larry Zitnick has made a few intro videos for audiences without a computational chemistry background!
 

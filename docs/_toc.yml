@@ -6,6 +6,7 @@ root: index
 parts:
 - caption: Quickstart & Installation 
   chapters:
+  - file: videos/intro_series
   - file: core/install
   - file: core/quickstart
   - file: core/gotchas
@@ -33,7 +34,6 @@ parts:
   - file: core/model_faq
 - caption: Videos and Talks
   chapters:
-  - file: videos/intro_series
   - file: videos/technical_talks
 - caption: Case Studies & Tutorials
   chapters:
