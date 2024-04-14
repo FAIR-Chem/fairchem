@@ -3,6 +3,9 @@ from ocpmodels.models.gemnet_oc.gemnet_oc import GemNetOC
 import torch
 from ocpmodels.common.utils import conditional_grad, scatter_det
 from ocpmodels.models.gemnet_oc.utils import repeat_blocks
+from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from ocpmodels.datasets import data_list_collater
+
 
 
 @conditional_grad(torch.enable_grad())
@@ -168,10 +171,6 @@ def newforward(self, data):
 
 GemNetOC.forward = newforward
 
-# +
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-from ocpmodels.datasets import data_list_collater
-
 
 def embed(self, atoms):
     self.trainer._unwrapped_model.return_embedding = True
@@ -185,7 +184,7 @@ def embed(self, atoms):
 
     with torch.cuda.amp.autocast(enabled=self.trainer.scaler is not None):
         with torch.no_grad():
-            out = self.trainer.model([batch_list])
+            out = self.trainer.model(batch_list)
 
     if self.trainer.normalizers is not None and "target" in self.trainer.normalizers:
         out["energy"] = self.trainer.normalizers["target"].denorm(out["energy"])
