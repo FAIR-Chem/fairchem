@@ -204,6 +204,9 @@ idxs_to_keep = deduplicate(configs_for_deduplication, adsorbate.binding_indices[
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Flip through your configurations to check them out (and make sure deduplication looks good)
 print(idxs_to_keep)
 view_x3d_n(configs_for_deduplication[2].repeat((2,2,1)))
@@ -221,9 +224,12 @@ df
 
 ## Write VASP input files
 
-This assumes you have access to VASP pseudopotentials. The default VASP flags (which are equivalent to those used to make OC20) are located in `ocdata.utils.vasp`. Alternatively, you may pass your own vasp flags to the `write_vasp_input_files` function as `vasp_flags`
+This assumes you have access to VASP pseudopotentials and the right environment variables configured for ASE. The default VASP flags (which are equivalent to those used to make OC20) are located in `ocdata.utils.vasp`. Alternatively, you may pass your own vasp flags to the `write_vasp_input_files` function as `vasp_flags`. 
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Grab the 5 systems with the lowest energy
 configs_for_dft = df.sort_values(by = "relaxed_energy_ml").relaxed_atoms.tolist()[0:5]
 config_idxs = df.sort_values(by = "relaxed_energy_ml").relaxation_idx.tolist()[0:5]
