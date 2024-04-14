@@ -30,7 +30,7 @@ dependencies = [
 [project.optional-dependencies]  # add optional dependencies to be installed as pip install ocpmodels[dev]
 dev = ["pre-commit", "isort", "pytest", "pytest-cov", "coverage", "ruff"]
 docs = ["jupyter-book", "jupytext", "sphinx","sphinx-autoapi", "umap-learn"]
-adsorbml = ["dscribe","x3dase","skimage"]
+adsorbml = ["dscribe","x3dase","scikit-image"]
 
 [tool.setuptools.packages.find]
 include = ["ocpmodels", "experimental"]  # alternatively: `exclude = ["additional*"]`

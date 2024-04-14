@@ -79,7 +79,7 @@ plt.xlabel('Lattice constant (A)')
 plt.ylabel('Energy (eV)');
 ```
 
-Something is a little off in this equation of state, there is an unphysical bump in it. We now rerun this and get the embeddings. You simply call the `calc.embed` method. We need a reference configuration to compare too. We choose a lattice constant of 3.63 angstroms and compute three different embeddings.
+Something is a little off in this equation of state, there is an unphysical bump in it. We now rerun this and get the embeddings. You simply set `calc.trainer._unwrapped_model.return_embedding = True`  and the calculator will return useful embeddings if possible (e.g. for GemNet-OC). We need a reference configuration to compare too. We choose a lattice constant of 3.63 angstroms and compute three different embeddings.
 
 ```{code-cell} ipython3
 a0 = 3.63
@@ -93,7 +93,6 @@ atoms.set_tags(np.ones(len(atoms)))
 atoms.calc = calc
 
 atoms.get_potential_energy()
-out = calc.embed(atoms)
 
 x1, x2, x3 = atoms.calc.results['h sum'], atoms.calc.results['x_E sum'], atoms.calc.results['x_F sum']
 ```
