@@ -28,19 +28,18 @@ atoms = atoms.repeat((2, 2, 2))
 atoms.set_tags(np.ones(len(atoms)))
 atoms.calc = calc
 
-out = calc.embed(atoms)
+atoms.get_potential_energy()
 
-x1, x2, x3 = out['h sum'], out['x_E sum'], out['x_F sum']
+x1, x2, x3 = atoms.calc.results['h sum'], atoms.calc.results['x_E sum'], atoms.calc.results['x_F sum']
 ------------------
 
 
 [0;31m---------------------------------------------------------------------------[0m
-[0;31mAttributeError[0m                            Traceback (most recent call last)
-Cell [0;32mIn[4], line 11[0m
-[1;32m      8[0m atoms[38;5;241m.[39mset_tags(np[38;5;241m.[39mones([38;5;28mlen[39m(atoms)))
+[0;31mKeyError[0m                                  Traceback (most recent call last)
+Cell [0;32mIn[4], line 13[0m
 [1;32m      9[0m atoms[38;5;241m.[39mcalc [38;5;241m=[39m calc
-[0;32m---> 11[0m out [38;5;241m=[39m [43mcalc[49m[38;5;241;43m.[39;49m[43membed[49m(atoms)
-[1;32m     13[0m x1, x2, x3 [38;5;241m=[39m out[[38;5;124m'[39m[38;5;124mh sum[39m[38;5;124m'[39m], out[[38;5;124m'[39m[38;5;124mx_E sum[39m[38;5;124m'[39m], out[[38;5;124m'[39m[38;5;124mx_F sum[39m[38;5;124m'[39m]
+[1;32m     11[0m atoms[38;5;241m.[39mget_potential_energy()
+[0;32m---> 13[0m x1, x2, x3 [38;5;241m=[39m [43matoms[49m[38;5;241;43m.[39;49m[43mcalc[49m[38;5;241;43m.[39;49m[43mresults[49m[43m[[49m[38;5;124;43m'[39;49m[38;5;124;43mh sum[39;49m[38;5;124;43m'[39;49m[43m][49m, atoms[38;5;241m.[39mcalc[38;5;241m.[39mresults[[38;5;124m'[39m[38;5;124mx_E sum[39m[38;5;124m'[39m], atoms[38;5;241m.[39mcalc[38;5;241m.[39mresults[[38;5;124m'[39m[38;5;124mx_F sum[39m[38;5;124m'[39m]
 
-[0;31mAttributeError[0m: 'OCPCalculator' object has no attribute 'embed'
+[0;31mKeyError[0m: 'h sum'
 

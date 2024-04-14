@@ -33,7 +33,7 @@ Traceback (most recent call last):
                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 856, in _async_handle_timeout
     raise CellTimeoutError.error_from_timeout_and_cell(
-nbclient.exceptions.CellTimeoutError: A cell timed out while it was being executed, after 600 seconds.
+nbclient.exceptions.CellTimeoutError: A cell timed out while it was being executed, after 1200 seconds.
 The message was: Cell execution timed out.
 Here is a preview of the cell contents:
 -------------------

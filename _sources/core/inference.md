@@ -48,11 +48,6 @@ with ase.db.connect('full_data.db') as full_db:
 You have to choose a checkpoint to start with. The newer checkpoints may require too much memory for this environment. 
 
 ```{code-cell} ipython3
-import torch
-torch.set_num_threads(4)
-```
-
-```{code-cell} ipython3
 from ocpmodels.models.model_registry import available_pretrained_models
 print(available_pretrained_models)
 

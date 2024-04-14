@@ -18,63 +18,60 @@ Traceback (most recent call last):
     raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
 nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
 ------------------
-# Flip through your configurations to check them out (and make sure deduplication looks good)
-print(idxs_to_keep)
-view_x3d_n(configs_for_deduplication[2].repeat((2,2,1)))
+# Grab the 5 systems with the lowest energy
+configs_for_dft = df.sort_values(by = "relaxed_energy_ml").relaxed_atoms.tolist()[0:5]
+config_idxs = df.sort_values(by = "relaxed_energy_ml").relaxation_idx.tolist()[0:5]
+
+# Write the inputs
+for idx, config in enumerate(configs_for_dft):
+    os.mkdir(f"data/{config_idxs[idx]}")
+    write_vasp_input_files(config, outdir = f"data/{config_idxs[idx]}/")
 ------------------
 
------ stdout -----
-[7, 5, 3]
-------------------
 
 [0;31m---------------------------------------------------------------------------[0m
-[0;31mModuleNotFoundError[0m                       Traceback (most recent call last)
-Cell [0;32mIn[10], line 3[0m
-[1;32m      1[0m [38;5;66;03m# Flip through your configurations to check them out (and make sure deduplication looks good)[39;00m
-[1;32m      2[0m [38;5;28mprint[39m(idxs_to_keep)
-[0;32m----> 3[0m [43mview_x3d_n[49m[43m([49m[43mconfigs_for_deduplication[49m[43m[[49m[38;5;241;43m2[39;49m[43m][49m[38;5;241;43m.[39;49m[43mrepeat[49m[43m([49m[43m([49m[38;5;241;43m2[39;49m[43m,[49m[38;5;241;43m2[39;49m[43m,[49m[38;5;241;43m1[39;49m[43m)[49m[43m)[49m[43m)[49m
+[0;31mRuntimeError[0m                              Traceback (most recent call last)
+Cell [0;32mIn[13], line 8[0m
+[1;32m      6[0m [38;5;28;01mfor[39;00m idx, config [38;5;129;01min[39;00m [38;5;28menumerate[39m(configs_for_dft):
+[1;32m      7[0m     os[38;5;241m.[39mmkdir([38;5;124mf[39m[38;5;124m"[39m[38;5;124mdata/[39m[38;5;132;01m{[39;00mconfig_idxs[idx][38;5;132;01m}[39;00m[38;5;124m"[39m)
+[0;32m----> 8[0m     [43mwrite_vasp_input_files[49m[43m([49m[43mconfig[49m[43m,[49m[43m [49m[43moutdir[49m[43m [49m[38;5;241;43m=[39;49m[43m [49m[38;5;124;43mf[39;49m[38;5;124;43m"[39;49m[38;5;124;43mdata/[39;49m[38;5;132;43;01m{[39;49;00m[43mconfig_idxs[49m[43m[[49m[43midx[49m[43m][49m[38;5;132;43;01m}[39;49;00m[38;5;124;43m/[39;49m[38;5;124;43m"[39;49m[43m)[49m
 
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/x3dase/visualize.py:37[0m, in [0;36mview_x3d_n[0;34m(atoms, output, **kwargs)[0m
-[1;32m     26[0m [38;5;28;01mdef[39;00m [38;5;21mview_x3d_n[39m(atoms, output [38;5;241m=[39m [38;5;124m'[39m[38;5;124mx3dase.html[39m[38;5;124m'[39m, [38;5;241m*[39m[38;5;241m*[39mkwargs):
-[1;32m     27[0m [38;5;250m    [39m[38;5;124;03m"""[39;00m
-[1;32m     28[0m [38;5;124;03m    HTML <iframe> specifies an inline frame.[39;00m
-[1;32m     29[0m [38;5;124;03m    Creat a html file, and display the web page within jupyter notebook.[39;00m
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ocdata/utils/vasp.py:124[0m, in [0;36mwrite_vasp_input_files[0;34m(atoms, outdir, vasp_flags)[0m
+[1;32m    122[0m atoms, vasp_flags [38;5;241m=[39m _clean_up_inputs(atoms, vasp_flags[38;5;241m.[39mcopy())
+[1;32m    123[0m calc [38;5;241m=[39m Vasp(directory[38;5;241m=[39moutdir, [38;5;241m*[39m[38;5;241m*[39mvasp_flags)
+[0;32m--> 124[0m [43mcalc[49m[38;5;241;43m.[39;49m[43mwrite_input[49m[43m([49m[43matoms[49m[43m)[49m
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/calculators/vasp/vasp.py:471[0m, in [0;36mVasp.write_input[0;34m(self, atoms, properties, system_changes)[0m
+[1;32m    468[0m [38;5;28;01mif[39;00m [38;5;28mself[39m[38;5;241m.[39mdirectory [38;5;241m!=[39m os[38;5;241m.[39mcurdir [38;5;129;01mand[39;00m [38;5;129;01mnot[39;00m os[38;5;241m.[39mpath[38;5;241m.[39misdir([38;5;28mself[39m[38;5;241m.[39mdirectory):
+[1;32m    469[0m     os[38;5;241m.[39mmakedirs([38;5;28mself[39m[38;5;241m.[39mdirectory)
+[0;32m--> 471[0m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43minitialize[49m[43m([49m[43matoms[49m[43m)[49m
+[1;32m    473[0m GenerateVaspInput[38;5;241m.[39mwrite_input([38;5;28mself[39m, atoms, directory[38;5;241m=[39m[38;5;28mself[39m[38;5;241m.[39mdirectory)
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/calculators/vasp/create_input.py:1301[0m, in [0;36mGenerateVaspInput.initialize[0;34m(self, atoms)[0m
+[1;32m   1298[0m     [38;5;28mself[39m[38;5;241m.[39msymbol_count[38;5;241m.[39mappend([m, symbolcount[m]])
+[1;32m   1300[0m [38;5;66;03m# create pseudopotential list[39;00m
+[0;32m-> 1301[0m [38;5;28mself[39m[38;5;241m.[39mppp_list [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43m_build_pp_list[49m[43m([49m[43matoms[49m[43m,[49m
+[1;32m   1302[0m [43m                                    [49m[43msetups[49m[38;5;241;43m=[39;49m[43msetups[49m[43m,[49m
+[1;32m   1303[0m [43m                                    [49m[43mspecial_setups[49m[38;5;241;43m=[39;49m[43mspecial_setups[49m[43m)[49m
+[1;32m   1305[0m [38;5;28mself[39m[38;5;241m.[39mconverged [38;5;241m=[39m [38;5;28;01mNone[39;00m
+[1;32m   1306[0m [38;5;28mself[39m[38;5;241m.[39msetups_changed [38;5;241m=[39m [38;5;28;01mNone[39;00m
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/calculators/vasp/create_input.py:1204[0m, in [0;36mGenerateVaspInput._build_pp_list[0;34m(self, atoms, setups, special_setups)[0m
+[1;32m   1196[0m     [38;5;28;01melse[39;00m:
+[1;32m   1197[0m         msg [38;5;241m=[39m ([38;5;124m"""[39m[38;5;124mLooking for PP for [39m[38;5;132;01m{}[39;00m
+[1;32m   1198[0m [38;5;124m                The pseudopotentials are expected to be in:[39m
+[1;32m   1199[0m [38;5;124m                LDA:  $VASP_PP_PATH/potpaw/[39m
 [0;32m   (...)[0m
-[1;32m     35[0m [38;5;124;03m                file name of the html file.[39;00m
-[1;32m     36[0m [38;5;124;03m        """[39;00m
-[0;32m---> 37[0m     [43mwrite_x3d[49m[43m([49m[43moutput[49m[43m,[49m[43m [49m[43matoms[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
-[1;32m     38[0m     [38;5;28;01mreturn[39;00m IFrame(output, [38;5;124m'[39m[38;5;124m1000px[39m[38;5;124m'[39m, [38;5;124m'[39m[38;5;124m500px[39m[38;5;124m'[39m)
+[1;32m   1202[0m [38;5;124m                [39m
+[1;32m   1203[0m [38;5;124m                No pseudopotential for [39m[38;5;132;01m{}[39;00m[38;5;124m![39m[38;5;124m"""[39m[38;5;241m.[39mformat(potcar, symbol))
+[0;32m-> 1204[0m         [38;5;28;01mraise[39;00m [38;5;167;01mRuntimeError[39;00m(msg)
+[1;32m   1205[0m [38;5;28;01mreturn[39;00m ppp_list
 
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/x3dase/x3d.py:21[0m, in [0;36mwrite_x3d[0;34m(filename, atoms, format, **kwargs)[0m
-[1;32m     12[0m [38;5;250m[39m[38;5;124;03m"""Writes to html using X3DOM.[39;00m
-[1;32m     13[0m 
-[1;32m     14[0m [38;5;124;03mArgs:[39;00m
-[0;32m   (...)[0m
-[1;32m     18[0m [38;5;124;03m        to be readable by Blender. `None` to detect format based on file[39;00m
-[1;32m     19[0m [38;5;124;03m        extension ('.html' -> 'X3DOM', '.x3d' -> 'X3D')"""[39;00m
-[1;32m     20[0m obj [38;5;241m=[39m X3D(atoms, [38;5;241m*[39m[38;5;241m*[39mkwargs)
-[0;32m---> 21[0m [43mobj[49m[38;5;241;43m.[39;49m[43mwrite[49m[43m([49m[43mfilename[49m[43m,[49m[43m [49m[43mdatatype[49m[38;5;241;43m=[39;49m[38;5;28;43mformat[39;49m[43m)[49m
-
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/x3dase/x3d.py:78[0m, in [0;36mX3D.write[0;34m(self, filename, datatype, **kwargs)[0m
-[1;32m     76[0m bond_str [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mdraw_bonds()
-[1;32m     77[0m polyhedra_str [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mdraw_polyhedras()
-[0;32m---> 78[0m iso_str [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mget_isosurface[49m[43m([49m[43m)[49m
-[1;32m     79[0m marker_str [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mdraw_marker()
-[1;32m     80[0m [38;5;66;03m# animate[39;00m
-
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/x3dase/x3d.py:300[0m, in [0;36mX3D.get_isosurface[0;34m(self, volume, level, closed_edges, gradient_direction, color, icolor, transmit, verbose, step_size)[0m
-[1;32m    291[0m [38;5;28;01mdef[39;00m [38;5;21mget_isosurface[39m([38;5;28mself[39m, volume [38;5;241m=[39m [38;5;28;01mNone[39;00m, level [38;5;241m=[39m [38;5;241m0.02[39m,
-[1;32m    292[0m                 closed_edges [38;5;241m=[39m [38;5;28;01mFalse[39;00m, gradient_direction [38;5;241m=[39m [38;5;124m'[39m[38;5;124mdescent[39m[38;5;124m'[39m,
-[1;32m    293[0m                 color[38;5;241m=[39m([38;5;241m0.85[39m, [38;5;241m0.80[39m, [38;5;241m0.25[39m) , icolor [38;5;241m=[39m [38;5;28;01mNone[39;00m, transmit[38;5;241m=[39m[38;5;241m0.5[39m,
-[1;32m    294[0m                 verbose [38;5;241m=[39m [38;5;28;01mFalse[39;00m, step_size [38;5;241m=[39m [38;5;241m1[39m, ):
-[1;32m    295[0m [38;5;250m    [39m[38;5;124;03m'''[39;00m
-[1;32m    296[0m [38;5;124;03m    Computes an isosurface from a volume grid.[39;00m
-[1;32m    297[0m [38;5;124;03m    Parameters:    [39;00m
-[1;32m    298[0m [38;5;124;03m      'isosurface': [data, -0.002, 0.002],[39;00m
-[1;32m    299[0m [38;5;124;03m    '''[39;00m
-[0;32m--> 300[0m     [38;5;28;01mfrom[39;00m [38;5;21;01mskimage[39;00m [38;5;28;01mimport[39;00m measure
-[1;32m    301[0m     iso_str [38;5;241m=[39m []
-[1;32m    302[0m     [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m [38;5;28mself[39m[38;5;241m.[39misosurface: [38;5;28;01mreturn[39;00m iso_str
-
-[0;31mModuleNotFoundError[0m: No module named 'skimage'
+[0;31mRuntimeError[0m: Looking for PP for potpaw_PBE/Cu/POTCAR
+                        The pseudopotentials are expected to be in:
+                        LDA:  $VASP_PP_PATH/potpaw/
+                        PBE:  $VASP_PP_PATH/potpaw_PBE/
+                        PW91: $VASP_PP_PATH/potpaw_GGA/
+                        
+                        No pseudopotential for Cu!
 

@@ -49,6 +49,8 @@ import os
 checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 
 calc = OCPCalculator(checkpoint_path=checkpoint_path)
+calc.trainer._unwrapped_model.return_embedding = True
+
 ```
 
 ## Bulk Cu equation of state example
@@ -56,7 +58,6 @@ calc = OCPCalculator(checkpoint_path=checkpoint_path)
 Here we simply compute an equation of state by varying the lattice constant. You will see a small unphysical feature near 3.7 angstroms. We will investigate why that happens.
 
 ```{code-cell} ipython3
-#calc.trainer._unwrapped_model.return_embedding = False
 a0 = 3.63
 E = []
 
@@ -78,7 +79,7 @@ plt.xlabel('Lattice constant (A)')
 plt.ylabel('Energy (eV)');
 ```
 
-Something is a little off in this equation of state, there is an unphysical bump in it. We now rerun this and get the embeddings. You simply call the `calc.embed` method. We need a reference configuration to compare too. We choose a lattice constant of 3.63 angstroms and compute three different embeddings.
+Something is a little off in this equation of state, there is an unphysical bump in it. We now rerun this and get the embeddings. You simply set `calc.trainer._unwrapped_model.return_embedding = True`  and the calculator will return useful embeddings if possible (e.g. for GemNet-OC). We need a reference configuration to compare too. We choose a lattice constant of 3.63 angstroms and compute three different embeddings.
 
 ```{code-cell} ipython3
 a0 = 3.63
@@ -91,9 +92,9 @@ atoms = atoms.repeat((2, 2, 2))
 atoms.set_tags(np.ones(len(atoms)))
 atoms.calc = calc
 
-out = calc.embed(atoms)
+atoms.get_potential_energy()
 
-x1, x2, x3 = out['h sum'], out['x_E sum'], out['x_F sum']
+x1, x2, x3 = atoms.calc.results['h sum'], atoms.calc.results['x_E sum'], atoms.calc.results['x_F sum']
 ```
 
 Next, we loop over a grid of lattice constants, and we compare the cosine similarity of the embeddings for each one to the reference embeddings above. A similarity of 1 means they are the same, and as the similarity decreases it means the embbedings are more and more different (and so is the energy).
@@ -111,12 +112,12 @@ for a in LC:
                  pbc=True)
     atoms = atoms.repeat((2, 2, 2))
     atoms.set_tags(np.ones(len(atoms)))
+    atoms.get_potential_energy()
 
-    out = calc.embed(atoms)
     
-    cossim1.append(torch.cosine_similarity(x1, out["h sum"]).item())
-    cossim2.append(torch.cosine_similarity(x2, out["x_E sum"]).item())
-    cossim3.append(torch.cosine_similarity(x3, out["x_F sum"]).item())
+    cossim1.append(torch.cosine_similarity(x1, atoms.calc.results["h sum"]).item())
+    cossim2.append(torch.cosine_similarity(x2, atoms.calc.results["x_E sum"]).item())
+    cossim3.append(torch.cosine_similarity(x3, atoms.calc.results["x_F sum"]).item())
     E += [out['energy']]
 ```
 
@@ -152,17 +153,17 @@ We use this example to show that we can cluster structures by embedding similari
 from ase.build import bulk
 from ase.cluster import Octahedron
 
-calc.trainer._unwrapped_model.return_embedding = True
-
 embeddings = []
 labels = []
 
 oct = Octahedron('Cu', 2)
 oct.set_tags(np.ones(len(oct)))
+oct.calc = calc
 
 for i in range(20):
     oct.rattle(0.01)
-    embeddings += [calc.embed(oct)['x_E sum'][0].numpy()]
+    oct.get_potential_energy()
+    embeddings += [oct.calc.results['x_E sum'][0].numpy()]
     labels += [0]
 ```
 
@@ -170,10 +171,11 @@ for i in range(20):
 b = bulk('Cu')
 b = b.repeat((2, 2, 2))
 b.set_tags(np.ones(len(b)))
+b.calc = calc
 
 for i in range(40):
     b.rattle(0.01)
-    embeddings += [calc.embed(b)['x_E sum'][0].numpy()]
+    embeddings += [b.calc.results['x_E sum'][0].numpy()]
     labels += [1]
 ```
 
@@ -211,14 +213,15 @@ energies = []
 
 oct = Octahedron('Cu', 2)
 oct.set_tags(np.ones(len(oct)))
-
+oct.calc = calc
 for i in range(20):
     oct.rattle(0.01)
-    out = calc.embed(oct)
-    for a in out['h'][0]:
+    oct.get_potential_energy()
+
+    for a in oct.calc.results['h'][0]:
         embeddings += [a.numpy()]
         labels += [0]
-        energies += [out['energy']]
+        energies += [oct.calc.results['energy']]
 
 b = bulk('Cu')
 b = b.repeat((2, 2, 2))
@@ -226,11 +229,12 @@ b.set_tags(np.ones(len(b)))
 
 for i in range(20):
     b.rattle(0.01)
-    out = calc.embed(b)
-    for a in out['h'][0]:
+    b.get_potential_energy()
+
+    for a in b.calc.results['h'][0]:
         embeddings += [a.numpy()]
         labels += [1]
-        energies += [out['energy']]
+        energies += [b.calc.results['energy']]
         
 embeddings = np.array(embeddings)
 
@@ -266,17 +270,20 @@ data = vdict(space='cosine')
 
 ethanol = molecule('CH3CH2OH')
 ethanol.set_tags(np.ones(len(ethanol)))
-ethanol_emb = calc.embed(ethanol)
+ethanol.calc = calc
+ethanol.get_potential_energy()
+
+for i, atom in enumerate(ethanol):
+    data[ethanol.calc.results['x_E'][0][i].numpy()] = [i, ethanol]
+    
 
 methane = molecule('C2H6')
 methane.set_tags(np.ones(len(methane)))
-methane_emb = calc.embed(methane)
+methane.calc = calc
+methane.get_potential_energy()
 
-for i, atom in enumerate(ethanol):
-    data[ethanol_emb['x_E'][0][i].numpy()] = [i, ethanol]
-    
 for i, atom in enumerate(methane):
-    data[methane_emb['x_E'][0][i].numpy()] = [i, methane]
+    data[methane.calc.results['x_E'][0][i].numpy()] = [i, methane]
 ```
 
 Now we construct our "query". We inspect the Atoms object, see that the C atom is the first one, and then extract the embedding for that atom and save it in a variable.
@@ -284,12 +291,14 @@ Now we construct our "query". We inspect the Atoms object, see that the C atom i
 ```{code-cell} ipython3
 methanol = molecule('CH3OH')
 methanol.set_tags(np.ones(len(methanol)))
-methanol_emb = calc.embed(methanol)
+methanol.calc = calc
+methanol.get_potential_energy()
+
 methanol
 ```
 
 ```{code-cell} ipython3
-query = methanol_emb['x_E'][0][0].numpy()
+query = methanol.calc.results['x_E'][0][0].numpy()
 ```
 
 We run our search with the syntax like a dictionary. It returns the closest found match.
