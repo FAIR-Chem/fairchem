@@ -26,23 +26,26 @@ You can retrieve the dataset below. In this notebook we learn how to do "mass in
 ! [ ! -f data.db ]  && wget https://figshare.com/ndownloader/files/11948267 -O data.db 
 ```
 
-```{code-cell} ipython3
-! ase db data.db
-```
+
 
 Inference on this file will be fast if we have a gpu, but if we don't this could take a while. To keep things fast for the automated builds, we'll just select the first 10 structures so it's still approachable with just a CPU. 
 Comment or skip this block to use the whole dataset!
 
 ```{code-cell} ipython3
-! cp data.db full_data.db
+! mv data.db full_data.db
+
 import ase.db
 import numpy as np
 
 with ase.db.connect('full_data.db') as full_db:
-  with ase.db.connect('data.db') as subset_db:
+  with ase.db.connect('data.db',append=False) as subset_db:
     for i in range(1, 10):
       subset_db.write(full_db.get_atoms(i))
 
+```
+
+```{code-cell} ipython3
+! ase db data.db
 ```
 
 You have to choose a checkpoint to start with. The newer checkpoints may require too much memory for this environment. 

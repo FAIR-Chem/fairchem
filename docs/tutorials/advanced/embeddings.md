@@ -320,5 +320,5 @@ found.get_distance(0, 2), found.get_distance(1, 2)
 
 ```{code-cell} ipython3
 from ase.visualize.plot import plot_atoms
-plot_atoms(found);
+plot_atoms(found)
 ```

@@ -172,21 +172,22 @@ These steps are embarrassingly parallel, and can be launched that way to speed t
 
 The goal here is to relax each candidate adsorption geometry and save the results in a trajectory file we will analyze later. Each trajectory file will have the geometry and final energy of the relaxed structure. 
 
-It is somewhat time consuming to run this, so in this cell we only run one example.
+It is somewhat time consuming to run this, so in this cell we only run one example, and just the first 4 configurations for each adsorbate. 
 
 ```{code-cell} ipython3
 import time
 from tqdm import tqdm
 tinit = time.time()
 
-for bulk_src_id in tqdm(bulk_ids[1:2]): 
+# Note we're just doing the first bulk_id! 
+for bulk_src_id in tqdm(bulk_ids[:1]): 
     # Enumerate slabs and establish adsorbates
     bulk = Bulk(bulk_src_id_from_db=bulk_src_id, bulk_db_path="NRR_example_bulks.pkl")
     slab = Slab.from_bulk_get_specific_millers(bulk= bulk, specific_millers=(1, 1, 1))
 
-    # Perform heuristic placements
-    heuristic_adslabs_H = AdsorbateSlabConfig(slab[0], adsorbate_H, mode="heuristic")
-    heuristic_adslabs_NNH = AdsorbateSlabConfig(slab[0], adsorbate_NNH, mode="heuristic")
+    # Perform heuristic placements, note just 4 configs!
+    heuristic_adslabs_H = AdsorbateSlabConfig(slab[0], adsorbate_H, mode="heuristic")[:4]
+    heuristic_adslabs_NNH = AdsorbateSlabConfig(slab[0], adsorbate_NNH, mode="heuristic")[:4]
 
     #Run relaxations
     os.makedirs(f"data/{bulk_src_id}_H", exist_ok=True)
