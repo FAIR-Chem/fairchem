@@ -14,7 +14,7 @@ logo                        : logo.png  # A path to the book logo
 # See https://jupyterbook.org/content/execute.html
 execute:
   execute_notebooks: cache
-  timeout: 600
+  timeout: 1200
 
 # Define the name of the latex output file for PDF builds
 latex:
