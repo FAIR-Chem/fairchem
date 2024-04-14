@@ -30,7 +30,7 @@ You can retrieve the dataset below. In this notebook we learn how to do "mass in
 ! ase db data.db
 ```
 
-Inference on this file will be fast if we have a gpu, but if we don't this could take a while. To keep things fast for the automated builds, we'll just select the first 100 structures so it's still approachable with just a CPU. 
+Inference on this file will be fast if we have a gpu, but if we don't this could take a while. To keep things fast for the automated builds, we'll just select the first 10 structures so it's still approachable with just a CPU. 
 Comment or skip this block to use the whole dataset!
 
 ```{code-cell} ipython3
@@ -40,12 +40,17 @@ import numpy as np
 
 with ase.db.connect('full_data.db') as full_db:
   with ase.db.connect('data.db') as subset_db:
-    for i in range(1, 100):
+    for i in range(1, 10):
       subset_db.write(full_db.get_atoms(i))
 
 ```
 
 You have to choose a checkpoint to start with. The newer checkpoints may require too much memory for this environment. 
+
+```{code-cell} ipython3
+import torch
+torch.set_num_threads(4)
+```
 
 ```{code-cell} ipython3
 from ocpmodels.models.model_registry import available_pretrained_models

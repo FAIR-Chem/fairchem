@@ -14,7 +14,14 @@ kernelspec:
 Using OCP to enumerate adsorbates on alloy catalyst surfaces
 ======================================================
 
+
+
 In the previous example, we constructed slab models of adsorbates on desired sites. Here we leverage code to automate this process. The goal in this section is to generate candidate structures, compute energetics, and then filter out the most relevant ones.
+
+```{code-cell} ipython3
+import torch
+torch.set_num_threads(4)
+```
 
 ```{code-cell} ipython3
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator

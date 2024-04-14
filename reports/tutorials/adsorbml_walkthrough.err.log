@@ -18,34 +18,63 @@ Traceback (most recent call last):
     raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
 nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
 ------------------
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-from ocpmodels.models.model_registry import model_name_to_local_file
-import os
-
-checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
-
-os.makedirs(f"data/{bulk}_{adsorbate}", exist_ok=True)
-
-# Define the calculator
-calc = OCPCalculator(checkpoint=checkpoint_path) # if you have a gpu, add `cpu=False` to speed up calculations
-
-adslabs = [*heuristic_adslabs.atoms_list, *random_adslabs.atoms_list]
-# Set up the calculator
-for idx, adslab in enumerate(adslabs):
-    adslab.calc = calc
-    opt = BFGS(adslab, trajectory=f"data/{bulk}_{adsorbate}/{idx}.traj")
-    opt.run(fmax=0.05, steps=100) # For the AdsorbML results we used fmax = 0.02 and steps = 300, but we will use less strict values for brevity.
+# Flip through your configurations to check them out (and make sure deduplication looks good)
+print(idxs_to_keep)
+view_x3d_n(configs_for_deduplication[2].repeat((2,2,1)))
 ------------------
 
+----- stdout -----
+[7, 5, 3]
+------------------
 
 [0;31m---------------------------------------------------------------------------[0m
-[0;31mTypeError[0m                                 Traceback (most recent call last)
-Cell [0;32mIn[4], line 10[0m
-[1;32m      7[0m os[38;5;241m.[39mmakedirs([38;5;124mf[39m[38;5;124m"[39m[38;5;124mdata/[39m[38;5;132;01m{[39;00mbulk[38;5;132;01m}[39;00m[38;5;124m_[39m[38;5;132;01m{[39;00madsorbate[38;5;132;01m}[39;00m[38;5;124m"[39m, exist_ok[38;5;241m=[39m[38;5;28;01mTrue[39;00m)
-[1;32m      9[0m [38;5;66;03m# Define the calculator[39;00m
-[0;32m---> 10[0m calc [38;5;241m=[39m [43mOCPCalculator[49m[43m([49m[43mcheckpoint[49m[38;5;241;43m=[39;49m[43mcheckpoint_path[49m[43m)[49m [38;5;66;03m# if you have a gpu, add `cpu=False` to speed up calculations[39;00m
-[1;32m     12[0m adslabs [38;5;241m=[39m [[38;5;241m*[39mheuristic_adslabs[38;5;241m.[39matoms_list, [38;5;241m*[39mrandom_adslabs[38;5;241m.[39matoms_list]
-[1;32m     13[0m [38;5;66;03m# Set up the calculator[39;00m
+[0;31mModuleNotFoundError[0m                       Traceback (most recent call last)
+Cell [0;32mIn[10], line 3[0m
+[1;32m      1[0m [38;5;66;03m# Flip through your configurations to check them out (and make sure deduplication looks good)[39;00m
+[1;32m      2[0m [38;5;28mprint[39m(idxs_to_keep)
+[0;32m----> 3[0m [43mview_x3d_n[49m[43m([49m[43mconfigs_for_deduplication[49m[43m[[49m[38;5;241;43m2[39;49m[43m][49m[38;5;241;43m.[39;49m[43mrepeat[49m[43m([49m[43m([49m[38;5;241;43m2[39;49m[43m,[49m[38;5;241;43m2[39;49m[43m,[49m[38;5;241;43m1[39;49m[43m)[49m[43m)[49m[43m)[49m
 
-[0;31mTypeError[0m: OCPCalculator.__init__() got an unexpected keyword argument 'checkpoint'
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/x3dase/visualize.py:37[0m, in [0;36mview_x3d_n[0;34m(atoms, output, **kwargs)[0m
+[1;32m     26[0m [38;5;28;01mdef[39;00m [38;5;21mview_x3d_n[39m(atoms, output [38;5;241m=[39m [38;5;124m'[39m[38;5;124mx3dase.html[39m[38;5;124m'[39m, [38;5;241m*[39m[38;5;241m*[39mkwargs):
+[1;32m     27[0m [38;5;250m    [39m[38;5;124;03m"""[39;00m
+[1;32m     28[0m [38;5;124;03m    HTML <iframe> specifies an inline frame.[39;00m
+[1;32m     29[0m [38;5;124;03m    Creat a html file, and display the web page within jupyter notebook.[39;00m
+[0;32m   (...)[0m
+[1;32m     35[0m [38;5;124;03m                file name of the html file.[39;00m
+[1;32m     36[0m [38;5;124;03m        """[39;00m
+[0;32m---> 37[0m     [43mwrite_x3d[49m[43m([49m[43moutput[49m[43m,[49m[43m [49m[43matoms[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
+[1;32m     38[0m     [38;5;28;01mreturn[39;00m IFrame(output, [38;5;124m'[39m[38;5;124m1000px[39m[38;5;124m'[39m, [38;5;124m'[39m[38;5;124m500px[39m[38;5;124m'[39m)
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/x3dase/x3d.py:21[0m, in [0;36mwrite_x3d[0;34m(filename, atoms, format, **kwargs)[0m
+[1;32m     12[0m [38;5;250m[39m[38;5;124;03m"""Writes to html using X3DOM.[39;00m
+[1;32m     13[0m 
+[1;32m     14[0m [38;5;124;03mArgs:[39;00m
+[0;32m   (...)[0m
+[1;32m     18[0m [38;5;124;03m        to be readable by Blender. `None` to detect format based on file[39;00m
+[1;32m     19[0m [38;5;124;03m        extension ('.html' -> 'X3DOM', '.x3d' -> 'X3D')"""[39;00m
+[1;32m     20[0m obj [38;5;241m=[39m X3D(atoms, [38;5;241m*[39m[38;5;241m*[39mkwargs)
+[0;32m---> 21[0m [43mobj[49m[38;5;241;43m.[39;49m[43mwrite[49m[43m([49m[43mfilename[49m[43m,[49m[43m [49m[43mdatatype[49m[38;5;241;43m=[39;49m[38;5;28;43mformat[39;49m[43m)[49m
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/x3dase/x3d.py:78[0m, in [0;36mX3D.write[0;34m(self, filename, datatype, **kwargs)[0m
+[1;32m     76[0m bond_str [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mdraw_bonds()
+[1;32m     77[0m polyhedra_str [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mdraw_polyhedras()
+[0;32m---> 78[0m iso_str [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mget_isosurface[49m[43m([49m[43m)[49m
+[1;32m     79[0m marker_str [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mdraw_marker()
+[1;32m     80[0m [38;5;66;03m# animate[39;00m
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/x3dase/x3d.py:300[0m, in [0;36mX3D.get_isosurface[0;34m(self, volume, level, closed_edges, gradient_direction, color, icolor, transmit, verbose, step_size)[0m
+[1;32m    291[0m [38;5;28;01mdef[39;00m [38;5;21mget_isosurface[39m([38;5;28mself[39m, volume [38;5;241m=[39m [38;5;28;01mNone[39;00m, level [38;5;241m=[39m [38;5;241m0.02[39m,
+[1;32m    292[0m                 closed_edges [38;5;241m=[39m [38;5;28;01mFalse[39;00m, gradient_direction [38;5;241m=[39m [38;5;124m'[39m[38;5;124mdescent[39m[38;5;124m'[39m,
+[1;32m    293[0m                 color[38;5;241m=[39m([38;5;241m0.85[39m, [38;5;241m0.80[39m, [38;5;241m0.25[39m) , icolor [38;5;241m=[39m [38;5;28;01mNone[39;00m, transmit[38;5;241m=[39m[38;5;241m0.5[39m,
+[1;32m    294[0m                 verbose [38;5;241m=[39m [38;5;28;01mFalse[39;00m, step_size [38;5;241m=[39m [38;5;241m1[39m, ):
+[1;32m    295[0m [38;5;250m    [39m[38;5;124;03m'''[39;00m
+[1;32m    296[0m [38;5;124;03m    Computes an isosurface from a volume grid.[39;00m
+[1;32m    297[0m [38;5;124;03m    Parameters:    [39;00m
+[1;32m    298[0m [38;5;124;03m      'isosurface': [data, -0.002, 0.002],[39;00m
+[1;32m    299[0m [38;5;124;03m    '''[39;00m
+[0;32m--> 300[0m     [38;5;28;01mfrom[39;00m [38;5;21;01mskimage[39;00m [38;5;28;01mimport[39;00m measure
+[1;32m    301[0m     iso_str [38;5;241m=[39m []
+[1;32m    302[0m     [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m [38;5;28mself[39m[38;5;241m.[39misosurface: [38;5;28;01mreturn[39;00m iso_str
+
+[0;31mModuleNotFoundError[0m: No module named 'skimage'
 
