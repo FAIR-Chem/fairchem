@@ -338,12 +338,3 @@ There are also other models you could consider. Newer models tend to be more acc
 
 +++
 
-# Next steps
-
-You might want to check out the [gotchas](../gotchas) notebook. It has some examples of things we have seen go wrong before.
-
-The [advanced](../advanced) folder contains several concepts that are more advanced. These include:
-
-1. [Mass inference](../advanced/mass-inference) which is more efficient than the ASE calculator
-2. [Working with embeddings](../advanced/embeddings) which shows some ways to use the embeddings from OCP
-3. [Fine-tuning in python](../advanced/fine-tuning-in-python)

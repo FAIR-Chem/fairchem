@@ -36,14 +36,14 @@ from x3dase.visualize import view_x3d_n
 
 +++
 
-Be sure to set the path to the bulk and adsorbate pickle files in `ocdata/configs/paths.py` or pass the paths as an argument. The database pickles can be found in `ocdata/databases/pkls`. AdsorbML incorporates random placement, which is especially useful for more complicated adsorbates which may have many degrees of freedom. I have opted sample a few random placements and a few heuristic. Here I am using *CO on copper (1,1,1) as an example.
+AdsorbML incorporates random placement, which is especially useful for more complicated adsorbates which may have many degrees of freedom. I have opted sample a few random placements and a few heuristic. Here I am using *CO on copper (1,1,1) as an example.
 
 ```{code-cell} ipython3
 bulk_src_id = "mp-30"
 adsorbate_smiles = "*CO"
 
-bulk = Bulk(bulk_src_id_from_db = bulk_src_id, bulk_db_path = "your-path-here.pkl")
-adsorbate = Adsorbate(adsorbate_smiles_from_db=adsorbate_smiles, adsorbate_db_path = "your-path-here.pkl")
+bulk = Bulk(bulk_src_id_from_db = bulk_src_id)
+adsorbate = Adsorbate(adsorbate_smiles_from_db=adsorbate_smiles)
 slabs = Slab.from_bulk_get_specific_millers(bulk = bulk, specific_millers=(1,1,1))
 
 # There may be multiple slabs with this miller index.
@@ -71,7 +71,12 @@ There are 2 options for how to do this.
 You need to provide the calculator with a path to a model checkpoint file. That can be downloaded [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/MODELS.md)
 
 ```{code-cell} ipython3
-checkpoint_path = "your-path-here.pt"
+from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from ocpmodels.models.model_registry import model_name_to_local_file
+import os
+
+checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
+
 os.makedirs(f"data/{bulk}_{adsorbate}", exist_ok=True)
 
 # Define the calculator

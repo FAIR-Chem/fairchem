@@ -1,4 +1,17 @@
 Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 782, in _async_poll_for_reply
+    msg = await ensure_async(self.kc.shell_channel.get_msg(timeout=new_timeout))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/jupyter_core/utils/__init__.py", line 198, in ensure_async
+    result = await obj
+             ^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/jupyter_client/channels.py", line 315, in get_msg
+    raise Empty
+_queue.Empty
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/jupyter_cache/executors/utils.py", line 58, in single_nb_execution
     executenb(
   File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 1314, in execute
@@ -12,49 +25,24 @@ Traceback (most recent call last):
            ^^^^^^^^^^^^^^^
   File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 709, in async_execute
     await self.async_execute_cell(
-  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 1062, in async_execute_cell
-    await self._check_raise_for_error(cell, cell_index, exec_reply)
-  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
-    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
-nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
-------------------
-! cp data.db full_data.db
-import ase.db
-import numpy as np
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 1005, in async_execute_cell
+    exec_reply = await self.task_poll_for_reply
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 806, in _async_poll_for_reply
+    error_on_timeout_execute_reply = await self._async_handle_timeout(timeout, cell)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 856, in _async_handle_timeout
+    raise CellTimeoutError.error_from_timeout_and_cell(
+nbclient.exceptions.CellTimeoutError: A cell timed out while it was being executed, after 600 seconds.
+The message was: Cell execution timed out.
+Here is a preview of the cell contents:
+-------------------
+%%capture inference
+import time
+from ocpmodels.common.tutorial_utils import ocp_main
 
-with ase.db.connect('full_data.db') as full_db:
-  with ase.db.connect('data.db') as subset_db:
-    for i in range(100):
-      subset_db.write(full_db.get_atoms(i))
-
-------------------
-
-
-[0;31m---------------------------------------------------------------------------[0m
-[0;31mKeyError[0m                                  Traceback (most recent call last)
-Cell [0;32mIn[3], line 8[0m
-[1;32m      6[0m [38;5;28;01mwith[39;00m ase[38;5;241m.[39mdb[38;5;241m.[39mconnect([38;5;124m'[39m[38;5;124mdata.db[39m[38;5;124m'[39m) [38;5;28;01mas[39;00m subset_db:
-[1;32m      7[0m   [38;5;28;01mfor[39;00m i [38;5;129;01min[39;00m [38;5;28mrange[39m([38;5;241m100[39m):
-[0;32m----> 8[0m     subset_db[38;5;241m.[39mwrite([43mfull_db[49m[38;5;241;43m.[39;49m[43mget_atoms[49m[43m([49m[43mi[49m[43m)[49m)
-
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/db/core.py:418[0m, in [0;36mDatabase.get_atoms[0;34m(self, selection, attach_calculator, add_additional_information, **kwargs)[0m
-[1;32m    402[0m [38;5;28;01mdef[39;00m [38;5;21mget_atoms[39m([38;5;28mself[39m, selection[38;5;241m=[39m[38;5;28;01mNone[39;00m, attach_calculator[38;5;241m=[39m[38;5;28;01mFalse[39;00m,
-[1;32m    403[0m               add_additional_information[38;5;241m=[39m[38;5;28;01mFalse[39;00m, [38;5;241m*[39m[38;5;241m*[39mkwargs):
-[1;32m    404[0m [38;5;250m    [39m[38;5;124;03m"""Get Atoms object.[39;00m
-[1;32m    405[0m 
-[1;32m    406[0m [38;5;124;03m    selection: int, str or list[39;00m
-[0;32m   (...)[0m
-[1;32m    415[0m [38;5;124;03m    key-value pairs.[39;00m
-[1;32m    416[0m [38;5;124;03m    """[39;00m
-[0;32m--> 418[0m     row [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[43mselection[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
-[1;32m    419[0m     [38;5;28;01mreturn[39;00m row[38;5;241m.[39mtoatoms(attach_calculator, add_additional_information)
-
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/db/core.py:432[0m, in [0;36mDatabase.get[0;34m(self, selection, **kwargs)[0m
-[1;32m    430[0m rows [38;5;241m=[39m [38;5;28mlist[39m([38;5;28mself[39m[38;5;241m.[39mselect(selection, limit[38;5;241m=[39m[38;5;241m2[39m, [38;5;241m*[39m[38;5;241m*[39mkwargs))
-[1;32m    431[0m [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m rows:
-[0;32m--> 432[0m     [38;5;28;01mraise[39;00m [38;5;167;01mKeyError[39;00m([38;5;124m'[39m[38;5;124mno match[39m[38;5;124m'[39m)
-[1;32m    433[0m [38;5;28;01massert[39;00m [38;5;28mlen[39m(rows) [38;5;241m==[39m [38;5;241m1[39m, [38;5;124m'[39m[38;5;124mmore than one row matched[39m[38;5;124m'[39m
-[1;32m    434[0m [38;5;28;01mreturn[39;00m rows[[38;5;241m0[39m]
-
-[0;31mKeyError[0m: 'no match'
+t0 = time.time()
+! python {ocp_main()} --mode predict --config-yml {yml} --checkpoint {checkpoint_path} --amp
+print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
+-------------------
 

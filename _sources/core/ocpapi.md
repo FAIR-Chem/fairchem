@@ -122,6 +122,9 @@ Calls to `find_adsorbate_binding_sites()` will, by default, show the user all pe
 Run relaxations for all slabs that are generated:
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 from ocpapi import find_adsorbate_binding_sites, keep_all_slabs
 
 results = await find_adsorbate_binding_sites(
@@ -129,7 +132,6 @@ results = await find_adsorbate_binding_sites(
     bulk="mp-126",
     adslab_filter=keep_all_slabs(),
 )
-print(results)
 ```
 
 Run relaxations only for slabs with Miller Indices in the input set:
@@ -173,10 +175,6 @@ Relaxation results can be viewed in a web UI. For example, https://open-catalyst
 Extending the examples above, the URLs to visualize the results of relaxations on each Pt surface can be obtained with:
 
 ```{code-cell} ipython3
-urls = [
-    slab.ui_url
-    for slab in results.slabs
-]
 print([
     slab.ui_url
     for slab in results.slabs
@@ -200,6 +198,8 @@ results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
     bulk="mp-126",
     model="gemnet_oc_base_s2ef_all_md",
+    adslab_filter=keep_slabs_with_miller_indices([(1, 1, 1)]),
+
 )
 print([
     slab.ui_url

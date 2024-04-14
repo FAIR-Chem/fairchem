@@ -18,38 +18,34 @@ Traceback (most recent call last):
     raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
 nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
 ------------------
-bulk_src_id = "mp-30"
-adsorbate_smiles = "*CO"
+from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from ocpmodels.models.model_registry import model_name_to_local_file
+import os
 
-bulk = Bulk(bulk_src_id_from_db = bulk_src_id, bulk_db_path = "your-path-here.pkl")
-adsorbate = Adsorbate(adsorbate_smiles_from_db=adsorbate_smiles, adsorbate_db_path = "your-path-here.pkl")
-slabs = Slab.from_bulk_get_specific_millers(bulk = bulk, specific_millers=(1,1,1))
+checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
 
-# There may be multiple slabs with this miller index.
-# For demonstrative purposes we will take the first entry.
-slab = slabs[0]
+os.makedirs(f"data/{bulk}_{adsorbate}", exist_ok=True)
+
+# Define the calculator
+calc = OCPCalculator(checkpoint=checkpoint_path) # if you have a gpu, add `cpu=False` to speed up calculations
+
+adslabs = [*heuristic_adslabs.atoms_list, *random_adslabs.atoms_list]
+# Set up the calculator
+for idx, adslab in enumerate(adslabs):
+    adslab.calc = calc
+    opt = BFGS(adslab, trajectory=f"data/{bulk}_{adsorbate}/{idx}.traj")
+    opt.run(fmax=0.05, steps=100) # For the AdsorbML results we used fmax = 0.02 and steps = 300, but we will use less strict values for brevity.
 ------------------
 
 
 [0;31m---------------------------------------------------------------------------[0m
-[0;31mFileNotFoundError[0m                         Traceback (most recent call last)
-Cell [0;32mIn[2], line 4[0m
-[1;32m      1[0m bulk_src_id [38;5;241m=[39m [38;5;124m"[39m[38;5;124mmp-30[39m[38;5;124m"[39m
-[1;32m      2[0m adsorbate_smiles [38;5;241m=[39m [38;5;124m"[39m[38;5;124m*CO[39m[38;5;124m"[39m
-[0;32m----> 4[0m bulk [38;5;241m=[39m [43mBulk[49m[43m([49m[43mbulk_src_id_from_db[49m[43m [49m[38;5;241;43m=[39;49m[43m [49m[43mbulk_src_id[49m[43m,[49m[43m [49m[43mbulk_db_path[49m[43m [49m[38;5;241;43m=[39;49m[43m [49m[38;5;124;43m"[39;49m[38;5;124;43myour-path-here.pkl[39;49m[38;5;124;43m"[39;49m[43m)[49m
-[1;32m      5[0m adsorbate [38;5;241m=[39m Adsorbate(adsorbate_smiles_from_db[38;5;241m=[39madsorbate_smiles, adsorbate_db_path [38;5;241m=[39m [38;5;124m"[39m[38;5;124myour-path-here.pkl[39m[38;5;124m"[39m)
-[1;32m      6[0m slabs [38;5;241m=[39m Slab[38;5;241m.[39mfrom_bulk_get_specific_millers(bulk [38;5;241m=[39m bulk, specific_millers[38;5;241m=[39m([38;5;241m1[39m,[38;5;241m1[39m,[38;5;241m1[39m))
+[0;31mTypeError[0m                                 Traceback (most recent call last)
+Cell [0;32mIn[4], line 10[0m
+[1;32m      7[0m os[38;5;241m.[39mmakedirs([38;5;124mf[39m[38;5;124m"[39m[38;5;124mdata/[39m[38;5;132;01m{[39;00mbulk[38;5;132;01m}[39;00m[38;5;124m_[39m[38;5;132;01m{[39;00madsorbate[38;5;132;01m}[39;00m[38;5;124m"[39m, exist_ok[38;5;241m=[39m[38;5;28;01mTrue[39;00m)
+[1;32m      9[0m [38;5;66;03m# Define the calculator[39;00m
+[0;32m---> 10[0m calc [38;5;241m=[39m [43mOCPCalculator[49m[43m([49m[43mcheckpoint[49m[38;5;241;43m=[39;49m[43mcheckpoint_path[49m[43m)[49m [38;5;66;03m# if you have a gpu, add `cpu=False` to speed up calculations[39;00m
+[1;32m     12[0m adslabs [38;5;241m=[39m [[38;5;241m*[39mheuristic_adslabs[38;5;241m.[39matoms_list, [38;5;241m*[39mrandom_adslabs[38;5;241m.[39matoms_list]
+[1;32m     13[0m [38;5;66;03m# Set up the calculator[39;00m
 
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ocdata/core/bulk.py:54[0m, in [0;36mBulk.__init__[0;34m(self, bulk_atoms, bulk_id_from_db, bulk_src_id_from_db, bulk_db_path, bulk_db)[0m
-[1;32m     52[0m     [38;5;28mself[39m[38;5;241m.[39matoms, [38;5;28mself[39m[38;5;241m.[39msrc_id [38;5;241m=[39m bulk_obj[[38;5;124m"[39m[38;5;124matoms[39m[38;5;124m"[39m], bulk_obj[[38;5;124m"[39m[38;5;124msrc_id[39m[38;5;124m"[39m]
-[1;32m     53[0m [38;5;28;01melif[39;00m bulk_src_id_from_db [38;5;129;01mis[39;00m [38;5;129;01mnot[39;00m [38;5;28;01mNone[39;00m:
-[0;32m---> 54[0m     bulk_db [38;5;241m=[39m bulk_db [38;5;129;01mor[39;00m pickle[38;5;241m.[39mload([38;5;28;43mopen[39;49m[43m([49m[43mbulk_db_path[49m[43m,[49m[43m [49m[38;5;124;43m"[39;49m[38;5;124;43mrb[39;49m[38;5;124;43m"[39;49m[43m)[49m)
-[1;32m     55[0m     bulk_obj_tuple [38;5;241m=[39m [
-[1;32m     56[0m         (idx, bulk)
-[1;32m     57[0m         [38;5;28;01mfor[39;00m idx, bulk [38;5;129;01min[39;00m [38;5;28menumerate[39m(bulk_db)
-[1;32m     58[0m         [38;5;28;01mif[39;00m bulk[[38;5;124m"[39m[38;5;124msrc_id[39m[38;5;124m"[39m] [38;5;241m==[39m bulk_src_id_from_db
-[1;32m     59[0m     ]
-[1;32m     60[0m     [38;5;28;01mif[39;00m [38;5;28mlen[39m(bulk_obj_tuple) [38;5;241m<[39m [38;5;241m1[39m:
-
-[0;31mFileNotFoundError[0m: [Errno 2] No such file or directory: 'your-path-here.pkl'
+[0;31mTypeError[0m: OCPCalculator.__init__() got an unexpected keyword argument 'checkpoint'
 

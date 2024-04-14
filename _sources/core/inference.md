@@ -40,7 +40,7 @@ import numpy as np
 
 with ase.db.connect('full_data.db') as full_db:
   with ase.db.connect('data.db') as subset_db:
-    for i in range(100):
+    for i in range(1, 100):
       subset_db.write(full_db.get_atoms(i))
 
 ```

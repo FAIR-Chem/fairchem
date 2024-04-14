@@ -164,7 +164,10 @@ calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
 
 ```{code-cell} ipython3
+%%capture
 from ase.build import molecule
+import numpy as np
+
 atoms = molecule('H2O')
 atoms.set_tags(np.ones(len(atoms)))
 atoms.set_calculator(calc)
@@ -186,6 +189,7 @@ calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
 
 ```{code-cell} ipython3
+%%capture
 atoms = molecule('CH4')
 atoms.set_calculator(calc)
 atoms.get_potential_energy()  # error
@@ -201,7 +205,6 @@ atoms.get_potential_energy()
 Not all models require tags though. This EquiformerV2 model does not use them. This is another detail that is important to keep in mind.
 
 ```{code-cell} ipython3
-%%capture
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 from ocpmodels.models.model_registry import model_name_to_local_file
 import os
