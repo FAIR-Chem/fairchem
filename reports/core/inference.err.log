@@ -18,78 +18,25 @@ Traceback (most recent call last):
     raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
 nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
 ------------------
-! mv data.db full_data.db
-
-import ase.db
 import numpy as np
-
-with ase.db.connect('full_data.db') as full_db:
-  with ase.db.connect('data.db',append=False) as subset_db:
-    # Select 50 random points for the subset, ASE DB ids start at 1
-    for i in np.random.choice(list(range(1,len(full_db)+1)),size=50,replace=False):
-      subset_db.write(full_db.get_atoms(i))
+results = np.load(f'{d}/s2ef_predictions.npz', allow_pickle=True)
+results.files
 ------------------
 
 
 [0;31m---------------------------------------------------------------------------[0m
-[0;31mAttributeError[0m                            Traceback (most recent call last)
-Cell [0;32mIn[2], line 10[0m
-[1;32m      7[0m [38;5;28;01mwith[39;00m ase[38;5;241m.[39mdb[38;5;241m.[39mconnect([38;5;124m'[39m[38;5;124mdata.db[39m[38;5;124m'[39m,append[38;5;241m=[39m[38;5;28;01mFalse[39;00m) [38;5;28;01mas[39;00m subset_db:
-[1;32m      8[0m   [38;5;66;03m# Select 50 random points for the subset, ASE DB ids start at 1[39;00m
-[1;32m      9[0m   [38;5;28;01mfor[39;00m i [38;5;129;01min[39;00m np[38;5;241m.[39mrandom[38;5;241m.[39mchoice([38;5;28mlist[39m([38;5;28mrange[39m([38;5;241m1[39m,[38;5;28mlen[39m(full_db)[38;5;241m+[39m[38;5;241m1[39m)),size[38;5;241m=[39m[38;5;241m50[39m,replace[38;5;241m=[39m[38;5;28;01mFalse[39;00m):
-[0;32m---> 10[0m     subset_db[38;5;241m.[39mwrite([43mfull_db[49m[38;5;241;43m.[39;49m[43mget_atoms[49m[43m([49m[43mi[49m[43m)[49m)
+[0;31mFileNotFoundError[0m                         Traceback (most recent call last)
+Cell [0;32mIn[11], line 2[0m
+[1;32m      1[0m [38;5;28;01mimport[39;00m [38;5;21;01mnumpy[39;00m [38;5;28;01mas[39;00m [38;5;21;01mnp[39;00m
+[0;32m----> 2[0m results [38;5;241m=[39m [43mnp[49m[38;5;241;43m.[39;49m[43mload[49m[43m([49m[38;5;124;43mf[39;49m[38;5;124;43m'[39;49m[38;5;132;43;01m{[39;49;00m[43md[49m[38;5;132;43;01m}[39;49;00m[38;5;124;43m/s2ef_predictions.npz[39;49m[38;5;124;43m'[39;49m[43m,[49m[43m [49m[43mallow_pickle[49m[38;5;241;43m=[39;49m[38;5;28;43;01mTrue[39;49;00m[43m)[49m
+[1;32m      3[0m results[38;5;241m.[39mfiles
 
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/db/core.py:418[0m, in [0;36mDatabase.get_atoms[0;34m(self, selection, attach_calculator, add_additional_information, **kwargs)[0m
-[1;32m    402[0m [38;5;28;01mdef[39;00m [38;5;21mget_atoms[39m([38;5;28mself[39m, selection[38;5;241m=[39m[38;5;28;01mNone[39;00m, attach_calculator[38;5;241m=[39m[38;5;28;01mFalse[39;00m,
-[1;32m    403[0m               add_additional_information[38;5;241m=[39m[38;5;28;01mFalse[39;00m, [38;5;241m*[39m[38;5;241m*[39mkwargs):
-[1;32m    404[0m [38;5;250m    [39m[38;5;124;03m"""Get Atoms object.[39;00m
-[1;32m    405[0m 
-[1;32m    406[0m [38;5;124;03m    selection: int, str or list[39;00m
-[0;32m   (...)[0m
-[1;32m    415[0m [38;5;124;03m    key-value pairs.[39;00m
-[1;32m    416[0m [38;5;124;03m    """[39;00m
-[0;32m--> 418[0m     row [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[43mselection[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
-[1;32m    419[0m     [38;5;28;01mreturn[39;00m row[38;5;241m.[39mtoatoms(attach_calculator, add_additional_information)
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/numpy/lib/npyio.py:405[0m, in [0;36mload[0;34m(file, mmap_mode, allow_pickle, fix_imports, encoding, max_header_size)[0m
+[1;32m    403[0m     own_fid [38;5;241m=[39m [38;5;28;01mFalse[39;00m
+[1;32m    404[0m [38;5;28;01melse[39;00m:
+[0;32m--> 405[0m     fid [38;5;241m=[39m stack[38;5;241m.[39menter_context([38;5;28;43mopen[39;49m[43m([49m[43mos_fspath[49m[43m([49m[43mfile[49m[43m)[49m[43m,[49m[43m [49m[38;5;124;43m"[39;49m[38;5;124;43mrb[39;49m[38;5;124;43m"[39;49m[43m)[49m)
+[1;32m    406[0m     own_fid [38;5;241m=[39m [38;5;28;01mTrue[39;00m
+[1;32m    408[0m [38;5;66;03m# Code to distinguish from NumPy binary files and pickles.[39;00m
 
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/db/core.py:430[0m, in [0;36mDatabase.get[0;34m(self, selection, **kwargs)[0m
-[1;32m    424[0m [38;5;28;01mdef[39;00m [38;5;21mget[39m([38;5;28mself[39m, selection[38;5;241m=[39m[38;5;28;01mNone[39;00m, [38;5;241m*[39m[38;5;241m*[39mkwargs):
-[1;32m    425[0m [38;5;250m    [39m[38;5;124;03m"""Select a single row and return it as a dictionary.[39;00m
-[1;32m    426[0m 
-[1;32m    427[0m [38;5;124;03m    selection: int, str or list[39;00m
-[1;32m    428[0m [38;5;124;03m        See the select() method.[39;00m
-[1;32m    429[0m [38;5;124;03m    """[39;00m
-[0;32m--> 430[0m     rows [38;5;241m=[39m [38;5;28;43mlist[39;49m[43m([49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mselect[49m[43m([49m[43mselection[49m[43m,[49m[43m [49m[43mlimit[49m[38;5;241;43m=[39;49m[38;5;241;43m2[39;49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m[43m)[49m
-[1;32m    431[0m     [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m rows:
-[1;32m    432[0m         [38;5;28;01mraise[39;00m [38;5;167;01mKeyError[39;00m([38;5;124m'[39m[38;5;124mno match[39m[38;5;124m'[39m)
-
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/parallel.py:275[0m, in [0;36mparallel_generator.<locals>.new_generator[0;34m(*args, **kwargs)[0m
-[1;32m    269[0m [38;5;129m@functools[39m[38;5;241m.[39mwraps(generator)
-[1;32m    270[0m [38;5;28;01mdef[39;00m [38;5;21mnew_generator[39m([38;5;241m*[39margs, [38;5;241m*[39m[38;5;241m*[39mkwargs):
-[1;32m    271[0m     [38;5;28;01mif[39;00m (world[38;5;241m.[39msize [38;5;241m==[39m [38;5;241m1[39m [38;5;129;01mor[39;00m
-[1;32m    272[0m         args [38;5;129;01mand[39;00m [38;5;28mgetattr[39m(args[[38;5;241m0[39m], [38;5;124m'[39m[38;5;124mserial[39m[38;5;124m'[39m, [38;5;28;01mFalse[39;00m) [38;5;129;01mor[39;00m
-[1;32m    273[0m         [38;5;129;01mnot[39;00m kwargs[38;5;241m.[39mpop([38;5;124m'[39m[38;5;124mparallel[39m[38;5;124m'[39m, [38;5;28;01mTrue[39;00m)):
-[1;32m    274[0m         [38;5;66;03m# Disable:[39;00m
-[0;32m--> 275[0m [43m        [49m[38;5;28;43;01mfor[39;49;00m[43m [49m[43mresult[49m[43m [49m[38;5;129;43;01min[39;49;00m[43m [49m[43mgenerator[49m[43m([49m[38;5;241;43m*[39;49m[43margs[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m[43m:[49m
-[1;32m    276[0m [43m            [49m[38;5;28;43;01myield[39;49;00m[43m [49m[43mresult[49m
-[1;32m    277[0m         [38;5;28;01mreturn[39;00m
-
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/db/core.py:485[0m, in [0;36mDatabase.select[0;34m(self, selection, filter, explain, verbosity, limit, offset, sort, include_data, columns, **kwargs)[0m
-[1;32m    482[0m     [38;5;28;01melif[39;00m sort[38;5;241m.[39mlstrip([38;5;124m'[39m[38;5;124m-[39m[38;5;124m'[39m) [38;5;241m==[39m [38;5;124m'[39m[38;5;124muser[39m[38;5;124m'[39m:
-[1;32m    483[0m         sort [38;5;241m+[39m[38;5;241m=[39m [38;5;124m'[39m[38;5;124mname[39m[38;5;124m'[39m
-[0;32m--> 485[0m keys, cmps [38;5;241m=[39m [43mparse_selection[49m[43m([49m[43mselection[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
-[1;32m    486[0m [38;5;28;01mfor[39;00m row [38;5;129;01min[39;00m [38;5;28mself[39m[38;5;241m.[39m_select(keys, cmps, explain[38;5;241m=[39mexplain,
-[1;32m    487[0m                         verbosity[38;5;241m=[39mverbosity,
-[1;32m    488[0m                         limit[38;5;241m=[39mlimit, offset[38;5;241m=[39moffset, sort[38;5;241m=[39msort,
-[1;32m    489[0m                         include_data[38;5;241m=[39minclude_data,
-[1;32m    490[0m                         columns[38;5;241m=[39mcolumns):
-[1;32m    491[0m     [38;5;28;01mif[39;00m [38;5;28mfilter[39m [38;5;129;01mis[39;00m [38;5;28;01mNone[39;00m [38;5;129;01mor[39;00m [38;5;28mfilter[39m(row):
-
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/db/core.py:227[0m, in [0;36mparse_selection[0;34m(selection, **kwargs)[0m
-[1;32m    225[0m     expressions [38;5;241m=[39m selection
-[1;32m    226[0m [38;5;28;01melse[39;00m:
-[0;32m--> 227[0m     expressions [38;5;241m=[39m [w[38;5;241m.[39mstrip() [38;5;28;01mfor[39;00m w [38;5;129;01min[39;00m [43mselection[49m[38;5;241;43m.[39;49m[43msplit[49m([38;5;124m'[39m[38;5;124m,[39m[38;5;124m'[39m)]
-[1;32m    228[0m keys [38;5;241m=[39m []
-[1;32m    229[0m comparisons [38;5;241m=[39m []
-
-[0;31mAttributeError[0m: 'numpy.int64' object has no attribute 'split'
+[0;31mFileNotFoundError[0m: [Errno 2] No such file or directory: './results/2024-04-15-17-18-56/s2ef_predictions.npz'
 

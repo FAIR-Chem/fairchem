@@ -37,11 +37,11 @@ nbclient.exceptions.CellTimeoutError: A cell timed out while it was being execut
 The message was: Cell execution timed out.
 Here is a preview of the cell contents:
 -------------------
-with new_trainer_context(config=config, args=args) as ctx:
-    config = ctx.config
-    task = ctx.task
-    trainer = ctx.trainer
-    task.setup(trainer)
-    task.run()
+import time
+from ocpmodels.common.tutorial_utils import ocp_main
+
+t0 = time.time()
+! python {ocp_main()} --mode train --config-yml {yml} --checkpoint {checkpoint_path} --run-dir fine-tuning --identifier ft-oxides --amp > train.txt 2>&1 
+print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
 -------------------
 
