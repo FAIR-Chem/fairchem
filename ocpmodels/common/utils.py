@@ -1239,12 +1239,13 @@ def update_config(base_config):
                     "magnitude_error",
                 ],
             },
+            "primary_metric": "forces_mae"
         }
         if "primary_metric" in config["task"]:
             _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
-        elif "primary_metric" in config["eval_metrics"]:
+        elif "eval_metrics" in config and "primary_metric" in config["eval_metrics"]:
             _eval_metrics["primary_metric"] = config["eval_metrics"]["primary_metric"]
-            
+
         ### Define outputs
         _outputs = {
             "energy": {"level": "system"},
