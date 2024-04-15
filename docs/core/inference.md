@@ -23,7 +23,7 @@ Boes, J. R., Groenenboom, M. C., Keith, J. A., & Kitchin, J. R. (2016). Neural n
 You can retrieve the dataset below. In this notebook we learn how to do "mass inference" without an ASE calculator. You do this by creating a config.yml file, and running the `main.py` command line utility.
 
 ```{code-cell} ipython3
-! [ ! -f data.db ]  && wget https://figshare.com/ndownloader/files/11948267 -O data.db 
+! wget https://figshare.com/ndownloader/files/11948267 -O data.db 
 ```
 
 
@@ -53,7 +53,6 @@ You have to choose a checkpoint to start with. The newer checkpoints may require
 ```{code-cell} ipython3
 from ocpmodels.models.model_registry import available_pretrained_models
 print(available_pretrained_models)
-
 ```
 
 ```{code-cell} ipython3
@@ -67,7 +66,6 @@ checkpoint_path
 We have to update our configuration yml file with the dataset. It is necessary to specify the train and test set for some reason. 
 
 ```{code-cell} ipython3
-
 from ocpmodels.common.tutorial_utils import generate_yml_config
 yml = generate_yml_config(checkpoint_path, 'config.yml',
                    delete=['cmd', 'logger', 'task', 'model_attributes',
