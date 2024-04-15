@@ -185,9 +185,9 @@ for bulk_src_id in tqdm(bulk_ids[:1]):
     bulk = Bulk(bulk_src_id_from_db=bulk_src_id, bulk_db_path="NRR_example_bulks.pkl")
     slab = Slab.from_bulk_get_specific_millers(bulk= bulk, specific_millers=(1, 1, 1))
 
-    # Perform heuristic placements, note just 4 configs!
-    heuristic_adslabs_H = AdsorbateSlabConfig(slab[0], adsorbate_H, mode="heuristic")[:4]
-    heuristic_adslabs_NNH = AdsorbateSlabConfig(slab[0], adsorbate_NNH, mode="heuristic")[:4]
+    # Perform heuristic placements
+    heuristic_adslabs_H = AdsorbateSlabConfig(slab[0], adsorbate_H, mode="heuristic")
+    heuristic_adslabs_NNH = AdsorbateSlabConfig(slab[0], adsorbate_NNH, mode="heuristic")
 
     #Run relaxations
     os.makedirs(f"data/{bulk_src_id}_H", exist_ok=True)
@@ -196,8 +196,8 @@ for bulk_src_id in tqdm(bulk_ids[:1]):
     print(f'{len(heuristic_adslabs_H.atoms_list)} H slabs to compute for {bulk_src_id}')
     print(f'{len(heuristic_adslabs_NNH.atoms_list)} NNH slabs to compute for {bulk_src_id}')
 
-    # Set up the calculator
-    for idx, adslab in enumerate(heuristic_adslabs_H.atoms_list):
+    # Set up the calculator, note we're doing just the first 4 configs to keep this fast for the online documentation!
+    for idx, adslab in enumerate(heuristic_adslabs_H.atoms_list[:4]):
         t0 = time.time()
         adslab.calc = calc
         print(f'Running data/{bulk_src_id}_H/{idx}')
@@ -205,7 +205,8 @@ for bulk_src_id in tqdm(bulk_ids[:1]):
         opt.run(fmax=0.05, steps=20)
         print(f'  Elapsed time: {time.time() - t0:1.1f} seconds for data/{bulk_src_id}_H/{idx}')
         
-    for idx, adslab in enumerate(heuristic_adslabs_NNH.atoms_list):
+    # Set up the calculator, note we're doing just the first 4 configs to keep this fast for the online documentation!
+    for idx, adslab in enumerate(heuristic_adslabs_NNH.atoms_list[:4]):
         t0 = time.time()
         adslab.calc = calc
         print(f'Running data/{bulk_src_id}_NNH/{idx}')

@@ -18,25 +18,30 @@ Traceback (most recent call last):
     raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
 nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
 ------------------
-import numpy as np
-results = np.load(f'{d}/s2ef_predictions.npz', allow_pickle=True)
-results.files
+! mv data.db full_data.db
+
+import ase.db
+import random
+
+with ase.db.connect('full_data.db') as full_db:
+  with ase.db.connect('data.db',append=False) as subset_db:
+
+    # Select 50 random points for the subset!
+    for i in random.shuffled(range(1,len(full_db)))[:50]:
+      subset_db.write(full_db.get_atoms(i))
+
 ------------------
 
 
 [0;31m---------------------------------------------------------------------------[0m
-[0;31mFileNotFoundError[0m                         Traceback (most recent call last)
-Cell [0;32mIn[11], line 2[0m
-[1;32m      1[0m [38;5;28;01mimport[39;00m [38;5;21;01mnumpy[39;00m [38;5;28;01mas[39;00m [38;5;21;01mnp[39;00m
-[0;32m----> 2[0m results [38;5;241m=[39m [43mnp[49m[38;5;241;43m.[39;49m[43mload[49m[43m([49m[38;5;124;43mf[39;49m[38;5;124;43m'[39;49m[38;5;132;43;01m{[39;49;00m[43md[49m[38;5;132;43;01m}[39;49;00m[38;5;124;43m/s2ef_predictions.npz[39;49m[38;5;124;43m'[39;49m[43m,[49m[43m [49m[43mallow_pickle[49m[38;5;241;43m=[39;49m[38;5;28;43;01mTrue[39;49;00m[43m)[49m
-[1;32m      3[0m results[38;5;241m.[39mfiles
+[0;31mAttributeError[0m                            Traceback (most recent call last)
+Cell [0;32mIn[2], line 10[0m
+[1;32m      6[0m [38;5;28;01mwith[39;00m ase[38;5;241m.[39mdb[38;5;241m.[39mconnect([38;5;124m'[39m[38;5;124mfull_data.db[39m[38;5;124m'[39m) [38;5;28;01mas[39;00m full_db:
+[1;32m      7[0m   [38;5;28;01mwith[39;00m ase[38;5;241m.[39mdb[38;5;241m.[39mconnect([38;5;124m'[39m[38;5;124mdata.db[39m[38;5;124m'[39m,append[38;5;241m=[39m[38;5;28;01mFalse[39;00m) [38;5;28;01mas[39;00m subset_db:
+[1;32m      8[0m 
+[1;32m      9[0m     [38;5;66;03m# Select 50 random points for the subset![39;00m
+[0;32m---> 10[0m     [38;5;28;01mfor[39;00m i [38;5;129;01min[39;00m [43mrandom[49m[38;5;241;43m.[39;49m[43mshuffled[49m([38;5;28mrange[39m([38;5;241m1[39m,[38;5;28mlen[39m(full_db)))[:[38;5;241m50[39m]:
+[1;32m     11[0m       subset_db[38;5;241m.[39mwrite(full_db[38;5;241m.[39mget_atoms(i))
 
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/numpy/lib/npyio.py:405[0m, in [0;36mload[0;34m(file, mmap_mode, allow_pickle, fix_imports, encoding, max_header_size)[0m
-[1;32m    403[0m     own_fid [38;5;241m=[39m [38;5;28;01mFalse[39;00m
-[1;32m    404[0m [38;5;28;01melse[39;00m:
-[0;32m--> 405[0m     fid [38;5;241m=[39m stack[38;5;241m.[39menter_context([38;5;28;43mopen[39;49m[43m([49m[43mos_fspath[49m[43m([49m[43mfile[49m[43m)[49m[43m,[49m[43m [49m[38;5;124;43m"[39;49m[38;5;124;43mrb[39;49m[38;5;124;43m"[39;49m[43m)[49m)
-[1;32m    406[0m     own_fid [38;5;241m=[39m [38;5;28;01mTrue[39;00m
-[1;32m    408[0m [38;5;66;03m# Code to distinguish from NumPy binary files and pickles.[39;00m
-
-[0;31mFileNotFoundError[0m: [Errno 2] No such file or directory: './results/2024-04-14-21-28-32/s2ef_predictions.npz'
+[0;31mAttributeError[0m: module 'random' has no attribute 'shuffled'
 
