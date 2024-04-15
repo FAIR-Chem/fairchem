@@ -1,11 +1,10 @@
+import collections.abc
 import copy
 import glob
 import os
 import tempfile
 from pathlib import Path, PosixPath
 from typing import List
-
-import collections.abc
 
 import numpy as np
 import pytest
@@ -159,8 +158,7 @@ def update_config_to_train_and_val_on_val(
         input_yaml=str(input_yaml),
         update_with={
             "dataset": oc20_lmdb_train_and_val_from_paths(
-                train_src=str(tutorial_val_src),
-                val_src=str(tutorial_val_src),
+                train_src=str(tutorial_val_src), val_src=str(tutorial_val_src),
             )
         },
         output_yaml=output_yaml,
@@ -191,12 +189,9 @@ def _run_train_and_val_on_val(
         }
         run_args.update(update_run_args_with)
         run_with_args(
-            base_command_line_args,
-            run_args,
+            base_command_line_args, run_args,
         )
-        return get_tensorboard_log_values(
-            f"{tempdirname}/logs",
-        )
+        return get_tensorboard_log_values(f"{tempdirname}/logs",)
 
 
 """
@@ -308,7 +303,6 @@ These tests intend to test if optimization is not obviously broken on a time sca
 
 
 class TestSmallDatasetOptim:
-
     def test_gemnet(
         self,
         base_command_line_args,
