@@ -158,7 +158,6 @@ def snapshot(snapshot):
 def torch_deterministic() -> Iterator[bool]:
     # Setup
     torch.use_deterministic_algorithms(True)
-    print("TORCH IS NOW DETERMINSTIC")
     yield True  # Usability: prints `torch_deterministic=True` if a test fails
     # Tear down
     torch.use_deterministic_algorithms(False)

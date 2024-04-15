@@ -206,7 +206,13 @@ These should catch errors such as shape mismatches or otherways to code wise bre
 
 
 class TestSmoke:
-    def test_gemnet(self, base_command_line_args, configs, tutorial_val_src):
+    def test_gemnet(
+        self,
+        base_command_line_args,
+        configs,
+        tutorial_val_src,
+        torch_deterministic,
+    ):
         acc = _run_train_and_val_on_val(
             base_command_line_args,
             configs,
@@ -217,7 +223,13 @@ class TestSmoke:
         assert "train/energy_mae" in acc.Tags()["scalars"]
         assert "val/energy_mae" in acc.Tags()["scalars"]
 
-    def test_escn(self, base_command_line_args, configs, tutorial_val_src):
+    def test_escn(
+        self,
+        base_command_line_args,
+        configs,
+        tutorial_val_src,
+        torch_deterministic,
+    ):
         acc = _run_train_and_val_on_val(
             base_command_line_args,
             configs,
@@ -229,7 +241,11 @@ class TestSmoke:
         assert "val/energy_mae" in acc.Tags()["scalars"]
 
     def test_equiformerv2(
-        self, base_command_line_args, configs, tutorial_val_src
+        self,
+        base_command_line_args,
+        configs,
+        tutorial_val_src,
+        torch_deterministic,
     ):
         acc = _run_train_and_val_on_val(
             base_command_line_args,
@@ -243,7 +259,11 @@ class TestSmoke:
 
     # train for a few steps and confirm same seeds get same results
     def test_different_seeds(
-        self, base_command_line_args, configs, tutorial_val_src
+        self,
+        base_command_line_args,
+        configs,
+        tutorial_val_src,
+        torch_deterministic,
     ):
         seed0_take1_acc = _run_train_and_val_on_val(
             base_command_line_args,
@@ -289,7 +309,13 @@ These tests intend to test if optimization is not obviously broken on a time sca
 
 class TestSmallDatasetOptim:
 
-    def test_gemnet(self, base_command_line_args, configs, tutorial_val_src):
+    def test_gemnet(
+        self,
+        base_command_line_args,
+        configs,
+        tutorial_val_src,
+        torch_deterministic,
+    ):
         acc = _run_train_and_val_on_val(
             base_command_line_args,
             configs,
@@ -299,7 +325,13 @@ class TestSmallDatasetOptim:
         assert acc.Scalars("train/energy_mae")[-1].value < 0.4
         assert acc.Scalars("train/forces_mae")[-1].value < 0.06
 
-    def test_escn(self, base_command_line_args, configs, tutorial_val_src):
+    def test_escn(
+        self,
+        base_command_line_args,
+        configs,
+        tutorial_val_src,
+        torch_deterministic,
+    ):
         acc = _run_train_and_val_on_val(
             base_command_line_args,
             configs,
@@ -310,7 +342,11 @@ class TestSmallDatasetOptim:
         assert acc.Scalars("train/forces_mae")[-1].value < 0.06
 
     def test_equiformerv2(
-        self, base_command_line_args, configs, tutorial_val_src
+        self,
+        base_command_line_args,
+        configs,
+        tutorial_val_src,
+        torch_deterministic,
     ):
         acc = _run_train_and_val_on_val(
             base_command_line_args,
