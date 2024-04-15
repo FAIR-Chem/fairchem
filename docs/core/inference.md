@@ -35,11 +35,13 @@ Comment or skip this block to use the whole dataset!
 ! mv data.db full_data.db
 
 import ase.db
-import numpy as np
+import random
 
 with ase.db.connect('full_data.db') as full_db:
   with ase.db.connect('data.db',append=False) as subset_db:
-    for i in range(1, 10):
+
+    # Select 50 random points for the subset!
+    for i in random.shuffled(range(1,len(full_db)))[:50]:
       subset_db.write(full_db.get_atoms(i))
 
 ```
