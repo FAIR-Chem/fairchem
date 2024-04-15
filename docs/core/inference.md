@@ -39,10 +39,9 @@ import numpy as np
 
 with ase.db.connect('full_data.db') as full_db:
   with ase.db.connect('data.db',append=False) as subset_db:
-    # Select 50 random points for the subset!
-    for i in np.random.choice(range(1,len(full_db)),size=50,replace=False):
+    # Select 50 random points for the subset, ASE DB ids start at 1
+    for i in np.random.choice(list(range(1,len(full_db)+1)),size=50,replace=False):
       subset_db.write(full_db.get_atoms(i))
-
 ```
 
 ```{code-cell} ipython3
