@@ -2,38 +2,41 @@ trainer: forces
 
 dataset:
   train:
-    src: tests/models/test_data/oc22_pickle16_train.pkl
+    src: tutorial_dset/s2ef/train_100/
     normalize_labels: True
-    target_mean: 0.0
-    target_std: 25.119809935106424
+    target_mean: -0.7554450631141663
+    target_std: 2.887317180633545
     grad_target_mean: 0.0
-    grad_target_std: 0.14759646356105804
-    lin_ref:  configs/oc22/linref/oc22_linfit_coeffs.npz
+    grad_target_std: 2.887317180633545
   val:
-    format: pickle
-    src: tests/models/test_data/oc22_pickle16_val.pkl
-    lin_ref: configs/oc22/linref/oc22_linfit_coeffs.npz
+    format: lmdb
+    src: tutorial_dset/s2ef/val_20/
 
 logger:
   name: tensorboard
 
 task:
-  dataset: pickle
-  primary_metric: energy_mae
+  dataset: lmdb
+  type: regression
+  metric: mae
+  primary_metric: forces_mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
   train_on_free_atoms: True
   eval_on_free_atoms: True
   prediction_dtype: float32
 
 model:
   name: escn
-  num_layers: 1
-  max_neighbors: 2
+  num_layers: 2
+  max_neighbors: 10
   cutoff: 12.0
-  sphere_channels: 2
-  hidden_channels: 3
-  lmax_list: [1]
-  mmax_list: [1]
-  num_sphere_samples: 128
+  sphere_channels: 8
+  hidden_channels: 8
+  lmax_list: [2]
+  mmax_list: [2]
+  num_sphere_samples: 64
   distance_function: "gaussian"
   regress_forces: True
   use_pbc: True
@@ -41,18 +44,17 @@ model:
   otf_graph: True
 
 optim:
-  batch_size: 2
+  batch_size: 5
   eval_batch_size: 2
   num_workers: 0
-  lr_initial: 0.01
+  lr_initial: 0.0025
   optimizer: AdamW
   optimizer_params: {"amsgrad": True,weight_decay: 0.0}
-  eval_every: 380
+  eval_every: 190
   max_epochs: 50
-  force_coefficient: 0
+  force_coefficient: 20
   scheduler: "Null"
-  energy_coefficient: 4
-  clip_grad_norm: 2000
-  ema_decay: 0.999
+  energy_coefficient: 1
+  clip_grad_norm: 20
   loss_energy: mae
   loss_force: l2mae
