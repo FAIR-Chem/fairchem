@@ -25,10 +25,9 @@ import numpy as np
 
 with ase.db.connect('full_data.db') as full_db:
   with ase.db.connect('data.db',append=False) as subset_db:
-    # Select 50 random points for the subset!
-    for i in np.random.choice(range(1,len(full_db)),size=50,replace=False):
+    # Select 50 random points for the subset, ASE DB ids start at 1
+    for i in np.random.choice(list(range(1,len(full_db)+1)),size=50,replace=False):
       subset_db.write(full_db.get_atoms(i))
-
 ------------------
 
 
@@ -36,8 +35,8 @@ with ase.db.connect('full_data.db') as full_db:
 [0;31mAttributeError[0m                            Traceback (most recent call last)
 Cell [0;32mIn[2], line 10[0m
 [1;32m      7[0m [38;5;28;01mwith[39;00m ase[38;5;241m.[39mdb[38;5;241m.[39mconnect([38;5;124m'[39m[38;5;124mdata.db[39m[38;5;124m'[39m,append[38;5;241m=[39m[38;5;28;01mFalse[39;00m) [38;5;28;01mas[39;00m subset_db:
-[1;32m      8[0m   [38;5;66;03m# Select 50 random points for the subset![39;00m
-[1;32m      9[0m   [38;5;28;01mfor[39;00m i [38;5;129;01min[39;00m np[38;5;241m.[39mrandom[38;5;241m.[39mchoice([38;5;28mrange[39m([38;5;241m1[39m,[38;5;28mlen[39m(full_db)),size[38;5;241m=[39m[38;5;241m50[39m,replace[38;5;241m=[39m[38;5;28;01mFalse[39;00m):
+[1;32m      8[0m   [38;5;66;03m# Select 50 random points for the subset, ASE DB ids start at 1[39;00m
+[1;32m      9[0m   [38;5;28;01mfor[39;00m i [38;5;129;01min[39;00m np[38;5;241m.[39mrandom[38;5;241m.[39mchoice([38;5;28mlist[39m([38;5;28mrange[39m([38;5;241m1[39m,[38;5;28mlen[39m(full_db)[38;5;241m+[39m[38;5;241m1[39m)),size[38;5;241m=[39m[38;5;241m50[39m,replace[38;5;241m=[39m[38;5;28;01mFalse[39;00m):
 [0;32m---> 10[0m     subset_db[38;5;241m.[39mwrite([43mfull_db[49m[38;5;241;43m.[39;49m[43mget_atoms[49m[43m([49m[43mi[49m[43m)[49m)
 
 File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/ase/db/core.py:418[0m, in [0;36mDatabase.get_atoms[0;34m(self, selection, attach_calculator, add_additional_information, **kwargs)[0m
