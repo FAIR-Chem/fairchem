@@ -81,8 +81,8 @@ yml = generate_yml_config(checkpoint_path, 'config.yml',
                    update={'gpus': 1,
                            'task.dataset': 'ase_db',
                            'optim.eval_every': 1,
-                           'optim.max_epochs': 5,
-                           'optim.batch_size': 8,
+                           'optim.max_epochs': 4,
+                           'optim.batch_size': 4,
                            'logger': 'tensorboard', # don't use wandb unless you already are logged in 
                            # Train data
                            'dataset.train.src': 'train.db',
