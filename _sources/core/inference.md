@@ -126,7 +126,7 @@ d = results[0].split(':')[-1].strip()
 
 ```{code-cell} ipython3
 import numpy as np
-results = np.load(f'{d}/s2ef_predictions.npz', allow_pickle=True)
+results = np.load(f'{d}/ocp_predictions.npz', allow_pickle=True)
 results.files
 ```
 

@@ -171,7 +171,7 @@ Next, run this model on the test data:
 python main.py --mode predict --config-yml configs/s2ef/2M/schnet/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
-The predictions are stored in `[RESULTS_DIR]/s2ef_predictions.npz` and later used to create a submission file to be uploaded to EvalAI.
+The predictions are stored in `[RESULTS_DIR]/ocp_predictions.npz` and later used to create a submission file to be uploaded to EvalAI.
 
 ## Training OC20 models with total energies (IS2RE/S2EF)
 
