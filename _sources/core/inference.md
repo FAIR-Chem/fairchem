@@ -39,9 +39,15 @@ import numpy as np
 
 with ase.db.connect('full_data.db') as full_db:
   with ase.db.connect('data.db',append=False) as subset_db:
+
     # Select 50 random points for the subset, ASE DB ids start at 1
     for i in np.random.choice(list(range(1,len(full_db)+1)),size=50,replace=False):
-      subset_db.write(full_db.get_atoms(f'id={i}'))
+      atoms = full_db.get_atoms(f'id={i}', add_additional_information=True)
+
+      if 'tag' in atoms.info['key_value_pairs']:
+        atoms.info['key_value_pairs']['tag'] = int(atoms.info['key_value_pairs']['tag'])
+        
+      subset_db.write(atoms, **atoms.info['key_value_pairs'])
 ```
 
 ```{code-cell} ipython3
