@@ -171,6 +171,7 @@ class OCPTrainer(BaseTrainer):
 
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
+
                 # Log metrics.
                 log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
                 log_dict.update(
@@ -355,7 +356,7 @@ class OCPTrainer(BaseTrainer):
         return loss
 
     def _compute_metrics(self, out, batch, evaluator, metrics={}):
-        out = {k: v.clone() for k, v in out.items()}
+        out = {k: v.clone().detach() for k, v in out.items()}
         natoms = batch.natoms
         batch_size = natoms.numel()
 

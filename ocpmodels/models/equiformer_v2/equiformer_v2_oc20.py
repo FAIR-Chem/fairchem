@@ -58,6 +58,11 @@ def checksum_eq_blocks(m):
         print(f" > EQ {idx}", checksum_nn(m.blocks[idx]))
 
 
+def checksum_seq_linear(m):
+    if isinstance(m, torch.nn.Linear) or isinstance(m, SO3_LinearV2):
+        print(m, checksum_nn(m))
+
+
 @registry.register_model("equiformer_v2")
 class EquiformerV2_OC20(BaseModel):
     """
@@ -405,13 +410,10 @@ class EquiformerV2_OC20(BaseModel):
 
         self.apply(self._init_weights)
         self.apply(self._uniform_init_rad_func_linear_weights)
-        checksum_eq_blocks(self)
-        print(" > Output", "energy", checksum_nn(self.energy_block))
-        print(" > Output", "force", checksum_nn(self.force_block))
 
     @conditional_grad(torch.enable_grad())
     def forward(self, data):
-        checksum_eq_blocks(self)
+
         self.batch_size = len(data.natoms)
         self.dtype = data.pos.dtype
         self.device = data.pos.device
@@ -439,7 +441,7 @@ class EquiformerV2_OC20(BaseModel):
         edge_rot_mat = self._init_edge_rot_mat(
             data, edge_index, edge_distance_vec
         )
-        breakpoint()
+
         # Initialize the WignerD matrices and other values for spherical harmonic calculations
         for i in range(self.num_resolutions):
             self.SO3_rotation[i].set_wigner(edge_rot_mat)
@@ -570,7 +572,6 @@ class EquiformerV2_OC20(BaseModel):
 
     def _init_weights(self, m):
         if isinstance(m, torch.nn.Linear) or isinstance(m, SO3_LinearV2):
-            print("INIT", m, m.weight.abs().sum())
             if m.bias is not None:
                 torch.nn.init.constant_(m.bias, 0)
             if self.weight_init == "normal":
@@ -578,7 +579,6 @@ class EquiformerV2_OC20(BaseModel):
                 torch.nn.init.normal_(m.weight, 0, std)
 
         elif isinstance(m, torch.nn.LayerNorm):
-            print("INIT", m, m.weight.abs().sum())
             torch.nn.init.constant_(m.bias, 0)
             torch.nn.init.constant_(m.weight, 1.0)
 
@@ -588,7 +588,6 @@ class EquiformerV2_OC20(BaseModel):
 
     def _uniform_init_linear_weights(self, m):
         if isinstance(m, torch.nn.Linear):
-            print("RAD", m, m.weight.abs().sum())
             if m.bias is not None:
                 torch.nn.init.constant_(m.bias, 0)
             std = 1 / math.sqrt(m.in_features)
