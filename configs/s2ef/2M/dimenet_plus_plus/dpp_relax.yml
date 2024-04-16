@@ -9,7 +9,7 @@ dataset:
     grad_target_std: 2.887317180633545
   - src: data/s2ef/all/val_id/
 
-logger: tensorboard
+logger: wandb
 
 task:
   dataset: trajectory_lmdb
