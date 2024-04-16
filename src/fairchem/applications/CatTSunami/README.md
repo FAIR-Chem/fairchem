@@ -1,6 +1,6 @@
 ## CatTSunami: Accelerating Transition State Energy Calculations with Pre-trained Graph Neural Networks
 
-![summary](https://github.com/Open-Catalyst-Project/CatTSunami/blob/main/summary_fig.png)
+![summary](https://github.com/Open-Catalyst-Project/CatTSunami/blob/master/summary_fig.png)
 
 CatTSunami is a framework for high-throughput enumeration of nudged elastic band (NEB) frame sets. It was built for use with machine learned (ML) models trained on [OC20](https://arxiv.org/abs/2010.09990), which were demonstrated to be performant on this auxiliary task. To train your own model or obtain pre-trained checkpoints, please see [`ocp`](https://github.com/Open-Catalyst-Project/ocp).
 
@@ -10,11 +10,11 @@ This repository contains the validation dataset, framework for enumeration, and 
 1. Install [`Open-Catalyst-Dataset`](https://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset) and [`ocp`](https://github.com/Open-Catalyst-Project/ocp)
 2. Clone this repository
 3. `cd ocpneb && python setup.py develop`
-4. Check out the [tutorial notebook](https://github.com/Open-Catalyst-Project/CatTSunami/blob/main/tutorials/workbook.ipynb) 
+4. Check out the [tutorial notebook](https://github.com/Open-Catalyst-Project/CatTSunami/blob/master/tutorials/workbook.ipynb) 
 
 
 ### Validation Dataset
-The validation dataset is comprised of 932 DFT NEB calculations to assess model performance on this important task. There are 3 different reaction classes considered: desorptions, dissociations, and transfers. 
+The validation dataset is comprised of 932 DFT NEB calculations to assess model performance on this important task. There are 3 different reaction classes considered: desorptions, dissociations, and transfers. For more information see the [dataset markdown file](https://github.com/Open-Catalyst-Project/CatTSunami/blob/master/DATASET.md).
 
 |Splits |Size of compressed version (in bytes)  |Size of uncompressed version (in bytes)    | MD5 checksum (download link)   |
 |---    |---    |---    |---    |
