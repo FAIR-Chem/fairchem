@@ -1056,7 +1056,7 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
                 raise MissingConfigKeyError
             trainer = trainer_cls(
                 tasks=config.get("tasks", {}),
-                datasets=config["datasets"],
+                dataset_configs=config["datasets"],
                 combined_dataset_config=config.get("combined_dataset", {}),
                 model=config["model"],
                 optimizer=config["optim"],
