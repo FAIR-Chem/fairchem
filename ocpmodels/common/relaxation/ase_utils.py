@@ -9,6 +9,7 @@ LICENSE file in the root directory of this source tree.
 Utilities to interface OCP models/trainers with the Atomic Simulation
 Environment (ASE)
 """
+
 import copy
 import logging
 from typing import Dict, Optional
@@ -168,7 +169,6 @@ class OCPCalculator(Calculator):
             cpu=cpu,
             amp=config.get("amp", False),
         )
-
         if checkpoint_path is not None:
             self.load_checkpoint(
                 checkpoint_path=checkpoint_path, checkpoint=checkpoint
