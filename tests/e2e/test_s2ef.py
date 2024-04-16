@@ -178,7 +178,8 @@ def _run_main(
     if update_run_args_with is not None:
         run_args.update(update_run_args_with)
     run_with_args(
-        base_command_line_args, run_args,
+        base_command_line_args,
+        run_args,
     )
     if save_checkpoint_to is not None:
         checkpoints = glob.glob(f"{rundir}/checkpoints/*/checkpoint.pt")
@@ -190,7 +191,9 @@ def _run_main(
         )
         assert len(predictions_filenames) == 1
         os.rename(predictions_filenames[0], save_predictions_to)
-    return get_tensorboard_log_values(f"{rundir}/logs",)
+    return get_tensorboard_log_values(
+        f"{rundir}/logs",
+    )
 
 
 @pytest.fixture(scope="class")
@@ -206,7 +209,11 @@ These should catch errors such as shape mismatches or otherways to code wise bre
 
 class TestSmoke:
     def smoke_test_train(
-        self, model_name, base_command_line_args, input_yaml, tutorial_val_src,
+        self,
+        model_name,
+        base_command_line_args,
+        input_yaml,
+        tutorial_val_src,
     ):
         with tempfile.TemporaryDirectory() as tempdirname:
             # first train a very simple model, checkpoint
@@ -273,7 +280,11 @@ class TestSmoke:
         ],
     )
     def test_train_and_predict(
-        self, model_name, base_command_line_args, configs, tutorial_val_src,
+        self,
+        model_name,
+        base_command_line_args,
+        configs,
+        tutorial_val_src,
     ):
         self.smoke_test_train(
             model_name=model_name,
