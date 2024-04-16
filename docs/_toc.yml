@@ -6,7 +6,7 @@ root: index
 parts:
 - caption: Quickstart & Installation 
   chapters:
-  - file: videos/intro_series
+  - file: core/intro_series
   - file: core/install
   - file: core/quickstart
   - file: core/gotchas
