@@ -16,14 +16,15 @@ ORCA_SIMPLE_INPUT = [
     "NOSOSCF",
     "NormalConv",
     "DEFGRID2",
+    "ALLPOP"
 ]
 ORCA_SIMPLE_INPUT_QUACC_IGNORE = []
-ORCA_BLOCKS = ["%scf Convergence Tight maxiter 500 end"]
+ORCA_BLOCKS = ["%scf Convergence Tight maxiter 500 end","%elprop Dipole true Quadrupole true end"]
 ORCA_ASE_SIMPLE_INPUT = " ".join([ORCA_FUNCTIONAL] + [ORCA_BASIS] + ORCA_SIMPLE_INPUT)
 OPT_PARAMETERS = {
     "optimizer": Sella,
     "store_intermediate_results": True,
-    "fmax": 0.01,
+    "fmax": 0.05,
     "max_steps": 1000,
 }
 
