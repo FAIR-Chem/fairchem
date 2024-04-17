@@ -97,8 +97,12 @@ def setup(config) -> None:
             init_method="env://",
         )
     else:
+        # try to read local rank from environment for newer torchrun
+        # otherwise use local-rank arg for torch.distributed
+        config["local_rank"] = os.environ.get("LOCAL_RANK", config["local_rank"])
         dist.init_process_group(
-            backend=config["distributed_backend"], init_method="env://"
+            backend=config["distributed_backend"],
+            init_method="env://"
         )
     # TODO: SLURM
 
