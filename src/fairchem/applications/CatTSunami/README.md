@@ -9,7 +9,7 @@ This repository contains the validation dataset, framework for enumeration, and 
 ### Getting started
 1. Install [`Open-Catalyst-Dataset`](https://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset) and [`ocp`](https://github.com/Open-Catalyst-Project/ocp)
 2. Clone this repository
-3. `cd ocpneb && python setup.py develop`
+3. `cd CatTSunami && python setup.py develop`
 4. Check out the [tutorial notebook](https://github.com/Open-Catalyst-Project/CatTSunami/blob/master/tutorials/workbook.ipynb) 
 
 
