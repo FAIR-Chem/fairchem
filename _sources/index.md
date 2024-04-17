@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/Open-Catalyst-Project/ocp/graph/badge.svg?token=M606LH5LK6)](https://codecov.io/gh/Open-Catalyst-Project/ocp)
 
 `ocp` is the [Open Catalyst Project](https://opencatalystproject.org/)'s
-library of state-of-the-art machine learning algorithms for catalysis.
+library of state-of-the-art machine learning algorithms for chemistry. We've used it for catalysis and direct air capture (MOF) applications, and we hope it's useful for your projects too!
 
 <div align="left">
     <img src="https://user-images.githubusercontent.com/1156489/170388229-642c6619-dece-4c88-85ef-b46f4d5f1031.gif">
