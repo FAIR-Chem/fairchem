@@ -32,10 +32,9 @@ class BaseModel(nn.Module):
         output_targets: dict | None = None,
         node_embedding_dim=None,
         edge_embedding_dim=None,
-        _torch_initialized=False,
+        **kwargs,
     ) -> None:
-        if not _torch_initialized:
-            super().__init__()
+        super().__init__()
 
         self.output_targets = output_targets or {}
         self.num_targets = len(output_targets)
