@@ -431,7 +431,7 @@ if __name__ == "__main__":
     from ocpmodels.datasets.lmdb_dataset import DeupDataset
     from ocpmodels.common.utils import JOB_ID, RUNS_DIR, make_config_from_conf_str
 
-    base_trainer_path = "/network/scratch/s/schmidtv/ocp/runs/3298908"
+    base_trainer_path = "/network/scratch/a/alexandre.duval/ocp/runs/4615191"
 
     # what models to load for inference
     trainers_conf = {

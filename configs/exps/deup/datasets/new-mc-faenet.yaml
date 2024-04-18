@@ -7,11 +7,11 @@ job:
 default:
   config: faenet-is2re-all
   wandb_project: ocp-deup
-  wandb_tags: base-model, MC-D, 2935198
+  wandb_tags: base-model, MC-D, 4615191
   test_ri: True
   mode: train
-  checkpoint: /network/scratch/a/alexandre.duval/ocp/runs/2935198/checkpoints/best_checkpoint.pt
-  restart_from_dir: /network/scratch/a/alexandre.duval/ocp/runs/2935198
+  checkpoint: /network/scratch/a/alexandre.duval/scratch/ocp/runs/4615191/checkpoints/best_checkpoint.pt
+  restart_from_dir: /network/scratch/a/alexandre.duval/ocp/runs/4615191/
   model:
     dropout_lowest_layer: output
     first_trainable_layer: dropout
