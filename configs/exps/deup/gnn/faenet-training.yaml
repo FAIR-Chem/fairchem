@@ -18,7 +18,7 @@ default:
 
 runs:
   - config: faenet-is2re-all
-    note: "top-runs"
+    note: "top run no concat"
     frame_averaging: 2D
     fa_method: se3-random
     model:
@@ -34,7 +34,7 @@ runs:
       num_gaussians: 104
       num_interactions: 5
       second_layer_MLP: False
-      skip_co: concat
+      skip_co: False
       cutoff: 6.0
     optim:
       lr_initial: 0.002

@@ -306,6 +306,7 @@ class DeupDatasetCreator:
 
         stats = {d: {} for d in dataset_strs}
 
+        # Loop on train, val_id, val_ood_cat, val_ood_ads
         for dataset_name in dataset_strs:
             deup_samples = []
             deup_ds_size = 0
