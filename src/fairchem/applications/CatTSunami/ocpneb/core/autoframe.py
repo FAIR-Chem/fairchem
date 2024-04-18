@@ -1299,7 +1299,9 @@ def traverse_adsorbate_dissociation(
 
     # Get product 2 binding index
     if len(reaction.product1) == 1:
-        product2_idx = get_product2_idx(reaction, edge_list_final, [[reactant1_binding_idx]])
+        product2_idx = get_product2_idx(
+            reaction, edge_list_final, [[reactant1_binding_idx]]
+        )
     else:
         product2_idx = get_product2_idx(reaction, edge_list_final, traversal_rxt1_final)
 
