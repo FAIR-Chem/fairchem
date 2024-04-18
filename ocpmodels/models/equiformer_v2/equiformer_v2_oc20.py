@@ -55,12 +55,12 @@ def checksum_nn(m):
 def checksum_eq_blocks(m):
     print("EQ CHECKSUM", checksum_nn(m))
     for idx in range(len(m.blocks)):
-        print(f" > EQ {idx}", checksum_nn(m.blocks[idx]))
+        print(f" > EQ {idx}", checksum_nn(m.blocks[idx]).item())
 
 
 def checksum_seq_linear(m):
     if isinstance(m, torch.nn.Linear) or isinstance(m, SO3_LinearV2):
-        print(m, checksum_nn(m))
+        print(m, checksum_nn(m).item())
 
 
 @registry.register_model("equiformer_v2")

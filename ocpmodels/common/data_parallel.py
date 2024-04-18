@@ -129,6 +129,7 @@ class BalancedBatchSampler(Sampler):
         num_replicas: int,
         rank: int,
         device: torch.device,
+        seed: int,
         mode: Union[str, bool] = "atoms",
         shuffle: bool = True,
         drop_last: bool = False,
@@ -161,6 +162,7 @@ class BalancedBatchSampler(Sampler):
             shuffle=shuffle,
             drop_last=drop_last,
             batch_size=batch_size,
+            seed=seed
         )
         self.batch_sampler = BatchSampler(
             self.single_sampler,
