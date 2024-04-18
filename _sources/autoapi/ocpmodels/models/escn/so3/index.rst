@@ -40,7 +40,7 @@ Attributes
 
    
 
-.. py:class:: CoefficientMapping(lmax_list: list[int], mmax_list: list[int], device)
+.. py:class:: CoefficientMapping(lmax_list: List[int], mmax_list: List[int], device)
 
 
    Helper functions for coefficients used to reshape l<-->m and to get coefficients of specific degree or order
@@ -56,7 +56,7 @@ Attributes
 
 
 
-.. py:class:: SO3_Embedding(length: int, lmax_list: list[int], num_channels: int, device: torch.device, dtype: torch.dtype)
+.. py:class:: SO3_Embedding(length: int, lmax_list: List[int], num_channels: int, device: torch.device, dtype: torch.dtype)
 
 
    Bases: :py:obj:`torch.nn.Module`
@@ -111,7 +111,7 @@ Attributes
 
 
 
-.. py:class:: SO3_Rotation(rot_mat3x3: torch.Tensor, lmax: list[int])
+.. py:class:: SO3_Rotation(rot_mat3x3: torch.Tensor, lmax: List[int])
 
 
    Bases: :py:obj:`torch.nn.Module`

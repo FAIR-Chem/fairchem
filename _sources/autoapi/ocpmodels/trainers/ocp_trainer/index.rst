@@ -25,7 +25,7 @@ Classes
 
 
 
-.. py:class:: OCPTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm=None, noddp=False, name='ocp')
+.. py:class:: OCPTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm={}, noddp=False, name='ocp')
 
 
    Bases: :py:obj:`ocpmodels.trainers.base_trainer.BaseTrainer`
@@ -84,8 +84,6 @@ Classes
 
    .. py:method:: train(disable_eval_tqdm: bool = False) -> None
 
-      Run model training iterations.
-
 
    .. py:method:: _forward(batch)
 
@@ -93,10 +91,10 @@ Classes
    .. py:method:: _compute_loss(out, batch)
 
 
-   .. py:method:: _compute_metrics(out, batch, evaluator, metrics=None)
+   .. py:method:: _compute_metrics(out, batch, evaluator, metrics={})
 
 
-   .. py:method:: predict(data_loader, per_image: bool = True, results_file: str | None = None, disable_tqdm: bool = False)
+   .. py:method:: predict(data_loader, per_image: bool = True, results_file: Optional[str] = None, disable_tqdm: bool = False)
 
 
    .. py:method:: run_relaxations(split='val')

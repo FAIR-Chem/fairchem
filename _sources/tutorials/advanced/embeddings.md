@@ -32,15 +32,13 @@ We provide 5 different kinds of embeddings:
 4. 'x_E sum' - summed over atoms
 5. 'x_F sum' - This is related to the forces
 
-In principle other models could be adapted in a similar way. See [embedding-monkeypatch.py](./embedding-monkeypatch.py) for details on the patch. We simply load the module to monkeypatch GemNet-OC.
-
-
-```{code-cell} ipython3
-import embedding_monkeypatch
-```
+In principle other models could be adapted in a similar way. See [embedding-monkeypatch.ipynb](./embedding-monkeypatch.py) for details on the patch. We simply run this notebook below to load it.
 
 The OCP project is still under active development, and it is not yet clear what the best way to access these embeddings are, so this code is not yet part of the main development branch. This code was adapted from a branch at https://github.com/Open-Catalyst-Project/ocp/blob/gnoc-embeddings.
 
+```{code-cell} ipython3
+import embedding-monkeypatch
+```
 
 # A diagnostic example
 
@@ -55,12 +53,9 @@ import numpy as np
 ```{code-cell} ipython3
 %%capture
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-from ocpmodels.models.model_registry import model_name_to_local_file
-
 import os
-checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
-
-calc = OCPCalculator(checkpoint_path=checkpoint_path)
+cp = checkpoint = get_checkpoint('GemNet-OC OC20+OC22')
+calc = OCPCalculator(checkpoint=cp)
 ```
 
 ## Bulk Cu equation of state example
@@ -111,8 +106,6 @@ x1, x2, x3 = out['h sum'], out['x_E sum'], out['x_F sum']
 Next, we loop over a grid of lattice constants, and we compare the cosine similarity of the embeddings for each one to the reference embeddings above. A similarity of 1 means they are the same, and as the similarity decreases it means the embbedings are more and more different (and so is the energy).
 
 ```{code-cell} ipython3
-import torch
-
 E = []
 
 LC = np.linspace(0.95 * a0, 1.05 * a0, 200)
@@ -196,6 +189,11 @@ embeddings = np.array(embeddings)
 embeddings.shape
 ```
 
+```{code-cell} ipython3
+%%capture
+! pip install umap-learn
+```
+
 Now we use a tool like umap. This will take the 40 vectors with 256 dimensions each, and reduce these to two dimennsions where similar embeddings remain close together. You should see two clusters. The one labeled 1 with 40 points is the bulk set.
 
 ```{code-cell} ipython3
@@ -260,6 +258,9 @@ Our database is very small, it only contains embeddings for ethanol and ethane. 
 
 Note in this example, we have to tag all the atoms with 1 for GemnetOC to work.
 
+```{code-cell} ipython3
+! pip install vdict 2&>1 /devnull
+```
 
 Here we set up the simple database. Each row, or entry, is the actual embedding vector for an atom. That is the key that points to the atom index and the atoms object. I use cosine similarity here. If you use the default (l2) then you may not find anything close enough.
 
@@ -320,5 +321,5 @@ found.get_distance(0, 2), found.get_distance(1, 2)
 
 ```{code-cell} ipython3
 from ase.visualize.plot import plot_atoms
-plot_atoms(found)
+plot_atoms(found);
 ```

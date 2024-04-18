@@ -43,7 +43,7 @@ Classes
 
 
 
-.. py:class:: EdgeEmbedding(atom_features: int, edge_features: int, num_out_features: int, activation: str | None = None)
+.. py:class:: EdgeEmbedding(atom_features: int, edge_features: int, num_out_features: int, activation: Optional[str] = None)
 
 
    Bases: :py:obj:`torch.nn.Module`

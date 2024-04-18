@@ -25,7 +25,7 @@ Classes
 
 
 
-.. py:class:: BaseTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier: str, timestamp_id: str | None = None, run_dir: str | None = None, is_debug: bool = False, print_every: int = 100, seed: int | None = None, logger: str = 'wandb', local_rank: int = 0, amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm=None, noddp: bool = False)
+.. py:class:: BaseTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier: str, timestamp_id: Optional[str] = None, run_dir: Optional[str] = None, is_debug: bool = False, print_every: int = 100, seed: Optional[int] = None, logger: str = 'wandb', local_rank: int = 0, amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm={}, noddp: bool = False)
 
 
    Bases: :py:obj:`abc.ABC`
@@ -36,13 +36,7 @@ Classes
    .. py:property:: _unwrapped_model
 
 
-   .. py:method:: train(disable_eval_tqdm: bool = False) -> None
-      :abstractmethod:
-
-      Run model training iterations.
-
-
-   .. py:method:: _get_timestamp(device: torch.device, suffix: str | None) -> str
+   .. py:method:: _get_timestamp(device: torch.device, suffix: Optional[str]) -> str
       :staticmethod:
 
 
@@ -73,7 +67,7 @@ Classes
    .. py:method:: load_model() -> None
 
 
-   .. py:method:: load_checkpoint(checkpoint_path: str, checkpoint: dict | None = None) -> None
+   .. py:method:: load_checkpoint(checkpoint_path: str, checkpoint: Dict = {}) -> None
 
 
    .. py:method:: load_loss() -> None
@@ -85,7 +79,7 @@ Classes
    .. py:method:: load_extras() -> None
 
 
-   .. py:method:: save(metrics=None, checkpoint_file: str = 'checkpoint.pt', training_state: bool = True) -> str | None
+   .. py:method:: save(metrics=None, checkpoint_file: str = 'checkpoint.pt', training_state: bool = True) -> Optional[str]
 
 
    .. py:method:: update_best(primary_metric, val_metrics, disable_eval_tqdm: bool = True) -> None
@@ -97,7 +91,7 @@ Classes
    .. py:method:: _backward(loss) -> None
 
 
-   .. py:method:: save_results(predictions, results_file: str | None, keys=None) -> None
+   .. py:method:: save_results(predictions, results_file: Optional[str], keys=None) -> None
 
 
 

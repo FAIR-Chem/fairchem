@@ -25,7 +25,7 @@ Classes
 
 
 
-.. py:class:: EquiformerV2EnergyTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm=None, noddp=False, name='ocp')
+.. py:class:: EquiformerV2EnergyTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm={}, noddp=False, name='ocp')
 
 
    Bases: :py:obj:`ocpmodels.trainers.OCPTrainer`

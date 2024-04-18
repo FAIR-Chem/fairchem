@@ -39,7 +39,7 @@ Functions
 .. py:class:: OCPCollater(otf_graph: bool = False)
 
 
-   .. py:method:: __call__(data_list: list[torch_geometric.data.Data]) -> torch_geometric.data.Batch
+   .. py:method:: __call__(data_list: List[torch_geometric.data.Data]) -> torch_geometric.data.Batch
 
 
 
@@ -108,7 +108,7 @@ Functions
 
 
 
-.. py:class:: BalancedBatchSampler(dataset, batch_size: int, num_replicas: int, rank: int, device: torch.device, mode: str | bool = 'atoms', shuffle: bool = True, drop_last: bool = False, force_balancing: bool = False, throw_on_error: bool = False)
+.. py:class:: BalancedBatchSampler(dataset, batch_size: int, num_replicas: int, rank: int, device: torch.device, mode: Union[str, bool] = 'atoms', shuffle: bool = True, drop_last: bool = False, force_balancing: bool = False, throw_on_error: bool = False)
 
 
    Bases: :py:obj:`torch.utils.data.Sampler`

@@ -41,7 +41,7 @@ Attributes
 
    
 
-.. py:class:: LMDBDatabase(filename: str | pathlib.Path | None = None, create_indices: bool = True, use_lock_file: bool = False, serial: bool = False, readonly: bool = False, *args, **kwargs)
+.. py:class:: LMDBDatabase(filename: Optional[str | pathlib.Path] = None, create_indices: bool = True, use_lock_file: bool = False, serial: bool = False, readonly: bool = False, *args, **kwargs)
 
 
    Bases: :py:obj:`ase.db.core.Database`
@@ -65,10 +65,10 @@ Attributes
    .. py:method:: close() -> None
 
 
-   .. py:method:: _write(atoms: ase.Atoms | ase.db.row.AtomsRow, key_value_pairs: dict, data: dict | None, idx: int | None = None) -> None
+   .. py:method:: _write(atoms: ase.Atoms | ase.db.row.AtomsRow, key_value_pairs: dict, data: Optional[dict], idx: Optional[int] = None) -> None
 
 
-   .. py:method:: _update(idx: int, key_value_pairs: dict | None = None, data: dict | None = None)
+   .. py:method:: _update(idx: int, key_value_pairs: Optional[dict] = None, data: Optional[dict] = None)
 
 
    .. py:method:: _write_deleted_ids()
@@ -87,7 +87,7 @@ Attributes
       Auxiliary function to get the ith entry, rather than a specific id
 
 
-   .. py:method:: _select(keys, cmps: list[tuple[str, str, str]], explain: bool = False, verbosity: int = 0, limit: int | None = None, offset: int = 0, sort: str | None = None, include_data: bool = True, columns: str = 'all')
+   .. py:method:: _select(keys, cmps: list[tuple[str, str, str]], explain: bool = False, verbosity: int = 0, limit: Optional[int] = None, offset: int = 0, sort: Optional[str] = None, include_data: bool = True, columns: str = 'all')
 
 
    .. py:method:: count(selection=None, **kwargs) -> int

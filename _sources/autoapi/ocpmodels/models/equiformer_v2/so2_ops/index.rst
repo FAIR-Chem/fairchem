@@ -19,7 +19,7 @@ Classes
 
 
 
-.. py:class:: SO2_m_Convolution(m: int, sphere_channels: int, m_output_channels: int, lmax_list: list[int], mmax_list: list[int])
+.. py:class:: SO2_m_Convolution(m: int, sphere_channels: int, m_output_channels: int, lmax_list: List[int], mmax_list: List[int])
 
 
    Bases: :py:obj:`torch.nn.Module`
@@ -39,7 +39,7 @@ Classes
 
 
 
-.. py:class:: SO2_Convolution(sphere_channels: int, m_output_channels: int, lmax_list: list[int], mmax_list: list[int], mappingReduced, internal_weights: bool = True, edge_channels_list: list[int] | None = None, extra_m0_output_channels: int | None = None)
+.. py:class:: SO2_Convolution(sphere_channels: int, m_output_channels: int, lmax_list: List[int], mmax_list: List[int], mappingReduced, internal_weights: bool = True, edge_channels_list: Optional[List[int]] = None, extra_m0_output_channels: Optional[int] = None)
 
 
    Bases: :py:obj:`torch.nn.Module`
@@ -64,7 +64,7 @@ Classes
 
 
 
-.. py:class:: SO2_Linear(sphere_channels: int, m_output_channels: int, lmax_list: list[int], mmax_list: list[int], mappingReduced, internal_weights: bool = False, edge_channels_list: list[int] | None = None)
+.. py:class:: SO2_Linear(sphere_channels: int, m_output_channels: int, lmax_list: List[int], mmax_list: List[int], mappingReduced, internal_weights: bool = False, edge_channels_list: Optional[List[int]] = None)
 
 
    Bases: :py:obj:`torch.nn.Module`

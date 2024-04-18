@@ -302,7 +302,7 @@ Functions
       :rtype: atoms
 
 
-   .. py:method:: connect_db(address: str | pathlib.Path, connect_args: dict | None = None) -> ase.db.core.Database
+   .. py:method:: connect_db(address: str | pathlib.Path, connect_args: Optional[dict] = None) -> ase.db.core.Database
       :staticmethod:
 
 

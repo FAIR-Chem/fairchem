@@ -42,7 +42,7 @@ Attributes
 
    
 
-.. py:class:: AtomsToGraphs(max_neigh: int = 200, radius: int = 6, r_energy: bool = False, r_forces: bool = False, r_distances: bool = False, r_edges: bool = True, r_fixed: bool = True, r_pbc: bool = False, r_stress: bool = False, r_data_keys: collections.abc.Sequence[str] | None = None)
+.. py:class:: AtomsToGraphs(max_neigh: int = 200, radius: int = 6, r_energy: bool = False, r_forces: bool = False, r_distances: bool = False, r_edges: bool = True, r_fixed: bool = True, r_pbc: bool = False, r_stress: bool = False, r_data_keys: Optional[Sequence[str]] = None)
 
 
    A class to help convert periodic atomic structures to graphs.
@@ -186,7 +186,7 @@ Attributes
       :rtype: data (torch_geometric.data.Data)
 
 
-   .. py:method:: convert_all(atoms_collection, processed_file_path: str | None = None, collate_and_save=False, disable_tqdm=False)
+   .. py:method:: convert_all(atoms_collection, processed_file_path: Optional[str] = None, collate_and_save=False, disable_tqdm=False)
 
       Convert all atoms objects in a list or in an ase.db to graphs.
 

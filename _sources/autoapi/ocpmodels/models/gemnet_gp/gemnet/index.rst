@@ -25,7 +25,7 @@ Classes
 
 
 
-.. py:class:: GraphParallelGemNetT(num_atoms: int | None, bond_feat_dim: int, num_targets: int, num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_bil_trip: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, regress_forces: bool = True, direct_forces: bool = False, cutoff: float = 6.0, max_neighbors: int = 50, rbf: dict | None = None, envelope: dict | None = None, cbf: dict | None = None, extensive: bool = True, otf_graph: bool = False, use_pbc: bool = True, output_init: str = 'HeOrthogonal', activation: str = 'swish', scale_num_blocks: bool = False, scatter_atoms: bool = True, scale_file: str | None = None)
+.. py:class:: GraphParallelGemNetT(num_atoms: Optional[int], bond_feat_dim: int, num_targets: int, num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_bil_trip: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, regress_forces: bool = True, direct_forces: bool = False, cutoff: float = 6.0, max_neighbors: int = 50, rbf: dict = {'name': 'gaussian'}, envelope: dict = {'name': 'polynomial', 'exponent': 5}, cbf: dict = {'name': 'spherical_harmonics'}, extensive: bool = True, otf_graph: bool = False, use_pbc: bool = True, output_init: str = 'HeOrthogonal', activation: str = 'swish', scale_num_blocks: bool = False, scatter_atoms: bool = True, scale_file: Optional[str] = None)
 
 
    Bases: :py:obj:`ocpmodels.models.base.BaseModel`

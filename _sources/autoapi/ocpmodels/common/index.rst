@@ -33,6 +33,7 @@ Submodules
    gp_utils/index.rst
    hpo_utils/index.rst
    logger/index.rst
+   model_registry/index.rst
    registry/index.rst
    transforms/index.rst
    tutorial_utils/index.rst

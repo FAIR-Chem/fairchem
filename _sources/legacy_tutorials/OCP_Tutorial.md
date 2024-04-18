@@ -13,6 +13,8 @@ kernelspec:
 
 +++ {"colab_type": "text", "id": "view-in-github"}
 
+<a href="https://colab.research.google.com/github/Open-Catalyst-Project/ocp/blob/tutorials_01_11/tutorials/OCP_Tutorial.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
 ```{code-cell} ipython3
 :id: dzeHYa5GCxN7
 
@@ -57,6 +59,31 @@ FAIR - Facebook AI Research
 CMU - Carnegie Mellon University
 
 NERSC - National Energy Research Scientific Computing Center
+
++++ {"id": "E_qIKf8erkfC"}
+
+## Table of Contents
+
+*   [Background](#background)
+*   [Objective](#objective)
+*   [Climate Impact](#climate-impact)
+*   [Target Audience](#target-audience)
+*   [Background & Prerequisites](#background-and-prereqs)
+*   [Software Requirements](#software-requirements)
+*   [Dataset Overview & Visualization](#data-description)
+    *    [Download](#download)
+    *    [Visualization](#visual)
+    *    [Data contents](#contents)
+*   [Tasks](#tasks)
+    *    [S2EF](#s2ef)
+    *    [IS2RE](#is2re)
+    *    [IS2RS](#is2rs)
+*   [OCP Calculator](#calc)
+*   [Model development](#model-dev)
+*   [Running on command line](#cmd)
+*   [Limitations](#limit)
+*   [Next steps](#steps)
+*   [References](#references)
 
 +++ {"id": "JkjKcVJ47hSN"}
 
@@ -144,7 +171,32 @@ To gain an even better understanding of the Open Catalyst Project and the proble
 <a name="software-requirements"></a>
 # Software Requirements
 
-See [installation](../core/INSTALL.md) for installation instructions! 
+All required dependencies can be found here - https://github.com/Open-Catalyst-Project/ocp#installation.
+
+For the following Colab Notebook, we manually install the dependencies below.
+
+For the purpose of the demo, we hihgly recommend you use a GPU. Google Colab provides access to 1 GPU (Runtime -> Change runtime type -> select GPU). The tutorial will function without a GPU, but will be slower for training times.
+
+```{code-cell} ipython3
+:id: 58AKzWydvkVu
+
+# %%bash
+pip install torch==1.7.1+cu110 -f https://download.pytorch.org/whl/torch_stable.html 
+pip install demjson==2.2.4 lmdb==1.1.1 ase==3.21 pymatgen==2020.12.31 pyyaml==5.4 tensorboard==2.4 wandb==0.11.2
+pip install torch-scatter==2.0.6 torch-sparse==0.6.9 torch-cluster==1.5.9 torch-spline-conv==1.2.1 torch-geometric==1.6.3 -f https://data.pyg.org/whl/torch-1.7.1+cu110.html
+git clone https://github.com/Open-Catalyst-Project/ocp.git
+```
+
+```{code-cell} ipython3
+---
+colab:
+  base_uri: https://localhost:8080/
+id: 0NDOYuyAvmtO
+outputId: e3508b8f-8ade-4000-cdd8-7c5f75865a96
+---
+%cd ocp
+!pip install -e .
+```
 
 ```{code-cell} ipython3
 ---
@@ -739,7 +791,7 @@ from ocpmodels.trainers import OCPTrainer
 from ocpmodels.datasets import LmdbDataset
 from ocpmodels import models
 from ocpmodels.common import logger
-from ocpmodels.common.utils import setup_logging, setup_imports
+from ocpmodels.common.utils import setup_logging, setup_imports()
 setup_logging()
 setup_imports()
 
@@ -891,21 +943,6 @@ dataset = [
    }, # train set 
   {'src': val_src}, # val set (optional)
 ]
-```
-
-The above config references a scale file `configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.json`. We usually train in the root directory of the ocpmodels install, so this would be local to that directory. We'll link that folder into the current one to make it happy and keep things consistent as if you were running from the root directory!
-
-```{code-cell} ipython3
----
-colab:
-  base_uri: https://localhost:8080/
-id: 5KZvPu4hogkR
-outputId: fdbbfa5c-0d7c-449f-8be5-ef2e5d17860d
----
-import ocpmodels
-from ocpmodels.common.tutorial_utils import ocp_root
-
-! ln -s {ocp_root()}/configs ./configs
 ```
 
 +++ {"id": "8AsZpLjIQg-W"}
@@ -1392,10 +1429,8 @@ relax_dataset = "data/is2re/val_20/data.lmdb"
 ```{code-cell} ipython3
 :id: MiOeqFN-d-7K
 
-from ocpmodels.models.model_registry import model_name_to_local_file
-
-checkpoint_path = model_name_to_local_file('GemNet-dT All', local_cache='/tmp/ocp_checkpoints/')
-
+!wget -q https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_08/s2ef/gemnet_t_direct_h512_all.pt
+checkpoint_path = "/content/ocp/gemnet_t_direct_h512_all.pt"
 ```
 
 +++ {"id": "fp1Ab8TGltP6"}
@@ -1500,8 +1535,6 @@ dataset = [
   {'src': val_src}, # val set (optional)
 ]
 ```
-
-
 
 +++ {"id": "IsOqQIjnogkQ"}
 
@@ -2020,15 +2053,13 @@ For those interested in using our pretrained models for other applications, we p
 
 We have released checkpoints of all the models on the leaderboard [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/MODELS.md). These trained models can be used as an ASE calculator for various calculations.
 
-For this tutorial we download one of our earlier model checkpoints: GemNet-T
+For this tutorial we download our current best model checkpoint: GemNet-T
 
 ```{code-cell} ipython3
 :id: MBCRi69284Ve
 
-from ocpmodels.models.model_registry import model_name_to_local_file
-
-checkpoint_path = model_name_to_local_file('GemNet-dT All', local_cache='/tmp/ocp_checkpoints/')
-
+!wget -q https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_08/s2ef/gemnet_t_direct_h512_all.pt
+checkpoint_path = "/content/ocp/gemnet_t_direct_h512_all.pt"
 ```
 
 +++ {"id": "TNQ1dNVG93kH"}

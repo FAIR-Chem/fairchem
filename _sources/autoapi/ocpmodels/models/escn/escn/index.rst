@@ -32,7 +32,7 @@ Classes
 
 
 
-.. py:class:: eSCN(num_atoms: int, bond_feat_dim: int, num_targets: int, use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, max_neighbors: int = 40, cutoff: float = 8.0, max_num_elements: int = 90, num_layers: int = 8, lmax_list: list[int] | None = None, mmax_list: list[int] | None = None, sphere_channels: int = 128, hidden_channels: int = 256, edge_channels: int = 128, use_grid: bool = True, num_sphere_samples: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, show_timing_info: bool = False)
+.. py:class:: eSCN(num_atoms: int, bond_feat_dim: int, num_targets: int, use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, max_neighbors: int = 40, cutoff: float = 8.0, max_num_elements: int = 90, num_layers: int = 8, lmax_list: List[int] = [6], mmax_list: List[int] = [2], sphere_channels: int = 128, hidden_channels: int = 256, edge_channels: int = 128, use_grid: bool = True, num_sphere_samples: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, show_timing_info: bool = False)
 
 
    Bases: :py:obj:`ocpmodels.models.base.BaseModel`
@@ -87,7 +87,7 @@ Classes
 
 
 
-.. py:class:: LayerBlock(layer_idx: int, sphere_channels: int, hidden_channels: int, edge_channels: int, lmax_list: list[int], mmax_list: list[int], distance_expansion, max_num_elements: int, SO3_grid: ocpmodels.models.escn.so3.SO3_Grid, act)
+.. py:class:: LayerBlock(layer_idx: int, sphere_channels: int, hidden_channels: int, edge_channels: int, lmax_list: List[int], mmax_list: List[int], distance_expansion, max_num_elements: int, SO3_grid: ocpmodels.models.escn.so3.SO3_Grid, act)
 
 
    Bases: :py:obj:`torch.nn.Module`
@@ -117,7 +117,7 @@ Classes
 
 
 
-.. py:class:: MessageBlock(layer_idx: int, sphere_channels: int, hidden_channels: int, edge_channels: int, lmax_list: list[int], mmax_list: list[int], distance_expansion, max_num_elements: int, SO3_grid: ocpmodels.models.escn.so3.SO3_Grid, act)
+.. py:class:: MessageBlock(layer_idx: int, sphere_channels: int, hidden_channels: int, edge_channels: int, lmax_list: List[int], mmax_list: List[int], distance_expansion, max_num_elements: int, SO3_grid: ocpmodels.models.escn.so3.SO3_Grid, act)
 
 
    Bases: :py:obj:`torch.nn.Module`
@@ -147,7 +147,7 @@ Classes
 
 
 
-.. py:class:: SO2Block(sphere_channels: int, hidden_channels: int, edge_channels: int, lmax_list: list[int], mmax_list: list[int], act)
+.. py:class:: SO2Block(sphere_channels: int, hidden_channels: int, edge_channels: int, lmax_list: List[int], mmax_list: List[int], act)
 
 
    Bases: :py:obj:`torch.nn.Module`
@@ -169,7 +169,7 @@ Classes
 
 
 
-.. py:class:: SO2Conv(m: int, sphere_channels: int, hidden_channels: int, edge_channels: int, lmax_list: list[int], mmax_list: list[int], act)
+.. py:class:: SO2Conv(m: int, sphere_channels: int, hidden_channels: int, edge_channels: int, lmax_list: List[int], mmax_list: List[int], act)
 
 
    Bases: :py:obj:`torch.nn.Module`

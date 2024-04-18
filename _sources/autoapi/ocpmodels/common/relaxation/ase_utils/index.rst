@@ -41,7 +41,7 @@ Functions
 .. py:function:: batch_to_atoms(batch)
 
 
-.. py:class:: OCPCalculator(config_yml: str | None = None, checkpoint_path: str | None = None, model_name: str | None = None, local_cache: str | None = None, trainer: str | None = None, cutoff: int = 6, max_neighbors: int = 50, cpu: bool = True, seed: int | None = None)
+.. py:class:: OCPCalculator(config_yml: Optional[str] = None, checkpoint_path: Optional[str] = None, model_name: Optional[str] = None, local_cache: Optional[str] = None, trainer: Optional[str] = None, cutoff: int = 6, max_neighbors: int = 50, cpu: bool = True, seed: Optional[int] = None)
 
 
    Bases: :py:obj:`ase.calculators.calculator.Calculator`
@@ -58,12 +58,11 @@ Functions
    'magmom' and 'magmoms'.
 
    .. py:attribute:: implemented_properties
-      :type: ClassVar[list[str]]
       :value: ['energy', 'forces']
 
       
 
-   .. py:method:: load_checkpoint(checkpoint_path: str, checkpoint: dict | None = None) -> None
+   .. py:method:: load_checkpoint(checkpoint_path: str, checkpoint: Dict = {}) -> None
 
       Load existing trained model
 

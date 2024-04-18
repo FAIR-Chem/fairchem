@@ -93,7 +93,7 @@ Attributes
    .. py:method:: __getitem__(idx: int) -> T_co
 
 
-   .. py:method:: connect_db(lmdb_path: pathlib.Path | None = None) -> lmdb.Environment
+   .. py:method:: connect_db(lmdb_path: Optional[pathlib.Path] = None) -> lmdb.Environment
 
 
    .. py:method:: close_db() -> None
@@ -149,6 +149,6 @@ Attributes
      dataset with non-integral indices/keys, a custom sampler must be provided.
 
 
-.. py:function:: data_list_collater(data_list: list[torch_geometric.data.data.BaseData], otf_graph: bool = False) -> torch_geometric.data.data.BaseData
+.. py:function:: data_list_collater(data_list: List[torch_geometric.data.data.BaseData], otf_graph: bool = False) -> torch_geometric.data.data.BaseData
 
 

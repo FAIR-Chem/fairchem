@@ -53,7 +53,7 @@ Classes
 
 
 
-.. py:class:: PaiNN(num_atoms: int, bond_feat_dim: int, num_targets: int, hidden_channels: int = 512, num_layers: int = 6, num_rbf: int = 128, cutoff: float = 12.0, max_neighbors: int = 50, rbf: dict[str, str] | None = None, envelope: dict[str, str | int] | None = None, regress_forces: bool = True, direct_forces: bool = True, use_pbc: bool = True, otf_graph: bool = True, num_elements: int = 83, scale_file: str | None = None)
+.. py:class:: PaiNN(num_atoms: int, bond_feat_dim: int, num_targets: int, hidden_channels: int = 512, num_layers: int = 6, num_rbf: int = 128, cutoff: float = 12.0, max_neighbors: int = 50, rbf: Dict[str, str] = {'name': 'gaussian'}, envelope: Dict[str, Union[str, int]] = {'name': 'polynomial', 'exponent': 5}, regress_forces: bool = True, direct_forces: bool = True, use_pbc: bool = True, otf_graph: bool = True, num_elements: int = 83, scale_file: Optional[str] = None)
 
 
    Bases: :py:obj:`ocpmodels.models.base.BaseModel`
@@ -102,7 +102,9 @@ Classes
 
    Bases: :py:obj:`torch_geometric.nn.MessagePassing`
 
-   Base class for creating message passing layers of the form
+   Base class for creating message passing layers.
+
+   Message passing layers follow the form
 
    .. math::
        \mathbf{x}_i^{\prime} = \gamma_{\mathbf{\Theta}} \left( \mathbf{x}_i,
@@ -117,8 +119,8 @@ Classes
    create_gnn.html>`__ for the accompanying tutorial.
 
    :param aggr: The aggregation scheme
-                to use, *e.g.*, :obj:`"add"`, :obj:`"sum"` :obj:`"mean"`,
-                :obj:`"min"`, :obj:`"max"` or :obj:`"mul"`.
+                to use, *e.g.*, :obj:`"sum"` :obj:`"mean"`, :obj:`"min"`,
+                :obj:`"max"` or :obj:`"mul"`.
                 In addition, can be any
                 :class:`~torch_geometric.nn.aggr.Aggregation` module (or any string
                 that automatically resolves to it).
@@ -186,7 +188,7 @@ Classes
       :obj:`_j` to the variable name, *.e.g.* :obj:`x_i` and :obj:`x_j`.
 
 
-   .. py:method:: aggregate(features: tuple[torch.Tensor, torch.Tensor], index: torch.Tensor, dim_size: int) -> tuple[torch.Tensor, torch.Tensor]
+   .. py:method:: aggregate(features: Tuple[torch.Tensor, torch.Tensor], index: torch.Tensor, ptr: Optional[torch.Tensor], dim_size: Optional[int]) -> Tuple[torch.Tensor, torch.Tensor]
 
       Aggregates messages from neighbors as
       :math:`\bigoplus_{j \in \mathcal{N}(i)}`.
@@ -199,7 +201,7 @@ Classes
       as specified in :meth:`__init__` by the :obj:`aggr` argument.
 
 
-   .. py:method:: update(inputs: tuple[torch.Tensor, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]
+   .. py:method:: update(inputs: Tuple[torch.Tensor, torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]
 
       Updates node embeddings in analogy to
       :math:`\gamma_{\mathbf{\Theta}}` for each node

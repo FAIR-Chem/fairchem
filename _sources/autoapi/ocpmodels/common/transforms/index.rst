@@ -25,7 +25,7 @@ Classes
 
 
 
-.. py:class:: RandomRotate(degrees, axes: list[int] | None = None)
+.. py:class:: RandomRotate(degrees, axes: List[int] = [0, 1, 2])
 
 
    Rotates node positions around a specific axis by a randomly sampled

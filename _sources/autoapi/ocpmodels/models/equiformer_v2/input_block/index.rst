@@ -17,7 +17,7 @@ Classes
 
 
 
-.. py:class:: EdgeDegreeEmbedding(sphere_channels: int, lmax_list: list[int], mmax_list: list[int], SO3_rotation, mappingReduced, max_num_elements: int, edge_channels_list, use_atom_edge_embedding: bool, rescale_factor)
+.. py:class:: EdgeDegreeEmbedding(sphere_channels: int, lmax_list: List[int], mmax_list: List[int], SO3_rotation, mappingReduced, max_num_elements: int, edge_channels_list, use_atom_edge_embedding: bool, rescale_factor)
 
 
    Bases: :py:obj:`torch.nn.Module`

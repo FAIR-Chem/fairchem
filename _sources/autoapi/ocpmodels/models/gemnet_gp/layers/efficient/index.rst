@@ -41,7 +41,7 @@ Classes
    .. py:method:: reset_parameters() -> None
 
 
-   .. py:method:: forward(rbf: torch.Tensor, sph: torch.Tensor, id_ca, id_ragged_idx, Kmax: int) -> tuple[torch.Tensor, torch.Tensor]
+   .. py:method:: forward(rbf: torch.Tensor, sph: torch.Tensor, id_ca, id_ragged_idx, Kmax: int) -> Tuple[torch.Tensor, torch.Tensor]
 
       :param rbf:
       :type rbf: torch.Tensor, shape=(1, nEdges, num_radial)
@@ -70,7 +70,7 @@ Classes
    .. py:method:: reset_parameters() -> None
 
 
-   .. py:method:: forward(basis: tuple[torch.Tensor, torch.Tensor], m, id_reduce, id_ragged_idx, edge_offset, Kmax: int) -> torch.Tensor
+   .. py:method:: forward(basis: Tuple[torch.Tensor, torch.Tensor], m, id_reduce, id_ragged_idx, edge_offset, Kmax: int) -> torch.Tensor
 
       :param basis:
       :param m:

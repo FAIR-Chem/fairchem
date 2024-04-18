@@ -28,45 +28,6 @@ Submodules
 
    base/index.rst
    dimenet_plus_plus/index.rst
-   model_registry/index.rst
    schnet/index.rst
-
-
-Package Contents
-----------------
-
-
-Functions
-~~~~~~~~~
-
-.. autoapisummary::
-
-   ocpmodels.models.model_name_to_local_file
-
-
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   ocpmodels.models.available_pretrained_models
-
-
-.. py:data:: available_pretrained_models
-
-   
-
-.. py:function:: model_name_to_local_file(model_name: str, local_cache: str | pathlib.Path) -> str
-
-   Download a pretrained checkpoint if it does not exist already
-
-   :param model_name: the model name. See available_pretrained_checkpoints.
-   :type model_name: str
-   :param local_cache:
-   :type local_cache: str
-
-   Returns:
-
 
 

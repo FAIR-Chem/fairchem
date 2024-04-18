@@ -11,12 +11,10 @@ kernelspec:
   name: python3
 ---
 
-Using OCP to enumerate adsorbates on catalyst surfaces
+Using OCP to enumerate adsorbates on alloy catalyst surfaces
 ======================================================
 
 In the previous example, we constructed slab models of adsorbates on desired sites. Here we leverage code to automate this process. The goal in this section is to generate candidate structures, compute energetics, and then filter out the most relevant ones.
-
-In this section we use one of the more recent models `escn`.
 
 ```{code-cell} ipython3
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
@@ -33,6 +31,13 @@ import os
 from glob import glob
 import pandas as pd
 from ocdata.utils import DetectTrajAnomaly
+```
+
+```{code-cell} ipython3
+%run ../ocp-tutorial.ipynb
+
+checkpoint = get_checkpoint('GemNet-OC-Large All+MD')
+checkpoint
 ```
 
 # Introduction
@@ -108,27 +113,17 @@ plt.tight_layout()
 
 ### Run an ML relaxation
 
-There are 2 options for how to do this.
- 1. Using `OCPCalculator` as the calculator within the ASE framework
- 2. By writing objects to lmdb and relaxing them using `main.py` in the ocp repo
- 
-(1) is really only adequate for small stuff and it is what we will show here, but if you plan to run many relaxations, you should definitely use (2). More details about writing lmdbs has been provided [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/tutorials/lmdb_dataset_creation.ipynb) - follow the IS2RS/IS2RE instructions. And more information about running relaxations once the lmdb has been written is [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/TRAIN.md#initial-structure-to-relaxed-structure-is2rs).
-
-You need to provide the calculator with a path to a model checkpoint file. That can be downloaded [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/MODELS.md).
+We will use an ASE compatible calculator to run these.
 
 +++
 
-Running the model with BFGS prints at each relaxation step is a lot to print. So we will just run one to demonstrate what happens on each iteration.
+Running the model with BFGS prints at each relaxation step which is a lot to print. So we will just run one to demonstrate what happens on each iteration.
 
 ```{code-cell} ipython3
-from ocpmodels.common.model_registry import model_name_to_local_file
-
-checkpoint_path = model_name_to_local_file('eSCN-L6-M3-Lay20All+MD', local_cache='/tmp/ocp_checkpoints/')
-
 os.makedirs(f"data/{bulk_src_id}_{adsorbate_smiles_h}", exist_ok=True)
 
 # Define the calculator
-calc = OCPCalculator(checkpoint=checkpoint_path, cpu=False)   # if you have a GPU
+calc = OCPCalculator(checkpoint=checkpoint, cpu=False)   # if you have a GPU
 # calc = OCPCalculator(checkpoint=checkpoint_path, cpu=True)  # If you have CPU only
 ```
 
@@ -172,9 +167,56 @@ These steps are embarrassingly parallel, and can be launched that way to speed t
 
 +++
 
-The goal here is to relax each candidate adsorption geometry and save the results in a trajectory file we will analyze later. Each trajectory file will have the geometry and final energy of the relaxed structure. This is a quite time-consuming task.
+The goal here is to relax each candidate adsorption geometry and save the results in a trajectory file we will analyze later. Each trajectory file will have the geometry and final energy of the relaxed structure. 
+
+It is somewhat time consuming to run this, so in this cell we only run one example.
 
 ```{code-cell} ipython3
+import time
+from tqdm import tqdm
+tinit = time.time()
+
+for bulk_src_id in tqdm(bulk_ids[1:2]): 
+    # Enumerate slabs and establish adsorbates
+    bulk = Bulk(bulk_src_id_from_db=bulk_src_id, bulk_db_path="NRR_example_bulks.pkl")
+    slab = Slab.from_bulk_get_specific_millers(bulk= bulk, specific_millers=(1, 1, 1))
+
+    # Perform heuristic placements
+    heuristic_adslabs_H = AdsorbateSlabConfig(slab[0], adsorbate_H, mode="heuristic")
+    heuristic_adslabs_NNH = AdsorbateSlabConfig(slab[0], adsorbate_NNH, mode="heuristic")
+
+    #Run relaxations
+    os.makedirs(f"data/{bulk_src_id}_H", exist_ok=True)
+    os.makedirs(f"data/{bulk_src_id}_NNH", exist_ok=True)
+
+    print(f'{len(heuristic_adslabs_H.atoms_list)} H slabs to compute for {bulk_src_id}')
+    print(f'{len(heuristic_adslabs_NNH.atoms_list)} NNH slabs to compute for {bulk_src_id}')
+
+    # Set up the calculator
+    for idx, adslab in enumerate(heuristic_adslabs_H.atoms_list):
+        t0 = time.time()
+        adslab.calc = calc
+        print(f'Running data/{bulk_src_id}_H/{idx}')
+        opt = BFGS(adslab, trajectory=f"data/{bulk_src_id}_H/{idx}.traj", logfile=f"data/{bulk_src_id}_H/{idx}.log")
+        opt.run(fmax=0.05, steps=20)
+        print(f'  Elapsed time: {time.time() - t0:1.1f} seconds for data/{bulk_src_id}_H/{idx}')
+        
+    for idx, adslab in enumerate(heuristic_adslabs_NNH.atoms_list):
+        t0 = time.time()
+        adslab.calc = calc
+        print(f'Running data/{bulk_src_id}_NNH/{idx}')
+        opt = BFGS(adslab, trajectory=f"data/{bulk_src_id}_NNH/{idx}.traj", logfile=f"data/{bulk_src_id}_NNH/{idx}.log")
+        opt.run(fmax=0.05, steps=50)
+        print(f'  Elapsed time: {time.time() - t0:1.1f} seconds for data/{bulk_src_id}_NNH/{idx}')
+
+print(f'Elapsed time: {time.time() - tinit:1.1f} seconds')
+```
+
+This cell runs all the examples. I don't recommend you run this during the workshop. Instead, we have saved the results for the subsequent analyses so you can skip this one.
+
+```{code-cell} ipython3
+:tags: [hide-output]
+
 import time
 from tqdm import tqdm
 tinit = time.time()
@@ -225,6 +267,8 @@ As a post-processing step we check to see if:
 4. the surface has changed
 
 We check these because they affect our referencing scheme and may result in energies that don't mean what we think, e.g. they aren't just adsorption, but include contributions from other things like desorption, dissociation or reconstruction. For (4), the relaxed surface should really be supplied as well. It will be necessary when correcting the SP / RX energies later. Since we don't have it here, we will ommit supplying it, and the detector will instead compare the initial and final slab from the adsorbate-slab relaxation trajectory. If a relaxed slab is provided, the detector will compare it and the slab after the adsorbate-slab relaxation. The latter is more correct!
+
+In this loop we find the most stable (most negative) adsorption energy for each adsorbate on each surface and save them in a DataFrame.
 
 ```{code-cell} ipython3
 # Iterate over trajs to extract results
@@ -380,3 +424,7 @@ ax2.set_ylabel("dE *H literature [eV]")
 f.set_figwidth(15)
 f.set_figheight(7)
 ```
+
+# Next steps
+
+Next we consider [fine-tuning](../fine-tuning/fine-tuning-oxides.ipynb).

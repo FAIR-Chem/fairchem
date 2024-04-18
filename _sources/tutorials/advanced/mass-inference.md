@@ -11,7 +11,7 @@ kernelspec:
   name: python3
 ---
 
-Fast batched inference
+Mass inference
 ------------------
 
 The ASE calculator is not necessarily the most efficient way to run a lot of computations. It is better to do a "mass inference" using a command line utility. We illustrate how to do that here. 
@@ -23,31 +23,7 @@ Boes, J. R., Groenenboom, M. C., Keith, J. A., & Kitchin, J. R. (2016). Neural n
 You can retrieve the dataset below. In this notebook we learn how to do "mass inference" without an ASE calculator. You do this by creating a config.yml file, and running the `main.py` command line utility.
 
 ```{code-cell} ipython3
-! wget https://figshare.com/ndownloader/files/11948267 -O data.db 
-```
-
-
-
-Inference on this file will be fast if we have a gpu, but if we don't this could take a while. To keep things fast for the automated builds, we'll just select the first 10 structures so it's still approachable with just a CPU. 
-Comment or skip this block to use the whole dataset!
-
-```{code-cell} ipython3
-! mv data.db full_data.db
-
-import ase.db
-import numpy as np
-
-with ase.db.connect('full_data.db') as full_db:
-  with ase.db.connect('data.db',append=False) as subset_db:
-
-    # Select 50 random points for the subset, ASE DB ids start at 1
-    for i in np.random.choice(list(range(1,len(full_db)+1)),size=50,replace=False):
-      atoms = full_db.get_atoms(f'id={i}', add_additional_information=True)
-
-      if 'tag' in atoms.info['key_value_pairs']:
-        atoms.info['key_value_pairs']['tag'] = int(atoms.info['key_value_pairs']['tag'])
-        
-      subset_db.write(atoms, **atoms.info['key_value_pairs'])
+! [ ! -f data.db ]  && wget https://figshare.com/ndownloader/files/11948267 -O data.db 
 ```
 
 ```{code-cell} ipython3
@@ -57,14 +33,15 @@ with ase.db.connect('full_data.db') as full_db:
 You have to choose a checkpoint to start with. The newer checkpoints may require too much memory for this environment. 
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import available_pretrained_models
-print(available_pretrained_models)
+from ocpmodels.common.model_registry import MODEL_REGISTRY
+print(MODEL_REGISTRY.keys())
+
 ```
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import model_name_to_local_file
+from ocpmodels.common.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-dTOC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-dT OC22', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path
 
 ```
@@ -72,6 +49,7 @@ checkpoint_path
 We have to update our configuration yml file with the dataset. It is necessary to specify the train and test set for some reason. 
 
 ```{code-cell} ipython3
+
 from ocpmodels.common.tutorial_utils import generate_yml_config
 yml = generate_yml_config(checkpoint_path, 'config.yml',
                    delete=['cmd', 'logger', 'task', 'model_attributes',
@@ -80,7 +58,7 @@ yml = generate_yml_config(checkpoint_path, 'config.yml',
                            'gpus': 1,
                            'task.dataset': 'ase_db',
                            'task.prediction_dtype': 'float32',
-                           'logger':'tensorboard', # don't use wandb!
+                        
                            # Train data
                            'dataset.train.src': 'data.db',
                            'dataset.train.a2g_args.r_energy': False,
@@ -101,20 +79,18 @@ It is a good idea to redirect the output to a file. If the output gets too large
 ```{code-cell} ipython3
 %%capture inference
 import time
-from ocpmodels.common.tutorial_utils import ocp_main
-
 t0 = time.time()
 ! python {ocp_main()} --mode predict --config-yml {yml} --checkpoint {checkpoint_path} --amp
 print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
 ```
 
 ```{code-cell} ipython3
-with open('mass-inference.txt', 'wb') as f:
-    f.write(inference.stdout.encode('utf-8')) 
+! grep "Total time taken:" 'mass-inference.txt'
 ```
 
 ```{code-cell} ipython3
-! grep "Total time taken:" 'mass-inference.txt'
+with open('mass-inference.txt', 'wb') as f:
+    f.write(inference.stdout.encode('utf-8')) 
 ```
 
 The mass inference approach takes 1-2 minutes to run. See the output [here](./mass-inference.txt).
@@ -126,7 +102,7 @@ d = results[0].split(':')[-1].strip()
 
 ```{code-cell} ipython3
 import numpy as np
-results = np.load(f'{d}/ocp_predictions.npz', allow_pickle=True)
+results = np.load(f'{d}/s2ef_predictions.npz', allow_pickle=True)
 results.files
 ```
 
@@ -167,7 +143,7 @@ We include this here just to show that:
 
 ```{code-cell} ipython3
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
+calc = OCPCalculator(checkpoint=os.path.expanduser(checkpoint_path), cpu=False)
 ```
 
 ```{code-cell} ipython3
