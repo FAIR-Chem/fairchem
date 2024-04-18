@@ -1286,7 +1286,6 @@ def update_config(base_config):
         "lmdb",
         "trajectory_lmdb_v2",
         "oc22_lmdb",
-        "pickle",
         "ase_read",
         "ase_read_multi",
         "ase_db",
