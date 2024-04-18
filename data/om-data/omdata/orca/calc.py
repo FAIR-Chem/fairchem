@@ -42,7 +42,7 @@ def write_orca_inputs(
     system. Primarily used for debugging.
     """
 
-    MyOrcaProfile = OrcaProfile([str(Field(Path(which("orca") or "orca")).default)])
+    MyOrcaProfile = OrcaProfile([which("orca")])
     calc = ORCA(
         charge=charge,
         mult=mult,
