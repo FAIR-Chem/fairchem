@@ -41,7 +41,7 @@ else
     conda activate {env}
 fi
 {wandb_offline}
-srun --gpus-per-task=1 --output={output} {python_command}
+srun --output={output} {python_command}
 """
 
 
