@@ -37,7 +37,7 @@ class LmdbDataset(Dataset):
             config (dict): Dataset configuration
             transform (callable, optional): Data transform function.
                     (default: :obj:`None`)
-            fa_frames (str, optional): type of frame averaging method applied, if any.
+            fa_method (str, optional): type of frame averaging method applied, if any.
             adsorbates (str, optional): comma-separated list of adsorbates to filter.
                     If None or "all", no filtering is applied.
                     (default: None)
@@ -49,7 +49,7 @@ class LmdbDataset(Dataset):
         self,
         config,
         transform=None,
-        fa_frames=None,
+        fa_method=None,
         lmdb_glob=None,
         adsorbates=None,
         adsorbates_ref_dir=None,
@@ -96,7 +96,7 @@ class LmdbDataset(Dataset):
 
         self.filter_per_adsorbates()
         self.transform = transform
-        self.fa_method = fa_frames
+        self.fa_method = fa_method
 
     def filter_per_adsorbates(self):
         """Filter the dataset to only include structures with a specific

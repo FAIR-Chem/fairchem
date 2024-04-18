@@ -303,7 +303,7 @@ if __name__ == "__main__":
             "num_workers": 0,
         },
         "frame_averaging": None,
-        "fa_frames": None,
+        "fa_method": None,
         "silent": False,
         "graph_rewiring": "remove-tag-0",
         "de": {

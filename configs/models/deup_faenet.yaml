@@ -57,7 +57,7 @@ default:
     energy_coefficient: 1
 
   frame_averaging: False # 2D, 3D, da, False
-  fa_frames: False # can be {None, full, random, det, e3, e3-random, e3-det}
+  fa_method: False # can be {None, full, random, det, e3, e3-random, e3-det}
 
 # -------------------
 # -----  IS2RE  -----
