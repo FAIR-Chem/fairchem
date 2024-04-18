@@ -1,7 +1,7 @@
 job:
   mem: 32GB
   cpus: 4
-  gres: gpu:rtx8000:1
+  gres: gpu:1
   partition: long
 
 default:
