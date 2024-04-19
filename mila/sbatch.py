@@ -1,12 +1,13 @@
-from minydra import resolved_args, MinyDict
-from pathlib import Path
-from datetime import datetime
 import os
-import subprocess
-from shutil import copyfile
-import sys
 import re
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+from shutil import copyfile
+
 import yaml
+from minydra import MinyDict, resolved_args
 
 IS_DRAC = (
     "narval.calcul.quebec" in os.environ.get("HOSTNAME", "")

@@ -1,0 +1,75 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:rtx8000:1
+  partition: long
+  time: 15:00:00
+
+default:
+  # wandb_name: alvaro-carbonero-math
+  wandb_project: ocp-alvaro
+  wandb_tags: "reproduce-best-config"
+  test_ri: True
+  mode: train
+  graph_rewiring: remove-tag-0
+  note: "repoduce-top-run"
+  frame_averaging: 2D
+  fa_method: se3-random
+  cp_data_to_tmpdir: True
+  is_disconnected: true
+  model:
+    edge_embed_type: all_rij
+    mp_type: updownscale_base
+    phys_embeds: True
+    tag_hidden_channels: 32
+    pg_hidden_channels: 96
+    energy_head: weighted-av-final-embeds
+    complex_mp: True
+    graph_norm: True
+    hidden_channels: 352
+    num_filters: 288
+    num_gaussians: 68
+    num_interactions: 5
+    second_layer_MLP: False
+    skip_co: concat
+    cutoff: 4.0
+  optim:
+    batch_size: 256
+    eval_batch_size: 256
+    lr_initial: 0.002
+    scheduler: LinearWarmupCosineAnnealingLR
+    max_epochs: 9
+    eval_every: 0.4
+
+runs:
+ 
+  - config: faenet-is2re-all
+    note: baseline faenet
+
+  - config: indfaenet-is2re-all
+    note: baseline with top configs 
+
+  - config: indfaenet-is2re-all
+    note: baseline with runs' configs 
+    model: 
+      tag_hidden_channels: 32
+      pg_hidden_channels: 96
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 528
+      num_filters: 672
+      num_gaussians: 148
+      num_interactions: 5
+      second_layer_MLP: False
+      skip_co: concat
+
+  - config: depfaenet-is2re-all
+    note: baseline with top configs
+
+  - config: indfaenet-is2re-all
+    note: so that ads get old dimensions
+    model:
+      hidden_channels: 704 
+      num_gaussians: 200
+      num_filters: 896

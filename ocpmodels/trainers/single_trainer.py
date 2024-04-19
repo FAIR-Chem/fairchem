@@ -227,6 +227,8 @@ class SingleTrainer(BaseTrainer):
 
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
+        if self.config["continue_from_dir"] is not None and self.config["adsorbates"] not in {None, "all"}:
+            self.step = 0
         start_epoch = self.step // n_train
         max_epochs = self.config["optim"]["max_epochs"]
         timer = Times()
@@ -498,7 +500,11 @@ class SingleTrainer(BaseTrainer):
         # Close datasets
         if debug_batches < 0:
             for ds in self.datasets.values():
-                ds.close_db()
+                try:
+                    ds.close_db()
+                except:
+                    assert self.config["lowest_energy_only"] == True
+                    self.real_dataset.close_db()
 
     def model_forward(self, batch_list, mode="train", q=None):
         """Perform a forward pass of the model when frame averaging is applied.

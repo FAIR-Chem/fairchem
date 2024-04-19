@@ -2,6 +2,9 @@ default:
   model:
     name: painn
     use_pbc: True
+  optim:
+    num_workers: 4
+    eval_batch_size: 64
 
 # -------------------
 # -----  IS2RE  -----
