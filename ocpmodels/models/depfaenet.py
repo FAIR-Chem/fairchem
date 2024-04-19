@@ -2,6 +2,7 @@ import torch
 from torch.nn import Linear
 from torch import nn
 from torch_scatter import scatter
+import torch.nn.functional as F
 
 from ocpmodels.models.faenet import FAENet
 from ocpmodels.models.faenet import OutputBlock as conOutputBlock
@@ -12,9 +13,9 @@ from ocpmodels.models.utils.activations import swish
 from torch_geometric.data import Batch
 
 
-class discOutputBlock(conOutputBlock):
-    def __init__(self, energy_head, hidden_channels, act, disconnected_mlp=False):
-        super(discOutputBlock, self).__init__(energy_head, hidden_channels, act)
+class DiscOutputBlock(conOutputBlock):
+    def __init__(self, energy_head, hidden_channels, act, dropout_lin, disconnected_mlp=False):
+        super(DiscOutputBlock, self).__init__(energy_head, hidden_channels, act, dropout_lin)
 
         # We modify the last output linear function to make the output a vector
         self.lin2 = Linear(hidden_channels // 2, hidden_channels // 2)
@@ -40,17 +41,16 @@ class discOutputBlock(conOutputBlock):
         ):  # Right now, this is the only available option.
             alpha = self.w_lin(h)
 
-        elif self.energy_head == "graclus":
-            h, batch = self.graclus(h, edge_index, edge_weight, batch)
-
-        elif self.energy_head in {"pooling", "random"}:
-            h, batch, pooling_loss = self.hierarchical_pooling(
-                h, edge_index, edge_weight, batch
-            )
-
         # MLP
+        h = F.dropout(
+            h, p=self.dropout_lin, training=self.training or self.deup_inference
+        )
         h = self.lin1(h)
-        h = self.lin2(self.act(h))
+        h = self.act(h)
+        h = F.dropout(
+            h, p=self.dropout_lin, training=self.training or self.deup_inference
+        )
+        h = self.lin2(h)
 
         if self.energy_head in {
             "weighted-av-initial-embeds",
@@ -78,14 +78,14 @@ class discOutputBlock(conOutputBlock):
 
 
 @registry.register_model("depfaenet")
-class depFAENet(FAENet):
+class DepFAENet(FAENet):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         # We replace the old output block by the new output block
         self.disconnected_mlp = kwargs.get("disconnected_mlp", False)
-        self.output_block = discOutputBlock(
-            self.energy_head, kwargs["hidden_channels"], self.act, self.disconnected_mlp
+        self.output_block = DiscOutputBlock(
+            self.energy_head, kwargs["hidden_channels"], self.act, self.disconnected_mlp, self.dropout_lin,
         )
 
     @conditional_grad(torch.enable_grad())
