@@ -56,7 +56,7 @@ class OCPTrainer(BaseTrainer):
         seed (int, optional): Random number seed.
             (default: :obj:`None`)
         logger (str, optional): Type of logger to be used.
-            (default: :obj:`tensorboard`)
+            (default: :obj:`wandb`)
         local_rank (int, optional): Local rank of the process, only applicable for distributed training.
             (default: :obj:`0`)
         amp (bool, optional): Run using automatic mixed precision.
@@ -81,7 +81,7 @@ class OCPTrainer(BaseTrainer):
         is_debug=False,
         print_every=100,
         seed=None,
-        logger="tensorboard",
+        logger="wandb",
         local_rank=0,
         amp=False,
         cpu=False,
@@ -144,6 +144,7 @@ class OCPTrainer(BaseTrainer):
             self.train_sampler.set_epoch_and_start_iteration(
                 epoch_int, skip_steps
             )
+
             train_loader_iter = iter(self.train_loader)
 
             for i in range(skip_steps, len(self.train_loader)):
@@ -359,6 +360,10 @@ class OCPTrainer(BaseTrainer):
         return loss
 
     def _compute_metrics(self, out, batch, evaluator, metrics={}):
+        # this function changes the values in the out dictionary,
+        # make a copy instead of changing them in the callers version
+        out = {k: v.clone() for k, v in out.items()}
+
         natoms = batch.natoms
         batch_size = natoms.numel()
 
