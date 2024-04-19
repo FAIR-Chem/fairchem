@@ -35,7 +35,7 @@ class DiscOutputBlock(conOutputBlock):
     def tags_saver(self, tags):
         self.current_tags = tags
 
-    def forward(self, h, edge_index, edge_weight, batch, alpha):
+    def forward(self, h, edge_index, edge_weight, batch, alpha, data):
         if (
             self.energy_head == "weighted-av-final-embeds"
         ):  # Right now, this is the only available option.
@@ -85,7 +85,7 @@ class DepFAENet(FAENet):
         # We replace the old output block by the new output block
         self.disconnected_mlp = kwargs.get("disconnected_mlp", False)
         self.output_block = DiscOutputBlock(
-            self.energy_head, kwargs["hidden_channels"], self.act, self.disconnected_mlp, self.dropout_lin,
+            self.energy_head, kwargs["hidden_channels"], self.act, self.dropout_lin, self.disconnected_mlp,
         )
 
     @conditional_grad(torch.enable_grad())
