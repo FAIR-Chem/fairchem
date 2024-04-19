@@ -35,6 +35,7 @@ jobs:
         pip install -e .[docs,adsorbml]
         pip install git+https://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset.git
         pip install git+https://github.com/Open-Catalyst-Project/ocpapi.git
+        pip install git+https://github.com/Open-Catalyst-Project/CatTSunami.git
 
     # Build the book
     - name: Build the book
