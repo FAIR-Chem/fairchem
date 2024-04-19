@@ -1,8 +1,6 @@
-from pathlib import Path
 from shutil import which
 
 from ase.calculators.orca import ORCA, OrcaProfile
-from pydantic import Field
 from sella import Sella
 
 ORCA_FUNCTIONAL = "wB97M-V"
@@ -16,16 +14,23 @@ ORCA_SIMPLE_INPUT = [
     "NOSOSCF",
     "NormalConv",
     "DEFGRID2",
-    "ALLPOP"
+    "ALLPOP",
 ]
 ORCA_SIMPLE_INPUT_QUACC_IGNORE = []
-ORCA_BLOCKS = ["%scf Convergence Tight maxiter 500 end","%elprop Dipole true Quadrupole true end"]
+ORCA_BLOCKS = [
+    "%scf Convergence Tight maxiter 300 end",
+    "%elprop Dipole true Quadrupole true end",
+]
 ORCA_ASE_SIMPLE_INPUT = " ".join([ORCA_FUNCTIONAL] + [ORCA_BASIS] + ORCA_SIMPLE_INPUT)
 OPT_PARAMETERS = {
     "optimizer": Sella,
     "store_intermediate_results": True,
     "fmax": 0.05,
-    "max_steps": 1000,
+    "max_steps": 100,
+    "optimizer_kwargs": {
+        "order": 0,
+        "internal": True,
+    },
 }
 
 
