@@ -25,7 +25,6 @@ default:
     skip_co: False # output skip connections {False, "add", "concat"}
     second_layer_MLP: False # in EmbeddingBlock
     complex_mp: False
-    edge_embed_type: rij # {'rij','all_rij','sh', 'all'})
     mp_type: base # {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env'}
     graph_norm: False  # bool
     att_heads: 1  # int
@@ -153,7 +152,6 @@ qm9:
       att_heads: 1
       complex_mp: true
       cutoff: 6.0
-      edge_embed_type: all_rij
       energy_head: ''
       graph_norm: true
       graph_rewiring: null
@@ -205,7 +203,6 @@ qm7x:
       att_heads: 1
       complex_mp: true
       cutoff: 5.0
-      edge_embed_type: all_rij
       energy_head: false
       force_decoder_model_config:
         mlp:

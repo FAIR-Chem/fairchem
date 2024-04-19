@@ -39,8 +39,6 @@ default:
     targets: hidden_channels, num_filters, pg_hidden_channels, phys_hidden_channels, batch_size
   frame_averaging: 3D
   fa_method: random
-  model:
-    edge_embed_type: all_rij
 
 orion:
   # Remember to change the experiment name if you change anything in the search space

@@ -110,7 +110,6 @@ if __name__ == "__main__":
         trainer_config["dataset"]
     )
 
-    trainer_config["model"]["edge_embed_type"] = "all_rij"
     trainer_config["model"]["mp_type"] = "updownscale"
     trainer_config["model"]["phys_embeds"] = True
     trainer_config["model"]["tag_hidden_channels"] = 32

@@ -9,8 +9,6 @@ default:
   test_ri: True
   mode: train
   graph_rewiring: remove-tag-0
-  model:
-    edge_embed_type: all_rij
   wandb_tags: "best-config"
   optim:
     batch_size: 256
