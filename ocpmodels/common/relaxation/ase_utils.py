@@ -64,8 +64,6 @@ def batch_to_atoms(batch):
 
 
 class OCPCalculator(Calculator):
-    implemented_properties = ["energy", "forces"]
-
     def __init__(
         self,
         config_yml: str | None = None,
@@ -183,6 +181,7 @@ class OCPCalculator(Calculator):
             r_distances=False,
             r_pbc=True,
         )
+        self.implemented_properties = list(self.config["outputs"].keys())
 
     def load_checkpoint(
         self, checkpoint_path: str, checkpoint: dict | None = None
