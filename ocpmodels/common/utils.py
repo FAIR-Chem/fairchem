@@ -282,7 +282,9 @@ def setup_experimental_imports(project_root: Path) -> None:
 
     if include_file.exists():
         with open(include_file, "r") as f:
-            include_dirs = f.read().splitlines()
+            include_dirs = [
+                line.rstrip("\n") for line in f.readlines() if line.strip()
+            ]
 
         for inc_dir in include_dirs:
             experimental_files.extend(
