@@ -294,7 +294,9 @@ def cosine_similarity(
     target: dict[str, torch.Tensor],
     key: Hashable = NONE,
 ):
-    error = torch.cosine_similarity(prediction[key], target[key])
+    # cast to float 32 to avoid 0/nan issues in fp16
+    # https://github.com/pytorch/pytorch/issues/69512
+    error = torch.cosine_similarity(prediction[key].float(), target[key].float())
     return {
         "metric": torch.mean(error).item(),
         "total": torch.sum(error).item(),
