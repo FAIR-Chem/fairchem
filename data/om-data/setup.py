@@ -12,6 +12,9 @@ setup(
     description="Code for generating OMOL input configurations",
     url="http://github.com/Open-Catalyst-Project/om-data",
     packages=find_packages(),
-    install_requires=["ase", "quacc[sella]>=0.7.2"],
+    install_requires=[
+        "ase@git+https://gitlab.com/ase/ase.git@dc86a19a280741aa2b42a08d0fa63a8d0348e225",
+        "quacc[sella]>=0.7.6",
+    ],
     include_package_data=True,
 )
