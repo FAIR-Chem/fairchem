@@ -1,8 +1,9 @@
-import os
-import pickle
+from __future__ import annotations
 
-from quacc.recipes.orca.core import ase_relax_job, static_job
-from quacc.wflow_tools.customizers import strip_decorator
+import os
+
+import psutil
+from quacc.recipes.orca.core import run_and_summarize, run_and_summarize_opt
 
 from omdata.orca.calc import (
     OPT_PARAMETERS,
@@ -10,7 +11,6 @@ from omdata.orca.calc import (
     ORCA_BLOCKS,
     ORCA_FUNCTIONAL,
     ORCA_SIMPLE_INPUT,
-    ORCA_SIMPLE_INPUT_QUACC_IGNORE,
 )
 
 
@@ -20,10 +20,11 @@ def single_point_calculation(
     spin_multiplicity,
     xc=ORCA_FUNCTIONAL,
     basis=ORCA_BASIS,
-    orcasimpleinput=ORCA_SIMPLE_INPUT,
-    orcablocks=ORCA_BLOCKS,
+    orcasimpleinput=None,
+    orcablocks=None,
     nprocs=12,
     outputdir=os.getcwd(),
+    **calc_kwargs,
 ):
     """
     Wrapper around QUACC's static job to standardize single-point calculations.
@@ -51,25 +52,34 @@ def single_point_calculation(
         Number of processes to parallelize across
     outputdir: str
         Directory to move results to upon completion
+    calc_kwargs:
+        Additional kwargs for the custom Orca calculator
     """
     from quacc import SETTINGS
 
     SETTINGS.RESULTS_DIR = outputdir
 
-    o = strip_decorator(static_job)(
+    if orcasimpleinput is None:
+        orcasimpleinput = ORCA_SIMPLE_INPUT.copy()
+    if orcablocks is None:
+        orcablocks = ORCA_BLOCKS.copy()
+
+    nprocs = psutil.cpu_count(logical=False) if nprocs == "max" else nprocs
+    default_inputs = [xc, basis, "engrad", "normalprint"]
+    default_blocks = [f"%pal nprocs {nprocs} end"]
+
+    doc = run_and_summarize(
         atoms,
         charge=charge,
         spin_multiplicity=spin_multiplicity,
-        xc=xc,
-        basis=basis,
-        orcasimpleinput=orcasimpleinput + ORCA_SIMPLE_INPUT_QUACC_IGNORE,
-        orcablocks=orcablocks,
-        nprocs=nprocs,
+        default_inputs=default_inputs,
+        default_blocks=default_blocks,
+        input_swaps=orcasimpleinput,
+        block_swaps=orcablocks,
+        **calc_kwargs,
     )
-    # TODO: how we want to handle what results to save out and where to store
-    # them.
-    with open(os.path.join(outputdir, "quacc_results.pkl"), "wb") as f:
-        pickle.dump(o, f)
+
+    return doc
 
 
 def ase_relaxation(
@@ -78,11 +88,12 @@ def ase_relaxation(
     spin_multiplicity,
     xc=ORCA_FUNCTIONAL,
     basis=ORCA_BASIS,
-    orcasimpleinput=ORCA_SIMPLE_INPUT,
-    orcablocks=ORCA_BLOCKS,
+    orcasimpleinput=None,
+    orcablocks=None,
     nprocs=12,
-    opt_params=OPT_PARAMETERS,
+    opt_params=None,
     outputdir=os.getcwd(),
+    **calc_kwargs,
 ):
     """
     Wrapper around QUACC's ase_relax_job to standardize geometry optimizations.
@@ -112,22 +123,34 @@ def ase_relaxation(
         Dictionary of optimizer parameters
     outputdir: str
         Directory to move results to upon completion
+    calc_kwargs:
+        Additional kwargs for the custom Orca calculator
     """
     from quacc import SETTINGS
 
     SETTINGS.RESULTS_DIR = outputdir
 
-    o = strip_decorator(ase_relax_job)(
+    if orcasimpleinput is None:
+        orcasimpleinput = ORCA_SIMPLE_INPUT.copy()
+    if orcablocks is None:
+        orcablocks = ORCA_BLOCKS.copy()
+    if opt_params is None:
+        opt_params = OPT_PARAMETERS.copy()
+
+    nprocs = psutil.cpu_count(logical=False) if nprocs == "max" else nprocs
+    default_inputs = [xc, basis, "engrad", "normalprint"]
+    default_blocks = [f"%pal nprocs {nprocs} end"]
+
+    doc = run_and_summarize_opt(
         atoms,
         charge=charge,
         spin_multiplicity=spin_multiplicity,
-        xc=xc,
-        basis=basis,
-        orcasimpleinput=orcasimpleinput + ORCA_SIMPLE_INPUT_QUACC_IGNORE,
-        orcablocks=orcablocks,
+        default_inputs=default_inputs,
+        default_blocks=default_blocks,
+        input_swaps=orcasimpleinput,
+        block_swaps=orcablocks,
         opt_params=opt_params,
-        nprocs=nprocs,
+        **calc_kwargs,
     )
-    # TODO: how we want to handle what results to save out and where to store them.
-    with open(os.path.join(outputdir, "quacc_results.pkl"), "wb") as f:
-        pickle.dump(o, f)
+
+    return doc
