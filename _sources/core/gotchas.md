@@ -22,7 +22,7 @@ If you see errors like:
 torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 390.00 MiB (GPU 0; 10.76 GiB total capacity; 9.59 GiB already allocated; 170.06 MiB free; 9.81 GiB reserved in total by PyTorch) If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
 ```
 
-It means your GPU is out of memory. Some reasons could be that you have multiple notebooks open that are using the GPU, e.g. they have loaded a calculator or something. Try closing all the other notebooks. 
+It means your GPU is out of memory. Some reasons could be that you have multiple notebooks open that are using the GPU, e.g. they have loaded a calculator or something. Try closing all the other notebooks.
 
 It could also mean the batch size is too large to fit in memory. You can try making it smaller in the yml config file (optim.batch_size).
 
@@ -34,7 +34,7 @@ If it is an option, you can try a GPU with more memory, or you may be able to sp
 
 # I want the energy of a gas phase atom
 
-But I get an error like 
+But I get an error like
 
 ```
 RuntimeError: cannot reshape tensor of 0 elements into shape [0, -1] because the unspecified dimension size -1 can be any value and is ambiguous
@@ -83,7 +83,7 @@ checkpoint_path = model_name_to_local_file('GemNet-OC All', local_cache='/tmp/oc
 
 with contextlib.redirect_stdout(StringIO()) as _:
     calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
-    
+
 
 
 slab.set_calculator(calc)
@@ -96,7 +96,7 @@ checkpoint_path = model_name_to_local_file('GemNet-OCOC22', local_cache='/tmp/oc
 
 with contextlib.redirect_stdout(StringIO()) as _:
     calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
-    
+
 
 
 slab.set_calculator(calc)
@@ -176,7 +176,7 @@ atoms.get_potential_energy()
 
 # To tag or not?
 
-Some models use tags to determine which atoms to calculate energies for. For example, Gemnet uses a tag=1 to indicate the atom should be calculated. You will get an error with this model 
+Some models use tags to determine which atoms to calculate energies for. For example, Gemnet uses a tag=1 to indicate the atom should be calculated. You will get an error with this model
 
 ```{code-cell} ipython3
 %%capture
@@ -223,7 +223,9 @@ atoms.get_potential_energy()
 
 # Stochastic simulation results
 
-Some models are not deterministic (SCN/eSCN/EqV2), i.e. you can get slightly different answers each time you run it. An example is shown below. See https://github.com/Open-Catalyst-Project/ocp/issues/563 for more discussion. This happens because a random selection of is made to sample edges, and a different selection is made each time you run it. 
+Some models are not deterministic (SCN/eSCN/EqV2), i.e. you can get slightly different answers each time you run it.
+An example is shown below. See [Issue 563](https://github.com/Open-Catalyst-Project/ocp/issues/563) for more discussion.
+This happens because a random selection of is made to sample edges, and a different selection is made each time you run it.
 
 ```{code-cell} ipython3
 from ocpmodels.models.model_registry import model_name_to_local_file
@@ -242,7 +244,7 @@ results = []
 for i in range(10):
     calc.calculate(slab, ['energy'], None)
     results += [slab.get_potential_energy()]
-    
+
 import numpy as np
 print(np.mean(results), np.std(results))
 for result in results:
