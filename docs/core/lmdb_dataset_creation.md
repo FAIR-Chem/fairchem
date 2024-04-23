@@ -24,7 +24,7 @@ about these steps as they've been automated as part of this
 
 ```{code-cell} ipython3
 from ocpmodels.preprocessing import AtomsToGraphs
-from ocpmodels.datasets import SinglePointLmdbDataset, TrajectoryLmdbDataset
+from ocpmodels.datasets import LmdbDataset
 import ase.io
 from ase.build import bulk
 from ase.build import fcc100, add_adsorbate, molecule
@@ -149,7 +149,7 @@ db.close()
 ```
 
 ```{code-cell} ipython3
-dataset = SinglePointLmdbDataset({"src": "sample_CuCO.lmdb"})
+dataset = LmdbDataset({"src": "sample_CuCO.lmdb"})
 len(dataset)
 ```
 
@@ -217,7 +217,7 @@ db.close()
 ```
 
 ```{code-cell} ipython3
-dataset = TrajectoryLmdbDataset({"src": "s2ef/"})
+dataset = LmdbDataset({"src": "s2ef/"})
 len(dataset)
 ```
 
@@ -227,7 +227,7 @@ dataset[0]
 
 ### Advanced usage
 
-TrajectoryLmdbDataset supports multiple LMDB files because the need to highly parallelize the dataset construction process. With OCP's largest split containing 135M+ frames, the need to parallelize the LMDB generation process for these was necessary. If you find yourself needing to deal with very large datasets we recommend parallelizing this process.
+LmdbDataset supports multiple LMDB files because the need to highly parallelize the dataset construction process. With OCP's largest split containing 135M+ frames, the need to parallelize the LMDB generation process for these was necessary. If you find yourself needing to deal with very large datasets we recommend parallelizing this process.
 
 +++
 
@@ -236,7 +236,7 @@ TrajectoryLmdbDataset supports multiple LMDB files because the need to highly pa
 Below we demonstrate how to interact with an LMDB to extract particular information.
 
 ```{code-cell} ipython3
-dataset = TrajectoryLmdbDataset({"src": "s2ef/"})
+dataset = LmdbDataset({"src": "s2ef/"})
 ```
 
 ```{code-cell} ipython3
