@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import copy
 import logging
+from typing import TYPE_CHECKING
 
 import torch
 from ase import Atoms
@@ -30,8 +31,11 @@ from ocpmodels.common.utils import (
 from ocpmodels.datasets import data_list_collater
 from ocpmodels.preprocessing import AtomsToGraphs
 
+if TYPE_CHECKING:
+    from torch_geometric.data import Batch
 
-def batch_to_atoms(batch):
+
+def batch_to_atoms(batch: Batch):
     n_systems = batch.natoms.shape[0]
     natoms = batch.natoms.tolist()
     numbers = torch.split(batch.atomic_numbers, natoms)
@@ -201,10 +205,16 @@ class OCPCalculator(Calculator):
         except NotImplementedError:
             logging.warning("Unable to load checkpoint!")
 
-    def calculate(self, atoms: Atoms, properties, system_changes) -> None:
-        Calculator.calculate(self, atoms, properties, system_changes)
-        data_object = self.a2g.convert(atoms)
-        batch = data_list_collater([data_object], otf_graph=True)
+    def calculate(
+        self, atoms: Atoms | Batch, properties, system_changes
+    ) -> None:
+        """Calculate implemented properties for a single Atoms object or a Batch of them."""
+        super().calculate(self, atoms, properties, system_changes)
+        if isinstance(atoms, Atoms):
+            data_object = self.a2g.convert(atoms)
+            batch = data_list_collater([data_object], otf_graph=True)
+        else:
+            batch = atoms
 
         predictions = self.trainer.predict(
             batch, per_image=False, disable_tqdm=True
