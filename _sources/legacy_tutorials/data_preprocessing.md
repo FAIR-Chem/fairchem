@@ -104,7 +104,7 @@ data.fixed
 ```
 
 ```{code-cell} ipython3
-data.force
+data.forces
 ```
 
 ```{code-cell} ipython3
@@ -112,7 +112,7 @@ data.pos
 ```
 
 ```{code-cell} ipython3
-data.y
+data.energy
 ```
 
 ### Adding additional info to your Data objects

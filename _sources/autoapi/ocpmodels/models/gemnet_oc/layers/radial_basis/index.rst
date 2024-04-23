@@ -134,7 +134,7 @@ Classes
 
 
 
-.. py:class:: RadialBasis(num_radial: int, cutoff: float, rbf: Dict[str, str] = {'name': 'gaussian'}, envelope: Dict[str, Union[str, int]] = {'name': 'polynomial', 'exponent': 5}, scale_basis: bool = False)
+.. py:class:: RadialBasis(num_radial: int, cutoff: float, rbf: dict[str, str] | None = None, envelope: dict[str, str | int] | None = None, scale_basis: bool = False)
 
 
    Bases: :py:obj:`torch.nn.Module`

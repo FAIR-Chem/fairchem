@@ -135,7 +135,7 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
-   .. py:method:: forward(input: torch.Tensor, target: torch.Tensor, natoms: Optional[torch.Tensor] = None, batch_size: Optional[int] = None)
+   .. py:method:: forward(input: torch.Tensor, target: torch.Tensor, natoms: torch.Tensor | None = None, batch_size: int | None = None)
 
 
 

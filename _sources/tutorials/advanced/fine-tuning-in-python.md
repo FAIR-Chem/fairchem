@@ -17,10 +17,6 @@ Fine-tuning with Python
 The recommended way to do training is with the `main.py` script in ocp. One of the reasons for that is training often takes a long time and is better suited for queue systems like slurm. However, you can submit Python scripts too, and it is possible to run notebooks in Slurm too. Here we work out a proof of concept in training from Python and a Jupyter notebook.
 
 ```{code-cell} ipython3
-%run ../ocp-tutorial.ipynb
-```
-
-```{code-cell} ipython3
 import logging
 from ocpmodels.common.utils import SeverityLevelBetween
 
@@ -49,13 +45,15 @@ root.addHandler(handler_err)
 ```
 
 ```{code-cell} ipython3
-! ase db ../fine-tuning/oxides.db
+! ase db ../../core/fine-tuning/oxides.db
 ```
 
 ```{code-cell} ipython3
-checkpoint = get_checkpoint('GemNet-OC OC20+OC22')
+from ocpmodels.models.model_registry import model_name_to_local_file
+
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-calc = OCPCalculator(checkpoint=checkpoint, trainer='forces', cpu=False)
+calc = OCPCalculator(checkpoint_path=checkpoint_path, trainer='forces', cpu=False)
 ```
 
 ## Split the data into train, test, val sets
@@ -65,7 +63,7 @@ calc = OCPCalculator(checkpoint=checkpoint, trainer='forces', cpu=False)
 
 from ocpmodels.common.tutorial_utils import train_test_val_split
 
-train, test, val = train_test_val_split('../fine-tuning/oxides.db')
+train, test, val = train_test_val_split('../../core/fine-tuning/oxides.db')
 train, test, val
 ```
 
@@ -76,14 +74,16 @@ We start by making the config.yml. We build this from the calculator checkpoint.
 ```{code-cell} ipython3
 from ocpmodels.common.tutorial_utils import generate_yml_config
 
-yml = generate_yml_config(checkpoint, 'config.yml',
+yml = generate_yml_config(checkpoint_path, 'config.yml',
                    delete=['slurm', 'cmd', 'logger', 'task', 'model_attributes',
                            'optim.loss_force', # the checkpoint setting causes an error
                            'dataset', 'test_dataset', 'val_dataset'],
                    update={'gpus': 1,
                            'task.dataset': 'ase_db',
-                           'optim.eval_every': 1,
-                           'optim.max_epochs': 5,
+                           'optim.eval_every': 10,
+                           'optim.max_epochs': 1,
+                           'optim.batch_size': 4,
+                           'logger': 'tensorboard', # don't use wandb unless you already are logged in 
                            # Train data
                            'dataset.train.src': 'train.db',
                            'dataset.train.a2g_args.r_energy': True,
@@ -116,7 +116,7 @@ from ocpmodels.common.flags import flags
 parser = flags.get_parser()
 args, args_override = parser.parse_known_args(["--mode=train",                                            
                                                "--config-yml=config.yml", 
-                                               f"--checkpoint={checkpoint}",
+                                               f"--checkpoint={checkpoint_path}",
                                                "--amp"])
 args, args_override
 ```

@@ -1,4 +1,4 @@
-# Frequently Asked Questions
+# Model FAQ
 
 If you don't find your question answered here, please feel free to [file a GitHub issue](https://github.com/open-catalyst-project/ocp/issues) or [post on the discussion board](https://discuss.opencatalystproject.org/).
 

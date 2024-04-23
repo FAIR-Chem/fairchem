@@ -22,14 +22,14 @@ This data set shows equations of state for several oxide/polymorph combinations.
 
 +++
 
-First we get the checkpoint that we want. According to the [MODELS](../../core/MODELS.md) the GemNet-OC	OC20+OC22 combination has an energy MAE of 0.483 which seems like a good place to start. This model was trained on oxides.
+First we get the checkpoint that we want. According to the [MODELS](../../core/models) the GemNet-OC	OC20+OC22 combination has an energy MAE of 0.483 which seems like a good place to start. This model was trained on oxides.
 
 We get this checkpoint here.
 
 ```{code-cell} ipython3
-from ocpmodels.common.model_registry import model_name_to_local_file
+from ocpmodels.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-OC OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 ```
 
 The data we need is provided in `supporting-information.json`. That file is embedded in the supporting information for the article, and is provided here in the tutorial. We load this data and explore it a little. The json file provides a dictionary with the structure:
@@ -75,7 +75,7 @@ Next, we will create an OCP calculator that we can use to get predictions from.
 
 ```{code-cell} ipython3
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-calc = OCPCalculator(checkpoint=checkpoint_path, trainer='forces', cpu=False)
+calc = OCPCalculator(checkpoint_path=checkpoint_path, trainer='forces', cpu=False)
 ```
 
 Now, we loop through each structure and accumulate the OCP predictions. Then, we plot the parity results.
@@ -185,9 +185,10 @@ The train set is used for training. The test and val sets are used to check for 
 
 You choose the splits you want, 80:10:10 is common. We take a simple approach to split the database here. We make an array of integers that correspond to the ids, randomly shuffle them, and then get each row in the randomized order and write them to a new db.
 
-We provide some helper functions in [../ocp-tutorial.ipynb](../ocp-tutorial) to streamline this process. 
+We provide some helper functions in `ocpmodels.common.tutorial_utils` to streamline this process. 
 
 ```{code-cell} ipython3
+from ocpmodels.common.tutorial_utils import train_test_val_split
 ! rm -fr train.db test.db val.db
 
 train, test, val = train_test_val_split('oxides.db')
@@ -199,14 +200,18 @@ train, test, val
 We have to create a yaml configuration file for the model we are using. The pre-trained checkpoints contain their config data, so we use this to get the base configuration, and then remove pieces we don't need, and update pieces we do need.
 
 ```{code-cell} ipython3
-yml = generate_yml_config(checkpoint, 'config.yml',
+from ocpmodels.common.tutorial_utils import generate_yml_config 
+
+yml = generate_yml_config(checkpoint_path, 'config.yml',
                    delete=['slurm', 'cmd', 'logger', 'task', 'model_attributes',
                            'optim.loss_force', # the checkpoint setting causes an error
                            'dataset', 'test_dataset', 'val_dataset'],
                    update={'gpus': 1,
                            'task.dataset': 'ase_db',
-                           'optim.eval_every': 1,
-                           'optim.max_epochs': 10,
+                           'optim.eval_every': 10,
+                           'optim.max_epochs': 1,
+                           'optim.batch_size': 4,
+                            'logger':'tensorboard', # don't use wandb!
                            # Train data
                            'dataset.train.src': 'train.db',
                            'dataset.train.a2g_args.r_energy': True,
@@ -230,7 +235,7 @@ yml
 
 ## Running the training job
 
-`ocp` provides a `main.py` file that is used for training. Here we construct the Python command you need to run, and run it. `main.py` is not executable, so we have to run it with python, and you need the absolute path to it, which we get from the `ocp_main()` that is defined in the [utilities](../ocp-tutorial).
+`ocp` provides a `main.py` file that is used for training. Here we construct the Python command you need to run, and run it. `main.py` is not executable, so we have to run it with python, and you need the absolute path to it, which we get from the `ocp_main()` that is defined in the ocpmodels.common.tutorial_utils.
 
 you must set a `mode` and provide a `config-yml`. We provide a checkpoint for a starting point, if you don't do this, it will start from scratch. 
 
@@ -256,9 +261,10 @@ This can take up to 30 minutes for 80 epochs, so we only do a few here to see wh
 :tags: [hide-output]
 
 import time
+from ocpmodels.common.tutorial_utils import ocp_main
+
 t0 = time.time()
-! python {ocp_main()} --mode train --config-yml $yml --checkpoint $checkpoint \
-  --run-dir fine-tuning --identifier ft-oxides --amp > train.txt 2>&1 
+! python {ocp_main()} --mode train --config-yml {yml} --checkpoint {checkpoint_path} --run-dir fine-tuning --identifier ft-oxides --amp > train.txt 2>&1 
 print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
 ```
 
@@ -276,7 +282,7 @@ The `best_checkpoint.pt` is the one that performs best on the validation dataset
 
 ```{code-cell} ipython3
 newckpt = cpdir + '/checkpoint.pt'
-newcalc = OCPCalculator(checkpoint=newckpt, cpu=False)
+newcalc = OCPCalculator(checkpoint_path=newckpt, cpu=False)
 ```
 
 ```{code-cell} ipython3
@@ -334,12 +340,3 @@ There are also other models you could consider. Newer models tend to be more acc
 
 +++
 
-# Next steps
-
-You might want to check out the [gotchas](../gotchas) notebook. It has some examples of things we have seen go wrong before.
-
-The [advanced](../advanced) folder contains several concepts that are more advanced. These include:
-
-1. [Mass inference](../advanced/mass-inference) which is more efficient than the ASE calculator
-2. [Working with embeddings](../advanced/embeddings) which shows some ways to use the embeddings from OCP
-3. [Fine-tuning in python](../advanced/fine-tuning-in-python)

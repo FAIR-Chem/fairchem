@@ -53,14 +53,14 @@ is just re1 + re2.
 
 Based on https://atct.anl.gov/Thermochemical%20Data/version%201.118/species/?species_number=986, the formation energy of water is about -3.03 eV at standard state. You could also compute this using DFT.
 
-The first step is getting a checkpoint for the model we want to use. eSCN is currently the state of the art model [`arXiv`](https://arxiv.org/abs/2302.03655). This next cell will download the checkpoint if you don't have it already.
+The first step is getting a checkpoint for the model we want to use. eSCN is currently the state of the art model [`arXiv`](https://arxiv.org/abs/2302.03655). This next cell will download the checkpoint if you don't have it already. However, we're going to use an older GemNet model (which still works pretty well!) just to keep the resources lower for this tutorial.
 
 The different models have different compute requirements. If you find your kernel is crashing, it probably means you have exceeded the allowed amount of memory. This checkpoint works fine in this example, but it may crash your kernel if you use it in the NRR example.
 
 ```{code-cell}
-from ocpmodels.common.model_registry import model_name_to_local_file
+from ocpmodels.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('eSCN-L6-M3-Lay20All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
 ```
 
 Next we load the checkpoint. The output is somewhat verbose, but it can be informative for debugging purposes.
@@ -68,7 +68,7 @@ Next we load the checkpoint. The output is somewhat verbose, but it can be infor
 ```{code-cell}
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
-# calc = OCPCalculator(checkpoint_path=os.path.expanduser(checkpoint), cpu=True)
+# calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
 ```
 
 Next we can build a slab with an adsorbate on it. Here we use the ASE module to build a Pt slab. We use the experimental lattice constant that is the default. This can introduce some small errors with DFT since the lattice constant can differ by a few percent, and it is common to use DFT lattice constants. In this example, we do not constrain any layers.

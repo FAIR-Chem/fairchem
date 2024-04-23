@@ -71,7 +71,7 @@ Classes
 
 
 
-.. py:class:: SIREN(layers: List[int], num_in_features: int, out_features: int, w0: float = 30.0, initializer: Optional[str] = 'siren', c: float = 6)
+.. py:class:: SIREN(layers: list[int], num_in_features: int, out_features: int, w0: float = 30.0, initializer: str | None = 'siren', c: float = 6)
 
 
    Bases: :py:obj:`torch.nn.Module`
@@ -231,7 +231,7 @@ Classes
 
 
 
-.. py:class:: Basis(num_in_features: int, num_freqs: int = 50, basis_type: str = 'powersine', act: str = 'ssp', sph: Optional[SphericalSmearing] = None)
+.. py:class:: Basis(num_in_features: int, num_freqs: int = 50, basis_type: str = 'powersine', act: str = 'ssp', sph: SphericalSmearing | None = None)
 
 
    Bases: :py:obj:`torch.nn.Module`
@@ -268,11 +268,11 @@ Classes
    :vartype training: bool
 
    .. py:attribute:: smearing
-      :type: Union[SINESmearing, SINESmearing, FourierSmearing, GaussianSmearing, torch.nn.Sequential]
+      :type: SINESmearing | FourierSmearing | GaussianSmearing | torch.nn.Sequential
 
       
 
-   .. py:method:: forward(x: torch.Tensor, edge_attr_sph: Optional[torch.Tensor] = None)
+   .. py:method:: forward(x: torch.Tensor, edge_attr_sph: torch.Tensor | None = None)
 
 
 

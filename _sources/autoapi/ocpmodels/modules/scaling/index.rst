@@ -29,7 +29,7 @@ Classes
 
 
 
-.. py:class:: ScaleFactor(name: Optional[str] = None, enforce_consistency: bool = True)
+.. py:class:: ScaleFactor(name: str | None = None, enforce_consistency: bool = True)
 
 
    Bases: :py:obj:`torch.nn.Module`
@@ -75,17 +75,17 @@ Classes
       
 
    .. py:attribute:: name
-      :type: Optional[str]
+      :type: str | None
 
       
 
    .. py:attribute:: index_fn
-      :type: Optional[IndexFn]
+      :type: IndexFn | None
 
       
 
    .. py:attribute:: stats
-      :type: Optional[_Stats]
+      :type: _Stats | None
 
       
 
@@ -95,10 +95,10 @@ Classes
    .. py:method:: reset_() -> None
 
 
-   .. py:method:: set_(scale: Union[float, torch.Tensor]) -> None
+   .. py:method:: set_(scale: float | torch.Tensor) -> None
 
 
-   .. py:method:: initialize_(*, index_fn: Optional[IndexFn] = None) -> None
+   .. py:method:: initialize_(*, index_fn: IndexFn | None = None) -> None
 
 
    .. py:method:: fit_context_()
@@ -107,10 +107,10 @@ Classes
    .. py:method:: fit_()
 
 
-   .. py:method:: _observe(x: torch.Tensor, ref: Optional[torch.Tensor] = None) -> None
+   .. py:method:: _observe(x: torch.Tensor, ref: torch.Tensor | None = None) -> None
 
 
-   .. py:method:: forward(x: torch.Tensor, *, ref: Optional[torch.Tensor] = None) -> torch.Tensor
+   .. py:method:: forward(x: torch.Tensor, *, ref: torch.Tensor | None = None) -> torch.Tensor
 
 
 

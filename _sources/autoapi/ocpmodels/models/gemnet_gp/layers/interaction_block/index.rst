@@ -26,7 +26,7 @@ Classes
 
 
 
-.. py:class:: InteractionBlockTripletsOnly(emb_size_atom: int, emb_size_edge: int, emb_size_trip: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_bil_trip: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, activation: Optional[str] = None, name: str = 'Interaction')
+.. py:class:: InteractionBlockTripletsOnly(emb_size_atom: int, emb_size_edge: int, emb_size_trip: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_bil_trip: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, activation: str | None = None, name: str = 'Interaction')
 
 
    Bases: :py:obj:`torch.nn.Module`
@@ -66,7 +66,7 @@ Classes
 
 
 
-.. py:class:: TripletInteraction(emb_size_edge: int, emb_size_trip: int, emb_size_bilinear: int, emb_size_rbf: int, emb_size_cbf: int, activation: Optional[str] = None, name: str = 'TripletInteraction', **kwargs)
+.. py:class:: TripletInteraction(emb_size_edge: int, emb_size_trip: int, emb_size_bilinear: int, emb_size_rbf: int, emb_size_cbf: int, activation: str | None = None, name: str = 'TripletInteraction', **kwargs)
 
 
    Bases: :py:obj:`torch.nn.Module`

@@ -37,7 +37,7 @@ Classes
 
 
 
-.. py:class:: CoefficientMappingModule(lmax_list: List[int], mmax_list: List[int])
+.. py:class:: CoefficientMappingModule(lmax_list: list[int], mmax_list: list[int])
 
 
    Bases: :py:obj:`torch.nn.Module`
@@ -65,7 +65,7 @@ Classes
 
 
 
-.. py:class:: SO3_Embedding(length: int, lmax_list: List[int], num_channels: int, device: torch.device, dtype: torch.dtype)
+.. py:class:: SO3_Embedding(length: int, lmax_list: list[int], num_channels: int, device: torch.device, dtype: torch.dtype)
 
 
    Helper functions for performing operations on irreps embedding
@@ -84,7 +84,7 @@ Classes
    .. py:method:: set_embedding(embedding) -> None
 
 
-   .. py:method:: set_lmax_mmax(lmax_list: List[int], mmax_list: List[int]) -> None
+   .. py:method:: set_lmax_mmax(lmax_list: list[int], mmax_list: list[int]) -> None
 
 
    .. py:method:: _expand_edge(edge_index: torch.Tensor) -> None
@@ -102,7 +102,7 @@ Classes
    .. py:method:: _l_primary(mapping)
 
 
-   .. py:method:: _rotate(SO3_rotation, lmax_list: List[int], mmax_list: List[int])
+   .. py:method:: _rotate(SO3_rotation, lmax_list: list[int], mmax_list: list[int])
 
 
    .. py:method:: _rotate_inv(SO3_rotation, mappingReduced)
@@ -140,7 +140,7 @@ Classes
 
 
 
-.. py:class:: SO3_Grid(lmax: int, mmax: int, normalization: str = 'integral', resolution: Optional[int] = None)
+.. py:class:: SO3_Grid(lmax: int, mmax: int, normalization: str = 'integral', resolution: int | None = None)
 
 
    Bases: :py:obj:`torch.nn.Module`

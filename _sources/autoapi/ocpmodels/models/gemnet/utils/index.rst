@@ -55,7 +55,7 @@ Functions
    Return: [0  0 1 2 3  0 1  0 1 2]
 
 
-.. py:function:: repeat_blocks(sizes: torch.Tensor, repeats: Union[int, torch.Tensor], continuous_indexing: bool = True, start_idx: int = 0, block_inc: int = 0, repeat_inc: int = 0) -> torch.Tensor
+.. py:function:: repeat_blocks(sizes: torch.Tensor, repeats: int | torch.Tensor, continuous_indexing: bool = True, start_idx: int = 0, block_inc: int = 0, repeat_inc: int = 0) -> torch.Tensor
 
    Repeat blocks of indices.
    Adapted from https://stackoverflow.com/questions/51154989/numpy-vectorized-function-to-repeat-blocks-of-consecutive-elements
@@ -88,7 +88,7 @@ Functions
    Return: [0 1 0 1  5 6 5 6]
 
 
-.. py:function:: calculate_interatomic_vectors(R: torch.Tensor, id_s: torch.Tensor, id_t: torch.Tensor, offsets_st: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]
+.. py:function:: calculate_interatomic_vectors(R: torch.Tensor, id_s: torch.Tensor, id_t: torch.Tensor, offsets_st: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]
 
    Calculate the vectors connecting the given atom pairs,
    considering offsets from periodic boundary conditions (PBC).

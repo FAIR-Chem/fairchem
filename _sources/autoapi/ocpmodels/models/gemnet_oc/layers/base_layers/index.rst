@@ -26,7 +26,7 @@ Classes
 
 
 
-.. py:class:: Dense(in_features: int, out_features: int, bias: bool = False, activation: Optional[str] = None)
+.. py:class:: Dense(in_features: int, out_features: int, bias: bool = False, activation: str | None = None)
 
 
    Bases: :py:obj:`torch.nn.Module`

@@ -14,7 +14,7 @@ kernelspec:
 Intro and background on OCP and DFT
 ----------
 
-# Abstract
+## Abstract
 
 The most recent, state of the art machine learned potentials in atomistic simulations are based on graph models that are trained on large (1M+) datasets. These models can be downloaded and used in a wide array of applications ranging from catalysis to materials properties. These pre-trained models can be used on their own, to accelerate DFT calculation, and they can also be used as a starting point to fine-tune new models for specific tasks. In this workshop we will focus on large, graph-based, pre-trained  machine learned models from the Open Catalyst Project (OCP) to showcase how they can be used for these purposes. OCP provides several pre-trained models for a variety of tasks related to atomistic simulations. We will explain what these models are, how they differ, and details of the datasets they are trained from.  We will introduce an Atomic Simulation Environment (ase) calculator that leverages an OCP pre-trained model for typical simulation tasks including adsorbate geometry relaxation, adsorption energy calculations, and reaction energies. We will show how pre-trained models can be fine-tuned on new data sets for new tasks. We will also discuss current limitations of the models and opportunities for future research. Participants will need a laptop with internet capability. 
 
@@ -24,7 +24,7 @@ The most recent, state of the art machine learned potentials in atomistic simula
 
 +++
 
-# Introduction
+## Introduction
 
 Density functional theory (DFT) has been a mainstay in molecular simulation, but its high computational cost limits the number and size of simulations that are practical. Over the past two decades machine learning has increasingly been used to build surrogate models to supplement DFT. We call these models machine learned potentials (MLP) In the early days, neural networks were trained using the cartesian coordinates of atomistic systems as features with some success. These features lack important physical properties, notably they lack invariance to rotations, translations and permutations, and they are extensive features, which limit them to the specific system being investigated. About 15 years ago, a new set of features called symmetry functions were developed that were intensive, and which had these invariances. These functions enabled substantial progress in MLP, but they had a few important limitations. First, the size of the feature vector scaled quadratically with the number of elements, practically limiting the MLP to 4-5 elements. Second, composition was usually implicit in the functions, which limited the transferrability of the MLP to new systems. Finally, these functions were "hand-crafted", with limited or no adaptability to the systems being explored, thus one needed to use judgement and experience to select them. While progess has been made in mitigating these limitations, a new approach has overtaken these methods.
 
@@ -40,50 +40,50 @@ The [Open Catalyst Project (OCP)](https://github.com/Open-Catalyst-Project) is a
 
 +++
 
-## Models
+### Models
 
-OCP provides several [models](../core/MODELS). Each model represents a different approach to featurization, and a different machine learning architecture. The models can be used for different tasks, and you will find different checkpoints associated with different datasets and tasks. 
+OCP provides several [models](../core/models). Each model represents a different approach to featurization, and a different machine learning architecture. The models can be used for different tasks, and you will find different checkpoints associated with different datasets and tasks. 
 
 +++
 
-## Datasets / Tasks
+### Datasets / Tasks
 
 OCP provides several different datasets like [OC20](../core/datasets/oc20) that correspond to different tasks that range from predicting energy and forces from structures to Bader charges, relaxation energies, and others.
 
 +++
 
-## Checkpoints
+### Checkpoints
 
 To use a pre-trained model you need to have [ocp](https://github.com/Open-Catalyst-Project/ocp) installed. Then you need to choose a checkpoint and config file which will be loaded to configure OCP for the predictions you want to make. There are two approaches to running OCP, via scripts in a shell, or using an ASE compatible calculator.
 
 We will focus on the ASE compatible calculator here. To facilitate using the checkpoints, there is a set of [utilities](./ocp-tutorial) for this tutorial. You can list the checkpoints that are readily available here:
 
 ```{code-cell} ipython3
-from ocpmodels.common.model_registry import MODEL_REGISTRY
-print(MODEL_REGISTRY.keys())
+from ocpmodels.models.model_registry import available_pretrained_models
+print(available_pretrained_models)
 ```
 
 You can get a checkpoint file with one of the keys listed above like this. The resulting string is the name of the file downloaded, and you use that when creating an OCP calculator later.
 
 ```{code-cell} ipython3
-from ocpmodels.common.model_registry import model_name_to_local_file
+from ocpmodels.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-OC OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path
 ```
 
-# Goals for this tutorial
+## Goals for this tutorial
 
 This tutorial will start by using OCP in a Jupyter notebook to setup some simple calculations that use OCP to compute energy and forces, for structure optimization, and then an example of fine-tuning a model with new data.
 
 +++
 
-# About the compute environment
+## About the compute environment
 
-[ocp-tutorial.ipynb](./ocp_tutorial_helper.py) provides `describe_ocp` to output information that might be helpful in debugging.
+`ocpmodels.common.tutorial_utils`  provides `describe_ocp` to output information that might be helpful in debugging.
 
 ```{code-cell} ipython3
-from ocp_tutorial_helper import describe_ocp
+from ocpmodels.common.tutorial_utils import describe_ocp
 describe_ocp()
 ```
 

@@ -88,7 +88,7 @@ Functions
    Return: [0 1 0 1  5 6 5 6]
 
 
-.. py:function:: calculate_interatomic_vectors(R: torch.Tensor, id_s: torch.Tensor, id_t: torch.Tensor, offsets_st: Optional[torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]
+.. py:function:: calculate_interatomic_vectors(R: torch.Tensor, id_s: torch.Tensor, id_t: torch.Tensor, offsets_st: torch.Tensor | None) -> tuple[torch.Tensor, torch.Tensor]
 
    Calculate the vectors connecting the given atom pairs,
    considering offsets from periodic boundary conditions (PBC).

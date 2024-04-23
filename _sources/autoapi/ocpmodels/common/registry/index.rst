@@ -10,6 +10,22 @@
    This source code is licensed under the MIT license found in the
    LICENSE file in the root directory of this source tree.
 
+   # Copyright (c) Facebook, Inc. and its affiliates.
+   # Borrowed from https://github.com/facebookresearch/pythia/blob/master/pythia/common/registry.py.
+
+   Registry is central source of truth. Inspired from Redux's concept of
+   global store, Registry maintains mappings of various information to unique
+   keys. Special functions in registry can be used as decorators to register
+   different kind of classes.
+
+   Import the global registry object using
+
+   ``from ocpmodels.common.registry import registry``
+
+   Various decorators for registry different kind of classes with unique keys
+
+   - Register a model: ``@registry.register_model``
+
 
 
 Module Contents
@@ -60,7 +76,7 @@ Attributes
    Class for registry object which acts as central source of truth.
 
    .. py:attribute:: mapping
-      :type: NestedDict
+      :type: ClassVar[NestedDict]
 
       
 

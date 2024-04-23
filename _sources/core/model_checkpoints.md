@@ -1,4 +1,4 @@
-# Pretrained OCP model checkpoints
+# Pretrained model checkpoints
 
 This page summarizes all the pretrained models released as part of the [Open Catalyst Project](https://opencatalystproject.org/). All models were trained using this codebase.
 

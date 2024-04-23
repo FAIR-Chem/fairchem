@@ -122,6 +122,14 @@ Functions
 
 .. py:function:: setup_experimental_imports(project_root: pathlib.Path) -> None
 
+   Import selected directories of modules from the "experimental" subdirectory.
+
+   If a file named ".include" is present in the "experimental" subdirectory,
+   this will be read as a list of experimental subdirectories whose module
+   (including in any subsubdirectories) should be imported.
+
+   :param project_root: The root directory of the project (i.e., the "ocp" folder)
+
 
 .. py:function:: _get_project_root() -> pathlib.Path
 
@@ -129,7 +137,7 @@ Functions
    :return: The absolute path to the project root.
 
 
-.. py:function:: setup_imports(config: Optional[dict] = None) -> None
+.. py:function:: setup_imports(config: dict | None = None) -> None
 
 
 .. py:function:: dict_set_recursively(dictionary, key_sequence, val) -> None
@@ -146,7 +154,7 @@ Functions
    Keys in different dictionary levels are separated by sep.
 
 
-.. py:function:: load_config(path: str, previous_includes: list = [])
+.. py:function:: load_config(path: str, previous_includes: list | None = None)
 
 
 .. py:function:: build_config(args, args_override)
@@ -161,7 +169,7 @@ Functions
 .. py:function:: get_pbc_distances(pos, edge_index, cell, cell_offsets, neighbors, return_offsets: bool = False, return_distance_vec: bool = False)
 
 
-.. py:function:: radius_graph_pbc(data, radius, max_num_neighbors_threshold, enforce_max_neighbors_strictly: bool = False, pbc=[True, True, True])
+.. py:function:: radius_graph_pbc(data, radius, max_num_neighbors_threshold, enforce_max_neighbors_strictly: bool = False, pbc=None)
 
 
 .. py:function:: get_max_neighbors_mask(natoms, index, atom_distance, max_num_neighbors_threshold, degeneracy_tolerance: float = 0.01, enforce_max_strictly: bool = False)
@@ -233,16 +241,16 @@ Functions
 .. py:function:: check_traj_files(batch, traj_dir) -> bool
 
 
-.. py:function:: new_trainer_context(*, config: Dict[str, Any], args: argparse.Namespace)
+.. py:function:: new_trainer_context(*, config: dict[str, Any], args: argparse.Namespace)
 
 
 .. py:function:: _resolve_scale_factor_submodule(model: torch.nn.Module, name: str)
 
 
-.. py:function:: _report_incompat_keys(model: torch.nn.Module, keys: torch.nn.modules.module._IncompatibleKeys, strict: bool = False) -> Tuple[List[str], List[str]]
+.. py:function:: _report_incompat_keys(model: torch.nn.Module, keys: torch.nn.modules.module._IncompatibleKeys, strict: bool = False) -> tuple[list[str], list[str]]
 
 
-.. py:function:: load_state_dict(module: torch.nn.Module, state_dict: Mapping[str, torch.Tensor], strict: bool = True) -> Tuple[List[str], List[str]]
+.. py:function:: load_state_dict(module: torch.nn.Module, state_dict: collections.abc.Mapping[str, torch.Tensor], strict: bool = True) -> tuple[list[str], list[str]]
 
 
 .. py:function:: scatter_det(*args, **kwargs)
@@ -251,12 +259,14 @@ Functions
 .. py:function:: get_commit_hash()
 
 
-.. py:function:: cg_change_mat(l, device='cpu')
+.. py:function:: cg_change_mat(ang_mom: int, device: str = 'cpu') -> torch.tensor
 
 
-.. py:function:: irreps_sum(l)
+.. py:function:: irreps_sum(ang_mom: int) -> int
 
-   Returns the sum of the dimensions of the irreps up to the specified l.
+   Returns the sum of the dimensions of the irreps up to the specified angular momentum.
+
+   :param ang_mom: max angular momenttum to sum up dimensions of irreps
 
 
 .. py:function:: update_config(base_config)
