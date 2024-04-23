@@ -14,7 +14,7 @@ kernelspec:
 Fast batched inference
 ------------------
 
-The ASE calculator is not necessarily the most efficient way to run a lot of computations. It is better to do a "mass inference" using a command line utility. We illustrate how to do that here. 
+The ASE calculator is not necessarily the most efficient way to run a lot of computations. It is better to do a "mass inference" using a command line utility. We illustrate how to do that here.
 
 In this paper we computed about 10K different gold structures:
 
@@ -23,12 +23,12 @@ Boes, J. R., Groenenboom, M. C., Keith, J. A., & Kitchin, J. R. (2016). Neural n
 You can retrieve the dataset below. In this notebook we learn how to do "mass inference" without an ASE calculator. You do this by creating a config.yml file, and running the `main.py` command line utility.
 
 ```{code-cell} ipython3
-! wget https://figshare.com/ndownloader/files/11948267 -O data.db 
+! wget https://figshare.com/ndownloader/files/11948267 -O data.db
 ```
 
 
 
-Inference on this file will be fast if we have a gpu, but if we don't this could take a while. To keep things fast for the automated builds, we'll just select the first 10 structures so it's still approachable with just a CPU. 
+Inference on this file will be fast if we have a gpu, but if we don't this could take a while. To keep things fast for the automated builds, we'll just select the first 10 structures so it's still approachable with just a CPU.
 Comment or skip this block to use the whole dataset!
 
 ```{code-cell} ipython3
@@ -46,7 +46,7 @@ with ase.db.connect('full_data.db') as full_db:
 
       if 'tag' in atoms.info['key_value_pairs']:
         atoms.info['key_value_pairs']['tag'] = int(atoms.info['key_value_pairs']['tag'])
-        
+
       subset_db.write(atoms, **atoms.info['key_value_pairs'])
 ```
 
@@ -54,7 +54,7 @@ with ase.db.connect('full_data.db') as full_db:
 ! ase db data.db
 ```
 
-You have to choose a checkpoint to start with. The newer checkpoints may require too much memory for this environment. 
+You have to choose a checkpoint to start with. The newer checkpoints may require too much memory for this environment.
 
 ```{code-cell} ipython3
 from ocpmodels.models.model_registry import available_pretrained_models
@@ -69,7 +69,7 @@ checkpoint_path
 
 ```
 
-We have to update our configuration yml file with the dataset. It is necessary to specify the train and test set for some reason. 
+We have to update our configuration yml file with the dataset. It is necessary to specify the train and test set for some reason.
 
 ```{code-cell} ipython3
 from ocpmodels.common.tutorial_utils import generate_yml_config
@@ -110,7 +110,7 @@ print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
 
 ```{code-cell} ipython3
 with open('mass-inference.txt', 'wb') as f:
-    f.write(inference.stdout.encode('utf-8')) 
+    f.write(inference.stdout.encode('utf-8'))
 ```
 
 ```{code-cell} ipython3
@@ -148,7 +148,7 @@ energies = np.array([row.energy for row in db.select('natoms>5,xc=PBE')])
 natoms = np.array([row.natoms for row in db.select('natoms>5,xc=PBE')])
 ```
 
-Now, we can see the predictions. The are only ok here; that is not surprising, the data set has lots of Au configurations that have never been seen by this model. Fine-tuning would certainly help improve this.
+Now, we can see the predictions. They are only ok here; that is not surprising, the data set has lots of Au configurations that have never been seen by this model. Fine-tuning would certainly help improve this.
 
 ```{code-cell} ipython3
 import matplotlib.pyplot as plt
@@ -193,11 +193,11 @@ plt.ylabel('OCP (eV/atom)');
 
 # Comparing ASE calculator and main.py
 
-The results should be the same. 
+The results should be the same.
 
 It is worth noting the default precision of predictions is float16 with main.py, but with the ASE calculator the default precision is float32. Supposedly you can specify `--task.prediction_dtype=float32` at the command line to or specify it in the config.yml like we do above, but as of the tutorial this does not resolve the issue.
 
-As noted above (see also [Issue 542](https://github.com/Open-Catalyst-Project/ocp/issues/542)), the ASE calculator and main.py use different precisions by default, which can lead to small differences. 
+As noted above (see also [Issue 542](https://github.com/Open-Catalyst-Project/ocp/issues/542)), the ASE calculator and main.py use different precisions by default, which can lead to small differences.
 
 ```{code-cell} ipython3
 np.mean(np.abs(results['energy'][sind] - OCP * natoms))  # MAE

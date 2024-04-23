@@ -58,5 +58,5 @@ File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/
 [1;32m    425[0m [38;5;28;01mdef[39;00m [38;5;21m__init__[39m([38;5;28mself[39m, name, mode):
 [0;32m--> 426[0m     [38;5;28msuper[39m()[38;5;241m.[39m[38;5;21m__init__[39m([38;5;28;43mopen[39;49m[43m([49m[43mname[49m[43m,[49m[43m [49m[43mmode[49m[43m)[49m)
 
-[0;31mFileNotFoundError[0m: [Errno 2] No such file or directory: 'fine-tuning/checkpoints/2024-04-23-22-36-48-ft-oxides/checkpoint.pt'
+[0;31mFileNotFoundError[0m: [Errno 2] No such file or directory: 'fine-tuning/checkpoints/2024-04-23-22-53-52-ft-oxides/checkpoint.pt'
 
