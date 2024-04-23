@@ -25,10 +25,10 @@ python main.py --mode train --config-yml configs/TASK/SIZE/MODEL/MODEL.yml
 If you have multiple
 GPUs, you can use distributed data parallel training by running:
 ```
-python -u -m torch.distributed.launch --nproc_per_node=8 main.py --distributed --num-gpus 8 [...]
+torchrun --standalone --nproc_per_node=8 main.py --distributed --num-gpus 8 [...]
 ```
-`torch.distributed.launch` launches multiple processes for distributed training. For more details, refer to
-https://pytorch.org/docs/stable/distributed.html#launch-utility
+`torchrun` launches multiple processes for distributed training. For more details, refer to the
+[official documentation](https://pytorch.org/docs/stable/elastic/run.html)
 
 If training with multiple GPUs, GPU load balancing may be used to evenly distribute a batch of variable system sizes across GPUs. Load balancing may either balance by number of atoms or number of neighbors. A `metadata.npz` file must be available in the dataset directory to take advantage of this feature. The following command will generate a  `metadata.npz` file and place it in the corresponding directory.
 ```
@@ -39,7 +39,7 @@ Load balancing is activated by default (in atoms mode). To change modes you can 
 optim:
   load_balancing: neighbors
 ```
-For more details, refer to https://github.com/Open-Catalyst-Project/ocp/pull/267.
+For more details, refer to [PR 267](https://github.com/Open-Catalyst-Project/ocp/pull/267).
 
 If you have access to a slurm cluster, we use the [submitit](https://github.com/facebookincubator/submitit) package to simplify multi-node distributed training:
 ```
@@ -53,11 +53,10 @@ In the rest of this tutorial, we explain how to train models for each task.
 ## Initial Structure to Relaxed Energy prediction (IS2RE)
 
 In the IS2RE tasks, the model takes the initial structure as an input and predicts the structure’s adsorption energy
-in the relaxed state. To train a model for the IS2RE task, you can use the `EnergyTrainer`
-Trainer and `SinglePointLmdb` dataset by specifying the following in your configuration file:
+in the relaxed state. To train a model for the IS2RE task, you can use the following in your configuration file:
 
 ```yaml
-trainer: energy # Use the EnergyTrainer
+trainer: ocp
 
 dataset:
   # Train data
@@ -130,11 +129,11 @@ Alternatively, the IS2RE task may be approached by 2 methods as described in our
 ## Structure to Energy and Forces (S2EF)
 
 In the S2EF task, the model takes the positions of the atoms as input and predicts the adsorption energy and per-atom
-forces as calculated by DFT. To train a model for the S2EF task, you can use the `ForcesTrainer` Trainer
+forces as calculated by DFT. To train a model for the S2EF task, you can use the `OCPTrainer`
 and `TrajectoryLmdb` dataset by specifying the following in your configuration file:
 
 ```yaml
-trainer: forces  # Use the ForcesTrainer
+trainer: ocp
 
 dataset:
   # Training data
@@ -159,7 +158,7 @@ You can find examples configuration files in [`configs/s2ef`](https://github.com
 To train a SchNet model for the S2EF task on the 2M split using 2 GPUs, run:
 
 ```bash
-python -u -m torch.distributed.launch --nproc_per_node=2 main.py \
+torchrun --standalone --nproc_per_node=2 main.py \
         --mode train --config-yml configs/s2ef/2M/schnet/schnet.yml --num-gpus 2 --distributed
 ```
 Similar to the IS2RE task, tensorboard logs are stored in `logs/tensorboard/[TIMESTAMP]` and the
@@ -175,7 +174,10 @@ The predictions are stored in `[RESULTS_DIR]/ocp_predictions.npz` and later used
 
 ## Training OC20 models with total energies (IS2RE/S2EF)
 
-To train and validate an OC20 IS2RE/S2EF model on total energies instead of adsorption energies there are a number of required changes to the config. They include setting: `dataset: oc22_lmdb`, `prediction_dtype: float32`, `train_on_oc20_total_energies: True`, and `oc20_ref: path/to/oc20_ref.pkl` (see example below). Also, please note that our evaluation server does not currently support OC20 total energy models.
+To train and validate an OC20 IS2RE/S2EF model on total energies instead of adsorption energies there are a number of
+required changes to the config. They include setting: `dataset: oc22_lmdb`, `prediction_dtype: float32`,
+`train_on_oc20_total_energies: True`, and `oc20_ref: path/to/oc20_ref.pkl` (see example below).
+Also, please note that our evaluation server does not currently support OC20 total energy models.
 
 ```yaml
 task:
@@ -278,11 +280,10 @@ EvalAI expects results to be structured in a specific format for a submission to
 
 ## Initial Structure to Total Relaxed Energy (IS2RE-Total)
 
-For the IS2RE-Total task, the model takes the initial structure as input and predicts the total DFT energy of the relaxed structure. This task is more general and more challenging than the original OC20 IS2RE task that predicts adsorption energy. To train an OC22 IS2RE-Total model use the `EnergyTrainer` with the `OC22LmdbDataset` by including these lines in your configuration file:
+For the IS2RE-Total task, the model takes the initial structure as input and predicts the total DFT energy of the relaxed structure. This task is more general and more challenging than the original OC20 IS2RE task that predicts adsorption energy.
+To train an OC22 IS2RE-Total model use the `OC22LmdbDataset` by including these lines in your configuration file:
 
 ```yaml
-trainer: energy # Use the EnergyTrainer
-
 dataset:
   format: oc22_lmdb # Use the OC22LmdbDataset
   ...
@@ -291,11 +292,11 @@ You can find examples configuration files in [`configs/oc22/is2re`](https://gith
 
 ## Structure to Total Energy and Forces (S2EF-Total)
 
-The S2EF-Total task takes a structure and predicts the total DFT energy and per-atom forces. This differs from the original OC20 S2EF task because it predicts total energy instead of adsorption energy. To train an OC22 S2EF-Total model use the ForcesTrainer with the OC22LmdbDataset by including these lines in your configuration file:
+The S2EF-Total task takes a structure and predicts the total DFT energy and per-atom forces. This differs from the
+original OC20 S2EF task because it predicts total energy instead of adsorption energy.
+To train an OC22 S2EF-Total model the OC22LmdbDataset by including these lines in your configuration file:
 
 ```yaml
-trainer: forces  # Use the ForcesTrainer
-
 dataset:
   format: oc22_lmdb # Use the OC22LmdbDataset
   ...
@@ -338,4 +339,3 @@ EvalAI expects results to be structured in a specific format for a submission to
     ```
    Where `file.npz` corresponds to the respective `[s2ef/is2re]_predictions.npz` files generated for the corresponding task. The final submission file will be written to `submission_file.npz` (rename accordingly). The `dataset` argument specifies which dataset is being considered — this only needs to be set for OC22 predictions because OC20 is the default.
 3. Upload `submission_file.npz` to EvalAI.
-
