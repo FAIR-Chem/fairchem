@@ -1,8 +1,13 @@
-from pathlib import Path
-import ocpmodels as om
+from __future__ import annotations
+
+import contextlib
+import os
 import platform
 import subprocess
 import sys
+from io import StringIO
+from pathlib import Path
+
 import ase
 import e3nn
 import numba
@@ -12,18 +17,10 @@ import pymatgen.core as pc
 import torch
 import torch.cuda as tc
 import torch_geometric as tg
-import os
-from pathlib import Path
-from pathlib import Path
-import numpy as np
 from ase.db import connect
-import contextlib
-import os
-import sys
-from io import StringIO
-import torch
 from yaml import dump
 
+import ocpmodels as om
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 
 
