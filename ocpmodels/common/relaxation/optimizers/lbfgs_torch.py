@@ -148,18 +148,6 @@ class LBFGS:
         forces: Optional[torch.Tensor],
         update_mask: torch.Tensor,
     ) -> None:
-        def determine_step(dr):
-            steplengths = torch.norm(dr, dim=1)
-            longest_steps = scatter(
-                steplengths, self.batch.batch, reduce="max"
-            )
-            longest_steps = longest_steps[self.batch.batch]
-            maxstep = longest_steps.new_tensor(self.maxstep)
-            scale = (longest_steps + 1e-7).reciprocal() * torch.min(
-                longest_steps, maxstep
-            )
-            dr *= scale.unsqueeze(1)
-            return dr * self.damping
 
         if forces is None:
             _, forces = self.get_energy_and_forces()
@@ -191,7 +179,7 @@ class LBFGS:
 
         # descent direction
         p = -z.reshape((-1, 3))
-        dr = determine_step(p)
+        dr = self._determine_step(p)
         if torch.abs(dr).max() < 1e-7:
             # Same configuration again (maybe a restart):
             return
@@ -200,6 +188,17 @@ class LBFGS:
 
         self.r0 = r
         self.f0 = forces
+
+    def _determine_step(self, dr):
+        steplengths = torch.norm(dr, dim=1)
+        longest_steps = scatter(steplengths, self.batch.batch, reduce="max")
+        longest_steps = longest_steps[self.batch.batch]
+        maxstep = longest_steps.new_tensor(self.maxstep)
+        scale = (longest_steps + 1e-7).reciprocal() * torch.min(
+            longest_steps, maxstep
+        )
+        dr *= scale.unsqueeze(1)
+        return dr * self.damping
 
     def write(self, energy, forces, update_mask) -> None:
         self.batch.y, self.batch.force = energy, forces
