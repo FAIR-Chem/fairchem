@@ -10,16 +10,20 @@ library of state-of-the-art machine learning algorithms for catalysis.
     <img src="https://user-images.githubusercontent.com/1156489/170388229-642c6619-dece-4c88-85ef-b46f4d5f1031.gif">
 </div>
 
-Full documentation, released data/checkpoints, and tutorials are now available at the [OCP Documentation](https://open-catalyst-project.github.io/ocp/):
-* https://open-catalyst-project.github.io/ocp/
+## [OCP Documentation](https://open-catalyst-project.github.io/ocp/)
+Full documentation, released data/checkpoints, and tutorials are now available.
 
-It provides training and evaluation code for tasks and models that take arbitrary
+- [Installation](https://open-catalyst-project.github.io/ocp/core/install.html)
+- [Pretrained models](https://open-catalyst-project.github.io/ocp/core/models.html)
+- [FAQ](https://open-catalyst-project.github.io/ocp/core/model_faq.html)
+
+`ocp` provides training and evaluation code for tasks and models that take arbitrary
 chemical structures as input to predict energies / forces / positions / stresses,
 and can be used as a base scaffold for research projects. For an overview of
-tasks, data, and metrics, please read our papers:
- - [OC20](https://arxiv.org/abs/2010.09990)
- - [OC22](https://arxiv.org/abs/2206.08917)
- - [ODAC23](https://arxiv.org/abs/2311.00341)
+tasks, data, and metrics, please read the documentations and respective papers:
+ - [OC20](https://open-catalyst-project.github.io/ocp/core/datasets/oc20.html)
+ - [OC22](https://open-catalyst-project.github.io/ocp/core/datasets/oc22.html)
+ - [ODAC23](https://open-catalyst-project.github.io/ocp/core/datasets/odac.html)
 
 Projects and models built on `ocp`:
 

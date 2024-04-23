@@ -1,1 +1,0 @@
-For the pre-trained model checkpoints please see the [OCP documentation models page](https://open-catalyst-project.github.io/ocp/core/MODELS.html)

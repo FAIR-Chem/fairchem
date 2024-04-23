@@ -1,1 +1,0 @@
-For installation instructions see the [OCP documentation site](https://open-catalyst-project.github.io/ocp/core/INSTALL.html)
