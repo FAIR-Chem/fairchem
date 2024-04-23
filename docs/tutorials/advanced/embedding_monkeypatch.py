@@ -1,11 +1,12 @@
-from ocpmodels.models.gemnet_oc.gemnet_oc import GemNetOC
+from __future__ import annotations
 
 import torch
-from ocpmodels.common.utils import conditional_grad, scatter_det
-from ocpmodels.models.gemnet_oc.utils import repeat_blocks
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-from ocpmodels.datasets import data_list_collater
 
+from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from ocpmodels.common.utils import conditional_grad, scatter_det
+from ocpmodels.datasets import data_list_collater
+from ocpmodels.models.gemnet_oc.gemnet_oc import GemNetOC
+from ocpmodels.models.gemnet_oc.utils import repeat_blocks
 
 
 @conditional_grad(torch.enable_grad())
@@ -107,8 +108,6 @@ def newforward(self, data):
             E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
         )  # (nMolecules, num_targets)
 
-    out = {}
-
     E_t = E_t.squeeze(1)  # (num_molecules)
     outputs = {"energy": E_t}
     if self.regress_forces:
@@ -151,7 +150,9 @@ def newforward(self, data):
         nMolecules = (torch.max(batch) + 1).item()
 
         # This seems to be an earlier block
-        outputs["h sum"] = scatter_det(h, batch, dim=0, dim_size=nMolecules, reduce="add")
+        outputs["h sum"] = scatter_det(
+            h, batch, dim=0, dim_size=nMolecules, reduce="add"
+        )
 
         # These embedding are closer to energy output
         outputs["x_E sum"] = scatter_det(
@@ -169,6 +170,7 @@ def newforward(self, data):
 
     return outputs
 
+
 GemNetOC.forward = newforward
 
 
@@ -182,9 +184,11 @@ def embed(self, atoms):
         self.trainer.ema.store()
         self.trainer.ema.copy_to()
 
-    with torch.cuda.amp.autocast(enabled=self.trainer.scaler is not None):
-        with torch.no_grad():
-            out = self.trainer.model(batch_list)
+    with (
+        torch.cuda.amp.autocast(enabled=self.trainer.scaler is not None),
+        torch.no_grad(),
+    ):
+        out = self.trainer.model(batch_list)
 
     if self.trainer.normalizers is not None and "target" in self.trainer.normalizers:
         out["energy"] = self.trainer.normalizers["target"].denorm(out["energy"])
