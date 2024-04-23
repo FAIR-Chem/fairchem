@@ -13,9 +13,14 @@ kernelspec:
 
 # Making LMDB Datasets (original format)
 
-Storing your data in an LMDB ensures very fast random read speeds for the fastest supported throughput. This is the recommended option for the majority of OCP use cases. For more information about writing your data to an LMDB, please see the [LMDB Dataset Tutorial](https://github.com/Open-Catalyst-Project/ocp/blob/main/tutorials/lmdb_dataset_creation.ipynb).
+Storing your data in an LMDB ensures very fast random read speeds for the fastest supported throughput. This is the
+recommended option for the majority of OCP use cases. For more information about writing your data to an LMDB,
+please see the [LMDB Dataset Tutorial](https://github.com/Open-Catalyst-Project/ocp/blob/main/tutorials/lmdb_dataset_creation.ipynb).
 
-This notebook provides an overview of how to create LMDB datasets to be used with the OCP repo. This tutorial is intended for those who wish to use OCP to train on their own datasets. Those interested in just using OCP data need not worry about these steps as they've been automated as part of the download script: https://github.com/Open-Catalyst-Project/ocp/blob/master/scripts/download_data.py.
+This notebook provides an overview of how to create LMDB datasets to be used with the OCP repo. This tutorial is intended
+for those who wish to use OCP to train on their own datasets. Those interested in just using OCP data need not worry
+about these steps as they've been automated as part of this
+[download script](https://github.com/Open-Catalyst-Project/ocp/blob/master/scripts/download_data.py).
 
 ```{code-cell} ipython3
 from ocpmodels.preprocessing import AtomsToGraphs
@@ -56,7 +61,8 @@ len(raw_data)
 
 ## Initial Structure to Relaxed Energy/Structure (IS2RE/IS2RS) LMDBs
 
-IS2RE/IS2RS LMDBs utilize the SinglePointLmdb dataset. This dataset expects the data to be contained in a SINGLE LMDB file. In addition to the attributes defined by AtomsToGraph, the following attributes must be added for the IS2RE/IS2RS tasks:
+IS2RE/IS2RS LMDBs utilize the SinglePointLmdb dataset. This dataset expects the data to be contained in a SINGLE LMDB file.
+In addition to the attributes defined by AtomsToGraph, the following attributes must be added for the IS2RE/IS2RS tasks:
 
 - pos_relaxed: Relaxed adslab positions
 - sid: Unique system identifier, arbitrary
@@ -116,22 +122,22 @@ for system in system_paths:
     data_objects = read_trajectory_extract_features(a2g, system)
     initial_struc = data_objects[0]
     relaxed_struc = data_objects[1]
-    
+
     initial_struc.y_init = initial_struc.y # subtract off reference energy, if applicable
     del initial_struc.y
     initial_struc.y_relaxed = relaxed_struc.y # subtract off reference energy, if applicable
     initial_struc.pos_relaxed = relaxed_struc.pos
-    
+
     # Filter data if necessary
     # OCP filters adsorption energies > |10| eV
-    
-    initial_struc.sid = idx  # arbitrary unique identifier 
-    
+
+    initial_struc.sid = idx  # arbitrary unique identifier
+
     # no neighbor edge case check
     if initial_struc.edge_index.shape[1] == 0:
         print("no neighbors", traj_path)
         continue
-    
+
     # Write to LMDB
     txn = db.begin(write=True)
     txn.put(f"{idx}".encode("ascii"), pickle.dumps(initial_struc, protocol=-1))
@@ -182,13 +188,13 @@ data_objects = a2g.convert_all(raw_data, disable_tqdm=True)
 for fid, data in tqdm(enumerate(data_objects), total=len(data_objects)):
     #assign sid
     data.sid = torch.LongTensor([0])
-    
+
     #assign fid
     data.fid = torch.LongTensor([fid])
-    
+
     #assign tags, if available
     data.tags = torch.LongTensor(tags)
-    
+
     # Filter data if necessary
     # OCP filters adsorption energies > |10| eV and forces > |50| eV/A
 
@@ -200,7 +206,7 @@ for fid, data in tqdm(enumerate(data_objects), total=len(data_objects)):
     txn = db.begin(write=True)
     txn.put(f"{fid}".encode("ascii"), pickle.dumps(data, protocol=-1))
     txn.commit()
-    
+
 txn = db.begin(write=True)
 txn.put(f"length".encode("ascii"), pickle.dumps(len(data_objects), protocol=-1))
 txn.commit()
