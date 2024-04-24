@@ -7,7 +7,7 @@ job:
 default:
   config: deup_faenet-deup_is2re-all
   wandb_project: ocp-deup
-  wandb_tags: base-model, MC-D, 4616500-model, 4642835-dataset
+  wandb_tags: faenet, MC-D, 4616500-model, 4642835-dataset
   test_ri: True
   mode: train
   model:
@@ -16,7 +16,7 @@ default:
     dropout_lin: 0.3
   cp_data_to_tmpdir: false
   inference_time_loops: 1
-  restart_from_dir: /network/scratch/a/alexandre.duval/ocp/runs/4621042/
+  # restart_from_dir: /network/scratch/a/alexandre.duval/ocp/runs/4621042/
   # checkpoint: /network/scratch/a/alexandre.duval/ocp/runs/4621042/
   dataset: # mandatory if restart_from_dir is set
     default_val: deup-val_ood_cat-val_ood_ads
@@ -28,5 +28,4 @@ default:
     create: False
 
 runs:
-  - optim:
-      max_epochs: 12
+  - note: deup-faenet d=0.2 (not trained with d)

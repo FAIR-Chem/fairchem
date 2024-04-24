@@ -41,7 +41,7 @@ default:
     n_samples: 7
 
   ensemble_checkpoints: /network/scratch/a/alexandre.duval/ocp/runs/2935198
-  ensemble_dropout: 0.7
+  ensemble_dropout: 0.3
 
 
 10k:
