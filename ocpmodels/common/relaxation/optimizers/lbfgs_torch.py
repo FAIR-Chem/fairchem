@@ -87,7 +87,7 @@ class LBFGS:
         # (batch_size) -> (nAtoms)
         max_forces = max_forces_[self.batch.batch]
 
-        return ~max_forces.ge(self.fmax), energy, forces
+        return max_forces.lt(self.fmax), energy, forces
 
     def run(self, fmax, steps):
         self.fmax = fmax
