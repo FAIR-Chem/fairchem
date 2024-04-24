@@ -1,73 +1,53 @@
 # Installation
 
-## pip (fast, easy to get started)
+## conda or better yet [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html) - easy
 
-Installing the OCP package and necessary dependencies is now as easy as:
+We do not have official conda recipes (yet!), so install with conda or mamba you will need to clone the
+[ocp repo](https://github.com/Open-Catalyst-Project/ocp) and run the following from inside the repo directory to
+create an environment with all dependencies.
 
-### GPU enabled machines
-```
-pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
-pip install pyg_lib torch_scatter torch_sparse --no-index -f https://data.pyg.org/whl/torch-1.13.1+cu117.html
-pip install -i https://test.pypi.org/simple/ ocp-models
-```
+1. Create an *ocp-models* environment
+   1. **GPU**
 
-Note the `--no-index` in the second line - it seems unnecessary, but is important to make sure the versions come from that file and not the main pip index!
+      The default environment uses cuda 11.8, if you need a different version you will have to edit *pytorch-cuda* version
+      accordingly.
+      ```bash
+      conda create -f env.gpu.yml
+      ```
 
-### CPU-only install (slower training/inference!)
-```
-pip install torch==1.13.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu # install CPU torch
-pip install pyg_lib torch_scatter torch_sparse -f https://data.pyg.org/whl/torch-1.13.1+cpu.html
-pip install -i https://test.pypi.org/simple/ ocp-models
-```
+   2. **CPU**
+      ```bash
+      conda create -f env.cpu.yml
+      ```
 
-## Conda (preferred for model training & development)
+2. Activate the environment and install `ocpmodels`
+   ```bash
+   conda activate ocp-models
+   pip install .
+   ```
 
-- We'll use `conda` to install dependencies and set up the environment.
-We recommend using the [Python 3.9 Miniconda installer](https://docs.conda.io/en/latest/miniconda.html#linux-installers).
-- After installing `conda`, install [`mamba`](https://mamba.readthedocs.io/en/latest/) to the base environment. `mamba` is a faster, drop-in replacement for `conda`:
-    ```bash
-    conda install mamba -n base -c conda-forge
-    ```
-- Also install `conda-merge` to the base environment:
-    ```bash
-    conda install conda-merge -n base -c conda-forge
-    ```
+## PyPi - flexible
+1. Install `pytorch` by selecting your installer, OS and CPU or CUDA version follow the official
+[Pytorch docs](https://pytorch.org/get-started/locally/)
 
-Next, follow the instructions for [GPU](#gpu-machines) or [CPU](#cpu-only-machines) machines depending on your hardware to create a new environment named `ocp-models` and install dependencies.
+2. Install `torch_geometric` and the `torch_scatter`, `torch_sparse`, and `torch_cluster` optional dependencies
+   similarly by selecting the appropriate versions in the official
+   [PyG docs](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html)
 
-### GPU machines
+3. Install `ocpmodels`
+   1. From test-PyPi (until we have our official release on PyPi soon!)
+      ```bash
+      pip install -i https://test.pypi.org/simple/ ocp-models
+      ```
+   2. Or by cloning the repo and then using pip
+      ```bash
+      pip install .
+      ```
 
-Instructions are for PyTorch 1.13.1, CUDA 11.6 specifically.
 
-- First, check that CUDA is in your `PATH` and `LD_LIBRARY_PATH`, e.g.
-    ```bash
-    $ echo $PATH | tr ':' '\n' | grep cuda
-    /public/apps/cuda/11.6/bin
+## Dev install
 
-    $ echo $LD_LIBRARY_PATH | tr ':' '\n' | grep cuda
-    /public/apps/cuda/11.6/lib64
-    ```
-    The exact paths may differ on your system.
-- Then install the dependencies:
-    ```bash
-    conda-merge env.common.yml env.gpu.yml > env.yml
-    mamba env create -f env.yml
-    ```
-    Activate the conda environment with `conda activate ocp-models`.
-- Install the `ocp` package with `pip install -e .`.
-- Finally, install the pre-commit hooks:
-    ```bash
-    pre-commit install
-    ```
-
-### CPU-only machines
-
-Please skip the following if you completed the with-GPU installation from above.
-
+If you plan to make contributions you will need to clone the repo and install `ocp-models` with dev dependencies,
 ```bash
-conda-merge env.common.yml env.cpu.yml > env.yml
-mamba env create -f env.yml
-conda activate ocp-models
-pip install -e .
-pre-commit install
+pip install -e .[dev]
 ```
