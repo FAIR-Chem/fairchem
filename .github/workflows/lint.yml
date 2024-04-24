@@ -25,4 +25,4 @@ jobs:
       - name: ruff
         run: |
           ruff --version
-          ruff check --config pyproject.toml
+          ruff check --statistics --config pyproject.toml
