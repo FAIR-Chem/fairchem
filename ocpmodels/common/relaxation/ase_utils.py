@@ -157,7 +157,6 @@ class OCPCalculator(Calculator):
         # Calculate the edge indices on the fly
         config["model"]["otf_graph"] = True
 
-        
         ### backwards compatability with OCP v<2.0
         ### TODO: better format check for older configs
         ### Taken from base_trainer
