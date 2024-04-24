@@ -10,19 +10,20 @@ license = {text = "MIT License"}
 dynamic = ["version"]
 requires-python = ">=3.9, <3.13"
 dependencies = [
-    "torch",
-    "numpy",
+    "torch>=2.2",
+    "numpy>=1.25.0",
     "lmdb",
     "ase",
-    "pymatgen",
+    "pymatgen>=2023.10.3",
     "pyyaml",
     "tensorboard",
     "wandb",
     "numba",
-    "e3nn",
+    "e3nn>=0.5",
     "urllib3",
     "orjson",
-    "tqdm"
+    "tqdm",
+    "submitit"
 ]
 
 [project.optional-dependencies]  # add optional dependencies to be installed as pip install ocpmodels[dev]
