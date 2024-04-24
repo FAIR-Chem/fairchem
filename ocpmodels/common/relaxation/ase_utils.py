@@ -145,7 +145,12 @@ class OCPCalculator(Calculator):
         config["model"]["otf_graph"] = True
 
         # Save config so obj can be transported over network (pkl)
-        config = update_config(config)
+        if not config.get("loss_fns"):
+            logging.warning(
+                "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
+            )
+            config = update_config(config)
+
         self.config = copy.deepcopy(config)
         self.config["checkpoint"] = checkpoint_path
         del config["dataset"]["src"]
