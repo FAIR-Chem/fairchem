@@ -3,12 +3,7 @@ name: documentation
 on:
   workflow_call:
   workflow_dispatch:
-  push:
-    branches:
-      - ocp_documentation
-    paths:
-      - 'docs/**'
-      - '.github/workflows/docs.yml'
+
 
 # This job installs dependencies, build the book, and pushes it to `gh-pages`
 jobs:
