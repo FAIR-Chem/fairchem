@@ -5,7 +5,7 @@ job:
   partition: long
 
 default:
-  config: faenet-is2re-all
+  config: depfaenet-is2re-all
   wandb_project: ocp-deup
   wandb_tags: depfaenet, MC-D,4621042
   test_ri: True
@@ -15,7 +15,7 @@ default:
   model:
     dropout_lowest_layer: output
     first_trainable_layer: dropout
-    dropout_lin: 0.7
+    dropout_lin: 0.3
   cp_data_to_tmpdir: true
   inference_time_loops: 1
   deup_dataset:

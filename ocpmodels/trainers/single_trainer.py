@@ -227,7 +227,11 @@ class SingleTrainer(BaseTrainer):
 
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
-        if self.config["continue_from_dir"] is not None and self.config["adsorbates"] not in {None, "all"}:
+        if (
+            "continue_from_dir" in self.config
+            and self.config["continue_from_dir"] is not None
+            and self.config["adsorbates"] not in {None, "all"}
+        ):
             self.step = 0
         start_epoch = self.step // n_train
         max_epochs = self.config["optim"]["max_epochs"]
@@ -589,11 +593,15 @@ class SingleTrainer(BaseTrainer):
         # Energy loss
         energy_target = torch.cat(
             [
-                batch.y_relaxed.to(self.device)
-                if self.task_name == "is2re"
-                else batch.deup_loss.to(self.device)
-                if self.task_name == "deup_is2re"
-                else batch.y.to(self.device)
+                (
+                    batch.y_relaxed.to(self.device)
+                    if self.task_name == "is2re"
+                    else (
+                        batch.deup_loss.to(self.device)
+                        if self.task_name == "deup_is2re"
+                        else batch.y.to(self.device)
+                    )
+                )
                 for batch in batch_list
             ],
             dim=0,
@@ -706,11 +714,15 @@ class SingleTrainer(BaseTrainer):
         target = {
             "energy": torch.cat(
                 [
-                    batch.y_relaxed.to(self.device)
-                    if self.task_name == "is2re"
-                    else batch.deup_loss.to(self.device)
-                    if self.task_name == "deup_is2re"
-                    else batch.y.to(self.device)
+                    (
+                        batch.y_relaxed.to(self.device)
+                        if self.task_name == "is2re"
+                        else (
+                            batch.deup_loss.to(self.device)
+                            if self.task_name == "deup_is2re"
+                            else batch.y.to(self.device)
+                        )
+                    )
                     for batch in batch_list
                 ],
                 dim=0,

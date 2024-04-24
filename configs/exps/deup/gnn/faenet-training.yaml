@@ -8,8 +8,7 @@ job:
 default:
   test_ri: True
   mode: train
-  graph_rewiring: remove-tag-0
-  wandb_tags: "top-model"
+  wandb_tags: faenet, no-concat, with-tag0, dropout
   wandb_project: ocp-deup
   optim:
     batch_size: 256
@@ -36,8 +35,10 @@ runs:
       second_layer_MLP: False
       skip_co: False
       cutoff: 6.0
+      dropout_lin: 0.3
+      dropout_lowest_layer: output
     optim:
       lr_initial: 0.002
       scheduler: LinearWarmupCosineAnnealingLR
-      max_epochs: 12
+      max_epochs: 14
       eval_every: 0.25
