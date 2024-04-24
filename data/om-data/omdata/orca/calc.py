@@ -20,6 +20,7 @@ ORCA_SIMPLE_INPUT = [
 ORCA_BLOCKS = [
     "%scf Convergence Tight maxiter 300 end",
     "%elprop Dipole true Quadrupole true end",
+    '%nbo NBOKEYLIST = "$NBO NPA NBO E2PERT 0.1 $END" end',
 ]
 ORCA_ASE_SIMPLE_INPUT = " ".join([ORCA_FUNCTIONAL] + [ORCA_BASIS] + ORCA_SIMPLE_INPUT)
 OPT_PARAMETERS = {
