@@ -1,1 +1,0 @@
-For the released datasets instructions see the [OCP documentation site](https://open-catalyst-project.github.io/ocp/) or directly look in `docs/core/datasets` in this repo. 

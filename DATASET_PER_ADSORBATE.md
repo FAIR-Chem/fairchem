@@ -1,1 +1,0 @@
-For OC20 datasets per adsorbate, please see the [OCP documentation site](https://open-catalyst-project.github.io/ocp/core/datasets/oc20.html)

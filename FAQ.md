@@ -1,1 +1,0 @@
-For the original FAQ see the [OCP documentation site](https://open-catalyst-project.github.io/ocp/)
