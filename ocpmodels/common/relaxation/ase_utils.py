@@ -68,6 +68,10 @@ def batch_to_atoms(batch: Batch):
 
 
 class OCPCalculator(Calculator):
+    """ASE based calculator using an OCP model"""
+
+    _reshaped_props = {"stress": (-1, 3, 3), "dielectric_tensor": (-1, 3, 3)}
+
     def __init__(
         self,
         config_yml: str | None = None,
@@ -214,7 +218,7 @@ class OCPCalculator(Calculator):
         self, atoms: Atoms | Batch, properties, system_changes
     ) -> None:
         """Calculate implemented properties for a single Atoms object or a Batch of them."""
-        super().calculate(self, atoms, properties, system_changes)
+        super().calculate(atoms, properties, system_changes)
         if isinstance(atoms, Atoms):
             data_object = self.a2g.convert(atoms)
             batch = data_list_collater([data_object], otf_graph=True)
@@ -228,4 +232,8 @@ class OCPCalculator(Calculator):
         for key in predictions:
             _pred = predictions[key]
             _pred = _pred.item() if _pred.numel() == 1 else _pred.cpu().numpy()
+            if key in OCPCalculator._reshaped_props:
+                _pred = _pred.reshape(
+                    OCPCalculator._reshaped_props[key]
+                ).squeeze()
             self.results[key] = _pred
