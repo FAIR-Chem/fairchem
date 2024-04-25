@@ -61,15 +61,16 @@ class SchNetWrap(BaseModel, SchNet):
         cutoff=10.0,
         readout="add",
     ) -> None:
-        self.output_targets = output_targets
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff
         self.otf_graph = otf_graph
         self.max_neighbors = 50
         self.reduce = readout
-        SchNet.__init__(
-            self,
+        super().__init__(
+            output_targets=output_targets,
+            node_embedding_dim=hidden_channels,
+            edge_embedding_dim=hidden_channels,
             hidden_channels=hidden_channels,
             num_filters=num_filters,
             num_interactions=num_interactions,
@@ -77,13 +78,22 @@ class SchNetWrap(BaseModel, SchNet):
             cutoff=cutoff,
             readout=readout,
         )
-        BaseModel.__init__(
-            self,
-            output_targets=output_targets,
-            node_embedding_dim=hidden_channels,
-            edge_embedding_dim=hidden_channels,
-            _torch_initialized=True,
-        )
+        # SchNet.__init__(
+        #     self,
+        #     hidden_channels=hidden_channels,
+        #     num_filters=num_filters,
+        #     num_interactions=num_interactions,
+        #     num_gaussians=num_gaussians,
+        #     cutoff=cutoff,
+        #     readout=readout,
+        # )
+        # BaseModel.__init__(
+        #     self,
+        #     output_targets=output_targets,
+        #     node_embedding_dim=hidden_channels,
+        #     edge_embedding_dim=hidden_channels,
+        #     _torch_initialized=True,
+        # )
 
     @conditional_grad(torch.enable_grad())
     def _forward_helper(self, data):
