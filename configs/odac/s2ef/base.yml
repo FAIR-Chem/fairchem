@@ -47,6 +47,7 @@ evaluation_metrics:
     forces:
       - mae
       - cosine_similarity
+      - magnitude_error
     misc:
       - energy_forces_within_threshold
   primary_metric: forces_mae
