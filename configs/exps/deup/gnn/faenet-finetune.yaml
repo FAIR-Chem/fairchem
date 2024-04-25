@@ -1,0 +1,46 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:1
+  partition: long
+  time: 18:00:00
+
+default:
+  test_ri: True
+  mode: train
+  wandb_tags: faenet, no-concat, with-tag0, dropout, fine-tuned
+  wandb_project: ocp-deup
+  optim:
+    batch_size: 256
+    eval_batch_size: 256
+  cp_data_to_tmpdir: True
+
+runs:
+  - config: faenet-is2re-all
+    note: "fine-tuned faenet"
+    continue_from_dir: /network/scratch/a/alexandre.duval/ocp/runs/4647489
+    adsorbates: "*O, *OH, *OH2, *H"
+    frame_averaging: 2D
+    fa_method: se3-random
+    model:
+      mp_type: updownscale_base
+      phys_embeds: True
+      tag_hidden_channels: 32
+      pg_hidden_channels: 96
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 384
+      num_filters: 480
+      num_gaussians: 104
+      num_interactions: 5
+      second_layer_MLP: False
+      skip_co: False
+      cutoff: 6.0
+      dropout_lin: 0.3
+      dropout_lowest_layer: output
+    optim:
+      lr_initial: 0.002
+      scheduler: LinearWarmupCosineAnnealingLR
+      max_epochs: 14
+      eval_every: 0.25

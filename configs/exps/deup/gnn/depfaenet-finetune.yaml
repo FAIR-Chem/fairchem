@@ -13,6 +13,33 @@ default:
   graph_rewiring: ""
   frame_averaging: 2D
   fa_method: se3-random
+  is_disconnected: true
+
+runs:
+
+  - config: depfaenet-is2re-all
+    note: Depfaenet per-ads-dataset
+    continue_from_dir: /network/scratch/a/alexandre.duval/ocp/runs/4647488  #4647466 #4023244
+    adsorbates: "*O, *OH, *OH2, *H"
+    optim:
+      max_epochs: 10
+      lr_initial: 0.0002
+
+  - config: depfaenet-is2re-all
+    note: Depfaenet per-ads-dataset
+    continue_from_dir: /network/scratch/a/alexandre.duval/ocp/runs/4647488 #4647466  # 4023244
+    adsorbates: "*O, *OH, *OH2, *H"
+    optim:
+      max_epochs: 12
+      lr_initial: 0.0001
+
+- config: depfaenet-is2re-all
+  note: Depfaenet per-ads-dataset
+  continue_from_dir: /network/scratch/a/alexandre.duval/ocp/runs/4647466 # 4023244
+  adsorbates: "*O, *OH, *OH2, *H"
+  graph_rewiring: ""
+  frame_averaging: 2D
+  fa_method: se3-random
   cp_data_to_tmpdir: True
   is_disconnected: true
   model:
@@ -37,21 +64,4 @@ default:
     lr_initial: 0.002
     scheduler: LinearWarmupCosineAnnealingLR
     eval_every: 0.4
-
-runs:
-
-  - config: depfaenet-is2re-all
-    note: Depfaenet per-ads-dataset
-    continue_from_dir: /network/scratch/a/alexandre.duval/ocp/runs/4023244
-    adsorbates: "*O, *OH, *OH2, *H"
-    optim:
-      max_epochs: 10
-      lr_initial: 0.0002
-
-  - config: depfaenet-is2re-all
-    note: Depfaenet per-ads-dataset
-    continue_from_dir: /network/scratch/a/alexandre.duval/ocp/runs/4023244
-    adsorbates: "*O, *OH, *OH2, *H"
-    optim:
-      max_epochs: 12
-      lr_initial: 0.0001
+    max_epochs: 12
