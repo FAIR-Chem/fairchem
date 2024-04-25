@@ -1,6 +1,6 @@
 # `ocp` by Open Catalyst Project
 
-[![CircleCI](https://circleci.com/gh/Open-Catalyst-Project/ocp.svg?style=shield)](https://circleci.com/gh/Open-Catalyst-Project/ocp)
+![tests](https://github.com/Open-Catalyst-Project/ocp/actions/workflows/test.yml/badge.svg?branch=main)
 [![codecov](https://codecov.io/gh/Open-Catalyst-Project/ocp/graph/badge.svg?token=M606LH5LK6)](https://codecov.io/gh/Open-Catalyst-Project/ocp)
 
 `ocp` is the [Open Catalyst Project](https://opencatalystproject.org/)'s
