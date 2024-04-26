@@ -76,7 +76,9 @@ class TestBulk:
 
         # pymatgen bug see https://github.com/materialsproject/pymatgen/issues/3747
         if len(slabs) == 15:
-            pytest.xfail(f"Number of generated slabs {len(slabs)} is off due to pymatgen bug!")
+            pytest.xfail(
+                f"Number of generated slabs {len(slabs)} is off due to pymatgen bug!"
+            )
         assert len(slabs) == 14
 
         with open(self.precomputed_path, "wb") as f:
@@ -90,7 +92,9 @@ class TestBulk:
         )
 
         if len(precomputed_slabs) == 15:
-            pytest.xfail(f"Number of generated slabs {len(precomputed_slabs)} is off due to pymatgen bug!")
+            pytest.xfail(
+                f"Number of generated slabs {len(precomputed_slabs)} is off due to pymatgen bug!"
+            )
 
         assert len(precomputed_slabs) == 14
 
