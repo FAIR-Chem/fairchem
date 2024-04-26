@@ -107,6 +107,7 @@ class FAENetWrapper(nn.Module):
         self,
         batch: Union[Batch, Data, List[Data], List[Batch]],
         preprocess: bool = True,
+        retrieve_hidden: bool = False,
     ):
         """Perform a forward pass of the model when frame averaging is applied.
 
@@ -162,6 +163,8 @@ class FAENetWrapper(nn.Module):
         if preds["energy"].shape[-1] == 1:
             preds["energy"] = preds["energy"].view(-1)
 
+        if retrieve_hidden:
+            return preds
         return preds["energy"]  # denormalize?
 
     def freeze(self):

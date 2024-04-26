@@ -755,7 +755,7 @@ def add_edge_distance_to_graph(
 
 
 # Copied from https://github.com/facebookresearch/mmf/blob/master/mmf/utils/env.py#L89.
-def setup_imports():
+def setup_imports(skip_imports=[]):
     from ocpmodels.common.registry import registry
 
     try:
@@ -803,10 +803,14 @@ def setup_imports():
                 splits = f.split(os.sep)
                 file_name = splits[-1]
                 module_name = file_name[: file_name.find(".py")]
-                importlib.import_module("ocpmodels.%s.%s" % (key[1:], module_name))
+                if module_name not in skip_imports:
+                    importlib.import_module("ocpmodels.%s.%s" % (key[1:], module_name))
 
     # manual model imports
-    importlib.import_module("ocpmodels.models.gemnet_oc.gemnet_oc")
+    try:
+        importlib.import_module("ocpmodels.models.gemnet_oc.gemnet_oc")
+    except:
+        print("unable to load gemnet_oc")
 
     experimental_folder = os.path.join(root_folder, "../experimental/")
     if os.path.exists(experimental_folder):
@@ -1797,7 +1801,7 @@ def make_script_trainer(str_args=[], overrides={}, silent=False, mode="train"):
     return trainer
 
 
-def make_config_from_dir(path, mode, overrides={}, silent=None):
+def make_config_from_dir(path, mode, overrides={}, silent=None, skip_imports=[]):
     """
     Make a config from a directory. This is useful when restarting or continuing from a
     previous run.
@@ -1834,11 +1838,11 @@ def make_config_from_dir(path, mode, overrides={}, silent=None):
     config = build_config(default_args, silent=silent)
     config = merge_dicts(config, overrides)
 
-    setup_imports()
+    setup_imports(skip_imports=skip_imports)
     return config
 
 
-def make_trainer_from_dir(path, mode, overrides={}, silent=None):
+def make_trainer_from_dir(path, mode, overrides={}, silent=None, skip_imports=[]):
     """
     Make a trainer from a directory.
 
@@ -1854,7 +1858,7 @@ def make_trainer_from_dir(path, mode, overrides={}, silent=None):
     Returns:
         Trainer: The loaded trainer.
     """
-    config = make_config_from_dir(path, mode, overrides, silent)
+    config = make_config_from_dir(path, mode, overrides, silent, skip_imports)
     return registry.get_trainer_class(config["trainer"])(**config)
 
 
