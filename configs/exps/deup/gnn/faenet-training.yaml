@@ -11,13 +11,14 @@ default:
   wandb_tags: faenet, no-concat, with-tag0, dropout
   wandb_project: ocp-deup
   optim:
-    batch_size: 256
-    eval_batch_size: 256
+    batch_size: 200
+    eval_batch_size: 200
   cp_data_to_tmpdir: True
 
 runs:
   - config: faenet-is2re-all
     note: "top run no concat"
+    graph_rewiring: ""
     frame_averaging: 2D
     fa_method: se3-random
     model:

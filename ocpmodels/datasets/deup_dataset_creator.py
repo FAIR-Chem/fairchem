@@ -441,13 +441,13 @@ if __name__ == "__main__":
         parser.add_argument(
             "--checkpoints",
             nargs="+",
-            default="/network/scratch/a/alexandre.duval/ocp/runs/4616500/",
+            default="/network/scratch/a/alexandre.duval/ocp/runs/4648581/",
             help="Paths to the checkpoints",
         )
         parser.add_argument(
             "--dropout",
             type=float,
-            default=0.2,
+            default=0.3,
             help="Dropout value",
         )
         return parser.parse_args()

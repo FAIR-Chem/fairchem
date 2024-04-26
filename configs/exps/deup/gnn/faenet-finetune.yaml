@@ -10,9 +10,10 @@ default:
   mode: train
   wandb_tags: faenet, no-concat, with-tag0, dropout, fine-tuned
   wandb_project: ocp-deup
+  graph_rewiring: ""
   optim:
-    batch_size: 256
-    eval_batch_size: 256
+    batch_size: 232
+    eval_batch_size: 232
   cp_data_to_tmpdir: True
 
 runs:
