@@ -755,7 +755,7 @@ def add_edge_distance_to_graph(
 
 
 # Copied from https://github.com/facebookresearch/mmf/blob/master/mmf/utils/env.py#L89.
-def setup_imports(skip_modules=[]):
+def setup_imports(skip_imports=[]):
     from ocpmodels.common.registry import registry
 
     try:
@@ -803,7 +803,7 @@ def setup_imports(skip_modules=[]):
                 splits = f.split(os.sep)
                 file_name = splits[-1]
                 module_name = file_name[: file_name.find(".py")]
-                if module_name not in skip_modules:
+                if module_name not in skip_imports:
                     importlib.import_module("ocpmodels.%s.%s" % (key[1:], module_name))
 
     # manual model imports
@@ -1801,7 +1801,7 @@ def make_script_trainer(str_args=[], overrides={}, silent=False, mode="train"):
     return trainer
 
 
-def make_config_from_dir(path, mode, overrides={}, silent=None, setup_imports=[]):
+def make_config_from_dir(path, mode, overrides={}, silent=None, skip_imports=[]):
     """
     Make a config from a directory. This is useful when restarting or continuing from a
     previous run.
@@ -1838,7 +1838,7 @@ def make_config_from_dir(path, mode, overrides={}, silent=None, setup_imports=[]
     config = build_config(default_args, silent=silent)
     config = merge_dicts(config, overrides)
 
-    setup_imports(setup_imports=setup_imports)
+    setup_imports(skip_imports=skip_imports)
     return config
 
 
