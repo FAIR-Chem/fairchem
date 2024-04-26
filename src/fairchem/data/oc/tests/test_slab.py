@@ -1,6 +1,7 @@
 import random
 
 import numpy as np
+import pytest
 
 from ocdata.core import Bulk, Slab
 
@@ -32,4 +33,4 @@ class TestSlab:
 
         assert slab.atoms.get_chemical_formula() == "Sn48"
         assert slab.millers == (2, 1, 0)
-        assert slab.shift == 0.0833333333333334
+        assert slab.shift == pytest.approx(0.0833333333333334)
