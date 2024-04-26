@@ -31,7 +31,5 @@ optim:
   max_epochs: 24
   clip_grad_norm: 20
   ema_decay: 0.999
-  loss_energy: mae
-  loss_force: l2mae
   scheduler: CosineAnnealingLR
   T_max: 2000000

@@ -42,5 +42,3 @@ optim:
   warmup_factor: 0.2
   max_epochs: 12
   ema_decay: 0.999
-  loss_energy: mae
-  loss_force: l2mae

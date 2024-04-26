@@ -1,6 +1,6 @@
 dataset:
   train:
-    format: lmdb
+    format: oc22_lmdb
     src: data/oc20+oc22/is2re/train
     train_on_oc20_total_energies: True
     # download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl

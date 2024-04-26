@@ -22,7 +22,7 @@ logger: wandb
 
 outputs:
   forces:
-    shape: 3
+    irrep_dim: 1
     level: atom
     train_on_free_atoms: True
     eval_on_free_atoms: True

@@ -2,7 +2,7 @@ trainer: ocp
 
 dataset:
   train:
-    format: lmdb
+    format: oc22_lmdb
     src: data/oc22/s2ef/train
     key_mapping:
       y: energy
@@ -16,11 +16,13 @@ outputs:
   energy:
     shape: 1
     level: system
+    prediction_dtype: float32
   forces:
-    shape: 3
+    irrep_dim: 1
     level: atom
     train_on_free_atoms: True
     eval_on_free_atoms: True
+    prediction_dtype: float32
 
 loss_functions:
   - energy:

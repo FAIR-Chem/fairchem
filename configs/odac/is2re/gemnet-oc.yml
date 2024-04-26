@@ -85,4 +85,3 @@ optim:
   energy_coefficient: 1
   ema_decay: 0.999
   clip_grad_norm: 10
-  loss_energy: mae

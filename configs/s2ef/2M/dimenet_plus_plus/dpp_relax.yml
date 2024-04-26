@@ -3,7 +3,7 @@ trainer: ocp
 loss_functions:
   - energy:
       fn: mae
-      coefficient: 2
+      coefficient: 1
   - forces:
       fn: l2mae
       coefficient: 50

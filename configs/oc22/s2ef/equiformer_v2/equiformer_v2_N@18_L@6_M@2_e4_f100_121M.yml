@@ -2,7 +2,7 @@ trainer: equiformerv2_forces
 
 dataset:
   train:
-    format: lmdb
+    format: oc22_lmdb
     src: data/oc22/s2ef/train
     key_mapping:
       y: energy
@@ -26,11 +26,13 @@ outputs:
   energy:
     shape: 1
     level: system
+    prediction_dtype: float32
   forces:
-    shape: 3
+    irrep_dim: 1
     level: atom
     train_on_free_atoms: True
     eval_on_free_atoms: True
+    prediction_dtype: float32
 
 loss_functions:
   - energy:
@@ -125,7 +127,5 @@ optim:
   max_epochs:               6
   clip_grad_norm:           50
   ema_decay:                0.999
-  loss_energy:              mae
-  loss_force:               l2mae
 
   eval_every:               5000
