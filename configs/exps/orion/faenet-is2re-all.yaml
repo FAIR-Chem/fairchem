@@ -14,8 +14,6 @@ default:
   wandb_tags: is2re-all, orion
   cp_data_to_tmpdir: true
   graph_rewiring: remove-tag-0
-  model:
-    edge_embed_type: all_rij
   frame_averaging: 2D
   fa_method: random
   optim:

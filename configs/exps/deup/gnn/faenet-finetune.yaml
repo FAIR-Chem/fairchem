@@ -8,17 +8,19 @@ job:
 default:
   test_ri: True
   mode: train
-  wandb_tags: faenet, no-concat, with-tag0, dropout
+  wandb_tags: faenet, no-concat, with-tag0, dropout, fine-tuned
   wandb_project: ocp-deup
+  graph_rewiring: ""
   optim:
-    batch_size: 200
-    eval_batch_size: 200
+    batch_size: 232
+    eval_batch_size: 232
   cp_data_to_tmpdir: True
 
 runs:
   - config: faenet-is2re-all
-    note: "top run no concat"
-    graph_rewiring: ""
+    note: "fine-tuned faenet"
+    continue_from_dir: /network/scratch/a/alexandre.duval/ocp/runs/4647489
+    adsorbates: "*O, *OH, *OH2, *H"
     frame_averaging: 2D
     fa_method: se3-random
     model:

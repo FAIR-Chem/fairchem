@@ -87,12 +87,14 @@ class Flags:
             "--checkpoint", type=str, help="Model checkpoint to load"
         )
         self.parser.add_argument(
-            "--continue_from_dir", type=str, help="Run to continue, loading its config"
+            "--continue_from_dir",
+            type=str,
+            help="Continue an existing run, loading its config and overwriting desired arguments",
         )
         self.parser.add_argument(
             "--restart_from_dir",
             type=str,
-            help="Run to restart, loading its config and overwriting "
+            help="Restart training from an existing run, loading its config and overwriting args"
             + "from the command-line",
         )
         self.parser.add_argument(
@@ -292,6 +294,18 @@ class Flags:
             default=3,
             help="Number of validation loops to run in order to collect inference"
             + " timing stats",
+        )
+        self.parser.add_argument(
+            "--is_disconnected",
+            type=bool,
+            default=False,
+            help="Eliminates edges between catalyst and adsorbate.",
+        )
+        self.parser.add_argument(
+            "--lowest_energy_only",
+            type=bool,
+            default=False,
+            help="Makes trainer use the lowest energy data point for every (catalyst, adsorbate, cell) tuple. ONLY USE WITH ALL DATASET",
         )
 
 

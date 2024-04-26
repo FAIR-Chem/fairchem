@@ -36,6 +36,11 @@ def remove_tag0_nodes(data):
     data.tags = data.tags[non_sub]
     if hasattr(data, "pos_relaxed"):
         data.pos_relaxed = data.pos_relaxed[non_sub, :]
+    if hasattr(data, "query"):
+        data.h = data.h[non_sub, :]
+        data.query = data.query[non_sub, :]
+        data.key = data.key[non_sub, :]
+        data.value = data.value[non_sub, :]
 
     # per-edge tensors
     data.edge_index = data.edge_index[:, neither_is_sub]

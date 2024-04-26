@@ -1,0 +1,28 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:1
+  partition: long
+
+default:
+  config: depfaenet-is2re-all
+  wandb_project: ocp-deup
+  wandb_tags: depfaenet, MC-D,4621042
+  test_ri: True
+  mode: train
+  checkpoint: /network/scratch/a/alexandre.duval/ocp/runs/4621042/checkpoints/best_checkpoint.pt
+  restart_from_dir: /network/scratch/a/alexandre.duval/ocp/runs/4621042/
+  model:
+    dropout_lowest_layer: output
+    first_trainable_layer: dropout
+    dropout_lin: 0.3
+  cp_data_to_tmpdir: true
+  inference_time_loops: 1
+  deup_dataset:
+    create: after # "before" -> created before training (for deup) "after" -> created after training (for is2re) "" - not created
+    dataset_strs: ["train", "val_id", "val_ood_cat", "val_ood_ads"]
+    n_samples: 7
+
+runs:
+  - optim:
+      max_epochs: 12

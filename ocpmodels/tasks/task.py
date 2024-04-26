@@ -27,10 +27,10 @@ class BaseTask:
             self.trainer.load_checkpoint(self.config["checkpoint"])
             print()
 
-        # save checkpoint path to runner state for slurm resubmissions
-        self.chkpt_path = os.path.join(
-            self.trainer.config["checkpoint_dir"], "checkpoint.pt"
-        )
+            # save checkpoint path to runner state for slurm resubmissions
+            self.chkpt_path = os.path.join(
+                self.trainer.config["checkpoint_dir"], "checkpoint.pt"
+            )
 
     def run(self):
         raise NotImplementedError

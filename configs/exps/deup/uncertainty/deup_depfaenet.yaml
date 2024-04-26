@@ -1,0 +1,61 @@
+job:
+  mem: 32GB
+  cpus: 4
+  gres: gpu:1
+  partition: long
+
+default:
+  config: deup_faenet-deup_is2re-all
+  wandb_project: ocp-deup
+  wandb_tags: deup-depfaenet, 4648581-model, 4657270-dataset
+  test_ri: True
+  mode: train
+  model:
+    dropout_lowest_layer: output
+    first_trainable_layer: output
+    dropout_lin: 0.3
+  cp_data_to_tmpdir: false
+  inference_time_loops: 1
+  restart_from_dir: /network/scratch/a/alexandre.duval/ocp/runs/4648581/
+  checkpoint: /network/scratch/a/alexandre.duval/ocp/runs/4648581/
+  dataset: # mandatory if restart_from_dir is set
+    default_val: deup-val_ood_cat-val_ood_ads
+    deup-train-val_id:
+      src: /network/scratch/a/alexandre.duval/ocp/runs/4657270/deup_dataset
+    deup-val_ood_cat-val_ood_ads:
+      src: /network/scratch/a/alexandre.duval/ocp/runs/4657270/deup_dataset
+  deup_dataset:
+    create: False
+
+runs:
+  - note: deup-depfaenet (with dropout)
+    graph_rewiring: ""
+    frame_averaging: 2D
+    fa_method: se3-random
+    cp_data_to_tmpdir: True
+    is_disconnected: true
+    model:
+      mp_type: updownscale_base
+      phys_embeds: True
+      tag_hidden_channels: 0
+      pg_hidden_channels: 96
+      energy_head: weighted-av-final-embeds
+      complex_mp: True
+      graph_norm: True
+      hidden_channels: 352
+      num_filters: 288
+      num_gaussians: 68
+      num_interactions: 5
+      second_layer_MLP: False
+      skip_co: False
+      cutoff: 4.0
+      dropout_lin: 0.3
+    optim:
+      batch_size: 256
+      eval_batch_size: 256
+      lr_initial: 0.002
+      scheduler: LinearWarmupCosineAnnealingLR
+      eval_every: 0.4
+      max_epochs: 12
+  
+  - note: deup-depfaenet (without specifying configs)

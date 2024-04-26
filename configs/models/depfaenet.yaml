@@ -1,31 +1,28 @@
 default:
   model:
-    name: deup_faenet
+    name: depfaenet
     act: swish
-    dropout_lin: 0.0
-    dropout_edge: 0.0
-    dropout_lowest_layer: output # lowest layer where `dropout_lin` is applied. Can be `inter-{i}` or `output`. Defaults to `output`.
-    first_trainable_layer: dropout # lowest layer to NOT freeze. All previous layers will be frozen. Can be ``, `embed`, `inter-{i}`, `output`, or `dropout`.
-                            # if it is `` then no layer is frozen. If it is `dropout` then it will be set to the layer before `dropout_lowest_layer`.
-                            # Defaults to ``.
-    hidden_channels: 384
-    num_filters: 480
-    num_interactions: 5
-    num_gaussians: 104
+    hidden_channels: 128
+    num_filters: 100
+    num_interactions: 3
+    num_gaussians: 100
     cutoff: 6.0
     use_pbc: True
     regress_forces: False
-    tag_hidden_channels: 64 # only for OC20
-    pg_hidden_channels: 64 # period & group embedding hidden channels
-    phys_embeds: True # physics-aware embeddings for atoms
+    # drlab attributes:
+    tag_hidden_channels: 0 # 32
+    pg_hidden_channels: 0 # 32 -> period & group embedding hidden channels
+    phys_embeds: False # True
     phys_hidden_channels: 0
-    energy_head: weighted-av-final-embeds # Energy head: {False, weighted-av-initial-embeds, weighted-av-final-embeds}
-    skip_co: False # Skip connections {False, "add", "concat"}
+    energy_head: False # can be {False, weighted-av-initial-embeds, weighted-av-final-embeds, pooling, graclus, random}
+    # faenet new features
+    skip_co: False # output skip connections {False, "add", "concat"}
     second_layer_MLP: False # in EmbeddingBlock
-    complex_mp: True # 2-layer MLP in Interaction blocks
-    mp_type: base # Message Passing type {'base', 'simple', 'updownscale', 'updownscale_base'}
-    graph_norm: True # graph normalization layer
-    force_decoder_type: "mlp" # force head (`"simple"`, `"mlp"`, `"res"`, `"res_updown"`)
+    complex_mp: False
+    mp_type: base # {'base', 'simple', 'updownscale', 'att', 'base_with_att', 'local_env'}
+    graph_norm: False  # bool
+    att_heads: 1  # int
+    force_decoder_type: "mlp" # can be {"" or "simple"} | only used if regress_forces is True
     force_decoder_model_config:
       simple:
         hidden_channels: 128
@@ -39,35 +36,30 @@ default:
       res_updown:
         hidden_channels: 128
         norm: batch1d # batch1d, layer or null
-    deup_features: [s, energy_pred_std]
   optim:
-    batch_size: 256
-    eval_batch_size: 256
-    max_epochs: 12
-    scheduler: LinearWarmupCosineAnnealingLR
-    optimizer: AdamW
+    batch_size: 64
+    eval_batch_size: 64
     num_workers: 4
-    warmup_steps: 6000
-    warmup_factor: 0.2
-    lr_initial: 0.002
     lr_gamma: 0.1
+    lr_initial: 0.001
+    warmup_factor: 0.2
+    max_epochs: 20
     energy_grad_coefficient: 10
     force_coefficient: 30
     energy_coefficient: 1
-    lr_milestones:
-      - 18000
-      - 27000
-      - 37000
-    epoch_fine_tune: 4
 
-  frame_averaging: "" # 2D, 3D, da, False
-  fa_method: "" # can be {None, full, random, det, e3, e3-random, e3-det}
+  frame_averaging: False # 2D, 3D, da, False
+  fa_frames: False # can be {None, full, random, det, e3, e3-random, e3-det}
 
 # -------------------
 # -----  IS2RE  -----
 # -------------------
 
-deup_is2re: # was: is2re
+is2re:
+  # *** Important note ***
+  #   The total number of gpus used for this run was 1.
+  #   If the global batch size (num_gpus * batch_size) is modified
+  #   the lr_milestones and warmup_steps need to be adjusted accordingly.
   10k:
     optim:
       lr_initial: 0.005
@@ -120,6 +112,8 @@ s2ef:
       num_gaussians: 200
       num_filters: 256
       regress_forces: "direct"
+      force_coefficient: 30
+      energy_grad_coefficient: 10
     optim:
       batch_size: 96
       eval_batch_size: 96
@@ -183,9 +177,10 @@ qm9:
       es_warmup_epochs: 600
       eval_batch_size: 64
       factor: 0.9
+      lr_initial: 0.0003
       loss_energy: mse
       lr_gamma: 0.1
-      lr_initial: 0.0003
+      lr_initial: 0.001
       max_epochs: 1500
       min_lr: 1.0e-06
       mode: min
