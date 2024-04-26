@@ -7,17 +7,17 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 from torch.nn import Embedding, Linear
-from torch_geometric.utils import dropout_edge
 from torch_geometric.nn import MessagePassing, radius_graph
 from torch_geometric.nn.norm import GraphNorm
+from torch_geometric.utils import dropout_edge
 from torch_scatter import scatter
 
 from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import conditional_grad, get_pbc_distances
 from ocpmodels.models.base_model import BaseModel
 from ocpmodels.models.force_decoder import ForceDecoder
 from ocpmodels.models.utils.activations import swish
 from ocpmodels.modules.phys_embeddings import PhysEmbedding
-from ocpmodels.common.utils import get_pbc_distances, conditional_grad
 
 
 class GaussianSmearing(nn.Module):
@@ -751,6 +751,9 @@ class FAENet(BaseModel):
                 q = h.clone().detach()
 
         else:
+            # WARNING
+            # q which is NOT the hidden state h if it was stored as a scattered
+            # version of h. This works for GPs, NOT for MC-dropout
             h = q
             alpha = None
 
@@ -762,6 +765,9 @@ class FAENet(BaseModel):
             energy = self.mlp_skip_co(torch.cat(energy_skip_co, dim=1))
         elif self.skip_co == "add":
             energy = sum(energy_skip_co)
+
+        if q and len(q) > len(energy):
+            q = scatter(q, batch, dim=0, reduce="mean")  # N_graphs x hidden_channels
 
         preds = {
             "energy": energy,
