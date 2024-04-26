@@ -12,7 +12,7 @@ dependencies = [
     "scipy",
     "numpy",
     "ase==3.22.1",
-    "pymatgen==2023.5.10",
+    "pymatgen",
     "tqdm"
 ]
 
