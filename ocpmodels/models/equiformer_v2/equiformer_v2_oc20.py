@@ -152,6 +152,7 @@ class EquiformerV2_OC20(BaseModel):
         avg_degree: Optional[float] = None,
         use_energy_lin_ref: Optional[bool] = False,
         load_energy_lin_ref: Optional[bool] = False,
+        energy_lin_ref_path: Optional[str] = None,
     ):
         super().__init__()
 
@@ -215,6 +216,7 @@ class EquiformerV2_OC20(BaseModel):
 
         self.use_energy_lin_ref = use_energy_lin_ref
         self.load_energy_lin_ref = load_energy_lin_ref
+        self.energy_lin_ref_path = energy_lin_ref_path
         assert not (
             self.use_energy_lin_ref and not self.load_energy_lin_ref
         ), "You can't have use_energy_lin_ref = True and load_energy_lin_ref = False, since the model will not have the parameters for the linear references. All other combinations are fine."
@@ -389,10 +391,20 @@ class EquiformerV2_OC20(BaseModel):
             )
 
         if self.load_energy_lin_ref:
-            self.energy_lin_ref = nn.Parameter(
-                torch.zeros(self.max_num_elements),
-                requires_grad=False,
-            )
+            if not self.energy_lin_ref_path:
+                self.energy_lin_ref = nn.Parameter(
+                    torch.zeros(self.max_num_elements),
+                    requires_grad=False,
+                )
+            if self.energy_lin_ref_path:
+                self.energy_lin_ref = nn.Parameter(
+                    torch.zeros(self.max_num_elements + 1),
+                    requires_grad=False,
+                )
+                import numpy as np
+                coeffs = np.load(self.energy_lin_ref_path)["coeff"]
+                self.energy_lin_ref.add_(self.energy_lin_ref.new_tensor(coeffs))
+                print("Energy Reference:", self.energy_lin_ref)
 
         self.apply(self._init_weights)
         self.apply(self._uniform_init_rad_func_linear_weights)

@@ -1,5 +1,39 @@
-includes:
-  - configs/odac/s2ef/base.yml
+dataset:
+  train:
+    src: data_odac/s2ef/train
+    normalize_labels: True
+    target_mean: 0.5514033085536203
+    target_std: 15.554063738073438
+    grad_target_mean: 0.0
+    grad_target_std: 0.04262716323137283
+    # lin_ref: configs/odac/s2ef_lin_ref.npz
+    target: raw_y
+
+  val:
+    src: data_odac/s2ef/val_0.1
+    # lin_ref: configs/odac/s2ef_lin_ref.npz
+    target: raw_y
+
+logger:
+  name: wandb
+
+task:
+  dataset: lmdb
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
+  primary_metric: forces_mae
+
+  relaxation_steps: 125
+  relaxation_fmax: 0.05
+  write_pos: True
+  relax_dataset:
+    src: data_odac/is2r/val
+  relax_opt:
+    name: lbfgs
+    maxstep: 0.04
+    memory: 50
+    damping: 1.0
+    alpha: 70.0
 
 trainer: equiformerv2_forces
 
@@ -13,7 +47,7 @@ model:
   max_radius:               8.0
   max_num_elements:         100
 
-  num_layers:               20
+  num_layers:               8
   sphere_channels:          128
   attn_hidden_channels:     64              # [64, 96] This determines the hidden size of message passing. Do not necessarily use 96.
   num_heads:                8
@@ -22,8 +56,8 @@ model:
   ffn_hidden_channels:      128
   norm_type:                'layer_norm_sh' # ['rms_norm_sh', 'layer_norm', 'layer_norm_sh']
 
-  lmax_list:                [6]
-  mmax_list:                [3]
+  lmax_list:                [4]
+  mmax_list:                [2]
   grid_resolution:          18              # [18, 16, 14, None] For `None`, simply comment this line.
 
   num_sphere_samples:       128
@@ -45,16 +79,21 @@ model:
 
   weight_init:              'uniform'    # ['uniform', 'normal']
 
-  avg_num_nodes: 192.561
-  avg_degree: 21.024127419363214
+  avg_num_nodes:            192.561
+  avg_degree:               21.024127419363214
+
+  use_energy_lin_ref: True
+  load_energy_lin_ref: True
+
+  # energy_lin_ref_path: configs/odac/s2ef_lin_ref_offset.npz
 
 optim:
-  batch_size:                   1
-  eval_batch_size:              1
-  grad_accumulation_steps:      1
+  batch_size:                   3
+  eval_batch_size:              3
+  grad_accumulation_steps:      1         # gradient accumulation: effective batch size = `grad_accumulation_steps` * `batch_size` * (num of GPUs)
   load_balancing: atoms
   num_workers: 8
-  lr_initial:                   0.0004
+  lr_initial:                   0.0004    # [0.0002, 0.0004], eSCN uses 0.0008 for batch size 96
 
   optimizer: AdamW
   optimizer_params:
@@ -66,12 +105,12 @@ optim:
     warmup_epochs: 0.01
     lr_min_factor: 0.01
 
-  max_epochs: 1
-  force_coefficient: 100
-  energy_coefficient: 4
+  max_epochs: 3
+  force_coefficient: 200
+  energy_coefficient: 1
   clip_grad_norm: 100
   ema_decay: 0.999
   loss_energy: mae
   loss_force: l2mae
 
-  eval_every: 2500
+  eval_every: 5000

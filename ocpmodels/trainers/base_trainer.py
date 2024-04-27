@@ -745,7 +745,12 @@ class BaseTrainer(ABC):
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 batch.to(self.device)
-                out = self._forward(batch)
+                try:
+                    out = self._forward(batch)
+                except torch.cuda.OutOfMemoryError:
+                    logging.error(f"OOM error at batch: {i}")
+                    torch.cuda.empty_cache()
+                    continue
             loss = self._compute_loss(out, batch)
 
             # Compute metrics.

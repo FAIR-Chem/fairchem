@@ -153,6 +153,9 @@ class LmdbDataset(Dataset[T_co]):
             data_object = rename_data_object_keys(
                 data_object, self.key_mapping
             )
+        
+        if "target" in self.config:
+            data_object.y = data_object[self.config["target"]]
 
         data_object = self.transforms(data_object)
 
@@ -253,8 +256,9 @@ def data_list_collater(
                 n_neighbors.append(n_index.shape[0])
             batch.neighbors = torch.tensor(n_neighbors)
         except (NotImplementedError, TypeError):
-            logging.warning(
-                "LMDB does not contain edge index information, set otf_graph=True"
-            )
+            # logging.warning(
+            #     "LMDB does not contain edge index information, set otf_graph=True"
+            # )
+            pass
 
     return batch

@@ -455,7 +455,12 @@ class OCPTrainer(BaseTrainer):
         ):
 
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                out = self._forward(batch)
+                try:
+                    out = self._forward(batch)
+                except torch.cuda.OutOfMemoryError:
+                    logging.error(f"OOM error at batch: {i}")
+                    torch.cuda.empty_cache()
+                    continue
 
             for target_key in self.config["outputs"]:
                 pred = out[target_key]
