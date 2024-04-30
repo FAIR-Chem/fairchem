@@ -21,14 +21,13 @@ commands:
           name: Install conda and environment
           command: |
             if [ ! -d "/home/circleci/miniconda" ]; then
-              wget https://repo.anaconda.com/miniconda/Miniconda3-py39_22.11.1-1-Linux-x86_64.sh -O miniconda.sh
+              wget https://repo.anaconda.com/miniconda/Miniconda3-py39_23.11.0-2-Linux-x86_64.sh -O miniconda.sh
               bash miniconda.sh -b -p "$HOME"/miniconda
               source /home/circleci/miniconda/etc/profile.d/conda.sh
               conda activate base
               # Conda configuration
               conda config --set always_yes yes --set auto_update_conda false
               # Update conda
-              conda update conda
               conda install mamba -n base -c conda-forge
               # Install ocp conda env
               conda create --name ocp-models --clone base
@@ -102,7 +101,7 @@ jobs:
             conda activate ocp-models
             pip install -e .
             pre-commit install
-            pytest --cov-report=xml --cov=ocpmodels/ /home/circleci/project/tests
+            pytest -vv --cov-report=xml --cov=ocpmodels/ /home/circleci/project/tests
       - codecov/upload:
           file: coverage.xml
 

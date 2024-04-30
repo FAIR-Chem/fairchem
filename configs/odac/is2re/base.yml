@@ -1,0 +1,21 @@
+trainer: energy
+
+dataset:
+  train:
+    src: data_odac/is2r/train
+    normalize_labels: True
+    target_mean: -0.5249277949333191
+    target_std: 0.943034291267395
+  val:
+    src: data_odac/is2r/train
+
+logger:
+  name: wandb
+
+task:
+  dataset: lmdb
+  description: "Relaxed state energy prediction from initial structure."
+  type: regression
+  metric: mae
+  labels:
+    - relaxed energy

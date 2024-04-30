@@ -1,0 +1,34 @@
+includes:
+  - configs/odac/s2ef/base.yml
+
+trainer: forces
+
+model:
+  name: dimenetplusplus
+  hidden_channels: 192
+  out_emb_channels: 192
+  num_blocks: 3
+  cutoff: 6.0
+  num_radial: 6
+  num_spherical: 7
+  num_before_skip: 1
+  num_after_skip: 2
+  num_output_layers: 3
+  regress_forces: True
+  use_pbc: True
+
+optim:
+  batch_size: 8
+  eval_batch_size: 8
+  eval_every: 10000
+  num_workers: 8
+  lr_initial: 0.0001
+  lr_gamma: 0.1
+  lr_milestones:
+    - 130794
+    - 196192
+    - 261589
+  warmup_steps: 130794
+  warmup_factor: 0.2
+  max_epochs: 7
+  force_coefficient: 50

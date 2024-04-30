@@ -125,3 +125,12 @@ class BaseModel(nn.Module):
     @property
     def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
+
+    @torch.jit.ignore
+    def no_weight_decay(self) -> list:
+        """Returns a list of parameters with no weight decay."""
+        no_wd_list = []
+        for name, _ in self.named_parameters():
+            if "embedding" in name or "frequencies" in name or "bias" in name:
+                no_wd_list.append(name)
+        return no_wd_list

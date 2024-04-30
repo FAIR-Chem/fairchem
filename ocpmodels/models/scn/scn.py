@@ -26,7 +26,6 @@ from ocpmodels.models.scn.smearing import (
 from ocpmodels.models.scn.spherical_harmonics import SphericalHarmonicsHelper
 
 try:
-    import e3nn
     from e3nn import o3
 except ImportError:
     pass
@@ -105,12 +104,8 @@ class SphericalChannelNetwork(BaseModel):
         super().__init__()
 
         if "e3nn" not in sys.modules:
-            logging.error(
-                "You need to install e3nn v0.2.6 to use the SCN model"
-            )
+            logging.error("You need to install e3nn==0.2.6 to use SCN.")
             raise ImportError
-
-        assert e3nn.__version__ == "0.2.6"
 
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
@@ -409,6 +404,8 @@ class SphericalChannelNetwork(BaseModel):
         energy = torch.zeros(len(data.natoms), device=pos.device)
         energy.index_add_(0, data.batch, node_energy.view(-1))
 
+        outputs = {"energy": energy}
+
         # Force estimation
         if self.regress_forces:
             forces = torch.einsum(
@@ -421,11 +418,9 @@ class SphericalChannelNetwork(BaseModel):
             forces = forces.view(-1, self.num_sphere_samples, 1)
             forces = forces * sphere_points.view(1, self.num_sphere_samples, 3)
             forces = torch.sum(forces, dim=1) / self.num_sphere_samples
+            outputs["forces"] = forces
 
-        if not self.regress_forces:
-            return energy
-        else:
-            return energy, forces
+        return outputs
 
     def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
         edge_vec_0 = edge_distance_vec

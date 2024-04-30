@@ -1,5 +1,5 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -140,8 +140,8 @@ class Registry:
 
             from ocpmodels.common.registry import registry
 
-            @registry.register_logger("tensorboard")
-            class WandB():
+            @registry.register_logger("wandb")
+            class WandBLogger():
                 ...
         """
 

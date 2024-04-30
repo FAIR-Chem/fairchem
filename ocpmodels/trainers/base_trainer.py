@@ -9,32 +9,36 @@ import errno
 import logging
 import os
 import random
-import subprocess
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections import defaultdict
-from typing import Dict, Optional
+from typing import DefaultDict, Dict, Optional
 
 import numpy as np
+import numpy.typing as npt
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-import ocpmodels
 from ocpmodels.common import distutils, gp_utils
 from ocpmodels.common.balanced_batch_sampler import BalancedBatchSampler
-from ocpmodels.common.data_parallel import OCPDataParallel, ParallelCollater
 from ocpmodels.common.registry import registry
-from ocpmodels.common.typing import assert_is_instance
-from ocpmodels.common.utils import load_state_dict, save_checkpoint
+from ocpmodels.common.typing import assert_is_instance as aii
+from ocpmodels.common.typing import none_throws
+from ocpmodels.common.utils import (
+    get_commit_hash,
+    get_loss_module,
+    load_state_dict,
+    save_checkpoint,
+    update_config,
+)
 from ocpmodels.modules.evaluator import Evaluator
 from ocpmodels.modules.exponential_moving_average import (
     ExponentialMovingAverage,
 )
-from ocpmodels.modules.loss import AtomwiseL2Loss, DDPLoss, L2MAELoss
+from ocpmodels.modules.loss import DDPLoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scaling.compat import load_scales_compat
 from ocpmodels.modules.scaling.util import ensure_fitted
@@ -43,41 +47,35 @@ from ocpmodels.modules.scheduler import LRScheduler
 
 @registry.register_trainer("base")
 class BaseTrainer(ABC):
-    @property
-    def _unwrapped_model(self):
-        module = self.model
-        while isinstance(module, (OCPDataParallel, DistributedDataParallel)):
-            module = module.module
-        return module
-
     def __init__(
         self,
         task,
         model,
+        outputs,
         dataset,
         optimizer,
-        identifier,
-        normalizer=None,
+        loss_fns,
+        eval_metrics,
+        identifier: str,
         timestamp_id: Optional[str] = None,
-        run_dir=None,
+        run_dir: Optional[str] = None,
         is_debug: bool = False,
-        is_hpo: bool = False,
         print_every: int = 100,
-        seed=None,
-        logger: str = "tensorboard",
+        seed: Optional[int] = None,
+        logger: str = "wandb",
         local_rank: int = 0,
         amp: bool = False,
         cpu: bool = False,
-        name: str = "base_trainer",
+        name: str = "ocp",
         slurm={},
         noddp: bool = False,
     ) -> None:
         self.name = name
+        self.is_debug = is_debug
         self.cpu = cpu
         self.epoch = 0
         self.step = 0
 
-        self.device: torch.device
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{local_rank}")
         else:
@@ -90,46 +88,22 @@ class BaseTrainer(ABC):
 
         self.timestamp_id: str
         if timestamp_id is None:
-            timestamp = torch.tensor(datetime.datetime.now().timestamp()).to(
-                self.device
-            )
-            # create directories from master rank only
-            distutils.broadcast(timestamp, 0)
-            timestamp = datetime.datetime.fromtimestamp(
-                timestamp.float().item()
-            ).strftime("%Y-%m-%d-%H-%M-%S")
-            if identifier:
-                self.timestamp_id = f"{timestamp}-{identifier}"
-            else:
-                self.timestamp_id = timestamp
-        else:
-            self.timestamp_id = timestamp_id
+            timestamp_id = self._get_timestamp(self.device, identifier)
 
-        try:
-            commit_hash = (
-                subprocess.check_output(
-                    [
-                        "git",
-                        "-C",
-                        assert_is_instance(ocpmodels.__path__[0], str),
-                        "describe",
-                        "--always",
-                    ]
-                )
-                .strip()
-                .decode("ascii")
-            )
-        # catch instances where code is not being run from a git repo
-        except Exception:
-            commit_hash = None
+        self.timestamp_id = none_throws(timestamp_id)
+
+        commit_hash = get_commit_hash()
 
         logger_name = logger if isinstance(logger, str) else logger["name"]
         self.config = {
             "task": task,
-            "trainer": "forces" if name == "s2ef" else "energy",
-            "model": assert_is_instance(model.pop("name"), str),
+            "trainer": name,
+            "model": aii(model.pop("name"), str),
             "model_attributes": model,
+            "outputs": outputs,
             "optim": optimizer,
+            "loss_fns": loss_fns,
+            "eval_metrics": eval_metrics,
             "logger": logger,
             "amp": amp,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
@@ -155,6 +129,7 @@ class BaseTrainer(ABC):
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp else None
 
+        # Fill in SLURM information in config, if applicable
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
             if "SLURM_ARRAY_JOB_ID" in os.environ:
                 self.config["slurm"]["job_id"] = "%s_%s" % (
@@ -166,6 +141,8 @@ class BaseTrainer(ABC):
             self.config["slurm"]["folder"] = self.config["slurm"][
                 "folder"
             ].replace("%j", self.config["slurm"]["job_id"])
+
+        # Define datasets
         if isinstance(dataset, list):
             if len(dataset) > 0:
                 self.config["dataset"] = dataset[0]
@@ -180,33 +157,36 @@ class BaseTrainer(ABC):
         else:
             self.config["dataset"] = dataset
 
-        self.normalizer = normalizer
-        # This supports the legacy way of providing norm parameters in dataset
-        if self.config.get("dataset", None) is not None and normalizer is None:
-            self.normalizer = self.config["dataset"]
-
-        if not is_debug and distutils.is_master() and not is_hpo:
+        if not is_debug and distutils.is_master():
             os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
             os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
             os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
 
-        self.is_debug = is_debug
-        self.is_hpo = is_hpo
-
-        if self.is_hpo:
-            # conditional import is necessary for checkpointing
-
-            # sets the hpo checkpoint frequency
-            # default is no checkpointing
-            self.hpo_checkpoint_every = self.config["optim"].get(
-                "checkpoint_every", -1
+        ### backwards compatability with OCP v<2.0
+        ### TODO: better format check for older configs
+        if not self.config.get("loss_fns"):
+            logging.warning(
+                "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
             )
+            self.config = update_config(self.config)
 
         if distutils.is_master():
             logging.info(yaml.dump(self.config, default_flow_style=False))
+
         self.load()
 
-        self.evaluator = Evaluator(task=name)
+    @staticmethod
+    def _get_timestamp(device: torch.device, suffix: Optional[str]) -> str:
+        now = datetime.datetime.now().timestamp()
+        timestamp_tensor = torch.tensor(now).to(device)
+        # create directories from master rank only
+        distutils.broadcast(timestamp_tensor, 0)
+        timestamp_str = datetime.datetime.fromtimestamp(
+            timestamp_tensor.float().item()
+        ).strftime("%Y-%m-%d-%H-%M-%S")
+        if suffix:
+            timestamp_str += "-" + suffix
+        return timestamp_str
 
     def load(self) -> None:
         self.load_seed_from_config()
@@ -218,12 +198,8 @@ class BaseTrainer(ABC):
         self.load_optimizer()
         self.load_extras()
 
-    def load_seed_from_config(self) -> None:
+    def set_seed(self, seed) -> None:
         # https://pytorch.org/docs/stable/notes/randomness.html
-        seed = self.config["cmd"]["seed"]
-        if seed is None:
-            return
-
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
@@ -231,9 +207,15 @@ class BaseTrainer(ABC):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
+    def load_seed_from_config(self) -> None:
+        # https://pytorch.org/docs/stable/notes/randomness.html
+        if self.config["cmd"]["seed"] is None:
+            return
+        self.set_seed(self.config["cmd"]["seed"])
+
     def load_logger(self) -> None:
         self.logger = None
-        if not self.is_debug and distutils.is_master() and not self.is_hpo:
+        if not self.is_debug and distutils.is_master():
             assert (
                 self.config["logger"] is not None
             ), "Specify logger in config"
@@ -245,10 +227,7 @@ class BaseTrainer(ABC):
             self.logger = registry.get_logger_class(logger_name)(self.config)
 
     def get_sampler(
-        self,
-        dataset,
-        batch_size: int,
-        shuffle: bool,
+        self, dataset, batch_size: int, shuffle: bool
     ) -> BalancedBatchSampler:
         balancing_mode = self.config["optim"].get("load_balancing", None)
         on_error = self.config["optim"].get("load_balancing_on_error", None)
@@ -283,7 +262,7 @@ class BaseTrainer(ABC):
     def get_dataloader(self, dataset, sampler) -> DataLoader:
         loader = DataLoader(
             dataset,
-            collate_fn=self.parallel_collater,
+            collate_fn=self.ocp_collater,
             num_workers=self.config["optim"]["num_workers"],
             pin_memory=True,
             batch_sampler=sampler,
@@ -291,18 +270,21 @@ class BaseTrainer(ABC):
         return loader
 
     def load_datasets(self) -> None:
-        self.parallel_collater = ParallelCollater(
-            0 if self.cpu else 1,
-            self.config["model_attributes"].get("otf_graph", False),
+        self.ocp_collater = OCPCollater(
+            self.config["model_attributes"].get("otf_graph", False)
         )
-
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
 
-        if self.config.get("dataset", None):
+        # load train, val, test datasets
+        if self.config["dataset"].get("src", None):
+            logging.info(
+                f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
+            )
+
             self.train_dataset = registry.get_dataset_class(
-                self.config["task"]["dataset"]
+                self.config["dataset"].get("format", "lmdb")
             )(self.config["dataset"])
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
@@ -315,9 +297,15 @@ class BaseTrainer(ABC):
             )
 
             if self.config.get("val_dataset", None):
+                if self.config["val_dataset"].get("use_train_settings", True):
+                    val_config = self.config["dataset"].copy()
+                    val_config.update(self.config["val_dataset"])
+                else:
+                    val_config = self.config["val_dataset"]
+
                 self.val_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(self.config["val_dataset"])
+                    val_config.get("format", "lmdb")
+                )(val_config)
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,
                     self.config["optim"].get(
@@ -331,9 +319,15 @@ class BaseTrainer(ABC):
                 )
 
             if self.config.get("test_dataset", None):
+                if self.config["test_dataset"].get("use_train_settings", True):
+                    test_config = self.config["dataset"].copy()
+                    test_config.update(self.config["test_dataset"])
+                else:
+                    test_config = self.config["test_dataset"]
+
                 self.test_dataset = registry.get_dataset_class(
-                    self.config["task"]["dataset"]
-                )(self.config["test_dataset"])
+                    test_config.get("format", "lmdb")
+                )(test_config)
                 self.test_sampler = self.get_sampler(
                     self.test_dataset,
                     self.config["optim"].get(
@@ -346,27 +340,81 @@ class BaseTrainer(ABC):
                     self.test_sampler,
                 )
 
+        # load relaxation dataset
+        if "relax_dataset" in self.config["task"]:
+            self.relax_dataset = registry.get_dataset_class("lmdb")(
+                self.config["task"]["relax_dataset"]
+            )
+            self.relax_sampler = self.get_sampler(
+                self.relax_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.relax_loader = self.get_dataloader(
+                self.relax_dataset,
+                self.relax_sampler,
+            )
+
+    def load_task(self):
         # Normalizer for the dataset.
-        # Compute mean, std of training set labels.
+        normalizer = (
+            self.config["dataset"].get("transforms", {}).get("normalizer", {})
+        )
         self.normalizers = {}
-        if self.normalizer.get("normalize_labels", False):
-            if "target_mean" in self.normalizer:
-                self.normalizers["target"] = Normalizer(
-                    mean=self.normalizer["target_mean"],
-                    std=self.normalizer["target_std"],
-                    device=self.device,
-                )
-            else:
-                self.normalizers["target"] = Normalizer(
-                    tensor=self.train_loader.dataset.data.y[
-                        self.train_loader.dataset.__indices__
-                    ],
-                    device=self.device,
+        if normalizer:
+            for target in normalizer:
+                self.normalizers[target] = Normalizer(
+                    mean=normalizer[target].get("mean", 0),
+                    std=normalizer[target].get("stdev", 1),
                 )
 
-    @abstractmethod
-    def load_task(self):
-        """Initialize task-specific information. Derived classes should implement this function."""
+        self.output_targets = {}
+        for target_name in self.config["outputs"]:
+            self.output_targets[target_name] = self.config["outputs"][
+                target_name
+            ]
+            if "decomposition" in self.config["outputs"][target_name]:
+                for subtarget in self.config["outputs"][target_name][
+                    "decomposition"
+                ]:
+                    self.output_targets[subtarget] = (
+                        self.config["outputs"][target_name]["decomposition"]
+                    )[subtarget]
+                    self.output_targets[subtarget]["parent"] = target_name
+                    # inherent properties if not available
+                    if "level" not in self.output_targets[subtarget]:
+                        self.output_targets[subtarget]["level"] = self.config[
+                            "outputs"
+                        ][target_name].get("level", "system")
+                    if (
+                        "train_on_free_atoms"
+                        not in self.output_targets[subtarget]
+                    ):
+                        self.output_targets[subtarget][
+                            "train_on_free_atoms"
+                        ] = self.config["outputs"][target_name].get(
+                            "train_on_free_atoms", True
+                        )
+                    if (
+                        "eval_on_free_atoms"
+                        not in self.output_targets[subtarget]
+                    ):
+                        self.output_targets[subtarget][
+                            "eval_on_free_atoms"
+                        ] = self.config["outputs"][target_name].get(
+                            "eval_on_free_atoms", True
+                        )
+
+        # TODO: Assert that all targets, loss fn, metrics defined are consistent
+        self.evaluation_metrics = self.config.get("eval_metrics", {})
+        self.evaluator = Evaluator(
+            task=self.name,
+            eval_metrics=self.evaluation_metrics.get(
+                "metrics", Evaluator.task_metrics.get(self.name, {})
+            ),
+        )
 
     def load_model(self) -> None:
         # Build model
@@ -387,7 +435,7 @@ class BaseTrainer(ABC):
             and loader.dataset[0].x is not None
             else None,
             bond_feat_dim,
-            self.num_targets,
+            1,
             **self.config["model_attributes"],
         ).to(self.device)
 
@@ -400,25 +448,33 @@ class BaseTrainer(ABC):
         if self.logger is not None:
             self.logger.watch(self.model)
 
-        self.model = OCPDataParallel(
-            self.model,
-            output_device=self.device,
-            num_gpus=1 if not self.cpu else 0,
-        )
         if distutils.initialized() and not self.config["noddp"]:
             self.model = DistributedDataParallel(
                 self.model, device_ids=[self.device]
             )
 
-    def load_checkpoint(self, checkpoint_path: str) -> None:
-        if not os.path.isfile(checkpoint_path):
-            raise FileNotFoundError(
-                errno.ENOENT, "Checkpoint file not found", checkpoint_path
-            )
+    @property
+    def _unwrapped_model(self):
+        module = self.model
+        while isinstance(module, DistributedDataParallel):
+            module = module.module
+        return module
 
-        logging.info(f"Loading checkpoint from: {checkpoint_path}")
-        map_location = torch.device("cpu") if self.cpu else self.device
-        checkpoint = torch.load(checkpoint_path, map_location=map_location)
+    def load_checkpoint(
+        self, checkpoint_path: str, checkpoint: Dict = {}
+    ) -> None:
+        if not checkpoint:
+            if not os.path.isfile(checkpoint_path):
+                raise FileNotFoundError(
+                    errno.ENOENT, "Checkpoint file not found", checkpoint_path
+                )
+            else:
+                logging.info(f"Loading checkpoint from: {checkpoint_path}")
+                map_location = torch.device("cpu") if self.cpu else self.device
+                checkpoint = torch.load(
+                    checkpoint_path, map_location=map_location
+                )
+
         self.epoch = checkpoint.get("epoch", 0)
         self.step = checkpoint.get("step", 0)
         self.best_val_metric = checkpoint.get("best_val_metric", None)
@@ -467,74 +523,104 @@ class BaseTrainer(ABC):
             load_scales_compat(self._unwrapped_model, scale_dict)
 
         for key in checkpoint["normalizers"]:
-            if key in self.normalizers:
-                self.normalizers[key].load_state_dict(
+            ### Convert old normalizer keys to new target keys
+            if key == "target":
+                target_key = "energy"
+            elif key == "grad_target":
+                target_key = "forces"
+            else:
+                target_key = key
+
+            if target_key in self.normalizers:
+                self.normalizers[target_key].load_state_dict(
                     checkpoint["normalizers"][key]
                 )
-            if self.scaler and checkpoint["amp"]:
-                self.scaler.load_state_dict(checkpoint["amp"])
+
+        if self.scaler and checkpoint["amp"]:
+            self.scaler.load_state_dict(checkpoint["amp"])
 
     def load_loss(self) -> None:
-        self.loss_fn: Dict[str, str] = {
-            "energy": self.config["optim"].get("loss_energy", "mae"),
-            "force": self.config["optim"].get("loss_force", "mae"),
-        }
-        for loss, loss_name in self.loss_fn.items():
-            if loss_name in ["l1", "mae"]:
-                self.loss_fn[loss] = nn.L1Loss()
-            elif loss_name == "mse":
-                self.loss_fn[loss] = nn.MSELoss()
-            elif loss_name == "l2mae":
-                self.loss_fn[loss] = L2MAELoss()
-            elif loss_name == "atomwisel2":
-                self.loss_fn[loss] = AtomwiseL2Loss()
-            else:
-                raise NotImplementedError(
-                    f"Unknown loss function name: {loss_name}"
+        self.loss_fns = []
+        for idx, loss in enumerate(self.config["loss_fns"]):
+            for target in loss:
+                loss_name = loss[target].get("fn", "mae")
+                coefficient = loss[target].get("coefficient", 1)
+                loss_reduction = loss[target].get("reduction", "mean")
+
+                ### if torch module name provided, use that directly
+                if hasattr(nn, loss_name):
+                    loss_fn = getattr(nn, loss_name)()
+                ### otherwise, retrieve the correct module based off old naming
+                else:
+                    loss_fn = get_loss_module(loss_name)
+
+                loss_fn = DDPLoss(loss_fn, loss_name, loss_reduction)
+
+                self.loss_fns.append(
+                    (target, {"fn": loss_fn, "coefficient": coefficient})
                 )
-            self.loss_fn[loss] = DDPLoss(self.loss_fn[loss])
 
     def load_optimizer(self) -> None:
-        optimizer = self.config["optim"].get("optimizer", "AdamW")
-        optimizer = getattr(optim, optimizer)
+        optimizer = getattr(
+            torch.optim, self.config["optim"].get("optimizer", "AdamW")
+        )
+        optimizer_params = self.config["optim"].get("optimizer_params", {})
 
-        if self.config["optim"].get("weight_decay", 0) > 0:
-            # Do not regularize bias etc.
-            params_decay = []
-            params_no_decay = []
+        weight_decay = optimizer_params.get("weight_decay", 0)
+        if "weight_decay" in self.config["optim"]:
+            weight_decay = self.config["optim"]["weight_decay"]
+            logging.warning(
+                "Using `weight_decay` from `optim` instead of `optim.optimizer_params`."
+                "Please update your config to use `optim.optimizer_params.weight_decay`."
+                "`optim.weight_decay` will soon be deprecated."
+            )
+
+        if weight_decay > 0:
+            self.model_params_no_wd = {}
+            if hasattr(self._unwrapped_model, "no_weight_decay"):
+                self.model_params_no_wd = (
+                    self._unwrapped_model.no_weight_decay()
+                )
+
+            params_decay, params_no_decay, name_no_decay = [], [], []
             for name, param in self.model.named_parameters():
-                if param.requires_grad:
-                    if "embedding" in name:
-                        params_no_decay += [param]
-                    elif "frequencies" in name:
-                        params_no_decay += [param]
-                    elif "bias" in name:
-                        params_no_decay += [param]
-                    else:
-                        params_decay += [param]
+                if not param.requires_grad:
+                    continue
+
+                if any(
+                    name.endswith(skip_name)
+                    for skip_name in self.model_params_no_wd
+                ):
+                    params_no_decay.append(param)
+                    name_no_decay.append(name)
+                else:
+                    params_decay.append(param)
+
+            if distutils.is_master():
+                logging.info("Parameters without weight decay:")
+                logging.info(name_no_decay)
 
             self.optimizer = optimizer(
-                [
+                params=[
                     {"params": params_no_decay, "weight_decay": 0},
-                    {
-                        "params": params_decay,
-                        "weight_decay": self.config["optim"]["weight_decay"],
-                    },
+                    {"params": params_decay, "weight_decay": weight_decay},
                 ],
                 lr=self.config["optim"]["lr_initial"],
-                **self.config["optim"].get("optimizer_params", {}),
+                **optimizer_params,
             )
         else:
             self.optimizer = optimizer(
                 params=self.model.parameters(),
                 lr=self.config["optim"]["lr_initial"],
-                **self.config["optim"].get("optimizer_params", {}),
+                **optimizer_params,
             )
 
     def load_extras(self) -> None:
         self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
-        self.clip_grad_norm = self.config["optim"].get("clip_grad_norm")
-        self.ema_decay = self.config["optim"].get("ema_decay")
+        self.clip_grad_norm = aii(
+            self.config["optim"].get("clip_grad_norm", None), (int, float)
+        )
+        self.ema_decay = aii(self.config["optim"].get("ema_decay"), float)
         if self.ema_decay:
             self.ema = ExponentialMovingAverage(
                 self.model.parameters(),
@@ -548,7 +634,7 @@ class BaseTrainer(ABC):
         metrics=None,
         checkpoint_file: str = "checkpoint.pt",
         training_state: bool = True,
-    ):
+    ) -> Optional[str]:
         if not self.is_debug and distutils.is_master():
             if training_state:
                 return save_checkpoint(
@@ -571,7 +657,7 @@ class BaseTrainer(ABC):
                         if self.scaler
                         else None,
                         "best_val_metric": self.best_val_metric,
-                        "primary_metric": self.config["task"].get(
+                        "primary_metric": self.evaluation_metrics.get(
                             "primary_metric",
                             self.evaluator.task_primary_metric[self.name],
                         ),
@@ -580,7 +666,7 @@ class BaseTrainer(ABC):
                     checkpoint_file=checkpoint_file,
                 )
             else:
-                if self.ema:
+                if self.ema is not None:
                     self.ema.store()
                     self.ema.copy_to()
                 ckpt_path = save_checkpoint(
@@ -604,46 +690,31 @@ class BaseTrainer(ABC):
                 return ckpt_path
         return None
 
-    def save_hpo(self, epoch, step: int, metrics, checkpoint_every: int):
-        # default is no checkpointing
-        # checkpointing frequency can be adjusted by setting checkpoint_every in steps
-        # to checkpoint every time results are communicated to Ray Tune set checkpoint_every=1
-        if checkpoint_every != -1 and step % checkpoint_every == 0:
-            with tune.checkpoint_dir(  # noqa: F821
-                step=step
-            ) as checkpoint_dir:
-                path = os.path.join(checkpoint_dir, "checkpoint")
-                torch.save(self.save_state(epoch, step, metrics), path)
-
-    def hpo_update(
-        self, epoch, step, train_metrics, val_metrics, test_metrics=None
-    ):
-        progress = {
-            "steps": step,
-            "epochs": epoch,
-            "act_lr": self.optimizer.param_groups[0]["lr"],
-        }
-        # checkpointing must occur before reporter
-        # default is no checkpointing
-        self.save_hpo(
-            epoch,
-            step,
-            val_metrics,
-            self.hpo_checkpoint_every,
-        )
-        # report metrics to tune
-        tune_reporter(  # noqa: F821
-            iters=progress,
-            train_metrics={
-                k: train_metrics[k]["metric"] for k in self.metrics
-            },
-            val_metrics={k: val_metrics[k]["metric"] for k in val_metrics},
-            test_metrics=test_metrics,
-        )
-
-    @abstractmethod
-    def train(self):
-        """Derived classes should implement this function."""
+    def update_best(
+        self,
+        primary_metric,
+        val_metrics,
+        disable_eval_tqdm: bool = True,
+    ) -> None:
+        if (
+            "mae" in primary_metric
+            and val_metrics[primary_metric]["metric"] < self.best_val_metric
+        ) or (
+            "mae" not in primary_metric
+            and val_metrics[primary_metric]["metric"] > self.best_val_metric
+        ):
+            self.best_val_metric = val_metrics[primary_metric]["metric"]
+            self.save(
+                metrics=val_metrics,
+                checkpoint_file="best_checkpoint.pt",
+                training_state=False,
+            )
+            if self.test_loader is not None:
+                self.predict(
+                    self.test_loader,
+                    results_file="predictions",
+                    disable_tqdm=disable_eval_tqdm,
+                )
 
     @torch.no_grad()
     def validate(self, split: str = "val", disable_tqdm: bool = False):
@@ -651,15 +722,20 @@ class BaseTrainer(ABC):
 
         if distutils.is_master():
             logging.info(f"Evaluating on {split}.")
-        if self.is_hpo:
-            disable_tqdm = True
 
         self.model.eval()
         if self.ema:
             self.ema.store()
             self.ema.copy_to()
 
-        evaluator, metrics = Evaluator(task=self.name), {}
+        metrics = {}
+        evaluator = Evaluator(
+            task=self.name,
+            eval_metrics=self.evaluation_metrics.get(
+                "metrics", Evaluator.task_metrics.get(self.name, {})
+            ),
+        )
+
         rank = distutils.get_rank()
 
         loader = self.val_loader if split == "val" else self.test_loader
@@ -673,6 +749,7 @@ class BaseTrainer(ABC):
         ):
             # Forward.
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                batch.to(self.device)
                 out = self._forward(batch)
             loss = self._compute_loss(out, batch)
 
@@ -714,20 +791,12 @@ class BaseTrainer(ABC):
 
         return metrics
 
-    @abstractmethod
-    def _forward(self, batch_list):
-        """Derived classes should implement this function."""
-
-    @abstractmethod
-    def _compute_loss(self, out, batch_list):
-        """Derived classes should implement this function."""
-
     def _backward(self, loss) -> None:
         self.optimizer.zero_grad()
         loss.backward()
         # Scale down the gradients of shared parameters
-        if hasattr(self.model.module, "shared_parameters"):
-            for p, factor in self.model.module.shared_parameters:
+        if hasattr(self.model, "shared_parameters"):
+            for p, factor in self.model.shared_parameters:
                 if hasattr(p, "grad") and p.grad is not None:
                     p.grad.detach().div_(factor)
                 else:
@@ -758,10 +827,12 @@ class BaseTrainer(ABC):
             self.ema.update()
 
     def save_results(
-        self, predictions, results_file: Optional[str], keys
+        self, predictions, results_file: Optional[str], keys=None
     ) -> None:
         if results_file is None:
             return
+        if keys is None:
+            keys = predictions.keys()
 
         results_file_path = os.path.join(
             self.config["cmd"]["results_dir"],
@@ -769,13 +840,14 @@ class BaseTrainer(ABC):
         )
         np.savez_compressed(
             results_file_path,
-            ids=predictions["id"],
             **{key: predictions[key] for key in keys},
         )
 
         distutils.synchronize()
         if distutils.is_master():
-            gather_results = defaultdict(list)
+            gather_results: DefaultDict[
+                str, npt.NDArray[np.float_]
+            ] = defaultdict(list)
             full_path = os.path.join(
                 self.config["cmd"]["results_dir"],
                 f"{self.name}_{results_file}.npz",
@@ -787,7 +859,6 @@ class BaseTrainer(ABC):
                     f"{self.name}_{results_file}_{i}.npz",
                 )
                 rank_results = np.load(rank_path, allow_pickle=True)
-                gather_results["ids"].extend(rank_results["ids"])
                 for key in keys:
                     gather_results[key].extend(rank_results[key])
                 os.remove(rank_path)
@@ -795,24 +866,20 @@ class BaseTrainer(ABC):
             # Because of how distributed sampler works, some system ids
             # might be repeated to make no. of samples even across GPUs.
             _, idx = np.unique(gather_results["ids"], return_index=True)
-            gather_results["ids"] = np.array(
-                gather_results["ids"],
-            )[idx]
             for k in keys:
-                if k == "forces":
-                    gather_results[k] = np.concatenate(
-                        np.array(gather_results[k], dtype=object)[idx]
-                    )
-                elif k == "chunk_idx":
+                if "chunk_idx" in k:
                     gather_results[k] = np.cumsum(
                         np.array(
                             gather_results[k],
                         )[idx]
                     )[:-1]
                 else:
-                    gather_results[k] = np.array(
-                        gather_results[k],
-                    )[idx]
+                    if f"{k}_chunk_idx" in keys or k == "forces":
+                        gather_results[k] = np.concatenate(
+                            np.array(gather_results[k])[idx]
+                        )
+                    else:
+                        gather_results[k] = np.array(gather_results[k])[idx]
 
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)

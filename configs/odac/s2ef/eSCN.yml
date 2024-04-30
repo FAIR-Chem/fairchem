@@ -1,0 +1,41 @@
+includes:
+  - configs/odac/s2ef/base.yml
+
+trainer: forces
+
+model:
+  name: escn
+  num_layers: 12
+  max_neighbors: 20
+  cutoff: 8.0
+  sphere_channels: 128
+  hidden_channels: 256
+  lmax_list: [6]
+  mmax_list: [2]
+  num_sphere_samples: 128
+  distance_function: "gaussian"
+  regress_forces: True
+  use_pbc: True
+  basis_width_scalar: 2.0
+  otf_graph: True
+  max_num_elements: 100
+
+optim:
+  batch_size: 4
+  eval_batch_size: 4
+  num_workers: 8
+  lr_initial: 0.0008
+  optimizer: AdamW
+  optimizer_params:
+    amsgrad: True
+    weight_decay: 0.1
+  eval_every: 5000
+  max_epochs: 24
+  force_coefficient: 100
+  energy_coefficient: 4
+  clip_grad_norm: 20
+  ema_decay: 0.999
+  loss_energy: mae
+  loss_force: l2mae
+  scheduler: CosineAnnealingLR
+  T_max: 2000000
