@@ -1,0 +1,210 @@
+flist="list_MOF.txt"
+x=load(flist).lines
+
+d=['ID' 'Material' 'CF' 'M_O_M' 'Benzene' 'Parellel' 'Parellel68' 'DistanceParallel68' 'DistanceParallel68Direct' 'uncoordN'];
+
+b="";
+for (i=1; i<=d.length; i++){ ; b += d[i].join("\t"); b += "\t";}
+b += "\n";
+
+nn=x.length+1;
+
+a_start=1;
+a_end=a_start+nn;
+
+for (a =a_start;a<a_end; a++){
+y=[];
+
+load @{x[a]} {1 1 1} range 12
+connect 3 ({_Ca or _Ba or _Sr})({_O or _N})
+connect 3 ({_Li})({_O or _N})
+connect 3 ({_F})({_Si or _Cu or Zn})
+if (f=="AVEMOE.cif") {connect 4.8 ({_Ag})({_O }); connect 4.6 ({_Ag})({_N })};
+select all
+connect (selected) aromatic modify
+calculate aromatic
+calculate hbonds
+connect (metal) (_C) delete
+connect (metal) (metal) delete
+
+r={fx>=0 and fx<1 and fy>=0 and fy<1 and fz>=0 and fz<1};
+
+n=={r and !_H}.size                                                                                                  // number of H-excluded atoms
+
+
+y=y+a;                                                                                                               // ID
+y=y+x[a].replace('.cif','');                                                                                         // Material
+y==y+{r}.find("MF",true).replace(' ','_');                                                                           // Chemical Formula   
+
+//M-O-M
+var mom_flag=0;
+g={*}.find("smarts","[$(select {metal})]~[$(select oxygen)]~[$(select {metal})]",true);     // metal–oxygen–metal bridges ?
+if (g.length>0){mom_flag=1;}
+y=y+mom_flag;
+
+//benzene-like
+var benzene_flag=0;
+var parellel_flag=0;
+var parellel68_flag=0;
+var DistanceParallel68=0;
+var DistanceParallel68Direct=0;
+
+
+g61={*}.find("smarts","[#6]1=[*][*][*][*][*]1",true)
+g62={*}.find("smarts","[#6]1:[*][*][*][*][*]1",true)
+g63={*}.find("smarts","[#6]1#[*][*][*][*][*]1",true)
+g6N={*}.find("smarts","[#6]1[#7][*][*][*][*]1",true)
+
+g6=g61+g62+g63+g6N
+
+
+benzeneCount = g6.length;
+if (benzeneCount>0){benzene_flag=1;}
+
+y=y+benzene_flag;
+
+if (benzeneCount >= 2) {
+		var shouldBreak = 0;
+
+		for (var i = 1; i <= benzeneCount - 1; i++) {
+			for (var j = i + 1; j <= benzeneCount; j++) {
+
+				var this_set_i=g6[i]
+				var this_set_j=g6[j]
+
+				var plane_i = plane(this_set_i[3], this_set_i[1], this_set_i[2]);
+				var plane_j = plane(this_set_j[3], this_set_j[1], this_set_j[2]);
+
+				var i_x = plane_i.x;
+				var i_y = plane_i.y;
+				var i_z = plane_i.z;
+
+				var j_x = plane_j.x;
+				var j_y = plane_j.y;
+				var j_z = plane_j.z;
+
+				//Create the vector
+				vector_i = [i_x i_y i_z]
+				vector_j = [j_x j_y j_z]
+
+				var magnitude_group1vector = (plane_i.x*plane_i.x*1.0 + plane_i.y*plane_i.y*1.0 + plane_i.z*plane_i.z*1.0)*1.0;
+				var magnitude_group2vector = (plane_j.x*plane_j.x*1.0 + plane_j.y*plane_j.y*1.0 + plane_j.z*plane_j.z*1.0)*1.0;
+
+				//Initialize the dot product to zero
+				var dotProduct = 0.0;
+
+				//Compute the dot product
+				for (var i = 1; i <= 3; i++) {
+					dotProduct += abs(vector_i[i] * vector_j[i]);
+				}
+
+				var magnitude_multiply = magnitude_group1vector*magnitude_group2vector;
+
+				if (abs(dotProduct) > 0.9*magnitude_multiply && abs(dotProduct) < 1.1*magnitude_multiply) {
+						parellel_flag=1;
+						shouldBreak = 1;
+            			break;}
+			}
+			if (shouldBreak==1) {break;}
+		}
+	}
+
+
+	if (benzeneCount >= 2) {
+		var shouldBreak = 0;
+
+		for (var i = 1; i <= benzeneCount - 1; i++) {
+			for (var j = i + 1; j <= benzeneCount; j++) {
+			 	var distanceValueDirect = distance(g6[i], g6[j]);
+
+			 	
+				if(abs(distanceValueDirect)<9.5 && abs(distanceValueDirect)>4.5){
+
+					var this_set_i=g6[i]
+					var this_set_j=g6[j]
+
+					var plane_i = plane(this_set_i[3], this_set_i[1], this_set_i[2]);
+					var plane_j = plane(this_set_j[3], this_set_j[1], this_set_j[2]);
+
+					var distanceValue = this_set_i[1].distance(plane_j);
+
+
+					if (abs(distanceValue)<8.5 && abs(distanceValue)>5.5){
+					
+
+					
+
+					var i_x = plane_i.x;
+					var i_y = plane_i.y;
+					var i_z = plane_i.z;
+
+					var j_x = plane_j.x;
+					var j_y = plane_j.y;
+					var j_z = plane_j.z;
+
+					//Create the vector
+					vector_i = [i_x i_y i_z]
+					vector_j = [j_x j_y j_z]
+
+					var magnitude_group1vector = (plane_i.x*plane_i.x*1.0 + plane_i.y*plane_i.y*1.0 + plane_i.z*plane_i.z*1.0)*1.0;
+					var magnitude_group2vector = (plane_j.x*plane_j.x*1.0 + plane_j.y*plane_j.y*1.0 + plane_j.z*plane_j.z*1.0)*1.0;
+
+					//Initialize the dot product to zero
+					var dotProduct = 0.0;
+
+					//Compute the dot product
+					for (var i = 1; i <= 3; i++) {
+						dotProduct += abs(vector_i[i] * vector_j[i]);
+					}
+
+					var magnitude_multiply = magnitude_group1vector*magnitude_group2vector;
+
+					if (abs(dotProduct) > 0.9*magnitude_multiply && abs(dotProduct) < 1.1*magnitude_multiply){
+						print(distanceValue)
+						print(distanceValueDirect)
+						parellel68_flag = 1;
+						DistanceParallel68=distanceValue;
+						DistanceParallel68Direct=distanceValueDirect;
+						
+						shouldBreak = 1;
+        				break;
+
+					}
+
+					}
+				}
+			}
+			if (shouldBreak==1) {break;}
+		}
+	}
+
+
+y=y+parellel_flag;
+
+
+//Parallel between 6-8
+y=y+parellel68_flag;
+
+//DistanceParallel68
+y=y+DistanceParallel68;
+
+//DistanceParallel68Direct
+y=y+DistanceParallel68Direct;
+
+
+//uncoordiated N 5-membered
+var uncoordNflag5=0;
+g={*}.find("smarts","[$([#7X2r5])]",true)
+if (g.length>0){uncoordNflag5=1;}
+y=y+uncoordNflag5;
+
+
+//print j
+
+if(a==nn){} else { b += y.join("\t");};
+b += "\n";
+write var b "./output.txt";
+}
+
+
+
