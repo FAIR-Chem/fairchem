@@ -47,6 +47,22 @@ if TYPE_CHECKING:
     from torch.nn.modules.module import _IncompatibleKeys
 
 
+# copied from https://stackoverflow.com/questions/33490870/parsing-yaml-in-python-detect-duplicated-keys
+# prevents loading YAMLS where keys have been overwritten
+class UniqueKeyLoader(yaml.SafeLoader):
+    def construct_mapping(self, node, deep=False):
+        mapping = set()
+        for key_node, value_node in node.value:
+            each_key = self.construct_object(key_node, deep=deep)
+            if each_key in mapping:
+                raise ValueError(
+                    f"Duplicate Key: {each_key!r} is found in YAML File.\n"
+                    f"Error File location: {key_node.end_mark}"
+                )
+            mapping.add(each_key)
+        return super().construct_mapping(node, deep)
+
+
 def pyg2_data_transform(data: Data):
     """
     if we're on the new pyg (2.0 or later) and if the Data stored is in older format
@@ -380,8 +396,8 @@ def load_config(path: str, previous_includes: list | None = None):
         )
     previous_includes = [*previous_includes, path]
 
-    with open(path) as fp:
-        direct_config = yaml.safe_load(fp)
+    with open(path, "r") as fp:
+        direct_config = yaml.safe_load(fp, Loader=UniqueKeyLoader)
 
     # Load config from included files.
     includes = direct_config.pop("includes") if "includes" in direct_config else []
@@ -473,8 +489,8 @@ def create_grid(base_config, sweep_file: str):
             child_config[key_path[-1]] = value
         return config
 
-    with open(sweep_file) as fp:
-        sweeps = yaml.safe_load(fp)
+    with open(sweep_file, "r") as fp:
+        sweeps = yaml.safe_load(fp, Loader=UniqueKeyLoader)
 
     flat_sweeps = _flatten_sweeps(sweeps)
     keys = list(flat_sweeps.keys())
