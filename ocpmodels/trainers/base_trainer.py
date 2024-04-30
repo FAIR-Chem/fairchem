@@ -23,7 +23,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ocpmodels.common import distutils, gp_utils
-from ocpmodels.common.balanced_batch_sampler import BalancedBatchSampler
+from ocpmodels.common.data_parallel import BalancedBatchSampler, OCPCollater
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typing import assert_is_instance as aii
 from ocpmodels.common.typing import none_throws

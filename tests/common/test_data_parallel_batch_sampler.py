@@ -12,13 +12,10 @@ import numpy as np
 import pytest
 from torch.utils.data import Dataset, DistributedSampler
 
-from ocpmodels.common.balanced_batch_sampler import (
-    BalancedBatchSampler,
-    UnsupportedDatasetError,
-)
 from ocpmodels.common.data_parallel import (
     BalancedBatchSampler,
     StatefulDistributedSampler,
+    UnsupportedDatasetError,
 )
 
 DATA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -61,7 +58,10 @@ def invalid_dataset():
 
 
 def test_invalid_mode(invalid_dataset) -> None:
-    with pytest.raises(ValueError, match="Only mode='atoms' is supported"):
+    with pytest.raises(
+        ValueError,
+        match="Only mode='atoms' or mode=True is supported, got mode='natoms'.",
+    ):
         _ = BalancedBatchSampler(
             dataset=invalid_dataset,
             batch_size=1,
@@ -72,7 +72,10 @@ def test_invalid_mode(invalid_dataset) -> None:
             on_error="raise",
         )
 
-    with pytest.raises(ValueError, match="Only mode='atoms' is supported"):
+    with pytest.raises(
+        ValueError,
+        match="Only mode='atoms' or mode=True is supported, got mode='neighbors'.",
+    ):
         _ = BalancedBatchSampler(
             dataset=invalid_dataset,
             batch_size=1,
@@ -124,7 +127,7 @@ def test_disabled(valid_dataset) -> None:
         mode=False,
         on_error="raise",
     )
-    assert sampler._should_disable()
+    assert sampler.disabled or not sampler._dist_enabled()
 
 
 def test_single_node(valid_dataset) -> None:
@@ -137,13 +140,13 @@ def test_single_node(valid_dataset) -> None:
         mode="atoms",
         on_error="raise",
     )
-    assert sampler._should_disable()
+    assert sampler.disabled or not sampler._dist_enabled()
 
 
-def test_stateful_distributed_sampler_noshuffle(valid_path_dataset) -> None:
+def test_stateful_distributed_sampler_noshuffle(valid_dataset) -> None:
     for batch_size in range(1, 4):
         sampler = StatefulDistributedSampler(
-            dataset=valid_path_dataset,
+            dataset=valid_dataset,
             batch_size=batch_size,
             rank=0,
             num_replicas=1,
@@ -155,12 +158,12 @@ def test_stateful_distributed_sampler_noshuffle(valid_path_dataset) -> None:
 
 
 def test_stateful_distributed_sampler_vs_distributed_sampler(
-    valid_path_dataset,
+    valid_dataset,
 ) -> None:
     for seed in [0, 100, 200]:
         for batch_size in range(1, 4):
             stateful_sampler = StatefulDistributedSampler(
-                dataset=valid_path_dataset,
+                dataset=valid_dataset,
                 batch_size=batch_size,
                 rank=0,
                 num_replicas=2,
@@ -169,7 +172,7 @@ def test_stateful_distributed_sampler_vs_distributed_sampler(
                 drop_last=True,
             )
             sampler = DistributedSampler(
-                dataset=valid_path_dataset,
+                dataset=valid_dataset,
                 rank=0,
                 num_replicas=2,
                 seed=seed,
@@ -179,10 +182,10 @@ def test_stateful_distributed_sampler_vs_distributed_sampler(
             assert list(stateful_sampler) == list(sampler)
 
 
-def test_stateful_distributed_sampler(valid_path_dataset) -> None:
+def test_stateful_distributed_sampler(valid_dataset) -> None:
     for batch_size in range(1, 4):
         sampler = StatefulDistributedSampler(
-            dataset=valid_path_dataset,
+            dataset=valid_dataset,
             batch_size=batch_size,
             rank=0,
             num_replicas=1,
@@ -192,7 +195,7 @@ def test_stateful_distributed_sampler(valid_path_dataset) -> None:
 
         offset_step = 2
         loaded_sampler = StatefulDistributedSampler(
-            dataset=valid_path_dataset,
+            dataset=valid_dataset,
             batch_size=batch_size,
             rank=0,
             seed=0,
@@ -204,7 +207,7 @@ def test_stateful_distributed_sampler(valid_path_dataset) -> None:
         )
 
         diff_sampler = StatefulDistributedSampler(
-            dataset=valid_path_dataset,
+            dataset=valid_dataset,
             batch_size=batch_size,
             rank=0,
             num_replicas=1,
@@ -213,14 +216,14 @@ def test_stateful_distributed_sampler(valid_path_dataset) -> None:
         assert list(diff_sampler) != original_order
 
 
-def test_stateful_distributed_sampler_numreplicas(valid_path_dataset) -> None:
-    fullset = set(range(len(valid_path_dataset)))
+def test_stateful_distributed_sampler_numreplicas(valid_dataset) -> None:
+    fullset = set(range(len(valid_dataset)))
     for drop_last in [True, False]:
         for num_replicas in range(1, 4):
             for batch_size in [1]:
                 samplers = [
                     StatefulDistributedSampler(
-                        dataset=valid_path_dataset,
+                        dataset=valid_dataset,
                         batch_size=batch_size,
                         rank=rank,
                         seed=0,
@@ -247,14 +250,14 @@ def test_stateful_distributed_sampler_numreplicas(valid_path_dataset) -> None:
 
 
 def test_stateful_distributed_sampler_numreplicas_drop_last(
-    valid_path_dataset,
+    valid_dataset,
 ) -> None:
-    fullset = set(range(len(valid_path_dataset)))
+    fullset = set(range(len(valid_dataset)))
     for num_replicas in range(1, 4):
         for batch_size in range(1, 4):
             samplers = [
                 StatefulDistributedSampler(
-                    dataset=valid_path_dataset,
+                    dataset=valid_dataset,
                     batch_size=batch_size,
                     rank=rank,
                     seed=0,
