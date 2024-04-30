@@ -1,0 +1,70 @@
+version: 2.1
+
+orbs:
+  codecov: codecov/codecov@3.1.1
+
+workflows:
+  version: 1
+  install_and_test:
+    jobs:
+      - python_lint
+      - test_ubuntu
+
+commands:
+  install_deps_ubuntu:
+    steps:
+      - checkout
+      - restore_cache:
+          key: conda-ubuntu-{{ checksum ".circleci/config.yml" }}
+      - run:
+          name: Install conda and environment
+          command: |
+            if [ ! -d "/home/circleci/miniconda" ]; then
+              wget https://repo.anaconda.com/miniconda/Miniconda3-py39_22.11.1-1-Linux-x86_64.sh -O miniconda.sh
+              bash miniconda.sh -b -p "$HOME"/miniconda
+              source /home/circleci/miniconda/etc/profile.d/conda.sh
+              conda activate base
+              # Conda configuration
+              conda config --set always_yes yes --set auto_update_conda false
+              # Update conda
+              conda create -n ocp python=3.9
+              # Install ocp conda env
+              source /home/circleci/miniconda/etc/profile.d/conda.sh
+              conda activate ocp
+              pip install ase==3.22.1 black==22.3.0 pymatgen==2023.5.10
+              pip install pytest-cov==4.0.0 pre-commit==2.10.*
+            fi
+      - save_cache:
+          paths:
+            - /home/circleci/miniconda
+          key: conda-ubuntu-{{ checksum ".circleci/config.yml" }}
+
+jobs:
+  python_lint:
+    docker:
+      - image: cimg/python:3.9.13
+    steps:
+      - checkout
+      - run:
+          name: setup
+          command: pip install black==22.3.0
+      - run:
+          name: run black
+          command: black . --check
+
+  test_ubuntu:
+    docker:
+      - image: cimg/python:3.9.13
+    resource_class: large
+    steps:
+      - install_deps_ubuntu
+      - run:
+          name: install ocdata and run tests
+          command: |
+            source /home/circleci/miniconda/etc/profile.d/conda.sh
+            conda activate ocp
+            pip install -e .
+            pre-commit install
+            pytest --cov-report=xml --cov=ocdata/core /home/circleci/project/tests
+      - codecov/upload:
+          file: coverage.xml
