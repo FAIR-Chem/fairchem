@@ -22,7 +22,9 @@ from torch_geometric.data.data import BaseData
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typing import assert_is_instance
 from ocpmodels.common.utils import pyg2_data_transform
+from ocpmodels.datasets._utils import rename_data_object_keys
 from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
+from ocpmodels.modules.transforms import DataTransforms
 
 T_co = TypeVar("T_co", covariant=True)
 
@@ -44,24 +46,9 @@ class LmdbDataset(Dataset[T_co]):
     folder, but lmdb lengths are now calculated directly from the number of keys.
     Args:
             config (dict): Dataset configuration
-            transform (callable, optional): Data transform function.
-                    (default: :obj:`None`)
     """
 
-    def data_sizes(self, indices: List[int]) -> np.ndarray:
-        return self.metadata["natoms"][indices]
-
-    @cached_property
-    def metadata(self) -> Dict[str, np.ndarray]:
-        metadata_path = self.metadata_path
-        if metadata_path and metadata_path.is_file():
-            return np.load(metadata_path, allow_pickle=True)
-
-        raise ValueError(
-            f"Could not find atoms metadata in '{self.metadata_path}'"
-        )
-
-    def __init__(self, config, transform=None) -> None:
+    def __init__(self, config) -> None:
         super(LmdbDataset, self).__init__()
         self.config = config
 
@@ -130,7 +117,21 @@ class LmdbDataset(Dataset[T_co]):
             self.available_indices = self.shards[self.config.get("shard", 0)]
             self.num_samples = len(self.available_indices)
 
-        self.transform = transform
+        self.key_mapping = self.config.get("key_mapping", None)
+        self.transforms = DataTransforms(self.config.get("transforms", {}))
+
+    def data_sizes(self, indices: List[int]) -> np.ndarray:
+        return self.metadata["natoms"][indices]
+
+    @cached_property
+    def metadata(self) -> Dict[str, np.ndarray]:
+        metadata_path = self.metadata_path
+        if metadata_path and metadata_path.is_file():
+            return np.load(metadata_path, allow_pickle=True)
+
+        raise ValueError(
+            f"Could not find atoms metadata in '{self.metadata_path}'"
+        )
 
     def __len__(self) -> int:
         return self.num_samples
@@ -162,8 +163,12 @@ class LmdbDataset(Dataset[T_co]):
             )
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
 
-        if self.transform is not None:
-            data_object = self.transform(data_object)
+        if self.key_mapping is not None:
+            data_object = rename_data_object_keys(
+                data_object, self.key_mapping
+            )
+
+        data_object = self.transforms(data_object)
 
         return data_object
 

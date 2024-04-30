@@ -10,7 +10,6 @@ import torch
 import torch.nn as nn
 from torch.nn.parallel.distributed import DistributedDataParallel
 
-from ocpmodels.common.data_parallel import OCPDataParallel
 from ocpmodels.common.flags import flags
 from ocpmodels.common.utils import (
     build_config,
@@ -47,7 +46,7 @@ def main(*, num_batches: int = 16) -> None:
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args()
     _config = build_config(args, override_args)
-    _config["logger"] = "tensorboard"
+    _config["logger"] = "wandb"
     # endregion
 
     assert not args.distributed, "This doesn't work with DDP"
@@ -72,14 +71,12 @@ def main(*, num_batches: int = 16) -> None:
         ), "Val dataset is required for making predictions"
 
         if ckpt_file.exists():
-            trainer.load_checkpoint(str(ckpt_file))
+            trainer.load_checkpoint(checkpoint_path=str(ckpt_file))
 
         # region reoad scale file contents if necessary
         # unwrap module from DP/DDP
         unwrapped_model = model
-        while isinstance(
-            unwrapped_model, (DistributedDataParallel, OCPDataParallel)
-        ):
+        while isinstance(unwrapped_model, DistributedDataParallel):
             unwrapped_model = unwrapped_model.module
         assert isinstance(
             unwrapped_model, nn.Module

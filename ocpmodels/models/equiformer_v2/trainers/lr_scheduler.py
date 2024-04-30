@@ -75,7 +75,7 @@ class MultistepLRLambda:
     def __init__(self, scheduler_params) -> None:
         self.warmup_epochs = aii(scheduler_params["warmup_epochs"], int)
         self.lr_warmup_factor = aii(scheduler_params["warmup_factor"], float)
-        self.lr_decay_epochs = aii(scheduler_params["decay_epochs"], int)
+        self.lr_decay_epochs = aii(scheduler_params["decay_epochs"], list)
         self.lr_gamma = aii(scheduler_params["decay_rate"], float)
 
     def __call__(self, current_step: int) -> float:

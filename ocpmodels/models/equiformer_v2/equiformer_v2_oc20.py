@@ -95,6 +95,16 @@ class EquiformerV2_OC20(BaseModel):
         proj_drop (float):          Dropout rate for outputs of attention and FFN in Transformer blocks
 
         weight_init (str):          ['normal', 'uniform'] initialization of weights of linear layers except those in radial functions
+        enforce_max_neighbors_strictly (bool):      When edges are subselected based on the `max_neighbors` arg, arbitrarily select amongst equidistant / degenerate edges to have exactly the correct number.
+        avg_num_nodes (float):      Average number of nodes per graph
+        avg_degree (float):         Average degree of nodes in the graph
+
+        use_energy_lin_ref (bool):  Whether to add the per-atom energy references during prediction.
+                                    During training and validation, this should be kept `False` since we use the `lin_ref` parameter in the OC22 dataloader to subtract the per-atom linear references from the energy targets.
+                                    During prediction (where we don't have energy targets), this can be set to `True` to add the per-atom linear references to the predicted energies.
+        load_energy_lin_ref (bool): Whether to add nn.Parameters for the per-element energy references.
+                                    This additional flag is there to ensure compatibility when strict-loading checkpoints, since the `use_energy_lin_ref` flag can be either True or False even if the model is trained with linear references.
+                                    You can't have use_energy_lin_ref = True and load_energy_lin_ref = False, since the model will not have the parameters for the linear references. All other combinations are fine.
     """
 
     def __init__(
@@ -137,6 +147,11 @@ class EquiformerV2_OC20(BaseModel):
         drop_path_rate: float = 0.05,
         proj_drop: float = 0.0,
         weight_init: str = "normal",
+        enforce_max_neighbors_strictly: bool = True,
+        avg_num_nodes: Optional[float] = None,
+        avg_degree: Optional[float] = None,
+        use_energy_lin_ref: Optional[bool] = False,
+        load_energy_lin_ref: Optional[bool] = False,
     ):
         super().__init__()
 
@@ -195,8 +210,19 @@ class EquiformerV2_OC20(BaseModel):
         self.drop_path_rate = drop_path_rate
         self.proj_drop = proj_drop
 
+        self.avg_num_nodes = avg_num_nodes or _AVG_NUM_NODES
+        self.avg_degree = avg_degree or _AVG_DEGREE
+
+        self.use_energy_lin_ref = use_energy_lin_ref
+        self.load_energy_lin_ref = load_energy_lin_ref
+        assert not (
+            self.use_energy_lin_ref and not self.load_energy_lin_ref
+        ), "You can't have use_energy_lin_ref = True and load_energy_lin_ref = False, since the model will not have the parameters for the linear references. All other combinations are fine."
+
         self.weight_init = weight_init
         assert self.weight_init in ["normal", "uniform"]
+
+        self.enforce_max_neighbors_strictly = enforce_max_neighbors_strictly
 
         self.device = "cpu"  # torch.cuda.current_device()
 
@@ -282,7 +308,7 @@ class EquiformerV2_OC20(BaseModel):
             self.max_num_elements,
             self.edge_channels_list,
             self.block_use_atom_edge_embedding,
-            rescale_factor=_AVG_DEGREE,
+            rescale_factor=self.avg_degree,
         )
 
         # Initialize the blocks for each layer of EquiformerV2
@@ -362,6 +388,12 @@ class EquiformerV2_OC20(BaseModel):
                 alpha_drop=0.0,
             )
 
+        if self.load_energy_lin_ref:
+            self.energy_lin_ref = nn.Parameter(
+                torch.zeros(self.max_num_elements),
+                requires_grad=False,
+            )
+
         self.apply(self._init_weights)
         self.apply(self._uniform_init_rad_func_linear_weights)
 
@@ -381,7 +413,10 @@ class EquiformerV2_OC20(BaseModel):
             cell_offsets,
             _,  # cell offset distances
             neighbors,
-        ) = self.generate_graph(data)
+        ) = self.generate_graph(
+            data,
+            enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly,
+        )
 
         ###############################################################
         # Initialize data structures
@@ -473,8 +508,32 @@ class EquiformerV2_OC20(BaseModel):
             dtype=node_energy.dtype,
         )
         energy.index_add_(0, data.batch, node_energy.view(-1))
-        energy = energy / _AVG_NUM_NODES
+        energy = energy / self.avg_num_nodes
 
+        # Add the per-atom linear references to the energy.
+        if self.use_energy_lin_ref and self.load_energy_lin_ref:
+            # During training, target E = (E_DFT - E_ref - E_mean) / E_std, and
+            # during inference, \hat{E_DFT} = \hat{E} * E_std + E_ref + E_mean
+            # where
+            #
+            # E_DFT = raw DFT energy,
+            # E_ref = reference energy,
+            # E_mean = normalizer mean,
+            # E_std = normalizer std,
+            # \hat{E} = predicted energy,
+            # \hat{E_DFT} = predicted DFT energy.
+            #
+            # We can also write this as
+            # \hat{E_DFT} = E_std * (\hat{E} + E_ref / E_std) + E_mean,
+            # which is why we save E_ref / E_std as the linear reference.
+            with torch.cuda.amp.autocast(False):
+                energy = energy.to(self.energy_lin_ref.dtype).index_add(
+                    0,
+                    data.batch,
+                    self.energy_lin_ref[atomic_numbers],
+                )
+
+        outputs = {"energy": energy}
         ###############################################################
         # Force estimation
         ###############################################################
@@ -484,11 +543,9 @@ class EquiformerV2_OC20(BaseModel):
             )
             forces = forces.embedding.narrow(1, 1, 3)
             forces = forces.view(-1, 3)
+            outputs["forces"] = forces
 
-        if not self.regress_forces:
-            return energy
-        else:
-            return energy, forces
+        return outputs
 
     # Initialize the edge rotation matrics
     def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
@@ -522,33 +579,29 @@ class EquiformerV2_OC20(BaseModel):
             torch.nn.init.uniform_(m.weight, -std, std)
 
     @torch.jit.ignore
-    def no_weight_decay(self):
+    def no_weight_decay(self) -> set:
         no_wd_list = []
         named_parameters_list = [name for name, _ in self.named_parameters()]
         for module_name, module in self.named_modules():
-            if (
-                isinstance(module, torch.nn.Linear)
-                or isinstance(module, SO3_LinearV2)
-                or isinstance(module, torch.nn.LayerNorm)
-                or isinstance(module, EquivariantLayerNormArray)
-                or isinstance(
-                    module, EquivariantLayerNormArraySphericalHarmonics
-                )
-                or isinstance(
-                    module, EquivariantRMSNormArraySphericalHarmonics
-                )
-                or isinstance(
-                    module, EquivariantRMSNormArraySphericalHarmonicsV2
-                )
-                or isinstance(module, GaussianRadialBasisLayer)
+            if isinstance(
+                module,
+                (
+                    torch.nn.Linear,
+                    SO3_LinearV2,
+                    torch.nn.LayerNorm,
+                    EquivariantLayerNormArray,
+                    EquivariantLayerNormArraySphericalHarmonics,
+                    EquivariantRMSNormArraySphericalHarmonics,
+                    EquivariantRMSNormArraySphericalHarmonicsV2,
+                    GaussianRadialBasisLayer,
+                ),
             ):
                 for parameter_name, _ in module.named_parameters():
-                    if isinstance(module, torch.nn.Linear) or isinstance(
-                        module, SO3_LinearV2
-                    ):
+                    if isinstance(module, (torch.nn.Linear, SO3_LinearV2)):
                         if "weight" in parameter_name:
                             continue
                     global_parameter_name = module_name + "." + parameter_name
                     assert global_parameter_name in named_parameters_list
                     no_wd_list.append(global_parameter_name)
+
         return set(no_wd_list)

@@ -2,12 +2,16 @@
 
 This page summarizes all the pretrained models released as part of the [Open Catalyst Project](https://opencatalystproject.org/). All models were trained using this codebase.
 
+
 * [Open Catalyst 2020 (OC20)](#open-catalyst-2020-oc20)
     * [S2EF models optimized for EFwT](#s2ef-models-optimized-for-efwt)
     * [S2EF models optimized for force](#s2ef-models-optimized-for-force-only)
     * [IS2RE models](#is2re-models)
 * [Open Catalyst 2022 (OC22)](#open-catalyst-2022-oc22)
+    * [S2EF total models](#s2ef-total-models)
+* [Open Direct Air Capture 2023 (ODAC23)](#open-direct-air-capture-2023-odac23)
     * [S2EF models](#s2ef-models)
+    * [IS2RE Direct models](#is2re-direct-models)
 
 * * *
 
@@ -16,6 +20,7 @@ This page summarizes all the pretrained models released as part of the [Open Cat
 
 * All configurations for these models are available in the [`configs/`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs) directory.
 * All of these models are trained on various splits of the OC20 S2EF / IS2RE datasets. For details, see [https://arxiv.org/abs/2010.09990](https://arxiv.org/abs/2010.09990) and https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md.
+* All OC20 models are trained on adsorption energies, i.e. the DFT total energies minus the clean surface and gas phase adsorbate energies. For details on how to train models on OC20 total energies, please read the [referencing section here](https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md#oc20-reference-information).
 
 ## S2EF models: optimized for EFwT
 
@@ -88,7 +93,7 @@ The Open Catalyst 2020 (OC20) dataset is licensed under a [Creative Commons Attr
 Please consider citing the following paper in any research manuscript using the
 OC20 dataset or pretrained models, as well as the original paper for each model:
 
-```
+```bibtex
 @article{ocp_dataset,
     author = {Chanussot*, Lowik and Das*, Abhishek and Goyal*, Siddharth and Lavril*, Thibaut and Shuaibi*, Muhammed and Riviere, Morgane and Tran, Kevin and Heras-Domingo, Javier and Ho, Caleb and Hu, Weihua and Palizhati, Aini and Sriram, Anuroop and Wood, Brandon and Yoon, Junwoong and Parikh, Devi and Zitnick, C. Lawrence and Ulissi, Zachary},
     title = {Open Catalyst 2020 (OC20) Dataset and Community Challenges},
@@ -102,8 +107,10 @@ OC20 dataset or pretrained models, as well as the original paper for each model:
 
 * All configurations for these models are available in the [`configs/oc22`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/oc22) directory.
 * All of these models are trained on various splits of the OC22 S2EF / IS2RE datasets. For details, see [https://arxiv.org/abs/2206.08917](https://arxiv.org/abs/2206.08917) and https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md.
+* All OC22 models released here are trained on DFT total energies, in contrast to the OC20 models listed above, which are trained on adsorption energies.
 
-## S2EF models
+
+## S2EF-Total models
 
 |Model	|Training	|Download	|val ID force MAE	|val ID energy MAE	|
 |---	|---	|---	|---	|---	|
@@ -112,17 +119,61 @@ OC20 dataset or pretrained models, as well as the original paper for each model:
 |GemNet-OC | OC20+OC22	|[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_09/oc22/s2ef/gnoc_oc22_oc20_all_s2ef.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/oc22/s2ef/gemnet-oc/gemnet_oc_oc20_oc22.yml)	|0.027	|0.483	|
 |GemNet-OC <br><sub><sup>(trained with `enforce_max_neighbors_strictly=False`, [#467](https://github.com/Open-Catalyst-Project/ocp/pull/467))</sup></sub> | OC20+OC22	|[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_05/oc22/s2ef/gnoc_oc22_oc20_all_s2ef.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/oc22/s2ef/gemnet-oc/gemnet_oc_oc20_oc22_degen_edges.yml)	|0.027	|0.458	|
 |GemNet-OC | OC20->OC22	|[checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_09/oc22/s2ef/gnoc_finetune_all_s2ef.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/oc22/s2ef/gemnet-oc/gemnet_oc_finetune.yml)	|0.030	|0.417	|
+|EquiformerV2 ($\lambda_E$=4, $\lambda_F$=100)    | OC22  | [checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_10/oc22/s2ef/eq2_121M_e4_f100_oc22_s2ef.pt) \| [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/oc22/s2ef/equiformer_v2/equiformer_v2_N@18_L@6_M@2_e4_f100_121M.yml) | 0.023 | 0.447
 
 The Open Catalyst 2022 (OC22) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
 
 Please consider citing the following paper in any research manuscript using the
 OC22 dataset or pretrained models, as well as the original paper for each model:
 
-```
+```bibtex
 @article{oc22_dataset,
     author = {Tran*, Richard and Lan*, Janice and Shuaibi*, Muhammed and Wood*, Brandon and Goyal*, Siddharth and Das, Abhishek and Heras-Domingo, Javier and Kolluru, Adeesh and Rizvi, Ammar and Shoghi, Nima and Sriram, Anuroop and Ulissi, Zachary and Zitnick, C. Lawrence},
-    title = {The Open Catalyst 2022 (OC22) Dataset and Challenges for Oxide Electrocatalysis},
-    year = {2022},
-    journal = {arXiv preprint arXiv:2206.08917},
+    title = {The Open Catalyst 2022 (OC22) dataset and challenges for oxide electrocatalysts},
+    journal = {ACS Catalysis},
+    year={2023},
+}
+```
+
+## Open Direct Air Capture 2023 (ODAC23)
+
+* All config files for the ODAC23 models are available in the [`configs/odac`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac) directory.
+
+## S2EF models
+
+|Model	|Checkpoint	| Config |
+|---	|---	|---	|
+|SchNet | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Schnet.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/schnet.yml) |
+|DimeNet++ | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/DimenetPP.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/dpp.yml) |
+|PaiNN | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/PaiNN.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/painn.yml) |
+|GemNet-OC | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/gemnet-oc.yml) |
+|eSCN | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eSCN.yml) |
+|EquiformerV2 | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231116/eqv2_31M.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_31M.yml) |
+|EquiformerV2 (Large) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Large.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/s2ef/eqv2_153M.yml) |
+
+## IS2RE Direct models
+
+|Model	|Checkpoint	| Config |
+|---	|---	| --- |
+|Gemnet-OC (Direct) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/gemnet-oc.yml) |
+|eSCN (Direct) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/eSCN.yml) |
+|EquiformerV2 (Direct) | [checkpoint](https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Direct.pt) | [config](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/odac/is2re/eqv2_31M.yml) |
+
+The models in the table above were trained to predict relaxed energy directly. Relaxed energies can also be predicted by running structural relaxations using the S2EF models from the previous section.
+
+## IS2RS
+
+The IS2RS is solved by running structural relaxations using the S2EF models from the prior section.
+
+The Open DAC 2023 (ODAC23) dataset is licensed under a [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/legalcode).
+
+Please consider citing the following paper in any research manuscript using the ODAC23 dataset:
+
+```bibtex
+@article{odac23_dataset,
+    author = {Anuroop Sriram and Sihoon Choi and Xiaohan Yu and Logan M. Brabson and Abhishek Das and Zachary Ulissi and Matt Uyttendaele and Andrew J. Medford and David S. Sholl},
+    title = {The Open DAC 2023 Dataset and Challenges for Sorbent Discovery in Direct Air Capture},
+    year = {2023},
+    journal={arXiv preprint arXiv:2311.00341},
 }
 ```

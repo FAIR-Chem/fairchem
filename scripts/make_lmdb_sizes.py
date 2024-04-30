@@ -19,7 +19,7 @@ def get_data(index):
     data = dataset[index]
     natoms = data.natoms
     neighbors = None
-    if hasattr(data, "edge_index"):
+    if hasattr(data, "edge_index") and data.edge_index is not None:
         neighbors = data.edge_index.shape[1]
 
     return index, natoms, neighbors
@@ -39,7 +39,7 @@ def main(args) -> None:
 
     pool = mp.Pool(assert_is_instance(args.num_workers, int))
     outputs = list(
-        tqdm(pool.imap(get_data, output_indices), total=len(indices))
+        tqdm(pool.imap(get_data, output_indices), total=len(output_indices))
     )
 
     indices = []
