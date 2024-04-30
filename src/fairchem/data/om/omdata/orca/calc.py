@@ -13,7 +13,7 @@ ORCA_SIMPLE_INPUT = [
     "DIIS",
     "NOSOSCF",
     "NormalConv",
-    "DEFGRID2",
+    "DEFGRID3",
     "ALLPOP",
     "NBO",
 ]
