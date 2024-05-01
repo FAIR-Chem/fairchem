@@ -115,11 +115,6 @@ class OC22LmdbDataset(BaseDataset):
         )
         if self.train_on_oc20_total_energies:
             self.oc20_ref = pickle.load(open(config["oc20_ref"], "rb"))
-        if self.config.get("lin_ref", False):
-            coeff = np.load(self.config["lin_ref"], allow_pickle=True)["coeff"]
-            self.lin_ref = torch.nn.Parameter(
-                torch.tensor(coeff), requires_grad=False
-            )
         self.subsample = aii(self.config.get("subsample", False), bool)
 
     def __len__(self) -> int:

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Sequence, TypeVar
 
 import numpy as np
+import torch
 from numpy.typing import ArrayLike, NDArray
 from torch.utils.data import Dataset
 
@@ -40,6 +41,13 @@ class BaseDataset(Dataset[T_co]):
             self.paths = tuple(Path(path) for path in config["src"])
         else:
             self.paths = [Path(self.config["src"])]
+
+        self.lin_ref = None
+        if self.config.get("lin_ref", False):
+            lin_ref = torch.tensor(
+                np.load(self.config["lin_ref"], allow_pickle=True)["coeff"]
+            )
+            self.lin_ref = torch.nn.Parameter(lin_ref, requires_grad=False)
 
     def data_sizes(self, indices: ArrayLike) -> NDArray[int]:
         return self.metadata.natoms[indices]
