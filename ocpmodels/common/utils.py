@@ -1224,8 +1224,6 @@ def update_config(base_config):
             },
         ]
         ### Define evaluation metrics
-        # It's a bit strange we over-write these regardless of what is already in the config
-        # in config["eval_metrics"]
         _eval_metrics = {
             "metrics": {
                 "misc": ["energy_forces_within_threshold"],
