@@ -114,7 +114,7 @@ task:
 
 logger: wandb                                                             # 'wandb' or 'tensorboard'
 
-loss_functions:
+loss_fns:
 # Specify the different terms in the loss function. For each term, the target property must
 # be specified, the loss function to be used (`fn`), and the coefficient to weigh that term by.
   - energy:
@@ -136,7 +136,7 @@ loss_functions:
   - anisotropic_stress:
       fn: mae
 
-evaluation_metrics:
+eval_metrics:
   # Evaluation metrics to be reported are specified here. For each target property,
   # specify the evaluation metrics to be reported for that property. A list of possible
   # metrics can be found in modules/evaluator.py.
