@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import tempfile
 
 import pytest
@@ -33,13 +35,17 @@ key2:
 def test_invalid_config(invalid_yaml_config):
     with tempfile.NamedTemporaryFile(delete=False) as fp:
         fp.write(invalid_yaml_config.encode())
-        fp.close()
-        with pytest.raises(ValueError):
-            yaml.load(open(fp.name, "r"), Loader=UniqueKeyLoader)
+        fname = fp.name
+
+    with pytest.raises(ValueError):  # noqa
+        with open(fname) as fp:
+            yaml.load(fp, Loader=UniqueKeyLoader)
 
 
 def test_valid_config(valid_yaml_config):
     with tempfile.NamedTemporaryFile(delete=False) as fp:
         fp.write(valid_yaml_config.encode())
-        fp.close()
-        yaml.load(open(fp.name, "r"), Loader=UniqueKeyLoader)
+        fname = fp.name
+
+    with open(fname) as fp:
+        yaml.load(fp, Loader=UniqueKeyLoader)

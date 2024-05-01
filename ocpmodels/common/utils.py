@@ -52,7 +52,7 @@ if TYPE_CHECKING:
 class UniqueKeyLoader(yaml.SafeLoader):
     def construct_mapping(self, node, deep=False):
         mapping = set()
-        for key_node, value_node in node.value:
+        for key_node, _ in node.value:
             each_key = self.construct_object(key_node, deep=deep)
             if each_key in mapping:
                 raise ValueError(
@@ -396,7 +396,7 @@ def load_config(path: str, previous_includes: list | None = None):
         )
     previous_includes = [*previous_includes, path]
 
-    with open(path, "r") as fp:
+    with open(path) as fp:
         direct_config = yaml.safe_load(fp, Loader=UniqueKeyLoader)
 
     # Load config from included files.
@@ -489,7 +489,7 @@ def create_grid(base_config, sweep_file: str):
             child_config[key_path[-1]] = value
         return config
 
-    with open(sweep_file, "r") as fp:
+    with open(sweep_file) as fp:
         sweeps = yaml.safe_load(fp, Loader=UniqueKeyLoader)
 
     flat_sweeps = _flatten_sweeps(sweeps)
