@@ -230,13 +230,17 @@ def test_ase_multiread_dataset(tmp_path) -> None:
         f.write(f"{tmp_path / 'test.traj'} {len(atoms_objects)}")
 
     dataset = AseReadMultiStructureDataset(
-        config={"index_file": str(tmp_path / "test_index_file")},
+        config={
+            "src": str(tmp_path),
+            "index_file": str(tmp_path / "test_index_file"),
+        },
     )
 
     assert len(dataset) == len(atoms_objects)
 
     dataset = AseReadMultiStructureDataset(
         config={
+            "src": str(tmp_path),
             "index_file": str(tmp_path / "test_index_file"),
             "a2g_args": {
                 "r_energy": True,
