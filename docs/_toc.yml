@@ -2,9 +2,9 @@
 # Learn more at https://jupyterbook.org/customize/toc.html
 
 format: jb-book
-root: ../README
+root: index
 parts:
-- caption: Quickstart & Installation 
+- caption: Quickstart & Installation
   chapters:
   - file: core/intro_series
   - file: core/install

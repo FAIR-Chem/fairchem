@@ -980,8 +980,8 @@ def new_trainer_context(*, config: dict[str, Any], args: Namespace):
             outputs=config.get("outputs", {}),
             dataset=config["dataset"],
             optimizer=config["optim"],
-            loss_fns=config.get("loss_fns", {}),
-            eval_metrics=config.get("eval_metrics", {}),
+            loss_fns=config.get("loss_functions", {}),
+            eval_metrics=config.get("evaluation_metrics", {}),
             identifier=config["identifier"],
             timestamp_id=config.get("timestamp_id", None),
             run_dir=config.get("run_dir", "./"),
@@ -1240,7 +1240,6 @@ def update_config(base_config):
         }
         if "primary_metric" in config["task"]:
             _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
-
         ### Define outputs
         _outputs = {
             "energy": {"level": "system"},
