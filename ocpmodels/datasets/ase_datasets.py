@@ -20,13 +20,12 @@ from typing import Any, Callable, Optional
 
 import ase
 import numpy as np
-import torch.nn
 from torch import tensor
-from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from ocpmodels.common.registry import registry
 from ocpmodels.datasets._utils import rename_data_object_keys
+from ocpmodels.datasets.base_dataset import BaseDataset
 from ocpmodels.datasets.lmdb_database import LMDBDatabase
 from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
 from ocpmodels.modules.transforms import DataTransforms
@@ -60,7 +59,7 @@ def apply_one_tags(
     return atoms
 
 
-class AseAtomsDataset(Dataset, ABC):
+class AseAtomsDataset(BaseDataset, ABC):
     """
     This is an abstract Dataset that includes helpful utilities for turning
     ASE atoms objects into OCP-usable data objects. This should not be instantiated directly
@@ -83,7 +82,7 @@ class AseAtomsDataset(Dataset, ABC):
             [ase.Atoms, Any, ...], ase.Atoms
         ] = apply_one_tags,
     ) -> None:
-        self.config = config
+        super().__init__(config)
 
         a2g_args = config.get("a2g_args", {}) or {}
 
@@ -97,13 +96,6 @@ class AseAtomsDataset(Dataset, ABC):
 
         self.key_mapping = self.config.get("key_mapping", None)
         self.transforms = DataTransforms(self.config.get("transforms", {}))
-
-        self.lin_ref = None
-        if self.config.get("lin_ref", False):
-            lin_ref = torch.tensor(
-                np.load(self.config["lin_ref"], allow_pickle=True)["coeff"]
-            )
-            self.lin_ref = torch.nn.Parameter(lin_ref, requires_grad=False)
 
         self.atoms_transform = atoms_transform
 
