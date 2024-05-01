@@ -4,29 +4,25 @@ Copyright (c) Facebook, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+from __future__ import annotations
 
 import bisect
 import pickle
-from functools import cached_property
-from pathlib import Path
-from typing import Dict, List
 
 import lmdb
 import numpy as np
 import torch
-from torch.utils.data import Dataset
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typing import assert_is_instance as aii
 from ocpmodels.common.utils import pyg2_data_transform
 from ocpmodels.datasets._utils import rename_data_object_keys
+from ocpmodels.datasets.base_dataset import BaseDataset
 from ocpmodels.modules.transforms import DataTransforms
 
 
 @registry.register_dataset("oc22_lmdb")
-class OC22LmdbDataset(Dataset):
-    metadata_path: Path
-
+class OC22LmdbDataset(BaseDataset):
     r"""Dataset class to load from LMDB files containing relaxation
     trajectories or single point computations.
 
@@ -44,24 +40,14 @@ class OC22LmdbDataset(Dataset):
                     (default: :obj:`None`)
     """
 
-    def data_sizes(self, indices: List[int]) -> np.ndarray:
-        return self.metadata["natoms"][indices]
-
-    @cached_property
-    def metadata(self) -> Dict[str, np.ndarray]:
-        metadata_path = self.metadata_path
-        if metadata_path and metadata_path.is_file():
-            return np.load(metadata_path, allow_pickle=True)
-
-        raise ValueError(
-            f"Could not find atoms metadata in '{self.metadata_path}'"
-        )
-
     def __init__(self, config, transform=None) -> None:
-        super(OC22LmdbDataset, self).__init__()
-        self.config = config
+        super().__init__(config)
 
-        self.path = Path(self.config["src"])
+        assert (
+            len(self.paths) == 1
+        ), f"{type(self)} does not support a list of src paths."
+        self.path = self.paths[0]
+
         self.data2train = self.config.get("data2train", "all")
         if not self.path.is_file():
             db_paths = sorted(self.path.glob("*.lmdb"))
