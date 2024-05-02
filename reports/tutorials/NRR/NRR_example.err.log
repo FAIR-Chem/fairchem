@@ -1,0 +1,65 @@
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/jupyter_cache/executors/utils.py", line 58, in single_nb_execution
+    executenb(
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 1314, in execute
+    return NotebookClient(nb=nb, resources=resources, km=km, **kwargs).execute()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 709, in async_execute
+    await self.async_execute_cell(
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+# Iterate over trajs to extract results
+min_E = []
+for file_outer in glob("data/*"):
+    ads = file_outer.split("_")[1]
+    bulk = file_outer.split("/")[1].split("_")[0]
+    results = []
+    for file in glob(f"{file_outer}/*.traj"):
+        rx_id = file.split("/")[-1].split(".")[0]
+        traj = ase.io.read(file, ":")
+
+        # Check to see if the trajectory is anomolous
+        detector = DetectTrajAnomaly(traj[0], traj[-1], traj[0].get_tags())
+        anom = (
+            detector.is_adsorbate_dissociated()
+            or detector.is_adsorbate_desorbed()
+            or detector.has_surface_changed()
+            or detector.is_adsorbate_intercalated()
+        )
+        rx_energy = traj[-1].get_potential_energy()
+        results.append({"relaxation_idx": rx_id, "relaxed_atoms": traj[-1],
+                        "relaxed_energy_ml": rx_energy, "anomolous": anom})
+    df = pd.DataFrame(results)
+
+    df = df[~df.anomolous].copy().reset_index()
+    min_e = min(df.relaxed_energy_ml.tolist())
+    min_E.append({"adsorbate":ads, "bulk_id":bulk, "min_E_ml": min_e})
+
+df = pd.DataFrame(min_E)
+df_h = df[df.adsorbate == "H"]
+df_nnh = df[df.adsorbate == "NNH"]
+df_flat = df_h.merge(df_nnh, on = "bulk_id")
+------------------
+
+
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mValueError[0m                                Traceback (most recent call last)
+Cell [0;32mIn[12], line 25[0m
+[1;32m     22[0m     df [38;5;241m=[39m pd[38;5;241m.[39mDataFrame(results)
+[1;32m     24[0m     df [38;5;241m=[39m df[[38;5;241m~[39mdf[38;5;241m.[39manomolous][38;5;241m.[39mcopy()[38;5;241m.[39mreset_index()
+[0;32m---> 25[0m     min_e [38;5;241m=[39m [38;5;28;43mmin[39;49m[43m([49m[43mdf[49m[38;5;241;43m.[39;49m[43mrelaxed_energy_ml[49m[38;5;241;43m.[39;49m[43mtolist[49m[43m([49m[43m)[49m[43m)[49m
+[1;32m     26[0m     min_E[38;5;241m.[39mappend({[38;5;124m"[39m[38;5;124madsorbate[39m[38;5;124m"[39m:ads, [38;5;124m"[39m[38;5;124mbulk_id[39m[38;5;124m"[39m:bulk, [38;5;124m"[39m[38;5;124mmin_E_ml[39m[38;5;124m"[39m: min_e})
+[1;32m     28[0m df [38;5;241m=[39m pd[38;5;241m.[39mDataFrame(min_E)
+
+[0;31mValueError[0m: min() arg is an empty sequence
+
