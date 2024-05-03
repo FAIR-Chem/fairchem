@@ -24,9 +24,9 @@ checkpoint_path = model_name_to_local_file('GemNet-dT All', local_cache='/tmp/oc
 ------------------
 
 ----- stdout -----
-2024-05-03 00:57:17 (INFO): Checking local cache: /tmp/ocp_checkpoints/ for model GemNet-dT All
+2024-05-03 01:38:06 (INFO): Checking local cache: /tmp/ocp_checkpoints/ for model GemNet-dT All
 ----- stderr -----
-2024-05-03 00:57:17 (ERROR): Not a valid model name 'GemNet-dT All'
+2024-05-03 01:38:06 (ERROR): Not a valid model name 'GemNet-dT All'
 ------------------
 
 [0;31m---------------------------------------------------------------------------[0m

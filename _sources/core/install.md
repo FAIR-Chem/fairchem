@@ -2,9 +2,9 @@
 
 ## conda or better yet [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html) - easy
 
-We do not have official conda recipes (yet!), so install with conda or mamba you will need to clone the
-[ocp repo](https://github.com/Open-Catalyst-Project/ocp) and run the following from inside the repo directory to
-create an environment with all dependencies.
+We do not have official conda recipes (yet!), so to install with conda or mamba you will need to clone the
+[ocp repo](https://github.com/Open-Catalyst-Project/ocp) and run the following from inside the repo directory to create an environment with all the
+necessary dependencies.
 
 1. Create an *ocp-models* environment
    1. **GPU**
@@ -27,7 +27,7 @@ create an environment with all dependencies.
    ```
 
 ## PyPi - flexible
-1. Install `pytorch` by selecting your installer, OS and CPU or CUDA version follow the official
+1. Install `pytorch` by selecting your installer, OS and CPU or CUDA version following the official
 [Pytorch docs](https://pytorch.org/get-started/locally/)
 
 2. Install `torch_geometric` and the `torch_scatter`, `torch_sparse`, and `torch_cluster` optional dependencies
@@ -47,7 +47,8 @@ create an environment with all dependencies.
 
 ## Dev install
 
-If you plan to make contributions you will need to clone the repo and install `ocp-models` with dev dependencies,
+If you plan to make contributions you will need to clone the repo and install `ocp-models` in editable mode with dev
+dependencies,
 ```bash
 pip install -e .[dev]
 ```
