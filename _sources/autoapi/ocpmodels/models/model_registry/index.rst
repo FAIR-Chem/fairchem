@@ -3,6 +3,14 @@
 
 .. py:module:: ocpmodels.models.model_registry
 
+.. autoapi-nested-parse::
+
+   Copyright (c) Meta, Inc. and its affiliates.
+
+   This source code is licensed under the MIT license found in the
+   LICENSE file in the root directory of this source tree.
+
+
 
 Module Contents
 ---------------
@@ -40,10 +48,10 @@ Attributes
 
    :param model_name: the model name. See available_pretrained_checkpoints.
    :type model_name: str
-   :param local_cache:
-   :type local_cache: str
+   :param local_cache: path to local cache directory
+   :type local_cache: str or Path
 
-   Returns:
-
+   :returns: local path to checkpoint file
+   :rtype: str
 
 

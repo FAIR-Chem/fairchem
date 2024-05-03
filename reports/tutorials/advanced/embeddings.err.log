@@ -1,0 +1,54 @@
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/jupyter_cache/executors/utils.py", line 58, in single_nb_execution
+    executenb(
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 1314, in execute
+    return NotebookClient(nb=nb, resources=resources, km=km, **kwargs).execute()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 709, in async_execute
+    await self.async_execute_cell(
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+#calc.trainer._unwrapped_model.return_embedding = False
+a0 = 3.63
+E = []
+
+LC = np.linspace(0.95 * a0, 1.05 * a0, 20)
+
+for a in LC:
+    atoms = Atoms([Atom('Cu', (0, 0, 0))],
+                  cell=0.5 * a * np.array([[1.0, 1.0, 0.0],
+                                           [0.0, 1.0, 1.0],
+                                           [1.0, 0.0, 1.0]]),
+                 pbc=True)
+    atoms = atoms.repeat((2, 2, 2))
+    atoms.set_tags(np.ones(len(atoms)))
+    atoms.set_calculator(calc)
+    E += [atoms.get_potential_energy()]
+    
+plt.plot(LC, E)
+plt.xlabel('Lattice constant (A)')
+plt.ylabel('Energy (eV)');
+------------------
+
+
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mNameError[0m                                 Traceback (most recent call last)
+Cell [0;32mIn[4], line 15[0m
+[1;32m     13[0m     atoms [38;5;241m=[39m atoms[38;5;241m.[39mrepeat(([38;5;241m2[39m, [38;5;241m2[39m, [38;5;241m2[39m))
+[1;32m     14[0m     atoms[38;5;241m.[39mset_tags(np[38;5;241m.[39mones([38;5;28mlen[39m(atoms)))
+[0;32m---> 15[0m     atoms[38;5;241m.[39mset_calculator([43mcalc[49m)
+[1;32m     16[0m     E [38;5;241m+[39m[38;5;241m=[39m [atoms[38;5;241m.[39mget_potential_energy()]
+[1;32m     18[0m plt[38;5;241m.[39mplot(LC, E)
+
+[0;31mNameError[0m: name 'calc' is not defined
+

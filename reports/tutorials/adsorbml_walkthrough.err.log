@@ -18,10 +18,23 @@ Traceback (most recent call last):
     raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
 nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
 ------------------
+from ocpmodels.common.relaxation.ase_utils import OCPCalculator
 from ocpmodels.models.model_registry import model_name_to_local_file
+import os
 
 checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
-checkpoint_path
+
+os.makedirs(f"data/{bulk}_{adsorbate}", exist_ok=True)
+
+# Define the calculator
+calc = OCPCalculator(checkpoint_path=checkpoint_path) # if you have a gpu, add `cpu=False` to speed up calculations
+
+adslabs = [*heuristic_adslabs.atoms_list, *random_adslabs.atoms_list]
+# Set up the calculator
+for idx, adslab in enumerate(adslabs):
+    adslab.calc = calc
+    opt = BFGS(adslab, trajectory=f"data/{bulk}_{adsorbate}/{idx}.traj")
+    opt.run(fmax=0.05, steps=100) # For the AdsorbML results we used fmax = 0.02 and steps = 300, but we will use less strict values for brevity.
 ------------------
 
 ----- stderr -----
@@ -30,10 +43,12 @@ ERROR:root:Not a valid model name 'EquiformerV2 (31M) All+MD'
 
 [0;31m---------------------------------------------------------------------------[0m
 [0;31mValueError[0m                                Traceback (most recent call last)
-Cell [0;32mIn[2], line 3[0m
-[1;32m      1[0m [38;5;28;01mfrom[39;00m [38;5;21;01mocpmodels[39;00m[38;5;21;01m.[39;00m[38;5;21;01mmodels[39;00m[38;5;21;01m.[39;00m[38;5;21;01mmodel_registry[39;00m [38;5;28;01mimport[39;00m model_name_to_local_file
-[0;32m----> 3[0m checkpoint_path [38;5;241m=[39m [43mmodel_name_to_local_file[49m[43m([49m[38;5;124;43m'[39;49m[38;5;124;43mEquiformerV2 (31M) All+MD[39;49m[38;5;124;43m'[39;49m[43m,[49m[43m [49m[43mlocal_cache[49m[38;5;241;43m=[39;49m[38;5;124;43m'[39;49m[38;5;124;43m/tmp/ocp_checkpoints/[39;49m[38;5;124;43m'[39;49m[43m)[49m
-[1;32m      4[0m checkpoint_path
+Cell [0;32mIn[4], line 5[0m
+[1;32m      2[0m [38;5;28;01mfrom[39;00m [38;5;21;01mocpmodels[39;00m[38;5;21;01m.[39;00m[38;5;21;01mmodels[39;00m[38;5;21;01m.[39;00m[38;5;21;01mmodel_registry[39;00m [38;5;28;01mimport[39;00m model_name_to_local_file
+[1;32m      3[0m [38;5;28;01mimport[39;00m [38;5;21;01mos[39;00m
+[0;32m----> 5[0m checkpoint_path [38;5;241m=[39m [43mmodel_name_to_local_file[49m[43m([49m[38;5;124;43m'[39;49m[38;5;124;43mEquiformerV2 (31M) All+MD[39;49m[38;5;124;43m'[39;49m[43m,[49m[43m [49m[43mlocal_cache[49m[38;5;241;43m=[39;49m[38;5;124;43m'[39;49m[38;5;124;43m/tmp/ocp_checkpoints/[39;49m[38;5;124;43m'[39;49m[43m)[49m
+[1;32m      7[0m os[38;5;241m.[39mmakedirs([38;5;124mf[39m[38;5;124m"[39m[38;5;124mdata/[39m[38;5;132;01m{[39;00mbulk[38;5;132;01m}[39;00m[38;5;124m_[39m[38;5;132;01m{[39;00madsorbate[38;5;132;01m}[39;00m[38;5;124m"[39m, exist_ok[38;5;241m=[39m[38;5;28;01mTrue[39;00m)
+[1;32m      9[0m [38;5;66;03m# Define the calculator[39;00m
 
 File [0;32m~/work/ocp/ocp/ocpmodels/models/model_registry.py:45[0m, in [0;36mmodel_name_to_local_file[0;34m(model_name, local_cache)[0m
 [1;32m     43[0m [38;5;28;01mif[39;00m model_name [38;5;129;01mnot[39;00m [38;5;129;01min[39;00m MODEL_REGISTRY:

@@ -63,10 +63,10 @@ Attributes
 
    :param model_name: the model name. See available_pretrained_checkpoints.
    :type model_name: str
-   :param local_cache:
-   :type local_cache: str
+   :param local_cache: path to local cache directory
+   :type local_cache: str or Path
 
-   Returns:
-
+   :returns: local path to checkpoint file
+   :rtype: str
 
 

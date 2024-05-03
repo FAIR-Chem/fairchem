@@ -5,7 +5,7 @@
 
 .. autoapi-nested-parse::
 
-   Copyright (c) Facebook, Inc. and its affiliates.
+   Copyright (c) Meta, Inc. and its affiliates.
 
    This source code is licensed under the MIT license found in the
    LICENSE file in the root directory of this source tree.
@@ -20,6 +20,7 @@ Classes
 
 .. autoapisummary::
 
+   ocpmodels.common.utils.UniqueKeyLoader
    ocpmodels.common.utils.Complete
    ocpmodels.common.utils.SeverityLevelBetween
 
@@ -67,6 +68,15 @@ Functions
    ocpmodels.common.utils.irreps_sum
    ocpmodels.common.utils.update_config
    ocpmodels.common.utils.get_loss_module
+
+
+
+.. py:class:: UniqueKeyLoader(stream)
+
+
+   Bases: :py:obj:`yaml.SafeLoader`
+
+   .. py:method:: construct_mapping(node, deep=False)
 
 
 

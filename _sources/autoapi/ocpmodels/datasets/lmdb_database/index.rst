@@ -5,7 +5,7 @@
 
 .. autoapi-nested-parse::
 
-   Copyright (c) Facebook, Inc. and its affiliates.
+   Copyright (c) Meta, Inc. and its affiliates.
 
    This source code is modified from the ASE db json backend
    and is thus licensed under the corresponding LGPL2.1 license
