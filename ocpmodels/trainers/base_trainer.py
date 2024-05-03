@@ -1,17 +1,19 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
+
 import datetime
 import errno
 import logging
 import os
 import random
-from abc import ABC
+from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import DefaultDict, Dict, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -35,9 +37,7 @@ from ocpmodels.common.utils import (
     update_config,
 )
 from ocpmodels.modules.evaluator import Evaluator
-from ocpmodels.modules.exponential_moving_average import (
-    ExponentialMovingAverage,
-)
+from ocpmodels.modules.exponential_moving_average import ExponentialMovingAverage
 from ocpmodels.modules.loss import DDPLoss
 from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scaling.compat import load_scales_compat
@@ -57,19 +57,21 @@ class BaseTrainer(ABC):
         loss_fns,
         eval_metrics,
         identifier: str,
-        timestamp_id: Optional[str] = None,
-        run_dir: Optional[str] = None,
+        timestamp_id: str | None = None,
+        run_dir: str | None = None,
         is_debug: bool = False,
         print_every: int = 100,
-        seed: Optional[int] = None,
+        seed: int | None = None,
         logger: str = "wandb",
         local_rank: int = 0,
         amp: bool = False,
         cpu: bool = False,
         name: str = "ocp",
-        slurm={},
+        slurm=None,
         noddp: bool = False,
     ) -> None:
+        if slurm is None:
+            slurm = {}
         self.name = name
         self.is_debug = is_debug
         self.cpu = cpu
@@ -116,9 +118,7 @@ class BaseTrainer(ABC):
                 "checkpoint_dir": os.path.join(
                     run_dir, "checkpoints", self.timestamp_id
                 ),
-                "results_dir": os.path.join(
-                    run_dir, "results", self.timestamp_id
-                ),
+                "results_dir": os.path.join(run_dir, "results", self.timestamp_id),
                 "logs_dir": os.path.join(
                     run_dir, "logs", logger_name, self.timestamp_id
                 ),
@@ -132,15 +132,15 @@ class BaseTrainer(ABC):
         # Fill in SLURM information in config, if applicable
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
             if "SLURM_ARRAY_JOB_ID" in os.environ:
-                self.config["slurm"]["job_id"] = "%s_%s" % (
+                self.config["slurm"]["job_id"] = "{}_{}".format(
                     os.environ["SLURM_ARRAY_JOB_ID"],
                     os.environ["SLURM_ARRAY_TASK_ID"],
                 )
             else:
                 self.config["slurm"]["job_id"] = os.environ["SLURM_JOB_ID"]
-            self.config["slurm"]["folder"] = self.config["slurm"][
-                "folder"
-            ].replace("%j", self.config["slurm"]["job_id"])
+            self.config["slurm"]["folder"] = self.config["slurm"]["folder"].replace(
+                "%j", self.config["slurm"]["job_id"]
+            )
 
         # Define datasets
         if isinstance(dataset, list):
@@ -175,8 +175,12 @@ class BaseTrainer(ABC):
 
         self.load()
 
+    @abstractmethod
+    def train(self, disable_eval_tqdm: bool = False) -> None:
+        """Run model training iterations."""
+
     @staticmethod
-    def _get_timestamp(device: torch.device, suffix: Optional[str]) -> str:
+    def _get_timestamp(device: torch.device, suffix: str | None) -> str:
         now = datetime.datetime.now().timestamp()
         timestamp_tensor = torch.tensor(now).to(device)
         # create directories from master rank only
@@ -216,9 +220,7 @@ class BaseTrainer(ABC):
     def load_logger(self) -> None:
         self.logger = None
         if not self.is_debug and distutils.is_master():
-            assert (
-                self.config["logger"] is not None
-            ), "Specify logger in config"
+            assert self.config["logger"] is not None, "Specify logger in config"
 
             logger = self.config["logger"]
             logger_name = logger if isinstance(logger, str) else logger["name"]
@@ -242,7 +244,7 @@ class BaseTrainer(ABC):
         else:
             num_replicas = distutils.get_world_size()
             rank = distutils.get_rank()
-        sampler = BalancedBatchSampler(
+        return BalancedBatchSampler(
             dataset,
             batch_size=batch_size,
             num_replicas=num_replicas,
@@ -252,17 +254,15 @@ class BaseTrainer(ABC):
             shuffle=shuffle,
             force_balancing=force_balancing,
         )
-        return sampler
 
     def get_dataloader(self, dataset, sampler) -> DataLoader:
-        loader = DataLoader(
+        return DataLoader(
             dataset,
             collate_fn=self.ocp_collater,
             num_workers=self.config["optim"]["num_workers"],
             pin_memory=True,
             batch_sampler=sampler,
         )
-        return loader
 
     def load_datasets(self) -> None:
         self.ocp_collater = OCPCollater(
@@ -354,9 +354,7 @@ class BaseTrainer(ABC):
 
     def load_task(self):
         # Normalizer for the dataset.
-        normalizer = (
-            self.config["dataset"].get("transforms", {}).get("normalizer", {})
-        )
+        normalizer = self.config["dataset"].get("transforms", {}).get("normalizer", {})
         self.normalizers = {}
         if normalizer:
             for target in normalizer:
@@ -367,13 +365,9 @@ class BaseTrainer(ABC):
 
         self.output_targets = {}
         for target_name in self.config["outputs"]:
-            self.output_targets[target_name] = self.config["outputs"][
-                target_name
-            ]
+            self.output_targets[target_name] = self.config["outputs"][target_name]
             if "decomposition" in self.config["outputs"][target_name]:
-                for subtarget in self.config["outputs"][target_name][
-                    "decomposition"
-                ]:
+                for subtarget in self.config["outputs"][target_name]["decomposition"]:
                     self.output_targets[subtarget] = (
                         self.config["outputs"][target_name]["decomposition"]
                     )[subtarget]
@@ -383,23 +377,17 @@ class BaseTrainer(ABC):
                         self.output_targets[subtarget]["level"] = self.config[
                             "outputs"
                         ][target_name].get("level", "system")
-                    if (
-                        "train_on_free_atoms"
-                        not in self.output_targets[subtarget]
-                    ):
-                        self.output_targets[subtarget][
-                            "train_on_free_atoms"
-                        ] = self.config["outputs"][target_name].get(
-                            "train_on_free_atoms", True
+                    if "train_on_free_atoms" not in self.output_targets[subtarget]:
+                        self.output_targets[subtarget]["train_on_free_atoms"] = (
+                            self.config[
+                                "outputs"
+                            ][target_name].get("train_on_free_atoms", True)
                         )
-                    if (
-                        "eval_on_free_atoms"
-                        not in self.output_targets[subtarget]
-                    ):
-                        self.output_targets[subtarget][
-                            "eval_on_free_atoms"
-                        ] = self.config["outputs"][target_name].get(
-                            "eval_on_free_atoms", True
+                    if "eval_on_free_atoms" not in self.output_targets[subtarget]:
+                        self.output_targets[subtarget]["eval_on_free_atoms"] = (
+                            self.config[
+                                "outputs"
+                            ][target_name].get("eval_on_free_atoms", True)
                         )
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
@@ -418,9 +406,7 @@ class BaseTrainer(ABC):
 
         # TODO: depreicated, remove.
         bond_feat_dim = None
-        bond_feat_dim = self.config["model_attributes"].get(
-            "num_gaussians", 50
-        )
+        bond_feat_dim = self.config["model_attributes"].get("num_gaussians", 50)
 
         loader = self.train_loader or self.val_loader or self.test_loader
         self.model = registry.get_model_class(self.config["model"])(
@@ -444,9 +430,7 @@ class BaseTrainer(ABC):
             self.logger.watch(self.model)
 
         if distutils.initialized() and not self.config["noddp"]:
-            self.model = DistributedDataParallel(
-                self.model, device_ids=[self.device]
-            )
+            self.model = DistributedDataParallel(self.model, device_ids=[self.device])
 
     @property
     def _unwrapped_model(self):
@@ -456,19 +440,16 @@ class BaseTrainer(ABC):
         return module
 
     def load_checkpoint(
-        self, checkpoint_path: str, checkpoint: Dict = {}
+        self, checkpoint_path: str, checkpoint: dict | None = None
     ) -> None:
-        if not checkpoint:
+        if checkpoint is None:
             if not os.path.isfile(checkpoint_path):
                 raise FileNotFoundError(
                     errno.ENOENT, "Checkpoint file not found", checkpoint_path
                 )
-            else:
-                logging.info(f"Loading checkpoint from: {checkpoint_path}")
-                map_location = torch.device("cpu") if self.cpu else self.device
-                checkpoint = torch.load(
-                    checkpoint_path, map_location=map_location
-                )
+            logging.info(f"Loading checkpoint from: {checkpoint_path}")
+            map_location = torch.device("cpu") if self.cpu else self.device
+            checkpoint = torch.load(checkpoint_path, map_location=map_location)
 
         self.epoch = checkpoint.get("epoch", 0)
         self.step = checkpoint.get("step", 0)
@@ -536,7 +517,7 @@ class BaseTrainer(ABC):
 
     def load_loss(self) -> None:
         self.loss_fns = []
-        for idx, loss in enumerate(self.config["loss_fns"]):
+        for _idx, loss in enumerate(self.config["loss_fns"]):
             for target in loss:
                 loss_name = loss[target].get("fn", "mae")
                 coefficient = loss[target].get("coefficient", 1)
@@ -556,9 +537,7 @@ class BaseTrainer(ABC):
                 )
 
     def load_optimizer(self) -> None:
-        optimizer = getattr(
-            torch.optim, self.config["optim"].get("optimizer", "AdamW")
-        )
+        optimizer = getattr(torch.optim, self.config["optim"].get("optimizer", "AdamW"))
         optimizer_params = self.config["optim"].get("optimizer_params", {})
 
         weight_decay = optimizer_params.get("weight_decay", 0)
@@ -573,9 +552,7 @@ class BaseTrainer(ABC):
         if weight_decay > 0:
             self.model_params_no_wd = {}
             if hasattr(self._unwrapped_model, "no_weight_decay"):
-                self.model_params_no_wd = (
-                    self._unwrapped_model.no_weight_decay()
-                )
+                self.model_params_no_wd = self._unwrapped_model.no_weight_decay()
 
             params_decay, params_no_decay, name_no_decay = [], [], []
             for name, param in self.model.named_parameters():
@@ -583,8 +560,7 @@ class BaseTrainer(ABC):
                     continue
 
                 if any(
-                    name.endswith(skip_name)
-                    for skip_name in self.model_params_no_wd
+                    name.endswith(skip_name) for skip_name in self.model_params_no_wd
                 ):
                     params_no_decay.append(param)
                     name_no_decay.append(name)
@@ -629,7 +605,7 @@ class BaseTrainer(ABC):
         metrics=None,
         checkpoint_file: str = "checkpoint.pt",
         training_state: bool = True,
-    ) -> Optional[str]:
+    ) -> str | None:
         if not self.is_debug and distutils.is_master():
             if training_state:
                 return save_checkpoint(
@@ -648,9 +624,7 @@ class BaseTrainer(ABC):
                         "config": self.config,
                         "val_metrics": metrics,
                         "ema": self.ema.state_dict() if self.ema else None,
-                        "amp": self.scaler.state_dict()
-                        if self.scaler
-                        else None,
+                        "amp": self.scaler.state_dict() if self.scaler else None,
                         "best_val_metric": self.best_val_metric,
                         "primary_metric": self.evaluation_metrics.get(
                             "primary_metric",
@@ -673,9 +647,7 @@ class BaseTrainer(ABC):
                         },
                         "config": self.config,
                         "val_metrics": metrics,
-                        "amp": self.scaler.state_dict()
-                        if self.scaler
-                        else None,
+                        "amp": self.scaler.state_dict() if self.scaler else None,
                     },
                     checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
@@ -735,11 +707,11 @@ class BaseTrainer(ABC):
 
         loader = self.val_loader if split == "val" else self.test_loader
 
-        for i, batch in tqdm(
+        for _i, batch in tqdm(
             enumerate(loader),
             total=len(loader),
             position=rank,
-            desc="device {}".format(rank),
+            desc=f"device {rank}",
             disable=disable_tqdm,
         ):
             # Forward.
@@ -770,7 +742,7 @@ class BaseTrainer(ABC):
         log_dict = {k: metrics[k]["metric"] for k in metrics}
         log_dict.update({"epoch": self.epoch})
         if distutils.is_master():
-            log_str = ["{}: {:.4f}".format(k, v) for k, v in log_dict.items()]
+            log_str = [f"{k}: {v:.4f}" for k, v in log_dict.items()]
             logging.info(", ".join(log_str))
 
         # Make plots.
@@ -810,9 +782,7 @@ class BaseTrainer(ABC):
                 max_norm=self.clip_grad_norm,
             )
             if self.logger is not None:
-                self.logger.log(
-                    {"grad_norm": grad_norm}, step=self.step, split="train"
-                )
+                self.logger.log({"grad_norm": grad_norm}, step=self.step, split="train")
         if self.scaler:
             self.scaler.step(self.optimizer)
             self.scaler.update()
@@ -821,9 +791,7 @@ class BaseTrainer(ABC):
         if self.ema:
             self.ema.update()
 
-    def save_results(
-        self, predictions, results_file: Optional[str], keys=None
-    ) -> None:
+    def save_results(self, predictions, results_file: str | None, keys=None) -> None:
         if results_file is None:
             return
         if keys is None:
@@ -840,9 +808,7 @@ class BaseTrainer(ABC):
 
         distutils.synchronize()
         if distutils.is_master():
-            gather_results: DefaultDict[
-                str, npt.NDArray[np.float_]
-            ] = defaultdict(list)
+            gather_results: defaultdict[str, npt.NDArray[np.float_]] = defaultdict(list)
             full_path = os.path.join(
                 self.config["cmd"]["results_dir"],
                 f"{self.name}_{results_file}.npz",

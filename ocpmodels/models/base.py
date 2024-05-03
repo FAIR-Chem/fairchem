@@ -1,9 +1,11 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
 
 import logging
 
@@ -19,10 +21,8 @@ from ocpmodels.common.utils import (
 
 
 class BaseModel(nn.Module):
-    def __init__(
-        self, num_atoms=None, bond_feat_dim=None, num_targets=None
-    ) -> None:
-        super(BaseModel, self).__init__()
+    def __init__(self, num_atoms=None, bond_feat_dim=None, num_targets=None) -> None:
+        super().__init__()
         self.num_atoms = num_atoms
         self.bond_feat_dim = bond_feat_dim
         self.num_targets = num_targets
@@ -48,9 +48,7 @@ class BaseModel(nn.Module):
             pass
         elif hasattr(self, "enforce_max_neighbors_strictly"):
             # Not all models will have this attribute
-            enforce_max_neighbors_strictly = (
-                self.enforce_max_neighbors_strictly
-            )
+            enforce_max_neighbors_strictly = self.enforce_max_neighbors_strictly
         else:
             # Default to old behavior
             enforce_max_neighbors_strictly = True
@@ -105,9 +103,7 @@ class BaseModel(nn.Module):
             distance_vec = data.pos[j] - data.pos[i]
 
             edge_dist = distance_vec.norm(dim=-1)
-            cell_offsets = torch.zeros(
-                edge_index.shape[1], 3, device=data.pos.device
-            )
+            cell_offsets = torch.zeros(edge_index.shape[1], 3, device=data.pos.device)
             cell_offset_distances = torch.zeros_like(
                 cell_offsets, device=data.pos.device
             )

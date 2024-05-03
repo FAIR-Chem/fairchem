@@ -1,0 +1,61 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: index
+parts:
+- caption: Quickstart & Installation
+  chapters:
+  - file: core/intro_series
+  - file: core/install
+  - file: core/quickstart
+  - file: core/gotchas
+  - file: core/license
+- caption: OCP API & Demo
+  chapters:
+  - url: https://open-catalyst.metademolab.com/
+    title: OCP Demo (no install required!)
+  - file: core/ocpapi
+- caption: Released Datasets & Models
+  chapters:
+  - file: core/datasets/oc20
+  - file: core/datasets/oc22
+  - file: core/datasets/odac
+  - file: core/model_checkpoints
+- caption: Making your own datasets
+  chapters:
+  - file: core/ase_dataset_creation
+  - file: core/lmdb_dataset_creation
+- caption: Model development, training, inference, finetuning
+  chapters:
+  - file: core/model_training
+  - file: core/inference
+  - file: core/fine-tuning/fine-tuning-oxides
+  - file: core/model_faq
+- caption: Videos and Talks
+  chapters:
+  - file: videos/technical_talks
+- caption: Case Studies & Tutorials
+  chapters:
+  - file: tutorials/adsorbml_walkthrough
+  - file: core/papers_using_models
+  - file: tutorials/intro
+  - file: tutorials/OCP-introduction
+  - file: tutorials/NRR/NRR_toc
+    sections:
+    - file: tutorials/NRR/NRR_example
+  - file: tutorials/advanced/advanced_toc
+    sections:
+    - file: tutorials/advanced/fine-tuning-in-python
+    - file: tutorials/advanced/embeddings
+  - file: legacy_tutorials/legacy_tutorials
+    sections:
+    - file: legacy_tutorials/OCP_Tutorial
+    - file: legacy_tutorials/data_preprocessing
+    - file: legacy_tutorials/data_visualization
+- caption: ocpmodels documentation
+  chapters:
+  - file: autoapi/index
+- caption: Notebook execution times
+  chapters:
+  - file: execution_time

@@ -1,9 +1,11 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
 
 import ast
 import collections
@@ -16,14 +18,13 @@ import os
 import subprocess
 import sys
 import time
-from argparse import Namespace
 from bisect import bisect
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import wraps
 from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
@@ -40,6 +41,8 @@ import ocpmodels
 from ocpmodels.modules.loss import AtomwiseL2Loss, L2MAELoss
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from torch.nn.modules.module import _IncompatibleKeys
 
 
@@ -48,7 +51,7 @@ if TYPE_CHECKING:
 class UniqueKeyLoader(yaml.SafeLoader):
     def construct_mapping(self, node, deep=False):
         mapping = set()
-        for key_node, value_node in node.value:
+        for key_node, _ in node.value:
             each_key = self.construct_object(key_node, deep=deep)
             if each_key in mapping:
                 raise ValueError(
@@ -65,9 +68,7 @@ def pyg2_data_transform(data: Data):
     we need to convert the data to the new format
     """
     if torch_geometric.__version__ >= "2.0" and "_store" not in data.__dict__:
-        return Data(
-            **{k: v for k, v in data.__dict__.items() if v is not None}
-        )
+        return Data(**{k: v for k, v in data.__dict__.items() if v is not None})
 
     return data
 
@@ -180,11 +181,7 @@ def plot_histogram(data, xlabel: str = "", ylabel: str = "", title: str = ""):
     # Return numpy array
     canvas.draw()
     image_from_plot = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-    image_from_plot = image_from_plot.reshape(
-        fig.canvas.get_width_height()[::-1] + (3,)
-    )
-
-    return image_from_plot
+    return image_from_plot.reshape(fig.canvas.get_width_height()[::-1] + (3,))
 
 
 # Override the collation method in `pytorch_geometric.data.InMemoryDataset`
@@ -199,10 +196,8 @@ def collate(data_list):
     for item, key in product(data_list, keys):
         data[key].append(item[key])
         if torch.is_tensor(item[key]):
-            s = slices[key][-1] + item[key].size(
-                item.__cat_dim__(key, item[key])
-            )
-        elif isinstance(item[key], int) or isinstance(item[key], float):
+            s = slices[key][-1] + item[key].size(item.__cat_dim__(key, item[key]))
+        elif isinstance(item[key], (int, float)):
             s = slices[key][-1] + 1
         else:
             raise ValueError("Unsupported attribute type")
@@ -247,9 +242,7 @@ def add_edge_distance_to_graph(
     gdf_filter = torch.linspace(dmin, dmax, num_gaussians)
     var = gdf_filter[1] - gdf_filter[0]
     gdf_filter, var = gdf_filter.to(device), var.to(device)
-    gdf_distances = torch.exp(
-        -((distances.view(-1, 1) - gdf_filter) ** 2) / var**2
-    )
+    gdf_distances = torch.exp(-((distances.view(-1, 1) - gdf_filter) ** 2) / var**2)
     # Reassign edge attributes.
     batch.edge_weight = distances
     batch.edge_attr = gdf_distances.float()
@@ -270,10 +263,7 @@ def _import_local_file(path: Path, *, project_root: Path) -> None:
     project_root = project_root.resolve()
 
     module_name = ".".join(
-        path.absolute()
-        .relative_to(project_root.absolute())
-        .with_suffix("")
-        .parts
+        path.absolute().relative_to(project_root.absolute()).with_suffix("").parts
     )
     logging.debug(f"Resolved module name of {path} to {module_name}")
     importlib.import_module(module_name)
@@ -297,10 +287,8 @@ def setup_experimental_imports(project_root: Path) -> None:
     include_file = experimental_dir / ".include"
 
     if include_file.exists():
-        with open(include_file, "r") as f:
-            include_dirs = [
-                line.rstrip("\n") for line in f.readlines() if line.strip()
-            ]
+        with open(include_file) as f:
+            include_dirs = [line.rstrip("\n") for line in f.readlines() if line.strip()]
 
         for inc_dir in include_dirs:
             experimental_files.extend(
@@ -336,12 +324,10 @@ def _get_project_root() -> Path:
 
 
 # Copied from https://github.com/facebookresearch/mmf/blob/master/mmf/utils/env.py#L89.
-def setup_imports(config: Optional[dict] = None) -> None:
+def setup_imports(config: dict | None = None) -> None:
     from ocpmodels.common.registry import registry
 
-    skip_experimental_imports = (config or {}).get(
-        "skip_experimental_imports", False
-    )
+    skip_experimental_imports = (config or {}).get("skip_experimental_imports", False)
 
     # First, check if imports are already setup
     has_already_setup = registry.get("imports_setup", no_warning=True)
@@ -392,33 +378,30 @@ def create_dict_from_args(args: list, sep: str = "."):
     """
     return_dict = {}
     for arg in args:
-        arg = arg.strip("--")
-        keys_concat, val = arg.split("=")
+        keys_concat, val = arg.removeprefix("--").split("=")
         val = parse_value(val)
         key_sequence = keys_concat.split(sep)
         dict_set_recursively(return_dict, key_sequence, val)
     return return_dict
 
 
-def load_config(path: str, previous_includes: list = []):
+def load_config(path: str, previous_includes: list | None = None):
+    if previous_includes is None:
+        previous_includes = []
     path = Path(path)
     if path in previous_includes:
         raise ValueError(
             f"Cyclic config include detected. {path} included in sequence {previous_includes}."
         )
-    previous_includes = previous_includes + [path]
+    previous_includes = [*previous_includes, path]
 
-    direct_config = yaml.load(open(path, "r"), Loader=UniqueKeyLoader)
+    with open(path) as fp:
+        direct_config = yaml.safe_load(fp, Loader=UniqueKeyLoader)
 
     # Load config from included files.
-    if "includes" in direct_config:
-        includes = direct_config.pop("includes")
-    else:
-        includes = []
+    includes = direct_config.pop("includes") if "includes" in direct_config else []
     if not isinstance(includes, list):
-        raise AttributeError(
-            "Includes must be a list, '{}' provided".format(type(includes))
-        )
+        raise AttributeError(f"Includes must be a list, '{type(includes)}' provided")
 
     config = {}
     duplicates_warning = []
@@ -505,7 +488,9 @@ def create_grid(base_config, sweep_file: str):
             child_config[key_path[-1]] = value
         return config
 
-    sweeps = yaml.load(open(sweep_file, "r"), Loader=UniqueKeyLoader)
+    with open(sweep_file) as fp:
+        sweeps = yaml.safe_load(fp, Loader=UniqueKeyLoader)
+
     flat_sweeps = _flatten_sweeps(sweeps)
     keys = list(flat_sweeps.keys())
     values = list(itertools.product(*flat_sweeps.values()))
@@ -560,9 +545,7 @@ def get_pbc_distances(
     distances = distance_vectors.norm(dim=-1)
 
     # redundancy: remove zero distances
-    nonzero_idx = torch.arange(len(distances), device=distances.device)[
-        distances != 0
-    ]
+    nonzero_idx = torch.arange(len(distances), device=distances.device)[distances != 0]
     edge_index = edge_index[:, nonzero_idx]
     distances = distances[nonzero_idx]
 
@@ -585,8 +568,10 @@ def radius_graph_pbc(
     radius,
     max_num_neighbors_threshold,
     enforce_max_neighbors_strictly: bool = False,
-    pbc=[True, True, True],
+    pbc=None,
 ):
+    if pbc is None:
+        pbc = [True, True, True]
     device = data.pos.device
     batch_size = len(data.natoms)
 
@@ -610,13 +595,9 @@ def radius_graph_pbc(
     num_atoms_per_image_sqr = (num_atoms_per_image**2).long()
 
     # index offset between images
-    index_offset = (
-        torch.cumsum(num_atoms_per_image, dim=0) - num_atoms_per_image
-    )
+    index_offset = torch.cumsum(num_atoms_per_image, dim=0) - num_atoms_per_image
 
-    index_offset_expand = torch.repeat_interleave(
-        index_offset, num_atoms_per_image_sqr
-    )
+    index_offset_expand = torch.repeat_interleave(index_offset, num_atoms_per_image_sqr)
     num_atoms_per_image_expand = torch.repeat_interleave(
         num_atoms_per_image, num_atoms_per_image_sqr
     )
@@ -633,20 +614,14 @@ def radius_graph_pbc(
     index_sqr_offset = torch.repeat_interleave(
         index_sqr_offset, num_atoms_per_image_sqr
     )
-    atom_count_sqr = (
-        torch.arange(num_atom_pairs, device=device) - index_sqr_offset
-    )
+    atom_count_sqr = torch.arange(num_atom_pairs, device=device) - index_sqr_offset
 
     # Compute the indices for the pairs of atoms (using division and mod)
     # If the systems get too large this apporach could run into numerical precision issues
     index1 = (
-        torch.div(
-            atom_count_sqr, num_atoms_per_image_expand, rounding_mode="floor"
-        )
+        torch.div(atom_count_sqr, num_atoms_per_image_expand, rounding_mode="floor")
     ) + index_offset_expand
-    index2 = (
-        atom_count_sqr % num_atoms_per_image_expand
-    ) + index_offset_expand
+    index2 = (atom_count_sqr % num_atoms_per_image_expand) + index_offset_expand
     # Get the positions for each atom
     pos1 = torch.index_select(atom_pos, 0, index1)
     pos2 = torch.index_select(atom_pos, 0, index2)
@@ -690,18 +665,13 @@ def radius_graph_pbc(
 
     # Tensor of unit cells
     cells_per_dim = [
-        torch.arange(-rep, rep + 1, device=device, dtype=torch.float)
-        for rep in max_rep
+        torch.arange(-rep, rep + 1, device=device, dtype=torch.float) for rep in max_rep
     ]
     unit_cell = torch.cartesian_prod(*cells_per_dim)
     num_cells = len(unit_cell)
-    unit_cell_per_atom = unit_cell.view(1, num_cells, 3).repeat(
-        len(index2), 1, 1
-    )
+    unit_cell_per_atom = unit_cell.view(1, num_cells, 3).repeat(len(index2), 1, 1)
     unit_cell = torch.transpose(unit_cell, 0, 1)
-    unit_cell_batch = unit_cell.view(1, 3, num_cells).expand(
-        batch_size, -1, -1
-    )
+    unit_cell_batch = unit_cell.view(1, 3, num_cells).expand(batch_size, -1, -1)
 
     # Compute the x, y, z positional offsets for each cell in each image
     data_cell = torch.transpose(data.cell, 1, 2)
@@ -788,14 +758,10 @@ def get_max_neighbors_mask(
     ones = index.new_ones(1).expand_as(index)
     num_neighbors = segment_coo(ones, index, dim_size=num_atoms)
     max_num_neighbors = num_neighbors.max()
-    num_neighbors_thresholded = num_neighbors.clamp(
-        max=max_num_neighbors_threshold
-    )
+    num_neighbors_thresholded = num_neighbors.clamp(max=max_num_neighbors_threshold)
 
     # Get number of (thresholded) neighbors per image
-    image_indptr = torch.zeros(
-        natoms.shape[0] + 1, device=device, dtype=torch.long
-    )
+    image_indptr = torch.zeros(natoms.shape[0] + 1, device=device, dtype=torch.long)
     image_indptr[1:] = torch.cumsum(natoms, dim=0)
     num_neighbors_image = segment_csr(num_neighbors_thresholded, image_indptr)
 
@@ -804,16 +770,14 @@ def get_max_neighbors_mask(
         max_num_neighbors <= max_num_neighbors_threshold
         or max_num_neighbors_threshold <= 0
     ):
-        mask_num_neighbors = torch.tensor(
-            [True], dtype=bool, device=device
-        ).expand_as(index)
+        mask_num_neighbors = torch.tensor([True], dtype=bool, device=device).expand_as(
+            index
+        )
         return mask_num_neighbors, num_neighbors_image
 
     # Create a tensor of size [num_atoms, max_num_neighbors] to sort the distances of the neighbors.
     # Fill with infinity so we can easily remove unused distances later.
-    distance_sort = torch.full(
-        [num_atoms * max_num_neighbors], np.inf, device=device
-    )
+    distance_sort = torch.full([num_atoms * max_num_neighbors], np.inf, device=device)
 
     # Create an index map to map distances from atom_distance to distance_sort
     # index_sort_map assumes index to be sorted
@@ -840,8 +804,7 @@ def get_max_neighbors_mask(
 
     else:
         effective_cutoff = (
-            distance_sort[:, max_num_neighbors_threshold]
-            + degeneracy_tolerance
+            distance_sort[:, max_num_neighbors_threshold] + degeneracy_tolerance
         )
         is_included = torch.le(distance_sort.T, effective_cutoff)
 
@@ -855,13 +818,9 @@ def get_max_neighbors_mask(
         index_sort = index_sort[:, :max_num_included]
 
         # Recompute the number of neighbors
-        num_neighbors_thresholded = num_neighbors.clamp(
-            max=num_included_per_atom
-        )
+        num_neighbors_thresholded = num_neighbors.clamp(max=num_included_per_atom)
 
-        num_neighbors_image = segment_csr(
-            num_neighbors_thresholded, image_indptr
-        )
+        num_neighbors_image = segment_csr(num_neighbors_thresholded, image_indptr)
 
     # Offset index_sort so that it indexes into index
     index_sort = index_sort + index_neighbor_offset.view(-1, 1).expand(
@@ -889,9 +848,7 @@ def get_pruned_edge_idx(
     # assumes neighbors are sorted in increasing distance
     _nonmax_idx_list = []
     for i in range(num_atoms):
-        idx_i = torch.arange(len(edge_index[1]))[(edge_index[1] == i)][
-            :max_neigh
-        ]
+        idx_i = torch.arange(len(edge_index[1]))[(edge_index[1] == i)][:max_neigh]
         _nonmax_idx_list.append(idx_i)
     return torch.cat(_nonmax_idx_list)
 
@@ -962,9 +919,7 @@ def setup_logging() -> None:
 
         # Send INFO to stdout
         handler_out = logging.StreamHandler(sys.stdout)
-        handler_out.addFilter(
-            SeverityLevelBetween(logging.INFO, logging.WARNING)
-        )
+        handler_out.addFilter(SeverityLevelBetween(logging.INFO, logging.WARNING))
         handler_out.setFormatter(log_formatter)
         root.addHandler(handler_out)
 
@@ -979,34 +934,27 @@ def compute_neighbors(data, edge_index):
     # Get number of neighbors
     # segment_coo assumes sorted index
     ones = edge_index[1].new_ones(1).expand_as(edge_index[1])
-    num_neighbors = segment_coo(
-        ones, edge_index[1], dim_size=data.natoms.sum()
-    )
+    num_neighbors = segment_coo(ones, edge_index[1], dim_size=data.natoms.sum())
 
     # Get number of neighbors per image
     image_indptr = torch.zeros(
         data.natoms.shape[0] + 1, device=data.pos.device, dtype=torch.long
     )
     image_indptr[1:] = torch.cumsum(data.natoms, dim=0)
-    neighbors = segment_csr(num_neighbors, image_indptr)
-    return neighbors
+    return segment_csr(num_neighbors, image_indptr)
 
 
 def check_traj_files(batch, traj_dir) -> bool:
     if traj_dir is None:
         return False
     traj_dir = Path(traj_dir)
-    sid_list = (
-        batch.sid.tolist()
-        if isinstance(batch.sid, torch.Tensor)
-        else batch.sid
-    )
+    sid_list = batch.sid.tolist() if isinstance(batch.sid, torch.Tensor) else batch.sid
     traj_files = [traj_dir / f"{sid}.traj" for sid in sid_list]
     return all(fl.exists() for fl in traj_files)
 
 
 @contextmanager
-def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
+def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
     from ocpmodels.common import distutils, gp_utils
     from ocpmodels.common.registry import registry
 
@@ -1016,15 +964,15 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
 
     @dataclass
     class _TrainingContext:
-        config: Dict[str, Any]
-        task: "BaseTask"
-        trainer: "BaseTrainer"
+        config: dict[str, Any]
+        task: BaseTask
+        trainer: BaseTrainer
 
     setup_logging()
     original_config = config
     config = copy.deepcopy(original_config)
 
-    if args.distributed:
+    if distributed:
         distutils.setup(config)
         if config["gp_gpus"] is not None:
             gp_utils.setup_gp(config)
@@ -1068,15 +1016,13 @@ def new_trainer_context(*, config: Dict[str, Any], args: Namespace):
         assert task_cls is not None, "Task not found"
         task = task_cls(config)
         start_time = time.time()
-        ctx = _TrainingContext(
-            config=original_config, task=task, trainer=trainer
-        )
+        ctx = _TrainingContext(config=original_config, task=task, trainer=trainer)
         yield ctx
         distutils.synchronize()
         if distutils.is_master():
             logging.info(f"Total time taken: {time.time() - start_time}")
     finally:
-        if args.distributed:
+        if distributed:
             distutils.cleanup()
 
 
@@ -1094,27 +1040,23 @@ def _resolve_scale_factor_submodule(model: nn.Module, name: str):
 
 def _report_incompat_keys(
     model: nn.Module,
-    keys: "_IncompatibleKeys",
+    keys: _IncompatibleKeys,
     strict: bool = False,
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     # filter out the missing scale factor keys for the new scaling factor module
-    missing_keys: List[str] = []
+    missing_keys: list[str] = []
     for full_key_name in keys.missing_keys:
         parent_module_name, _ = full_key_name.rsplit(".", 1)
-        scale_factor = _resolve_scale_factor_submodule(
-            model, parent_module_name
-        )
+        scale_factor = _resolve_scale_factor_submodule(model, parent_module_name)
         if scale_factor is not None:
             continue
         missing_keys.append(full_key_name)
 
     # filter out unexpected scale factor keys that remain from the old scaling modules
-    unexpected_keys: List[str] = []
+    unexpected_keys: list[str] = []
     for full_key_name in keys.unexpected_keys:
         parent_module_name, _ = full_key_name.rsplit(".", 1)
-        scale_factor = _resolve_scale_factor_submodule(
-            model, parent_module_name
-        )
+        scale_factor = _resolve_scale_factor_submodule(model, parent_module_name)
         if scale_factor is not None:
             continue
         unexpected_keys.append(full_key_name)
@@ -1124,14 +1066,14 @@ def _report_incompat_keys(
         error_msgs.insert(
             0,
             "Unexpected key(s) in state_dict: {}. ".format(
-                ", ".join('"{}"'.format(k) for k in unexpected_keys)
+                ", ".join(f'"{k}"' for k in unexpected_keys)
             ),
         )
     if len(missing_keys) > 0:
         error_msgs.insert(
             0,
             "Missing key(s) in state_dict: {}. ".format(
-                ", ".join('"{}"'.format(k) for k in missing_keys)
+                ", ".join(f'"{k}"' for k in missing_keys)
             ),
         )
 
@@ -1141,8 +1083,7 @@ def _report_incompat_keys(
         )
         if strict:
             raise RuntimeError(error_msg)
-        else:
-            logging.warning(error_msg)
+        logging.warning(error_msg)
 
     return missing_keys, unexpected_keys
 
@@ -1151,7 +1092,7 @@ def load_state_dict(
     module: nn.Module,
     state_dict: Mapping[str, torch.Tensor],
     strict: bool = True,
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     incompat_keys = module.load_state_dict(state_dict, strict=False)  # type: ignore
     return _report_incompat_keys(module, incompat_keys, strict=strict)
 
@@ -1267,9 +1208,7 @@ def update_config(base_config):
             {
                 "energy": {
                     "fn": config["optim"].get("loss_energy", "mae"),
-                    "coefficient": config["optim"].get(
-                        "energy_coefficient", 1
-                    ),
+                    "coefficient": config["optim"].get("energy_coefficient", 1),
                 },
             }
         ]
@@ -1289,17 +1228,13 @@ def update_config(base_config):
             {
                 "energy": {
                     "fn": config["optim"].get("loss_energy", "mae"),
-                    "coefficient": config["optim"].get(
-                        "energy_coefficient", 1
-                    ),
+                    "coefficient": config["optim"].get("energy_coefficient", 1),
                 },
             },
             {
                 "forces": {
                     "fn": config["optim"].get("loss_forces", "l2mae"),
-                    "coefficient": config["optim"].get(
-                        "force_coefficient", 30
-                    ),
+                    "coefficient": config["optim"].get("force_coefficient", 30),
                 },
             },
         ]
@@ -1328,9 +1263,7 @@ def update_config(base_config):
                 "train_on_free_atoms": (
                     config["task"].get("train_on_free_atoms", False)
                 ),
-                "eval_on_free_atoms": (
-                    config["task"].get("eval_on_free_atoms", True)
-                ),
+                "eval_on_free_atoms": (config["task"].get("eval_on_free_atoms", True)),
             },
         }
         ### Define key mapping

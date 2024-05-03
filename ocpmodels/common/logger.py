@@ -1,9 +1,12 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
 
@@ -36,7 +39,7 @@ class Logger(ABC):
         if split != "":
             new_dict = {}
             for key in update_dict:
-                new_dict["{}/{}".format(split, key)] = update_dict[key]
+                new_dict[f"{split}/{key}"] = update_dict[key]
             update_dict = new_dict
         return update_dict
 
@@ -92,9 +95,7 @@ class TensorboardLogger(Logger):
 
     # TODO: add a model hook for watching gradients.
     def watch(self, model) -> bool:
-        logging.warning(
-            "Model gradient logging to tensorboard not yet supported."
-        )
+        logging.warning("Model gradient logging to tensorboard not yet supported.")
         return False
 
     def log(self, update_dict, step: int, split: str = ""):
@@ -103,9 +104,7 @@ class TensorboardLogger(Logger):
             if torch.is_tensor(update_dict[key]):
                 self.writer.add_scalar(key, update_dict[key].item(), step)
             else:
-                assert isinstance(update_dict[key], int) or isinstance(
-                    update_dict[key], float
-                )
+                assert isinstance(update_dict[key], (int, float))
                 self.writer.add_scalar(key, update_dict[key], step)
 
     def mark_preempting(self) -> None:

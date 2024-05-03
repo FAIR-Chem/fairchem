@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from functools import cache, reduce
 from glob import glob
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 import ase
 import numpy as np
@@ -79,9 +79,7 @@ class AseAtomsDataset(Dataset, ABC):
     def __init__(
         self,
         config: dict,
-        atoms_transform: Callable[
-            [ase.Atoms, Any, ...], ase.Atoms
-        ] = apply_one_tags,
+        atoms_transform: Callable[[ase.Atoms, Any, ...], ase.Atoms] = apply_one_tags,
     ) -> None:
         self.config = config
 
@@ -145,14 +143,10 @@ class AseAtomsDataset(Dataset, ABC):
 
         # apply linear reference
         if self.a2g.r_energy is True and self.lin_ref is not None:
-            data_object.energy -= sum(
-                self.lin_ref[data_object.atomic_numbers.long()]
-            )
+            data_object.energy -= sum(self.lin_ref[data_object.atomic_numbers.long()])
 
         if self.key_mapping is not None:
-            data_object = rename_data_object_keys(
-                data_object, self.key_mapping
-            )
+            data_object = rename_data_object_keys(data_object, self.key_mapping)
 
         # Transform data object
         data_object = self.transforms(data_object)
@@ -178,9 +172,7 @@ class AseAtomsDataset(Dataset, ABC):
 
     @abstractmethod
     def get_relaxed_energy(self, identifier):
-        raise NotImplementedError(
-            "IS2RE-Direct is not implemented with this dataset."
-        )
+        raise NotImplementedError("IS2RE-Direct is not implemented with this dataset.")
 
     def close_db(self) -> None:
         # This method is sometimes called by a trainer
@@ -357,14 +349,13 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
             self.ase_read_args["index"] = ":"
 
         if config.get("index_file", None) is not None:
-            with open(config["index_file"], "r") as f:
+            with open(config["index_file"]) as f:
                 index = f.readlines()
 
             ids = []
             for line in index:
                 filename = line.split(" ", maxsplit=1)[0]
-                for i in range(int(line.split(" ")[1])):
-                    ids.append(f"{filename} {i}")
+                ids = [f"{filename} {i}" for i in range(int(line.split(" ")[1]))]
 
             return ids
 
@@ -394,9 +385,9 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
     def get_atoms(self, idx: str) -> ase.Atoms:
         try:
             identifiers = idx.split(" ")
-            atoms = ase.io.read(
-                "".join(identifiers[:-1]), **self.ase_read_args
-            )[int(identifiers[-1])]
+            atoms = ase.io.read("".join(identifiers[:-1]), **self.ase_read_args)[
+                int(identifiers[-1])
+            ]
         except Exception as err:
             warnings.warn(f"{err} occured for: {idx}", stacklevel=2)
             raise err
@@ -496,9 +487,7 @@ class AseDBDataset(AseAtomsDataset):
 
         for path in filepaths:
             try:
-                self.dbs.append(
-                    self.connect_db(path, config.get("connect_args", {}))
-                )
+                self.dbs.append(self.connect_db(path, config.get("connect_args", {})))
             except ValueError:
                 logging.debug(
                     f"Tried to connect to {path} but it's not an ASE database!"
@@ -519,9 +508,7 @@ class AseDBDataset(AseAtomsDataset):
                 self.db_ids.append(db.ids)
             else:
                 # this is the slow alternative
-                self.db_ids.append(
-                    [row.id for row in db.select(**self.select_args)]
-                )
+                self.db_ids.append([row.id for row in db.select(**self.select_args)])
 
         idlens = [len(ids) for ids in self.db_ids]
         self._idlen_cumulative = np.cumsum(idlens).tolist()
@@ -556,7 +543,7 @@ class AseDBDataset(AseAtomsDataset):
 
     @staticmethod
     def connect_db(
-        address: str | Path, connect_args: Optional[dict] = None
+        address: str | Path, connect_args: dict | None = None
     ) -> ase.db.core.Database:
         if connect_args is None:
             connect_args = {}
