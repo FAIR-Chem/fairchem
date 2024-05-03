@@ -815,7 +815,6 @@ class BaseTrainer(ABC):
 
             # Because of how distributed sampler works, some system ids
             # might be repeated to make no. of samples even across GPUs.
-            # breakpoint()
             _, idx = np.unique(gather_results["ids"], return_index=True)
             for k in keys:
                 if "chunk_idx" in k:
