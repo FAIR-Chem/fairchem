@@ -1,3 +1,10 @@
+"""
+Copyright (c) Meta, Inc. and its affiliates.
+
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -27,10 +34,10 @@ def model_name_to_local_file(model_name: str, local_cache: str | Path) -> str:
 
     Args:
         model_name (str): the model name. See available_pretrained_checkpoints.
-        local_cache (str):
+        local_cache (str or Path): path to local cache directory
 
     Returns:
-
+        str: local path to checkpoint file
     """
     logging.info(f"Checking local cache: {local_cache} for model {model_name}")
     if model_name not in MODEL_REGISTRY:

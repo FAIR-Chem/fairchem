@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]  # add optional dependencies to be installed as pip install ocpmodels[dev]
-dev = ["pre-commit", "isort", "pytest", "pytest-cov", "coverage", "syrupy", "ruff"]
+dev = ["pre-commit", "pytest", "pytest-cov", "coverage", "syrupy", "ruff"]
 # docs = []
 
 [tool.setuptools.packages.find]
@@ -57,16 +57,6 @@ testpaths = ["tests"]
 
 [tool.coverage.run]
 source = ["ocpmodels"]
-
-[tool.isort]
-profile = 'black'
-skip_gitignore = true
-multi_line_output=3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-line_length = 88
-
 
 [tool.ruff]
 line-length = 88
