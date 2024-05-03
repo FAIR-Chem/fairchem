@@ -1,9 +1,11 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
 
 import numpy as np
 import torch
@@ -27,9 +29,7 @@ class AtomEmbedding(torch.nn.Module):
 
         self.embeddings = torch.nn.Embedding(num_elements, emb_size)
         # init by uniform distribution
-        torch.nn.init.uniform_(
-            self.embeddings.weight, a=-np.sqrt(3), b=np.sqrt(3)
-        )
+        torch.nn.init.uniform_(self.embeddings.weight, a=-np.sqrt(3), b=np.sqrt(3))
 
     def forward(self, Z):
         """
@@ -38,8 +38,7 @@ class AtomEmbedding(torch.nn.Module):
             h: torch.Tensor, shape=(nAtoms, emb_size)
                 Atom embeddings.
         """
-        h = self.embeddings(Z - 1)  # -1 because Z.min()=1 (==Hydrogen)
-        return h
+        return self.embeddings(Z - 1)  # -1 because Z.min()=1 (==Hydrogen)
 
 
 class EdgeEmbedding(torch.nn.Module):
@@ -63,9 +62,7 @@ class EdgeEmbedding(torch.nn.Module):
     ) -> None:
         super().__init__()
         in_features = 2 * atom_features + edge_features
-        self.dense = Dense(
-            in_features, out_features, activation=activation, bias=False
-        )
+        self.dense = Dense(in_features, out_features, activation=activation, bias=False)
 
     def forward(
         self,
@@ -92,8 +89,5 @@ class EdgeEmbedding(torch.nn.Module):
         h_s = h[idx_s]  # shape=(nEdges, emb_size)
         h_t = h[idx_t]  # shape=(nEdges, emb_size)
 
-        m_st = torch.cat(
-            [h_s, h_t, m_rbf], dim=-1
-        )  # (nEdges, 2*emb_size+nFeatures)
-        m_st = self.dense(m_st)  # (nEdges, emb_size)
-        return m_st
+        m_st = torch.cat([h_s, h_t, m_rbf], dim=-1)  # (nEdges, 2*emb_size+nFeatures)
+        return self.dense(m_st)  # (nEdges, emb_size)

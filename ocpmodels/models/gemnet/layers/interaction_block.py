@@ -1,12 +1,13 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import math
-from typing import Optional
 
 import torch
 
@@ -62,7 +63,7 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
         num_after_skip: int,
         num_concat: int,
         num_atom: int,
-        activation: Optional[str] = None,
+        activation: str | None = None,
         name: str = "Interaction",
     ) -> None:
         super().__init__()
@@ -239,7 +240,7 @@ class TripletInteraction(torch.nn.Module):
         emb_size_bilinear: int,
         emb_size_rbf: int,
         emb_size_cbf: int,
-        activation: Optional[str] = None,
+        activation: str | None = None,
         name: str = "TripletInteraction",
         **kwargs,
     ) -> None:
@@ -338,5 +339,4 @@ class TripletInteraction(torch.nn.Module):
         # Merge interaction of c->a and a->c
         x_ac = x_ac[id_swap]  # swap to add to edge a->c and not c->a
         x3 = x_ca + x_ac
-        x3 = x3 * self.inv_sqrt_2
-        return x3
+        return x3 * self.inv_sqrt_2

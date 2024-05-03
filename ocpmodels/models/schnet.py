@@ -1,9 +1,11 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
 
 import torch
 from torch_geometric.nn import SchNet
@@ -72,7 +74,7 @@ class SchNetWrap(SchNet, BaseModel):
         self.otf_graph = otf_graph
         self.max_neighbors = 50
         self.reduce = readout
-        super(SchNetWrap, self).__init__(
+        super().__init__(
             hidden_channels=hidden_channels,
             num_filters=num_filters,
             num_interactions=num_interactions,
@@ -97,7 +99,8 @@ class SchNetWrap(SchNet, BaseModel):
         ) = self.generate_graph(data)
 
         if self.use_pbc:
-            assert z.dim() == 1 and z.dtype == torch.long
+            assert z.dim() == 1
+            assert z.dtype == torch.long
 
             edge_attr = self.distance_expansion(edge_weight)
 
@@ -112,7 +115,7 @@ class SchNetWrap(SchNet, BaseModel):
             batch = torch.zeros_like(z) if batch is None else batch
             energy = scatter(h, batch, dim=0, reduce=self.reduce)
         else:
-            energy = super(SchNetWrap, self).forward(z, pos, batch)
+            energy = super().forward(z, pos, batch)
         return energy
 
     def forward(self, data):
@@ -122,13 +125,16 @@ class SchNetWrap(SchNet, BaseModel):
         outputs = {"energy": energy}
 
         if self.regress_forces:
-            forces = -1 * (
-                torch.autograd.grad(
-                    energy,
-                    data.pos,
-                    grad_outputs=torch.ones_like(energy),
-                    create_graph=True,
-                )[0]
+            forces = (
+                -1
+                * (
+                    torch.autograd.grad(
+                        energy,
+                        data.pos,
+                        grad_outputs=torch.ones_like(energy),
+                        create_graph=True,
+                    )[0]
+                )
             )
             outputs["forces"] = forces
 

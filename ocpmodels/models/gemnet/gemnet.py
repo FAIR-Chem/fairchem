@@ -1,11 +1,11 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import Optional
+from __future__ import annotations
 
 import numpy as np
 import torch
@@ -24,12 +24,7 @@ from .layers.embedding_block import AtomEmbedding, EdgeEmbedding
 from .layers.interaction_block import InteractionBlockTripletsOnly
 from .layers.radial_basis import RadialBasis
 from .layers.spherical_basis import CircularBasisLayer
-from .utils import (
-    inner_product_normalized,
-    mask_neighbors,
-    ragged_range,
-    repeat_blocks,
-)
+from .utils import inner_product_normalized, mask_neighbors, ragged_range, repeat_blocks
 
 
 @registry.register_model("gemnet_t")
@@ -99,7 +94,7 @@ class GemNetT(BaseModel):
 
     def __init__(
         self,
-        num_atoms: Optional[int],
+        num_atoms: int | None,
         bond_feat_dim: int,
         num_targets: int,
         num_spherical: int,
@@ -119,17 +114,23 @@ class GemNetT(BaseModel):
         direct_forces: bool = False,
         cutoff: float = 6.0,
         max_neighbors: int = 50,
-        rbf: dict = {"name": "gaussian"},
-        envelope: dict = {"name": "polynomial", "exponent": 5},
-        cbf: dict = {"name": "spherical_harmonics"},
+        rbf: dict | None = None,
+        envelope: dict | None = None,
+        cbf: dict | None = None,
         extensive: bool = True,
         otf_graph: bool = False,
         use_pbc: bool = True,
         output_init: str = "HeOrthogonal",
         activation: str = "swish",
         num_elements: int = 83,
-        scale_file: Optional[str] = None,
+        scale_file: str | None = None,
     ):
+        if cbf is None:
+            cbf = {"name": "spherical_harmonics"}
+        if envelope is None:
+            envelope = {"name": "polynomial", "exponent": 5}
+        if rbf is None:
+            rbf = {"name": "gaussian"}
         super().__init__()
         self.num_targets = num_targets
         assert num_blocks > 0
@@ -270,9 +271,7 @@ class GemNetT(BaseModel):
         """
         idx_s, idx_t = edge_index  # c->a (source=c, target=a)
 
-        value = torch.arange(
-            idx_s.size(0), device=idx_s.device, dtype=idx_s.dtype
-        )
+        value = torch.arange(idx_s.size(0), device=idx_s.device, dtype=idx_s.dtype)
         # Possibly contains multiple copies of the same edge (for periodic interactions)
         adj = SparseTensor(
             row=idx_t,
@@ -312,8 +311,7 @@ class GemNetT(BaseModel):
         sign = 1 - 2 * inverse_neg
         tensor_cat = torch.cat([tensor_directed, sign * tensor_directed])
         # Reorder everything so the edges of every image are consecutive
-        tensor_ordered = tensor_cat[reorder_idx]
-        return tensor_ordered
+        return tensor_cat[reorder_idx]
 
     def reorder_symmetric_edges(
         self, edge_index, cell_offsets, neighbors, edge_dist, edge_vector
@@ -364,9 +362,7 @@ class GemNetT(BaseModel):
             neighbors,
         )
         batch_edge = batch_edge[mask]
-        neighbors_new = 2 * torch.bincount(
-            batch_edge, minlength=neighbors.size(0)
-        )
+        neighbors_new = 2 * torch.bincount(batch_edge, minlength=neighbors.size(0))
 
         # Create indexing array
         edge_reorder_idx = repeat_blocks(
@@ -443,7 +439,13 @@ class GemNetT(BaseModel):
             select_cutoff = None
         else:
             select_cutoff = self.cutoff
-        (edge_index, cell_offsets, neighbors, D_st, V_st,) = self.select_edges(
+        (
+            edge_index,
+            cell_offsets,
+            neighbors,
+            D_st,
+            V_st,
+        ) = self.select_edges(
             data=data,
             edge_index=edge_index,
             cell_offsets=cell_offsets,
@@ -589,9 +591,7 @@ class GemNetT(BaseModel):
                     F_t = torch.stack(forces, dim=1)
                     # (nAtoms, num_targets, 3)
                 else:
-                    F_t = -torch.autograd.grad(
-                        E_t.sum(), pos, create_graph=True
-                    )[0]
+                    F_t = -torch.autograd.grad(E_t.sum(), pos, create_graph=True)[0]
                     # (nAtoms, 3)
 
             outputs["forces"] = F_t

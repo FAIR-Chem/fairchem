@@ -1,14 +1,15 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import Optional
+from __future__ import annotations
 
 import torch
 
-from ..initializers import he_orthogonal_init
+from ocpmodels.models.gemnet_oc.initializers import he_orthogonal_init
+
 from .base_layers import Dense
 
 
@@ -33,7 +34,7 @@ class BasisEmbedding(torch.nn.Module):
         self,
         num_radial: int,
         emb_size_interm: int,
-        num_spherical: Optional[int] = None,
+        num_spherical: int | None = None,
     ) -> None:
         super().__init__()
         self.num_radial = num_radial
@@ -109,33 +110,22 @@ class BasisEmbedding(torch.nn.Module):
         if idx_rad_inner is not None:
             # Zero padded dense matrix
             # maximum number of neighbors
-            if idx_rad_outer.shape[0] == 0:
-                # catch empty idx_rad_outer
-                Kmax = 0
-            else:
-                Kmax = torch.max(idx_rad_inner) + 1
 
-            rad_W1_padded = rad_W1.new_zeros(
-                [num_atoms, Kmax] + list(rad_W1.shape[1:])
-            )
+            Kmax = 0 if idx_rad_outer.shape[0] == 0 else torch.max(idx_rad_inner) + 1
+
+            rad_W1_padded = rad_W1.new_zeros([num_atoms, Kmax, *list(rad_W1.shape[1:])])
             rad_W1_padded[idx_rad_outer, idx_rad_inner] = rad_W1
             # (num_atoms, Kmax, emb_size_interm, ...)
             rad_W1_padded = torch.transpose(rad_W1_padded, 1, 2)
             # (num_atoms, emb_size_interm, Kmax, ...)
-            rad_W1_padded = rad_W1_padded.reshape(
-                num_atoms, rad_W1.shape[1], -1
-            )
+            rad_W1_padded = rad_W1_padded.reshape(num_atoms, rad_W1.shape[1], -1)
             # (num_atoms, emb_size_interm, Kmax2 * ...)
             rad_W1 = rad_W1_padded
 
         if idx_sph_inner is not None:
             # Zero padded dense matrix
             # maximum number of neighbors
-            if idx_sph_outer.shape[0] == 0:
-                # catch empty idx_sph_outer
-                Kmax = 0
-            else:
-                Kmax = torch.max(idx_sph_inner) + 1
+            Kmax = 0 if idx_sph_outer.shape[0] == 0 else torch.max(idx_sph_inner) + 1
 
             sph2 = sph_basis.new_zeros(num_edges, Kmax, sph_basis.shape[-1])
             sph2[idx_sph_outer, idx_sph_inner] = sph_basis
@@ -249,9 +239,7 @@ class EfficientInteractionBilinear(torch.nn.Module):
             )
             sph_m_padded[idx_agg2_outer, idx_agg2_inner] = sph_m
             # (num_atoms, Kmax2, num_spherical, emb_size_in)
-            sph_m_padded = sph_m_padded.reshape(
-                agg2_out_size, -1, sph_m.shape[-1]
-            )
+            sph_m_padded = sph_m_padded.reshape(agg2_out_size, -1, sph_m.shape[-1])
             # (num_atoms, Kmax2 * num_spherical, emb_size_in)
 
             rad_W1_sph_m = rad_W1 @ sph_m_padded
@@ -262,9 +250,5 @@ class EfficientInteractionBilinear(torch.nn.Module):
             # (num_edges, emb_size_interm, emb_size_in)
 
         # Bilinear: Sum over emb_size_interm and emb_size_in
-        m_ca = self.bilinear(
-            rad_W1_sph_m.reshape(-1, rad_W1_sph_m.shape[1:].numel())
-        )
+        return self.bilinear(rad_W1_sph_m.reshape(-1, rad_W1_sph_m.shape[1:].numel()))
         # (num_edges/num_atoms, emb_size_out)
-
-        return m_ca

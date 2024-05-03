@@ -1,8 +1,10 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
 
 import math
 
@@ -84,8 +86,7 @@ def bessel_basis(n: int, k: int):
         for i in range(k):
             bess_basis_tmp += [
                 sym.simplify(
-                    normalizer[order][i]
-                    * f[order].subs(x, zeros[order, i] * x)
+                    normalizer[order][i] * f[order].subs(x, zeros[order, i] * x)
                 )
             ]
         bess_basis += [bess_basis_tmp]
@@ -171,7 +172,7 @@ def associated_legendre_polynomials(
                     * P_l_m[l_degree - 1][l_degree - 1]
                 )  # P_00, P_11, P_22, P_33
 
-            for m_order in range(0, L_maxdegree - 1):
+            for m_order in range(L_maxdegree - 1):
                 P_l_m[m_order + 1][m_order] = sym.simplify(
                     (2 * m_order + 1) * z * P_l_m[m_order][m_order]
                 )  # P_10, P_21, P_32, P_43
@@ -180,11 +181,8 @@ def associated_legendre_polynomials(
                 for m_order in range(l_degree - 1):  # P_20, P_30, P_31
                     P_l_m[l_degree][m_order] = sym.simplify(
                         (
-                            (2 * l_degree - 1)
-                            * z
-                            * P_l_m[l_degree - 1][m_order]
-                            - (l_degree + m_order - 1)
-                            * P_l_m[l_degree - 2][m_order]
+                            (2 * l_degree - 1) * z * P_l_m[l_degree - 1][m_order]
+                            - (l_degree + m_order - 1) * P_l_m[l_degree - 2][m_order]
                         )
                         / (l_degree - m_order)
                     )
@@ -192,9 +190,7 @@ def associated_legendre_polynomials(
             if not pos_m_only:
                 # for m < 0: P_l(-m) = (-1)^m * (l-m)!/(l+m)! * P_lm
                 for l_degree in range(1, L_maxdegree):
-                    for m_order in range(
-                        1, l_degree + 1
-                    ):  # P_1(-1), P_2(-1) P_2(-2)
+                    for m_order in range(1, l_degree + 1):  # P_1(-1), P_2(-1) P_2(-2)
                         P_l_m[l_degree][-m_order] = sym.simplify(
                             (-1) ** m_order
                             * math.factorial(l_degree - m_order)
@@ -203,6 +199,7 @@ def associated_legendre_polynomials(
                         )
 
             return P_l_m
+    return None
 
 
 def real_sph_harm(

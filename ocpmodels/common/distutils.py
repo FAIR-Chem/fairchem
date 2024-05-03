@@ -1,14 +1,15 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import subprocess
-from typing import List
 
 import torch
 import torch.distributed as dist
@@ -53,12 +54,8 @@ def setup(config) -> None:
                     config["local_rank"] = 0
                 else:
                     assert ntasks_per_node == config["world_size"] // nnodes
-                    config["rank"] = int(
-                        os_environ_get_or_throw("SLURM_PROCID")
-                    )
-                    config["local_rank"] = int(
-                        os_environ_get_or_throw("SLURM_LOCALID")
-                    )
+                    config["rank"] = int(os_environ_get_or_throw("SLURM_PROCID"))
+                    config["local_rank"] = int(os_environ_get_or_throw("SLURM_LOCALID"))
 
                 logging.info(
                     f"Init: {config['init_method']}, {config['world_size']}, {config['rank']}"
@@ -157,9 +154,7 @@ def all_reduce(
     return result
 
 
-def all_gather(
-    data, group=dist.group.WORLD, device=None
-) -> List[torch.Tensor]:
+def all_gather(data, group=dist.group.WORLD, device=None) -> list[torch.Tensor]:
     if get_world_size() == 1:
         return data
     tensor = data
@@ -167,9 +162,7 @@ def all_gather(
         tensor = torch.tensor(data)
     if device is not None:
         tensor = tensor.cuda(device)
-    tensor_list = [
-        tensor.new_zeros(tensor.shape) for _ in range(get_world_size())
-    ]
+    tensor_list = [tensor.new_zeros(tensor.shape) for _ in range(get_world_size())]
     dist.all_gather(tensor_list, tensor, group=group)
     if not isinstance(data, torch.Tensor):
         result = [tensor.cpu().numpy() for tensor in tensor_list]

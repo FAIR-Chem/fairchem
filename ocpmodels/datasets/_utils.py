@@ -1,5 +1,5 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -13,9 +13,7 @@ if typing.TYPE_CHECKING:
     from torch_geometric.data import Data
 
 
-def rename_data_object_keys(
-    data_object: Data, key_mapping: dict[str, str]
-) -> Data:
+def rename_data_object_keys(data_object: Data, key_mapping: dict[str, str]) -> Data:
     """Rename data object keys
 
     Args:

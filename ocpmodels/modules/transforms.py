@@ -1,7 +1,13 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import torch
-from torch_geometric.data import Data
 
 from ocpmodels.common.utils import cg_change_mat, irreps_sum
+
+if TYPE_CHECKING:
+    from torch_geometric.data import Data
 
 
 class DataTransforms:
@@ -17,9 +23,7 @@ class DataTransforms:
             # for now.
             if transform_fn == "normalizer":
                 continue
-            data_object = eval(transform_fn)(
-                data_object, self.config[transform_fn]
-            )
+            data_object = eval(transform_fn)(data_object, self.config[transform_fn])
 
         return data_object
 

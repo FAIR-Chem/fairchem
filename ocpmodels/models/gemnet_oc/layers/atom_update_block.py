@@ -1,11 +1,12 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import math
-from typing import Optional
 
 import torch
 
@@ -43,14 +44,10 @@ class AtomUpdateBlock(torch.nn.Module):
     ) -> None:
         super().__init__()
 
-        self.dense_rbf = Dense(
-            emb_size_rbf, emb_size_edge, activation=None, bias=False
-        )
+        self.dense_rbf = Dense(emb_size_rbf, emb_size_edge, activation=None, bias=False)
         self.scale_sum = ScaleFactor()
 
-        self.layers = self.get_mlp(
-            emb_size_edge, emb_size_atom, nHidden, activation
-        )
+        self.layers = self.get_mlp(emb_size_edge, emb_size_atom, nHidden, activation)
 
     def get_mlp(self, units_in: int, units: int, nHidden: int, activation):
         if units_in != units:
@@ -118,7 +115,7 @@ class OutputBlock(AtomUpdateBlock):
         emb_size_rbf: int,
         nHidden: int,
         nHidden_afteratom: int,
-        activation: Optional[str] = None,
+        activation: str | None = None,
         direct_forces: bool = True,
     ) -> None:
         super().__init__(

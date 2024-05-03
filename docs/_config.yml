@@ -1,0 +1,53 @@
+#######################################################################################
+# A default configuration that will be loaded for all jupyter books
+# See the documentation for help and more options: 
+# https://jupyterbook.org/customize/config.html
+
+#######################################################################################
+# Book settings
+title                       : Open Catalyst Project Documentation  # The title of the book. Will be placed in the left navbar.
+author                      : The Open Catalyst Project  # The author of the book
+copyright                   : "2024"  # Copyright year to be placed in the footer
+logo                        : logo.png  # A path to the book logo
+
+# Force re-execution of notebooks on each build.
+# See https://jupyterbook.org/content/execute.html
+execute:
+  execute_notebooks: cache
+  timeout: 1800
+
+# Define the name of the latex output file for PDF builds
+latex:
+  latex_documents:
+    targetname: ocp.tex
+
+# Add a bibtex file so that we can create citations
+bibtex_bibfiles:
+  - references.bib
+
+# Information about where the book exists on the web
+repository:
+  url: https://github.com/Open-Catalyst-Project/ocp  # Online location of your book
+  path_to_book: docs  # Optional path to your book, relative to the repository root
+  branch: ocp_documentation  # Which branch of the repository should be used when creating links (optional)
+  
+# Add GitHub buttons to your book
+# See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
+html:
+  use_issues_button: true
+  use_repository_button: true
+
+parse:
+  myst_enable_extensions:
+    # don't forget to list any other extensions you want enabled,
+    # including those that are enabled by default!
+    - amsmath
+    - dollarmath
+    
+sphinx:
+  extra_extensions:
+  - 'sphinx.ext.napoleon'
+  - 'autoapi.extension'
+  config:
+    autosummary_generate: True
+    autoapi_dirs: ['../ocpmodels']

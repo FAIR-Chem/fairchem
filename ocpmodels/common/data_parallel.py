@@ -1,33 +1,37 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import heapq
 import logging
-from pathlib import Path
-from typing import List, Literal, Protocol, Tuple, Union, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 import numba
 import numpy as np
 import numpy.typing as npt
 import torch
 from torch.utils.data import BatchSampler, DistributedSampler, Sampler
-from torch_geometric.data import Batch, Data
 
 from ocpmodels.common import distutils, gp_utils
 from ocpmodels.datasets import data_list_collater
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from torch_geometric.data import Batch, Data
 
 
 class OCPCollater:
     def __init__(self, otf_graph: bool = False) -> None:
         self.otf_graph = otf_graph
 
-    def __call__(self, data_list: List[Data]) -> Batch:
-        batch = data_list_collater(data_list, otf_graph=self.otf_graph)
-        return batch
+    def __call__(self, data_list: list[Data]) -> Batch:
+        return data_list_collater(data_list, otf_graph=self.otf_graph)
 
 
 @numba.njit
@@ -37,24 +41,22 @@ def balanced_partition(sizes: npt.NDArray[np.int_], num_parts: int):
     the largest element into the smallest partition.
     """
     sort_idx = np.argsort(-sizes)  # Sort in descending order
-    heap: List[Tuple[List[int], List[int]]] = []
-    for idx in sort_idx[:num_parts]:
-        heap.append((sizes[idx], [idx]))
+    heap: list[tuple[list[int], list[int]]] = [
+        (sizes[idx], [idx]) for idx in sort_idx[:num_parts]
+    ]
     heapq.heapify(heap)
     for idx in sort_idx[num_parts:]:
         smallest_part = heapq.heappop(heap)
         new_size = smallest_part[0] + sizes[idx]
         new_idx = smallest_part[1] + [idx]
         heapq.heappush(heap, (new_size, new_idx))
-    idx_balanced = [part[1] for part in heap]
-    return idx_balanced
+    return [part[1] for part in heap]
 
 
 @runtime_checkable
 class _HasMetadata(Protocol):
     @property
-    def metadata_path(self) -> Path:
-        ...
+    def metadata_path(self) -> Path: ...
 
 
 class StatefulDistributedSampler(DistributedSampler):
@@ -105,16 +107,12 @@ class StatefulDistributedSampler(DistributedSampler):
 
 class BalancedBatchSampler(Sampler):
     def _load_dataset(self, dataset, mode: Literal["atoms", "neighbors"]):
-        errors: List[str] = []
+        errors: list[str] = []
         if not isinstance(dataset, _HasMetadata):
-            errors.append(
-                f"Dataset {dataset} does not have a metadata_path attribute."
-            )
+            errors.append(f"Dataset {dataset} does not have a metadata_path attribute.")
             return None, errors
         if not dataset.metadata_path.exists():
-            errors.append(
-                f"Metadata file {dataset.metadata_path} does not exist."
-            )
+            errors.append(f"Metadata file {dataset.metadata_path} does not exist.")
             return None, errors
 
         key = {"atoms": "natoms", "neighbors": "neighbors"}[mode]
@@ -129,7 +127,7 @@ class BalancedBatchSampler(Sampler):
         num_replicas: int,
         rank: int,
         device: torch.device,
-        mode: Union[str, bool] = "atoms",
+        mode: str | bool = "atoms",
         shuffle: bool = True,
         drop_last: bool = False,
         force_balancing: bool = False,
@@ -172,9 +170,7 @@ class BalancedBatchSampler(Sampler):
         self.balance_batches = False
 
         if self.num_replicas <= 1:
-            logging.info(
-                "Batch balancing is disabled for single GPU training."
-            )
+            logging.info("Batch balancing is disabled for single GPU training.")
             return
 
         if self.mode is False:
@@ -202,15 +198,13 @@ class BalancedBatchSampler(Sampler):
             msg = "BalancedBatchSampler: " + " ".join(errors)
             if throw_on_error:
                 raise RuntimeError(msg)
-            else:
-                logging.warning(msg)
+
+            logging.warning(msg)
 
     def __len__(self) -> int:
         return len(self.batch_sampler)
 
-    def set_epoch_and_start_iteration(
-        self, epoch: int, start_iteration: int
-    ) -> None:
+    def set_epoch_and_start_iteration(self, epoch: int, start_iteration: int) -> None:
         if not hasattr(self.single_sampler, "set_epoch_and_start_iteration"):
             if start_iteration != 0:
                 raise NotImplementedError(
@@ -218,9 +212,7 @@ class BalancedBatchSampler(Sampler):
                 )
             self.single_sampler.set_epoch(epoch)
         else:
-            self.single_sampler.set_epoch_and_start_iteration(
-                epoch, start_iteration
-            )
+            self.single_sampler.set_epoch_and_start_iteration(epoch, start_iteration)
 
     def __iter__(self):
         if not self.balance_batches:
@@ -243,9 +235,7 @@ class BalancedBatchSampler(Sampler):
             else:
                 sizes = [self.sizes[idx] for idx in batch_idx]
 
-            idx_sizes = torch.stack(
-                [torch.tensor(batch_idx), torch.tensor(sizes)]
-            )
+            idx_sizes = torch.stack([torch.tensor(batch_idx), torch.tensor(sizes)])
             idx_sizes_all = distutils.all_gather(idx_sizes, device=self.device)
             idx_sizes_all = torch.cat(idx_sizes_all, dim=-1).cpu()
             if gp_utils.initialized():
