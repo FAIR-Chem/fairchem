@@ -28,13 +28,17 @@ dependencies = [
 
 [project.optional-dependencies]  # add optional dependencies to be installed as pip install ocpmodels[dev]
 dev = ["pre-commit", "pytest", "pytest-cov", "coverage", "syrupy", "ruff"]
-# docs = []
+docs = ["jupyter-book", "jupytext", "sphinx","sphinx-autoapi", "umap-learn", "vdict"]
+adsorbml = ["dscribe","x3dase","scikit-image"]
 
 [tool.setuptools.packages.find]
 include = ["ocpmodels", "experimental"]  # alternatively: `exclude = ["additional*"]`
 namespaces = false
 
 [tool.setuptools_scm]  # for version instrospection based on tags + commit
+
+[project.scripts]
+ocp = "ocpmodels._cli:main"
 
 [project.urls]
 repository = "https://github.com/Open-Catalyst-Project/ocp"
