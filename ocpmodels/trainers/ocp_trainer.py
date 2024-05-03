@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import os
 from collections import defaultdict
+from itertools import chain
 
 import numpy as np
 import torch
@@ -506,9 +507,6 @@ class OCPTrainer(BaseTrainer):
 
             predictions["ids"].extend(systemids)
 
-        for key in predictions:
-            predictions[key] = np.array(predictions[key])
-
         self.save_results(predictions, results_file)
 
         if self.ema:
@@ -629,48 +627,30 @@ class OCPTrainer(BaseTrainer):
                 )
 
         if self.config["task"].get("write_pos", False):
-            rank = distutils.get_rank()
-            pos_filename = os.path.join(
-                self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.npz"
+            results = distutils.gather_objects(
+                {"ids": ids, "pos": relaxed_positions, "chunk_idx": chunk_idx}
             )
-            np.savez_compressed(
-                pos_filename,
-                ids=ids,
-                pos=np.array(relaxed_positions, dtype=object),
-                chunk_idx=chunk_idx,
-            )
-
             distutils.synchronize()
             if distutils.is_master():
-                gather_results = defaultdict(list)
-                full_path = os.path.join(
-                    self.config["cmd"]["results_dir"],
-                    "relaxed_positions.npz",
-                )
-
-                for i in range(distutils.get_world_size()):
-                    rank_path = os.path.join(
-                        self.config["cmd"]["results_dir"],
-                        f"relaxed_pos_{i}.npz",
-                    )
-                    rank_results = np.load(rank_path, allow_pickle=True)
-                    gather_results["ids"].extend(rank_results["ids"])
-                    gather_results["pos"].extend(rank_results["pos"])
-                    gather_results["chunk_idx"].extend(rank_results["chunk_idx"])
-                    os.remove(rank_path)
+                gather_results = {
+                    key: list(chain(*(result[key] for result in results)))
+                    for key in results[0]
+                }
 
                 # Because of how distributed sampler works, some system ids
                 # might be repeated to make no. of samples even across GPUs.
                 _, idx = np.unique(gather_results["ids"], return_index=True)
                 gather_results["ids"] = np.array(gather_results["ids"])[idx]
-
                 gather_results["pos"] = np.concatenate(
-                    np.array(gather_results["pos"])[idx]
+                    [gather_results["pos"][i] for i in idx]
                 )
                 gather_results["chunk_idx"] = np.cumsum(
-                    np.array(gather_results["chunk_idx"])[idx]
+                    [gather_results["chunk_idx"][i] for i in idx]
                 )[:-1]  # np.split does not need last idx, assumes n-1:end
 
+                full_path = os.path.join(
+                    self.config["cmd"]["results_dir"], "relaxed_positions.npz"
+                )
                 logging.info(f"Writing results to {full_path}")
                 np.savez_compressed(full_path, **gather_results)
 
