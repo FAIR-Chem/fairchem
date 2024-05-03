@@ -113,19 +113,15 @@ class LmdbDataset(BaseDataset):
                 self.indices, self.config.get("total_shards", 1)
             )
             # limit each process to see a subset of data based off defined shard
-            self.available_indices = self.shards[self.config.get("shard", 0)]
-            self.num_samples = len(self.available_indices)
+            self.indices = self.shards[self.config.get("shard", 0)]
+            self.num_samples = len(self.indices)
 
         self.key_mapping = self.config.get("key_mapping", None)
         self.transforms = DataTransforms(self.config.get("transforms", {}))
 
-    def __len__(self) -> int:
-        return self.num_samples
-
     def __getitem__(self, idx: int) -> T_co:
         # if sharding, remap idx to appropriate idx of the sharded set
-        if self.sharded:
-            idx = self.available_indices[idx]
+        idx = self.filtered_indices[idx]
         if not self.path.is_file():
             # Figure out which db this should be indexed from.
             db_idx = bisect.bisect(self._keylen_cumulative, idx)

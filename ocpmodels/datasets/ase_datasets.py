@@ -103,6 +103,7 @@ class AseAtomsDataset(BaseDataset, ABC):
             self.__getitem__ = cache(self.__getitem__)
 
         self.ids = self._load_dataset_get_ids(config)
+        self.num_samples = len(self.ids)
 
         if len(self.ids) == 0:
             raise ValueError(
@@ -110,11 +111,9 @@ class AseAtomsDataset(BaseDataset, ABC):
                 f"Double check that the src path and/or glob search pattern gives ASE compatible data: {config['src']}"
             )
 
-    def __len__(self) -> int:
-        return len(self.ids)
-
     def __getitem__(self, idx):
         # Handle slicing
+        idx = self.filtered_indices[idx]
         if isinstance(idx, slice):
             return [self[i] for i in range(*idx.indices(len(self)))]
 
