@@ -1,5 +1,5 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
@@ -216,7 +216,7 @@ class LmdbDataset(Dataset[T_co]):
 
 class SinglePointLmdbDataset(LmdbDataset[BaseData]):
     def __init__(self, config, transform=None) -> None:
-        super().__init__(config, transform)
+        super().__init__(config)
         warnings.warn(
             "SinglePointLmdbDataset is deprecated and will be removed in the future."
             "Please use 'LmdbDataset' instead.",
@@ -226,7 +226,7 @@ class SinglePointLmdbDataset(LmdbDataset[BaseData]):
 
 class TrajectoryLmdbDataset(LmdbDataset[BaseData]):
     def __init__(self, config, transform=None) -> None:
-        super().__init__(config, transform)
+        super().__init__(config)
         warnings.warn(
             "TrajectoryLmdbDataset is deprecated and will be removed in the future."
             "Please use 'LmdbDataset' instead.",

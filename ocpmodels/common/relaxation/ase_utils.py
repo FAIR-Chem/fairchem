@@ -1,5 +1,5 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -157,8 +157,16 @@ class OCPCalculator(Calculator):
         # Calculate the edge indices on the fly
         config["model"]["otf_graph"] = True
 
+        ### backwards compatability with OCP v<2.0
+        ### TODO: better format check for older configs
+        ### Taken from base_trainer
+        if not config.get("loss_fns"):
+            logging.warning(
+                "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
+            )
+            config = update_config(config)
+
         # Save config so obj can be transported over network (pkl)
-        config = update_config(config)
         self.config = copy.deepcopy(config)
         self.config["checkpoint"] = checkpoint_path
         del config["dataset"]["src"]
