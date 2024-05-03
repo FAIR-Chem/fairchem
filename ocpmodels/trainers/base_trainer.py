@@ -13,7 +13,8 @@ import logging
 import os
 import random
 from abc import ABC, abstractmethod
-from collections import defaultdict
+from itertools import chain
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -43,6 +44,9 @@ from ocpmodels.modules.normalizer import Normalizer
 from ocpmodels.modules.scaling.compat import load_scales_compat
 from ocpmodels.modules.scaling.util import ensure_fitted
 from ocpmodels.modules.scheduler import LRScheduler
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 @registry.register_trainer("base")
@@ -791,56 +795,44 @@ class BaseTrainer(ABC):
         if self.ema:
             self.ema.update()
 
-    def save_results(self, predictions, results_file: str | None, keys=None) -> None:
+    def save_results(
+        self,
+        predictions: dict[str, npt.NDArray],
+        results_file: str | None,
+        keys: Sequence[str] | None = None,
+    ) -> None:
         if results_file is None:
             return
         if keys is None:
             keys = predictions.keys()
 
-        results_file_path = os.path.join(
-            self.config["cmd"]["results_dir"],
-            f"{self.name}_{results_file}_{distutils.get_rank()}.npz",
-        )
-        np.savez_compressed(
-            results_file_path,
-            **{key: predictions[key] for key in keys},
-        )
-
+        results = distutils.gather_objects(predictions)
         distutils.synchronize()
         if distutils.is_master():
-            gather_results: defaultdict[str, npt.NDArray[np.float_]] = defaultdict(list)
-            full_path = os.path.join(
-                self.config["cmd"]["results_dir"],
-                f"{self.name}_{results_file}.npz",
-            )
-
-            for i in range(distutils.get_world_size()):
-                rank_path = os.path.join(
-                    self.config["cmd"]["results_dir"],
-                    f"{self.name}_{results_file}_{i}.npz",
-                )
-                rank_results = np.load(rank_path, allow_pickle=True)
-                for key in keys:
-                    gather_results[key].extend(rank_results[key])
-                os.remove(rank_path)
+            gather_results = {
+                key: list(chain(*(result[key] for result in results))) for key in keys
+            }
 
             # Because of how distributed sampler works, some system ids
             # might be repeated to make no. of samples even across GPUs.
             _, idx = np.unique(gather_results["ids"], return_index=True)
             for k in keys:
                 if "chunk_idx" in k:
-                    gather_results[k] = np.cumsum(
-                        np.array(
-                            gather_results[k],
-                        )[idx]
-                    )[:-1]
+                    gather_results[k] = np.cumsum([gather_results[k][i] for i in idx])[
+                        :-1
+                    ]
                 else:
                     if f"{k}_chunk_idx" in keys or k == "forces":
                         gather_results[k] = np.concatenate(
-                            np.array(gather_results[k])[idx]
+                            [gather_results[k][i] for i in idx]
                         )
                     else:
-                        gather_results[k] = np.array(gather_results[k])[idx]
+                        gather_results[k] = np.array(
+                            [gather_results[k][i] for i in idx]
+                        )
 
+            full_path = os.path.join(
+                self.config["cmd"]["results_dir"], f"{self.name}_{results_file}.npz"
+            )
             logging.info(f"Writing results to {full_path}")
             np.savez_compressed(full_path, **gather_results)

@@ -15,7 +15,7 @@ from ase.build import molecule
 from ase.io import read
 from ase.lattice.cubic import FaceCenteredCubic
 from torch_geometric.transforms.radius_graph import RadiusGraph
-from torch_geometric.utils.sort_edge_index import sort_edge_index
+from torch_geometric.utils import sort_edge_index
 
 from ocpmodels.common.utils import radius_graph_pbc
 from ocpmodels.datasets import data_list_collater
