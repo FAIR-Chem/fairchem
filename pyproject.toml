@@ -23,7 +23,8 @@ dependencies = [
     "e3nn",
     "urllib3",
     "orjson",
-    "tqdm"
+    "tqdm",
+    "submitit"
 ]
 
 [project.optional-dependencies]  # add optional dependencies to be installed as pip install ocpmodels[dev]
@@ -35,6 +36,9 @@ include = ["ocpmodels", "experimental"]  # alternatively: `exclude = ["additiona
 namespaces = false
 
 [tool.setuptools_scm]  # for version instrospection based on tags + commit
+
+[project.scripts]
+ocp = "ocpmodels._cli:main"
 
 [project.urls]
 repository = "https://github.com/Open-Catalyst-Project/ocp"
