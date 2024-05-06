@@ -59,10 +59,10 @@ def ml_relax(
         optimizer = LBFGS(
             batch,
             calc,
-            maxstep=relax_opt.get("maxstep", 0.04),
+            maxstep=relax_opt.get("maxstep", 0.2),
             memory=relax_opt["memory"],
-            damping=relax_opt.get("damping", 1.0),
-            alpha=relax_opt.get("alpha", 70.0),
+            damping=relax_opt.get("damping", 1.2),
+            alpha=relax_opt.get("alpha", 80.0),
             device=device,
             save_full_traj=save_full_traj,
             traj_dir=Path(traj_dir) if traj_dir is not None else None,

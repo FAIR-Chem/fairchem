@@ -88,7 +88,7 @@ class LBFGS:
         # (batch_size) -> (nAtoms)
         max_forces = max_forces_[self.batch.batch]
 
-        return max_forces.ge(self.fmax), energy, forces
+        return max_forces.lt(self.fmax), energy, forces
 
     def run(self, fmax, steps):
         self.fmax = fmax
@@ -109,9 +109,17 @@ class LBFGS:
 
         iteration = 0
         converged = False
+        converged_mask = torch.zeros_like(
+            self.batch.atomic_numbers, device=self.device
+        ).bool()
         while iteration < steps and not converged:
-            update_mask, energy, forces = self.check_convergence(iteration)
-            converged = torch.all(torch.logical_not(update_mask))
+            _converged_mask, energy, forces = self.check_convergence(iteration)
+            # Models like GemNet-OC can have random noise in their predictions.
+            # Here we ensure atom positions are not being updated after already
+            # hitting the desired convergence criteria.
+            converged_mask = torch.logical_or(converged_mask, _converged_mask)
+            converged = torch.all(converged_mask)
+            update_mask = torch.logical_not(converged_mask)
 
             if self.trajectories is not None and (
                 self.save_full or converged or iteration == steps - 1 or iteration == 0
@@ -145,6 +153,9 @@ class LBFGS:
         forces: torch.Tensor | None,
         update_mask: torch.Tensor,
     ) -> None:
+        def _batched_dot(x: torch.Tensor, y: torch.Tensor):
+            return scatter((x * y).sum(dim=-1), self.batch.batch, reduce="sum")
+
         def determine_step(dr):
             steplengths = torch.norm(dr, dim=1)
             longest_steps = scatter(steplengths, self.batch.batch, reduce="max")
@@ -163,29 +174,32 @@ class LBFGS:
 
         # Update s, y, rho
         if iteration > 0:
-            s0 = (r - self.r0).flatten()
+            s0 = r - self.r0
             self.s.append(s0)
 
-            y0 = -(forces - self.f0).flatten()
+            y0 = -(forces - self.f0)
             self.y.append(y0)
 
-            self.rho.append(1.0 / torch.dot(y0, s0))
+            self.rho.append(1.0 / _batched_dot(y0, s0))
 
         loopmax = min(self.memory, iteration)
-        alpha = forces.new_empty(loopmax)
-        q = -forces.flatten()
+        alpha = forces.new_empty(loopmax, self.batch.natoms.shape[0])
+        q = -forces
 
         for i in range(loopmax - 1, -1, -1):
-            alpha[i] = self.rho[i] * torch.dot(self.s[i], q)  # b
-            q -= alpha[i] * self.y[i]
+            alpha[i] = self.rho[i] * _batched_dot(self.s[i], q)  # b
+            q -= alpha[i][self.batch.batch, ..., None] * self.y[i]
 
         z = self.H0 * q
         for i in range(loopmax):
-            beta = self.rho[i] * torch.dot(self.y[i], z)
-            z += self.s[i] * (alpha[i] - beta)
+            beta = self.rho[i] * _batched_dot(self.y[i], z)
+            z += self.s[i] * (
+                alpha[i][self.batch.batch, ..., None]
+                - beta[self.batch.batch, ..., None]
+            )
 
         # descent direction
-        p = -z.reshape((-1, 3))
+        p = -z
         dr = determine_step(p)
         if torch.abs(dr).max() < 1e-7:
             # Same configuration again (maybe a restart):
