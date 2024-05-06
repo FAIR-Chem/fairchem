@@ -4,7 +4,7 @@
 
 CatTSunami is a framework for high-throughput enumeration of nudged elastic band (NEB) frame sets. It was built for use with machine learned (ML) models trained on [OC20](https://arxiv.org/abs/2010.09990), which were demonstrated to be performant on this auxiliary task. To train your own model or obtain pre-trained checkpoints, please see [`ocp`](https://github.com/Open-Catalyst-Project/ocp).
 
-This repository contains the validation dataset, framework for enumeration, and accompanying code to run ML-accelerated NEBs and validate new models. For more information, please read the manuscript [paper](https://arxiv.org/).
+This repository contains the validation dataset, framework for enumeration, and accompanying code to run ML-accelerated NEBs and validate new models. For more information, please read the manuscript [paper](https://arxiv.org/abs/2405.02078).
 
 ### Getting started
 1. Install [`Open-Catalyst-Dataset`](https://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset) and [`ocp`](https://github.com/Open-Catalyst-Project/ocp)
@@ -27,5 +27,10 @@ The validation dataset is comprised of 932 DFT NEB calculations to assess model 
 If you use this codebase in your work, please consider citing:
 
 ```bibtex
-
+@article{wander2024cattsunami,
+  title={CatTSunami: Accelerating Transition State Energy Calculations with Pre-trained Graph Neural Networks},
+  author={Wander, Brook and Shuaibi, Muhammed and Kitchin, John R and Ulissi, Zachary W and Zitnick, C Lawrence},
+  journal={arXiv preprint arXiv:2405.02078},
+  year={2024}
+}
 ```
