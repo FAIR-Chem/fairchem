@@ -1,12 +1,15 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
+
 import logging
 import math
-from typing import Any, Optional
+from typing import Any
 
 import torch
 from torch import distributed as dist
@@ -44,26 +47,20 @@ def setup_gp(config) -> None:
     rank = dist.get_rank()
 
     if rank == 0:
-        logging.info(
-            "> initializing graph parallel with size {}".format(gp_size)
-        )
-        logging.info("> initializing ddp with size {}".format(dp_size))
+        logging.info(f"> initializing graph parallel with size {gp_size}")
+        logging.info(f"> initializing ddp with size {dp_size}")
 
     groups = torch.arange(world_size).reshape(dp_size, gp_size)
     found = [x.item() for x in torch.where(groups == rank)]
 
     global _DATA_PARALLEL_GROUP
-    assert (
-        _DATA_PARALLEL_GROUP is None
-    ), "data parallel group is already initialized"
+    assert _DATA_PARALLEL_GROUP is None, "data parallel group is already initialized"
     for j in range(gp_size):
         group = dist.new_group(groups[:, j].tolist(), backend=backend)
         if j == found[1]:
             _DATA_PARALLEL_GROUP = group
     global _GRAPH_PARALLEL_GROUP
-    assert (
-        _GRAPH_PARALLEL_GROUP is None
-    ), "graph parallel group is already initialized"
+    assert _GRAPH_PARALLEL_GROUP is None, "graph parallel group is already initialized"
     for i in range(dp_size):
         group = dist.new_group(groups[i, :].tolist(), backend=backend)
         if i == found[0]:
@@ -100,24 +97,19 @@ def get_dp_world_size() -> int:
 
 
 def get_gp_world_size() -> int:
-    return (
-        1 if not initialized() else dist.get_world_size(group=get_gp_group())
-    )
+    return 1 if not initialized() else dist.get_world_size(group=get_gp_group())
 
 
 ########## DIST METHODS ##########
 
 
 def pad_tensor(
-    tensor: torch.Tensor, dim: int = -1, target_size: Optional[int] = None
+    tensor: torch.Tensor, dim: int = -1, target_size: int | None = None
 ) -> torch.Tensor:
     size = tensor.size(dim)
     if target_size is None:
         world_size = get_gp_world_size()
-        if size % world_size == 0:
-            pad_size = 0
-        else:
-            pad_size = world_size - size % world_size
+        pad_size = 0 if size % world_size == 0 else world_size - size % world_size
     else:
         pad_size = target_size - size
     if pad_size == 0:
@@ -128,9 +120,7 @@ def pad_tensor(
     return torch.cat([tensor, padding], dim=dim)
 
 
-def trim_tensor(
-    tensor: torch.Tensor, sizes: Optional[torch.Tensor] = None, dim: int = 0
-):
+def trim_tensor(tensor: torch.Tensor, sizes: torch.Tensor | None = None, dim: int = 0):
     size = tensor.size(dim)
     world_size = get_gp_world_size()
     if size % world_size == 0:
@@ -201,12 +191,9 @@ def _gather_with_padding(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
 
     # Gather sizes
     size_list = [
-        torch.empty(1, device=input.device, dtype=torch.long)
-        for _ in range(world_size)
+        torch.empty(1, device=input.device, dtype=torch.long) for _ in range(world_size)
     ]
-    size = torch.tensor(
-        [input.size(dim)], device=input.device, dtype=torch.long
-    )
+    size = torch.tensor([input.size(dim)], device=input.device, dtype=torch.long)
     size_list[rank] = size
     dist.all_gather(size_list, size, group=group)
 
@@ -224,13 +211,9 @@ def _gather_with_padding(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
 
     # Trim and cat
     if dim == 0:
-        tensor_list = [
-            tensor[:size] for tensor, size in zip(tensor_list, size_list)
-        ]
+        tensor_list = [tensor[:size] for tensor, size in zip(tensor_list, size_list)]
     elif dim == 1:
-        tensor_list = [
-            tensor[:, :size] for tensor, size in zip(tensor_list, size_list)
-        ]
+        tensor_list = [tensor[:, :size] for tensor, size in zip(tensor_list, size_list)]
     else:
         raise ValueError
     return torch.cat(tensor_list, dim=dim).contiguous()
@@ -278,8 +261,7 @@ class GatherFromModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor:
         ctx.save_for_backward(torch.tensor(dim))
-        result = _gather_with_padding(input, dim)
-        return result
+        return _gather_with_padding(input, dim)
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):

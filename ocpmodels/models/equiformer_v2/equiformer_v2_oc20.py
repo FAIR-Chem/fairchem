@@ -1,6 +1,8 @@
+from __future__ import annotations
+
+import contextlib
 import logging
 import math
-from typing import List, Optional
 
 import torch
 import torch.nn as nn
@@ -10,9 +12,7 @@ from ocpmodels.common.utils import conditional_grad
 from ocpmodels.models.base import BaseModel
 from ocpmodels.models.scn.smearing import GaussianSmearing
 
-try:
-    pass
-except ImportError:
+with contextlib.suppress(ImportError):
     pass
 
 
@@ -43,9 +43,7 @@ from .transformer_block import (
 
 # Statistics of IS2RE 100K
 _AVG_NUM_NODES = 77.81317
-_AVG_DEGREE = (
-    23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
-)
+_AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
 
 
 @registry.register_model("equiformer_v2")
@@ -126,9 +124,9 @@ class EquiformerV2_OC20(BaseModel):
         attn_value_channels: int = 16,
         ffn_hidden_channels: int = 512,
         norm_type: str = "rms_norm_sh",
-        lmax_list: List[int] = [6],
-        mmax_list: List[int] = [2],
-        grid_resolution: Optional[int] = None,
+        lmax_list: list[int] | None = None,
+        mmax_list: list[int] | None = None,
+        grid_resolution: int | None = None,
         num_sphere_samples: int = 128,
         edge_channels: int = 128,
         use_atom_edge_embedding: bool = True,
@@ -148,19 +146,21 @@ class EquiformerV2_OC20(BaseModel):
         proj_drop: float = 0.0,
         weight_init: str = "normal",
         enforce_max_neighbors_strictly: bool = True,
-        avg_num_nodes: Optional[float] = None,
-        avg_degree: Optional[float] = None,
-        use_energy_lin_ref: Optional[bool] = False,
-        load_energy_lin_ref: Optional[bool] = False,
+        avg_num_nodes: float | None = None,
+        avg_degree: float | None = None,
+        use_energy_lin_ref: bool | None = False,
+        load_energy_lin_ref: bool | None = False,
     ):
+        if mmax_list is None:
+            mmax_list = [2]
+        if lmax_list is None:
+            lmax_list = [6]
         super().__init__()
 
         import sys
 
         if "e3nn" not in sys.modules:
-            logging.error(
-                "You need to install e3nn==0.4.4 to use EquiformerV2."
-            )
+            logging.error("You need to install e3nn==0.4.4 to use EquiformerV2.")
             raise ImportError
 
         self.use_pbc = use_pbc
@@ -228,9 +228,7 @@ class EquiformerV2_OC20(BaseModel):
 
         self.grad_forces = False
         self.num_resolutions: int = len(self.lmax_list)
-        self.sphere_channels_all: int = (
-            self.num_resolutions * self.sphere_channels
-        )
+        self.sphere_channels_all: int = self.num_resolutions * self.sphere_channels
 
         # Weights for message initialization
         self.sphere_embedding = nn.Embedding(
@@ -277,13 +275,11 @@ class EquiformerV2_OC20(BaseModel):
             self.SO3_rotation.append(SO3_Rotation(self.lmax_list[i]))
 
         # Initialize conversion between degree l and order m layouts
-        self.mappingReduced = CoefficientMappingModule(
-            self.lmax_list, self.mmax_list
-        )
+        self.mappingReduced = CoefficientMappingModule(self.lmax_list, self.mmax_list)
 
         # Initialize the transformations between spherical and grid representations
         self.SO3_grid = ModuleListInfo(
-            "({}, {})".format(max(self.lmax_list), max(self.lmax_list))
+            f"({max(self.lmax_list)}, {max(self.lmax_list)})"
         )
         for lval in range(max(self.lmax_list) + 1):
             SO3_m_grid = nn.ModuleList()
@@ -313,7 +309,7 @@ class EquiformerV2_OC20(BaseModel):
 
         # Initialize the blocks for each layer of EquiformerV2
         self.blocks = nn.ModuleList()
-        for i in range(self.num_layers):
+        for _ in range(self.num_layers):
             block = TransBlockV2(
                 self.sphere_channels,
                 self.attn_hidden_channels,
@@ -423,9 +419,7 @@ class EquiformerV2_OC20(BaseModel):
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(
-            data, edge_index, edge_distance_vec
-        )
+        edge_rot_mat = self._init_edge_rot_mat(data, edge_index, edge_distance_vec)
 
         # Initialize the WignerD matrices and other values for spherical harmonic calculations
         for i in range(self.num_resolutions):
@@ -450,25 +444,19 @@ class EquiformerV2_OC20(BaseModel):
         # Initialize the l = 0, m = 0 coefficients for each resolution
         for i in range(self.num_resolutions):
             if self.num_resolutions == 1:
-                x.embedding[:, offset_res, :] = self.sphere_embedding(
-                    atomic_numbers
-                )
+                x.embedding[:, offset_res, :] = self.sphere_embedding(atomic_numbers)
             else:
-                x.embedding[:, offset_res, :] = self.sphere_embedding(
-                    atomic_numbers
-                )[:, offset : offset + self.sphere_channels]
+                x.embedding[:, offset_res, :] = self.sphere_embedding(atomic_numbers)[
+                    :, offset : offset + self.sphere_channels
+                ]
             offset = offset + self.sphere_channels
             offset_res = offset_res + int((self.lmax_list[i] + 1) ** 2)
 
         # Edge encoding (distance and atom edge)
         edge_distance = self.distance_expansion(edge_distance)
         if self.share_atom_edge_embedding and self.use_atom_edge_embedding:
-            source_element = atomic_numbers[
-                edge_index[0]
-            ]  # Source atom atomic number
-            target_element = atomic_numbers[
-                edge_index[1]
-            ]  # Target atom atomic number
+            source_element = atomic_numbers[edge_index[0]]  # Source atom atomic number
+            target_element = atomic_numbers[edge_index[1]]  # Target atom atomic number
             source_embedding = self.source_embedding(source_element)
             target_embedding = self.target_embedding(target_element)
             edge_distance = torch.cat(
@@ -538,9 +526,7 @@ class EquiformerV2_OC20(BaseModel):
         # Force estimation
         ###############################################################
         if self.regress_forces:
-            forces = self.force_block(
-                x, atomic_numbers, edge_distance, edge_index
-            )
+            forces = self.force_block(x, atomic_numbers, edge_distance, edge_index)
             forces = forces.embedding.narrow(1, 1, 3)
             forces = forces.view(-1, 3)
             outputs["forces"] = forces
@@ -556,7 +542,7 @@ class EquiformerV2_OC20(BaseModel):
         return sum(p.numel() for p in self.parameters())
 
     def _init_weights(self, m):
-        if isinstance(m, torch.nn.Linear) or isinstance(m, SO3_LinearV2):
+        if isinstance(m, (torch.nn.Linear, SO3_LinearV2)):
             if m.bias is not None:
                 torch.nn.init.constant_(m.bias, 0)
             if self.weight_init == "normal":
@@ -597,9 +583,11 @@ class EquiformerV2_OC20(BaseModel):
                 ),
             ):
                 for parameter_name, _ in module.named_parameters():
-                    if isinstance(module, (torch.nn.Linear, SO3_LinearV2)):
-                        if "weight" in parameter_name:
-                            continue
+                    if (
+                        isinstance(module, (torch.nn.Linear, SO3_LinearV2))
+                        and "weight" in parameter_name
+                    ):
+                        continue
                     global_parameter_name = module_name + "." + parameter_name
                     assert global_parameter_name in named_parameters_list
                     no_wd_list.append(global_parameter_name)

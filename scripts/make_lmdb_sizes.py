@@ -3,6 +3,9 @@ This script provides the functionality to generate metadata.npz files necessary
 for load_balancing the DataLoader.
 
 """
+
+from __future__ import annotations
+
 import argparse
 import multiprocessing as mp
 import os
@@ -38,9 +41,7 @@ def main(args) -> None:
     output_indices = range(len(dataset))
 
     pool = mp.Pool(assert_is_instance(args.num_workers, int))
-    outputs = list(
-        tqdm(pool.imap(get_data, output_indices), total=len(output_indices))
-    )
+    outputs = list(tqdm(pool.imap(get_data, output_indices), total=len(output_indices)))
 
     indices = []
     natoms = []

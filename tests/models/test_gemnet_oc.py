@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import io
 import logging
 import os
@@ -53,9 +55,7 @@ def load_model(request) -> None:
     # and then load it with torch.load
     r = requests.get(checkpoint_url, stream=True)
     r.raise_for_status()
-    checkpoint = torch.load(
-        io.BytesIO(r.content), map_location=torch.device("cpu")
-    )
+    checkpoint = torch.load(io.BytesIO(r.content), map_location=torch.device("cpu"))
 
     model = registry.get_model_class("gemnet_oc")(
         None,
@@ -109,9 +109,7 @@ def load_model(request) -> None:
         scale_file=checkpoint["scale_dict"],
     )
 
-    new_dict = {
-        k[len("module.") * 2 :]: v for k, v in checkpoint["state_dict"].items()
-    }
+    new_dict = {k[len("module.") * 2 :]: v for k, v in checkpoint["state_dict"].items()}
     load_state_dict(model, new_dict)
 
     request.cls.model = model

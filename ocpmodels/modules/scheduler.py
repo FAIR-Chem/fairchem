@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import inspect
 
 import torch.optim.lr_scheduler as lr_scheduler
@@ -27,7 +29,10 @@ class LRScheduler:
             self.scheduler_type = self.config["scheduler"]
         else:
             self.scheduler_type = "LambdaLR"
-            scheduler_lambda_fn = lambda x: warmup_lr_lambda(x, self.config)
+
+            def scheduler_lambda_fn(x):
+                return warmup_lr_lambda(x, self.config)
+
             self.config["lr_lambda"] = scheduler_lambda_fn
 
         if self.scheduler_type != "Null":
@@ -40,9 +45,7 @@ class LRScheduler:
             return
         if self.scheduler_type == "ReduceLROnPlateau":
             if metrics is None:
-                raise Exception(
-                    "Validation set required for ReduceLROnPlateau."
-                )
+                raise Exception("Validation set required for ReduceLROnPlateau.")
             self.scheduler.step(metrics)
         else:
             self.scheduler.step()
@@ -56,11 +59,9 @@ class LRScheduler:
             if param.kind == param.POSITIONAL_OR_KEYWORD
         ]
         filter_keys.remove("optimizer")
-        scheduler_args = {
-            arg: self.config[arg] for arg in self.config if arg in filter_keys
-        }
-        return scheduler_args
+        return {arg: self.config[arg] for arg in self.config if arg in filter_keys}
 
     def get_lr(self):
         for group in self.optimizer.param_groups:
             return group["lr"]
+        return None

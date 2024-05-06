@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 import ray
@@ -70,8 +72,8 @@ def main() -> None:
     # for slurm cluster
     ray.init(
         address="auto",
-        _node_ip_address=os.environ["ip_head"].split(":")[0],
-        _redis_password=os.environ["redis_password"],
+        _node_ip_address=os.environ["IP_HEAD"].split(":")[0],
+        _redis_password=os.environ["REDIS_PASSWORD"],
     )
     # define command line reporter
     reporter = CLIReporter(
@@ -101,9 +103,7 @@ def main() -> None:
 
     print(
         "Best config is:",
-        analysis.get_best_config(
-            metric="val_forces_mae", mode="min", scope="last"
-        ),
+        analysis.get_best_config(metric="val_forces_mae", mode="min", scope="last"),
     )
 
 

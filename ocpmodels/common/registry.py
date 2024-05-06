@@ -1,13 +1,12 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
-"""
 
-# Copyright (c) Facebook, Inc. and its affiliates.
+# Copyright (c) Meta, Inc. and its affiliates.
 # Borrowed from https://github.com/facebookresearch/pythia/blob/master/pythia/common/registry.py.
-"""
+
 Registry is central source of truth. Inspired from Redux's concept of
 global store, Registry maintains mappings of various information to unique
 keys. Special functions in registry can be used as decorators to register
@@ -21,11 +20,14 @@ Various decorators for registry different kind of classes with unique keys
 
 - Register a model: ``@registry.register_model``
 """
+
+from __future__ import annotations
+
 import importlib
-from typing import Any, Callable, Dict, List, TypeVar, Union
+from typing import Any, Callable, ClassVar, TypeVar, Union
 
 R = TypeVar("R")
-NestedDict = Dict[str, Union[str, Callable[..., Any], "NestedDict"]]
+NestedDict = dict[str, Union[str, Callable[..., Any], "NestedDict"]]
 
 
 def _get_absolute_mapping(name: str):
@@ -54,7 +56,8 @@ def _get_absolute_mapping(name: str):
 
 class Registry:
     r"""Class for registry object which acts as central source of truth."""
-    mapping: NestedDict = {
+
+    mapping: ClassVar[NestedDict] = {
         # Mappings to respective classes.
         "task_name_mapping": {},
         "dataset_name_mapping": {},
@@ -148,9 +151,7 @@ class Registry:
         def wrap(func: Callable[..., R]) -> Callable[..., R]:
             from ocpmodels.common.logger import Logger
 
-            assert issubclass(
-                func, Logger
-            ), "All loggers must inherit Logger class"
+            assert issubclass(func, Logger), "All loggers must inherit Logger class"
             cls.mapping["logger_name_mapping"][name] = func
             return func
 
@@ -205,7 +206,7 @@ class Registry:
     def __import_error(cls, name: str, mapping_name: str) -> RuntimeError:
         kind = mapping_name[: -len("_name_mapping")]
         mapping = cls.mapping.get(mapping_name, {})
-        existing_keys: List[str] = list(mapping.keys())
+        existing_keys: list[str] = list(mapping.keys())
 
         if len(existing_keys) == 0:
             raise RuntimeError(
@@ -216,17 +217,15 @@ class Registry:
             mapping.get(existing_keys[-1], None) if existing_keys else None
         )
         if existing_cls_path is not None:
-            existing_cls_path = f"{existing_cls_path.__module__}.{existing_cls_path.__qualname__}"
+            existing_cls_path = (
+                f"{existing_cls_path.__module__}.{existing_cls_path.__qualname__}"
+            )
         else:
             existing_cls_path = "ocpmodels.trainers.ForcesTrainer"
 
         existing_keys = [f"'{name}'" for name in existing_keys]
-        existing_keys = (
-            ", ".join(existing_keys[:-1]) + " or " + existing_keys[-1]
-        )
-        existing_keys_str = (
-            f" (one of {existing_keys})" if existing_keys else ""
-        )
+        existing_keys = ", ".join(existing_keys[:-1]) + " or " + existing_keys[-1]
+        existing_keys_str = f" (one of {existing_keys})" if existing_keys else ""
         return RuntimeError(
             f"Failed to find the {kind} '{name}'. "
             f"You may either use a {kind} from the registry{existing_keys_str} "
@@ -299,8 +298,8 @@ class Registry:
             and no_warning is False
         ):
             cls.mapping["state"]["writer"].write(
-                "Key {} is not present in registry, returning default value "
-                "of {}".format(original_name, default)
+                f"Key {original_name} is not present in registry, returning default value "
+                f"of {default}"
             )
         return value
 

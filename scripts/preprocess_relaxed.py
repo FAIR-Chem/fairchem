@@ -3,6 +3,8 @@ Creates LMDB files with extracted graph features from provided *.extxyz files
 for the S2EF task.
 """
 
+from __future__ import annotations
+
 import argparse
 import glob
 import multiprocessing as mp
@@ -85,8 +87,7 @@ def main(args, split) -> None:
 
     # Initialize lmdb paths
     db_paths = [
-        os.path.join(out_path, "data.%04d.lmdb" % i)
-        for i in range(args.num_workers)
+        os.path.join(out_path, "data.%04d.lmdb" % i) for i in range(args.num_workers)
     ]
 
     pool = mp.Pool(args.num_workers)

@@ -5,14 +5,16 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import TYPE_CHECKING, Optional, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
 from syrupy.extensions.amber import AmberSnapshotExtension
 
 if TYPE_CHECKING:
-    from syrupy.types import SerializableData, SerializedData, SnapshotIndex
+    from syrupy.types import SerializableData
 
 DEFAULT_RTOL = 1.0e-03
 DEFAULT_ATOL = 1.0e-03
@@ -25,10 +27,10 @@ class Approx:
 
     def __init__(
         self,
-        data: Union[np.ndarray, list],
+        data: np.ndarray | list,
         *,
-        rtol: Optional[float] = None,
-        atol: Optional[float] = None,
+        rtol: float | None = None,
+        atol: float | None = None,
     ) -> None:
         if isinstance(data, list):
             self.data = np.array(data)
@@ -62,7 +64,7 @@ class _ApproxNumpyFormatter:
         ).__repr__()
 
 
-def _try_parse_approx(data: "SerializableData") -> Optional[Approx]:
+def _try_parse_approx(data: SerializableData) -> Approx | None:
     """
     Parse the string representation of an Approx object.
     We can just use eval here, since we know the string is safe.
@@ -103,8 +105,8 @@ class ApproxExtension(AmberSnapshotExtension):
     def matches(
         self,
         *,
-        serialized_data: "SerializableData",
-        snapshot_data: "SerializableData",
+        serialized_data: SerializableData,
+        snapshot_data: SerializableData,
     ) -> bool:
         # if both serialized_data and snapshot_data are serialized Approx objects,
         # then we can load them as numpy arrays and compare them using np.allclose
@@ -131,20 +133,7 @@ class ApproxExtension(AmberSnapshotExtension):
             raise NotImplementedError("Scalar approx not implemented yet")
         return super().serialize(data, **kwargs)
 
-    def write_snapshot(
-        self, *, data: "SerializedData", index: "SnapshotIndex"
-    ) -> None:
-        # Right before writing to file, we update the serialized snapshot data
-        # and remove the atol/rtol from the string representation.
-        # This is an implementation detail, and is not necessary for the extension to work.
-        # It just makes the snapshot files a bit cleaner.
-        approx = _try_parse_approx(data)
-        if approx is not None:
-            approx.tol_repr = False
-            data = self.serialize(approx)
-        return super().write_snapshot(data=data, index=index)
 
-
-@pytest.fixture
+@pytest.fixture()
 def snapshot(snapshot):
     return snapshot.use_extension(ApproxExtension)

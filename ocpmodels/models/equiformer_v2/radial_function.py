@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import torch
 import torch.nn as nn
 
@@ -15,9 +17,7 @@ class RadialFunction(nn.Module):
             if i == 0:
                 continue
 
-            modules.append(
-                nn.Linear(input_channels, channels_list[i], bias=True)
-            )
+            modules.append(nn.Linear(input_channels, channels_list[i], bias=True))
             input_channels = channels_list[i]
 
             if i == len(channels_list) - 1:

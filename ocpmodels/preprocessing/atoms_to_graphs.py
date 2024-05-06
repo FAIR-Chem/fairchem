@@ -1,5 +1,5 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -7,7 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from typing import TYPE_CHECKING
 
 import ase.db.sqlite
 import ase.io.trajectory
@@ -16,6 +16,9 @@ import torch
 from torch_geometric.data import Data
 
 from ocpmodels.common.utils import collate
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 try:
     from pymatgen.io.ase import AseAtomsAdaptor
@@ -86,7 +89,7 @@ class AtomsToGraphs:
         r_fixed: bool = True,
         r_pbc: bool = False,
         r_stress: bool = False,
-        r_data_keys: Optional[Sequence[str]] = None,
+        r_data_keys: Sequence[str] | None = None,
     ) -> None:
         self.max_neigh = max_neigh
         self.radius = radius
@@ -198,9 +201,7 @@ class AtomsToGraphs:
             forces = torch.Tensor(atoms.get_forces(apply_constraint=False))
             data.forces = forces
         if self.r_stress:
-            stress = torch.Tensor(
-                atoms.get_stress(apply_constraint=False, voigt=False)
-            )
+            stress = torch.Tensor(atoms.get_stress(apply_constraint=False, voigt=False))
             data.stress = stress
         if self.r_distances and self.r_edges:
             data.distances = edge_distances
@@ -228,7 +229,7 @@ class AtomsToGraphs:
     def convert_all(
         self,
         atoms_collection,
-        processed_file_path: Optional[str] = None,
+        processed_file_path: str | None = None,
         collate_and_save=False,
         disable_tqdm=False,
     ):
@@ -253,8 +254,9 @@ class AtomsToGraphs:
         elif isinstance(atoms_collection, ase.db.sqlite.SQLite3Database):
             atoms_iter = atoms_collection.select()
         elif isinstance(
-            atoms_collection, ase.io.trajectory.SlicedTrajectory
-        ) or isinstance(atoms_collection, ase.io.trajectory.TrajectoryReader):
+            atoms_collection,
+            (ase.io.trajectory.SlicedTrajectory, ase.io.trajectory.TrajectoryReader),
+        ):
             atoms_iter = atoms_collection
         else:
             raise NotImplementedError
@@ -267,9 +269,9 @@ class AtomsToGraphs:
             disable=disable_tqdm,
         ):
             # check if atoms is an ASE Atoms object this for the ase.db case
-            if not isinstance(atoms, ase.atoms.Atoms):
-                atoms = atoms.toatoms()
-            data = self.convert(atoms)
+            data = self.convert(
+                atoms if isinstance(atoms, ase.atoms.Atoms) else atoms.toatoms()
+            )
             data_list.append(data)
 
         if collate_and_save:

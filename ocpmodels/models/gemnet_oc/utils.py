@@ -1,8 +1,10 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
 
 import numpy as np
 import torch
@@ -38,8 +40,7 @@ def ragged_range(sizes):
     id_steps[insert_index] = insert_val
 
     # Finally index into input array for the group repeated o/p
-    res = id_steps.cumsum(0)
-    return res
+    return id_steps.cumsum(0)
 
 
 def repeat_blocks(
@@ -110,9 +111,7 @@ def repeat_blocks(
         insert_dummy = False
 
     # Get repeats for each group using group lengths/sizes
-    r1 = torch.repeat_interleave(
-        torch.arange(len(sizes), device=sizes.device), repeats
-    )
+    r1 = torch.repeat_interleave(torch.arange(len(sizes), device=sizes.device), repeats)
 
     # Get total size of output array, as needed to initialize output indexing array
     N = (sizes * repeats).sum()
@@ -136,9 +135,7 @@ def repeat_blocks(
 
         # Add block increments
         if isinstance(block_inc, torch.Tensor):
-            insert_val += segment_csr(
-                block_inc[: r1[-1]], indptr, reduce="sum"
-            )
+            insert_val += segment_csr(block_inc[: r1[-1]], indptr, reduce="sum")
         else:
             insert_val += block_inc * (indptr[1:] - indptr[:-1])
             if insert_dummy:
@@ -183,8 +180,7 @@ def repeat_blocks(
     id_ar[0] += start_idx
 
     # Finally index into input array for the group repeated o/p
-    res = id_ar.cumsum(0)
-    return res
+    return id_ar.cumsum(0)
 
 
 def masked_select_sparsetensor_flat(src, mask) -> SparseTensor:
@@ -192,9 +188,7 @@ def masked_select_sparsetensor_flat(src, mask) -> SparseTensor:
     row = row[mask]
     col = col[mask]
     value = value[mask]
-    return SparseTensor(
-        row=row, col=col, value=value, sparse_sizes=src.sparse_sizes()
-    )
+    return SparseTensor(row=row, col=col, value=value, sparse_sizes=src.sparse_sizes())
 
 
 def calculate_interatomic_vectors(R, id_s, id_t, offsets_st):
@@ -225,10 +219,8 @@ def calculate_interatomic_vectors(R, id_s, id_t, offsets_st):
     Rs = R[id_s]
     Rt = R[id_t]
     # ReLU prevents negative numbers in sqrt
-    if offsets_st is None:
-        V_st = Rt - Rs  # s -> t
-    else:
-        V_st = Rt - Rs + offsets_st  # s -> t
+
+    V_st = Rt - Rs if offsets_st is None else Rt - Rs + offsets_st  # s -> t
     D_st = torch.sqrt(torch.sum(V_st**2, dim=1))
     V_st = V_st / D_st[..., None]
     return D_st, V_st
@@ -263,8 +255,7 @@ def get_angle(R_ac, R_ab) -> torch.Tensor:
     y = torch.cross(R_ac, R_ab, dim=-1).norm(dim=-1)  # shape = (N,)
     y = y.clamp(min=1e-9)  # Avoid NaN gradient for y = (0,0,0)
 
-    angle = torch.atan2(y, x)
-    return angle
+    return torch.atan2(y, x)
 
 
 def vector_rejection(R_ab, P_n):
@@ -333,8 +324,7 @@ def get_projected_angle(R_ab, P_n, eps: float = 1e-4) -> torch.Tensor:
 def mask_neighbors(neighbors, edge_mask):
     neighbors_old_indptr = torch.cat([neighbors.new_zeros(1), neighbors])
     neighbors_old_indptr = torch.cumsum(neighbors_old_indptr, dim=0)
-    neighbors = segment_csr(edge_mask.long(), neighbors_old_indptr)
-    return neighbors
+    return segment_csr(edge_mask.long(), neighbors_old_indptr)
 
 
 def get_neighbor_order(num_atoms: int, index, atom_distance) -> torch.Tensor:
@@ -356,9 +346,7 @@ def get_neighbor_order(num_atoms: int, index, atom_distance) -> torch.Tensor:
 
     # Create a tensor of size [num_atoms, max_num_neighbors] to sort the distances of the neighbors.
     # Fill with infinity so we can easily remove unused distances later.
-    distance_sort = torch.full(
-        [num_atoms * max_num_neighbors], np.inf, device=device
-    )
+    distance_sort = torch.full([num_atoms * max_num_neighbors], np.inf, device=device)
 
     # Create an index map to map distances from atom_distance to distance_sort
     index_neighbor_offset = torch.cumsum(num_neighbors, dim=0) - num_neighbors
@@ -385,9 +373,9 @@ def get_neighbor_order(num_atoms: int, index, atom_distance) -> torch.Tensor:
     index_sort = torch.masked_select(index_sort, mask_finite)
 
     # Create indices specifying the order in index_sort
-    order_peratom = torch.arange(max_num_neighbors, device=device)[
-        None, :
-    ].expand_as(mask_finite)
+    order_peratom = torch.arange(max_num_neighbors, device=device)[None, :].expand_as(
+        mask_finite
+    )
     order_peratom = torch.masked_select(order_peratom, mask_finite)
 
     # Re-index to obtain order value of each neighbor in index_sorted
@@ -406,19 +394,14 @@ def get_inner_idx(idx, dim_size):
     """
     ones = idx.new_ones(1).expand_as(idx)
     num_neighbors = segment_coo(ones, idx, dim_size=dim_size)
-    inner_idx = ragged_range(num_neighbors)
-    return inner_idx
+    return ragged_range(num_neighbors)
 
 
 def get_edge_id(edge_idx, cell_offsets, num_atoms: int):
     cell_basis = cell_offsets.max() - cell_offsets.min() + 1
     cell_id = (
-        (
-            cell_offsets
-            * cell_offsets.new_tensor([[1, cell_basis, cell_basis**2]])
-        )
+        (cell_offsets * cell_offsets.new_tensor([[1, cell_basis, cell_basis**2]]))
         .sum(-1)
         .long()
     )
-    edge_id = edge_idx[0] + edge_idx[1] * num_atoms + cell_id * num_atoms**2
-    return edge_id
+    return edge_idx[0] + edge_idx[1] * num_atoms + cell_id * num_atoms**2

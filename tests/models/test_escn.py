@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import torch
 
 from ocpmodels.models.escn.so3 import CoefficientMapping
@@ -38,9 +40,7 @@ class TestMPrimaryLPrimary:
                         test_matrix_lp.append(v)
 
                 test_matrix_lp = (
-                    torch.tensor(test_matrix_lp)
-                    .reshape(1, -1, 1)
-                    .to(torch.float32)
+                    torch.tensor(test_matrix_lp).reshape(1, -1, 1).to(torch.float32)
                 )
 
                 """
@@ -59,9 +59,7 @@ class TestMPrimaryLPrimary:
                             test_matrix_mp.append(v)
 
                 test_matrix_mp = (
-                    torch.tensor(test_matrix_mp)
-                    .reshape(1, -1, 1)
-                    .to(torch.float32)
+                    torch.tensor(test_matrix_mp).reshape(1, -1, 1).to(torch.float32)
                 )
 
                 escn_embedding.embedding = test_matrix_lp.clone()
