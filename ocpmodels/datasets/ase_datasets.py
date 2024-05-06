@@ -31,10 +31,11 @@ from ocpmodels.datasets.lmdb_database import LMDBDatabase
 from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
 
 # from ocpmodels.modules.transforms import DataTransforms
+from ocpmodels.preprocessing import AtomsToGraphs
+
 from experimental.foundation_models.multi_task_dataloader.transforms.data_object import (
     DataTransforms,
 )
-from ocpmodels.preprocessing import AtomsToGraphs
 
 
 def apply_one_tags(
