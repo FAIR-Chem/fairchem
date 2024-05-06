@@ -568,8 +568,8 @@ class OCPTrainer(BaseTrainer):
             relaxed_batch = ml_relax(
                 batch=batch,
                 model=self,
-                steps=self.config["task"].get("relaxation_steps", 200),
-                fmax=self.config["task"].get("relaxation_fmax", 0.0),
+                steps=self.config["task"].get("relaxation_steps", 300),
+                fmax=self.config["task"].get("relaxation_fmax", 0.02),
                 relax_opt=self.config["task"]["relax_opt"],
                 save_full_traj=self.config["task"].get("save_full_traj", True),
                 device=self.device,
