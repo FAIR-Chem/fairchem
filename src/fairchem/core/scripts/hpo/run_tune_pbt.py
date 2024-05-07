@@ -7,9 +7,9 @@ from ray import tune
 from ray.tune import CLIReporter
 from ray.tune.schedulers import PopulationBasedTraining
 
-from ocpmodels.common.flags import flags
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import build_config, setup_imports
+from fairchem.core.common.flags import flags
+from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import build_config, setup_imports
 
 
 # this function is general and should work for any ocp trainer

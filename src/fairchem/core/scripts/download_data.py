@@ -5,7 +5,7 @@ import glob
 import logging
 import os
 
-import ocpmodels
+import fairchem.core
 
 """
 This script provides users with an automated way to download, preprocess (where
@@ -168,8 +168,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data-path",
         type=str,
-        default=os.path.join(os.path.dirname(ocpmodels.__path__[0]), "data"),
-        help="Specify path to save dataset. Defaults to 'ocpmodels/data'",
+        default=os.path.join(os.path.dirname(fairchem.core.__path__[0]), "data"),
+        help="Specify path to save dataset. Defaults to 'fairchem.core/data'",
     )
 
     args: argparse.Namespace

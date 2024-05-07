@@ -15,8 +15,8 @@ import torch
 from ase.build import add_adsorbate, fcc111
 from ase.optimize import BFGS
 
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.models.model_registry import model_name_to_local_file
 
 if TYPE_CHECKING:
     from ase import Atoms

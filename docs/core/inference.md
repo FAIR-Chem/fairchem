@@ -57,12 +57,12 @@ with ase.db.connect('full_data.db') as full_db:
 You have to choose a checkpoint to start with. The newer checkpoints may require too much memory for this environment.
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import available_pretrained_models
+from fairchem.core.models.model_registry import available_pretrained_models
 print(available_pretrained_models)
 ```
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.models.model_registry import model_name_to_local_file
 
 checkpoint_path = model_name_to_local_file('GemNet-dTOC22', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path
@@ -72,7 +72,7 @@ checkpoint_path
 We have to update our configuration yml file with the dataset. It is necessary to specify the train and test set for some reason.
 
 ```{code-cell} ipython3
-from ocpmodels.common.tutorial_utils import generate_yml_config
+from fairchem.core.common.tutorial_utils import generate_yml_config
 yml = generate_yml_config(checkpoint_path, 'config.yml',
                    delete=['cmd', 'logger', 'task', 'model_attributes',
                            'dataset', 'slurm'],
@@ -101,7 +101,7 @@ It is a good idea to redirect the output to a file. If the output gets too large
 ```{code-cell} ipython3
 %%capture inference
 import time
-from ocpmodels.common.tutorial_utils import ocp_main
+from fairchem.core.common.tutorial_utils import ocp_main
 
 t0 = time.time()
 ! python {ocp_main()} --mode predict --config-yml {yml} --checkpoint {checkpoint_path} --amp
@@ -166,7 +166,7 @@ We include this here just to show that:
 2. That this is much slower.
 
 ```{code-cell} ipython3
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
 ```
 

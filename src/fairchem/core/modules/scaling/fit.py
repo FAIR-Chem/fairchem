@@ -12,13 +12,13 @@ import torch
 import torch.nn as nn
 from torch.nn.parallel.distributed import DistributedDataParallel
 
-from ocpmodels.common.flags import flags
-from ocpmodels.common.utils import build_config, new_trainer_context, setup_logging
-from ocpmodels.modules.scaling import ScaleFactor
-from ocpmodels.modules.scaling.compat import load_scales_compat
+from fairchem.core.common.flags import flags
+from fairchem.core.common.utils import build_config, new_trainer_context, setup_logging
+from fairchem.core.modules.scaling import ScaleFactor
+from fairchem.core.modules.scaling.compat import load_scales_compat
 
 if TYPE_CHECKING:
-    from ocpmodels.trainers.base_trainer import BaseTrainer
+    from fairchem.core.trainers.base_trainer import BaseTrainer
 
 
 def _prefilled_input(prompt: str, prefill: str = "") -> str:

@@ -23,7 +23,7 @@ from collections import defaultdict
 
 import numpy as np
 from ase.io import read
-from ocdata.utils.flag_anomaly import DetectTrajAnomaly
+from fairchem.data.oc.utils.flag_anomaly import DetectTrajAnomaly
 from tqdm import tqdm
 
 SURFACE_CHANGE_CUTOFF_MULTIPLIER = 1.5

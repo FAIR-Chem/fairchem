@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from ocpmodels.common.utils import cg_change_mat, irreps_sum
+from fairchem.core.common.utils import cg_change_mat, irreps_sum
 
 if TYPE_CHECKING:
     from torch_geometric.data import Data

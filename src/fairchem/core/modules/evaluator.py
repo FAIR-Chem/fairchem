@@ -20,7 +20,7 @@ An evaluation module for use with the OCP dataset and suite of tasks. It should
 be possible to import this independently of the rest of the codebase, e.g:
 
 ```
-from ocpmodels.modules import Evaluator
+from fairchem.core.modules import Evaluator
 
 evaluator = Evaluator(task="is2re")
 perf = evaluator.eval(prediction, target)

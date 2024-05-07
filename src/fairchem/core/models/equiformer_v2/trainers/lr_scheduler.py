@@ -6,7 +6,7 @@ from bisect import bisect
 
 import torch
 
-from ocpmodels.common.typing import assert_is_instance as aii
+from fairchem.core.common.typing import assert_is_instance as aii
 
 
 def multiply(obj, num):

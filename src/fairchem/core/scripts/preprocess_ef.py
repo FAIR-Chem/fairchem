@@ -17,7 +17,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from ocpmodels.preprocessing import AtomsToGraphs
+from fairchem.core.preprocessing import AtomsToGraphs
 
 
 def write_images_to_lmdb(mp_arg):

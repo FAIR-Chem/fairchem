@@ -14,7 +14,7 @@ import torch
 from scipy.special import binom
 from torch_geometric.nn.models.schnet import GaussianSmearing
 
-from ocpmodels.common.typing import assert_is_instance
+from fairchem.core.common.typing import assert_is_instance
 
 
 class PolynomialEnvelope(torch.nn.Module):

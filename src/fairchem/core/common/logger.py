@@ -14,7 +14,7 @@ import torch
 import wandb
 from torch.utils.tensorboard import SummaryWriter
 
-from ocpmodels.common.registry import registry
+from fairchem.core.common.registry import registry
 
 
 class Logger(ABC):

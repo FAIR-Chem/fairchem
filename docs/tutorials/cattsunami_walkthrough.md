@@ -15,15 +15,15 @@ kernelspec:
 
 ```{code-cell} ipython3
 from ocpneb.core.reaction import Reaction
-from ocdata.core import Slab, Adsorbate, Bulk, AdsorbateSlabConfig
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.data.oc.core import Slab, Adsorbate, Bulk, AdsorbateSlabConfig
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from ase.optimize import BFGS
 from x3dase.visualize import view_x3d_n
 from ase.io import read
 from x3dase.x3d import X3D
 from ocpneb.databases import DISSOCIATION_REACTION_DB_PATH
-from ocdata.databases.pkls import ADSORBATES_PKL_PATH, BULK_PKL_PATH
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.data.oc.databases.pkls import ADSORBATES_PKL_PATH, BULK_PKL_PATH
+from fairchem.core.models.model_registry import model_name_to_local_file
 import matplotlib.pyplot as plt
 from ocpneb.core.autoframe import AutoFrameDissociation
 from ocpneb.core import OCPNEB

@@ -4,7 +4,7 @@ import pytest
 import torch
 from torch_geometric.data import Data
 
-from ocpmodels.datasets._utils import rename_data_object_keys
+from fairchem.core.datasets._utils import rename_data_object_keys
 
 
 @pytest.fixture()

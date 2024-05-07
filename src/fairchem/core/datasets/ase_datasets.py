@@ -25,12 +25,12 @@ from torch import tensor
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from ocpmodels.common.registry import registry
-from ocpmodels.datasets._utils import rename_data_object_keys
-from ocpmodels.datasets.lmdb_database import LMDBDatabase
-from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
-from ocpmodels.modules.transforms import DataTransforms
-from ocpmodels.preprocessing import AtomsToGraphs
+from fairchem.core.common.registry import registry
+from fairchem.core.datasets._utils import rename_data_object_keys
+from fairchem.core.datasets.lmdb_database import LMDBDatabase
+from fairchem.core.datasets.target_metadata_guesser import guess_property_metadata
+from fairchem.core.modules.transforms import DataTransforms
+from fairchem.core.preprocessing import AtomsToGraphs
 
 
 def apply_one_tags(
@@ -217,7 +217,7 @@ class AseReadDataset(AseAtomsDataset):
                     ex. "*/POSCAR", "*.cif", "*.xyz"
                     search recursively with two wildcards: "**/POSCAR" or "**/*.cif"
 
-            a2g_args (dict): Keyword arguments for ocpmodels.preprocessing.AtomsToGraphs()
+            a2g_args (dict): Keyword arguments for fairchem.core.preprocessing.AtomsToGraphs()
                     default options will work for most users
 
                     If you are using this for a training dataset, set
@@ -310,7 +310,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
 
                     This will overrule the src and pattern that you specify!
 
-            a2g_args (dict): Keyword arguments for ocpmodels.preprocessing.AtomsToGraphs()
+            a2g_args (dict): Keyword arguments for fairchem.core.preprocessing.AtomsToGraphs()
                     default options will work for most users
 
                     If you are using this for a training dataset, set
@@ -441,7 +441,7 @@ class AseDBDataset(AseAtomsDataset):
             select_args (dict): Keyword arguments for ase.db.select()
                     You can use this to query/filter your database
 
-            a2g_args (dict): Keyword arguments for ocpmodels.preprocessing.AtomsToGraphs()
+            a2g_args (dict): Keyword arguments for fairchem.core.preprocessing.AtomsToGraphs()
                     default options will work for most users
 
                     If you are using this for a training dataset, set

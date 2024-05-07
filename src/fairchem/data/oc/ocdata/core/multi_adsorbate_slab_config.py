@@ -4,7 +4,7 @@ import numpy as np
 from ase import Atoms
 from ase.data import covalent_radii
 
-from ocdata.core import Adsorbate, AdsorbateSlabConfig, Slab
+from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig, Slab
 
 
 class MultipleAdsorbateSlabConfig(AdsorbateSlabConfig):

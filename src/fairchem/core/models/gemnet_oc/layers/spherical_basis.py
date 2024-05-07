@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import torch
 
-from ocpmodels.modules.scaling import ScaleFactor
+from fairchem.core.modules.scaling import ScaleFactor
 
 from .basis_utils import get_sph_harm_basis
 from .radial_basis import GaussianBasis, RadialBasis

@@ -5,7 +5,7 @@ from typing import Any, Dict, Tuple
 import ase
 import numpy as np
 
-from ocdata.databases.pkls import ADSORBATES_PKL_PATH
+from fairchem.data.oc.databases.pkls import ADSORBATES_PKL_PATH
 
 
 class Adsorbate:

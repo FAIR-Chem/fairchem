@@ -6,7 +6,7 @@ import ase
 import numpy as np
 import pytest
 
-from ocdata.core import Bulk
+from fairchem.data.oc.core import Bulk
 
 
 @pytest.fixture(scope="class")

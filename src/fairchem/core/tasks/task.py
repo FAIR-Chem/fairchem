@@ -10,8 +10,8 @@ from __future__ import annotations
 import logging
 import os
 
-from ocpmodels.common.registry import registry
-from ocpmodels.trainers import OCPTrainer
+from fairchem.core.common.registry import registry
+from fairchem.core.trainers import OCPTrainer
 
 
 class BaseTask:

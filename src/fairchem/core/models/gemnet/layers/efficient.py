@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import torch
 
-from ocpmodels.models.gemnet.initializers import he_orthogonal_init
+from fairchem.core.models.gemnet.initializers import he_orthogonal_init
 
 
 class EfficientInteractionDownProjection(torch.nn.Module):

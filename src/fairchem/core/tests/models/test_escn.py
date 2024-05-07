@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import torch
 
-from ocpmodels.models.escn.so3 import CoefficientMapping
-from ocpmodels.models.escn.so3 import SO3_Embedding as escn_SO3_Embedding
+from fairchem.core.models.escn.so3 import CoefficientMapping
+from fairchem.core.models.escn.so3 import SO3_Embedding as escn_SO3_Embedding
 
 
 class TestMPrimaryLPrimary:

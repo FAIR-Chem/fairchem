@@ -16,11 +16,11 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from ocpmodels.common.registry import registry
-from ocpmodels.common.typing import assert_is_instance as aii
-from ocpmodels.common.utils import pyg2_data_transform
-from ocpmodels.datasets._utils import rename_data_object_keys
-from ocpmodels.modules.transforms import DataTransforms
+from fairchem.core.common.registry import registry
+from fairchem.core.common.typing import assert_is_instance as aii
+from fairchem.core.common.utils import pyg2_data_transform
+from fairchem.core.datasets._utils import rename_data_object_keys
+from fairchem.core.modules.transforms import DataTransforms
 
 
 @registry.register_dataset("oc22_lmdb")

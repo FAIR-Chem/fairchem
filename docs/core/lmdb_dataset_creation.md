@@ -23,8 +23,8 @@ about these steps as they've been automated as part of this
 [download script](https://github.com/Open-Catalyst-Project/ocp/blob/master/scripts/download_data.py).
 
 ```{code-cell} ipython3
-from ocpmodels.preprocessing import AtomsToGraphs
-from ocpmodels.datasets import LmdbDataset
+from fairchem.core.preprocessing import AtomsToGraphs
+from fairchem.core.datasets import LmdbDataset
 import ase.io
 from ase.build import bulk
 from ase.build import fcc100, add_adsorbate, molecule

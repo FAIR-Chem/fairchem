@@ -20,12 +20,12 @@ from torch.utils.data import Dataset
 from torch_geometric.data import Batch
 from torch_geometric.data.data import BaseData
 
-from ocpmodels.common.registry import registry
-from ocpmodels.common.typing import assert_is_instance
-from ocpmodels.common.utils import pyg2_data_transform
-from ocpmodels.datasets._utils import rename_data_object_keys
-from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
-from ocpmodels.modules.transforms import DataTransforms
+from fairchem.core.common.registry import registry
+from fairchem.core.common.typing import assert_is_instance
+from fairchem.core.common.utils import pyg2_data_transform
+from fairchem.core.datasets._utils import rename_data_object_keys
+from fairchem.core.datasets.target_metadata_guesser import guess_property_metadata
+from fairchem.core.modules.transforms import DataTransforms
 
 T_co = TypeVar("T_co", covariant=True)
 

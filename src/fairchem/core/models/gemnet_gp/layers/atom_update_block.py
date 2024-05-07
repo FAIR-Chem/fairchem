@@ -11,9 +11,9 @@ import torch
 from torch_scatter import scatter
 from torch_scatter.utils import broadcast
 
-from ocpmodels.common import gp_utils
-from ocpmodels.models.gemnet_gp.initializers import he_orthogonal_init
-from ocpmodels.modules.scaling import ScaleFactor
+from fairchem.core.common import gp_utils
+from fairchem.core.models.gemnet_gp.initializers import he_orthogonal_init
+from fairchem.core.modules.scaling import ScaleFactor
 
 from .base_layers import Dense, ResidualLayer
 

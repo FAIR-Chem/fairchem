@@ -1,6 +1,6 @@
 from typing import Iterable, List, Set, Tuple
 
-from ocpapi.client import AdsorbateSlabConfigs, SlabMetadata
+from fairchem.demo.ocpapi.client import AdsorbateSlabConfigs, SlabMetadata
 
 
 class keep_all_slabs:

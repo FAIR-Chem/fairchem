@@ -14,7 +14,7 @@ from tenacity import (
 )
 from tenacity.wait import wait_base
 
-from ocpapi.client import (
+from fairchem.demo.ocpapi.client import (
     NonRetryableRequestException,
     RateLimitExceededException,
     RequestException,

@@ -4,8 +4,8 @@ from unittest import IsolatedAsyncioTestCase
 
 import requests
 
-from ocpapi.client import AdsorbateSlabConfigs, Client, Status
-from ocpapi.workflows import (
+from fairchem.demo.ocpapi.client import AdsorbateSlabConfigs, Client, Status
+from fairchem.demo.ocpapi.workflows import (
     Lifetime,
     find_adsorbate_binding_sites,
     get_adsorbate_slab_relaxation_results,

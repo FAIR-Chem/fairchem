@@ -47,9 +47,9 @@ from torch_geometric.nn.resolver import activation_resolver
 from torch_scatter import scatter
 from torch_sparse import SparseTensor
 
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import conditional_grad
-from ocpmodels.models.base import BaseModel
+from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import conditional_grad
+from fairchem.core.models.base import BaseModel
 
 try:
     import sympy as sym

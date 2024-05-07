@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from ocpmodels.common.typing import none_throws
+from fairchem.core.common.typing import none_throws
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

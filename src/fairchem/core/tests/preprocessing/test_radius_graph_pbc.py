@@ -17,9 +17,9 @@ from ase.lattice.cubic import FaceCenteredCubic
 from torch_geometric.transforms.radius_graph import RadiusGraph
 from torch_geometric.utils import sort_edge_index
 
-from ocpmodels.common.utils import radius_graph_pbc
-from ocpmodels.datasets import data_list_collater
-from ocpmodels.preprocessing import AtomsToGraphs
+from fairchem.core.common.utils import radius_graph_pbc
+from fairchem.core.datasets import data_list_collater
+from fairchem.core.preprocessing import AtomsToGraphs
 
 
 @pytest.fixture(scope="class")

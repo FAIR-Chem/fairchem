@@ -18,7 +18,7 @@ from ase.atoms import Atoms as ASEAtoms
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms
 
-from ocpapi.client import (
+from fairchem.demo.ocpapi.client import (
     Adsorbates,
     AdsorbateSlabConfigs,
     AdsorbateSlabRelaxationResult,
@@ -35,7 +35,7 @@ from ocpapi.client import (
     Slabs,
     Status,
 )
-from ocpapi.client.models import _DataModel
+from fairchem.demo.ocpapi.client.models import _DataModel
 
 T = TypeVar("T", bound=_DataModel)
 

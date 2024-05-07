@@ -7,9 +7,9 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from ocpmodels.common.registry import registry
-from ocpmodels.modules.exponential_moving_average import ExponentialMovingAverage
-from ocpmodels.trainers import OCPTrainer
+from fairchem.core.common.registry import registry
+from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
+from fairchem.core.trainers import OCPTrainer
 
 from .lr_scheduler import LRScheduler
 

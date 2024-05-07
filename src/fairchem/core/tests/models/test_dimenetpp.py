@@ -16,11 +16,11 @@ import pytest
 import torch
 from ase.io import read
 
-from ocpmodels.common.registry import registry
-from ocpmodels.common.transforms import RandomRotate
-from ocpmodels.common.utils import setup_imports
-from ocpmodels.datasets import data_list_collater
-from ocpmodels.preprocessing import AtomsToGraphs
+from fairchem.core.common.registry import registry
+from fairchem.core.common.transforms import RandomRotate
+from fairchem.core.common.utils import setup_imports
+from fairchem.core.datasets import data_list_collater
+from fairchem.core.preprocessing import AtomsToGraphs
 
 
 @pytest.fixture(scope="class")

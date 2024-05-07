@@ -5,7 +5,7 @@ import logging
 import torch
 from torch import nn
 
-from ocpmodels.common import distutils
+from fairchem.core.common import distutils
 
 
 class L2MAELoss(nn.Module):

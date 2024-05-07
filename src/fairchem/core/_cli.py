@@ -14,8 +14,8 @@ from typing import TYPE_CHECKING
 from submitit import AutoExecutor
 from submitit.helpers import Checkpointable, DelayedSubmission
 
-from ocpmodels.common.flags import flags
-from ocpmodels.common.utils import (
+from fairchem.core.common.flags import flags
+from fairchem.core.common.utils import (
     build_config,
     create_grid,
     new_trainer_context,

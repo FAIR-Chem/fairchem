@@ -3,7 +3,7 @@ import random
 import ase
 import numpy as np
 
-from ocdata.core import Adsorbate
+from fairchem.data.oc.core import Adsorbate
 
 
 _test_db = {

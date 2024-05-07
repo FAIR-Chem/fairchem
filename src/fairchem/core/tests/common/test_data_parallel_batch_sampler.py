@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from torch.utils.data import Dataset, DistributedSampler
 
-from ocpmodels.common.data_parallel import (
+from fairchem.core.common.data_parallel import (
     BalancedBatchSampler,
     StatefulDistributedSampler,
 )

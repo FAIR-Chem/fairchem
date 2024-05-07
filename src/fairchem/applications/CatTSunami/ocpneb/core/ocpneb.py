@@ -5,10 +5,10 @@ import numpy as np
 import torch
 from ase.neb import DyNEB, NEBState
 from ase.optimize.precon import Precon, PreconImages
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import setup_imports, setup_logging
-from ocpmodels.datasets import data_list_collater
-from ocpmodels.preprocessing import AtomsToGraphs
+from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import setup_imports, setup_logging
+from fairchem.core.datasets import data_list_collater
+from fairchem.core.preprocessing import AtomsToGraphs
 from torch.utils.data import DataLoader
 from ase.constraints import FixAtoms
 

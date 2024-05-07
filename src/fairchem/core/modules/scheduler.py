@@ -4,7 +4,7 @@ import inspect
 
 import torch.optim.lr_scheduler as lr_scheduler
 
-from ocpmodels.common.utils import warmup_lr_lambda
+from fairchem.core.common.utils import warmup_lr_lambda
 
 
 class LRScheduler:
@@ -13,7 +13,7 @@ class LRScheduler:
 
     Notes:
         If no learning rate scheduler is specified in the config the default
-        scheduler is warmup_lr_lambda (ocpmodels.common.utils) not no scheduler,
+        scheduler is warmup_lr_lambda (fairchem.core.common.utils) not no scheduler,
         this is for backward-compatibility reasons. To run without a lr scheduler
         specify scheduler: "Null" in the optim section of the config.
 

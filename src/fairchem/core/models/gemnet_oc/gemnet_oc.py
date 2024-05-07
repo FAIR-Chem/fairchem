@@ -12,10 +12,10 @@ import numpy as np
 import torch
 from torch_scatter import segment_coo
 
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import conditional_grad, get_max_neighbors_mask, scatter_det
-from ocpmodels.models.base import BaseModel
-from ocpmodels.modules.scaling.compat import load_scales_compat
+from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import conditional_grad, get_max_neighbors_mask, scatter_det
+from fairchem.core.models.base import BaseModel
+from fairchem.core.modules.scaling.compat import load_scales_compat
 
 from .initializers import get_initializer
 from .interaction_indices import get_mixed_triplets, get_quadruplets, get_triplets

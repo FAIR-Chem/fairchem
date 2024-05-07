@@ -59,14 +59,14 @@ To use a pre-trained model you need to have [ocp](https://github.com/Open-Cataly
 We will focus on the ASE compatible calculator here. To facilitate using the checkpoints, there is a set of [utilities](./ocp-tutorial) for this tutorial. You can list the checkpoints that are readily available here:
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import available_pretrained_models
+from fairchem.core.models.model_registry import available_pretrained_models
 print(available_pretrained_models)
 ```
 
 You can get a checkpoint file with one of the keys listed above like this. The resulting string is the name of the file downloaded, and you use that when creating an OCP calculator later.
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.models.model_registry import model_name_to_local_file
 
 checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path
@@ -83,7 +83,7 @@ This tutorial will start by using OCP in a Jupyter notebook to setup some simple
 `ocpmodels.common.tutorial_utils`  provides `describe_ocp` to output information that might be helpful in debugging.
 
 ```{code-cell} ipython3
-from ocpmodels.common.tutorial_utils import describe_ocp
+from fairchem.core.common.tutorial_utils import describe_ocp
 describe_ocp()
 ```
 

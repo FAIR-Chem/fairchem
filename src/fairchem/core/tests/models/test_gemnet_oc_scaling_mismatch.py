@@ -13,11 +13,11 @@ import pytest
 import requests
 import torch
 
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import load_state_dict, setup_imports
-from ocpmodels.modules.scaling import ScaleFactor
-from ocpmodels.modules.scaling.compat import load_scales_compat
-from ocpmodels.modules.scaling.util import ensure_fitted
+from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import load_state_dict, setup_imports
+from fairchem.core.modules.scaling import ScaleFactor
+from fairchem.core.modules.scaling.compat import load_scales_compat
+from fairchem.core.modules.scaling.util import ensure_fitted
 
 
 class TestGemNetOC:

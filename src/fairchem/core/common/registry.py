@@ -14,7 +14,7 @@ different kind of classes.
 
 Import the global registry object using
 
-``from ocpmodels.common.registry import registry``
+``from fairchem.core.common.registry import registry``
 
 Various decorators for registry different kind of classes with unique keys
 
@@ -32,8 +32,8 @@ NestedDict = dict[str, Union[str, Callable[..., Any], "NestedDict"]]
 
 def _get_absolute_mapping(name: str):
     # in this case, the `name` should be the fully qualified name of the class
-    # e.g., `ocpmodels.tasks.base_task.BaseTask`
-    # we can use importlib to get the module (e.g., `ocpmodels.tasks.base_task`)
+    # e.g., `fairchem.core.tasks.base_task.BaseTask`
+    # we can use importlib to get the module (e.g., `fairchem.core.tasks.base_task`)
     # and then import the class (e.g., `BaseTask`)
 
     module_name = ".".join(name.split(".")[:-1])
@@ -73,8 +73,8 @@ class Registry:
         Args:
             name: Key with which the task will be registered.
         Usage::
-            from ocpmodels.common.registry import registry
-            from ocpmodels.tasks import BaseTask
+            from fairchem.core.common.registry import registry
+            from fairchem.core.tasks import BaseTask
             @registry.register_task("train")
             class TrainTask(BaseTask):
                 ...
@@ -95,8 +95,8 @@ class Registry:
 
         Usage::
 
-            from ocpmodels.common.registry import registry
-            from ocpmodels.datasets import BaseDataset
+            from fairchem.core.common.registry import registry
+            from fairchem.core.datasets import BaseDataset
 
             @registry.register_dataset("qm9")
             class QM9(BaseDataset):
@@ -118,8 +118,8 @@ class Registry:
 
         Usage::
 
-            from ocpmodels.common.registry import registry
-            from ocpmodels.modules.layers import CGCNNConv
+            from fairchem.core.common.registry import registry
+            from fairchem.core.modules.layers import CGCNNConv
 
             @registry.register_model("cgcnn")
             class CGCNN():
@@ -141,7 +141,7 @@ class Registry:
 
         Usage::
 
-            from ocpmodels.common.registry import registry
+            from fairchem.core.common.registry import registry
 
             @registry.register_logger("wandb")
             class WandBLogger():
@@ -149,7 +149,7 @@ class Registry:
         """
 
         def wrap(func: Callable[..., R]) -> Callable[..., R]:
-            from ocpmodels.common.logger import Logger
+            from fairchem.core.common.logger import Logger
 
             assert issubclass(func, Logger), "All loggers must inherit Logger class"
             cls.mapping["logger_name_mapping"][name] = func
@@ -166,7 +166,7 @@ class Registry:
 
         Usage::
 
-            from ocpmodels.common.registry import registry
+            from fairchem.core.common.registry import registry
 
             @registry.register_trainer("active_discovery")
             class ActiveDiscoveryTrainer():
@@ -188,7 +188,7 @@ class Registry:
 
         Usage::
 
-            from ocpmodels.common.registry import registry
+            from fairchem.core.common.registry import registry
 
             registry.register("config", {})
         """
@@ -221,7 +221,7 @@ class Registry:
                 f"{existing_cls_path.__module__}.{existing_cls_path.__qualname__}"
             )
         else:
-            existing_cls_path = "ocpmodels.trainers.ForcesTrainer"
+            existing_cls_path = "fairchem.core.trainers.ForcesTrainer"
 
         existing_keys = [f"'{name}'" for name in existing_keys]
         existing_keys = ", ".join(existing_keys[:-1]) + " or " + existing_keys[-1]
@@ -238,7 +238,7 @@ class Registry:
         if existing_mapping is not None:
             return existing_mapping
 
-        # mapping be class path of type `{module_name}.{class_name}` (e.g., `ocpmodels.trainers.ForcesTrainer`)
+        # mapping be class path of type `{module_name}.{class_name}` (e.g., `fairchem.core.trainers.ForcesTrainer`)
         if name.count(".") < 1:
             raise cls.__import_error(name, mapping_name)
 
@@ -280,7 +280,7 @@ class Registry:
                                internal operations. Default: False
         Usage::
 
-            from ocpmodels.common.registry import registry
+            from fairchem.core.common.registry import registry
 
             config = registry.get("config")
         """
@@ -311,7 +311,7 @@ class Registry:
             name: Key which needs to be removed.
         Usage::
 
-            from ocpmodels.common.registry import registry
+            from fairchem.core.common.registry import registry
 
             config = registry.unregister("config")
         """

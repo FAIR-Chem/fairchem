@@ -22,16 +22,16 @@ from ase.calculators.calculator import Calculator
 from ase.calculators.singlepoint import SinglePointCalculator as sp
 from ase.constraints import FixAtoms
 
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
+from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import (
     load_config,
     setup_imports,
     setup_logging,
     update_config,
 )
-from ocpmodels.datasets import data_list_collater
-from ocpmodels.models.model_registry import model_name_to_local_file
-from ocpmodels.preprocessing import AtomsToGraphs
+from fairchem.core.datasets import data_list_collater
+from fairchem.core.models.model_registry import model_name_to_local_file
+from fairchem.core.preprocessing import AtomsToGraphs
 
 
 def batch_to_atoms(batch):

@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 import torch
 
-from ocpmodels.common import gp_utils
+from fairchem.core.common import gp_utils
 
 from .base_layers import Dense
 

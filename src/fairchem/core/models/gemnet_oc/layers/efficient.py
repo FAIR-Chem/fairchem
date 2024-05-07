@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import torch
 
-from ocpmodels.models.gemnet_oc.initializers import he_orthogonal_init
+from fairchem.core.models.gemnet_oc.initializers import he_orthogonal_init
 
 from .base_layers import Dense
 

@@ -13,9 +13,9 @@ import numpy as np
 import pytest
 from ase.io import read
 
-from ocpmodels.common.utils import get_pbc_distances
-from ocpmodels.datasets import data_list_collater
-from ocpmodels.preprocessing import AtomsToGraphs
+from fairchem.core.common.utils import get_pbc_distances
+from fairchem.core.datasets import data_list_collater
+from fairchem.core.preprocessing import AtomsToGraphs
 
 
 @pytest.fixture(scope="class")

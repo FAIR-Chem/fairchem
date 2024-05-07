@@ -8,7 +8,7 @@ from ocpneb.core.ocpneb import OCPNEB
 from ase.optimize import BFGS
 import torch
 import argparse
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 import os
 import pandas as pd
 import numpy as np
@@ -344,7 +344,7 @@ if __name__ == "__main__":
             # If single points are to be performed, perform them
             if args.get_ts_sp:
                 from vasp_interactive import VaspInteractive
-                from ocdata.utils.vasp import calculate_surface_k_points
+                from fairchem.data.oc.utils.vasp import calculate_surface_k_points
 
                 os.makedirs(
                     f"{args.output_file_path}/{model_id}/vasp_files/{neb_id}",

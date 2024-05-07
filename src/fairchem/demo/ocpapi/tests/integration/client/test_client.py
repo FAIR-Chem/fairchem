@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from unittest import IsolatedAsyncioTestCase, mock
 
-from ocpapi.client import (
+from fairchem.demo.ocpapi.client import (
     Atoms,
     Bulk,
     Client,

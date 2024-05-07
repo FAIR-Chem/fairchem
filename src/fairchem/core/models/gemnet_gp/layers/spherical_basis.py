@@ -13,7 +13,7 @@ import sympy as sym
 import torch
 from torch_geometric.nn.models.schnet import GaussianSmearing
 
-from ocpmodels.common.typing import assert_is_instance
+from fairchem.core.common.typing import assert_is_instance
 
 from .basis_utils import real_sph_harm
 
