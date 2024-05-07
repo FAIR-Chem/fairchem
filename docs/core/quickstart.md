@@ -18,14 +18,14 @@ Using pre-trained models in ASE
 2. See what pre-trained potentials are available 
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import available_pretrained_models
+from fairchem.core.models.model_registry import available_pretrained_models
 print(available_pretrained_models)
 ```
 
 3. Choose a checkpoint you want to use and download it automatically! We'll use the GemNet-OC potential, trained on both the OC20 and OC22 datasets.
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.models.model_registry import model_name_to_local_file
 checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path
 ```
@@ -33,7 +33,7 @@ checkpoint_path
 4. Finally, use this checkpoint in an ASE calculator for a simple relaxation!
 
 ```{code-cell} ipython3
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from ase.build import fcc111, add_adsorbate
 from ase.optimize import BFGS
 import matplotlib.pyplot as plt

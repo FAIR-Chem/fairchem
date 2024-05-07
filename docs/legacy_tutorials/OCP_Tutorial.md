@@ -618,7 +618,7 @@ colab:
 id: 7F7BjxNQoGLn
 outputId: 36fcd255-facc-43dd-efda-c238cac9c5d9
 ---
-from ocpmodels.datasets import LmdbDataset
+from fairchem.core.datasets import LmdbDataset
 
 # LmdbDataset is our custom Dataset method to read the lmdbs as Data objects. Note that we need to give the path to the folder containing lmdbs for S2EF
 dataset = LmdbDataset({"src": "data/s2ef/train_100/"})
@@ -735,11 +735,11 @@ The S2EF task takes an atomic system as input and predicts the energy of the ent
 ```{code-cell} ipython3
 :id: l-1rNyuk_1Mo
 
-from ocpmodels.trainers import OCPTrainer
-from ocpmodels.datasets import LmdbDataset
-from ocpmodels import models
-from ocpmodels.common import logger
-from ocpmodels.common.utils import setup_logging, setup_imports
+from fairchem.core.trainers import OCPTrainer
+from fairchem.core.datasets import LmdbDataset
+from fairchem.core import models
+from fairchem.core.common import logger
+from fairchem.core.common.utils import setup_logging, setup_imports
 setup_logging()
 setup_imports()
 
@@ -903,7 +903,7 @@ id: 5KZvPu4hogkR
 outputId: fdbbfa5c-0d7c-449f-8be5-ef2e5d17860d
 ---
 import ocpmodels
-from ocpmodels.common.tutorial_utils import ocp_root
+from fairchem.core.common.tutorial_utils import ocp_root
 
 ! ln -s {ocp_root()}/configs ./configs
 ```
@@ -1079,11 +1079,11 @@ An alternative is to perform a structure relaxation using an S2EF model to obtai
 ```{code-cell} ipython3
 :id: d-0GsaGDW16G
 
-from ocpmodels.trainers import OCPTrainer
-from ocpmodels.datasets import LmdbDataset
-from ocpmodels import models
-from ocpmodels.common import logger
-from ocpmodels.common.utils import setup_logging
+from fairchem.core.trainers import OCPTrainer
+from fairchem.core.datasets import LmdbDataset
+from fairchem.core import models
+from fairchem.core.common import logger
+from fairchem.core.common.utils import setup_logging
 setup_logging()
 
 import numpy as np
@@ -1361,11 +1361,11 @@ We approach the IS2RS task by using a pre-trained S2EF model to iteratively run 
 ```{code-cell} ipython3
 :id: Z-WZXuRiI6Vo
 
-from ocpmodels.trainers import OCPTrainer
-from ocpmodels.datasets import LmdbDataset
-from ocpmodels import models
-from ocpmodels.common import logger
-from ocpmodels.common.utils import setup_logging
+from fairchem.core.trainers import OCPTrainer
+from fairchem.core.datasets import LmdbDataset
+from fairchem.core import models
+from fairchem.core.common import logger
+from fairchem.core.common.utils import setup_logging
 setup_logging()
 
 import numpy as np
@@ -1392,7 +1392,7 @@ relax_dataset = "data/is2re/val_20/data.lmdb"
 ```{code-cell} ipython3
 :id: MiOeqFN-d-7K
 
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.models.model_registry import model_name_to_local_file
 
 checkpoint_path = model_name_to_local_file('GemNet-dT All', local_cache='/tmp/ocp_checkpoints/')
 
@@ -1676,13 +1676,13 @@ import torch
 
 from typing import Optional
 
-from ocpmodels.trainers import OCPTrainer
-from ocpmodels import models
-from ocpmodels.common import logger
-from ocpmodels.common.utils import setup_logging, get_pbc_distances
-from ocpmodels.common.registry import registry
+from fairchem.core.trainers import OCPTrainer
+from fairchem.core import models
+from fairchem.core.common import logger
+from fairchem.core.common.utils import setup_logging, get_pbc_distances
+from fairchem.core.common.registry import registry
 
-from ocpmodels.models.gemnet.layers.radial_basis import PolynomialEnvelope
+from fairchem.core.models.gemnet.layers.radial_basis import PolynomialEnvelope
 
 from torch_geometric.nn.models.schnet import GaussianSmearing
 from torch_scatter import scatter
@@ -2025,7 +2025,7 @@ For this tutorial we download one of our earlier model checkpoints: GemNet-T
 ```{code-cell} ipython3
 :id: MBCRi69284Ve
 
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.models.model_registry import model_name_to_local_file
 
 checkpoint_path = model_name_to_local_file('GemNet-dT All', local_cache='/tmp/ocp_checkpoints/')
 
@@ -2042,7 +2042,7 @@ colab:
 id: o_MHpzbhPKN_
 outputId: fa4336cf-ba85-43b6-e608-551ffcf3763a
 ---
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 import ase.io
 from ase.optimize import BFGS
 from ase.build import fcc100, add_adsorbate, molecule
@@ -2102,7 +2102,7 @@ As a demo, we will use the above generated data to create an IS2R* LMDB file.
 ```{code-cell} ipython3
 :id: nweCG0y5nxlw
 
-from ocpmodels.preprocessing import AtomsToGraphs
+from fairchem.core.preprocessing import AtomsToGraphs
 
 """
 args description:
@@ -2218,7 +2218,7 @@ colab:
 id: p8ftTehrn9pG
 outputId: 74c95b8a-e260-4b6f-92c4-3544f28deda5
 ---
-from ocpmodels.datasets import LmdbDataset
+from fairchem.core.datasets import LmdbDataset
 
 # LmdbDataset is out custom Dataset method to read the lmdbs as Data objects. Note that we need to give the entire path (including lmdb) for IS2RE
 dataset = LmdbDataset({"src": "data/toy_C3H8.lmdb"})

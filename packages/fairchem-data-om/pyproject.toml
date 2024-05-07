@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling","hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fairchem.data.om"
+dynamic = ["version"]
+description = "Code for generating OMOL input configurations"
+readme = "../../src/fairchem/data/om/README.md"
+license = ""
+dependencies = [
+    "ase@git+https://gitlab.com/ase/ase.git@dc86a19a280741aa2b42a08d0fa63a8d0348e225",
+    "quacc[sella]>=0.7.6",
+    "sella==2.3.3",
+]
+
+[project.urls]
+Homepage = "http://github.com/Open-Catalyst-Project/om-data"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+root = "../../" 
+git_describe_command = 'git describe --dirty --tags --long --match om*'
+
+[tool.hatch.build.targets.sdist]
+sources = ["src"]
+only-include = ["src/fairchem/data/om"]
+
+[tool.hatch.build.targets.wheel]
+sources = ["src"]
+only-include = ["src/fairchem/data/om"]

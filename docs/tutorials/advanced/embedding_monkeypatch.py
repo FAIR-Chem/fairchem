@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import torch
 
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-from ocpmodels.common.utils import conditional_grad, scatter_det
-from ocpmodels.datasets import data_list_collater
-from ocpmodels.models.gemnet_oc.gemnet_oc import GemNetOC
-from ocpmodels.models.gemnet_oc.utils import repeat_blocks
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.common.utils import conditional_grad, scatter_det
+from fairchem.core.datasets import data_list_collater
+from fairchem.core.models.gemnet_oc.gemnet_oc import GemNetOC
+from fairchem.core.models.gemnet_oc.utils import repeat_blocks
 
 
 @conditional_grad(torch.enable_grad())

@@ -59,7 +59,7 @@ here](https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md#oc20-ref
 To test if your setup is correct, try the following:
 
 ```python
-from ocpmodels.datasets import OC22LmdbDataset
+from fairchem.core.datasets import OC22LmdbDataset
 
 dset = OC22LmdbDataset({
     "src": "path/to/oc20/lmdb/folder/",

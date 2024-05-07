@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling","hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fairchem.demo.ocpapi"
+dynamic = ["version"]
+description = "Python client library for the Open Catalyst API"
+readme = "../../src/fairchem/demo/README.md"
+license = ""
+requires-python = ">=3.9"
+authors = [
+    { name = "Open Catalyst Project", email = "opencatalyst@meta.com" },
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "dataclasses-json == 0.6.0",
+    "inquirer == 3.1.3",
+    "requests == 2.31.0",
+    "responses == 0.23.2",
+    "tenacity == 8.2.3",
+    "tqdm == 4.66.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ase == 3.22.1",
+    "readchar == 4.0.5",
+]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+root = "../../" 
+git_describe_command = 'git describe --dirty --tags --long --match fairchem.ocpapi*'
+
+[tool.hatch.build.targets.sdist]
+sources = ["src"]
+only-include = ["src/fairchem/demo/ocpapi"]
+
+[tool.hatch.build.targets.wheel]
+sources = ["src"]
+only-include = ["src/fairchem/demo/ocpapi"]
+
