@@ -396,7 +396,7 @@ def load_config(path: str, previous_includes: list | None = None):
     previous_includes = [*previous_includes, path]
 
     with open(path) as fp:
-        direct_config = yaml.safe_load(fp, Loader=UniqueKeyLoader)
+        direct_config = yaml.load(fp, Loader=UniqueKeyLoader)
 
     # Load config from included files.
     includes = direct_config.pop("includes") if "includes" in direct_config else []
@@ -489,7 +489,7 @@ def create_grid(base_config, sweep_file: str):
         return config
 
     with open(sweep_file) as fp:
-        sweeps = yaml.safe_load(fp, Loader=UniqueKeyLoader)
+        sweeps = yaml.load(fp, Loader=UniqueKeyLoader)
 
     flat_sweeps = _flatten_sweeps(sweeps)
     keys = list(flat_sweeps.keys())
