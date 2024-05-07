@@ -29,7 +29,7 @@ bibtex_bibfiles:
 repository:
   url: https://github.com/fair-chem/fairchem  # Online location of your book
   path_to_book: docs  # Optional path to your book, relative to the repository root
-  branch: fix_doc_workflow  # Which branch of the repository should be used when creating links (optional)
+  #branch: fix_doc_workflow  # Which branch of the repository should be used when creating links (optional)
   
 # Add GitHub buttons to your book
 # See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
@@ -50,5 +50,5 @@ sphinx:
   - 'autoapi.extension'
   config:
     autosummary_generate: True
-    autoapi_dirs: ['../src/fairchem']
+    autoapi_dirs: ['../src']
     autoapi_ignore: ['*precompute_sample_structures.py'] 
