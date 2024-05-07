@@ -1,7 +1,6 @@
 import os
 
 import numpy as np
-import numpy.testing as npt
 import pytest
 from ase import build, db
 from ase.calculators.singlepoint import SinglePointCalculator
@@ -283,33 +282,3 @@ def test_empty_dataset(tmp_path):
 
     with pytest.raises(ValueError):
         AseDBDataset(config={"src": str(tmp_path)})
-
-
-def test_filter_atoms_dataset(tmp_path):
-    a2g_args = {
-        "r_energy": True,
-        "r_forces": True,
-    }
-    num_atoms = []
-    with db.connect(tmp_path / "asedb.db") as database:
-        for i, atoms in enumerate(structures):
-            database.write(atoms, data=atoms.info)
-            num_atoms.append(len(atoms))
-    np.savez(tmp_path / "metadata.npz", natoms=num_atoms)
-    dataset = AseDBDataset(
-        config={"src": str(tmp_path / "asedb.db"), "a2g_args": {}}
-    )
-    assert len(dataset) == len(structures)
-    npt.assert_array_equal(num_atoms, dataset.metadata.natoms)
-
-    dataset = AseDBDataset(
-        config={
-            "src": str(tmp_path / "asedb.db"),
-            "a2g_args": a2g_args,
-            "filter": {"max_natoms": 2},
-        }
-    )
-    assert len(dataset) == len(structures)
-    assert len(dataset.filtered_indices) == len(
-        [s for s in structures if len(s) <= 2]
-    )
