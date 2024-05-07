@@ -121,7 +121,6 @@ class LmdbDataset(BaseDataset):
 
     def __getitem__(self, idx: int) -> T_co:
         # if sharding, remap idx to appropriate idx of the sharded set
-        idx = self.filtered_indices[idx]
         if not self.path.is_file():
             # Figure out which db this should be indexed from.
             db_idx = bisect.bisect(self._keylen_cumulative, idx)

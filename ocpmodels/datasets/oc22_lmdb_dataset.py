@@ -123,7 +123,6 @@ class OC22LmdbDataset(BaseDataset):
         return self.num_samples
 
     def __getitem__(self, idx):
-        idx = self.filtered_indices[idx]
         if not self.path.is_file():
             # Figure out which db this should be indexed from.
             db_idx = bisect.bisect(self._keylen_cumulative, idx)
