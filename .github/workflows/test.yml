@@ -33,18 +33,36 @@ jobs:
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
 
-      - name: Install dependencies and package
+      - name: Install core dependencies and package
         # this can be added along with a dependabot config to run tests with latest versions
         # pip install -r requirements.txt
         # pip install -r requirements-optional.txt
         run: |
           python -m pip install --upgrade pip
+          pushd packages/
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-optional.txt ]; then pip install -r requirements-optional.txt; fi
+          popd
+          pushd packages/fairchem-core/
           pip install -e .[dev]
-      - name: Test with pytest
+          popd
+          pushd packages/fairchem-data-oc/
+          pip install -e .[dev]
+          popd
+          pushd packages/fairchem-demo-ocpapi/
+          pip install -e .[dev]
+          popd
+      - name: Test core with pytest
         run: |
-          pytest tests -vv --cov-report=xml --cov=ocpmodels
+          pushd src/fairchem/core/
+          pytest tests -vv --cov-report=xml --cov=fairchem.core
+          popd
+          pushd src/fairchem/data/oc/
+          pytest tests -vv --cov-report=xml --cov=fairchem.data.oc
+          popd
+          pushd src/fairchem/demo/ocpapi/
+          pytest tests -vv --cov-report=xml --cov=fairchem.demo.ocpapi
+          popd
 
       - if: ${{ matrix.python_version == '3.11' }}
         name: codecov-report
