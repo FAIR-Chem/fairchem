@@ -113,7 +113,6 @@ class AseAtomsDataset(BaseDataset, ABC):
 
     def __getitem__(self, idx):
         # Handle slicing
-        idx = self.filtered_indices[idx]
         if isinstance(idx, slice):
             return [self[i] for i in range(*idx.indices(len(self)))]
 
