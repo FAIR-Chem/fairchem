@@ -8,13 +8,13 @@ from abc import ABCMeta
 from collections import namedtuple
 from functools import cached_property
 from pathlib import Path
-from typing import TypeVar, Any
+from typing import Any, TypeVar
 
 import numpy as np
 import torch
 from numpy.typing import ArrayLike, NDArray
-from torch.utils.data import Dataset, Subset
 from torch import randperm
+from torch.utils.data import Dataset, Subset
 
 from ocpmodels.common.registry import registry
 
@@ -46,14 +46,6 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
         else:
             self.paths = tuple(Path(path) for path in config["src"])
 
-        if self.config.get("filter") is not None:
-            max_natoms = self.config["filter"].get("max_natoms", None)
-            self._data_filter = (
-                lambda idx: self.metadata.natoms[idx] <= max_natoms
-            )
-        else:
-            self._data_filter = lambda idx: True
-
         self.lin_ref = None
         if self.config.get("lin_ref", False):
             lin_ref = torch.tensor(
@@ -67,11 +59,7 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
     def __len__(self) -> int:
         return self.num_samples
 
-    @cached_property
-    def filtered_indices(self):
-        return list(filter(self._data_filter, self.indices))
-
-    @cached_property
+    @property
     def indices(self):
         return list(range(self.num_samples))
 
@@ -108,8 +96,16 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
         return metadata
 
 
-def create_dataset(config: dict[str, Any], split: str):
-    # TODO this might be better as a few funtions???
+def create_dataset(config: dict[str, Any], split: str) -> Subset:
+    """Create a dataset from a config dictionary
+
+    Args:
+        config (dict): dataset config dictionary
+        split (str): name of split
+
+    Returns:
+        Subset: dataset subset class
+    """
     # Initialize the dataset
     dataset_cls = registry.get_dataset_class(config["format"])
     assert issubclass(dataset_cls, Dataset), f"{dataset_cls} is not a Dataset"
@@ -121,53 +117,39 @@ def create_dataset(config: dict[str, Any], split: str):
     current_split_config.update(config["splits"][split])
 
     dataset = dataset_cls(current_split_config)
-
-    # TODO return the dataset if max_atoms or others are not specified
-
     # Get indices of the dataset
-    # TODO it might be good to move filter_indicies out of the BaseDataset class because
-    # we have to parse the config here anyways
+    indices = dataset.indices
     max_atoms = current_split_config.get("max_atoms", None)
     if max_atoms is not None:
-        # TODO add max_atoms argument to filtered_indices
-        indices = dataset.filtered_indices(max_atoms)
-    else:
-        indices = dataset.indices
+        indices = indices[dataset.data_sizes < max_atoms]
 
     # Apply dataset level transforms
-    mutually_exclusive_arguments = ["sample_n", "first_n", "no_shuffle"]
-    valid_arguments = (
-        sum(
-            argument in current_split_config
-            for argument in mutually_exclusive_arguments
+    # TODO is no_shuffle mutually exclusive though? or what is the purpose of no_shuffle?
+    first_n = current_split_config.get("first_n")
+    sample_n = current_split_config.get("sample_n")
+    no_shuffle = current_split_config.get("no_shuffle")
+    # this is true if at most one of the mutually exclusive arguments are set
+    if sum(arg is not None for arg in (first_n, sample_n, no_shuffle)) > 1:
+        raise ValueError(
+            "sample_n, first_n, no_shuffle are mutually exclusive arguments. Only one can be provided."
         )
-        <= 1
-    )  # this is true if at most of of the mutually exclusive arguments are set
-    if not valid_arguments:
-        raise IndexError(
-            "sample_n, first_n, no_shuffle are mutually exclusive arguments"
-        )
-    if "first_n" in current_split_config:
-        if len(dataset) < current_split_config["first_n"]:
-            raise ValueError(
-                f"Cannot take first {current_split_config['first_n']} from a dataset of only length {len(dataset)}"
-            )
-        indices = np.arange(current_split_config["first_n"])
-        dataset = Subset(dataset, indices)
-    elif (
-        "no_shuffle" in current_split_config
-        and current_split_config["no_shuffle"]
-    ):
-        return dataset
-    else:  # shuffle by default , user can disable to optimize if they have confidence in dataset
+    if first_n is not None:
+        max_index = first_n
+    elif sample_n is not None:
+        # shuffle by default, user can disable to optimize if they have confidence in dataset
         # shuffle all datasets by default to avoid biasing the sampling in concat dataset
-        # TODO only shuffle is split is train
-        indices = randperm(len(dataset)).tolist()
-        if "sample_n" in current_split_config:
-            if len(dataset) < current_split_config["sample_n"]:
-                raise ValueError(
-                    f"Cannot sample {current_split_config['sample_n']} from a dataset of only length {len(dataset)}"
-                )
-            indices = indices[: current_split_config["sample_n"]]
-        dataset = Subset(dataset, indices)
-    return dataset
+        # TODO only shuffle if split is train
+        max_index = first_n
+        indices = randperm(indices).tolist()
+    else:
+        max_index = len(dataset)
+        indices = indices if no_shuffle else randperm(indices).tolist()
+
+    try:
+        indices = indices[:max_index]
+    except IndexError:
+        raise ValueError(
+            f"Cannot take {max_index} from a dataset of only length {len(dataset)}."
+            f"Make sure to set first_n or sample_n to a number =< the total samples in dataset."
+        )
+    return Subset(dataset, indices)
