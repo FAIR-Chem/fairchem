@@ -2,7 +2,6 @@ import argparse
 import multiprocessing as mp
 import os
 import pickle
-import sys
 
 import ase
 import ase.io

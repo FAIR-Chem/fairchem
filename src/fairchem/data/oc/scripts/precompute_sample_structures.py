@@ -9,21 +9,11 @@ Note that some of these scripts were taken from
 __authors__ = ["Kevin Tran", "Aini Palizhati", "Siddharth Goyal", "Zachary Ulissi"]
 __email__ = ["ktran@andrew.cmu.edu"]
 
-import math
 import pickle
-import random
 import sys
 import time
-from collections import defaultdict
 
-import ase
-import ase.db
-import catkit
 import numpy as np
-from ase import neighborlist
-from ase.constraints import FixAtoms
-from ase.neighborlist import natural_cutoffs
-from pymatgen.analysis.local_env import VoronoiNN
 from pymatgen.core.surface import (
     SlabGenerator,
     get_symmetrically_distinct_miller_indices,
@@ -31,7 +21,7 @@ from pymatgen.core.surface import (
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
-from .base_atoms.pkls import ADSORBATE_PKL, BULK_PKL
+from .base_atoms.pkls import BULK_PKL
 from .constants import MAX_MILLER
 
 

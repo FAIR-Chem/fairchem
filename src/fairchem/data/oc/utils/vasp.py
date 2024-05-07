@@ -8,13 +8,9 @@ Note that some of these scripts were taken and modified from
 __author__ = "Kevin Tran"
 __email__ = "ktran@andrew.cmu.edu"
 
-import os
 
-import ase.io
 import numpy as np
-from ase.calculators.singlepoint import SinglePointCalculator as SPC
 from ase.calculators.vasp import Vasp
-from ase.io.trajectory import TrajectoryWriter
 
 # NOTE: this is the setting for slab and adslab
 VASP_FLAGS = {

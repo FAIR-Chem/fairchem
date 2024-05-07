@@ -13,7 +13,11 @@ import torch
 from torch_scatter import segment_coo
 
 from fairchem.core.common.registry import registry
-from fairchem.core.common.utils import conditional_grad, get_max_neighbors_mask, scatter_det
+from fairchem.core.common.utils import (
+    conditional_grad,
+    get_max_neighbors_mask,
+    scatter_det,
+)
 from fairchem.core.models.base import BaseModel
 from fairchem.core.modules.scaling.compat import load_scales_compat
 

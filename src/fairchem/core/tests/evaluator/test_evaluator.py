@@ -11,7 +11,11 @@ import numpy as np
 import pytest
 import torch
 
-from fairchem.core.modules.evaluator import Evaluator, cosine_similarity, magnitude_error
+from fairchem.core.modules.evaluator import (
+    Evaluator,
+    cosine_similarity,
+    magnitude_error,
+)
 
 
 @pytest.fixture(scope="class")

@@ -1,8 +1,6 @@
 import argparse
 import multiprocessing as mp
-import os
 import pickle
-import sys
 
 import numpy as np
 from ase.io import Trajectory, read

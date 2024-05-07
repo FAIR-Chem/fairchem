@@ -2,13 +2,9 @@ import random
 
 import numpy as np
 import pytest
-from ase.data import covalent_radii
-from pymatgen.analysis.adsorption import AdsorbateSiteFinder
-from pymatgen.io.ase import AseAtomsAdaptor
 
 from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig, Bulk, Slab
 from fairchem.data.oc.core.adsorbate_slab_config import get_interstitial_distances
-from fairchem.data.oc.databases.pkls import ADSORBATES_PKL_PATH, BULK_PKL_PATH
 
 
 @pytest.fixture(scope="class")
