@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling","hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fairchem.applications.adsorbml"
+dynamic = ["version"]
+description = "Module for calculating the minima adsorbtion energy"
+readme = "../../src/fairchem/applications/AdsorbML/README.md"
+license = ""
+
+[project.urls]
+Homepage = "http://github.com/Open-Catalyst-Project/AdsorbML"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+root = "../../" 
+git_describe_command = 'git describe --dirty --tags --long --match fairchem.adsorb*'
+
+[tool.hatch.build.targets.sdist]
+sources = ["src"]
+only-include = ["src/fairchem/applications/AdsorbML"]
+
+[tool.hatch.build.targets.wheel]
+sources = ["src"]
+only-include = ["src/fairchem/applications/AdsorbML"]
+
