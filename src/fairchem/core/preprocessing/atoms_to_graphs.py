@@ -15,7 +15,7 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 
-from ocpmodels.common.utils import collate
+from fairchem.core.common.utils import collate
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

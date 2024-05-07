@@ -10,8 +10,8 @@ import math
 
 import torch
 
-from ocpmodels.common.utils import scatter_det
-from ocpmodels.modules.scaling import ScaleFactor
+from fairchem.core.common.utils import scatter_det
+from fairchem.core.modules.scaling import ScaleFactor
 
 from .base_layers import Dense, ResidualLayer
 

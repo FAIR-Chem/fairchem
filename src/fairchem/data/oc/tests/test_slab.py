@@ -3,7 +3,7 @@ import random
 import numpy as np
 import pytest
 
-from ocdata.core import Bulk, Slab
+from fairchem.data.oc.core import Bulk, Slab
 
 
 class TestSlab:

@@ -8,12 +8,12 @@ from ase import build, db
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.io import Trajectory, write
 
-from ocpmodels.datasets import (
+from fairchem.core.datasets import (
     AseDBDataset,
     AseReadDataset,
     AseReadMultiStructureDataset,
 )
-from ocpmodels.datasets.lmdb_database import LMDBDatabase
+from fairchem.core.datasets.lmdb_database import LMDBDatabase
 
 structures = [
     build.molecule("H2O", vacuum=4),

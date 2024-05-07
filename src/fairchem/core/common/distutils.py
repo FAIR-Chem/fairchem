@@ -15,7 +15,7 @@ from typing import TypeVar
 import torch
 import torch.distributed as dist
 
-from ocpmodels.common.typing import none_throws
+from fairchem.core.common.typing import none_throws
 
 T = TypeVar("T")
 

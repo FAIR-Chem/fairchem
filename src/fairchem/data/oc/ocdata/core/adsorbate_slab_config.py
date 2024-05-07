@@ -11,8 +11,8 @@ from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 from pymatgen.io.ase import AseAtomsAdaptor
 from scipy.optimize import fsolve
 
-from ocdata.core import Adsorbate, Slab
-from ocdata.core.adsorbate import randomly_rotate_adsorbate
+from fairchem.data.oc.core import Adsorbate, Slab
+from fairchem.data.oc.core.adsorbate import randomly_rotate_adsorbate
 
 # warnings.filterwarnings("ignore", "The iteration is not making good progress")
 

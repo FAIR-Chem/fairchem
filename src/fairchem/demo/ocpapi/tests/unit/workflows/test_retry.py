@@ -17,12 +17,12 @@ from typing import (
 from unittest import TestCase as UnitTestCase
 from unittest import mock
 
-from ocpapi.client import (
+from fairchem.demo.ocpapi.client import (
     NonRetryableRequestException,
     RateLimitExceededException,
     RequestException,
 )
-from ocpapi.workflows import (
+from fairchem.demo.ocpapi.workflows import (
     NO_LIMIT,
     NoLimitType,
     RateLimitLogging,

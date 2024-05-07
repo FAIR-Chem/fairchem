@@ -14,16 +14,16 @@ kernelspec:
 # AdsorbML tutorial
 
 ```{code-cell} ipython3
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 import ase.io
 from ase.optimize import BFGS
 
-from ocdata.core import Adsorbate, AdsorbateSlabConfig, Bulk, Slab
+from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig, Bulk, Slab
 import os
 from glob import glob
 import pandas as pd
-from ocdata.utils import DetectTrajAnomaly
-from ocdata.utils.vasp import write_vasp_input_files
+from fairchem.data.oc.utils import DetectTrajAnomaly
+from fairchem.data.oc.utils.vasp import write_vasp_input_files
 
 # Optional - see below
 import numpy as np
@@ -71,8 +71,8 @@ There are 2 options for how to do this.
 You need to provide the calculator with a path to a model checkpoint file. That can be downloaded [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/MODELS.md)
 
 ```{code-cell} ipython3
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.models.model_registry import model_name_to_local_file
 import os
 
 checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')

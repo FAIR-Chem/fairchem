@@ -10,7 +10,7 @@ from __future__ import annotations
 from importlib.metadata import PackageNotFoundError, version
 
 try:
-    __version__ = version("ocpmodels")
+    __version__ = version("fairchem.core")
 except PackageNotFoundError:
     # package is not installed
     __version__ = ""

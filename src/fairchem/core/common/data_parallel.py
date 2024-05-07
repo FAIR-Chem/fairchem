@@ -17,8 +17,8 @@ import numpy.typing as npt
 import torch
 from torch.utils.data import BatchSampler, DistributedSampler, Sampler
 
-from ocpmodels.common import distutils, gp_utils
-from ocpmodels.datasets import data_list_collater
+from fairchem.core.common import distutils, gp_utils
+from fairchem.core.datasets import data_list_collater
 
 if TYPE_CHECKING:
     from pathlib import Path

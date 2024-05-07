@@ -25,25 +25,25 @@ from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from ocpmodels.common import distutils, gp_utils
-from ocpmodels.common.data_parallel import BalancedBatchSampler, OCPCollater
-from ocpmodels.common.registry import registry
-from ocpmodels.common.typing import assert_is_instance as aii
-from ocpmodels.common.typing import none_throws
-from ocpmodels.common.utils import (
+from fairchem.core.common import distutils, gp_utils
+from fairchem.core.common.data_parallel import BalancedBatchSampler, OCPCollater
+from fairchem.core.common.registry import registry
+from fairchem.core.common.typing import assert_is_instance as aii
+from fairchem.core.common.typing import none_throws
+from fairchem.core.common.utils import (
     get_commit_hash,
     get_loss_module,
     load_state_dict,
     save_checkpoint,
     update_config,
 )
-from ocpmodels.modules.evaluator import Evaluator
-from ocpmodels.modules.exponential_moving_average import ExponentialMovingAverage
-from ocpmodels.modules.loss import DDPLoss
-from ocpmodels.modules.normalizer import Normalizer
-from ocpmodels.modules.scaling.compat import load_scales_compat
-from ocpmodels.modules.scaling.util import ensure_fitted
-from ocpmodels.modules.scheduler import LRScheduler
+from fairchem.core.modules.evaluator import Evaluator
+from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
+from fairchem.core.modules.loss import DDPLoss
+from fairchem.core.modules.normalizer import Normalizer
+from fairchem.core.modules.scaling.compat import load_scales_compat
+from fairchem.core.modules.scaling.util import ensure_fitted
+from fairchem.core.modules.scheduler import LRScheduler
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

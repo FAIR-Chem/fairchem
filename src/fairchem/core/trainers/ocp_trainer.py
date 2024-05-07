@@ -17,13 +17,13 @@ import torch
 import torch_geometric
 from tqdm import tqdm
 
-from ocpmodels.common import distutils
-from ocpmodels.common.registry import registry
-from ocpmodels.common.relaxation.ml_relaxation import ml_relax
-from ocpmodels.common.utils import cg_change_mat, check_traj_files, irreps_sum
-from ocpmodels.modules.evaluator import Evaluator
-from ocpmodels.modules.scaling.util import ensure_fitted
-from ocpmodels.trainers.base_trainer import BaseTrainer
+from fairchem.core.common import distutils
+from fairchem.core.common.registry import registry
+from fairchem.core.common.relaxation.ml_relaxation import ml_relax
+from fairchem.core.common.utils import cg_change_mat, check_traj_files, irreps_sum
+from fairchem.core.modules.evaluator import Evaluator
+from fairchem.core.modules.scaling.util import ensure_fitted
+from fairchem.core.trainers.base_trainer import BaseTrainer
 
 
 @registry.register_trainer("ocp")

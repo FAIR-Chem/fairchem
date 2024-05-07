@@ -2,7 +2,7 @@ from contextvars import ContextVar
 from unittest import TestCase as UnitTestCase
 from uuid import uuid4
 
-from ocpapi.workflows.context import set_context_var
+from fairchem.demo.ocpapi.workflows.context import set_context_var
 
 
 class TestContext(UnitTestCase):

@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 import urllib3
 import yaml
 
-from ocpmodels import models
+from fairchem.core import models
 
 if TYPE_CHECKING:
     from pathlib import Path

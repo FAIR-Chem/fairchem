@@ -11,7 +11,7 @@ import math
 
 import torch
 
-from ocpmodels.models.gemnet_gp.initializers import he_orthogonal_init
+from fairchem.core.models.gemnet_gp.initializers import he_orthogonal_init
 
 
 class Dense(torch.nn.Module):

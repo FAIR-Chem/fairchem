@@ -6,8 +6,8 @@ from typing import Any, Dict, List
 import ase
 import numpy as np
 
-from ocdata.core.slab import Slab
-from ocdata.databases.pkls import BULK_PKL_PATH
+from fairchem.data.oc.core.slab import Slab
+from fairchem.data.oc.databases.pkls import BULK_PKL_PATH
 
 
 class Bulk:

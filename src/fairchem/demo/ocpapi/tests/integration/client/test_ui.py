@@ -2,7 +2,7 @@ from unittest import TestCase as UnitTestCase
 
 import requests
 
-from ocpapi.client import get_results_ui_url
+from fairchem.demo.ocpapi.client import get_results_ui_url
 
 
 class TestUI(UnitTestCase):

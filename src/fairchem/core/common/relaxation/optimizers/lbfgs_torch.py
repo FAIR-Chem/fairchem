@@ -16,8 +16,8 @@ import ase
 import torch
 from torch_scatter import scatter
 
-from ocpmodels.common.relaxation.ase_utils import batch_to_atoms
-from ocpmodels.common.utils import radius_graph_pbc
+from fairchem.core.common.relaxation.ase_utils import batch_to_atoms
+from fairchem.core.common.utils import radius_graph_pbc
 
 if TYPE_CHECKING:
     from torch_geometric.data import Batch

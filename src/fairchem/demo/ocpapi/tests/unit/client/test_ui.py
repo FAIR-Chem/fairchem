@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 from unittest import TestCase as UnitTestCase
 
-from ocpapi.client import get_results_ui_url
+from fairchem.demo.ocpapi.client import get_results_ui_url
 
 
 class TestUI(UnitTestCase):

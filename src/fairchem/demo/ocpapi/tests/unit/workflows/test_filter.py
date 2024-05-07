@@ -11,8 +11,8 @@ from inquirer.events import KeyEventGenerator
 from inquirer.render import ConsoleRender
 from readchar import key
 
-from ocpapi.client import AdsorbateSlabConfigs, Atoms, Slab, SlabMetadata
-from ocpapi.workflows import (
+from fairchem.demo.ocpapi.client import AdsorbateSlabConfigs, Atoms, Slab, SlabMetadata
+from fairchem.demo.ocpapi.workflows import (
     keep_all_slabs,
     keep_slabs_with_miller_indices,
     prompt_for_slabs_to_keep,

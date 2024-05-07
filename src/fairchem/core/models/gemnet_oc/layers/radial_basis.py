@@ -12,8 +12,8 @@ import numpy as np
 import torch
 from scipy.special import binom
 
-from ocpmodels.common.typing import assert_is_instance
-from ocpmodels.modules.scaling import ScaleFactor
+from fairchem.core.common.typing import assert_is_instance
+from fairchem.core.modules.scaling import ScaleFactor
 
 
 class PolynomialEnvelope(torch.nn.Module):

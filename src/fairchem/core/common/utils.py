@@ -37,8 +37,8 @@ from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
 from torch_scatter import scatter, segment_coo, segment_csr
 
-import ocpmodels
-from ocpmodels.modules.loss import AtomwiseL2Loss, L2MAELoss
+import fairchem.core
+from fairchem.core.modules.loss import AtomwiseL2Loss, L2MAELoss
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -305,14 +305,14 @@ def _get_project_root() -> Path:
     Gets the root folder of the project (the "ocp" folder)
     :return: The absolute path to the project root.
     """
-    from ocpmodels.common.registry import registry
+    from fairchem.core.common.registry import registry
 
     # Automatically load all of the modules, so that
     # they register with registry
-    root_folder = registry.get("ocpmodels_root", no_warning=True)
+    root_folder = registry.get("fairchem_core_root", no_warning=True)
 
     if root_folder is not None:
-        assert isinstance(root_folder, str), "ocpmodels_root must be a string"
+        assert isinstance(root_folder, str), "fairchem_core_root must be a string"
         root_folder = Path(root_folder).resolve().absolute()
         assert root_folder.exists(), f"{root_folder} does not exist"
         assert root_folder.is_dir(), f"{root_folder} is not a directory"
@@ -325,7 +325,7 @@ def _get_project_root() -> Path:
 
 # Copied from https://github.com/facebookresearch/mmf/blob/master/mmf/utils/env.py#L89.
 def setup_imports(config: dict | None = None) -> None:
-    from ocpmodels.common.registry import registry
+    from fairchem.core.common.registry import registry
 
     skip_experimental_imports = (config or {}).get("skip_experimental_imports", False)
 
@@ -337,11 +337,11 @@ def setup_imports(config: dict | None = None) -> None:
     try:
         project_root = _get_project_root()
         logging.info(f"Project root: {project_root}")
-        importlib.import_module("ocpmodels.common.logger")
+        importlib.import_module("fairchem.core.common.logger")
 
         import_keys = ["trainers", "datasets", "models", "tasks"]
         for key in import_keys:
-            for f in (project_root / "ocpmodels" / key).rglob("*.py"):
+            for f in (project_root / "core" / key).rglob("*.py"):
                 _import_local_file(f, project_root=project_root)
 
         if not skip_experimental_imports:
@@ -955,12 +955,12 @@ def check_traj_files(batch, traj_dir) -> bool:
 
 @contextmanager
 def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
-    from ocpmodels.common import distutils, gp_utils
-    from ocpmodels.common.registry import registry
+    from fairchem.core.common import distutils, gp_utils
+    from fairchem.core.common.registry import registry
 
     if TYPE_CHECKING:
-        from ocpmodels.tasks.task import BaseTask
-        from ocpmodels.trainers import BaseTrainer
+        from fairchem.core.tasks.task import BaseTask
+        from fairchem.core.trainers import BaseTrainer
 
     @dataclass
     class _TrainingContext:
@@ -1027,7 +1027,7 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
 
 
 def _resolve_scale_factor_submodule(model: nn.Module, name: str):
-    from ocpmodels.modules.scaling.scale_factor import ScaleFactor
+    from fairchem.core.modules.scaling.scale_factor import ScaleFactor
 
     try:
         scale = model.get_submodule(name)
@@ -1098,7 +1098,7 @@ def load_state_dict(
 
 
 def scatter_det(*args, **kwargs):
-    from ocpmodels.common.registry import registry
+    from fairchem.core.common.registry import registry
 
     if registry.get("set_deterministic_scatter", no_warning=True):
         torch.use_deterministic_algorithms(mode=True)
@@ -1115,7 +1115,7 @@ def get_commit_hash():
     try:
         commit_hash = (
             subprocess.check_output(
-                ["git", "-C", ocpmodels.__path__[0], "describe", "--always"]
+                ["git", "-C", fairchem.core.__path__[0], "describe", "--always"]
             )
             .strip()
             .decode("ascii")

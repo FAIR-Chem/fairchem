@@ -14,7 +14,7 @@ import pytest
 from ase.io import read
 from ase.neighborlist import NeighborList, NewPrimitiveNeighborList
 
-from ocpmodels.preprocessing import AtomsToGraphs
+from fairchem.core.preprocessing import AtomsToGraphs
 
 
 @pytest.fixture(scope="class")

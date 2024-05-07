@@ -58,7 +58,7 @@ The first step is getting a checkpoint for the model we want to use. eSCN is cur
 The different models have different compute requirements. If you find your kernel is crashing, it probably means you have exceeded the allowed amount of memory. This checkpoint works fine in this example, but it may crash your kernel if you use it in the NRR example.
 
 ```{code-cell}
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.models.model_registry import model_name_to_local_file
 
 checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
 ```
@@ -66,7 +66,7 @@ checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_ca
 Next we load the checkpoint. The output is somewhat verbose, but it can be informative for debugging purposes.
 
 ```{code-cell}
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
 # calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
 ```

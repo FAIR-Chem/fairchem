@@ -8,7 +8,7 @@ from unittest import IsolatedAsyncioTestCase
 from unittest import TestCase as UnitTestCase
 from unittest import mock
 
-from ocpapi.client import (
+from fairchem.demo.ocpapi.client import (
     Adsorbates,
     AdsorbateSlabConfigs,
     AdsorbateSlabRelaxationResult,
@@ -27,8 +27,8 @@ from ocpapi.client import (
     Slabs,
     Status,
 )
-from ocpapi.client.ui import _API_TO_UI_HOSTS
-from ocpapi.workflows import (
+from fairchem.demo.ocpapi.client.ui import _API_TO_UI_HOSTS
+from fairchem.demo.ocpapi.workflows import (
     AdsorbateBindingSites,
     AdsorbateSlabRelaxations,
     UnsupportedAdsorbateException,

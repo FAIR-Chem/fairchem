@@ -19,7 +19,7 @@ from dataclasses_json import Undefined, dataclass_json
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
-from ocpapi.client import (
+from fairchem.demo.ocpapi.client import (
     Adsorbates,
     AdsorbateSlabConfigs,
     AdsorbateSlabRelaxationResult,

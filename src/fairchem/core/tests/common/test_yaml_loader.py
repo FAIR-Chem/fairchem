@@ -5,7 +5,7 @@ import tempfile
 import pytest
 import yaml
 
-from ocpmodels.common.utils import UniqueKeyLoader
+from fairchem.core.common.utils import UniqueKeyLoader
 
 
 @pytest.fixture(scope="class")

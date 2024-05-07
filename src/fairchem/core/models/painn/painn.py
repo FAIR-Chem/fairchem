@@ -38,14 +38,14 @@ from torch import nn
 from torch_geometric.nn import MessagePassing
 from torch_scatter import scatter, segment_coo
 
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import conditional_grad
-from ocpmodels.models.base import BaseModel
-from ocpmodels.models.gemnet.layers.base_layers import ScaledSiLU
-from ocpmodels.models.gemnet.layers.embedding_block import AtomEmbedding
-from ocpmodels.models.gemnet.layers.radial_basis import RadialBasis
-from ocpmodels.modules.scaling import ScaleFactor
-from ocpmodels.modules.scaling.compat import load_scales_compat
+from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import conditional_grad
+from fairchem.core.models.base import BaseModel
+from fairchem.core.models.gemnet.layers.base_layers import ScaledSiLU
+from fairchem.core.models.gemnet.layers.embedding_block import AtomEmbedding
+from fairchem.core.models.gemnet.layers.radial_basis import RadialBasis
+from fairchem.core.modules.scaling import ScaleFactor
+from fairchem.core.modules.scaling.compat import load_scales_compat
 
 from .utils import get_edge_id, repeat_blocks
 

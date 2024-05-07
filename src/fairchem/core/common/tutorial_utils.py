@@ -20,8 +20,8 @@ import torch_geometric as tg
 from ase.db import connect
 from yaml import dump
 
-import ocpmodels as om
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+import fairchem.core as om
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 
 
 def ocp_root():

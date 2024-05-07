@@ -15,11 +15,11 @@ import requests
 import torch
 from ase.io import read
 
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import load_state_dict, setup_imports
-from ocpmodels.datasets import data_list_collater
-from ocpmodels.models.equiformer_v2.so3 import CoefficientMappingModule, SO3_Embedding
-from ocpmodels.preprocessing import AtomsToGraphs
+from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import load_state_dict, setup_imports
+from fairchem.core.datasets import data_list_collater
+from fairchem.core.models.equiformer_v2.so3 import CoefficientMappingModule, SO3_Embedding
+from fairchem.core.preprocessing import AtomsToGraphs
 
 
 @pytest.fixture(scope="class")

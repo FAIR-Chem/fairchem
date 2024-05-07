@@ -11,7 +11,7 @@ from itertools import combinations, product
 from ase.optimize import BFGS
 import copy
 import torch
-from ocdata.utils import DetectTrajAnomaly
+from fairchem.data.oc.utils import DetectTrajAnomaly
 import networkx as nx
 import ocpneb
 from copy import deepcopy

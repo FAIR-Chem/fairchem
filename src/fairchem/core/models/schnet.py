@@ -11,9 +11,9 @@ import torch
 from torch_geometric.nn import SchNet
 from torch_scatter import scatter
 
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import conditional_grad
-from ocpmodels.models.base import BaseModel
+from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import conditional_grad
+from fairchem.core.models.base import BaseModel
 
 
 @registry.register_model("schnet")

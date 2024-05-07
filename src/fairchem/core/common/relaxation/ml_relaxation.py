@@ -14,8 +14,8 @@ from pathlib import Path
 import torch
 from torch_geometric.data import Batch
 
-from ocpmodels.common.typing import assert_is_instance
-from ocpmodels.datasets.lmdb_dataset import data_list_collater
+from fairchem.core.common.typing import assert_is_instance
+from fairchem.core.datasets.lmdb_dataset import data_list_collater
 
 from .optimizers.lbfgs_torch import LBFGS, TorchCalc
 

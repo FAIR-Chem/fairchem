@@ -16,17 +16,17 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import conditional_grad
-from ocpmodels.models.base import BaseModel
-from ocpmodels.models.scn.sampling import CalcSpherePoints
-from ocpmodels.models.scn.smearing import (
+from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import conditional_grad
+from fairchem.core.models.base import BaseModel
+from fairchem.core.models.scn.sampling import CalcSpherePoints
+from fairchem.core.models.scn.smearing import (
     GaussianSmearing,
     LinearSigmoidSmearing,
     SigmoidSmearing,
     SiLUSmearing,
 )
-from ocpmodels.models.scn.spherical_harmonics import SphericalHarmonicsHelper
+from fairchem.core.models.scn.spherical_harmonics import SphericalHarmonicsHelper
 
 with contextlib.suppress(ImportError):
     from e3nn import o3
