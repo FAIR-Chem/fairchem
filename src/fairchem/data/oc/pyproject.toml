@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=69"]
+
+[project]
+name = "oc-data"
+description = "Code for generating adsorbate-catalyst input configurations"
+readme = "README.md"
+license = {text = "MIT License"}
+version = "0.2.0"
+requires-python = ">=3.9, <3.13"
+dependencies = [
+    "scipy",
+    "numpy",
+    "ase==3.22.1",
+    "pymatgen",
+    "tqdm"
+]
+
+[tool.setuptools.packages]
+find = {namespaces = false}  # Disable implicit namespaces
+
+[tool.setuptools_scm]  # for version instrospection based on tags + commit
+
+[project.urls]
+repository = "http://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset"
+
+# include package data
+[tool.setuptools.package-data]
+"ocdata.databases.pkls" = ["*pkl"]
+
+[project.optional-dependencies]
+dev = ["pre-commit", "pytest", "pytest-cov", "coverage", "black"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts  =  "-p no:warnings --import-mode importlib -x --quiet -rxXs --color yes"
+filterwarnings  = [
+    'ignore::UserWarning',
+    'ignore::FutureWarning',
+    'ignore::RuntimeWarning'
+    ]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["ocdata"]
+
+[tool.isort]
+profile = 'black'
+skip_gitignore = true
+multi_line_output=3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 88
