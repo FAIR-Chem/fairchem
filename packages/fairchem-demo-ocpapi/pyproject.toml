@@ -23,7 +23,7 @@ dependencies = [
     "requests == 2.31.0",
     "responses == 0.23.2",
     "tenacity == 8.2.3",
-    "tqdm == 4.66.1",
+    "tqdm == 4.66.3",
 ]
 
 [project.optional-dependencies]
