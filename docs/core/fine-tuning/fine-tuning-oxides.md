@@ -27,7 +27,7 @@ First we get the checkpoint that we want. According to the [MODELS](../../core/m
 We get this checkpoint here.
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.models.model_registry import model_name_to_local_file
 
 checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 ```
@@ -74,7 +74,7 @@ atoms, c['data']['total_energy'], c['data']['forces']
 Next, we will create an OCP calculator that we can use to get predictions from.
 
 ```{code-cell} ipython3
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 calc = OCPCalculator(checkpoint_path=checkpoint_path, trainer='forces', cpu=False)
 ```
 
@@ -188,7 +188,7 @@ You choose the splits you want, 80:10:10 is common. We take a simple approach to
 We provide some helper functions in `ocpmodels.common.tutorial_utils` to streamline this process. 
 
 ```{code-cell} ipython3
-from ocpmodels.common.tutorial_utils import train_test_val_split
+from fairchem.core.common.tutorial_utils import train_test_val_split
 ! rm -fr train.db test.db val.db
 
 train, test, val = train_test_val_split('oxides.db')
@@ -200,7 +200,7 @@ train, test, val
 We have to create a yaml configuration file for the model we are using. The pre-trained checkpoints contain their config data, so we use this to get the base configuration, and then remove pieces we don't need, and update pieces we do need.
 
 ```{code-cell} ipython3
-from ocpmodels.common.tutorial_utils import generate_yml_config 
+from fairchem.core.common.tutorial_utils import generate_yml_config 
 
 yml = generate_yml_config(checkpoint_path, 'config.yml',
                    delete=['slurm', 'cmd', 'logger', 'task', 'model_attributes',
@@ -261,7 +261,7 @@ This can take up to 30 minutes for 80 epochs, so we only do a few here to see wh
 :tags: [hide-output]
 
 import time
-from ocpmodels.common.tutorial_utils import ocp_main
+from fairchem.core.common.tutorial_utils import ocp_main
 
 t0 = time.time()
 ! python {ocp_main()} --mode train --config-yml {yml} --checkpoint {checkpoint_path} --run-dir fine-tuning --identifier ft-oxides --amp > train.txt 2>&1 

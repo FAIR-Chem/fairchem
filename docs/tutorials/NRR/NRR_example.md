@@ -20,7 +20,7 @@ In the previous example, we constructed slab models of adsorbates on desired sit
 
 
 ```{code-cell} ipython3
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 import ase.io
 from ase.optimize import BFGS
 import sys
@@ -29,15 +29,15 @@ import pickle
 import matplotlib.pyplot as plt
 import time
 
-from ocdata.core import Adsorbate, AdsorbateSlabConfig, Bulk, Slab
+from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig, Bulk, Slab
 import os
 from glob import glob
 import pandas as pd
-from ocdata.utils import DetectTrajAnomaly
+from fairchem.data.oc.utils import DetectTrajAnomaly
 ```
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.models.model_registry import model_name_to_local_file
 
 checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path

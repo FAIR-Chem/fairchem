@@ -1,0 +1,28 @@
+data_image0
+_chemical_formula_structural       H2O
+_chemical_formula_sum              "H2 O1"
+_cell_length_a       10.7268
+_cell_length_b       11.9505
+_cell_length_c       33.4806
+_cell_angle_alpha    91.0424
+_cell_angle_beta     92.9493
+_cell_angle_gamma    88.9513
+
+_space_group_name_H-M_alt    "P 1"
+_space_group_IT_number       1
+
+loop_
+  _space_group_symop_operation_xyz
+  'x, y, z'
+
+loop_
+  _atom_site_type_symbol
+  _atom_site_label
+  _atom_site_symmetry_multiplicity
+  _atom_site_fract_x
+  _atom_site_fract_y
+  _atom_site_fract_z
+  _atom_site_occupancy
+  H   H1        1.0  0.14623  0.66781  0.89270  1.0000
+  H   H2        1.0  0.18169  0.63572  0.93681  1.0000
+  O   O1        1.0  0.21674  0.66206  0.91208  1.0000

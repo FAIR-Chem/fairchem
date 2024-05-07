@@ -18,7 +18,7 @@ The recommended way to do training is with the `main.py` script in ocp. One of t
 
 ```{code-cell} ipython3
 import logging
-from ocpmodels.common.utils import SeverityLevelBetween
+from fairchem.core.common.utils import SeverityLevelBetween
 
 root = logging.getLogger()
 
@@ -49,10 +49,10 @@ root.addHandler(handler_err)
 ```
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.models.model_registry import model_name_to_local_file
 
 checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 calc = OCPCalculator(checkpoint_path=checkpoint_path, trainer='forces', cpu=False)
 ```
 
@@ -61,7 +61,7 @@ calc = OCPCalculator(checkpoint_path=checkpoint_path, trainer='forces', cpu=Fals
 ```{code-cell} ipython3
 ! rm -fr train.db test.db val.db
 
-from ocpmodels.common.tutorial_utils import train_test_val_split
+from fairchem.core.common.tutorial_utils import train_test_val_split
 
 train, test, val = train_test_val_split('../../core/fine-tuning/oxides.db')
 train, test, val
@@ -72,7 +72,7 @@ train, test, val
 We start by making the config.yml. We build this from the calculator checkpoint.
 
 ```{code-cell} ipython3
-from ocpmodels.common.tutorial_utils import generate_yml_config
+from fairchem.core.common.tutorial_utils import generate_yml_config
 
 yml = generate_yml_config(checkpoint_path, 'config.yml',
                    delete=['slurm', 'cmd', 'logger', 'task', 'model_attributes',
@@ -112,7 +112,7 @@ The code is build around `submitit`, which is often used with Slurm, but also wo
 We have to mimic the `main.py` setup to get the arguments and config setup. Here is a minimal way to do this.
 
 ```{code-cell} ipython3
-from ocpmodels.common.flags import flags
+from fairchem.core.common.flags import flags
 parser = flags.get_parser()
 args, args_override = parser.parse_known_args(["--mode=train",                                            
                                                "--config-yml=config.yml", 
@@ -124,7 +124,7 @@ args, args_override
 Next, we build the first stage in our config. This starts with the file config.yml, then updates it with the args
 
 ```{code-cell} ipython3
-from ocpmodels.common.utils import build_config, new_trainer_context
+from fairchem.core.common.utils import build_config, new_trainer_context
 
 config = build_config(args=args, args_override={})
 config
