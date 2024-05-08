@@ -46,7 +46,7 @@ Alternatively, an async function can be run in a script by wrapping it with [asy
 tags: ["skip-execution"]
 ---
 import asyncio
-from ocpapi import find_adsorbate_binding_sites
+from fairchem.demo.ocpapi import find_adsorbate_binding_sites
 
 asyncio.run(find_adsorbate_binding_sites(...))
 ```
@@ -59,7 +59,7 @@ Since this is being evaluated as a jupyter notebook, ipython will handle this fo
 ---
 tags: ["skip-execution"]
 ---
-from ocpapi import find_adsorbate_binding_sites
+from fairchem.demo.ocpapi import find_adsorbate_binding_sites
 
 results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
@@ -103,7 +103,7 @@ A finite set of bulk materials and adsorbates can be referenced by ID throughout
 2. Use the low-level client that ships with this library:
 
 ```{code-cell} ipython3
-from ocpapi import Client
+from fairchem.demo.ocpapi import Client
 
 client = Client()
 
@@ -125,7 +125,7 @@ Run relaxations for all slabs that are generated:
 ---
 tags: ["skip-execution"]
 ---
-from ocpapi import find_adsorbate_binding_sites, keep_all_slabs
+from fairchem.demo.ocpapi import find_adsorbate_binding_sites, keep_all_slabs
 
 results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
@@ -137,7 +137,7 @@ results = await find_adsorbate_binding_sites(
 Run relaxations only for slabs with Miller Indices in the input set:
 
 ```{code-cell} ipython3
-from ocpapi import find_adsorbate_binding_sites, keep_slabs_with_miller_indices
+from fairchem.demo.ocpapi import find_adsorbate_binding_sites, keep_slabs_with_miller_indices
 
 results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
@@ -162,7 +162,7 @@ with open("results.json", "w") as f:
 Similarly, results can be read back from file to an `AdsorbateBindingSites` object with:
 
 ```{code-cell} ipython3
-from ocpapi import AdsorbateBindingSites
+from fairchem.demo.ocpapi import AdsorbateBindingSites
 
 with open("results.json", "r") as f:
     results = AdsorbateBindingSites.from_json(f.read())
@@ -192,7 +192,7 @@ The API currently supports two models:
 A specific model type can be requested with:
 
 ```{code-cell} ipython3
-from ocpapi import find_adsorbate_binding_sites
+from fairchem.demo.ocpapi import find_adsorbate_binding_sites
 
 results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
@@ -220,7 +220,7 @@ Two classes have support for generating [ase.Atoms](https://wiki.fysik.dtu.dk/as
 For example, the following would generate an `ase.Atoms` object for the first relaxed adsorbate configuration on the first slab generated for *OH binding on Pt:
 
 ```{code-cell} ipython3
-from ocpapi import find_adsorbate_binding_sites
+from fairchem.demo.ocpapi import find_adsorbate_binding_sites
 
 results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
