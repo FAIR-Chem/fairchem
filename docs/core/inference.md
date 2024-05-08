@@ -197,7 +197,7 @@ The results should be the same.
 
 It is worth noting the default precision of predictions is float16 with main.py, but with the ASE calculator the default precision is float32. Supposedly you can specify `--task.prediction_dtype=float32` at the command line to or specify it in the config.yml like we do above, but as of the tutorial this does not resolve the issue.
 
-As noted above (see also [Issue 542](https://github.com/Open-Catalyst-Project/ocp/issues/542)), the ASE calculator and main.py use different precisions by default, which can lead to small differences.
+As noted above (see also [Issue 542](https://github.com/FAIR-Chem/fairchem/issues/542)), the ASE calculator and main.py use different precisions by default, which can lead to small differences.
 
 ```{code-cell} ipython3
 np.mean(np.abs(results['energy'][sind] - OCP * natoms))  # MAE

@@ -51,7 +51,7 @@ For all non-codebase related questions and to keep up-to-date with the latest OC
 announcements, please join the [discussion board](https://discuss.opencatalystproject.org/).
 
 All code-related questions and issues should be posted directly on our
-[issues page](https://github.com/Open-Catalyst-Project/ocp/issues).
+[issues page](https://github.com/FAIR-Chem/fairchem/issues).
 Make sure to first go through the [FAQ](https://github.com/Open-Catalyst-Project/ocp/tree/main/FAQ.md)
 to check if your question's answered already.
 

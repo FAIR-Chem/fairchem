@@ -224,7 +224,7 @@ atoms.get_potential_energy()
 # Stochastic simulation results
 
 Some models are not deterministic (SCN/eSCN/EqV2), i.e. you can get slightly different answers each time you run it.
-An example is shown below. See [Issue 563](https://github.com/Open-Catalyst-Project/ocp/issues/563) for more discussion.
+An example is shown below. See [Issue 563](https://github.com/FAIR-Chem/fairchem/issues/563) for more discussion.
 This happens because a random selection of is made to sample edges, and a different selection is made each time you run it.
 
 ```{code-cell} ipython3
