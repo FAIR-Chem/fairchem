@@ -61,7 +61,7 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
 
     @property
     def indices(self):
-        return list(range(self.num_samples))
+        return np.arange(self.num_samples, dtype=int)
 
     @cached_property
     def metadata(self) -> DatasetMetadata:
@@ -113,15 +113,17 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
     # remove information about other splits, only keep specified split
     # this may only work with the mt config not main config
     current_split_config = config.copy()
-    current_split_config.pop("splits")
-    current_split_config.update(config["splits"][split])
+
+    if "splits" in current_split_config:
+        current_split_config.pop("splits")
+        current_split_config.update(config["splits"][split])
 
     dataset = dataset_cls(current_split_config)
     # Get indices of the dataset
     indices = dataset.indices
     max_atoms = current_split_config.get("max_atoms", None)
     if max_atoms is not None:
-        indices = indices[dataset.data_sizes < max_atoms]
+        indices = indices[dataset.data_sizes(indices) <= max_atoms]
 
     # Apply dataset level transforms
     # TODO is no_shuffle mutually exclusive though? or what is the purpose of no_shuffle?
@@ -139,17 +141,27 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
         # shuffle by default, user can disable to optimize if they have confidence in dataset
         # shuffle all datasets by default to avoid biasing the sampling in concat dataset
         # TODO only shuffle if split is train
-        max_index = first_n
-        indices = randperm(indices).tolist()
+        max_index = sample_n
+        indices = indices[randperm(len(indices))]
     else:
         max_index = len(dataset)
-        indices = indices if no_shuffle else randperm(indices).tolist()
+        indices = indices if no_shuffle else indices[randperm(len(indices))]
 
     try:
         indices = indices[:max_index]
     except IndexError:
-        raise ValueError(
-            f"Cannot take {max_index} from a dataset of only length {len(dataset)}."
+        msg = (
+            f"Cannot take {max_index} data points from a dataset of only length {len(indices)}.\n"
             f"Make sure to set first_n or sample_n to a number =< the total samples in dataset."
         )
-    return Subset(dataset, indices)
+        if max_atoms is not None:
+            msg = (
+                msg[:-1]
+                + f"that are smaller than the given max_atoms {max_atoms}."
+            )
+        raise ValueError(msg)
+    # inject data_sizes right now (hacky should just subclass Subset)
+    subset = Subset(dataset, indices)
+    # TODO makes this just an array
+    subset.data_sizes = lambda idx: dataset.data_sizes(indices)[idx]
+    return subset
