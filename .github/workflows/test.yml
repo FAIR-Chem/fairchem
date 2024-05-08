@@ -39,9 +39,9 @@ jobs:
 
       - name: Test core with pytest
         run: |
-          pytest src/fairchem/core/tests -vv --cov-report=xml --cov=fairchem.core
           pytest src/fairchem/data/oc/tests -vv --cov-report=xml --cov=fairchem.data.oc
           pytest src/fairchem/demo/ocpapi/tests -vv --cov-report=xml --cov=fairchem.demo.ocpapi
+          pytest src/fairchem/core/tests -vv --cov-report=xml --cov=fairchem.core
 
       - if: ${{ matrix.python_version == '3.11' }}
         name: codecov-report
