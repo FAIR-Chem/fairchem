@@ -39,6 +39,9 @@ source = "vcs"
 root = "../../" 
 git_describe_command = 'git describe --dirty --tags --long --match fairchem.ocpapi*'
 
+[tool.hatch.build]
+directory = "../../dist"
+
 [tool.hatch.build.targets.sdist]
 sources = ["src"]
 only-include = ["src/fairchem/demo/ocpapi"]

@@ -2,21 +2,6 @@
 requires = ["hatchling","hatch-vcs"]
 build-backend = "hatchling.build"
 
-[tool.hatch.version]
-source = "vcs"
-
-[tool.hatch.version.raw-options]
-root = "../../" 
-git_describe_command = 'git describe --dirty --tags --long --match fairchem.core*'
-
-[tool.hatch.build.targets.sdist]
-sources = ["src"]
-only-include = ["src/fairchem/core"]
-
-[tool.hatch.build.targets.wheel]
-sources = ["src"]
-only-include = ["src/fairchem/core"]
-
 [project]
 name = "fairchem.core"
 description = "Machine learning models for use in catalysis as part of the Open Catalyst Project"
@@ -53,6 +38,24 @@ fairchem = "fairchem.core._cli:main"
 repository = "https://github.com/Open-Catalyst-Project/ocp"
 home = "https://opencatalystproject.org/"
 # documentation = ""
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+root = "../../"
+git_describe_command = 'git describe --dirty --tags --long --match fairchem.core*'
+
+[tool.hatch.build]
+directory = "../../dist"
+
+[tool.hatch.build.targets.sdist]
+sources = ["src"]
+only-include = ["src/fairchem/core"]
+
+[tool.hatch.build.targets.wheel]
+sources = ["src"]
+only-include = ["src/fairchem/core"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"

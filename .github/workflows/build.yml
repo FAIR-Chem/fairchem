@@ -14,8 +14,14 @@ jobs:
           fetch-depth: 0 # Optional, use if you use setuptools_scm
 
       - name: Build
-        run: pipx run build --sdist
-
+        run: |
+          # add packages that are supposed to be built to this list
+          for package in fairchem-core fairchem-data-oc fairchem-demo-ocpapi
+          do
+            pushd packages/$package
+            hatch build
+            popd
+          done
       - uses: actions/upload-artifact@v4
         with:
           path: dist/*.tar.gz
