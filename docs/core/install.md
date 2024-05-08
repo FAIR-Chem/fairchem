@@ -6,7 +6,7 @@ We do not have official conda recipes (yet!), so to install with conda or mamba 
 [ocp repo](https://github.com/FAIR-Chem/fairchem) and run the following from inside the repo directory to create an environment with all the
 necessary dependencies.
 
-1. Create an *ocp-models* environment
+1. Create an *fairchem* environment
    1. **GPU**
 
       The default environment uses cuda 11.8, if you need a different version you will have to edit *pytorch-cuda* version
