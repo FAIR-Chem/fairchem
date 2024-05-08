@@ -27,8 +27,8 @@ bibtex_bibfiles:
 
 # Information about where the book exists on the web
 repository:
-  url: https://fair-chem.github.io  # Online location of your book
-  # path_to_book: docs  # Optional path to your book, relative to the repository root
+  url: https://github.com/FAIR-Chem/fairchem  # Online location of your book
+  path_to_book: docs  # Optional path to your book, relative to the repository root
   branch: main  # Which branch of the repository should be used when creating links (optional)
   
 # Add GitHub buttons to your book
