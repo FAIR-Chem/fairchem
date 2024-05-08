@@ -67,7 +67,7 @@ An important quantity in screening catalysts is their adsorption energy for the 
 
 Specifically, during the course of a relaxation, given an initial set of atoms and their positions, the task is to iteratively estimate atomic forces and update atomic positions until a relaxed state is reached. The energy corresponding to the relaxed state is the structure's 'relaxed energy'.
 
-As part of the [Open Catalyst Project](https://github.com/Open-Catalyst-Project/ocp) (OCP), we identify three key tasks ML models need to perform well on in
+As part of the [Open Catalyst Project](https://github.com/FAIR-Chem/fairchem) (OCP), we identify three key tasks ML models need to perform well on in
 order to effectively approximate DFT --
 
  1) Given an **I**nitial **S**tructure, predict the **R**elaxed **E**nergy of the relaxed strucutre (**IS2RE**),
@@ -102,7 +102,7 @@ Scalable and cost-effective solutions to renewable energy storage are essential 
 
 An open challenge is finding low-cost catalysts to drive these reactions at high rates. Through the use of quantum mechanical simulations (Density Functional Theory, DFT), new catalyst structures can be tested and evaluated. Unfortunately, the high computational cost of these simulations limits the number of structures that may be tested. The use of AI or machine learning may provide a method to efficiently approximate these calculations; reducing the time required from 24} hours to a second. This capability would transform the search for new catalysts from the present day practice of evaluating O(1,000) of handpicked candidates to the brute force search over millions or even billions of candidates.
 
-As part of OCP, we publicly released the world's largest quantum mechanical simulation dataset -- [OC20](https://github.com/Open-Catalyst-Project/ocp/blob/master/DATASET.md) -- in the Fall of 2020 along with a suite of baselines and evaluation metrics. The creation of the dataset required over 70 million hours of compute. This dataset enables the exploration of techniques that will generalize across different catalyst materials and adsorbates. If successful, models trained on the dataset could enable the computational testing of millions of catalyst materials for a wide variety of chemical reactions. However, techniques that achieve the accuracies required** for practical impact are still beyond reach and remain an open area for research, thus encouraging research in this important area to help in meeting the world's energy needs in the decades ahead.
+As part of OCP, we publicly released the world's largest quantum mechanical simulation dataset -- [OC20](https://github.com/FAIR-Chem/fairchem/blob/master/DATASET.md) -- in the Fall of 2020 along with a suite of baselines and evaluation metrics. The creation of the dataset required over 70 million hours of compute. This dataset enables the exploration of techniques that will generalize across different catalyst materials and adsorbates. If successful, models trained on the dataset could enable the computational testing of millions of catalyst materials for a wide variety of chemical reactions. However, techniques that achieve the accuracies required** for practical impact are still beyond reach and remain an open area for research, thus encouraging research in this important area to help in meeting the world's energy needs in the decades ahead.
 
 ** The computational catalysis community often aims for an adsorption energy MAE of 0.1-0.2 eV for practical relevance.
 
@@ -162,7 +162,7 @@ torch.cuda.is_available()
 <a name="data-description"></a>
 # Dataset Overview
 
-The Open Catalyst 2020 Dataset (OC20) will be used throughout this tutorial. More details can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/DATASET.md) and the corresponding [paper](https://arxiv.org/abs/2010.09990). Data is stored in PyTorch Geometric [Data](https://pytorch-geometric.readthedocs.io/en/latest/modules/data.html) objects and stored in LMDB files. For each task we include several sized training splits. Validation/Test splits are broken into several subsplits: In Domain (ID), Out of Domain Adsorbate (OOD-Ads), Out of Domain Catalyast (OOD-Cat) and Out of Domain Adsorbate and Catalyst (OOD-Both). Split sizes are summarized below:
+The Open Catalyst 2020 Dataset (OC20) will be used throughout this tutorial. More details can be found [here](https://github.com/FAIR-Chem/fairchem/blob/master/DATASET.md) and the corresponding [paper](https://arxiv.org/abs/2010.09990). Data is stored in PyTorch Geometric [Data](https://pytorch-geometric.readthedocs.io/en/latest/modules/data.html) objects and stored in LMDB files. For each task we include several sized training splits. Validation/Test splits are broken into several subsplits: In Domain (ID), Out of Domain Adsorbate (OOD-Ads), Out of Domain Catalyast (OOD-Cat) and Out of Domain Adsorbate and Catalyst (OOD-Both). Split sizes are summarized below:
 
 Train
 * S2EF - 200k, 2M, 20M, 134M(All)
@@ -174,7 +174,7 @@ Val/Test
 
 #### **Tutorial Use**
 
-For the sake of this tutorial we provide much smaller splits (100 train, 20 val for all tasks) to allow users to easily store, train, and predict across the various tasks. Please refer [here](https://github.com/Open-Catalyst-Project/ocp#download-data) for details on how to download the full datasets for general use.
+For the sake of this tutorial we provide much smaller splits (100 train, 20 val for all tasks) to allow users to easily store, train, and predict across the various tasks. Please refer [here](https://github.com/FAIR-Chem/fairchem#download-data) for details on how to download the full datasets for general use.
 
  
 
@@ -609,7 +609,7 @@ i_structure.get_forces(apply_constraint=True)
 
 ### Interacting with the OC20 datasets
 
-The OC20 datasets are stored in LMDBs. Here we show how to interact with the datasets directly in order to better understand the data. We use [LmdbDataset](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/datasets/lmdb_dataset.py) to read in a directory of LMDB files or a single LMDB file.
+The OC20 datasets are stored in LMDBs. Here we show how to interact with the datasets directly in order to better understand the data. We use [LmdbDataset](https://github.com/FAIR-Chem/fairchem/blob/main/ocpmodels/datasets/lmdb_dataset.py) to read in a directory of LMDB files or a single LMDB file.
 
 ```{code-cell} ipython3
 ---
@@ -784,7 +784,7 @@ stdev = np.std(energies)
 
 +++ {"id": "6R6IkYLCQPpH"}
 
-For this example, we will explicitly define the config; however, a set of default configs can be found [here](https://github.com/Open-Catalyst-Project/ocp/tree/master/configs). Default config yaml files can easily be loaded with the following [utility](https://github.com/Open-Catalyst-Project/ocp/blob/aa8e44d50229fce887b3a94a5661c4f85cd73eed/ocpmodels/common/utils.py#L361-L400). Loading a yaml config is preferrable when launching jobs from the command line. We have included our best models' config files here for reference. 
+For this example, we will explicitly define the config; however, a set of default configs can be found [here](https://github.com/FAIR-Chem/fairchem/tree/master/configs). Default config yaml files can easily be loaded with the following [utility](https://github.com/FAIR-Chem/fairchem/blob/aa8e44d50229fce887b3a94a5661c4f85cd73eed/ocpmodels/common/utils.py#L361-L400). Loading a yaml config is preferrable when launching jobs from the command line. We have included our best models' config files here for reference. 
 
 **Note** - we only train for a single epoch with a reduced batch size (GPU memory constraints) for demonstration purposes, modify accordingly for full convergence.
 
@@ -1125,7 +1125,7 @@ stdev = np.std(energies)
 
 ### Define the Config
 
-For this example, we will explicitly define the config; however, a set of default configs can be found [here](https://github.com/Open-Catalyst-Project/ocp/tree/master/configs). Default config yaml files can easily be loaded with the following [utility](https://github.com/Open-Catalyst-Project/ocp/blob/aa8e44d50229fce887b3a94a5661c4f85cd73eed/ocpmodels/common/utils.py#L361-L400). Loading a yaml config is preferrable when launching jobs from the command line. We have included our best models' config files here for reference. 
+For this example, we will explicitly define the config; however, a set of default configs can be found [here](https://github.com/FAIR-Chem/fairchem/tree/master/configs). Default config yaml files can easily be loaded with the following [utility](https://github.com/FAIR-Chem/fairchem/blob/aa8e44d50229fce887b3a94a5661c4f85cd73eed/ocpmodels/common/utils.py#L361-L400). Loading a yaml config is preferrable when launching jobs from the command line. We have included our best models' config files here for reference. 
 
 **Note** - we only train for a single epoch with a reduced batch size (GPU memory constraints) for demonstration purposes, modify accordingly for full convergence.
 
@@ -1417,7 +1417,7 @@ Running an iterative S2EF model for the IS2RS task can be run from any S2EF conf
   * *traj_dir* - If specified, directory to save out the full ML relaxation as an ASE trajectory. Useful for debugging or visualizing results.
 * *num_relaxation_batches* - If specified, relaxations will only be run for a subset of the relaxation dataset. Useful for debugging or wanting to visualize a few systems.
 
-A sample relaxation config can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/1044e311182c1120c6e6d137ce6db3f445148973/configs/s2ef/2M/dimenet_plus_plus/dpp_relax.yml#L24-L33).
+A sample relaxation config can be found [here](https://github.com/FAIR-Chem/fairchem/blob/1044e311182c1120c6e6d137ce6db3f445148973/configs/s2ef/2M/dimenet_plus_plus/dpp_relax.yml#L24-L33).
    
 
 ```{code-cell} ipython3
@@ -2018,7 +2018,7 @@ For those interested in using our pretrained models for other applications, we p
 
 ## Download pretrained checkpoint
 
-We have released checkpoints of all the models on the leaderboard [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/MODELS.md). These trained models can be used as an ASE calculator for various calculations.
+We have released checkpoints of all the models on the leaderboard [here](https://github.com/FAIR-Chem/fairchem/blob/master/MODELS.md). These trained models can be used as an ASE calculator for various calculations.
 
 For this tutorial we download one of our earlier model checkpoints: GemNet-T
 
@@ -2305,12 +2305,12 @@ db.close()
 
 The previous sections of this notebook are intended to demonstrate the inner workings of our codebase. For regular training, we suggest that you train and evaluate on command line.
 
-1. Clone our repo at https://github.com/Open-Catalyst-Project/ocp and set up the environment according to the readme.
+1. Clone our repo at https://github.com/FAIR-Chem/fairchem and set up the environment according to the readme.
 2. Download relevant data ([see above for info](https://colab.research.google.com/drive/1oGZcrakB4Pbj8Xq74lSvcRDUHw9L-Dh5#scrollTo=jXoiLncsU3pe)).
 
 +++ {"id": "lAdwlMNOKwYj"}
 
-3. In the config file, modify the path of the data [train](https://github.com/Open-Catalyst-Project/ocp/blob/master/configs/is2re/10k/base.yml#L4) [val](https://github.com/Open-Catalyst-Project/ocp/blob/master/configs/is2re/10k/base.yml#L8), [normalization parameters](https://github.com/Open-Catalyst-Project/ocp/blob/master/configs/is2re/10k/base.yml#L5-L7)  as well as any other [model](https://github.com/Open-Catalyst-Project/ocp/blob/master/configs/is2re/10k/dimenet_plus_plus/dpp.yml#L4-L16) or [training](https://github.com/Open-Catalyst-Project/ocp/blob/master/configs/is2re/10k/dimenet_plus_plus/dpp.yml#L23-L35) args. 
+3. In the config file, modify the path of the data [train](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/base.yml#L4) [val](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/base.yml#L8), [normalization parameters](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/base.yml#L5-L7)  as well as any other [model](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/dimenet_plus_plus/dpp.yml#L4-L16) or [training](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/dimenet_plus_plus/dpp.yml#L23-L35) args. 
 
 For a simple example, we'll train DimeNet++ on IS2RE demo data: \
 a. Modify the train data path in `/contents/ocp/configs/is2re/10k/base.yml` in 
@@ -2336,7 +2336,7 @@ c. We can change the model parameters in `/contents/ocp/configs/is2re/10k/dimene
 `python main.py --mode predict --config-yml configs/is2re/10k/dimenet_plus_plus/dpp.yml --checkpoint checkpoints/[datetime]-dpp_is2re_sample/checkpoint.pt`
 7. View energy predictions at `results/[datetime]/is2re_predictions.npz`
 
-For more information on how to train and evaluate, see [this readme](https://github.com/Open-Catalyst-Project/ocp/blob/master/TRAIN.md). For checkpoints of publicly available trained models, see [MODELS.md](https://github.com/Open-Catalyst-Project/ocp/blob/master/MODELS.md).
+For more information on how to train and evaluate, see [this readme](../core/model_training.md). For checkpoints of publicly available trained models, see [MODELS.md](../core/model_checkpoints.md).
 
 +++ {"id": "oHIjM6eMwlXY"}
 
@@ -2369,7 +2369,7 @@ OC20 is a large and diverse dataset with many splits. For those with limited res
 <a name="references"></a>
 # References
 
-* Open Catalyst codebase: https://github.com/Open-Catalyst-Project/ocp/
+* Open Catalyst codebase: https://github.com/FAIR-Chem/fairchem/
 * Open Catalyst webpage: https://opencatalystproject.org/
 * [Electrocatalysis white paper](https://arxiv.org/pdf/2010.09435.pdf): C. Lawrence Zitnick, Lowik Chanussot, Abhishek Das, Siddharth Goyal, Javier Heras-Domingo, Caleb Ho, Weihua Hu, Thibaut Lavril, Aini Palizhati, Morgane Riviere, Muhammed Shuaibi, Anuroop Sriram, Kevin Tran, Brandon Wood, Junwoong Yoon, Devi Parikh, Zachary Ulissi: “An Introduction to Electrocatalyst Design using Machine Learning for Renewable Energy Storage”, 2020; arXiv:2010.09435.
 * [OC20 dataset paper](https://arxiv.org/pdf/2010.09990.pdf): L. Chanussot, A. Das, S. Goyal, T. Lavril, M. Shuaibi, M. Riviere, K. Tran, J. Heras-Domingo, C. Ho, W. Hu, A. Palizhati, A. Sriram, B. Wood, J. Yoon, D. Parikh, C. L. Zitnick, and Z. Ulissi. The Open Catalyst 2020 (oc20) dataset and community challenges. ACS Catalysis, 2021.

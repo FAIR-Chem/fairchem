@@ -11,16 +11,15 @@ kernelspec:
   name: python3
 ---
 
-# Making LMDB Datasets (original format)
+# Making LMDB Datasets (original format, deprecated for ASE LMDBs)
 
-Storing your data in an LMDB ensures very fast random read speeds for the fastest supported throughput. This is the
-recommended option for the majority of OCP use cases. For more information about writing your data to an LMDB,
-please see the [LMDB Dataset Tutorial](https://github.com/Open-Catalyst-Project/ocp/blob/main/tutorials/lmdb_dataset_creation.ipynb).
+Storing your data in an LMDB ensures very fast random read speeds for the fastest supported throughput. This was the
+recommended option for the majority of fairchem use cases, but has since been deprecated for [ASE LMDB files](ase_dataset_creation)
 
 This notebook provides an overview of how to create LMDB datasets to be used with the OCP repo. This tutorial is intended
 for those who wish to use OCP to train on their own datasets. Those interested in just using OCP data need not worry
 about these steps as they've been automated as part of this
-[download script](https://github.com/Open-Catalyst-Project/ocp/blob/master/scripts/download_data.py).
+[download script](https://github.com/FAIR-Chem/fairchem/blob/master/src/core/scripts/download_data.py).
 
 ```{code-cell} ipython3
 from fairchem.core.preprocessing import AtomsToGraphs

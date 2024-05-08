@@ -6,11 +6,15 @@ root: index
 parts:
 - caption: Quickstart & Installation
   chapters:
-  - file: core/intro_series
   - file: core/install
   - file: core/quickstart
   - file: core/gotchas
   - file: core/license
+- caption: Learn More
+  chapters:
+  - file: core/intro_series
+  - file: videos/technical_talks
+  - file: core/papers_using_models
 - caption: OCP API & Demo
   chapters:
   - url: https://open-catalyst.metademolab.com/
@@ -32,9 +36,6 @@ parts:
   - file: core/inference
   - file: core/fine-tuning/fine-tuning-oxides
   - file: core/model_faq
-- caption: Videos and Talks
-  chapters:
-  - file: videos/technical_talks
 - caption: Catalysis Case Studies & Tutorials
   chapters:
   - file: tutorials/cattsunami_walkthrough

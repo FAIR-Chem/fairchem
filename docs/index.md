@@ -1,49 +1,53 @@
-# `ocp` by Open Catalyst Project
+# `fairchem` repository for atomistic AI/ML models in chemistry
 
-![tests](https://github.com/Open-Catalyst-Project/ocp/actions/workflows/test.yml/badge.svg?branch=main)
+![tests](https://github.com/FAIR-Chem/fairchem/actions/workflows/test.yml/badge.svg?branch=main)
 [![codecov](https://codecov.io/gh/Open-Catalyst-Project/ocp/graph/badge.svg?token=M606LH5LK6)](https://codecov.io/gh/Open-Catalyst-Project/ocp)
 
-`ocp` is the [Open Catalyst Project](https://opencatalystproject.org/)'s
-library of state-of-the-art machine learning algorithms for catalysis.
+`fairchem` is the FAIR Chemistry team's library of state-of-the-art machine learning algorithms for chemistry and materials. Collaborative projects that contribute or use the models and approaches in this repo:
+* [Open Catalyst Project (OCP)](https://opencatalystproject.org/)
+* [Open Direct Air Capture (OpenDAC)](https://open-dac.github.io/)
+
+We re-organized and rebranded the repository in 2024 (previously the `ocp` repo) to reflect the increasingly general usability of these models beyond catalysis, including things like direct air capture.
+
 
 <div align="left">
     <img src="https://user-images.githubusercontent.com/1156489/170388229-642c6619-dece-4c88-85ef-b46f4d5f1031.gif">
 </div>
 
-## [OCP Documentation](https://open-catalyst-project.github.io/ocp/)
+## [fairchem](https://fair-chem.github.io/fairchem/)
 Full documentation, released data/checkpoints, and tutorials are now available.
 
-- [Installation](https://open-catalyst-project.github.io/ocp/core/install.html)
-- [Pretrained models](https://open-catalyst-project.github.io/ocp/core/models.html)
-- [FAQ](https://open-catalyst-project.github.io/ocp/core/model_faq.html)
+- [Installation](core/install)
+- [Pretrained model checkpoints](core/model_checkpoints)
+- [FAQ](core/model_faq)
 
 `ocp` provides training and evaluation code for tasks and models that take arbitrary
 chemical structures as input to predict energies / forces / positions / stresses,
 and can be used as a base scaffold for research projects. For an overview of
 tasks, data, and metrics, please read the documentations and respective papers:
- - [OC20](https://open-catalyst-project.github.io/ocp/core/datasets/oc20.html)
- - [OC22](https://open-catalyst-project.github.io/ocp/core/datasets/oc22.html)
- - [ODAC23](https://open-catalyst-project.github.io/ocp/core/datasets/odac.html)
+ - [OC20](core/datasets/oc20)
+ - [OC22](core/datasets/oc22)
+ - [ODAC23](core/datasets/odac)
 
 Projects and models built on `ocp`:
 
-- SchNet [[`arXiv`](https://arxiv.org/abs/1706.08566)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/models/schnet.py)]
-- DimeNet++ [[`arXiv`](https://arxiv.org/abs/2011.14115)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/models/dimenet_plus_plus.py)]
-- GemNet-dT [[`arXiv`](https://arxiv.org/abs/2106.08903)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/gemnet)]
-- PaiNN [[`arXiv`](https://arxiv.org/abs/2102.03150)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/painn)]
-- Graph Parallelism [[`arXiv`](https://arxiv.org/abs/2203.09697)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/gemnet_gp)]
-- GemNet-OC [[`arXiv`](https://arxiv.org/abs/2204.02782)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/gemnet_oc)]
-- SCN [[`arXiv`](https://arxiv.org/abs/2206.14331)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/scn)]
-- AdsorbML [[`arXiv`](https://arxiv.org/abs/2211.16486)] [[`code`](https://github.com/open-catalyst-project/adsorbml)]
-- eSCN [[`arXiv`](https://arxiv.org/abs/2302.03655)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/escn)]
-- EquiformerV2 [[`arXiv`](https://arxiv.org/abs/2306.12059)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/equiformer_v2)]
+- SchNet [[`arXiv`](https://arxiv.org/abs/1706.08566)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/schnet.py)]
+- DimeNet++ [[`arXiv`](https://arxiv.org/abs/2011.14115)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/dimenet_plus_plus.py)]
+- GemNet-dT [[`arXiv`](https://arxiv.org/abs/2106.08903)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/tree/fairchem/core/models/gemnet)]
+- PaiNN [[`arXiv`](https://arxiv.org/abs/2102.03150)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/tree/fairchem/core/models/painn)]
+- Graph Parallelism [[`arXiv`](https://arxiv.org/abs/2203.09697)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/tree/fairchem/core/models/gemnet_gp)]
+- GemNet-OC [[`arXiv`](https://arxiv.org/abs/2204.02782)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/tree/fairchem/core/models/gemnet_oc)]
+- SCN [[`arXiv`](https://arxiv.org/abs/2206.14331)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/tree/fairchem/core/models/scn)]
+- AdsorbML [[`arXiv`](https://arxiv.org/abs/2211.16486)] [[`code`](https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/applications/AdsorbML)]
+- eSCN [[`arXiv`](https://arxiv.org/abs/2302.03655)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/tree/fairchem/core/models/escn)]
+- EquiformerV2 [[`arXiv`](https://arxiv.org/abs/2306.12059)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/tree/fairchem/core/models/equiformer_v2)]
 
 Older model implementations that are no longer supported:
 
-- CGCNN [[`arXiv`](https://arxiv.org/abs/1710.10324)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/cgcnn.py)]
-- DimeNet [[`arXiv`](https://arxiv.org/abs/2003.03123)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/dimenet.py)]
-- SpinConv [[`arXiv`](https://arxiv.org/abs/2106.09575)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/spinconv.py)]
-- ForceNet [[`arXiv`](https://arxiv.org/abs/2103.01436)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/forcenet.py)]
+- CGCNN [[`arXiv`](https://arxiv.org/abs/1710.10324)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/cgcnn.py)]
+- DimeNet [[`arXiv`](https://arxiv.org/abs/2003.03123)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/dimenet.py)]
+- SpinConv [[`arXiv`](https://arxiv.org/abs/2106.09575)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/spinconv.py)]
+- ForceNet [[`arXiv`](https://arxiv.org/abs/2103.01436)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/forcenet.py)]
 
 ## Discussion
 
@@ -51,9 +55,7 @@ For all non-codebase related questions and to keep up-to-date with the latest OC
 announcements, please join the [discussion board](https://discuss.opencatalystproject.org/).
 
 All code-related questions and issues should be posted directly on our
-[issues page](https://github.com/Open-Catalyst-Project/ocp/issues).
-Make sure to first go through the [FAQ](https://github.com/Open-Catalyst-Project/ocp/tree/main/FAQ.md)
-to check if your question's answered already.
+[issues page](https://github.com/FAIR-Chem/fairchem/issues).
 
 ## Acknowledgements
 
@@ -61,12 +63,14 @@ to check if your question's answered already.
 by [Tian Xie](http://txie.me), but has undergone significant changes since.
 - A lot of engineering ideas have been borrowed from [github.com/facebookresearch/mmf](https://github.com/facebookresearch/mmf).
 - The DimeNet++ implementation is based on the [author's Tensorflow implementation](https://github.com/klicperajo/dimenet) and the [DimeNet implementation in Pytorch Geometric](https://github.com/rusty1s/pytorch_geometric/blob/master/torch_geometric/nn/models/dimenet.py).
+- It was then developed as the OCP repo, and includes many contributions from the community and collaborators.
+- Much of the documentation was developed for various papers or as part of a comprehensive tutorial for the 2023 ACS Fall Chemistry conference.
 
 ## License
 
-`ocp` is released under the [MIT](https://github.com/Open-Catalyst-Project/ocp/blob/main/LICENSE.md) license.
+`fairchem` is released under the [MIT](https://github.com/FAIR-Chem/fairchem/blob/main/LICENSE.md) license.
 
-## Citing `ocp`
+## Citing `fairchem`
 
 If you use this codebase in your work, please consider citing:
 

@@ -50,5 +50,5 @@ sphinx:
   - 'autoapi.extension'
   config:
     autosummary_generate: True
-    autoapi_dirs: ['../src/fairchem/core','../src/fairchem/demo','../src/fairchem/data','../src/fairchem/applications']
+    autoapi_dirs: ['../src/fairchem/']
     autoapi_python_use_implicit_namespaces: True
