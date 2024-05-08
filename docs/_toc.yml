@@ -35,8 +35,9 @@ parts:
 - caption: Videos and Talks
   chapters:
   - file: videos/technical_talks
-- caption: Case Studies & Tutorials
+- caption: Catalysis Case Studies & Tutorials
   chapters:
+  - file: tutorials/cattsunami_walkthrough
   - file: tutorials/adsorbml_walkthrough
   - file: core/papers_using_models
   - file: tutorials/intro
@@ -53,7 +54,7 @@ parts:
     - file: legacy_tutorials/OCP_Tutorial
     - file: legacy_tutorials/data_preprocessing
     - file: legacy_tutorials/data_visualization
-- caption: ocpmodels documentation
+- caption: fairchem documentation
   chapters:
   - file: autoapi/index
 - caption: Notebook execution times

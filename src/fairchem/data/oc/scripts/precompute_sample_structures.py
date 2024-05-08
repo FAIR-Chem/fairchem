@@ -21,8 +21,8 @@ from pymatgen.core.surface import (
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
-from .base_atoms.pkls import BULK_PKL
-from .constants import MAX_MILLER
+# from .base_atoms.pkls import BULK_PKL
+# from .constants import MAX_MILLER
 
 
 def enumerate_surfaces_for_saving(bulk_atoms, max_miller=MAX_MILLER):
