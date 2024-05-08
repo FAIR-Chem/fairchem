@@ -59,7 +59,7 @@ jobs:
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v4
       with:
-	deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-	external_repository: FAIR-Chem/fair-chem.github.io
-	publish_branch: main  # default: gh-pages
-	publish_dir: ./public
+        deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+        external_repository: FAIR-Chem/fair-chem.github.io
+        publish_branch: main  # default: gh-pages
+        publish_dir: ./public
