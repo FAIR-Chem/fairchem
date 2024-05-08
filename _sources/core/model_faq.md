@@ -1,6 +1,6 @@
 # Model FAQ
 
-If you don't find your question answered here, please feel free to [file a GitHub issue](https://github.com/open-catalyst-project/ocp/issues) or [post on the discussion board](https://discuss.opencatalystproject.org/).
+If you don't find your question answered here, please feel free to [file a GitHub issue](https://github.com/FAIR-Chem/fairchem/issues) or [post on the discussion board](https://discuss.opencatalystproject.org/).
 
 ## Models
 
@@ -18,7 +18,7 @@ Moreover, results may be different between GPU and CPU
 executions [[3](https://pytorch.org/docs/stable/notes/randomness.html)].
 
 To get deterministic results on GPU, use [`torch.use_deterministic_algorithms`](https://pytorch.org/docs/stable/generated/torch.use_deterministic_algorithms.html#torch.use_deterministic_algorithms)
-where available (for example, see [`scatter_det`](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/common/utils.py#L1112)). Note that deterministic operations are often slower
+where available (for example, see [`scatter_det`](https://github.com/FAIR-Chem/fairchem/blob/main/ocpmodels/common/utils.py#L1112)). Note that deterministic operations are often slower
 than non-deterministic operations, so while this may be worth using for testing
 and debugging, this is not recommended for large-scale training and inference.
 
@@ -54,7 +54,7 @@ dataset:
 
 The OC20 reference pickle file containing the energy necessary to convert
 adsorption energy values to total energy is [available for download
-here](https://github.com/Open-Catalyst-Project/ocp/blob/main/DATASET.md#oc20-reference-information).
+here](https://github.com/FAIR-Chem/fairchem/blob/main/DATASET.md#oc20-reference-information).
 
 To test if your setup is correct, try the following:
 
@@ -72,8 +72,8 @@ print(dset[0])
 ```
 
 Another option that might be useful for training on total energies is passing
-precomputed per-element average energies with [`lin_ref`](https://github.com/Open-Catalyst-Project/ocp/blob/faq/configs/s2ef/example.yml#L94-L97). If you use this option, make sure to recompute the
-[normalizer statistics (for energies)](https://github.com/Open-Catalyst-Project/ocp/blob/faq/configs/s2ef/example.yml#L82-L83)
+precomputed per-element average energies with [`lin_ref`](https://github.com/FAIR-Chem/fairchem/blob/faq/configs/s2ef/example.yml#L94-L97). If you use this option, make sure to recompute the
+[normalizer statistics (for energies)](https://github.com/FAIR-Chem/fairchem/blob/faq/configs/s2ef/example.yml#L82-L83)
 _after_ linear referencing.
 
 ### I'm trying to run GemNet-OC / GemNet-dT, but it throws an error that scaling factors are not fitted. What should I do?
@@ -85,8 +85,8 @@ for more details on this.
 
 We provide some set of scaling factors as part of the `ocp` codebase that you
 can reuse by passing the `scale_file` parameter in the YAML config. For example:
-* GemNet-dT [scaling factors](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json) and [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/s2ef/all/gemnet/gemnet-dT.yml#L32)
-* GemNet-OC [scaling factors](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt) and [config](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/s2ef/all/gemnet/gemnet-oc.yml#L45)
+* GemNet-dT [scaling factors](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json) and [config](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/gemnet-dT.yml#L32)
+* GemNet-OC [scaling factors](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt) and [config](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/gemnet-oc.yml#L45)
 
 If you change any of the model architecture hyperparameters or the dataset, you
 should refit these scaling factors:
@@ -112,7 +112,7 @@ python main.py \
 
 This is likely a tagging issue -- GemNet-OC computes quadruplet interactions
 for atoms tagged as 1 and 2
-([see code](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/models/gemnet_oc/gemnet_oc.py#L1020)).
+([see code](https://github.com/FAIR-Chem/fairchem/blob/main/ocpmodels/models/gemnet_oc/gemnet_oc.py#L1020)).
 In OC20 parlance, `tag==1` refers to surface atoms and `tag==2` refers to
 adsorbate atoms. If all the atoms are tagged as 0 (check `atoms.get_tags()`),
 no quadruplets are computed, and part of the GemNet-OC forward pass fails.

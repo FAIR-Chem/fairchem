@@ -66,7 +66,7 @@ There are 2 options for how to do this.
  1. Using `OCPCalculator` as the calculator within the ASE framework
  2. By writing objects to lmdb and relaxing them using `main.py` in the ocp repo
  
-(1) is really only adequate for small stuff and it is what I will show here, but if you plan to run many relaxations, you should definitely use (2). More details about writing lmdbs has been provided [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/tutorials/lmdb_dataset_creation.ipynb) - follow the IS2RS/IS2RE instructions. And more information about running relaxations once the lmdb has been written is [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/TRAIN.md#initial-structure-to-relaxed-structure-is2rs).
+(1) is really only adequate for small stuff and it is what I will show here, but if you plan to run many relaxations, you should definitely use (2). More details about writing lmdbs has been provided [here](../core/lmdb_dataset_creation.md) - follow the IS2RS/IS2RE instructions. And more information about running relaxations once the lmdb has been written is [here](../core/model_training.md).
 
 You need to provide the calculator with a path to a model checkpoint file. That can be downloaded [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/MODELS.md)
 
@@ -75,7 +75,7 @@ from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
 import os
 
-checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
 
 os.makedirs(f"data/{bulk}_{adsorbate}", exist_ok=True)
 

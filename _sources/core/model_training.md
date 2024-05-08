@@ -39,7 +39,7 @@ Load balancing is activated by default (in atoms mode). To change modes you can 
 optim:
   load_balancing: neighbors
 ```
-For more details, refer to [PR 267](https://github.com/Open-Catalyst-Project/ocp/pull/267).
+For more details, refer to [PR 267](https://github.com/FAIR-Chem/fairchem/pull/267).
 
 If you have access to a slurm cluster, we use the [submitit](https://github.com/facebookincubator/submitit) package to simplify multi-node distributed training:
 ```
@@ -73,7 +73,7 @@ dataset:
   test:
     src: [Path to test data]
 ```
-You can find examples configuration files in [`configs/is2re`](https://github.com/Open-Catalyst-Project/ocp/tree/master/configs/is2re).
+You can find examples configuration files in [`configs/is2re`](https://github.com/FAIR-Chem/fairchem/tree/main/configs/is2re).
 
 To train a SchNet model for the IS2RE task on the 10k split, run:
 ```bash
@@ -100,8 +100,8 @@ Alternatively, the IS2RE task may be approached by 2 methods as described in our
 
 - Single Model: Relaxed energy predictions are extracted from relaxed structures generated via ML relaxations from a single model.
 
-    1. Train a S2EF model on both energy and forces as described [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/TRAIN.md#structure-to-energy-and-forces-s2ef)
-    2. Using the trained S2EF model, run ML relaxations as described [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/TRAIN.md#initial-structure-to-relaxed-structure-is2rs). Ensure `traj_dir` is uniquely specified in the config as to save out the full trajectory. A sample config can be found [here](https://github.com/Open-Catalyst-Project/ocp/blob/master/configs/s2ef/2M/dimenet_plus_plus/dpp_relax.yml). ** Note ** Relaxations on the complete val/test set may take upwards of 8hrs depending on your available hardware.
+    1. Train a S2EF model on both energy and forces as described [here](../core/model_training.md)
+    2. Using the trained S2EF model, run ML relaxations as described [here](../core/model_training.md). Ensure `traj_dir` is uniquely specified in the config as to save out the full trajectory. A sample config can be found [here](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/2M/dimenet_plus_plus/dpp_relax.yml). ** Note ** Relaxations on the complete val/test set may take upwards of 8hrs depending on your available hardware.
     3. Prepare a submission file by running the following command:
         ```
         python scripts/make_submission_file.py --id path/to/id/traj_dir \
@@ -153,7 +153,7 @@ dataset:
   test:
     src: [Path to test data]
 ```
-You can find examples configuration files in [`configs/s2ef`](https://github.com/Open-Catalyst-Project/ocp/tree/master/configs/s2ef).
+You can find examples configuration files in [`configs/s2ef`](https://github.com/FAIR-Chem/fairchem/tree/main/configs/s2ef).
 
 To train a SchNet model for the S2EF task on the 2M split using 2 GPUs, run:
 
@@ -203,7 +203,7 @@ dataset:
 There is some support for specifying arguments from the command line, such that
 they would override any parameter from the YAML configuration file. The parser
 for this relies on the [nesting level being correctly specified using a `.`
-separator](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/common/utils.py#L357).
+separator](https://github.com/FAIR-Chem/fairchem/blob/main/ocpmodels/common/utils.py#L357).
 
 For example, to override the training dataset path via a command line argument:
 
@@ -288,7 +288,7 @@ dataset:
   format: oc22_lmdb # Use the OC22LmdbDataset
   ...
 ```
-You can find examples configuration files in [`configs/oc22/is2re`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/oc22/is2re).
+You can find examples configuration files in [`configs/oc22/is2re`](https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/core/configs/oc22/is2re).
 
 ## Structure to Total Energy and Forces (S2EF-Total)
 
@@ -301,7 +301,7 @@ dataset:
   format: oc22_lmdb # Use the OC22LmdbDataset
   ...
 ```
-You can find examples configuration files in [`configs/oc22/s2ef`](https://github.com/Open-Catalyst-Project/ocp/tree/main/configs/oc22/s2ef).
+You can find examples configuration files in [`configs/oc22/s2ef`](https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/core/configs/oc22/s2ef).
 
 ## Joint Training
 
@@ -325,7 +325,7 @@ dataset:
     oc20_ref: path/to/oc20_ref.pkl
 ```
 
-You can find an example configuration file at [configs/oc22/s2ef/base_joint.yml](https://github.com/Open-Catalyst-Project/ocp/blob/main/configs/oc22/s2ef/base_joint.yml)
+You can find an example configuration file at [configs/oc22/s2ef/base_joint.yml](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/oc22/s2ef/base_joint.yml)
 
 ## Create EvalAI OC22 submission files
 
