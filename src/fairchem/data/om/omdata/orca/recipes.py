@@ -11,6 +11,8 @@ from omdata.orca.calc import (
     ORCA_BLOCKS,
     ORCA_FUNCTIONAL,
     ORCA_SIMPLE_INPUT,
+    Vertical,
+    get_symm_break_block,
 )
 
 
@@ -24,6 +26,8 @@ def single_point_calculation(
     orcablocks=None,
     nprocs=12,
     outputdir=os.getcwd(),
+    vertical=Vertical.Default,
+    copy_files=None,
     **calc_kwargs,
 ):
     """
@@ -63,9 +67,12 @@ def single_point_calculation(
         orcasimpleinput = ORCA_SIMPLE_INPUT.copy()
     if orcablocks is None:
         orcablocks = ORCA_BLOCKS.copy()
+    if vertical == Vertical.MetalOrganics and spin_multiplicity == 1:
+        orcasimpleinput.append("UKS")
+        orcablocks.append(get_symm_break_block(atoms, charge))
 
     nprocs = psutil.cpu_count(logical=False) if nprocs == "max" else nprocs
-    default_inputs = [xc, basis, "engrad", "normalprint"]
+    default_inputs = [xc, basis, "engrad"]
     default_blocks = [f"%pal nprocs {nprocs} end"]
 
     doc = run_and_summarize(
@@ -76,6 +83,7 @@ def single_point_calculation(
         default_blocks=default_blocks,
         input_swaps=orcasimpleinput,
         block_swaps=orcablocks,
+        copy_files=copy_files,
         **calc_kwargs,
     )
 
@@ -93,6 +101,8 @@ def ase_relaxation(
     nprocs=12,
     opt_params=None,
     outputdir=os.getcwd(),
+    vertical=Vertical.Default,
+    copy_files=None,
     **calc_kwargs,
 ):
     """
@@ -136,9 +146,13 @@ def ase_relaxation(
         orcablocks = ORCA_BLOCKS.copy()
     if opt_params is None:
         opt_params = OPT_PARAMETERS.copy()
+    if vertical == Vertical.MetalOrganics and spin_multiplicity == 1:
+        orcasimpleinput.append("UKS")
+        orcablocks.append(get_symm_break_block(atoms, charge))
+        opt_params["max_steps"] = 5  # I think this is what we settled on?
 
     nprocs = psutil.cpu_count(logical=False) if nprocs == "max" else nprocs
-    default_inputs = [xc, basis, "engrad", "normalprint"]
+    default_inputs = [xc, basis, "engrad"]
     default_blocks = [f"%pal nprocs {nprocs} end"]
 
     doc = run_and_summarize_opt(
@@ -150,6 +164,7 @@ def ase_relaxation(
         input_swaps=orcasimpleinput,
         block_swaps=orcablocks,
         opt_params=opt_params,
+        copy_files=copy_files,
         **calc_kwargs,
     )
 
