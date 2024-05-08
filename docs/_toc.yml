@@ -40,7 +40,6 @@ parts:
   chapters:
   - file: tutorials/cattsunami_walkthrough
   - file: tutorials/adsorbml_walkthrough
-  - file: core/papers_using_models
   - file: tutorials/intro
   - file: tutorials/OCP-introduction
   - file: tutorials/NRR/NRR_toc
