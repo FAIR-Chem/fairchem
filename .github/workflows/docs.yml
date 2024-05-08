@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - ocp_documentation
+      - docs_fix
     paths:
       - 'docs/**'
       - '.github/workflows/docs.yml'
