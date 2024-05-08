@@ -45,7 +45,7 @@ The problem here is that no neighbors are found for the single atom which causes
 ```{code-cell} ipython3
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
-checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OC-S2EFS-OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
 
@@ -158,7 +158,7 @@ from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
 import os
 
-checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OC-S2EFS-OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 
 calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
@@ -184,7 +184,7 @@ from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
 import os
 
-checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OC-S2EFS-OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
 
@@ -209,7 +209,7 @@ from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
 import os
 
-checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
 
 calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
@@ -231,7 +231,7 @@ This happens because a random selection of is made to sample edges, and a differ
 from fairchem.core.models.model_registry import model_name_to_local_file
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 
-checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
 calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
 
 from ase.build import fcc111, add_adsorbate
@@ -258,7 +258,7 @@ In DFT, the forces on all the atoms should sum to zero; otherwise, there is a ne
 
 ```{code-cell} ipython3
 from fairchem.core.models.model_registry import model_name_to_local_file
-checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
 
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)

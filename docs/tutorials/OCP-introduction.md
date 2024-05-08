@@ -60,7 +60,7 @@ The different models have different compute requirements. If you find your kerne
 ```{code-cell}
 from fairchem.core.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
 ```
 
 Next we load the checkpoint. The output is somewhat verbose, but it can be informative for debugging purposes.

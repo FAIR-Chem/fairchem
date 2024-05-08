@@ -3,7 +3,7 @@
 ## conda or better yet [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html) - easy
 
 We do not have official conda recipes (yet!), so to install with conda or mamba you will need to clone the
-[ocp repo](https://github.com/Open-Catalyst-Project/ocp) and run the following from inside the repo directory to create an environment with all the
+[ocp repo](https://github.com/FAIR-Chem/fairchem) and run the following from inside the repo directory to create an environment with all the
 necessary dependencies.
 
 1. Create an *ocp-models* environment
