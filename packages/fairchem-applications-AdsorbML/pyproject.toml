@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "fairchem.applications.adsorbml"
 dynamic = ["version", "readme"]
 description = "Module for calculating the minima adsorbtion energy"
-license = ""
+license = {text = "MIT License"}
 
 [project.urls]
 homepage = "http://github.com/Open-Catalyst-Project/AdsorbML"

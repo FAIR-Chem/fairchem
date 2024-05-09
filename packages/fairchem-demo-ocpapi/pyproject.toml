@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "fairchem.demo.ocpapi"
 dynamic = ["version" ,"readme"]
 description = "Python client library for the Open Catalyst API"
-license = ""
+license = {text = "MIT License"}
 requires-python = ">=3.9"
 authors = [
     { name = "Open Catalyst Project", email = "opencatalyst@meta.com" },

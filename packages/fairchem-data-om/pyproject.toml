@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "fairchem.data.om"
 dynamic = ["version", "readme"]
 description = "Code for generating OMOL input configurations"
-license = ""
+license = {text = "MIT License"}
 dependencies = [
     "ase@git+https://gitlab.com/ase/ase.git@dc86a19a280741aa2b42a08d0fa63a8d0348e225",
     "quacc[sella]>=0.7.6",
