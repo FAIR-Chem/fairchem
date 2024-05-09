@@ -1,0 +1,6 @@
+ID	Material	CF	M_O_M	Benzene	Parellel	Parellel68	DistanceParallel68	DistanceParallel68Direct	uncoordN	
+1	BIMDIL	H_6_C_7_O_4_Cu_1	0	0	0	0	0	0	0
+2	DITYOW	H_6_C_6_N_8_O_4_Cu_1	0	0	0	0	0	0	1
+3	ODIXEG	H_16_C_28_O_8_Si_1_Zn_2	0	1	1	1	6.3053665	7.7250156	0
+4	REDROI_0.08_0	H_25_C_44_O_24_Zn_10	1	1	1	1	7.2415066	8.426583	0
+
