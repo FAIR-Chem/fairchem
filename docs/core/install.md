@@ -12,12 +12,12 @@ necessary dependencies.
       The default environment uses cuda 11.8, if you need a different version you will have to edit *pytorch-cuda* version
       accordingly.
       ```bash
-      conda create -f env.gpu.yml
+      conda env create -f env.gpu.yml
       ```
 
    2. **CPU**
       ```bash
-      conda create -f env.cpu.yml
+      conda env create -f env.cpu.yml
       ```
 
 2. Activate the environment and install `fair-chem`
