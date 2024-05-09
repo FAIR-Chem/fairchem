@@ -80,11 +80,11 @@ This tutorial will start by using OCP in a Jupyter notebook to setup some simple
 
 ## About the compute environment
 
-`ocpmodels.common.tutorial_utils`  provides `describe_ocp` to output information that might be helpful in debugging.
+`ocpmodels.common.tutorial_utils`  provides `describe_fairchem` to output information that might be helpful in debugging.
 
 ```{code-cell} ipython3
-from fairchem.core.common.tutorial_utils import describe_ocp
-describe_ocp()
+from fairchem.core.common.tutorial_utils import describe_fairchem
+describe_fairchem()
 ```
 
 Let's get started! Click here to open the [next notebook](./OCP-introduction).

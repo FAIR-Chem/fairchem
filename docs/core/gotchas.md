@@ -79,7 +79,7 @@ add_adsorbate(slab, 'O', height=1.2, position='fcc')
 from fairchem.core.models.model_registry import model_name_to_local_file
 
 # OC20 model - trained on adsorption energies
-checkpoint_path = model_name_to_local_file('GemNet-OC All', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OC-S2EF-OC20-All', local_cache='/tmp/ocp_checkpoints/')
 
 with contextlib.redirect_stdout(StringIO()) as _:
     calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
