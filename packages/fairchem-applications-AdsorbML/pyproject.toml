@@ -1,16 +1,15 @@
 [build-system]
-requires = ["hatchling","hatch-vcs"]
+requires = ["hatchling", "hatch-vcs", "hatch-fancy-pypi-readme>=24"]
 build-backend = "hatchling.build"
 
 [project]
 name = "fairchem.applications.adsorbml"
-dynamic = ["version"]
+dynamic = ["version", "readme"]
 description = "Module for calculating the minima adsorbtion energy"
-readme = "../../src/fairchem/applications/AdsorbML/README.md"
 license = ""
 
 [project.urls]
-Homepage = "http://github.com/Open-Catalyst-Project/AdsorbML"
+homepage = "http://github.com/Open-Catalyst-Project/AdsorbML"
 
 [tool.hatch.version]
 source = "vcs"
@@ -27,3 +26,9 @@ only-include = ["src/fairchem/applications/AdsorbML"]
 sources = ["src"]
 only-include = ["src/fairchem/applications/AdsorbML"]
 
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+fragments = [
+  { path = "src/fairchem/applications/AdsorbML/README.md" },
+  { path = "src/fairchem/applications/AdsorbML/LICENSE.md" },
+]
