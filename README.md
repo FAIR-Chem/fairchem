@@ -26,7 +26,7 @@ pip install -e packages/fairchem-{package-to-download}
 - [Installation Guide](https://fair-chem.github.io/core/install.html)
 
 ### Why a single repository?
-Since many of our repositories rely heavily on our other repositories, a single repository makes it really easy to test and ensure consistency across repositories with code changes in one. This should also help simplify the installation process for users who are interested in integrating many of the efforts into one place.
+Since many of our repositories rely heavily on our other repositories, a single repository makes it really easy to test and ensure consistency across repositories. This should also help simplify the installation process for users who are interested in integrating many of the efforts into one place.
 
 ### LICENSE
-`fairchem` is available under a [MIT License](LICENSE.md)
+`fairchem` is available under a [MIT License](LICENSE.md).
