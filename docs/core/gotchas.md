@@ -105,7 +105,7 @@ slab.get_potential_energy()
 
 ```{code-cell} ipython3
 # This eSCN model is trained on adsorption energies
-checkpoint_path = model_name_to_local_file('eSCN-L4-M2-Lay12 2M', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('eSCN-L4-M2-Lay12-S2EF-OC20-2M', local_cache='/tmp/ocp_checkpoints/')
 
 with contextlib.redirect_stdout(StringIO()) as _:
     calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
