@@ -4,11 +4,11 @@ This script has not been written to run in parallel, but should be modified to d
 """
 
 from ase.io import read
-from ocpneb.core.ocpneb import OCPNEB
 from ase.optimize import BFGS
 import torch
 import argparse
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
+from fairchem.applications.ocpneb.core.ocpneb import OCPNEB
 import os
 import pandas as pd
 import numpy as np

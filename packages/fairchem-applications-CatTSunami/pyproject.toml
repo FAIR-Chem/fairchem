@@ -3,10 +3,10 @@ requires = ["hatchling", "hatch-vcs", "hatch-fancy-pypi-readme>=24"]
 build-backend = "hatchling.build"
 
 [project]
-name = "fairchem.applications.cattsunami"
-dynamic = ["version"]
+name = "fairchem.applications.ocpneb"
+dynamic = ["version", "readme"]
 description = "Accelerating Transition State Energy Calculations with Pre-trained Graph Neural Networks"
-readme = "../../src/fairchem/applications/CatTSunami/README.md"
+# readme = "../../src/fairchem/applications/CatTSunami/README.md"
 license = ""
 
 [project.urls]
@@ -19,16 +19,21 @@ source = "vcs"
 root = "../../" 
 git_describe_command = 'git describe --dirty --tags --long --match fairchem.cattsunami-*'
 
+[tool.hatch.build]
+directory = "../../dist"
+
 [tool.hatch.build.targets.sdist]
-only-include = ["src/fairchem/applications/CatTSunami"]
+only-include = ["src/fairchem/applications/CatTSunami/ocpneb"]
 
 [tool.hatch.build.targets.wheel]
-sources = ["src"]
-only-include = ["src/fairchem/applications/CatTSunami"]
+only-include = ["src/fairchem/applications/CatTSunami/ocpneb"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/fairchem/applications/CatTSunami" = "fairchem/applications"
 
 [tool.hatch.metadata.hooks.fancy-pypi-readme]
 content-type = "text/markdown"
 fragments = [
-  { path = "src/fairchem/applications/CatTSunami/README.md" },
-  { path = "src/fairchem/applications/CatTSunami/DATASET.md" }
+  { path = "src/fairchem/applications/CatTSunami/ocpneb/README.md" },
+  { path = "src/fairchem/applications/CatTSunami/ocpneb/DATASET.md" }
 ]
