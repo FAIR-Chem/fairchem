@@ -1,6 +1,6 @@
 ## `fairchem` by FAIR Chemistry
 <p align="center">
-  <img width="559" height="200" src="https://github.com/FAIR-Chem/fairchem/assets/45150244/5b15129d-0b64-450c-b16b-f67fdef00013"?
+  <img width="559" height="200" src="https://github.com/FAIR-Chem/fairchem/assets/45150244/d3abd756-cb96-40eb-b3a8-976939a2f0d8"?
 </p>
 
 `fairchem` is the [FAIR](https://ai.meta.com/research/) Chemistry's centralized repository of all its data, models, demos, and application efforts for materials science and quantum chemistry.
