@@ -31,7 +31,7 @@ def fairchem_root():
 
 def fairchem_main():
     """Return the path to fairchem main.py"""
-    return fairchem_root() / "main.py"
+    return fairchem_root() / "../../main.py"
 
 
 def describe_fairchem():
