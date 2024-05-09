@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections.abc
 import glob
 import os
@@ -7,18 +9,17 @@ from pathlib import Path
 import numpy as np
 import pytest
 import yaml
-from tensorboard.backend.event_processing.event_accumulator import (
-    EventAccumulator,
-)
+from tensorboard.backend.event_processing.event_accumulator import \
+    EventAccumulator
 
-from fairchem.core.common.flags import flags
 from fairchem.core._cli import Runner
+from fairchem.core.common.flags import flags
 from fairchem.core.common.utils import build_config, setup_logging
 
 setup_logging()
 
 
-@pytest.fixture
+@pytest.fixture()
 def configs():
     return {
         "escn": Path("tests/models/test_configs/test_escn.yml"),
@@ -27,12 +28,12 @@ def configs():
     }
 
 
-@pytest.fixture
+@pytest.fixture()
 def tutorial_train_src(tutorial_dataset_path):
     return tutorial_dataset_path / "s2ef/train_100"
 
 
-@pytest.fixture
+@pytest.fixture()
 def tutorial_val_src(tutorial_dataset_path):
     return tutorial_dataset_path / "s2ef/val_20"
 
@@ -87,7 +88,7 @@ def _run_main(
 ):
     config_yaml = Path(rundir) / "train_and_val_on_val.yml"
 
-    with open(input_yaml, "r") as yaml_file:
+    with open(input_yaml) as yaml_file:
         yaml_config = yaml.safe_load(yaml_file)
     if update_dict_with is not None:
         yaml_config = merge_dictionary(yaml_config, update_dict_with)
@@ -288,7 +289,7 @@ These tests intend to test if optimization is not obviously broken on a time sca
 
 class TestSmallDatasetOptim:
     @pytest.mark.parametrize(
-        "model_name,expected_energy_mae,expected_force_mae",
+        ("model_name", "expected_energy_mae", "expected_force_mae"),
         [
             pytest.param("gemnet", 0.4, 0.06, id="gemnet"),
             pytest.param("escn", 0.4, 0.06, id="escn"),

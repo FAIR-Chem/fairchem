@@ -10,6 +10,9 @@ from __future__ import annotations
 import tarfile
 from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 import numpy as np
 import pytest
 import requests
@@ -143,7 +146,7 @@ def snapshot(snapshot):
 
 
 @pytest.fixture()
-def torch_deterministic() -> Iterator[bool]:
+def torch_deterministic():
     # Setup
     torch.use_deterministic_algorithms(True)
     yield True  # Usability: prints `torch_deterministic=True` if a test fails
@@ -152,7 +155,7 @@ def torch_deterministic() -> Iterator[bool]:
 
 
 @pytest.fixture(scope="session")
-def tutorial_dataset_path(tmp_path_factory: Any) -> Path:
+def tutorial_dataset_path(tmp_path_factory) -> Path:
     """
     Download the tutorial dataset and extract it to a temporary directory.
     This directory will persist until restart to avoid eating bandwidth.
