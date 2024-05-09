@@ -61,6 +61,6 @@ jobs:
       with:
         deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
         external_repository: FAIR-Chem/fair-chem.github.io
-        publish_branch: main  # default: gh-pages
+        publish_branch: gh-pages
         publish_dir: docs/_build/html
 
