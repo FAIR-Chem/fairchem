@@ -3,7 +3,7 @@
 ## conda or better yet [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html) - easy
 
 We do not have official conda recipes (yet!), so to install with conda or mamba you will need to clone the
-[ocp repo](https://github.com/FAIR-Chem/fairchem) and run the following from inside the repo directory to create an environment with all the
+[fairchem repo](https://github.com/FAIR-Chem/fairchem) and run the following from inside the repo directory to create an environment with all the
 necessary dependencies.
 
 1. Create an *fairchem* environment
@@ -20,9 +20,9 @@ necessary dependencies.
       conda create -f env.cpu.yml
       ```
 
-2. Activate the environment and install `ocpmodels`
+2. Activate the environment and install `fair-chem`
    ```bash
-   conda activate ocp-models
+   conda activate fair-chem
    pip install .
    ```
 
@@ -34,10 +34,10 @@ necessary dependencies.
    similarly by selecting the appropriate versions in the official
    [PyG docs](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html)
 
-3. Install `ocpmodels`
+3. Install `fairchem-core`
    1. From test-PyPi (until we have our official release on PyPi soon!)
       ```bash
-      pip install -i https://test.pypi.org/simple/ ocp-models
+      pip install -i https://test.pypi.org/simple/ fairchem-core
       ```
    2. Or by cloning the repo and then using pip
       ```bash
@@ -47,8 +47,8 @@ necessary dependencies.
 
 ## Dev install
 
-If you plan to make contributions you will need to clone the repo and install `ocp-models` in editable mode with dev
+If you plan to make contributions you will need to clone the repo and install `fairchem-core` in editable mode with dev
 dependencies,
 ```bash
-pip install -e .[dev]
+pip install -e packages/fairchem-core/[dev]
 ```

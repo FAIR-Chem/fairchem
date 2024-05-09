@@ -203,7 +203,7 @@ dataset:
 There is some support for specifying arguments from the command line, such that
 they would override any parameter from the YAML configuration file. The parser
 for this relies on the [nesting level being correctly specified using a `.`
-separator](https://github.com/FAIR-Chem/fairchem/blob/main/ocpmodels/common/utils.py#L357).
+separator](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/common/utils.py#L357).
 
 For example, to override the training dataset path via a command line argument:
 

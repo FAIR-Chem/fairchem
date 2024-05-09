@@ -16,8 +16,8 @@ kernelspec:
 Storing your data in an LMDB ensures very fast random read speeds for the fastest supported throughput. This was the
 recommended option for the majority of fairchem use cases, but has since been deprecated for [ASE LMDB files](ase_dataset_creation)
 
-This notebook provides an overview of how to create LMDB datasets to be used with the OCP repo. This tutorial is intended
-for those who wish to use OCP to train on their own datasets. Those interested in just using OCP data need not worry
+This notebook provides an overview of how to create LMDB datasets to be used with the FAIRChem repo. This tutorial is intended
+for those who wish to use FAIRChem to train on their own datasets. Those interested in just using FAIRChem data need not worry
 about these steps as they've been automated as part of this
 [download script](https://github.com/FAIR-Chem/fairchem/blob/master/src/core/scripts/download_data.py).
 
@@ -128,7 +128,7 @@ for system in system_paths:
     initial_struc.pos_relaxed = relaxed_struc.pos
 
     # Filter data if necessary
-    # OCP filters adsorption energies > |10| eV
+    # FAIRChem filters adsorption energies > |10| eV
 
     initial_struc.sid = idx  # arbitrary unique identifier
 
@@ -195,7 +195,7 @@ for fid, data in tqdm(enumerate(data_objects), total=len(data_objects)):
     data.tags = torch.LongTensor(tags)
 
     # Filter data if necessary
-    # OCP filters adsorption energies > |10| eV and forces > |50| eV/A
+    # FAIRChem filters adsorption energies > |10| eV and forces > |50| eV/A
 
     # no neighbor edge case check
     if data.edge_index.shape[1] == 0:
@@ -226,7 +226,7 @@ dataset[0]
 
 ### Advanced usage
 
-LmdbDataset supports multiple LMDB files because the need to highly parallelize the dataset construction process. With OCP's largest split containing 135M+ frames, the need to parallelize the LMDB generation process for these was necessary. If you find yourself needing to deal with very large datasets we recommend parallelizing this process.
+LmdbDataset supports multiple LMDB files because the need to highly parallelize the dataset construction process. With FAIRChem's largest split containing 135M+ frames, the need to parallelize the LMDB generation process for these was necessary. If you find yourself needing to deal with very large datasets we recommend parallelizing this process.
 
 +++
 

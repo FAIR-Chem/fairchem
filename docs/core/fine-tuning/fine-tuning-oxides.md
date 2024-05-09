@@ -185,7 +185,7 @@ The train set is used for training. The test and val sets are used to check for 
 
 You choose the splits you want, 80:10:10 is common. We take a simple approach to split the database here. We make an array of integers that correspond to the ids, randomly shuffle them, and then get each row in the randomized order and write them to a new db.
 
-We provide some helper functions in `ocpmodels.common.tutorial_utils` to streamline this process. 
+We provide some helper functions in `fairchem.core.common.tutorial_utils` to streamline this process. 
 
 ```{code-cell} ipython3
 from fairchem.core.common.tutorial_utils import train_test_val_split
@@ -235,7 +235,7 @@ yml
 
 ## Running the training job
 
-`ocp` provides a `main.py` file that is used for training. Here we construct the Python command you need to run, and run it. `main.py` is not executable, so we have to run it with python, and you need the absolute path to it, which we get from the `ocp_main()` that is defined in the ocpmodels.common.tutorial_utils.
+`fairchem` provides a `main.py` file that is used for training. Here we construct the Python command you need to run, and run it. `main.py` is not executable, so we have to run it with python, and you need the absolute path to it, which we get from the `fairchem_main()` that is defined in the fairchem.core.common.tutorial_utils.
 
 you must set a `mode` and provide a `config-yml`. We provide a checkpoint for a starting point, if you don't do this, it will start from scratch. 
 
@@ -261,10 +261,10 @@ This can take up to 30 minutes for 80 epochs, so we only do a few here to see wh
 :tags: [hide-output]
 
 import time
-from fairchem.core.common.tutorial_utils import ocp_main
+from fairchem.core.common.tutorial_utils import fairchem_main
 
 t0 = time.time()
-! python {ocp_main()} --mode train --config-yml {yml} --checkpoint {checkpoint_path} --run-dir fine-tuning --identifier ft-oxides --amp > train.txt 2>&1 
+! python {fairchem_main()} --mode train --config-yml {yml} --checkpoint {checkpoint_path} --run-dir fine-tuning --identifier ft-oxides --amp > train.txt 2>&1 
 print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
 ```
 

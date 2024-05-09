@@ -11,7 +11,7 @@ kernelspec:
   name: python3
 ---
 
-Common gotchas with OCP
+Common gotchas with fairchem
 ---------------------------------
 
 # OutOfMemoryError
@@ -128,12 +128,12 @@ WARNING:root:Unrecognized arguments: ['symmetric_edge_symmetrization']
 
 You can ignore this warning, it is not important for predictions.
 
-## Unable to identify OCP trainer
+## Unable to identify ocp trainer
 
 The trainer is not specified in some checkpoints, and defaults to `forces` which means energy and forces are calculated. This is the default for the ASE OCP calculator, and this warning just alerts you it is setting that.
 
 ```
-WARNING:root:Unable to identify OCP trainer, defaulting to `forces`. Specify the `trainer` argument into OCPCalculator if otherwise.
+WARNING:root:Unable to identify ocp trainer, defaulting to `forces`. Specify the `trainer` argument into OCPCalculator if otherwise.
 ```
 
 +++
@@ -254,7 +254,7 @@ for result in results:
 
 # The forces don't sum to zero
 
-In DFT, the forces on all the atoms should sum to zero; otherwise, there is a net translational or rotational force present. This is not enforced in OCP models. Instead, individual forces are predicted, with no constraint that they sum to zero. If the force predictions are very accurate, then they sum close to zero. You can further improve this if you subtract the mean force from each atom.
+In DFT, the forces on all the atoms should sum to zero; otherwise, there is a net translational or rotational force present. This is not enforced in fairchem models. Instead, individual forces are predicted, with no constraint that they sum to zero. If the force predictions are very accurate, then they sum close to zero. You can further improve this if you subtract the mean force from each atom.
 
 ```{code-cell} ipython3
 from fairchem.core.models.model_registry import model_name_to_local_file

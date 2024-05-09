@@ -101,10 +101,10 @@ It is a good idea to redirect the output to a file. If the output gets too large
 ```{code-cell} ipython3
 %%capture inference
 import time
-from fairchem.core.common.tutorial_utils import ocp_main
+from fairchem.core.common.tutorial_utils import fairchem_main
 
 t0 = time.time()
-! python {ocp_main()} --mode predict --config-yml {yml} --checkpoint {checkpoint_path} --amp
+! python {fairchem_main()} --mode predict --config-yml {yml} --checkpoint {checkpoint_path} --amp
 print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
 ```
 
