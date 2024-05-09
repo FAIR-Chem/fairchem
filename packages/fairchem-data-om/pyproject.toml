@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "http://github.com/Open-Catalyst-Project/om-data"
+repository = "https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/data/om"
 
 [tool.hatch.metadata]
 allow-direct-references = true
@@ -23,7 +23,7 @@ allow-direct-references = true
 source = "vcs"
 
 [tool.hatch.version.raw-options]
-root = "../../" 
+root = "../../"
 git_describe_command = 'git describe --tags --match fairchem_data_om-*'
 
 [tool.hatch.build]

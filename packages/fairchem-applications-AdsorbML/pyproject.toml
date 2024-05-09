@@ -9,13 +9,13 @@ description = "Module for calculating the minima adsorbtion energy"
 license = {text = "MIT License"}
 
 [project.urls]
-homepage = "http://github.com/Open-Catalyst-Project/AdsorbML"
+repository = "https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/applications/AdsorbML"
 
 [tool.hatch.version]
 source = "vcs"
 
 [tool.hatch.version.raw-options]
-root = "../../" 
+root = "../../"
 git_describe_command = 'git describe --tags --match  fairchem_applications_adsorbml-*'
 
 [tool.hatch.build.targets.sdist]

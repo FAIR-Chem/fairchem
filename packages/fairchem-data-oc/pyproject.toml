@@ -9,13 +9,13 @@ description = "Code for generating adsorbate-catalyst input configurations"
 license = {text = "MIT License"}
 
 [project.urls]
-homepage = "http://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset"
+repository = "https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/data/oc"
 
 [tool.hatch.version]
 source = "vcs"
 
 [tool.hatch.version.raw-options]
-root = "../../" 
+root = "../../"
 git_describe_command = 'git describe --tags --match  fairchem_data_oc-*'
 
 [tool.hatch.build]

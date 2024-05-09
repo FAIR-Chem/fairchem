@@ -25,6 +25,10 @@ dependencies = [
     "tqdm == 4.66.1",
 ]
 
+[project.urls]
+repository = "https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/demo/ocpapi"
+home = "https://open-catalyst.metademolab.com/"
+
 [project.optional-dependencies]
 dev = [
     "ase == 3.22.1",
@@ -35,7 +39,7 @@ dev = [
 source = "vcs"
 
 [tool.hatch.version.raw-options]
-root = "../../" 
+root = "../../"
 git_describe_command = 'git describe --tags --match  fairchem_demo_ocpapi-*'
 
 [tool.hatch.build]
