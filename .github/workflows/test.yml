@@ -54,15 +54,7 @@ jobs:
           popd
       - name: Test core with pytest
         run: |
-          pushd src/fairchem/core/
-          pytest tests -vv --cov-report=xml --cov=fairchem.core
-          popd
-          pushd src/fairchem/data/oc/
-          pytest tests -vv --cov-report=xml --cov=fairchem.data.oc
-          popd
-          pushd src/fairchem/demo/ocpapi/
-          pytest tests -vv --cov-report=xml --cov=fairchem.demo.ocpapi
-          popd
+          pytest tests -vv --cov-report=xml --cov=fairchem
 
       - if: ${{ matrix.python_version == '3.11' }}
         name: codecov-report
