@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import tarfile
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -156,7 +157,9 @@ def tutorial_dataset_path(tmp_path_factory: Any) -> Path:
     Download the tutorial dataset and extract it to a temporary directory.
     This directory will persist until restart to avoid eating bandwidth.
     """
-    TUTORIAL_DATASET_URL = "http://dl.fbaipublicfiles.com/opencatalystproject/data/tutorial_data.tar.gz"
+    TUTORIAL_DATASET_URL = (
+        "http://dl.fbaipublicfiles.com/opencatalystproject/data/tutorial_data.tar.gz"
+    )
 
     tmpdir = tmp_path_factory.getbasetemp()
 

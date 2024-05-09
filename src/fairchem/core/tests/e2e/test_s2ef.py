@@ -1,70 +1,21 @@
 import collections.abc
-import copy
 import glob
 import os
 import tempfile
-from pathlib import Path, PosixPath
-from typing import List
+from pathlib import Path
 
 import numpy as np
 import pytest
-import torch
 import yaml
 from tensorboard.backend.event_processing.event_accumulator import (
     EventAccumulator,
 )
 
-from main import Runner
-from ocpmodels.common.utils import build_config, setup_logging
-from ocpmodels.datasets import TrajectoryLmdbDataset
-from ocpmodels.models.escn.so3 import CoefficientMapping
-from ocpmodels.models.escn.so3 import SO3_Embedding as escn_SO3_Embedding
-from ocpmodels.trainers import OCPTrainer
-
-from ocpmodels import models  # isort: skip
-from ocpmodels.common import logger  # isort: skip
-
+from fairchem.core.common.flags import flags
+from fairchem.core._cli import Runner
+from fairchem.core.common.utils import build_config, setup_logging
 
 setup_logging()
-
-
-class DotDict(dict):
-    __getattr__ = dict.__getitem__
-
-
-@pytest.fixture
-def base_command_line_args():
-    return DotDict(
-        {
-            "mode": "train",
-            "identifier": "",
-            "debug": False,
-            "run_dir": "./",
-            "print_every": 10,
-            "seed": 100,
-            "amp": False,
-            "checkpoint": None,
-            "timestamp_id": None,
-            "sweep_yml": None,
-            "distributed": False,
-            "submit": False,
-            "summit": False,
-            "logdir": PosixPath("logs"),
-            "slurm_partition": "ocp",
-            "slurm_mem": 80,
-            "slurm_timeout": 72,
-            "local_rank": 0,
-            "distributed_port": 0,
-            "world_size": 1,
-            "noddp": False,
-            "gp_gpus": 0,
-            "cpu": True,
-            "num_nodes": 0,
-            "num_gpus": 0,
-            "distributed_backend": "nccl",
-            "no_ddp": False,
-        }
-    )
 
 
 @pytest.fixture
@@ -72,9 +23,7 @@ def configs():
     return {
         "escn": Path("tests/models/test_configs/test_escn.yml"),
         "gemnet": Path("tests/models/test_configs/test_gemnet.yml"),
-        "equiformer_v2": Path(
-            "tests/models/test_configs/test_equiformerv2.yml"
-        ),
+        "equiformer_v2": Path("tests/models/test_configs/test_equiformerv2.yml"),
     }
 
 
@@ -88,37 +37,22 @@ def tutorial_val_src(tutorial_dataset_path):
     return tutorial_dataset_path / "s2ef/val_20"
 
 
-def oc20_lmdb_train_config_from_path(src):
-    return {
-        "src": src,
-        "normalize_labels": True,
-        "target_mean": -0.7554450631141663,
-        "target_std": 2.887317180633545,
-        "grad_target_mean": 0.0,
-        "grad_target_std": 2.887317180633545,
-    }
-
-
-def oc20_lmdb_val_config_from_path(src):
-    return {"src": src}
-
-
 def oc20_lmdb_train_and_val_from_paths(train_src, val_src, test_src=None):
     datasets = {}
     if train_src is not None:
-        datasets["train"] = oc20_lmdb_train_config_from_path(train_src)
+        datasets["train"] = {
+            "src": train_src,
+            "normalize_labels": True,
+            "target_mean": -0.7554450631141663,
+            "target_std": 2.887317180633545,
+            "grad_target_mean": 0.0,
+            "grad_target_std": 2.887317180633545,
+        }
     if val_src is not None:
-        datasets["val"] = oc20_lmdb_val_config_from_path(val_src)
+        datasets["val"] = {"src": val_src}
     if test_src is not None:
-        datasets["test"] = oc20_lmdb_val_config_from_path(val_src)
+        datasets["test"] = {"src": test_src}
     return datasets
-
-
-def run_with_args(args, update_args):
-    args = DotDict(args.copy())
-    args.update(update_args)
-    config = build_config(args, [])
-    Runner(args)(config)
 
 
 def get_tensorboard_log_files(logdir):
@@ -143,33 +77,23 @@ def merge_dictionary(d, u):
     return d
 
 
-def config_change_values(input_yaml, update_with, output_yaml=None):
-    with open(input_yaml, "r") as escn_yaml_file:
-        yaml_config = yaml.safe_load(escn_yaml_file)
-    if update_with is not None:
-        yaml_config = merge_dictionary(yaml_config, update_with)
-    if output_yaml is None:
-        output_yaml = input_yaml
-    with open(str(output_yaml), "w") as escn_yaml_file:
-        yaml.dump(yaml_config, escn_yaml_file)
-
-
 def _run_main(
     rundir,
-    base_command_line_args,
     input_yaml,
     update_dict_with=None,
     update_run_args_with=None,
     save_checkpoint_to=None,
     save_predictions_to=None,
 ):
-    config_yaml = Path(rundir) / f"train_and_val_on_val.yml"
+    config_yaml = Path(rundir) / "train_and_val_on_val.yml"
 
-    config_change_values(
-        input_yaml=input_yaml,
-        output_yaml=config_yaml,
-        update_with=update_dict_with,
-    )
+    with open(input_yaml, "r") as yaml_file:
+        yaml_config = yaml.safe_load(yaml_file)
+    if update_dict_with is not None:
+        yaml_config = merge_dictionary(yaml_config, update_dict_with)
+    with open(str(config_yaml), "w") as yaml_file:
+        yaml.dump(yaml_config, yaml_file)
+
     run_args = {
         "run_dir": rundir,
         "logdir": f"{rundir}/logs",
@@ -177,18 +101,23 @@ def _run_main(
     }
     if update_run_args_with is not None:
         run_args.update(update_run_args_with)
-    run_with_args(
-        base_command_line_args,
-        run_args,
+
+    # run
+    parser = flags.get_parser()
+    args, override_args = parser.parse_known_args(
+        ["--mode", "train", "--seed", "100", "--config-yml", "config.yml", "--cpu"]
     )
+    for arg_name, arg_value in run_args.items():
+        setattr(args, arg_name, arg_value)
+    config = build_config(args, override_args)
+    Runner()(config)
+
     if save_checkpoint_to is not None:
         checkpoints = glob.glob(f"{rundir}/checkpoints/*/checkpoint.pt")
         assert len(checkpoints) == 1
         os.rename(checkpoints[0], save_checkpoint_to)
     if save_predictions_to is not None:
-        predictions_filenames = glob.glob(
-            f"{rundir}/results/*/s2ef_predictions.npz"
-        )
+        predictions_filenames = glob.glob(f"{rundir}/results/*/s2ef_predictions.npz")
         assert len(predictions_filenames) == 1
         os.rename(predictions_filenames[0], save_predictions_to)
     return get_tensorboard_log_values(
@@ -211,7 +140,6 @@ class TestSmoke:
     def smoke_test_train(
         self,
         model_name,
-        base_command_line_args,
         input_yaml,
         tutorial_val_src,
     ):
@@ -220,12 +148,9 @@ class TestSmoke:
             train_rundir = Path(tempdirname) / "train"
             train_rundir.mkdir()
             checkpoint_path = str(train_rundir / "checkpoint.pt")
-            training_predictions_filename = str(
-                train_rundir / "train_predictions.npz"
-            )
+            training_predictions_filename = str(train_rundir / "train_predictions.npz")
             acc = _run_main(
                 rundir=str(train_rundir),
-                base_command_line_args=base_command_line_args,
                 input_yaml=input_yaml,
                 update_dict_with={
                     "optim": {"max_epochs": 2, "eval_every": 8},
@@ -247,7 +172,6 @@ class TestSmoke:
             predictions_filename = str(predictions_rundir / "predictions.npz")
             _run_main(
                 rundir=str(predictions_rundir),
-                base_command_line_args=base_command_line_args,
                 input_yaml=input_yaml,
                 update_dict_with={
                     "optim": {"max_epochs": 2, "eval_every": 8},
@@ -265,9 +189,7 @@ class TestSmoke:
             )
 
             # verify predictions from train and predict are identical
-            energy_from_train = np.load(training_predictions_filename)[
-                "energy"
-            ]
+            energy_from_train = np.load(training_predictions_filename)["energy"]
             energy_from_checkpoint = np.load(predictions_filename)["energy"]
             assert np.isclose(energy_from_train, energy_from_checkpoint).all()
 
@@ -282,13 +204,11 @@ class TestSmoke:
     def test_train_and_predict(
         self,
         model_name,
-        base_command_line_args,
         configs,
         tutorial_val_src,
     ):
         self.smoke_test_train(
             model_name=model_name,
-            base_command_line_args=base_command_line_args,
             input_yaml=configs[model_name],
             tutorial_val_src=tutorial_val_src,
         )
@@ -296,7 +216,6 @@ class TestSmoke:
     # train for a few steps and confirm same seeds get same results
     def test_different_seeds(
         self,
-        base_command_line_args,
         configs,
         tutorial_val_src,
         torch_deterministic,
@@ -308,7 +227,6 @@ class TestSmoke:
             seed0_take1_rundir.mkdir()
             seed0_take1_acc = _run_main(
                 rundir=str(seed0_take1_rundir),
-                base_command_line_args=base_command_line_args,
                 update_dict_with={
                     "optim": {"max_epochs": 2},
                     "dataset": oc20_lmdb_train_and_val_from_paths(
@@ -325,7 +243,6 @@ class TestSmoke:
             seed1000_rundir.mkdir()
             seed1000_acc = _run_main(
                 rundir=str(seed1000_rundir),
-                base_command_line_args=base_command_line_args,
                 update_dict_with={
                     "optim": {"max_epochs": 2},
                     "dataset": oc20_lmdb_train_and_val_from_paths(
@@ -342,7 +259,6 @@ class TestSmoke:
             seed0_take2_rundir.mkdir()
             seed0_take2_acc = _run_main(
                 rundir=str(seed0_take2_rundir),
-                base_command_line_args=base_command_line_args,
                 update_dict_with={
                     "optim": {"max_epochs": 2},
                     "dataset": oc20_lmdb_train_and_val_from_paths(
@@ -384,7 +300,6 @@ class TestSmallDatasetOptim:
         model_name,
         expected_energy_mae,
         expected_force_mae,
-        base_command_line_args,
         configs,
         tutorial_val_src,
         torch_deterministic,
@@ -392,7 +307,6 @@ class TestSmallDatasetOptim:
         with tempfile.TemporaryDirectory() as tempdirname:
             acc = _run_main(
                 rundir=tempdirname,
-                base_command_line_args=base_command_line_args,
                 input_yaml=configs[model_name],
                 update_dict_with={
                     "dataset": oc20_lmdb_train_and_val_from_paths(
@@ -401,9 +315,5 @@ class TestSmallDatasetOptim:
                     ),
                 },
             )
-            assert (
-                acc.Scalars("train/energy_mae")[-1].value < expected_energy_mae
-            )
-            assert (
-                acc.Scalars("train/forces_mae")[-1].value < expected_force_mae
-            )
+            assert acc.Scalars("train/energy_mae")[-1].value < expected_energy_mae
+            assert acc.Scalars("train/forces_mae")[-1].value < expected_force_mae
