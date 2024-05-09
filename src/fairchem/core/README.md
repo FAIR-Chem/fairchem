@@ -1,9 +1,8 @@
-# `ocp` by Open Catalyst Project
+# `fairchem-core` by Open Catalyst Project
 
-![tests](https://github.com/Open-Catalyst-Project/ocp/actions/workflows/test.yml/badge.svg?branch=main)
-[![codecov](https://codecov.io/gh/Open-Catalyst-Project/ocp/graph/badge.svg?token=M606LH5LK6)](https://codecov.io/gh/Open-Catalyst-Project/ocp)
+![tests](https://github.com/FAIR-Chem/fairchem/actions/workflows/test.yml/badge.svg?branch=main)
 
-`ocp` is the [Open Catalyst Project](https://opencatalystproject.org/)'s
+`fairchem-core` is the [Open Catalyst Project](https://opencatalystproject.org/)'s
 library of state-of-the-art machine learning algorithms for catalysis.
 
 <div align="left">
@@ -34,7 +33,7 @@ Projects and models built on `ocp`:
 - Graph Parallelism [[`arXiv`](https://arxiv.org/abs/2203.09697)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/gemnet_gp)]
 - GemNet-OC [[`arXiv`](https://arxiv.org/abs/2204.02782)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/gemnet_oc)]
 - SCN [[`arXiv`](https://arxiv.org/abs/2206.14331)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/scn)]
-- AdsorbML [[`arXiv`](https://arxiv.org/abs/2211.16486)] [[`code`](https://github.com/open-catalyst-project/adsorbml)]
+- AdsorbML [[`arXiv`](https://arxiv.org/abs/2211.16486)] [[`code`](https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/applications/AdsorbML)]
 - eSCN [[`arXiv`](https://arxiv.org/abs/2302.03655)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/escn)]
 - EquiformerV2 [[`arXiv`](https://arxiv.org/abs/2306.12059)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/equiformer_v2)]
 
