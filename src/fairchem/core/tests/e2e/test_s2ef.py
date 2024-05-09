@@ -9,8 +9,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 import yaml
-from tensorboard.backend.event_processing.event_accumulator import \
-    EventAccumulator
+from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
 from fairchem.core._cli import Runner
 from fairchem.core.common.flags import flags
