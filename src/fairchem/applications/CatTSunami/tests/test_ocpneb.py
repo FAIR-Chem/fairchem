@@ -1,21 +1,22 @@
-import pickle
-
-
 import numpy as np
+import pytest
 
 from ase.neb import DyNEB
-from ocpneb.core import OCPdyNEB
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.applications.ocpneb.core import OCPNEB
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from ase.optimize import BFGS
 from fairchem.core.models.model_registry import model_name_to_local_file
 
 
-
+@pytest.mark.usefixtures("neb_frames")
 class TestNEB:
-    def test_force_call(self):
-        images = pickle.load(open("neb_frames.pkl", "rb"))
-        checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
-        batched = OCPdyNEB(
+    def test_force_call(self, tmp_path):
+        images = self.images
+        checkpoint_path = model_name_to_local_file(
+            "EquiformerV2-31M-S2EF-OC20-All+MD",
+            local_cache=tmp_path / "ocp_checkpoints/",
+        )
+        batched = OCPNEB(
             images=images,
             checkpoint_path=checkpoint_path,
             cpu=True,
@@ -38,10 +39,13 @@ class TestNEB:
         assert np.isclose(energies, energies_ub, atol=1e-3).all()
         assert mismatch.sum() == 0
 
-    def test_neb_call(self):
-        images = pickle.load(open("neb_frames.pkl", "rb"))
-        checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
-        batched = OCPdyNEB(
+    def test_neb_call(self, tmp_path):
+        images = self.images.copy()
+        checkpoint_path = model_name_to_local_file(
+            "EquiformerV2-31M-S2EF-OC20-All+MD",
+            local_cache=tmp_path / "ocp_checkpoints/",
+        )
+        batched = OCPNEB(
             images=images,
             checkpoint_path=checkpoint_path,
             cpu=True,
@@ -54,7 +58,7 @@ class TestNEB:
         forces = batched.get_forces()
         energies = batched.get_potential_energy()
 
-        images_ub = pickle.load(open("neb_frames.pkl", "rb"))
+        images_ub = self.images
         for image in images_ub[1:-1]:
             image.calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
         unbatched = DyNEB(images_ub, k=0.25)

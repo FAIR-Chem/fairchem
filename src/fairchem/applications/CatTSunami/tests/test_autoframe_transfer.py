@@ -1,13 +1,13 @@
-from ocpneb.core.autoframe import (
+import pytest
+from fairchem.applications.ocpneb.core.autoframe import (
     AutoFrameTransfer,
     interpolate_and_correct_frames,
 )
 from fairchem.core.models.model_registry import model_name_to_local_file
-from ocpneb.core.reaction import Reaction
-import pickle
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.applications.ocpneb.core.reaction import Reaction
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.data.oc.databases.pkls import ADSORBATES_PKL_PATH
-from ocpneb.databases import TRANSFER_REACTION_DB_PATH
+from fairchem.applications.ocpneb.databases import TRANSFER_REACTION_DB_PATH
 
 
 def get_ads_syms(adslab):
@@ -19,10 +19,10 @@ def get_ads_syms(adslab):
     return syms_str
 
 
+@pytest.mark.usefixtures("transfer_inputs")
 class TestAutoframe:
     def test_overall_functionality(self):
-        with open("autoframe_inputs_transfer.pkl", "rb") as f:
-            inputs = pickle.load(f)
+        inputs = self.inputs
 
         reaction = Reaction(
             reaction_db_path=TRANSFER_REACTION_DB_PATH,
@@ -41,8 +41,10 @@ class TestAutoframe:
         product1_energies = inputs["product1_energies"]
         product2_energies = inputs["product2_energies"]
 
-        checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
-        calc1 = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
+        checkpoint_path = model_name_to_local_file(
+            "EquiformerV2-31M-S2EF-OC20-All+MD", local_cache="/tmp/ocp_checkpoints/"
+        )
+        calc1 = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
         af = AutoFrameTransfer(
             reaction,
             reactant1_systems,
@@ -64,7 +66,7 @@ class TestAutoframe:
             n_final_frames_per_initial=5,
             fmax=0.05,
         )
-        print(len(neb_frames_sets))
+        # print(len(neb_frames_sets))
         neb_frames_len = [len(neb_set) == num_frames for neb_set in neb_frames_sets]
 
         syms_str_agree = [

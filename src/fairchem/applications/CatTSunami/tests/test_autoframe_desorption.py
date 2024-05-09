@@ -1,21 +1,20 @@
-from ocpneb.core.autoframe import (
+from fairchem.applications.ocpneb.core.autoframe import (
     AutoFrameDesorption,
     interpolate_and_correct_frames,
 )
-from ocpneb.core import Reaction
-import pickle
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.applications.ocpneb.core import Reaction
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
 import numpy as np
 import pytest
 from fairchem.data.oc.databases.pkls import ADSORBATES_PKL_PATH
-from ocpneb.databases import DESORPTION_REACTION_DB_PATH
+from fairchem.applications.ocpneb.databases import DESORPTION_REACTION_DB_PATH
 
 
+@pytest.mark.usefixtures("desorption_inputs")
 class TestAutoframe:
-    def test_overall_functionality(self):
-        with open("autoframe_inputs_desorption.pkl", "rb") as f:
-            inputs = pickle.load(f)
+    def test_overall_functionality(self, tmp_path):
+        inputs = self.inputs
         num_frames = 10
         reactant_systems = inputs["reactant_systems"]
         reactant_energies = inputs["reactant_energies"]
@@ -25,7 +24,10 @@ class TestAutoframe:
             reaction_id_from_db=0,
             adsorbate_db_path=ADSORBATES_PKL_PATH,
         )
-        checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
+        checkpoint_path = model_name_to_local_file(
+            "EquiformerV2-31M-S2EF-OC20-All+MD",
+            local_cache=tmp_path / "ocp_checkpoints",
+        )
         calc1 = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
         af = AutoFrameDesorption(reaction, reactant_systems, reactant_energies, 3)
         neb_frames_sets = af.get_neb_frames(
@@ -55,9 +57,8 @@ class TestAutoframe:
         )
         assert len(neb_frames_sets) == 2
 
-    def test_additional_failure_cases(self):
-        with open("autoframe_inputs_desorption.pkl", "rb") as f:
-            inputs = pickle.load(f)
+    def test_additional_failure_cases(self, tmp_path):
+        inputs = self.inputs
         num_frames = 10
         reactant_systems = inputs["reactant_systems"]
         reactant_energies = inputs["reactant_energies"]
@@ -66,8 +67,11 @@ class TestAutoframe:
             -1
         ] + np.array([1, 2, -1.25])
         reactant_systems.append(dissociated_adsorbate)
-        
-        checkpoint_path = checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
+
+        checkpoint_path = checkpoint_path = model_name_to_local_file(
+            "EquiformerV2-31M-S2EF-OC20-All+MD",
+            local_cache=tmp_path / "ocp_checkpoints",
+        )
         calc1 = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
 
         reaction = Reaction(

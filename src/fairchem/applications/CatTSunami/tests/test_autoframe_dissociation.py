@@ -1,14 +1,15 @@
-from ocpneb.core.autoframe import (
+import pytest
+from fairchem.applications.ocpneb.core.autoframe import (
     AutoFrameDissociation,
     is_edge_list_respected,
     interpolate_and_correct_frames,
 )
-import pickle
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
-from ocpneb.core import Reaction
+from fairchem.applications.ocpneb.core import Reaction
 from fairchem.data.oc.databases.pkls import ADSORBATES_PKL_PATH
-from ocpneb.databases import DISSOCIATION_REACTION_DB_PATH
+from fairchem.applications.ocpneb.databases import DISSOCIATION_REACTION_DB_PATH
+
 
 def get_ads_syms(adslab):
     adsorbate = adslab[[idx for idx, tag in enumerate(adslab.get_tags()) if tag == 2]]
@@ -19,10 +20,10 @@ def get_ads_syms(adslab):
     return syms_str
 
 
+@pytest.mark.usefixtures("dissociation_inputs")
 class TestAutoframe:
     def test_overall_functionality(self):
-        with open("autoframe_inputs_dissociation.pkl", "rb") as f:
-            inputs = pickle.load(f)
+        inputs = self.inputs
 
         num_frames = 10
         reactant_systems = inputs["reactant_systems"]
@@ -41,7 +42,9 @@ class TestAutoframe:
             reaction_id_from_db=8,
             adsorbate_db_path="/private/home/brookwander/Open-Catalyst-Dataset/ocdata/databases/pkls/adsorbates.pkl",
         )
-        checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
+        checkpoint_path = model_name_to_local_file(
+            "EquiformerV2-31M-S2EF-OC20-All+MD", local_cache="/tmp/ocp_checkpoints/"
+        )
         calc1 = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
         af = AutoFrameDissociation(
             reaction,
@@ -86,8 +89,7 @@ class TestAutoframe:
         reactant isnt connected and examples where it is but across a
         periodic boundary.
         """
-        with open("autoframe_inputs_dissociation.pkl", "rb") as f:
-            inputs = pickle.load(f)
+        inputs = self.inputs
 
         reactant_systems = inputs["reactant_systems"]
         reaction = Reaction(

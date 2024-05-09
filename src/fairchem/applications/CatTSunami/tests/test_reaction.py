@@ -1,6 +1,6 @@
-from ocpneb.core import Reaction
+from fairchem.applications.ocpneb.core import Reaction
 import ase
-from ocpneb.databases import DISSOCIATION_REACTION_DB_PATH
+from fairchem.applications.ocpneb.databases import DISSOCIATION_REACTION_DB_PATH
 from fairchem.data.oc.databases.pkls import ADSORBATES_PKL_PATH
 
 
