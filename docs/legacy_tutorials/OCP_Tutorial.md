@@ -902,7 +902,6 @@ colab:
 id: 5KZvPu4hogkR
 outputId: fdbbfa5c-0d7c-449f-8be5-ef2e5d17860d
 ---
-import ocpmodels
 from fairchem.core.common.tutorial_utils import ocp_root
 
 ! ln -s {ocp_root()}/configs ./configs

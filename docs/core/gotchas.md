@@ -92,7 +92,7 @@ slab.get_potential_energy()
 
 ```{code-cell} ipython3
 # An OC22 checkpoint - trained on total energy
-checkpoint_path = model_name_to_local_file('GemNet-OCOC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OC-S2EFS-OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 
 with contextlib.redirect_stdout(StringIO()) as _:
     calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
