@@ -24,6 +24,9 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 # from .base_atoms.pkls import BULK_PKL
 # from .constants import MAX_MILLER
 
+BULK_PKL = "/fill/this/in/with/path/to/bulk/pkl/file"
+MAX_MILLER = 2
+
 
 def enumerate_surfaces_for_saving(bulk_atoms, max_miller=MAX_MILLER):
     """
