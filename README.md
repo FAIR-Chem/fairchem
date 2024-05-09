@@ -13,4 +13,4 @@ Our new structure supports the fairchem package namespace with several independe
 * [fairchem.applications.adsorbml](src/fairchem/applications/AdsorbML) (formerly [AdsorbML](https://github.com/Open-Catalyst-Project/AdsorbML))
 * [fairchem.applications.cattsunami](src/fairchem/applications/CatTSunami)
 
-[go to the docs!](https://open-catalyst-project.github.io/ocp/)
+[go to the docs!](https://fair-chem.github.io/)
