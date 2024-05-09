@@ -902,9 +902,9 @@ colab:
 id: 5KZvPu4hogkR
 outputId: fdbbfa5c-0d7c-449f-8be5-ef2e5d17860d
 ---
-from fairchem.core.common.tutorial_utils import ocp_root
+from fairchem.core.common.tutorial_utils import fairchem_root
 
-! ln -s {ocp_root()}/configs ./configs
+! ln -s {fairchem_root()}/configs ./configs
 ```
 
 +++ {"id": "8AsZpLjIQg-W"}
