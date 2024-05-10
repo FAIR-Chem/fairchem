@@ -20,6 +20,7 @@ from typing_extensions import override
 
 from ocpmodels.common import distutils, gp_utils
 from ocpmodels.datasets import data_list_collater
+from ocpmodels.datasets.base_dataset import DatasetMetadata
 
 if TYPE_CHECKING:
     from torch_geometric.data import Batch, Data
@@ -60,8 +61,7 @@ class UnsupportedDatasetError(ValueError):
 
 @runtime_checkable
 class DatasetWithSizes(Protocol):
-    def data_sizes(self, indices: list[int]) -> np.ndarray:
-        ...
+    metadata: DatasetMetadata
 
 
 def _ensure_supported(dataset: Any):
@@ -72,7 +72,7 @@ def _ensure_supported(dataset: Any):
 
     if not isinstance(dataset, DatasetWithSizes):
         raise UnsupportedDatasetError(
-            "BalancedBatchSampler requires a dataset that implements the `data_sizes` method."
+            "BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms."
         )
 
     logging.debug(f"BalancedBatchSampler: Resolved dataset to {type(dataset)}")
@@ -148,7 +148,7 @@ class BalancedBatchSampler(BatchSampler):
         dataset = self.sampler.dataset
         try:
             dataset = _ensure_supported(dataset)
-            return dataset.data_sizes(batch_idx)
+            return dataset.metadata.natoms[batch_idx]
         except UnsupportedDatasetError as e:
             if self.on_error == "raise":
                 raise e

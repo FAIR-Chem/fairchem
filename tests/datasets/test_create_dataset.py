@@ -30,7 +30,7 @@ def test_create_dataset(key, value, max_atoms, structures, tmp_path):
         structures = [s for s in structures if len(s) <= max_atoms]
         assert all(
             natoms <= max_atoms
-            for natoms in dataset.data_sizes(range(len(dataset)))
+            for natoms in dataset.metadata.natoms[range(len(dataset))]
         )
     if key == "first_n":  # this assumes first_n are not shuffled
         assert all(

@@ -3,18 +3,20 @@ Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+from __future__ import annotations
 
 from abc import ABCMeta
 from collections import namedtuple
 from functools import cached_property
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, TypeVar, Sequence
 
 import numpy as np
 import torch
 from numpy.typing import ArrayLike, NDArray
 from torch import randperm
-from torch.utils.data import Dataset, Subset
+from torch.utils.data import Dataset
+from torch.utils.data import Subset as Subset_
 
 from ocpmodels.common.registry import registry
 
@@ -28,6 +30,20 @@ DatasetMetadata = namedtuple(
         None,
     ],
 )
+
+
+class Subset(Subset_):
+    """A pytorch subset that also takes metadata if given."""
+    def __init__(self, dataset: Dataset[T_co], indices: Sequence[int], metadata: DatasetMetadata | None = None) -> None:
+        super().__init__(dataset, indices)
+
+        metadata = {}
+        for field in DatasetMetadata._fields:
+            value = getattr(metadata, field)
+            if isinstance(value, Sequence):
+                value = value[indices]
+            metadata[field] = value
+        self.metadata = DatasetMetadata(**metadata)
 
 
 class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
@@ -123,7 +139,7 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
     indices = dataset.indices
     max_atoms = current_split_config.get("max_atoms", None)
     if max_atoms is not None:
-        indices = indices[dataset.data_sizes(indices) <= max_atoms]
+        indices = indices[dataset.metadata.natoms[indices] <= max_atoms]
 
     # Apply dataset level transforms
     # TODO is no_shuffle mutually exclusive though? or what is the purpose of no_shuffle?
@@ -160,8 +176,5 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
                 + f"that are smaller than the given max_atoms {max_atoms}."
             )
         raise ValueError(msg)
-    # inject data_sizes right now (hacky should just subclass Subset)
-    subset = Subset(dataset, indices)
-    # TODO makes this just an array
-    subset.data_sizes = lambda idx: dataset.data_sizes(indices)[idx]
+    subset = Subset(dataset, indices, metadata=dataset.metadata)
     return subset
