@@ -19,7 +19,7 @@ The repository is organized into several directories to help you find what you a
 ### Installation
 Packages can be installed in your environment by the following:
 ```
-pip install -e packages/fairchem-{package-to-download}
+pip install -e packages/fairchem-{fairchem-package-name}
 ```
 
 `fairchem.core` requires you to first create your environment
