@@ -20,7 +20,7 @@ Ensure you have Python 3.9.1 or newer, and install `ocpapi` using:
 
 ```{code-cell} ipython3
 %%sh
-pip install ocpapi
+pip install -q ocpapi
 ```
 
 ## Quickstart
@@ -67,7 +67,7 @@ results = await find_adsorbate_binding_sites(
 )
 ```
 
-Users will be prompted to select one or more surfaces that should be relaxed. 
+Users will be prompted to select one or more surfaces that should be relaxed.
 
 Input to this function includes:
 
