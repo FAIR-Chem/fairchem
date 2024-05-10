@@ -857,8 +857,6 @@ model = {
   "num_atom_emb_layers": 2,
   "num_global_out_layers": 2,
   "qint_tags": [1, 2],
-    
-  "scale_file": "configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt",
 }
 
 # Optimizer
@@ -891,21 +889,6 @@ dataset = [
    }, # train set 
   {'src': val_src}, # val set (optional)
 ]
-```
-
-The above config references a scale file `configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.json`. We usually train in the root directory of the ocpmodels install, so this would be local to that directory. We'll link that folder into the current one to make it happy and keep things consistent as if you were running from the root directory!
-
-```{code-cell} ipython3
----
-colab:
-  base_uri: https://localhost:8080/
-id: 5KZvPu4hogkR
-outputId: fdbbfa5c-0d7c-449f-8be5-ef2e5d17860d
----
-import ocpmodels
-from fairchem.core.common.tutorial_utils import ocp_root
-
-! ln -s {ocp_root()}/configs ./configs
 ```
 
 +++ {"id": "8AsZpLjIQg-W"}

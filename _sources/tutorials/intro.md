@@ -36,25 +36,25 @@ Today an MLP consists of three things:
 2. A dataset that provides the atomistic systems and the desired output labels. This label could be energy, forces, or other atomistic properties.
 3. A checkpoint that stores the trained model for use in predictions.
 
-The [Open Catalyst Project (OCP)](https://github.com/Open-Catalyst-Project) is an umbrella for these machine learned potential models, data sets, and checkpoints from training. 
+The [FAIRChem (Formerly Open Catalyst Project [OCP])](https://github.com/FAIR-Chem/) is an umbrella for these machine learned potential models, data sets, and checkpoints from training. 
 
 +++
 
 ### Models
 
-OCP provides several [models](../core/models). Each model represents a different approach to featurization, and a different machine learning architecture. The models can be used for different tasks, and you will find different checkpoints associated with different datasets and tasks. 
+FAIRChem provides several [models](../core/models). Each model represents a different approach to featurization, and a different machine learning architecture. The models can be used for different tasks, and you will find different checkpoints associated with different datasets and tasks. 
 
 +++
 
 ### Datasets / Tasks
 
-OCP provides several different datasets like [OC20](../core/datasets/oc20) that correspond to different tasks that range from predicting energy and forces from structures to Bader charges, relaxation energies, and others.
+FAIRChem provides several different datasets like [OC20](../core/datasets/oc20) that correspond to different tasks that range from predicting energy and forces from structures to Bader charges, relaxation energies, and others.
 
 +++
 
 ### Checkpoints
 
-To use a pre-trained model you need to have [ocp](https://github.com/Open-Catalyst-Project/ocp) installed. Then you need to choose a checkpoint and config file which will be loaded to configure OCP for the predictions you want to make. There are two approaches to running OCP, via scripts in a shell, or using an ASE compatible calculator.
+To use a pre-trained model you need to have [fairchem-core](https://github.com/FAIR-Chem/fairchem) installed. Then you need to choose a checkpoint and config file which will be loaded to configure FAIRChem for the predictions you want to make. There are two approaches to running FAIRChem, via scripts in a shell, or using an ASE compatible calculator.
 
 We will focus on the ASE compatible calculator here. To facilitate using the checkpoints, there is a set of [utilities](./ocp-tutorial) for this tutorial. You can list the checkpoints that are readily available here:
 
@@ -80,11 +80,11 @@ This tutorial will start by using OCP in a Jupyter notebook to setup some simple
 
 ## About the compute environment
 
-`ocpmodels.common.tutorial_utils`  provides `describe_ocp` to output information that might be helpful in debugging.
+`ocpmodels.common.tutorial_utils`  provides `describe_fairchem` to output information that might be helpful in debugging.
 
 ```{code-cell} ipython3
-from fairchem.core.common.tutorial_utils import describe_ocp
-describe_ocp()
+from fairchem.core.common.tutorial_utils import describe_fairchem
+describe_fairchem()
 ```
 
 Let's get started! Click here to open the [next notebook](./OCP-introduction).

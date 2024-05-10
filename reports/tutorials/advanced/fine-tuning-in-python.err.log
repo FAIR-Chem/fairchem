@@ -18,7 +18,7 @@ Traceback (most recent call last):
     raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
 nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
 ------------------
-with new_trainer_context(config=config, args=args) as ctx:
+with new_trainer_context(config=config) as ctx:
     config = ctx.config
     task = ctx.task
     trainer = ctx.trainer
@@ -26,24 +26,86 @@ with new_trainer_context(config=config, args=args) as ctx:
     task.run()
 ------------------
 
+----- stderr -----
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch/cuda/amp/grad_scaler.py:126: UserWarning: torch.cuda.amp.GradScaler is enabled, but CUDA is not available.  Disabling.
+  warnings.warn(
+----- stderr -----
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch_geometric/data/collate.py:145: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  storage = elem.storage()._new_shared(numel)
+----- stderr -----
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch_geometric/data/collate.py:145: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  storage = elem.storage()._new_shared(numel)
+----- stderr -----
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch/amp/autocast_mode.py:250: UserWarning: User provided device_type of 'cuda', but CUDA is not available. Disabling
+  warnings.warn(
+----- stderr -----
+device 0:   0%|          | 0/2 [00:00<?, ?it/s]
+----- stderr -----
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch_geometric/data/collate.py:145: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  storage = elem.storage()._new_shared(numel)
+----- stderr -----
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch_geometric/data/collate.py:145: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  storage = elem.storage()._new_shared(numel)
+----- stderr -----
+device 0:  50%|█████     | 1/2 [00:04<00:04,  4.32s/it]
+----- stderr -----
+device 0: 100%|██████████| 2/2 [00:07<00:00,  3.46s/it]
+----- stderr -----
+device 0: 100%|██████████| 2/2 [00:07<00:00,  3.65s/it]
+----- stderr -----
+
+------------------
 
 [0;31m---------------------------------------------------------------------------[0m
 [0;31mTypeError[0m                                 Traceback (most recent call last)
-Cell [0;32mIn[9], line 1[0m
-[0;32m----> 1[0m [38;5;28;01mwith[39;00m [43mnew_trainer_context[49m[43m([49m[43mconfig[49m[38;5;241;43m=[39;49m[43mconfig[49m[43m,[49m[43m [49m[43margs[49m[38;5;241;43m=[39;49m[43margs[49m[43m)[49m [38;5;28;01mas[39;00m ctx:
-[1;32m      2[0m     config [38;5;241m=[39m ctx[38;5;241m.[39mconfig
-[1;32m      3[0m     task [38;5;241m=[39m ctx[38;5;241m.[39mtask
+Cell [0;32mIn[9], line 6[0m
+[1;32m      4[0m trainer [38;5;241m=[39m ctx[38;5;241m.[39mtrainer
+[1;32m      5[0m task[38;5;241m.[39msetup(trainer)
+[0;32m----> 6[0m [43mtask[49m[38;5;241;43m.[39;49m[43mrun[49m[43m([49m[43m)[49m
 
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/contextlib.py:301[0m, in [0;36mcontextmanager.<locals>.helper[0;34m(*args, **kwds)[0m
-[1;32m    299[0m [38;5;129m@wraps[39m(func)
-[1;32m    300[0m [38;5;28;01mdef[39;00m [38;5;21mhelper[39m([38;5;241m*[39margs, [38;5;241m*[39m[38;5;241m*[39mkwds):
-[0;32m--> 301[0m     [38;5;28;01mreturn[39;00m [43m_GeneratorContextManager[49m[43m([49m[43mfunc[49m[43m,[49m[43m [49m[43margs[49m[43m,[49m[43m [49m[43mkwds[49m[43m)[49m
+File [0;32m~/work/fairchem/fairchem/src/fairchem/core/tasks/task.py:51[0m, in [0;36mTrainTask.run[0;34m(self)[0m
+[1;32m     49[0m [38;5;28;01mdef[39;00m [38;5;21mrun[39m([38;5;28mself[39m) [38;5;241m-[39m[38;5;241m>[39m [38;5;28;01mNone[39;00m:
+[1;32m     50[0m     [38;5;28;01mtry[39;00m:
+[0;32m---> 51[0m         [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mtrainer[49m[38;5;241;43m.[39;49m[43mtrain[49m[43m([49m
+[1;32m     52[0m [43m            [49m[43mdisable_eval_tqdm[49m[38;5;241;43m=[39;49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mconfig[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mhide_eval_progressbar[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;28;43;01mFalse[39;49;00m[43m)[49m
+[1;32m     53[0m [43m        [49m[43m)[49m
+[1;32m     54[0m     [38;5;28;01mexcept[39;00m [38;5;167;01mRuntimeError[39;00m [38;5;28;01mas[39;00m e:
+[1;32m     55[0m         [38;5;28mself[39m[38;5;241m.[39m_process_error(e)
 
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/contextlib.py:105[0m, in [0;36m_GeneratorContextManagerBase.__init__[0;34m(self, func, args, kwds)[0m
-[1;32m    104[0m [38;5;28;01mdef[39;00m [38;5;21m__init__[39m([38;5;28mself[39m, func, args, kwds):
-[0;32m--> 105[0m     [38;5;28mself[39m[38;5;241m.[39mgen [38;5;241m=[39m [43mfunc[49m[43m([49m[38;5;241;43m*[39;49m[43margs[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwds[49m[43m)[49m
-[1;32m    106[0m     [38;5;28mself[39m[38;5;241m.[39mfunc, [38;5;28mself[39m[38;5;241m.[39margs, [38;5;28mself[39m[38;5;241m.[39mkwds [38;5;241m=[39m func, args, kwds
-[1;32m    107[0m     [38;5;66;03m# Issue 19330: ensure context manager instances have good docstrings[39;00m
+File [0;32m~/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:201[0m, in [0;36mOCPTrainer.train[0;34m(self, disable_eval_tqdm)[0m
+[1;32m    196[0m [38;5;28;01mif[39;00m [38;5;28mself[39m[38;5;241m.[39mval_loader [38;5;129;01mis[39;00m [38;5;129;01mnot[39;00m [38;5;28;01mNone[39;00m:
+[1;32m    197[0m     val_metrics [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mvalidate(
+[1;32m    198[0m         split[38;5;241m=[39m[38;5;124m"[39m[38;5;124mval[39m[38;5;124m"[39m,
+[1;32m    199[0m         disable_tqdm[38;5;241m=[39mdisable_eval_tqdm,
+[1;32m    200[0m     )
+[0;32m--> 201[0m     [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mupdate_best[49m[43m([49m
+[1;32m    202[0m [43m        [49m[43mprimary_metric[49m[43m,[49m
+[1;32m    203[0m [43m        [49m[43mval_metrics[49m[43m,[49m
+[1;32m    204[0m [43m        [49m[43mdisable_eval_tqdm[49m[38;5;241;43m=[39;49m[43mdisable_eval_tqdm[49m[43m,[49m
+[1;32m    205[0m [43m    [49m[43m)[49m
+[1;32m    207[0m [38;5;28;01mif[39;00m [38;5;28mself[39m[38;5;241m.[39mconfig[[38;5;124m"[39m[38;5;124mtask[39m[38;5;124m"[39m][38;5;241m.[39mget([38;5;124m"[39m[38;5;124meval_relaxations[39m[38;5;124m"[39m, [38;5;28;01mFalse[39;00m):
+[1;32m    208[0m     [38;5;28;01mif[39;00m [38;5;124m"[39m[38;5;124mrelax_dataset[39m[38;5;124m"[39m [38;5;129;01mnot[39;00m [38;5;129;01min[39;00m [38;5;28mself[39m[38;5;241m.[39mconfig[[38;5;124m"[39m[38;5;124mtask[39m[38;5;124m"[39m]:
 
-[0;31mTypeError[0m: new_trainer_context() got an unexpected keyword argument 'args'
+File [0;32m~/work/fairchem/fairchem/src/fairchem/core/trainers/base_trainer.py:671[0m, in [0;36mBaseTrainer.update_best[0;34m(self, primary_metric, val_metrics, disable_eval_tqdm)[0m
+[1;32m    664[0m [38;5;28;01mdef[39;00m [38;5;21mupdate_best[39m(
+[1;32m    665[0m     [38;5;28mself[39m,
+[1;32m    666[0m     primary_metric,
+[1;32m    667[0m     val_metrics,
+[1;32m    668[0m     disable_eval_tqdm: [38;5;28mbool[39m [38;5;241m=[39m [38;5;28;01mTrue[39;00m,
+[1;32m    669[0m ) [38;5;241m-[39m[38;5;241m>[39m [38;5;28;01mNone[39;00m:
+[1;32m    670[0m     [38;5;28;01mif[39;00m (
+[0;32m--> 671[0m         [38;5;124;43m"[39;49m[38;5;124;43mmae[39;49m[38;5;124;43m"[39;49m[43m [49m[38;5;129;43;01min[39;49;00m[43m [49m[43mprimary_metric[49m
+[1;32m    672[0m         [38;5;129;01mand[39;00m val_metrics[primary_metric][[38;5;124m"[39m[38;5;124mmetric[39m[38;5;124m"[39m] [38;5;241m<[39m [38;5;28mself[39m[38;5;241m.[39mbest_val_metric
+[1;32m    673[0m     ) [38;5;129;01mor[39;00m (
+[1;32m    674[0m         [38;5;124m"[39m[38;5;124mmae[39m[38;5;124m"[39m [38;5;129;01mnot[39;00m [38;5;129;01min[39;00m primary_metric
+[1;32m    675[0m         [38;5;129;01mand[39;00m val_metrics[primary_metric][[38;5;124m"[39m[38;5;124mmetric[39m[38;5;124m"[39m] [38;5;241m>[39m [38;5;28mself[39m[38;5;241m.[39mbest_val_metric
+[1;32m    676[0m     ):
+[1;32m    677[0m         [38;5;28mself[39m[38;5;241m.[39mbest_val_metric [38;5;241m=[39m val_metrics[primary_metric][[38;5;124m"[39m[38;5;124mmetric[39m[38;5;124m"[39m]
+[1;32m    678[0m         [38;5;28mself[39m[38;5;241m.[39msave(
+[1;32m    679[0m             metrics[38;5;241m=[39mval_metrics,
+[1;32m    680[0m             checkpoint_file[38;5;241m=[39m[38;5;124m"[39m[38;5;124mbest_checkpoint.pt[39m[38;5;124m"[39m,
+[1;32m    681[0m             training_state[38;5;241m=[39m[38;5;28;01mFalse[39;00m,
+[1;32m    682[0m         )
+
+[0;31mTypeError[0m: argument of type 'NoneType' is not iterable
 

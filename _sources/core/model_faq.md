@@ -4,7 +4,7 @@ If you don't find your question answered here, please feel free to [file a GitHu
 
 ## Models
 
-### Are predictions from OCP models deterministic?
+### Are predictions from FAIRChem models deterministic?
 
 By deterministic, we mean that multiple calls to the same function, given
 the same inputs (and seed), will produce the same results.
@@ -83,7 +83,7 @@ few batches of data prior to training in order to stabilize the variance of
 activations. See [Sec. 6 in the GemNet paper](https://arxiv.org/abs/2106.08903)
 for more details on this.
 
-We provide some set of scaling factors as part of the `ocp` codebase that you
+We provide some set of scaling factors as part of the `fairchem` codebase that you
 can reuse by passing the `scale_file` parameter in the YAML config. For example:
 * GemNet-dT [scaling factors](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json) and [config](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/gemnet-dT.yml#L32)
 * GemNet-OC [scaling factors](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt) and [config](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/gemnet-oc.yml#L45)
@@ -92,7 +92,7 @@ If you change any of the model architecture hyperparameters or the dataset, you
 should refit these scaling factors:
 
 ```bash
-python ocpmodels/modules/scaling/fit.py \
+python src/fairchem/core/modules/scaling/fit.py \
     --config-yml path/to/my/config.yml \
     --checkpoint path/to/save/checkpoint.pt \
     --mode train
@@ -112,7 +112,7 @@ python main.py \
 
 This is likely a tagging issue -- GemNet-OC computes quadruplet interactions
 for atoms tagged as 1 and 2
-([see code](https://github.com/FAIR-Chem/fairchem/blob/main/ocpmodels/models/gemnet_oc/gemnet_oc.py#L1020)).
+([see code](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/gemnet_oc/gemnet_oc.py#L1020)).
 In OC20 parlance, `tag==1` refers to surface atoms and `tag==2` refers to
 adsorbate atoms. If all the atoms are tagged as 0 (check `atoms.get_tags()`),
 no quadruplets are computed, and part of the GemNet-OC forward pass fails.
