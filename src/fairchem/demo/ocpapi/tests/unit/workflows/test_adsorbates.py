@@ -1029,7 +1029,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
                 # retry until they are fetched successfully.
                 es.enter_context(
                     mock.patch(
-                        "ocpapi.workflows.adsorbates.wait_for_adsorbate_slab_relaxations",
+                        "fairchem.demo.ocpapi.workflows.adsorbates.wait_for_adsorbate_slab_relaxations",
                         partial(
                             wait_for_adsorbate_slab_relaxations,
                             slow_interval_sec=0.01,
