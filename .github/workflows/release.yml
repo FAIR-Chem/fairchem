@@ -58,7 +58,7 @@ jobs:
   release-test-pypi:
     needs: [build]
     runs-on: ubuntu-latest
-    # if: github.event.inputs.release-test-pypi == 'true'
+    if: github.event.inputs.release-test-pypi == 'true'
 
     environment:
       name: testpypi

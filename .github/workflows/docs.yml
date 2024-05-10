@@ -3,12 +3,6 @@ name: documentation
 on:
   workflow_call:
   workflow_dispatch:
-  push:
-    branches:
-      - ocp_documentation
-    paths:
-      - 'docs/**'
-      - '.github/workflows/docs.yml'
 
 # This job installs dependencies, build the book, and pushes it to `gh-pages`
 jobs:
@@ -30,19 +24,11 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pushd packages/
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        if [ -f requirements-optional.txt ]; then pip install -r requirements-optional.txt; fi
-        popd
-        pushd packages/fairchem-core
-        pip install -e .[docs,adsorbml]
-        popd
-        pushd packages/fairchem-data-oc
-        pip install -e .[dev]
-        popd
-        pushd packages/fairchem-demo-ocpapi
-        pip install -e .[dev]
-        popd 
+        if [ -f packages/requirements.txt ]; then pip install -r packages/requirements.txt; fi
+        if [ -f packages/requirements-optional.txt ]; then pip install -r packages/requirements-optional.txt; fi
+        pip install -e packages/fairchem-core[docs,adsorbml]
+        pip install -e packages/fairchem-data-oc[dev]
+        pip install -e packages/fairchem-demo-ocpapi[dev]
 
     # Build the book
     - name: Build the book
