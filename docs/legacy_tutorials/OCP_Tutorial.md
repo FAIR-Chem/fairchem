@@ -44,9 +44,9 @@ kernelspec:
 # Open Catalyst Project Tutorial Notebook
 Author(s):
 * [Muhammed Shuaibi](https://mshuaibii.github.io/), CMU, mshuaibi@andrew.cmu.edu
-* [Abhishek Das](https://abhishekdas.com/), FAIR, abhshkdz@fb.com 
+* [Abhishek Das](https://abhishekdas.com/), FAIR, abhshkdz@fb.com
 * [Adeesh Kolluru](https://adeeshkolluru.github.io/), CMU, akolluru@andrew.cmu.edu
-* [Brandon Wood](https://wood-b.github.io/), NERSC, bwood@lbl.gov 
+* [Brandon Wood](https://wood-b.github.io/), NERSC, bwood@lbl.gov
 * [Janice Lan](https://www.linkedin.com/in/janice-lan), FAIR, janlan@fb.com
 * [Anuroop Sriram](https://www.linkedin.com/in/anuroopsriram), FAIR, anuroops@fb.com
 * [Zachary Ulissi](https://ulissigroup.cheme.cmu.edu/), CMU, zulissi@andrew.cmu.edu
@@ -90,7 +90,7 @@ By the end of this tutorial, users will have gained:
 * Knowledge of the various OCP tasks: IS2RE, IS2RS, S2EF
 * Steps to train, validate, and predict a model on the various tasks
 * A walkthrough on creating your own model
-* (Optional) Creating your own dataset for other molecular/catalyst applications 
+* (Optional) Creating your own dataset for other molecular/catalyst applications
 * (Optional) Using pretrained models directly with an [ASE](https://wiki.fysik.dtu.dk/ase/#:~:text=The%20Atomic%20Simulation%20Environment%20(ASE,under%20the%20GNU%20LGPL%20license.)-style calculator.
 
 +++ {"id": "99jkSa_KmrDH"}
@@ -115,7 +115,7 @@ As part of OCP, we publicly released the world's largest quantum mechanical simu
 <a name="target-audience"></a>
 # Target Audience
 
-This tutorial is designed for those interested in application of ML towards climate change. More specifically, those interested in material/catalyst discovery and Graph Nueral Networks (GNNs) will find lots of benefit here. Little to no domain chemistry knowledge is necessary as it will be covered in the tutorial. Experience with GNNs is a plus but not required. 
+This tutorial is designed for those interested in application of ML towards climate change. More specifically, those interested in material/catalyst discovery and Graph Nueral Networks (GNNs) will find lots of benefit here. Little to no domain chemistry knowledge is necessary as it will be covered in the tutorial. Experience with GNNs is a plus but not required.
 
 We have designed this notebook in a manner to get the ML communnity up to speed as far as background knowledge is concerned, and the catalysis community to better understand how to use the OCP's state-of-the-art models in their everyday workflows.
 
@@ -144,7 +144,7 @@ To gain an even better understanding of the Open Catalyst Project and the proble
 <a name="software-requirements"></a>
 # Software Requirements
 
-See [installation](../core/INSTALL.md) for installation instructions! 
+See [installation](../core/INSTALL.md) for installation instructions!
 
 ```{code-cell} ipython3
 ---
@@ -176,7 +176,7 @@ Val/Test
 
 For the sake of this tutorial we provide much smaller splits (100 train, 20 val for all tasks) to allow users to easily store, train, and predict across the various tasks. Please refer [here](https://github.com/FAIR-Chem/fairchem#download-data) for details on how to download the full datasets for general use.
 
- 
+
 
 +++ {"id": "FIiwpALzBKaH"}
 
@@ -267,7 +267,7 @@ outputId: 96cd7bc8-2877-4b35-e133-80a10ad81b61
 ---
 ###DATA GENERATION - FEEL FREE TO SKIP###
 
-# This cell sets up and runs a structural relaxation 
+# This cell sets up and runs a structural relaxation
 # of a propane (C3H8) adsorbate on a copper (Cu) surface
 
 adslab = fcc100("Cu", size=(3, 3, 3))
@@ -281,8 +281,8 @@ tags[27:] = 2
 
 adslab.set_tags(tags)
 
-# Fixed atoms are prevented from moving during a structure relaxation. 
-# We fix all slab atoms beneath the surface. 
+# Fixed atoms are prevented from moving during a structure relaxation.
+# We fix all slab atoms beneath the surface.
 cons= FixAtoms(indices=[atom.index for atom in adslab if (atom.tag == 0)])
 adslab.set_constraint(cons)
 adslab.center(vacuum=13.0, axis=2)
@@ -291,9 +291,9 @@ adslab.set_calculator(EMT())
 
 os.makedirs('data', exist_ok=True)
 
-# Define structure optimizer - LBFGS. Run for 100 steps, 
+# Define structure optimizer - LBFGS. Run for 100 steps,
 # or if the max force on all atoms (fmax) is below 0 ev/A.
-# fmax is typically set to 0.01-0.05 eV/A, 
+# fmax is typically set to 0.01-0.05 eV/A,
 # for this demo however we run for the full 100 steps.
 
 dyn = LBFGS(adslab, trajectory="data/toy_c3h8_relax.traj")
@@ -339,17 +339,17 @@ labels = ['initial', 'middle', 'final']
 for i in range(3):
     ax[i].axis('off')
     ax[i].set_title(labels[i])
-ase.visualize.plot.plot_atoms(traj[0], 
-                              ax[0], 
-                              radii=0.8, 
+ase.visualize.plot.plot_atoms(traj[0],
+                              ax[0],
+                              radii=0.8,
                               rotation=("-75x, 45y, 10z"))
-ase.visualize.plot.plot_atoms(traj[50], 
-                              ax[1], 
-                              radii=0.8, 
+ase.visualize.plot.plot_atoms(traj[50],
+                              ax[1],
+                              radii=0.8,
                               rotation=("-75x, 45y, 10z"))
-ase.visualize.plot.plot_atoms(traj[-1], 
-                              ax[2], 
-                              radii=0.8, 
+ase.visualize.plot.plot_atoms(traj[-1],
+                              ax[2],
+                              radii=0.8,
                               rotation=("-75x, 45y, 10z"))
 ```
 
@@ -448,17 +448,17 @@ for i in range(3):
     ax[i].axis('off')
     ax[i].set_title(labels[i])
 
-ase.visualize.plot.plot_atoms(traj[0].repeat((2,2,1)), 
-                              ax[0], 
-                              radii=0.8, 
+ase.visualize.plot.plot_atoms(traj[0].repeat((2,2,1)),
+                              ax[0],
+                              radii=0.8,
                               rotation=("-75x, 45y, 10z"))
-ase.visualize.plot.plot_atoms(traj[50].repeat((2,2,1)), 
-                              ax[1], 
-                              radii=0.8, 
+ase.visualize.plot.plot_atoms(traj[50].repeat((2,2,1)),
+                              ax[1],
+                              radii=0.8,
                               rotation=("-75x, 45y, 10z"))
-ase.visualize.plot.plot_atoms(traj[-1].repeat((2,2,1)), 
-                              ax[2], 
-                              radii=0.8, 
+ase.visualize.plot.plot_atoms(traj[-1].repeat((2,2,1)),
+                              ax[2],
+                              radii=0.8,
                               rotation=("-75x, 45y, 10z"))
 ```
 
@@ -466,9 +466,9 @@ ase.visualize.plot.plot_atoms(traj[-1].repeat((2,2,1)),
 
 #### Tags
 
-The OC20 dataset consists of systems with several different types of atoms. To help with identifying the index of certain atoms, we tag each atom according to where it is found in the system. There are three categories of atoms: 
+The OC20 dataset consists of systems with several different types of atoms. To help with identifying the index of certain atoms, we tag each atom according to where it is found in the system. There are three categories of atoms:
 - *sub-surface slab atoms*: these are atoms in the bottom layers of the catalyst, furthest away from the adsorbate
-- *surface slab atoms*: these are atoms in the top layers of the catalyst, close to where the adsorbate will be placed   
+- *surface slab atoms*: these are atoms in the top layers of the catalyst, close to where the adsorbate will be placed
 - *adsorbate atoms*: atoms that make up the adsorbate molecule on top of the catalyst.
 
 Tag:
@@ -531,7 +531,7 @@ final_structure = traj[-1]
 relaxed_energy = final_structure.get_potential_energy()
 print(f'Relaxed absolute energy = {relaxed_energy} eV')
 
-# Corresponding raw slab used in original adslab (adsorbate+slab) system. 
+# Corresponding raw slab used in original adslab (adsorbate+slab) system.
 raw_slab = fcc100("Cu", size=(3, 3, 3))
 raw_slab.set_calculator(EMT())
 raw_slab_energy = raw_slab.get_potential_energy()
@@ -540,7 +540,7 @@ print(f'Raw slab energy = {raw_slab_energy} eV')
 
 adsorbate = Atoms("C3H8").get_chemical_symbols()
 # For clarity, we define arbitrary gas reference energies here.
-# A more detailed discussion of these calculations can be found in the corresponding paper's SI. 
+# A more detailed discussion of these calculations can be found in the corresponding paper's SI.
 gas_reference_energies = {'H': .3, 'O': .45, 'C': .35, 'N': .50}
 
 adsorbate_reference_energy = 0
@@ -667,7 +667,8 @@ plt.show()
 
 ### Additional Resources
 
-More helpful resources, tutorials, and documentation can be found at ASE's webpage: https://wiki.fysik.dtu.dk/ase/index.html. We point to specific pages that may be of interest:
+More helpful resources, tutorials, and documentation can be found at ASE's webpage: https://wiki.fysik.dtu.dk/ase/index.html.
+We point to specific pages that may be of interest:
 
 * Interacting with Atoms Object: https://wiki.fysik.dtu.dk/ase/ase/atoms.html
 * Visualization: https://wiki.fysik.dtu.dk/ase/ase/visualize/visualize.html
@@ -692,7 +693,7 @@ such as BFGS or conjugate gradient, to iteratively update
 the atom positions until the relaxed structure and energy are found.
 
 (b) using ML models trained to predict the energy and forces of a
-structure, S2EF can be used as a direct replacement for DFT. 
+structure, S2EF can be used as a direct replacement for DFT.
 
 (c) the relaxed structure could potentially be directly regressed from
 the initial structure and S2EF used to find the energy.
@@ -784,7 +785,19 @@ stdev = np.std(energies)
 
 +++ {"id": "6R6IkYLCQPpH"}
 
-For this example, we will explicitly define the config; however, a set of default configs can be found [here](https://github.com/FAIR-Chem/fairchem/tree/master/configs). Default config yaml files can easily be loaded with the following [utility](https://github.com/FAIR-Chem/fairchem/blob/aa8e44d50229fce887b3a94a5661c4f85cd73eed/ocpmodels/common/utils.py#L361-L400). Loading a yaml config is preferrable when launching jobs from the command line. We have included our best models' config files here for reference. 
+For this example, we will explicitly define the config. Default config yaml files can easily be loaded with
+the following [build_config](https://github.com/FAIR-Chem/fairchem/blob/617302946b2723277ea134477dae8e7f6e4accaa/src/fairchem/core/common/utils.py#L428)
+utility. Loading a yaml config is preferable when launching jobs from the command line. We have included a set of
+default configs for our best models' [here](https://github.com/FAIR-Chem/fairchem/tree/master/configs).
+
+We will also use a scaling file found [here](https://github.com/FAIR-Chem/fairchem/tree/master/configs/s2ef/all/gemnet/scaling_factors").
+Lets download it locally,
+
+```{code-cell} ipython3
+%%bash
+wget https://github.com/FAIR-Chem/fairchem/tree/master/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
+```
+
 
 **Note** - we only train for a single epoch with a reduced batch size (GPU memory constraints) for demonstration purposes, modify accordingly for full convergence.
 
@@ -853,10 +866,12 @@ model = {
   "atom_edge_interaction": True,
   "edge_atom_interaction": True,
   "atom_interaction": True,
-    
+
   "num_atom_emb_layers": 2,
   "num_global_out_layers": 2,
   "qint_tags": [1, 2],
+
+  "scale_file": "./gemnet-oc.pt"
 }
 
 # Optimizer
@@ -886,7 +901,7 @@ dataset = [
    "target_std": stdev,
    "grad_target_mean": 0.0,
    "grad_target_std": stdev
-   }, # train set 
+   }, # train set
   {'src': val_src}, # val set (optional)
 ]
 ```
@@ -945,14 +960,8 @@ trainer.train()
 #### Load the best checkpoint
 
 The `checkpoints` directory contains two checkpoint files:
-
-
-
 *   `best_checkpoint.pt` - Model parameters corresponding to the best val performance during training. Used for predictions.
 *   `checkpoint.pt` - Model parameters and optimizer settings for the latest checkpoint. Used to continue training.
-
-
-
 
 ```{code-cell} ipython3
 ---
@@ -1037,7 +1046,7 @@ forces = predictions["forces"]
 +++ {"id": "o8L28axZ4NVj"}
 
 ## Initial Structure to Relaxed Energy (IS2RE) <a name="is2re"></a>
-The IS2RE task predicts the relaxed energy (energy of the relaxed state) given the initial state of a system. One approach to this is by training a regression model mapping the initial structure to the relaxed energy. We call this the *direct* approach to the IS2RE task. 
+The IS2RE task predicts the relaxed energy (energy of the relaxed state) given the initial state of a system. One approach to this is by training a regression model mapping the initial structure to the relaxed energy. We call this the *direct* approach to the IS2RE task.
 
 An alternative is to perform a structure relaxation using an S2EF model to obtain the relaxed state and compute the energy of that state (see the IS2RS task below for details about relaxation).
 
@@ -1108,7 +1117,7 @@ stdev = np.std(energies)
 
 ### Define the Config
 
-For this example, we will explicitly define the config; however, a set of default configs can be found [here](https://github.com/FAIR-Chem/fairchem/tree/master/configs). Default config yaml files can easily be loaded with the following [utility](https://github.com/FAIR-Chem/fairchem/blob/aa8e44d50229fce887b3a94a5661c4f85cd73eed/ocpmodels/common/utils.py#L361-L400). Loading a yaml config is preferrable when launching jobs from the command line. We have included our best models' config files here for reference. 
+For this example, we will explicitly define the config; however, a set of default configs can be found [here](https://github.com/FAIR-Chem/fairchem/tree/master/configs). Default config yaml files can easily be loaded with the following [utility](https://github.com/FAIR-Chem/fairchem/blob/aa8e44d50229fce887b3a94a5661c4f85cd73eed/ocpmodels/common/utils.py#L361-L400). Loading a yaml config is preferrable when launching jobs from the command line. We have included our best models' config files here for reference.
 
 **Note** - we only train for a single epoch with a reduced batch size (GPU memory constraints) for demonstration purposes, modify accordingly for full convergence.
 
@@ -1178,7 +1187,7 @@ dataset = [
    'normalize_labels': True,
    'target_mean': mean,
    'target_std': stdev,
-  }, # train set 
+  }, # train set
   {'src': val_src}, # val set (optional)
 ]
 ```
@@ -1401,7 +1410,7 @@ Running an iterative S2EF model for the IS2RS task can be run from any S2EF conf
 * *num_relaxation_batches* - If specified, relaxations will only be run for a subset of the relaxation dataset. Useful for debugging or wanting to visualize a few systems.
 
 A sample relaxation config can be found [here](https://github.com/FAIR-Chem/fairchem/blob/1044e311182c1120c6e6d137ce6db3f445148973/configs/s2ef/2M/dimenet_plus_plus/dpp_relax.yml#L24-L33).
-   
+
 
 ```{code-cell} ipython3
 :id: XU9DisuyltP8
@@ -1425,7 +1434,7 @@ task = {
         'memory': 50,
         'damping': 1.0,
         'alpha': 70.0,
-        'traj_dir': "ml-relaxations/is2rs-test", 
+        'traj_dir': "ml-relaxations/is2rs-test",
     }
 }
 # Model
@@ -1479,7 +1488,7 @@ optimizer = {
 }
 # Dataset
 dataset = [
-  {'src': train_src, 'normalize_labels': False}, # train set 
+  {'src': train_src, 'normalize_labels': False}, # train set
   {'src': val_src}, # val set (optional)
 ]
 ```
@@ -1617,20 +1626,20 @@ for i in range(3):
     ax[i].set_title(labels[i])
 
 ase.visualize.plot.plot_atoms(
-    ml_trajectory[0], 
-    ax[0], 
+    ml_trajectory[0],
+    ax[0],
     radii=0.8,
     # rotation=("-75x, 45y, 10z")) # uncomment to visualize at different angles
 )
 ase.visualize.plot.plot_atoms(
-    ml_trajectory[100], 
-    ax[1], 
-    radii=0.8, 
+    ml_trajectory[100],
+    ax[1],
+    radii=0.8,
     # rotation=("-75x, 45y, 10z") # uncomment to visualize at different angles
 )
 ase.visualize.plot.plot_atoms(
-    ml_trajectory[-1], 
-    ax[2], 
+    ml_trajectory[-1],
+    ax[2],
     radii=0.8,
     # rotation=("-75x, 45y, 10z"), # uncomment to visualize at different angles
 )
@@ -1783,7 +1792,7 @@ class RadialBasis(torch.nn.Module):
 
 +++ {"id": "nhvCP4wzAE_K"}
 
-## Message passing 
+## Message passing
 
 We start by implementing a very simple message-passing scheme to predict system energy and forces.
 
@@ -1844,7 +1853,7 @@ class SimpleAtomEdgeModel(torch.nn.Module):
         m = self.edge_emb(h_atom, m_rbf, idx_s, idx_t)
 
         # read out energy
-        # 
+        #
         # x_E_i = \sum_j m_ji -- summing up edge features m_ji for all neighbors j
         # of node i to predict node i's energy contribution.
         x_E = scatter(m, idx_t, dim=0, dim_size=h_atom.shape[0], reduce="sum")
@@ -1856,7 +1865,7 @@ class SimpleAtomEdgeModel(torch.nn.Module):
         # (num_systems, 1)
 
         # read out forces
-        # 
+        #
         # x_F is the force magnitude per edge, we multiply that by the direction of each edge ji,
         # and sum up all the vectors to predict the resultant force on node i
         x_F = self.out_forces(m)
@@ -1864,7 +1873,7 @@ class SimpleAtomEdgeModel(torch.nn.Module):
         F = scatter(F_st_vec, idx_t, dim=0, dim_size=atomic_numbers.size(0), reduce="add")
         # (num_atoms, num_targets, 3)
         F = F.squeeze(1)
-        
+
         return {"energy": E, "forces": F}
 
     @property
@@ -2060,7 +2069,7 @@ opt.run(fmax=0.05, steps=100)
 +++ {"id": "TUH5BaaXo-ca"}
 
 <a name="lmdb"></a>
-# (Optional) Creating your own LMDBs for use in the OCP repository 
+# (Optional) Creating your own LMDBs for use in the OCP repository
 
 In order to interface with our repository, the data mustbe structured and organized in a specific format. Below we walk you through on how to create such datasets with your own non-OC20 data that may help with your research.
 
@@ -2102,9 +2111,9 @@ r_fixed (bools): True if you want to fix the subsurface atoms
 a2g = AtomsToGraphs(
     max_neigh=50,
     radius=6,
-    r_energy=True,    
+    r_energy=True,
     r_forces=True,
-    r_distances=False, 
+    r_distances=False,
     r_fixed=True,
 )
 ```
@@ -2168,22 +2177,22 @@ for system in system_paths:
     data_objects = read_trajectory_extract_features(a2g, system)
     initial_struc = data_objects[0]
     relaxed_struc = data_objects[1]
-    
+
     initial_struc.y_init = initial_struc.y # subtract off reference energy, if applicable
     del initial_struc.y
     initial_struc.y_relaxed = relaxed_struc.y # subtract off reference energy, if applicable
     initial_struc.pos_relaxed = relaxed_struc.pos
-    
+
     # Filter data if necessary
     # OCP filters adsorption energies > |10| eV
-    
-    initial_struc.sid = idx  # arbitrary unique identifier 
-    
+
+    initial_struc.sid = idx  # arbitrary unique identifier
+
     # no neighbor edge case check
     if initial_struc.edge_index.shape[1] == 0:
         print("no neighbors", traj_path)
         continue
-    
+
     # Write to LMDB
     txn = db.begin(write=True)
     txn.put(f"{idx}".encode("ascii"), pickle.dumps(initial_struc, protocol=-1))
@@ -2252,13 +2261,13 @@ data_objects = a2g.convert_all(traj, disable_tqdm=True)
 for fid, data in tqdm(enumerate(data_objects), total=len(data_objects)):
     #assign sid
     data.sid = torch.LongTensor([0])
-    
+
     #assign fid
     data.fid = torch.LongTensor([fid])
-    
+
     #assign tags, if available
     data.tags = torch.LongTensor(tags)
-    
+
     # Filter data if necessary
     # OCP filters adsorption energies > |10| eV and forces > |50| eV/A
 
@@ -2270,7 +2279,7 @@ for fid, data in tqdm(enumerate(data_objects), total=len(data_objects)):
     txn = db.begin(write=True)
     txn.put(f"{fid}".encode("ascii"), pickle.dumps(data, protocol=-1))
     txn.commit()
-    
+
 txn = db.begin(write=True)
 txn.put(f"length".encode("ascii"), pickle.dumps(len(data_objects), protocol=-1))
 txn.commit()
@@ -2293,10 +2302,10 @@ The previous sections of this notebook are intended to demonstrate the inner wor
 
 +++ {"id": "lAdwlMNOKwYj"}
 
-3. In the config file, modify the path of the data [train](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/base.yml#L4) [val](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/base.yml#L8), [normalization parameters](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/base.yml#L5-L7)  as well as any other [model](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/dimenet_plus_plus/dpp.yml#L4-L16) or [training](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/dimenet_plus_plus/dpp.yml#L23-L35) args. 
+3. In the config file, modify the path of the data [train](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/base.yml#L4) [val](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/base.yml#L8), [normalization parameters](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/base.yml#L5-L7)  as well as any other [model](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/dimenet_plus_plus/dpp.yml#L4-L16) or [training](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/dimenet_plus_plus/dpp.yml#L23-L35) args.
 
 For a simple example, we'll train DimeNet++ on IS2RE demo data: \
-a. Modify the train data path in `/contents/ocp/configs/is2re/10k/base.yml` in 
+a. Modify the train data path in `/contents/ocp/configs/is2re/10k/base.yml` in
 Line 4 to `/contents/ocp/data/is2re/train_10k/data.lmdb` and val data path in Line 8 to `/contents/ocp/data/is2re/val_2k/data.lmdb`. \
 b. Calculate the mean and std for train data and modify Lines 6-7 respectively \
 c. We can change the model parameters in `/contents/ocp/configs/is2re/10k/dimenet_plus_plus/dpp.yml` and we suggest you to change the lr_milestones and warmup_steps as the data here is smaller (these need to be tuned for every dataset).
@@ -2308,14 +2317,14 @@ c. We can change the model parameters in `/contents/ocp/configs/is2re/10k/dimene
 ```{code-cell} ipython3
 :id: mCgs4eGSO-HM
 
-# Optional block to try command line training 
+# Optional block to try command line training
 # Note that config args can be added in the command line. For example, --optim.batch_size=1
 ```
 
 +++ {"id": "q1xRtYWTO8Xb"}
 
 5. Add a data path as a test set to `configs/is2re/10k/base.yml`
-6. Run predictions with the trained model: 
+6. Run predictions with the trained model:
 `python main.py --mode predict --config-yml configs/is2re/10k/dimenet_plus_plus/dpp.yml --checkpoint checkpoints/[datetime]-dpp_is2re_sample/checkpoint.pt`
 7. View energy predictions at `results/[datetime]/is2re_predictions.npz`
 
@@ -2332,7 +2341,7 @@ The OpenCatalyst project is motivated by the problems we face due to climate cha
 
 While progress has been well underway - https://opencatalystproject.org/leaderboard.html, a considerable gap still exists between state-of-the-art models and our target goals. We offer some some general thoughts as to next steps for the readers to ponder on or explore:
 
-* GNN depth has consistenly improved model performance. What limitations to depth are there? How far can we push deeper models for OC20? 
+* GNN depth has consistenly improved model performance. What limitations to depth are there? How far can we push deeper models for OC20?
 * Our best performing models have little to no physical biases encoded. Can we incorporate such biases to improve our models? Experiments with physically inspired embeddings have had no advantage vs. random initializations, are there better ways to incorporate this information into the models?
 * Uncertainty estimation will play an important role in later stages of the project when it comes to large scale screening. How can we get reliable uncertainty estimates from large scale GNNs?
 * Are we limited to message-passing GNNs? Can we leverage alternative architectures for similiar or better performance?
