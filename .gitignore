@@ -1,6 +1,5 @@
 wandb
 /data
-/src/fairchem/data
 checkpoints
 results
 logs
