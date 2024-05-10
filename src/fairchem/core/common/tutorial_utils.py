@@ -24,20 +24,20 @@ import fairchem.core as om
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 
 
-def ocp_root():
-    """Return the root directory of the installed ocp package."""
+def fairchem_root():
+    """Return the root directory of the installed fairchem-core package."""
     return Path(om.__file__).parent.parent
 
 
-def ocp_main():
-    """Return the path to ocp main.py"""
-    return ocp_root() / "main.py"
+def fairchem_main():
+    """Return the path to fairchem main.py"""
+    return fairchem_root() / "../../main.py"
 
 
-def describe_ocp():
+def describe_fairchem():
     """Print some system information that could be useful in debugging."""
     print(sys.executable, sys.version)
-    print(f"ocp is installed at {ocp_root()}")
+    print(f"fairchem is installed at {fairchem_root()}")
 
     commit_hash = (
         subprocess.check_output(
@@ -52,7 +52,7 @@ def describe_ocp():
         .strip()
         .decode("ascii")
     )
-    print(f"ocp repo is at git commit: {commit_hash}")
+    print(f"fairchem repo is at git commit: {commit_hash}")
     print(f"numba: {numba.__version__}")
     print(f"numpy: {np.version.version}")
     print(f"ase: {ase.__version__}")

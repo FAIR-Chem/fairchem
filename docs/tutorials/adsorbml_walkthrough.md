@@ -68,7 +68,7 @@ There are 2 options for how to do this.
  
 (1) is really only adequate for small stuff and it is what I will show here, but if you plan to run many relaxations, you should definitely use (2). More details about writing lmdbs has been provided [here](../core/lmdb_dataset_creation.md) - follow the IS2RS/IS2RE instructions. And more information about running relaxations once the lmdb has been written is [here](../core/model_training.md).
 
-You need to provide the calculator with a path to a model checkpoint file. That can be downloaded [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/MODELS.md)
+You need to provide the calculator with a path to a model checkpoint file. That can be downloaded [here](../core/model_checkpoints)
 
 ```{code-cell} ipython3
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator

@@ -6,18 +6,18 @@ We do not have official conda recipes (yet!), so to install with conda or mamba 
 [fairchem](https://github.com/FAIR-Chem/fairchem) and run the following from inside the repo directory to create an environment with all the
 necessary dependencies.
 
-1. Create an *fair-chem* environment
+1. Create a *fairchem* environment
    1. **GPU**
 
       The default environment uses cuda 11.8, if you need a different version you will have to edit *pytorch-cuda* version
       accordingly.
       ```bash
-      conda create -f packages/env.gpu.yml
+      conda env create -f packages/env.gpu.yml
       ```
 
    2. **CPU**
       ```bash
-      conda create -f packages/env.cpu.yml
+      conda env create -f packages/env.cpu.yml
       ```
 
 2. Activate the environment and install `fairchem-core`
@@ -37,7 +37,7 @@ necessary dependencies.
 3. Install `fairchem-core`
    1. From test-PyPi (until we have our official release on PyPi soon!)
       ```bash
-      pip install -i https://test.pypi.org/simple/ fairchem-core
+      pip install -i https://test.pypi.org/simple/fairchem-core
       ```
    2. Or by cloning the repo and then using pip
       ```bash

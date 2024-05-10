@@ -57,12 +57,12 @@ To do this, we will enumerate adsorbate-slab configurations and run ML relaxatio
 
 +++
 
-Be sure to set the path in `ocdata/configs/paths.py` to point to the correct place or pass the paths as an argument. The database pickles can be found in `ocdata/databases/pkls`. We will show one explicitly here as an example and then run all of them in an automated fashion for brevity.
+Be sure to set the path in `fairchem/data/oc/configs/paths.py` to point to the correct place or pass the paths as an argument. The database pickles can be found in `fairchem/data/oc/databases/pkls`. We will show one explicitly here as an example and then run all of them in an automated fashion for brevity.
 
 ```{code-cell} ipython3
-import ocdata
+import fairchem.data.oc
 from pathlib import Path
-db = Path(ocdata.__file__).parent / Path('databases/pkls/adsorbates.pkl')
+db = Path(fairchem.data.oc.__file__).parent / Path('databases/pkls/adsorbates.pkl')
 db
 ```
 
