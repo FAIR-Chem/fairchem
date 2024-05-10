@@ -1,27 +1,29 @@
-# `fairchem` repository for atomistic AI/ML models in chemistry
+<h1 align="center"> <code>fairchem</code> by FAIR Chemistry </h1>
+
+<p align="center">
+  <img width="559" height="200" src="https://github.com/FAIR-Chem/fairchem/assets/45150244/d3abd756-cb96-40eb-b3a8-976939a2f0d8"?
+</p>
+
+<h4 align="center">
 
 ![tests](https://github.com/FAIR-Chem/fairchem/actions/workflows/test.yml/badge.svg?branch=main)
-[![codecov](https://codecov.io/gh/FAIR-Chem/fairchem/badge.svg)](https://codecov.io/gh/FAIR-Chem/fairchem)
+[![Static Badge](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
 
-`fairchem` is the FAIR Chemistry team's library of state-of-the-art machine learning algorithms for chemistry and materials. Collaborative projects that contribute or use the models and approaches in this repo:
+</h4>
+
+`fairchem` is the [FAIR](https://ai.meta.com/research/) Chemistry's centralized repository of all its data, models, demos, and application efforts
+for materials science and quantum chemistry. Collaborative projects that contribute or use the models and approaches in
+this repo:
 * [Open Catalyst Project (OCP)](https://opencatalystproject.org/)
 * [Open Direct Air Capture (OpenDAC)](https://open-dac.github.io/)
 
-We re-organized and rebranded the repository in 2024 (previously the `ocp` repo) to reflect the increasingly general usability of these models beyond catalysis, including things like direct air capture.
+:::{note}
+We re-organized and rebranded the repository in 2024 (previously the `fairchem` repo) to reflect the increasingly
+general usability of these models beyond catalysis, including things like direct air capture.
+:::
 
-
-<div align="left">
-    <img src="https://user-images.githubusercontent.com/1156489/170388229-642c6619-dece-4c88-85ef-b46f4d5f1031.gif">
-</div>
-
-## [fairchem](https://fair-chem.github.io/fairchem/)
-Full documentation, released data/checkpoints, and tutorials are now available.
-
-- [Installation](core/install)
-- [Pretrained model checkpoints](core/model_checkpoints)
-- [FAQ](core/model_faq)
-
-`ocp` provides training and evaluation code for tasks and models that take arbitrary
+### Datasets in `fairchem`:
+`fairchem` provides training and evaluation code for tasks and models that take arbitrary
 chemical structures as input to predict energies / forces / positions / stresses,
 and can be used as a base scaffold for research projects. For an overview of
 tasks, data, and metrics, please read the documentations and respective papers:
@@ -29,7 +31,7 @@ tasks, data, and metrics, please read the documentations and respective papers:
  - [OC22](core/datasets/oc22)
  - [ODAC23](core/datasets/odac)
 
-Projects and models built on `ocp`:
+### Projects and models built on `fairchem`:
 
 - SchNet [[`arXiv`](https://arxiv.org/abs/1706.08566)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/schnet.py)]
 - DimeNet++ [[`arXiv`](https://arxiv.org/abs/2011.14115)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/dimenet_plus_plus.py)]
