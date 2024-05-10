@@ -1,7 +1,7 @@
 <h1 align="center"> <code>fairchem</code> by FAIR Chemistry </h1>
 
 <p align="center">
-  <img width="559" height="200" src="https://github.com/FAIR-Chem/fairchem/assets/45150244/d3abd756-cb96-40eb-b3a8-976939a2f0d8"?
+  <img width="559" height="200" src="https://github.com/FAIR-Chem/fairchem/assets/45150244/5872c21c-8f39-41af-b703-af9817f0affe"?
 </p>
 
 <h4 align="center">
