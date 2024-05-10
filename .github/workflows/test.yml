@@ -39,7 +39,7 @@ jobs:
 
       - name: Test core with pytest
         run: |
-          pytest tests -vv --cov-report=xml --cov=fairchem --collect-only -c ./packages/fairchem-core/pyproject.toml
+          pytest tests -vv --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml
 
       - if: ${{ matrix.python_version == '3.11' }}
         name: codecov-report
