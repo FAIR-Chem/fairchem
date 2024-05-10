@@ -3,7 +3,7 @@ requires = ["hatchling", "hatch-vcs", "hatch-fancy-pypi-readme>=24"]
 build-backend = "hatchling.build"
 
 [project]
-name = "fairchem.core"
+name = "fairchem-core"
 description = "Machine learning models for use in catalysis as part of the Open Catalyst Project"
 license = {text = "MIT License"}
 dynamic = ["version", "readme"]

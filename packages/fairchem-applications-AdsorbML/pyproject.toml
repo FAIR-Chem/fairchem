@@ -3,7 +3,7 @@ requires = ["hatchling", "hatch-vcs", "hatch-fancy-pypi-readme>=24"]
 build-backend = "hatchling.build"
 
 [project]
-name = "fairchem.applications.adsorbml"
+name = "fairchem-applications-adsorbml"
 dynamic = ["version", "readme"]
 description = "Module for calculating the minima adsorbtion energy"
 license = {text = "MIT License"}

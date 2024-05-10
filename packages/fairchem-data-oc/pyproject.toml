@@ -3,7 +3,7 @@ requires = ["hatchling", "hatch-vcs", "hatch-fancy-pypi-readme>=24"]
 build-backend = "hatchling.build"
 
 [project]
-name = "fairchem.data.oc"
+name = "fairchem-data-oc"
 dynamic = ["version", "readme"]
 description = "Code for generating adsorbate-catalyst input configurations"
 license = {text = "MIT License"}

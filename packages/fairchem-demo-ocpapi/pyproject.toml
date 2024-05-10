@@ -3,7 +3,7 @@ requires = ["hatchling", "hatch-vcs", "hatch-fancy-pypi-readme>=24"]
 build-backend = "hatchling.build"
 
 [project]
-name = "fairchem.demo.ocpapi"
+name = "fairchem-demo-ocpapi"
 dynamic = ["version" ,"readme"]
 description = "Python client library for the Open Catalyst API"
 license = {text = "MIT License"}
