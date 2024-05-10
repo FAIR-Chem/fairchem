@@ -1,28 +1,12 @@
 [build-system]
-requires = ["hatchling","hatch-vcs"]
+requires = ["hatchling", "hatch-vcs", "hatch-fancy-pypi-readme>=24"]
 build-backend = "hatchling.build"
 
-[tool.hatch.version]
-source = "vcs"
-
-[tool.hatch.version.raw-options]
-root = "../../" 
-git_describe_command = 'git describe --dirty --tags --long --match fairchem.core*'
-
-[tool.hatch.build.targets.sdist]
-sources = ["src"]
-only-include = ["src/fairchem/core"]
-
-[tool.hatch.build.targets.wheel]
-sources = ["src"]
-only-include = ["src/fairchem/core"]
-
 [project]
-name = "fairchem.core"
+name = "fairchem-core"
 description = "Machine learning models for use in catalysis as part of the Open Catalyst Project"
-readme = "src/fairchem/core/README.md"
 license = {text = "MIT License"}
-dynamic = ["version"]
+dynamic = ["version", "readme"]
 requires-python = ">=3.9, <3.13"
 dependencies = [
     "torch>=2.2",
@@ -50,9 +34,33 @@ adsorbml = ["dscribe","x3dase","scikit-image"]
 fairchem = "fairchem.core._cli:main"
 
 [project.urls]
-repository = "https://github.com/Open-Catalyst-Project/ocp"
+repository = "https://github.com/FAIR-Chem/fairchem"
 home = "https://opencatalystproject.org/"
-# documentation = ""
+documentation = "https://fair-chem.github.io/"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+root = "../../"
+git_describe_command = 'git describe --tags --match fairchem_core-*'
+
+[tool.hatch.build]
+directory = "../../dist"
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src/fairchem/core", "src/fairchem/experimental"]
+
+[tool.hatch.build.targets.wheel]
+sources = ["src"]
+only-include = ["src/fairchem/core", "src/fairchem/experimental"]
+
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+fragments = [
+  { path = "src/fairchem/core/README.md" },
+  { path = "src/fairchem/core/LICENSE.md" },
+]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
