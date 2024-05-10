@@ -19,7 +19,7 @@ recommended option for the majority of fairchem use cases, but has since been de
 This notebook provides an overview of how to create LMDB datasets to be used with the FAIRChem repo. This tutorial is intended
 for those who wish to use FAIRChem to train on their own datasets. Those interested in just using FAIRChem data need not worry
 about these steps as they've been automated as part of this
-[download script](https://github.com/FAIR-Chem/fairchem/blob/master/src/core/scripts/download_data.py).
+[download script](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/scripts/download_data.py).
 
 ```{code-cell} ipython3
 from fairchem.core.preprocessing import AtomsToGraphs

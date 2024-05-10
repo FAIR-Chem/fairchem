@@ -790,12 +790,13 @@ the following [build_config](https://github.com/FAIR-Chem/fairchem/blob/61730294
 utility. Loading a yaml config is preferable when launching jobs from the command line. We have included a set of
 default configs for our best models' [here](https://github.com/FAIR-Chem/fairchem/tree/master/configs).
 
-We will also use a scaling file found [here](https://github.com/FAIR-Chem/fairchem/tree/master/configs/s2ef/all/gemnet/scaling_factors").
+We will also use a scaling files found [here](https://github.com/FAIR-Chem/fairchem/tree/master/configs/s2ef/all/gemnet/scaling_factors").
 Lets download it locally,
 
 ```{code-cell} ipython3
 %%bash
-wget https://github.com/FAIR-Chem/fairchem/tree/master/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
+wget https://github.com/FAIR-Chem/fairchem/tree/docs_fix/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
+wget https://github.com/FAIR-Chem/fairchem/tree/docs_fix/configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json
 ```
 
 
@@ -1160,7 +1161,7 @@ model = {
     "otf_graph": False,
     "output_init": "HeOrthogonal",
     "activation": "silu",
-    "scale_file": "configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json",
+    "scale_file": "./gemnet-dT.json",
     "regress_forces": False,
     "direct_forces": False,
 }
@@ -1465,7 +1466,7 @@ model = {
     "otf_graph": False,
     "output_init": "HeOrthogonal",
     "activation": "silu",
-    "scale_file": "configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json",
+    "scale_file": "./gemnet-dT.json",
     "regress_forces": True,
     "direct_forces": True,
 }
@@ -1967,7 +1968,7 @@ model_params = {
     'otf_graph': False,
     'output_init': 'HeOrthogonal',
     'activation': 'silu',
-    'scale_file': 'configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json',
+    'scale_file': './gemnet-dT.json',
     'regress_forces': True,
     'direct_forces': True,
 }

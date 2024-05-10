@@ -18,58 +18,332 @@ Traceback (most recent call last):
     raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
 nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
 ------------------
-%%bash
-wget https://github.com/FAIR-Chem/fairchem/tree/master/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
+trainer = OCPTrainer(
+    task=task,
+    model=copy.deepcopy(model), # copied for later use, not necessary in practice.
+    dataset=dataset,
+    optimizer=optimizer,
+    outputs={},
+    loss_fns={},
+    eval_metrics={},
+    name="s2ef",
+    identifier="S2EF-example",
+    run_dir=".", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!
+    is_debug=False, # if True, do not save checkpoint, logs, or results
+    print_every=5,
+    seed=0, # random seed to use
+    logger="tensorboard", # logger of choice (tensorboard and wandb supported)
+    local_rank=0,
+    amp=True, # use PyTorch Automatic Mixed Precision (faster training and less memory usage),
+)
 ------------------
 
 ----- stderr -----
---2024-05-10 22:30:45--  https://github.com/FAIR-Chem/fairchem/tree/master/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
------ stderr -----
-Resolving github.com (github.com)... 140.82.116.3
------ stderr -----
-Connecting to github.com (github.com)|140.82.116.3|:443... connected.
------ stderr -----
-HTTP request sent, awaiting response... 302 Found
------ stderr -----
-Location: https://github.com/FAIR-Chem/fairchem/tree/main/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt [following]
------ stderr -----
---2024-05-10 22:30:45--  https://github.com/FAIR-Chem/fairchem/tree/main/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
------ stderr -----
-Reusing existing connection to github.com:443.
------ stderr -----
-HTTP request sent, awaiting response... 404 Not Found
------ stderr -----
-2024-05-10 22:30:46 ERROR 404: Not Found.
------ stderr -----
-
+/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch/cuda/amp/grad_scaler.py:126: UserWarning: torch.cuda.amp.GradScaler is enabled, but CUDA is not available.  Disabling.
+  warnings.warn(
+2024-05-10 23:10:23 (WARNING): Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
+----- stdout -----
+2024-05-10 23:10:23 (INFO): amp: true
+cmd:
+  checkpoint_dir: ./checkpoints/2024-05-10-23-10-56-S2EF-example
+  commit: 7a0ae57
+  identifier: S2EF-example
+  logs_dir: ./logs/tensorboard/2024-05-10-23-10-56-S2EF-example
+  print_every: 5
+  results_dir: ./results/2024-05-10-23-10-56-S2EF-example
+  seed: 0
+  timestamp_id: 2024-05-10-23-10-56-S2EF-example
+dataset:
+  format: lmdb
+  grad_target_mean: 0.0
+  grad_target_std: !!python/object/apply:numpy.core.multiarray.scalar
+  - &id001 !!python/object/apply:numpy.dtype
+    args:
+    - f8
+    - false
+    - true
+    state: !!python/tuple
+    - 3
+    - <
+    - null
+    - null
+    - null
+    - -1
+    - -1
+    - 0
+  - !!binary |
+    dPVlWhRA+D8=
+  key_mapping:
+    force: forces
+    y: energy
+  normalize_labels: true
+  src: data/s2ef/train_100
+  target_mean: !!python/object/apply:numpy.core.multiarray.scalar
+  - *id001
+  - !!binary |
+    zSXlDMrm3D8=
+  target_std: !!python/object/apply:numpy.core.multiarray.scalar
+  - *id001
+  - !!binary |
+    dPVlWhRA+D8=
+  transforms:
+    normalizer:
+      energy:
+        mean: !!python/object/apply:numpy.core.multiarray.scalar
+        - *id001
+        - !!binary |
+          zSXlDMrm3D8=
+        stdev: !!python/object/apply:numpy.core.multiarray.scalar
+        - *id001
+        - !!binary |
+          dPVlWhRA+D8=
+      forces:
+        mean: 0.0
+        stdev: !!python/object/apply:numpy.core.multiarray.scalar
+        - *id001
+        - !!binary |
+          dPVlWhRA+D8=
+eval_metrics:
+  metrics:
+    energy:
+    - mae
+    forces:
+    - forcesx_mae
+    - forcesy_mae
+    - forcesz_mae
+    - mae
+    - cosine_similarity
+    - magnitude_error
+    misc:
+    - energy_forces_within_threshold
+gpus: 0
+logger: tensorboard
+loss_fns:
+- energy:
+    coefficient: 1
+    fn: mae
+- forces:
+    coefficient: 100
+    fn: l2mae
+model: gemnet_oc
+model_attributes:
+  activation: silu
+  atom_edge_interaction: true
+  atom_interaction: true
+  cbf:
+    name: spherical_harmonics
+  cutoff: 12.0
+  cutoff_aeaint: 12.0
+  cutoff_aint: 12.0
+  cutoff_qint: 12.0
+  direct_forces: true
+  edge_atom_interaction: true
+  emb_size_aint_in: 64
+  emb_size_aint_out: 64
+  emb_size_atom: 64
+  emb_size_cbf: 16
+  emb_size_edge: 64
+  emb_size_quad_in: 32
+  emb_size_quad_out: 32
+  emb_size_rbf: 16
+  emb_size_sbf: 32
+  emb_size_trip_in: 64
+  emb_size_trip_out: 64
+  envelope:
+    exponent: 5
+    name: polynomial
+  extensive: true
+  forces_coupled: false
+  max_neighbors: 30
+  max_neighbors_aeaint: 20
+  max_neighbors_aint: 1000
+  max_neighbors_qint: 8
+  num_after_skip: 2
+  num_atom: 3
+  num_atom_emb_layers: 2
+  num_before_skip: 2
+  num_blocks: 4
+  num_concat: 1
+  num_global_out_layers: 2
+  num_output_afteratom: 3
+  num_radial: 128
+  num_spherical: 7
+  output_init: HeOrthogonal
+  qint_tags:
+  - 1
+  - 2
+  quad_interaction: true
+  rbf:
+    name: gaussian
+  regress_forces: true
+  sbf:
+    name: legendre_outer
+  scale_file: ./gemnet-oc.pt
+noddp: false
+optim:
+  batch_size: 1
+  clip_grad_norm: 10
+  ema_decay: 0.999
+  eval_batch_size: 1
+  factor: 0.8
+  force_coefficient: 100
+  loss_energy: mae
+  loss_force: l2mae
+  lr_initial: 0.0005
+  max_epochs: 1
+  mode: min
+  num_workers: 2
+  optimizer: AdamW
+  optimizer_params:
+    amsgrad: true
+  patience: 3
+  scheduler: ReduceLROnPlateau
+outputs:
+  energy:
+    level: system
+  forces:
+    eval_on_free_atoms: true
+    level: atom
+    train_on_free_atoms: true
+slurm: {}
+task:
+  dataset: lmdb
+  description: Regressing to energies and forces for DFT trajectories from OCP
+  eval_on_free_atoms: true
+  grad_input: atomic forces
+  labels:
+  - potential energy
+  metric: mae
+  train_on_free_atoms: true
+  type: regression
+trainer: s2ef
+val_dataset:
+  src: data/s2ef/val_20
+----- stdout -----
+2024-05-10 23:10:23 (INFO): Loading dataset: lmdb
+----- stdout -----
+2024-05-10 23:10:23 (INFO): rank: 0: Sampler created...
+----- stdout -----
+2024-05-10 23:10:23 (INFO): Batch balancing is disabled for single GPU training.
+----- stdout -----
+2024-05-10 23:10:23 (INFO): rank: 0: Sampler created...
+----- stdout -----
+2024-05-10 23:10:23 (INFO): Batch balancing is disabled for single GPU training.
+----- stdout -----
+2024-05-10 23:10:23 (INFO): Loading model: gemnet_oc
 ------------------
 
 [0;31m---------------------------------------------------------------------------[0m
-[0;31mCalledProcessError[0m                        Traceback (most recent call last)
-Cell [0;32mIn[27], line 1[0m
-[0;32m----> 1[0m [43mget_ipython[49m[43m([49m[43m)[49m[38;5;241;43m.[39;49m[43mrun_cell_magic[49m[43m([49m[38;5;124;43m'[39;49m[38;5;124;43mbash[39;49m[38;5;124;43m'[39;49m[43m,[49m[43m [49m[38;5;124;43m'[39;49m[38;5;124;43m'[39;49m[43m,[49m[43m [49m[38;5;124;43m'[39;49m[38;5;124;43mwget https://github.com/FAIR-Chem/fairchem/tree/master/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt[39;49m[38;5;130;43;01m\n[39;49;00m[38;5;124;43m'[39;49m[43m)[49m
+[0;31mUnpicklingError[0m                           Traceback (most recent call last)
+Cell [0;32mIn[29], line 1[0m
+[0;32m----> 1[0m trainer [38;5;241m=[39m [43mOCPTrainer[49m[43m([49m
+[1;32m      2[0m [43m    [49m[43mtask[49m[38;5;241;43m=[39;49m[43mtask[49m[43m,[49m
+[1;32m      3[0m [43m    [49m[43mmodel[49m[38;5;241;43m=[39;49m[43mcopy[49m[38;5;241;43m.[39;49m[43mdeepcopy[49m[43m([49m[43mmodel[49m[43m)[49m[43m,[49m[43m [49m[38;5;66;43;03m# copied for later use, not necessary in practice.[39;49;00m
+[1;32m      4[0m [43m    [49m[43mdataset[49m[38;5;241;43m=[39;49m[43mdataset[49m[43m,[49m
+[1;32m      5[0m [43m    [49m[43moptimizer[49m[38;5;241;43m=[39;49m[43moptimizer[49m[43m,[49m
+[1;32m      6[0m [43m    [49m[43moutputs[49m[38;5;241;43m=[39;49m[43m{[49m[43m}[49m[43m,[49m
+[1;32m      7[0m [43m    [49m[43mloss_fns[49m[38;5;241;43m=[39;49m[43m{[49m[43m}[49m[43m,[49m
+[1;32m      8[0m [43m    [49m[43meval_metrics[49m[38;5;241;43m=[39;49m[43m{[49m[43m}[49m[43m,[49m
+[1;32m      9[0m [43m    [49m[43mname[49m[38;5;241;43m=[39;49m[38;5;124;43m"[39;49m[38;5;124;43ms2ef[39;49m[38;5;124;43m"[39;49m[43m,[49m
+[1;32m     10[0m [43m    [49m[43midentifier[49m[38;5;241;43m=[39;49m[38;5;124;43m"[39;49m[38;5;124;43mS2EF-example[39;49m[38;5;124;43m"[39;49m[43m,[49m
+[1;32m     11[0m [43m    [49m[43mrun_dir[49m[38;5;241;43m=[39;49m[38;5;124;43m"[39;49m[38;5;124;43m.[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;66;43;03m# directory to save results if is_debug=False. Prediction files are saved here so be careful not to override![39;49;00m
+[1;32m     12[0m [43m    [49m[43mis_debug[49m[38;5;241;43m=[39;49m[38;5;28;43;01mFalse[39;49;00m[43m,[49m[43m [49m[38;5;66;43;03m# if True, do not save checkpoint, logs, or results[39;49;00m
+[1;32m     13[0m [43m    [49m[43mprint_every[49m[38;5;241;43m=[39;49m[38;5;241;43m5[39;49m[43m,[49m
+[1;32m     14[0m [43m    [49m[43mseed[49m[38;5;241;43m=[39;49m[38;5;241;43m0[39;49m[43m,[49m[43m [49m[38;5;66;43;03m# random seed to use[39;49;00m
+[1;32m     15[0m [43m    [49m[43mlogger[49m[38;5;241;43m=[39;49m[38;5;124;43m"[39;49m[38;5;124;43mtensorboard[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;66;43;03m# logger of choice (tensorboard and wandb supported)[39;49;00m
+[1;32m     16[0m [43m    [49m[43mlocal_rank[49m[38;5;241;43m=[39;49m[38;5;241;43m0[39;49m[43m,[49m
+[1;32m     17[0m [43m    [49m[43mamp[49m[38;5;241;43m=[39;49m[38;5;28;43;01mTrue[39;49;00m[43m,[49m[43m [49m[38;5;66;43;03m# use PyTorch Automatic Mixed Precision (faster training and less memory usage),[39;49;00m
+[1;32m     18[0m [43m)[49m
 
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/IPython/core/interactiveshell.py:2541[0m, in [0;36mInteractiveShell.run_cell_magic[0;34m(self, magic_name, line, cell)[0m
-[1;32m   2539[0m [38;5;28;01mwith[39;00m [38;5;28mself[39m[38;5;241m.[39mbuiltin_trap:
-[1;32m   2540[0m     args [38;5;241m=[39m (magic_arg_s, cell)
-[0;32m-> 2541[0m     result [38;5;241m=[39m [43mfn[49m[43m([49m[38;5;241;43m*[39;49m[43margs[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
-[1;32m   2543[0m [38;5;66;03m# The code below prevents the output from being displayed[39;00m
-[1;32m   2544[0m [38;5;66;03m# when using magics with decorator @output_can_be_silenced[39;00m
-[1;32m   2545[0m [38;5;66;03m# when the last Python token in the expression is a ';'.[39;00m
-[1;32m   2546[0m [38;5;28;01mif[39;00m [38;5;28mgetattr[39m(fn, magic[38;5;241m.[39mMAGIC_OUTPUT_CAN_BE_SILENCED, [38;5;28;01mFalse[39;00m):
+File [0;32m~/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:96[0m, in [0;36mOCPTrainer.__init__[0;34m(self, task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier, timestamp_id, run_dir, is_debug, print_every, seed, logger, local_rank, amp, cpu, slurm, noddp, name)[0m
+[1;32m     94[0m [38;5;28;01mif[39;00m slurm [38;5;129;01mis[39;00m [38;5;28;01mNone[39;00m:
+[1;32m     95[0m     slurm [38;5;241m=[39m {}
+[0;32m---> 96[0m [38;5;28;43msuper[39;49m[43m([49m[43m)[49m[38;5;241;43m.[39;49m[38;5;21;43m__init__[39;49m[43m([49m
+[1;32m     97[0m [43m    [49m[43mtask[49m[38;5;241;43m=[39;49m[43mtask[49m[43m,[49m
+[1;32m     98[0m [43m    [49m[43mmodel[49m[38;5;241;43m=[39;49m[43mmodel[49m[43m,[49m
+[1;32m     99[0m [43m    [49m[43moutputs[49m[38;5;241;43m=[39;49m[43moutputs[49m[43m,[49m
+[1;32m    100[0m [43m    [49m[43mdataset[49m[38;5;241;43m=[39;49m[43mdataset[49m[43m,[49m
+[1;32m    101[0m [43m    [49m[43moptimizer[49m[38;5;241;43m=[39;49m[43moptimizer[49m[43m,[49m
+[1;32m    102[0m [43m    [49m[43mloss_fns[49m[38;5;241;43m=[39;49m[43mloss_fns[49m[43m,[49m
+[1;32m    103[0m [43m    [49m[43meval_metrics[49m[38;5;241;43m=[39;49m[43meval_metrics[49m[43m,[49m
+[1;32m    104[0m [43m    [49m[43midentifier[49m[38;5;241;43m=[39;49m[43midentifier[49m[43m,[49m
+[1;32m    105[0m [43m    [49m[43mtimestamp_id[49m[38;5;241;43m=[39;49m[43mtimestamp_id[49m[43m,[49m
+[1;32m    106[0m [43m    [49m[43mrun_dir[49m[38;5;241;43m=[39;49m[43mrun_dir[49m[43m,[49m
+[1;32m    107[0m [43m    [49m[43mis_debug[49m[38;5;241;43m=[39;49m[43mis_debug[49m[43m,[49m
+[1;32m    108[0m [43m    [49m[43mprint_every[49m[38;5;241;43m=[39;49m[43mprint_every[49m[43m,[49m
+[1;32m    109[0m [43m    [49m[43mseed[49m[38;5;241;43m=[39;49m[43mseed[49m[43m,[49m
+[1;32m    110[0m [43m    [49m[43mlogger[49m[38;5;241;43m=[39;49m[43mlogger[49m[43m,[49m
+[1;32m    111[0m [43m    [49m[43mlocal_rank[49m[38;5;241;43m=[39;49m[43mlocal_rank[49m[43m,[49m
+[1;32m    112[0m [43m    [49m[43mamp[49m[38;5;241;43m=[39;49m[43mamp[49m[43m,[49m
+[1;32m    113[0m [43m    [49m[43mcpu[49m[38;5;241;43m=[39;49m[43mcpu[49m[43m,[49m
+[1;32m    114[0m [43m    [49m[43mslurm[49m[38;5;241;43m=[39;49m[43mslurm[49m[43m,[49m
+[1;32m    115[0m [43m    [49m[43mnoddp[49m[38;5;241;43m=[39;49m[43mnoddp[49m[43m,[49m
+[1;32m    116[0m [43m    [49m[43mname[49m[38;5;241;43m=[39;49m[43mname[49m[43m,[49m
+[1;32m    117[0m [43m[49m[43m)[49m
 
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/IPython/core/magics/script.py:155[0m, in [0;36mScriptMagics._make_script_magic.<locals>.named_script_magic[0;34m(line, cell)[0m
-[1;32m    153[0m [38;5;28;01melse[39;00m:
-[1;32m    154[0m     line [38;5;241m=[39m script
-[0;32m--> 155[0m [38;5;28;01mreturn[39;00m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mshebang[49m[43m([49m[43mline[49m[43m,[49m[43m [49m[43mcell[49m[43m)[49m
+File [0;32m~/work/fairchem/fairchem/src/fairchem/core/trainers/base_trainer.py:180[0m, in [0;36mBaseTrainer.__init__[0;34m(self, task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier, timestamp_id, run_dir, is_debug, print_every, seed, logger, local_rank, amp, cpu, name, slurm, noddp)[0m
+[1;32m    177[0m [38;5;28;01mif[39;00m distutils[38;5;241m.[39mis_master():
+[1;32m    178[0m     logging[38;5;241m.[39minfo(yaml[38;5;241m.[39mdump([38;5;28mself[39m[38;5;241m.[39mconfig, default_flow_style[38;5;241m=[39m[38;5;28;01mFalse[39;00m))
+[0;32m--> 180[0m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mload[49m[43m([49m[43m)[49m
 
-File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/IPython/core/magics/script.py:315[0m, in [0;36mScriptMagics.shebang[0;34m(self, line, cell)[0m
-[1;32m    310[0m [38;5;28;01mif[39;00m args[38;5;241m.[39mraise_error [38;5;129;01mand[39;00m p[38;5;241m.[39mreturncode [38;5;241m!=[39m [38;5;241m0[39m:
-[1;32m    311[0m     [38;5;66;03m# If we get here and p.returncode is still None, we must have[39;00m
-[1;32m    312[0m     [38;5;66;03m# killed it but not yet seen its return code. We don't wait for it,[39;00m
-[1;32m    313[0m     [38;5;66;03m# in case it's stuck in uninterruptible sleep. -9 = SIGKILL[39;00m
-[1;32m    314[0m     rc [38;5;241m=[39m p[38;5;241m.[39mreturncode [38;5;129;01mor[39;00m [38;5;241m-[39m[38;5;241m9[39m
-[0;32m--> 315[0m     [38;5;28;01mraise[39;00m CalledProcessError(rc, cell)
+File [0;32m~/work/fairchem/fairchem/src/fairchem/core/trainers/base_trainer.py:204[0m, in [0;36mBaseTrainer.load[0;34m(self)[0m
+[1;32m    202[0m [38;5;28mself[39m[38;5;241m.[39mload_datasets()
+[1;32m    203[0m [38;5;28mself[39m[38;5;241m.[39mload_task()
+[0;32m--> 204[0m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mload_model[49m[43m([49m[43m)[49m
+[1;32m    205[0m [38;5;28mself[39m[38;5;241m.[39mload_loss()
+[1;32m    206[0m [38;5;28mself[39m[38;5;241m.[39mload_optimizer()
 
-[0;31mCalledProcessError[0m: Command 'b'wget https://github.com/FAIR-Chem/fairchem/tree/master/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt\n'' returned non-zero exit status 8.
+File [0;32m~/work/fairchem/fairchem/src/fairchem/core/trainers/base_trainer.py:416[0m, in [0;36mBaseTrainer.load_model[0;34m(self)[0m
+[1;32m    413[0m bond_feat_dim [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mconfig[[38;5;124m"[39m[38;5;124mmodel_attributes[39m[38;5;124m"[39m][38;5;241m.[39mget([38;5;124m"[39m[38;5;124mnum_gaussians[39m[38;5;124m"[39m, [38;5;241m50[39m)
+[1;32m    415[0m loader [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mtrain_loader [38;5;129;01mor[39;00m [38;5;28mself[39m[38;5;241m.[39mval_loader [38;5;129;01mor[39;00m [38;5;28mself[39m[38;5;241m.[39mtest_loader
+[0;32m--> 416[0m [38;5;28mself[39m[38;5;241m.[39mmodel [38;5;241m=[39m [43mregistry[49m[38;5;241;43m.[39;49m[43mget_model_class[49m[43m([49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mconfig[49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43mmodel[39;49m[38;5;124;43m"[39;49m[43m][49m[43m)[49m[43m([49m
+[1;32m    417[0m [43m    [49m[43mloader[49m[38;5;241;43m.[39;49m[43mdataset[49m[43m[[49m[38;5;241;43m0[39;49m[43m][49m[38;5;241;43m.[39;49m[43mx[49m[38;5;241;43m.[39;49m[43mshape[49m[43m[[49m[38;5;241;43m-[39;49m[38;5;241;43m1[39;49m[43m][49m
+[1;32m    418[0m [43m    [49m[38;5;28;43;01mif[39;49;00m[43m [49m[43mloader[49m
+[1;32m    419[0m [43m    [49m[38;5;129;43;01mand[39;49;00m[43m [49m[38;5;28;43mhasattr[39;49m[43m([49m[43mloader[49m[38;5;241;43m.[39;49m[43mdataset[49m[43m[[49m[38;5;241;43m0[39;49m[43m][49m[43m,[49m[43m [49m[38;5;124;43m"[39;49m[38;5;124;43mx[39;49m[38;5;124;43m"[39;49m[43m)[49m
+[1;32m    420[0m [43m    [49m[38;5;129;43;01mand[39;49;00m[43m [49m[43mloader[49m[38;5;241;43m.[39;49m[43mdataset[49m[43m[[49m[38;5;241;43m0[39;49m[43m][49m[38;5;241;43m.[39;49m[43mx[49m[43m [49m[38;5;129;43;01mis[39;49;00m[43m [49m[38;5;129;43;01mnot[39;49;00m[43m [49m[38;5;28;43;01mNone[39;49;00m
+[1;32m    421[0m [43m    [49m[38;5;28;43;01melse[39;49;00m[43m [49m[38;5;28;43;01mNone[39;49;00m[43m,[49m
+[1;32m    422[0m [43m    [49m[43mbond_feat_dim[49m[43m,[49m
+[1;32m    423[0m [43m    [49m[38;5;241;43m1[39;49m[43m,[49m
+[1;32m    424[0m [43m    [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mconfig[49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43mmodel_attributes[39;49m[38;5;124;43m"[39;49m[43m][49m[43m,[49m
+[1;32m    425[0m [43m[49m[43m)[49m[38;5;241m.[39mto([38;5;28mself[39m[38;5;241m.[39mdevice)
+[1;32m    427[0m [38;5;28;01mif[39;00m distutils[38;5;241m.[39mis_master():
+[1;32m    428[0m     logging[38;5;241m.[39minfo(
+[1;32m    429[0m         [38;5;124mf[39m[38;5;124m"[39m[38;5;124mLoaded [39m[38;5;132;01m{[39;00m[38;5;28mself[39m[38;5;241m.[39mmodel[38;5;241m.[39m[38;5;18m__class__[39m[38;5;241m.[39m[38;5;18m__name__[39m[38;5;132;01m}[39;00m[38;5;124m with [39m[38;5;124m"[39m
+[1;32m    430[0m         [38;5;124mf[39m[38;5;124m"[39m[38;5;132;01m{[39;00m[38;5;28mself[39m[38;5;241m.[39mmodel[38;5;241m.[39mnum_params[38;5;132;01m}[39;00m[38;5;124m parameters.[39m[38;5;124m"[39m
+[1;32m    431[0m     )
+
+File [0;32m~/work/fairchem/fairchem/src/fairchem/core/models/gemnet_oc/gemnet_oc.py:385[0m, in [0;36mGemNetOC.__init__[0;34m(self, num_atoms, bond_feat_dim, num_targets, num_spherical, num_radial, num_blocks, emb_size_atom, emb_size_edge, emb_size_trip_in, emb_size_trip_out, emb_size_quad_in, emb_size_quad_out, emb_size_aint_in, emb_size_aint_out, emb_size_rbf, emb_size_cbf, emb_size_sbf, num_before_skip, num_after_skip, num_concat, num_atom, num_output_afteratom, num_atom_emb_layers, num_global_out_layers, regress_forces, direct_forces, use_pbc, scale_backprop_forces, cutoff, cutoff_qint, cutoff_aeaint, cutoff_aint, max_neighbors, max_neighbors_qint, max_neighbors_aeaint, max_neighbors_aint, enforce_max_neighbors_strictly, rbf, rbf_spherical, envelope, cbf, sbf, extensive, forces_coupled, output_init, activation, quad_interaction, atom_edge_interaction, edge_atom_interaction, atom_interaction, scale_basis, qint_tags, num_elements, otf_graph, scale_file, **kwargs)[0m
+[1;32m    382[0m [38;5;28;01mif[39;00m direct_forces:
+[1;32m    383[0m     [38;5;28mself[39m[38;5;241m.[39mout_forces[38;5;241m.[39mreset_parameters(out_initializer)
+[0;32m--> 385[0m [43mload_scales_compat[49m[43m([49m[38;5;28;43mself[39;49m[43m,[49m[43m [49m[43mscale_file[49m[43m)[49m
+
+File [0;32m~/work/fairchem/fairchem/src/fairchem/core/modules/scaling/compat.py:55[0m, in [0;36mload_scales_compat[0;34m(module, scale_file)[0m
+[1;32m     54[0m [38;5;28;01mdef[39;00m [38;5;21mload_scales_compat[39m(module: nn[38;5;241m.[39mModule, scale_file: [38;5;28mstr[39m [38;5;241m|[39m ScaleDict [38;5;241m|[39m [38;5;28;01mNone[39;00m) [38;5;241m-[39m[38;5;241m>[39m [38;5;28;01mNone[39;00m:
+[0;32m---> 55[0m     scale_dict [38;5;241m=[39m [43m_load_scale_dict[49m[43m([49m[43mscale_file[49m[43m)[49m
+[1;32m     56[0m     [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m scale_dict:
+[1;32m     57[0m         [38;5;28;01mreturn[39;00m
+
+File [0;32m~/work/fairchem/fairchem/src/fairchem/core/modules/scaling/compat.py:37[0m, in [0;36m_load_scale_dict[0;34m(scale_file)[0m
+[1;32m     35[0m scale_dict: ScaleDict [38;5;241m|[39m [38;5;28;01mNone[39;00m [38;5;241m=[39m [38;5;28;01mNone[39;00m
+[1;32m     36[0m [38;5;28;01mif[39;00m path[38;5;241m.[39msuffix [38;5;241m==[39m [38;5;124m"[39m[38;5;124m.pt[39m[38;5;124m"[39m:
+[0;32m---> 37[0m     scale_dict [38;5;241m=[39m [43mtorch[49m[38;5;241;43m.[39;49m[43mload[49m[43m([49m[43mpath[49m[43m)[49m
+[1;32m     38[0m [38;5;28;01melif[39;00m path[38;5;241m.[39msuffix [38;5;241m==[39m [38;5;124m"[39m[38;5;124m.json[39m[38;5;124m"[39m:
+[1;32m     39[0m     [38;5;28;01mwith[39;00m [38;5;28mopen[39m(path) [38;5;28;01mas[39;00m f:
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch/serialization.py:1040[0m, in [0;36mload[0;34m(f, map_location, pickle_module, weights_only, mmap, **pickle_load_args)[0m
+[1;32m   1038[0m     [38;5;28;01mexcept[39;00m [38;5;167;01mRuntimeError[39;00m [38;5;28;01mas[39;00m e:
+[1;32m   1039[0m         [38;5;28;01mraise[39;00m pickle[38;5;241m.[39mUnpicklingError(UNSAFE_MESSAGE [38;5;241m+[39m [38;5;28mstr[39m(e)) [38;5;28;01mfrom[39;00m [38;5;28;01mNone[39;00m
+[0;32m-> 1040[0m [38;5;28;01mreturn[39;00m [43m_legacy_load[49m[43m([49m[43mopened_file[49m[43m,[49m[43m [49m[43mmap_location[49m[43m,[49m[43m [49m[43mpickle_module[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mpickle_load_args[49m[43m)[49m
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch/serialization.py:1258[0m, in [0;36m_legacy_load[0;34m(f, map_location, pickle_module, **pickle_load_args)[0m
+[1;32m   1252[0m [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m [38;5;28mhasattr[39m(f, [38;5;124m'[39m[38;5;124mreadinto[39m[38;5;124m'[39m) [38;5;129;01mand[39;00m ([38;5;241m3[39m, [38;5;241m8[39m, [38;5;241m0[39m) [38;5;241m<[39m[38;5;241m=[39m sys[38;5;241m.[39mversion_info [38;5;241m<[39m ([38;5;241m3[39m, [38;5;241m8[39m, [38;5;241m2[39m):
+[1;32m   1253[0m     [38;5;28;01mraise[39;00m [38;5;167;01mRuntimeError[39;00m(
+[1;32m   1254[0m         [38;5;124m"[39m[38;5;124mtorch.load does not work with file-like objects that do not implement readinto on Python 3.8.0 and 3.8.1. [39m[38;5;124m"[39m
+[1;32m   1255[0m         [38;5;124mf[39m[38;5;124m"[39m[38;5;124mReceived object of type [39m[38;5;130;01m\"[39;00m[38;5;132;01m{[39;00m[38;5;28mtype[39m(f)[38;5;132;01m}[39;00m[38;5;130;01m\"[39;00m[38;5;124m. Please update to Python 3.8.2 or newer to restore this [39m[38;5;124m"[39m
+[1;32m   1256[0m         [38;5;124m"[39m[38;5;124mfunctionality.[39m[38;5;124m"[39m)
+[0;32m-> 1258[0m magic_number [38;5;241m=[39m [43mpickle_module[49m[38;5;241;43m.[39;49m[43mload[49m[43m([49m[43mf[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mpickle_load_args[49m[43m)[49m
+[1;32m   1259[0m [38;5;28;01mif[39;00m magic_number [38;5;241m!=[39m MAGIC_NUMBER:
+[1;32m   1260[0m     [38;5;28;01mraise[39;00m [38;5;167;01mRuntimeError[39;00m([38;5;124m"[39m[38;5;124mInvalid magic number; corrupt file?[39m[38;5;124m"[39m)
+
+[0;31mUnpicklingError[0m: invalid load key, '\x0a'.
 
