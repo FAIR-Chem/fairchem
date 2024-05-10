@@ -795,8 +795,8 @@ Lets download it locally,
 
 ```{code-cell} ipython3
 %%bash
-wget https://github.com/FAIR-Chem/fairchem/tree/docs_fix/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
-wget https://github.com/FAIR-Chem/fairchem/tree/docs_fix/configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json
+wget https://github.com/FAIR-Chem/fairchem/tree/main/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
+wget https://github.com/FAIR-Chem/fairchem/tree/main/configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json
 ```
 
 
