@@ -18,7 +18,7 @@ Moreover, results may be different between GPU and CPU
 executions [[3](https://pytorch.org/docs/stable/notes/randomness.html)].
 
 To get deterministic results on GPU, use [`torch.use_deterministic_algorithms`](https://pytorch.org/docs/stable/generated/torch.use_deterministic_algorithms.html#torch.use_deterministic_algorithms)
-where available (for example, see [`scatter_det`](https://github.com/FAIR-Chem/fairchem/blob/main/ocpmodels/common/utils.py#L1112)). Note that deterministic operations are often slower
+where available (for example, see [`scatter_det`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/common/utils.py#L1112)). Note that deterministic operations are often slower
 than non-deterministic operations, so while this may be worth using for testing
 and debugging, this is not recommended for large-scale training and inference.
 
@@ -54,7 +54,7 @@ dataset:
 
 The OC20 reference pickle file containing the energy necessary to convert
 adsorption energy values to total energy is [available for download
-here](https://github.com/FAIR-Chem/fairchem/blob/main/DATASET.md#oc20-reference-information).
+here](https://fair-chem.github.io/core/datasets/oc20.html).
 
 To test if your setup is correct, try the following:
 

@@ -73,7 +73,7 @@ dataset:
   test:
     src: [Path to test data]
 ```
-You can find examples configuration files in [`configs/is2re`](https://github.com/FAIR-Chem/fairchem/tree/main/configs/is2re).
+You can find examples configuration files in [`configs/is2re`](https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/core/configs/is2re).
 
 To train a SchNet model for the IS2RE task on the 10k split, run:
 ```bash
@@ -153,7 +153,7 @@ dataset:
   test:
     src: [Path to test data]
 ```
-You can find examples configuration files in [`configs/s2ef`](https://github.com/FAIR-Chem/fairchem/tree/main/configs/s2ef).
+You can find examples configuration files in [`configs/s2ef`](https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/core/configs/s2ef).
 
 To train a SchNet model for the S2EF task on the 2M split using 2 GPUs, run:
 

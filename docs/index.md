@@ -1,7 +1,7 @@
 # `fairchem` repository for atomistic AI/ML models in chemistry
 
 ![tests](https://github.com/FAIR-Chem/fairchem/actions/workflows/test.yml/badge.svg?branch=main)
-[![codecov](https://codecov.io/gh/Open-Catalyst-Project/ocp/graph/badge.svg?token=M606LH5LK6)](https://codecov.io/gh/Open-Catalyst-Project/ocp)
+[![codecov](https://codecov.io/gh/FAIR-Chem/fairchem/badge.svg)](https://codecov.io/gh/FAIR-Chem/fairchem)
 
 `fairchem` is the FAIR Chemistry team's library of state-of-the-art machine learning algorithms for chemistry and materials. Collaborative projects that contribute or use the models and approaches in this repo:
 * [Open Catalyst Project (OCP)](https://opencatalystproject.org/)
@@ -33,14 +33,14 @@ Projects and models built on `ocp`:
 
 - SchNet [[`arXiv`](https://arxiv.org/abs/1706.08566)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/schnet.py)]
 - DimeNet++ [[`arXiv`](https://arxiv.org/abs/2011.14115)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/dimenet_plus_plus.py)]
-- GemNet-dT [[`arXiv`](https://arxiv.org/abs/2106.08903)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/tree/fairchem/core/models/gemnet)]
-- PaiNN [[`arXiv`](https://arxiv.org/abs/2102.03150)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/tree/fairchem/core/models/painn)]
-- Graph Parallelism [[`arXiv`](https://arxiv.org/abs/2203.09697)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/tree/fairchem/core/models/gemnet_gp)]
-- GemNet-OC [[`arXiv`](https://arxiv.org/abs/2204.02782)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/tree/fairchem/core/models/gemnet_oc)]
-- SCN [[`arXiv`](https://arxiv.org/abs/2206.14331)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/tree/fairchem/core/models/scn)]
+- GemNet-dT [[`arXiv`](https://arxiv.org/abs/2106.08903)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/gemnet)]
+- PaiNN [[`arXiv`](https://arxiv.org/abs/2102.03150)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/painn)]
+- Graph Parallelism [[`arXiv`](https://arxiv.org/abs/2203.09697)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/gemnet_gp)]
+- GemNet-OC [[`arXiv`](https://arxiv.org/abs/2204.02782)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/gemnet_oc)]
+- SCN [[`arXiv`](https://arxiv.org/abs/2206.14331)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/scn)]
 - AdsorbML [[`arXiv`](https://arxiv.org/abs/2211.16486)] [[`code`](https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/applications/AdsorbML)]
-- eSCN [[`arXiv`](https://arxiv.org/abs/2302.03655)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/tree/fairchem/core/models/escn)]
-- EquiformerV2 [[`arXiv`](https://arxiv.org/abs/2306.12059)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/tree/fairchem/core/models/equiformer_v2)]
+- eSCN [[`arXiv`](https://arxiv.org/abs/2302.03655)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/escn)]
+- EquiformerV2 [[`arXiv`](https://arxiv.org/abs/2306.12059)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/equiformer_v2)]
 
 Older model implementations that are no longer supported:
 
