@@ -1,11 +1,15 @@
 import numpy as np
 import pytest
 
-from ase.neb import DyNEB
 from fairchem.applications.ocpneb.core import OCPNEB
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from ase.optimize import BFGS
 from fairchem.core.models.model_registry import model_name_to_local_file
+
+try:
+    from ase.mep import DyNEB
+except ImportError:  # newest unreleased version has changed imports
+    from ase.mep.neb import DyNEB
 
 
 @pytest.mark.usefixtures("neb_frames")
@@ -34,7 +38,7 @@ class TestNEB:
         forces_ub = unbatched.get_forces()
         energies_ub = unbatched.get_potential_energy()
 
-        mismatch = np.isclose(forces, forces_ub, atol=1e-3).all(axis=1) == False
+        mismatch = np.isclose(forces, forces_ub, atol=1e-3).all(axis=1) is False
 
         assert np.isclose(energies, energies_ub, atol=1e-3).all()
         assert mismatch.sum() == 0
@@ -67,7 +71,7 @@ class TestNEB:
         forces_ub = unbatched.get_forces()
         energies_ub = unbatched.get_potential_energy()
 
-        mismatch = np.isclose(forces, forces_ub, atol=1e-3).all(axis=1) == False
+        mismatch = np.isclose(forces, forces_ub, atol=1e-3).all(axis=1) is False
 
         assert np.isclose(energies, energies_ub, atol=1e-3).all()
         assert mismatch.sum() == 0

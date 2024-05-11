@@ -1,19 +1,19 @@
 import logging
-import warnings
 
 import numpy as np
 import torch
-from ase.neb import DyNEB, NEBState
+
 from ase.optimize.precon import Precon, PreconImages
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import setup_imports, setup_logging
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.preprocessing import AtomsToGraphs
 from torch.utils.data import DataLoader
-from ase.constraints import FixAtoms
 
-from tqdm import tqdm
-from functools import partialmethod
+try:
+    from ase.neb import DyNEB, NEBState
+except ImportError:  # newest unreleased version has changed imports
+    from ase.mep.neb import DyNEB, NEBState
 
 
 class OCPNEB(DyNEB):
