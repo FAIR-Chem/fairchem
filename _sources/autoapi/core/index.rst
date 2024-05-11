@@ -25,7 +25,6 @@ Subpackages
    preprocessing/index.rst
    scripts/index.rst
    tasks/index.rst
-   tests/index.rst
    trainers/index.rst
 
 

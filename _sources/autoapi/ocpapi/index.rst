@@ -11,7 +11,6 @@ Subpackages
    :maxdepth: 3
 
    client/index.rst
-   tests/index.rst
    workflows/index.rst
 
 
