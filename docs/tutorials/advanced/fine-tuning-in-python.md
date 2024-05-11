@@ -22,7 +22,7 @@ from fairchem.core.common.utils import SeverityLevelBetween
 
 root = logging.getLogger()
 
- 
+
 root.setLevel(logging.INFO)
 
 log_formatter = logging.Formatter(
@@ -51,7 +51,7 @@ root.addHandler(handler_err)
 ```{code-cell} ipython3
 from fairchem.core.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OC-S2EFS-OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 calc = OCPCalculator(checkpoint_path=checkpoint_path, trainer='forces', cpu=False)
 ```
@@ -83,7 +83,7 @@ yml = generate_yml_config(checkpoint_path, 'config.yml',
                            'optim.eval_every': 10,
                            'optim.max_epochs': 1,
                            'optim.batch_size': 4,
-                           'logger': 'tensorboard', # don't use wandb unless you already are logged in 
+                           'logger': 'tensorboard', # don't use wandb unless you already are logged in
                            # Train data
                            'dataset.train.src': 'train.db',
                            'dataset.train.a2g_args.r_energy': True,
@@ -103,7 +103,7 @@ yml
 
 ## Setup the training task
 
-This essentially allows several opportunities to define and override the config. You start with the base config.yml, and then via "command-line" arguments you specify changes you want to make. 
+This essentially allows several opportunities to define and override the config. You start with the base config.yml, and then via "command-line" arguments you specify changes you want to make.
 
 The code is build around `submitit`, which is often used with Slurm, but also works locally.
 
@@ -114,8 +114,8 @@ We have to mimic the `main.py` setup to get the arguments and config setup. Here
 ```{code-cell} ipython3
 from fairchem.core.common.flags import flags
 parser = flags.get_parser()
-args, args_override = parser.parse_known_args(["--mode=train",                                            
-                                               "--config-yml=config.yml", 
+args, args_override = parser.parse_known_args(["--mode=train",
+                                               "--config-yml=config.yml",
                                                f"--checkpoint={checkpoint_path}",
                                                "--amp"])
 args, args_override
@@ -132,9 +132,9 @@ config
 
 # Run the training task
 
-It is still annoying that if your output is too large the notebook will not be able to be saved. On the other hand, it is annoying to simply capture the output. 
+It is still annoying that if your output is too large the notebook will not be able to be saved. On the other hand, it is annoying to simply capture the output.
 
-We are able to redirect most logging to a file above, but not all of it. The link below will open the file in a browser, and the subsequent cell captures all residual output. We do not need any of that, so it is ultimately discarded. 
+We are able to redirect most logging to a file above, but not all of it. The link below will open the file in a browser, and the subsequent cell captures all residual output. We do not need any of that, so it is ultimately discarded.
 
 Alternatively, you can open a Terminal and use `tail -f out.txt` to see the progress.
 
@@ -144,7 +144,7 @@ display(FileLink('out.txt'))
 ```
 
 ```{code-cell} ipython3
-with new_trainer_context(config=config, args=args) as ctx:
+with new_trainer_context(config=config) as ctx:
     config = ctx.config
     task = ctx.task
     trainer = ctx.trainer

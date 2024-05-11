@@ -71,7 +71,7 @@ product2_configs = AdsorbateSlabConfig(slab = slab[0], adsorbate = product2,
 # Instantiate the calculator
 # NOTE: If you have a GPU, use cpu = False
 # NOTE: Change the checkpoint path to locally downloaded files as needed
-checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
 cpu = True
 calc = OCPCalculator(checkpoint_path = CHECKPOINT_PATH, cpu = cpu)
 ```
@@ -84,7 +84,7 @@ There are 2 options for how to do this.
  
 (1) is really only adequate for small stuff and it is what I will show here, but if you plan to run many relaxations, you should definitely use (2). More details about writing lmdbs has been provided [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/tutorials/lmdb_dataset_creation.ipynb) - follow the IS2RS/IS2RE instructions. And more information about running relaxations once the lmdb has been written is [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/TRAIN.md#initial-structure-to-relaxed-structure-is2rs).
 
-You need to provide the calculator with a path to a model checkpoint file. That can be downloaded [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/MODELS.md)
+You need to provide the calculator with a path to a model checkpoint file. That can be downloaded [here](../core/model_checkpoints)
 
 ```{code-cell} ipython3
 # Relax the reactant systems
