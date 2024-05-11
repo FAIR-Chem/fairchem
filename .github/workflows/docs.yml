@@ -35,9 +35,18 @@ jobs:
       run: |
         jupyter-book build docs
 
-    # Deploy the book's HTML to gh-pages branch
-    - name: Deploy
+    # Deploy the book's HTML to gh-pages branch # TODO remove once ODAC link updated
+    - name: Deploy to ghpages branch
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: docs/_build/html
+
+    - name: Deploy to fair-chem.github.io
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+        external_repository: FAIR-Chem/fair-chem.github.io
+        publish_branch: gh-pages
+        publish_dir: docs/_build/html
+
