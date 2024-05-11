@@ -18,33 +18,33 @@ Traceback (most recent call last):
     raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
 nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
 ------------------
-from ocpneb.core.reaction import Reaction
+from fairchem.applications.ocpneb.core.reaction import Reaction
 from fairchem.data.oc.core import Slab, Adsorbate, Bulk, AdsorbateSlabConfig
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from ase.optimize import BFGS
 from x3dase.visualize import view_x3d_n
 from ase.io import read
 from x3dase.x3d import X3D
-from ocpneb.databases import DISSOCIATION_REACTION_DB_PATH
+from fairchem.applications.ocpneb.databases import DISSOCIATION_REACTION_DB_PATH
 from fairchem.data.oc.databases.pkls import ADSORBATES_PKL_PATH, BULK_PKL_PATH
 from fairchem.core.models.model_registry import model_name_to_local_file
 import matplotlib.pyplot as plt
-from ocpneb.core.autoframe import AutoFrameDissociation
-from ocpneb.core import OCPNEB
+from fairchem.applications.ocpneb.core.autoframe import AutoFrameDissociation
+from fairchem.applications.ocpneb.core import OCPNEB
 from ase.io import read
 
 #Optional
 from IPython.display import Image
-from x3dase.x3d import X3D 
+from x3dase.x3d import X3D
 ------------------
 
 
 [0;31m---------------------------------------------------------------------------[0m
 [0;31mModuleNotFoundError[0m                       Traceback (most recent call last)
 Cell [0;32mIn[1], line 1[0m
-[0;32m----> 1[0m [38;5;28;01mfrom[39;00m [38;5;21;01mocpneb[39;00m[38;5;21;01m.[39;00m[38;5;21;01mcore[39;00m[38;5;21;01m.[39;00m[38;5;21;01mreaction[39;00m [38;5;28;01mimport[39;00m Reaction
+[0;32m----> 1[0m [38;5;28;01mfrom[39;00m [38;5;21;01mfairchem[39;00m[38;5;21;01m.[39;00m[38;5;21;01mapplications[39;00m[38;5;21;01m.[39;00m[38;5;21;01mocpneb[39;00m[38;5;21;01m.[39;00m[38;5;21;01mcore[39;00m[38;5;21;01m.[39;00m[38;5;21;01mreaction[39;00m [38;5;28;01mimport[39;00m Reaction
 [1;32m      2[0m [38;5;28;01mfrom[39;00m [38;5;21;01mfairchem[39;00m[38;5;21;01m.[39;00m[38;5;21;01mdata[39;00m[38;5;21;01m.[39;00m[38;5;21;01moc[39;00m[38;5;21;01m.[39;00m[38;5;21;01mcore[39;00m [38;5;28;01mimport[39;00m Slab, Adsorbate, Bulk, AdsorbateSlabConfig
 [1;32m      3[0m [38;5;28;01mfrom[39;00m [38;5;21;01mfairchem[39;00m[38;5;21;01m.[39;00m[38;5;21;01mcore[39;00m[38;5;21;01m.[39;00m[38;5;21;01mcommon[39;00m[38;5;21;01m.[39;00m[38;5;21;01mrelaxation[39;00m[38;5;21;01m.[39;00m[38;5;21;01mase_utils[39;00m [38;5;28;01mimport[39;00m OCPCalculator
 
-[0;31mModuleNotFoundError[0m: No module named 'ocpneb'
+[0;31mModuleNotFoundError[0m: No module named 'fairchem.applications.ocpneb'
 
