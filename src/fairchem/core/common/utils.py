@@ -1256,7 +1256,7 @@ def update_config(base_config):
         if "primary_metric" in config["task"]:
             _eval_metrics["primary_metric"] = config["task"]["primary_metric"]
         elif "eval_metrics" in config and "primary_metric" in config["eval_metrics"]:
-            _eval_metrics["primary_metric"] = config["eval_metrics"]["primary_metric']
+            _eval_metrics["primary_metric"] = config["eval_metrics"]["primary_metric"]
         ### Define outputs
         _outputs = {
             "energy": {"level": "system"},
