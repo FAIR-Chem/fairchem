@@ -14,24 +14,24 @@ kernelspec:
 # CatTSunami tutorial
 
 ```{code-cell} ipython3
-from ocpneb.core.reaction import Reaction
+from fairchem.applications.ocpneb.core.reaction import Reaction
 from fairchem.data.oc.core import Slab, Adsorbate, Bulk, AdsorbateSlabConfig
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from ase.optimize import BFGS
 from x3dase.visualize import view_x3d_n
 from ase.io import read
 from x3dase.x3d import X3D
-from ocpneb.databases import DISSOCIATION_REACTION_DB_PATH
+from fairchem.applications.ocpneb.databases import DISSOCIATION_REACTION_DB_PATH
 from fairchem.data.oc.databases.pkls import ADSORBATES_PKL_PATH, BULK_PKL_PATH
 from fairchem.core.models.model_registry import model_name_to_local_file
 import matplotlib.pyplot as plt
-from ocpneb.core.autoframe import AutoFrameDissociation
-from ocpneb.core import OCPNEB
+from fairchem.applications.ocpneb.core.autoframe import AutoFrameDissociation
+from fairchem.applications.ocpneb.core import OCPNEB
 from ase.io import read
 
 #Optional
 from IPython.display import Image
-from x3dase.x3d import X3D 
+from x3dase.x3d import X3D
 ```
 
 ## Do enumerations in an AdsorbML style for CH dissociation on Ru (001)
@@ -81,7 +81,7 @@ calc = OCPCalculator(checkpoint_path = CHECKPOINT_PATH, cpu = cpu)
 There are 2 options for how to do this.
  1. Using `OCPCalculator` as the calculator within the ASE framework
  2. By writing objects to lmdb and relaxing them using `main.py` in the ocp repo
- 
+
 (1) is really only adequate for small stuff and it is what I will show here, but if you plan to run many relaxations, you should definitely use (2). More details about writing lmdbs has been provided [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/tutorials/lmdb_dataset_creation.ipynb) - follow the IS2RS/IS2RE instructions. And more information about running relaxations once the lmdb has been written is [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/TRAIN.md#initial-structure-to-relaxed-structure-is2rs).
 
 You need to provide the calculator with a path to a model checkpoint file. That can be downloaded [here](../core/model_checkpoints)
@@ -170,7 +170,7 @@ Here we use the custom child class we created to run NEB relaxations using ML. T
 #         conv = optimizer.run(fmax=fmax, steps=300)
 #         if conv:
 #             converged_idxs.append(idx)
-            
+
 # print(converged_idxs)
 ```
 
