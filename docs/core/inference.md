@@ -64,7 +64,7 @@ print(available_pretrained_models)
 ```{code-cell} ipython3
 from fairchem.core.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-dTOC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-dT-S2EFS-OC22', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path
 
 ```
@@ -101,10 +101,10 @@ It is a good idea to redirect the output to a file. If the output gets too large
 ```{code-cell} ipython3
 %%capture inference
 import time
-from fairchem.core.common.tutorial_utils import ocp_main
+from fairchem.core.common.tutorial_utils import fairchem_main
 
 t0 = time.time()
-! python {ocp_main()} --mode predict --config-yml {yml} --checkpoint {checkpoint_path} --amp
+! python {fairchem_main()} --mode predict --config-yml {yml} --checkpoint {checkpoint_path} --amp
 print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
 ```
 
@@ -197,7 +197,7 @@ The results should be the same.
 
 It is worth noting the default precision of predictions is float16 with main.py, but with the ASE calculator the default precision is float32. Supposedly you can specify `--task.prediction_dtype=float32` at the command line to or specify it in the config.yml like we do above, but as of the tutorial this does not resolve the issue.
 
-As noted above (see also [Issue 542](https://github.com/Open-Catalyst-Project/ocp/issues/542)), the ASE calculator and main.py use different precisions by default, which can lead to small differences.
+As noted above (see also [Issue 542](https://github.com/FAIR-Chem/fairchem/issues/542)), the ASE calculator and main.py use different precisions by default, which can lead to small differences.
 
 ```{code-cell} ipython3
 np.mean(np.abs(results['energy'][sind] - OCP * natoms))  # MAE

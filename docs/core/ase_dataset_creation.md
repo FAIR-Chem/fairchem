@@ -1,7 +1,7 @@
 
 # Making and using ASE datasets
 
-There are multiple ways to train and evaluate OCP models on data other than OC20 and OC22. Writing an LMDB is the most performant option. However, ASE-based dataset formats are also included as a convenience for people with existing data who simply want to try OCP tools without needing to learn about LMDBs.
+There are multiple ways to train and evaluate FAIRChem models on data other than OC20 and OC22. Writing an LMDB is the most performant option. However, ASE-based dataset formats are also included as a convenience for people with existing data who simply want to try fairchem tools without needing to learn about LMDBs.
 
 
 ## Using an ASE Database

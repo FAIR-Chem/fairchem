@@ -14,7 +14,7 @@ kernelspec:
 Using pre-trained models in ASE
 ----------
 
-1. First, install OCP in a fresh python environment using one of the approaches in [installation documentation](install).
+1. First, install `fairchem` in a fresh python environment using one of the approaches in [installation documentation](install).
 2. See what pre-trained potentials are available 
 
 ```{code-cell} ipython3
@@ -26,7 +26,7 @@ print(available_pretrained_models)
 
 ```{code-cell} ipython3
 from fairchem.core.models.model_registry import model_name_to_local_file
-checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OC-S2EFS-OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path
 ```
 
