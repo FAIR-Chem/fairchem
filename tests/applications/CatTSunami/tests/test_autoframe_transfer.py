@@ -6,7 +6,7 @@ from fairchem.applications.ocpneb.core.autoframe import (
 from fairchem.core.models.model_registry import model_name_to_local_file
 from fairchem.applications.ocpneb.core.reaction import Reaction
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
-from fairchem.data.oc.databases.pkls import ADSORBATES_PKL_PATH
+from fairchem.data.oc.databases.pkls import ADSORBATE_PKL_PATH
 from fairchem.applications.ocpneb.databases import TRANSFER_REACTION_DB_PATH
 
 
@@ -27,7 +27,7 @@ class TestAutoframe:
         reaction = Reaction(
             reaction_db_path=TRANSFER_REACTION_DB_PATH,
             reaction_id_from_db=2,
-            adsorbate_db_path=ADSORBATES_PKL_PATH,
+            adsorbate_db_path=ADSORBATE_PKL_PATH,
         )
 
         num_frames = 10

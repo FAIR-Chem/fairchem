@@ -81,8 +81,10 @@ class OCPNEB(DyNEB):
 
         # Silence otf_graph warnings
         logging.disable(logging.WARNING)
-
-        ckpt = torch.load(checkpoint_path)
+        if cpu:
+            ckpt = torch.load(checkpoint_path, map_location=torch.device("cpu"))
+        else:
+            ckpt = torch.load(checkpoint_path)
         config = ckpt["config"]
         if "normalizer" not in config:
             del config["dataset"]["src"]

@@ -7,7 +7,7 @@ from fairchem.applications.ocpneb.core.autoframe import (
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
 from fairchem.applications.ocpneb.core import Reaction
-from fairchem.data.oc.databases.pkls import ADSORBATES_PKL_PATH
+from fairchem.data.oc.databases.pkls import ADSORBATE_PKL_PATH
 from fairchem.applications.ocpneb.databases import DISSOCIATION_REACTION_DB_PATH
 
 
@@ -40,7 +40,7 @@ class TestAutoframe:
         reaction = Reaction(
             reaction_db_path=DISSOCIATION_REACTION_DB_PATH,
             reaction_id_from_db=8,
-            adsorbate_db_path="/private/home/brookwander/Open-Catalyst-Dataset/ocdata/databases/pkls/adsorbates.pkl",
+            adsorbate_db_path=ADSORBATE_PKL_PATH,
         )
         checkpoint_path = model_name_to_local_file(
             "EquiformerV2-31M-S2EF-OC20-All+MD", local_cache="/tmp/ocp_checkpoints/"
@@ -95,7 +95,7 @@ class TestAutoframe:
         reaction = Reaction(
             reaction_db_path=DISSOCIATION_REACTION_DB_PATH,
             reaction_id_from_db=8,
-            adsorbate_db_path=ADSORBATES_PKL_PATH,
+            adsorbate_db_path=ADSORBATE_PKL_PATH,
         )
 
         connected = 0
