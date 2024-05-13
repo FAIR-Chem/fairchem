@@ -14,24 +14,24 @@ kernelspec:
 # CatTSunami tutorial
 
 ```{code-cell} ipython3
-from fairchem.applications.ocpneb.core.reaction import Reaction
+from fairchem.applications.CatTSunami.ocpneb.core import Reaction
 from fairchem.data.oc.core import Slab, Adsorbate, Bulk, AdsorbateSlabConfig
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from ase.optimize import BFGS
 from x3dase.visualize import view_x3d_n
 from ase.io import read
 from x3dase.x3d import X3D
-from fairchem.applications.ocpneb.databases import DISSOCIATION_REACTION_DB_PATH
-from fairchem.data.oc.databases.pkls import ADSORBATES_PKL_PATH, BULK_PKL_PATH
+from fairchem.applications.CatTSunami.ocpneb.databases import DISSOCIATION_REACTION_DB_PATH
+from fairchem.data.oc.databases.pkls import ADSORBATE_PKL_PATH, BULK_PKL_PATH
 from fairchem.core.models.model_registry import model_name_to_local_file
 import matplotlib.pyplot as plt
-from fairchem.applications.ocpneb.core.autoframe import AutoFrameDissociation
-from fairchem.applications.ocpneb.core import OCPNEB
+from fairchem.applications.CatTSunami.ocpneb.core.autoframe import AutoFrameDissociation
+from fairchem.applications.CatTSunami.ocpneb.core import OCPNEB
 from ase.io import read
-
-#Optional
 from IPython.display import Image
-from x3dase.x3d import X3D
+
+# Optional
+# from x3dase.x3d import X3D 
 ```
 
 ## Do enumerations in an AdsorbML style for CH dissociation on Ru (001)
@@ -43,12 +43,12 @@ To start, we generate placements for the reactant and product species on the sur
 # Instantiate the reaction class for the reaction of interest
 reaction = Reaction(reaction_str_from_db="*CH -> *C + *H",
                     reaction_db_path=DISSOCIATION_REACTION_DB_PATH,
-                    adsorbate_db_path = ADSORBATES_PKL_PATH)
+                    adsorbate_db_path = ADSORBATE_PKL_PATH)
 
 # Instantiate our adsorbate class for the reactant and product
-reactant = Adsorbate(adsorbate_id_from_db=reaction.reactant1_idx, adsorbate_db_path=ADSORBATES_PKL_PATH)
-product1 = Adsorbate(adsorbate_id_from_db=reaction.product1_idx, adsorbate_db_path=ADSORBATES_PKL_PATH)
-product2 = Adsorbate(adsorbate_id_from_db=reaction.product2_idx, adsorbate_db_path=ADSORBATES_PKL_PATH)
+reactant = Adsorbate(adsorbate_id_from_db=reaction.reactant1_idx, adsorbate_db_path=ADSORBATE_PKL_PATH)
+product1 = Adsorbate(adsorbate_id_from_db=reaction.product1_idx, adsorbate_db_path=ADSORBATE_PKL_PATH)
+product2 = Adsorbate(adsorbate_id_from_db=reaction.product2_idx, adsorbate_db_path=ADSORBATE_PKL_PATH)
 
 # Grab the bulk and cut the slab we are interested in
 bulk = Bulk(bulk_src_id_from_db="mp-33", bulk_db_path=BULK_PKL_PATH)
@@ -73,7 +73,7 @@ product2_configs = AdsorbateSlabConfig(slab = slab[0], adsorbate = product2,
 # NOTE: Change the checkpoint path to locally downloaded files as needed
 checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
 cpu = True
-calc = OCPCalculator(checkpoint_path = CHECKPOINT_PATH, cpu = cpu)
+calc = OCPCalculator(checkpoint_path = checkpoint_path, cpu = cpu)
 ```
 
 ### Run ML local relaxations:
@@ -155,7 +155,7 @@ Here we use the custom child class we created to run NEB relaxations using ML. T
 # for idx, frame_set in enumerate(frame_sets):
 #     neb = OCPNEB(
 #         frame_set,
-#         checkpoint_path=CHECKPOINT_PATH,
+#         checkpoint_path=checkpoint_path,
 #         k=1,
 #         batch_size=8,
 #         cpu = cpu,
@@ -180,7 +180,7 @@ fmax = 0.05 # [eV / ang**2]
 delta_fmax_climb = 0.4
 neb = OCPNEB(
     frame_sets[0],
-    checkpoint_path=CHECKPOINT_PATH,
+    checkpoint_path=checkpoint_path,
     k=1,
     batch_size=8,
     cpu = cpu,
