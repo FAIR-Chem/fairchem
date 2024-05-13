@@ -22,17 +22,15 @@ git_describe_command = 'git describe --tags --match fairchem_applications_cattsu
 directory = "../../dist"
 
 [tool.hatch.build.targets.sdist]
-only-include = ["src/fairchem/applications/CatTSunami/ocpneb"]
+only-include = ["src/fairchem/applications/ocpneb"]
 
 [tool.hatch.build.targets.wheel]
-only-include = ["src/fairchem/applications/CatTSunami/ocpneb"]
-
-[tool.hatch.build.targets.wheel.sources]
-"src/fairchem/applications/CatTSunami" = "fairchem/applications"
+sources = ["src"]
+only-include = ["src/fairchem/demo/ocpapi"]
 
 [tool.hatch.metadata.hooks.fancy-pypi-readme]
 content-type = "text/markdown"
 fragments = [
-  { path = "src/fairchem/applications/CatTSunami/ocpneb/README.md" },
-  { path = "src/fairchem/applications/CatTSunami/ocpneb/DATASET.md" }
+  { path = "src/fairchem/applications/ocpneb/README.md" },
+  { path = "src/fairchem/applications/ocpneb/DATASET.md" }
 ]

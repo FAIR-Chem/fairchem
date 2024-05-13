@@ -28,7 +28,7 @@ One more note: We have not prepared an lmdb for this dataset. This is because it
 ```
 from ase.io import read
 from ase.optimize import BFGS
-from fairchem.applications.ocpneb.core import OCPNEB
+from ocpneb.core.ocpneb import OCPNEB
 
 traj = read("desorption_id_83_2409_9_111-4_neb1.0.traj", ":")
 neb_frames = traj[0:10]
