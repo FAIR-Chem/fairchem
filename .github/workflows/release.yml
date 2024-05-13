@@ -16,9 +16,9 @@ on:
         description: "if true a release is made on PyPI"
 
 jobs:
-  test:
-    uses: ./.github/workflows/test.yml
-    secrets: inherit
+#  test:
+#    uses: ./.github/workflows/test.yml
+#    secrets: inherit
 
   build:
     needs: test
@@ -28,6 +28,15 @@ jobs:
 #    needs: test
 #    uses: ./.github/workflows/docs.yml
 #    secrets: inherit
+
+  ref_name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo
+        run: |
+          echo ${{ github.ref_name }}
+          echo $GITHUB_REF_NAME
+          echo ${{ github.event.release.tag_name }}
 
   release-core-pypi:
     needs: [ build ]
