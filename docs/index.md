@@ -17,10 +17,10 @@ this repo:
 * [Open Catalyst Project (OCP)](https://opencatalystproject.org/)
 * [Open Direct Air Capture (OpenDAC)](https://open-dac.github.io/)
 
-:::{note}
+```{note}
 We re-organized and rebranded the repository in 2024 (previously the `fairchem` repo) to reflect the increasingly
 general usability of these models beyond catalysis, including things like direct air capture.
-:::
+```
 
 ### Datasets in `fairchem`:
 `fairchem` provides training and evaluation code for tasks and models that take arbitrary
