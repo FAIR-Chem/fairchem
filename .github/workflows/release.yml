@@ -55,5 +55,54 @@ jobs:
           skip-existing: true
           verbose: true
 
-# write a release-block for each packages
-# copy over to test-release as well!!!
+  release-data-oc-pypi:
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    if: |
+      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_data_oc-') || startsWith(github.event.release.tag_name, 'fairchem_data_oc-') )
+
+    environment:
+      name: test-pypi
+      url: https://pypi.org/p/fairchem-core/
+
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-core
+          path: dist-core
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          verbose: true
+          packages-dir: dist-data-oc/
+          skip-existing: true
+
+  release-demo-ocpapi-pypi:
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    if: |
+      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_demo_ocpapi-') || startsWith(github.event.release.tag_name, 'fairchem_demo_ocpapi-') )
+
+    environment:
+      name: test-pypi
+      url: https://pypi.org/p/fairchem-core/
+
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-core
+          path: dist-core
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          verbose: true
+          packages-dir: dist-demo-ocpapi/
+          skip-existing: true
