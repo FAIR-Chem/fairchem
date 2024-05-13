@@ -36,7 +36,7 @@ jobs:
       github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_core-') || startsWith(github.event.release.tag_name, 'fairchem_core-') )
 
     environment:
-      name: deploy-test-pypi
+      name: test-pypi
       url: https://pypi.org/p/fairchem-core/
 
     permissions:
