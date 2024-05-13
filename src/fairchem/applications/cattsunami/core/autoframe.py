@@ -14,7 +14,7 @@ import torch
 from fairchem.data.oc.utils import DetectTrajAnomaly
 import networkx as nx
 from copy import deepcopy
-from fairchem.applications.ocpneb.core import Reaction
+from fairchem.applications.cattsunami.core import Reaction
 
 
 class AutoFrame:

@@ -12,7 +12,7 @@ from ase.optimize import BFGS
 import torch
 import argparse
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
-from fairchem.applications.ocpneb.core.ocpneb import OCPNEB
+from fairchem.applications.cattsunami.core.ocpneb import OCPNEB
 import os
 import pandas as pd
 import numpy as np

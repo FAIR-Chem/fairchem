@@ -14,19 +14,19 @@ kernelspec:
 # CatTSunami tutorial
 
 ```{code-cell} ipython3
-from fairchem.applications.ocpneb.core import Reaction
+from fairchem.applications.cattsunami.core import Reaction
 from fairchem.data.oc.core import Slab, Adsorbate, Bulk, AdsorbateSlabConfig
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from ase.optimize import BFGS
 from x3dase.visualize import view_x3d_n
 from ase.io import read
 from x3dase.x3d import X3D
-from fairchem.applications.ocpneb.databases import DISSOCIATION_REACTION_DB_PATH
+from fairchem.applications.cattsunami.databases import DISSOCIATION_REACTION_DB_PATH
 from fairchem.data.oc.databases.pkls import ADSORBATE_PKL_PATH, BULK_PKL_PATH
 from fairchem.core.models.model_registry import model_name_to_local_file
 import matplotlib.pyplot as plt
-from fairchem.applications.ocpneb.core.autoframe import AutoFrameDissociation
-from fairchem.applications.ocpneb.core import OCPNEB
+from fairchem.applications.cattsunami.core.autoframe import AutoFrameDissociation
+from fairchem.applications.cattsunami.core import OCPNEB
 from ase.io import read
 from IPython.display import Image
 

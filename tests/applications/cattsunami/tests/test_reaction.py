@@ -1,6 +1,6 @@
-from fairchem.applications.ocpneb.core import Reaction
+from fairchem.applications.cattsunami.core import Reaction
 import ase
-from fairchem.applications.ocpneb.databases import DISSOCIATION_REACTION_DB_PATH
+from fairchem.applications.cattsunami.databases import DISSOCIATION_REACTION_DB_PATH
 from fairchem.data.oc.databases.pkls import ADSORBATE_PKL_PATH
 
 
