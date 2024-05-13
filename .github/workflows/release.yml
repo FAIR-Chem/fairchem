@@ -24,10 +24,10 @@ jobs:
     needs: test
     uses: ./.github/workflows/build.yml
 
-  docs:
-    needs: test
-    uses: ./.github/workflows/docs.yml
-    secrets: inherit
+#  docs:
+#    needs: test
+#    uses: ./.github/workflows/docs.yml
+#    secrets: inherit
 
   release-core-pypi:
     needs: [ build ]
