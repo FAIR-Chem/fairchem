@@ -46,5 +46,19 @@ Cell [0;32mIn[1], line 1[0m
 [1;32m      2[0m [38;5;28;01mfrom[39;00m [38;5;21;01mfairchem[39;00m[38;5;21;01m.[39;00m[38;5;21;01mdata[39;00m[38;5;21;01m.[39;00m[38;5;21;01moc[39;00m[38;5;21;01m.[39;00m[38;5;21;01mcore[39;00m [38;5;28;01mimport[39;00m Slab, Adsorbate, Bulk, AdsorbateSlabConfig
 [1;32m      3[0m [38;5;28;01mfrom[39;00m [38;5;21;01mfairchem[39;00m[38;5;21;01m.[39;00m[38;5;21;01mcore[39;00m[38;5;21;01m.[39;00m[38;5;21;01mcommon[39;00m[38;5;21;01m.[39;00m[38;5;21;01mrelaxation[39;00m[38;5;21;01m.[39;00m[38;5;21;01mase_utils[39;00m [38;5;28;01mimport[39;00m OCPCalculator
 
-[0;31mModuleNotFoundError[0m: No module named 'fairchem.applications.ocpneb'
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/fairchem/applications/ocpneb/core/__init__.py:1[0m
+[0;32m----> 1[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mreaction[39;00m [38;5;28;01mimport[39;00m Reaction
+[1;32m      2[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mocpneb[39;00m [38;5;28;01mimport[39;00m OCPNEB
+[1;32m      4[0m __all__ [38;5;241m=[39m [[38;5;124m"[39m[38;5;124mReaction[39m[38;5;124m"[39m, [38;5;124m"[39m[38;5;124mOCPNEB[39m[38;5;124m"[39m]
+
+File [0;32m/opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/fairchem/applications/ocpneb/core/reaction.py:3[0m
+[1;32m      1[0m [38;5;28;01mimport[39;00m [38;5;21;01mpickle[39;00m
+[1;32m      2[0m [38;5;28;01mimport[39;00m [38;5;21;01mrandom[39;00m
+[0;32m----> 3[0m [38;5;28;01mimport[39;00m [38;5;21;01mpytest[39;00m
+[1;32m      6[0m [38;5;28;01mclass[39;00m [38;5;21;01mReaction[39;00m:
+[1;32m      7[0m [38;5;250m    [39m[38;5;124;03m"""[39;00m
+[1;32m      8[0m [38;5;124;03m    Initialize Reaction object[39;00m
+[1;32m      9[0m [38;5;124;03m    """[39;00m
+
+[0;31mModuleNotFoundError[0m: No module named 'pytest'
 

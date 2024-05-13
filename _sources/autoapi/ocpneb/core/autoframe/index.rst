@@ -115,7 +115,7 @@ Functions
 
 
 
-.. py:class:: AutoFrameDissociation(reaction: fairchem.applications.ocpneb.core.Reaction, reactant_system: ase.Atoms, product1_systems: list, product1_energies: list, product2_systems: list, product2_energies: list, r_product1_max: float = None, r_product2_max: float = None, r_product2_min: float = None)
+.. py:class:: AutoFrameDissociation(reaction: fairchem.applications.CatTSunami.ocpneb.core.Reaction, reactant_system: ase.Atoms, product1_systems: list, product1_energies: list, product2_systems: list, product2_energies: list, r_product1_max: float = None, r_product2_max: float = None, r_product2_min: float = None)
 
 
    Bases: :py:obj:`AutoFrame`
@@ -213,7 +213,7 @@ Functions
 
 
 
-.. py:class:: AutoFrameTransfer(reaction: fairchem.applications.ocpneb.core.Reaction, reactant1_systems: list, reactant2_systems: list, reactant1_energies: list, reactant2_energies: list, product1_systems: list, product1_energies: list, product2_systems: list, product2_energies: list, r_traverse_max: float, r_react_max: float, r_react_min: float)
+.. py:class:: AutoFrameTransfer(reaction: fairchem.applications.CatTSunami.ocpneb.core.Reaction, reactant1_systems: list, reactant2_systems: list, reactant1_energies: list, reactant2_energies: list, product1_systems: list, product1_energies: list, product2_systems: list, product2_energies: list, r_traverse_max: float, r_react_max: float, r_react_min: float)
 
 
    Bases: :py:obj:`AutoFrame`
@@ -270,7 +270,7 @@ Functions
 
 
 
-.. py:class:: AutoFrameDesorption(reaction: fairchem.applications.ocpneb.core.Reaction, reactant_systems: list, reactant_energies: list, z_desorption: float)
+.. py:class:: AutoFrameDesorption(reaction: fairchem.applications.CatTSunami.ocpneb.core.Reaction, reactant_systems: list, reactant_energies: list, z_desorption: float)
 
 
    Bases: :py:obj:`AutoFrame`
@@ -303,7 +303,7 @@ Functions
 
 
 
-.. py:function:: interpolate_and_correct_frames(initial: ase.Atoms, final: ase.Atoms, n_frames: int, reaction: fairchem.applications.ocpneb.core.Reaction, map_idx: int)
+.. py:function:: interpolate_and_correct_frames(initial: ase.Atoms, final: ase.Atoms, n_frames: int, reaction: fairchem.applications.CatTSunami.ocpneb.core.Reaction, map_idx: int)
 
    Given the initial and final frames, perform the following:
    (1) Unwrap the final frame if it is wrapped around the cell
@@ -338,7 +338,7 @@ Functions
    :rtype: (ase.Atoms)
 
 
-.. py:function:: traverse_adsorbate_transfer(reaction: fairchem.applications.ocpneb.core.Reaction, initial: ase.Atoms, final: ase.Atoms, initial_tiled: ase.Atoms, final_tiled: ase.Atoms, edge_list_final: list)
+.. py:function:: traverse_adsorbate_transfer(reaction: fairchem.applications.CatTSunami.ocpneb.core.Reaction, initial: ase.Atoms, final: ase.Atoms, initial_tiled: ase.Atoms, final_tiled: ase.Atoms, edge_list_final: list)
 
    Traverse reactant 1, reactant 2, product 1 and product 2 in a depth first search of
    the bond graph. Unwrap the atoms to minimize the distance over the bonds. This ensures
@@ -364,7 +364,7 @@ Functions
    :rtype: (ase.Atoms)
 
 
-.. py:function:: traverse_adsorbate_dissociation(reaction: fairchem.applications.ocpneb.core.Reaction, initial: ase.Atoms, final: ase.Atoms, initial_tiled: ase.Atoms, final_tiled: ase.Atoms, edge_list_final: int)
+.. py:function:: traverse_adsorbate_dissociation(reaction: fairchem.applications.CatTSunami.ocpneb.core.Reaction, initial: ase.Atoms, final: ase.Atoms, initial_tiled: ase.Atoms, final_tiled: ase.Atoms, edge_list_final: int)
 
    Traverse reactant 1, product 1 and product 2 in a depth first search of
    the bond graph. Unwrap the atoms to minimize the distance over the bonds. This ensures
@@ -390,7 +390,7 @@ Functions
    :rtype: (ase.Atoms)
 
 
-.. py:function:: traverse_adsorbate_desorption(reaction: fairchem.applications.ocpneb.core.Reaction, initial: ase.Atoms, final: ase.Atoms, initial_tiled: ase.Atoms, final_tiled: ase.Atoms)
+.. py:function:: traverse_adsorbate_desorption(reaction: fairchem.applications.CatTSunami.ocpneb.core.Reaction, initial: ase.Atoms, final: ase.Atoms, initial_tiled: ase.Atoms, final_tiled: ase.Atoms)
 
    Traverse reactant 1 and  product 1 in a depth first search of
    the bond graph. Unwrap the atoms to minimize the distance over the bonds. This ensures
@@ -416,7 +416,7 @@ Functions
    :rtype: (ase.Atoms)
 
 
-.. py:function:: get_product2_idx(reaction: fairchem.applications.ocpneb.core.Reaction, edge_list_final: list, traversal_rxt1_final: list)
+.. py:function:: get_product2_idx(reaction: fairchem.applications.CatTSunami.ocpneb.core.Reaction, edge_list_final: list, traversal_rxt1_final: list)
 
    For dissociation only. Use the information about the initial edge list and final edge
    list to determine which atom in product 2 lost a bond in the reaction and use this
@@ -459,7 +459,7 @@ Functions
    :rtype: (ase.Atoms)
 
 
-.. py:function:: unwrap_atoms(initial: ase.Atoms, final: ase.Atoms, reaction: fairchem.applications.ocpneb.core.Reaction, map_idx: int)
+.. py:function:: unwrap_atoms(initial: ase.Atoms, final: ase.Atoms, reaction: fairchem.applications.CatTSunami.ocpneb.core.Reaction, map_idx: int)
 
    Make corrections to the final frame so it is no longer wrapped around the cell,
    if it has jumpped over the pbc. Ensure that for each adsorbate moity, absolute bond distances

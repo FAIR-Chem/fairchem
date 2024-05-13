@@ -41,18 +41,18 @@ trainer = OCPTrainer(
 ----- stderr -----
 /opt/hostedtoolcache/Python/3.11.9/x64/lib/python3.11/site-packages/torch/cuda/amp/grad_scaler.py:126: UserWarning: torch.cuda.amp.GradScaler is enabled, but CUDA is not available.  Disabling.
   warnings.warn(
-2024-05-11 01:33:35 (WARNING): Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
+2024-05-13 02:04:05 (WARNING): Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 ----- stdout -----
-2024-05-11 01:33:35 (INFO): amp: true
+2024-05-13 02:04:05 (INFO): amp: true
 cmd:
-  checkpoint_dir: ./checkpoints/2024-05-11-01-33-52-S2EF-example
-  commit: 42ae7ad
+  checkpoint_dir: ./checkpoints/2024-05-13-02-03-44-S2EF-example
+  commit: 06869ab
   identifier: S2EF-example
-  logs_dir: ./logs/tensorboard/2024-05-11-01-33-52-S2EF-example
+  logs_dir: ./logs/tensorboard/2024-05-13-02-03-44-S2EF-example
   print_every: 5
-  results_dir: ./results/2024-05-11-01-33-52-S2EF-example
+  results_dir: ./results/2024-05-13-02-03-44-S2EF-example
   seed: 0
-  timestamp_id: 2024-05-11-01-33-52-S2EF-example
+  timestamp_id: 2024-05-13-02-03-44-S2EF-example
 dataset:
   format: lmdb
   grad_target_mean: 0.0
@@ -220,17 +220,17 @@ trainer: s2ef
 val_dataset:
   src: data/s2ef/val_20
 ----- stdout -----
-2024-05-11 01:33:35 (INFO): Loading dataset: lmdb
+2024-05-13 02:04:05 (INFO): Loading dataset: lmdb
 ----- stdout -----
-2024-05-11 01:33:35 (INFO): rank: 0: Sampler created...
+2024-05-13 02:04:05 (INFO): rank: 0: Sampler created...
 ----- stdout -----
-2024-05-11 01:33:35 (INFO): Batch balancing is disabled for single GPU training.
+2024-05-13 02:04:05 (INFO): Batch balancing is disabled for single GPU training.
 ----- stdout -----
-2024-05-11 01:33:35 (INFO): rank: 0: Sampler created...
+2024-05-13 02:04:05 (INFO): rank: 0: Sampler created...
 ----- stdout -----
-2024-05-11 01:33:35 (INFO): Batch balancing is disabled for single GPU training.
+2024-05-13 02:04:05 (INFO): Batch balancing is disabled for single GPU training.
 ----- stdout -----
-2024-05-11 01:33:35 (INFO): Loading model: gemnet_oc
+2024-05-13 02:04:05 (INFO): Loading model: gemnet_oc
 ------------------
 
 [0;31m---------------------------------------------------------------------------[0m
