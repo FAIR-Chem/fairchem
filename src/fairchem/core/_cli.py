@@ -51,7 +51,7 @@ class Runner(Checkpointable):
 
 
 def main():
-    """Run the main ocp-models program."""
+    """Run the main fairchem program."""
     setup_logging()
 
     parser: argparse.ArgumentParser = flags.get_parser()
