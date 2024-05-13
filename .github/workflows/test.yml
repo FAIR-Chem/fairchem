@@ -36,7 +36,7 @@ jobs:
           pip install -e packages/fairchem-core[dev]
           pip install -e packages/fairchem-data-oc[dev]
           pip install -e packages/fairchem-demo-ocpapi[dev]
-          pip install packages/fairchem-applications-CatTSunami
+          pip install -e packages/fairchem-applications-ocpneb
 
       - name: Test core with pytest
         run: |
