@@ -29,15 +29,6 @@ jobs:
 #    uses: ./.github/workflows/docs.yml
 #    secrets: inherit
 
-  ref_name:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Echo
-        run: |
-          echo ${{ github.ref_name }}
-          echo $GITHUB_REF_NAME
-          echo ${{ github.event.release.tag_name }}
-
   release-core-pypi:
     needs: [ build ]
     runs-on: ubuntu-latest
@@ -45,7 +36,7 @@ jobs:
       github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_core-') || startsWith(github.event.release.tag_name, 'fairchem_core-') )
 
     environment:
-      name: deploy-pypi
+      name: deploy-test-pypi
       url: https://pypi.org/p/fairchem-core/
 
     permissions:
@@ -60,9 +51,9 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
-          verbose: true
           packages-dir: dist-core/
           skip-existing: true
+          verbose: true
 
 # write a release-block for each packages
 # copy over to test-release as well!!!
