@@ -27,6 +27,9 @@ root = "../../"
 git_describe_command = 'git describe --tags --match fairchem_data_om-*'
 
 [tool.hatch.build]
+directory = "../../dist-data-om"
+
+[tool.hatch.build]
 directory = "../../dist"
 
 [tool.hatch.build.targets.sdist]
