@@ -99,7 +99,7 @@ class TestAutoframe:
         dis_des_adsorbate.positions[-2] = dis_des_adsorbate.positions[-2] + np.array(
             [1, 2, 3]
         )
-        with pytest.raises(Exception) as e_info:
-            test_frames = interpolate_and_correct_frames(
+        with pytest.raises(Exception):
+            interpolate_and_correct_frames(
                 reactant_systems[0], dis_des_adsorbate, 10, reaction, 0
             )
