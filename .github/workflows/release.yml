@@ -71,8 +71,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dist-core
-          path: dist-core
+          name: dist-data-oc
+          path: dist-data-oc
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -97,8 +97,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dist-core
-          path: dist-core
+          name: dist-demo-ocpapi
+          path: dist-demo-ocpapi
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
