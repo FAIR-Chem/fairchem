@@ -37,7 +37,7 @@ jobs:
 
     environment:
       name: test-pypi
-      url: https://pypi.org/p/fairchem-core/
+      url: https://test.pypi.org/p/fairchem-core/
 
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
@@ -63,7 +63,7 @@ jobs:
 
     environment:
       name: test-pypi
-      url: https://pypi.org/p/fairchem-data-oc/
+      url: https://test.pypi.org/p/fairchem-data-oc/
 
     permissions:
       id-token: write
@@ -89,7 +89,7 @@ jobs:
 
     environment:
       name: test-pypi
-      url: https://pypi.org/p/fairchem-demo-ocpapi/
+      url: https://test.pypi.org/p/fairchem-demo-ocpapi/
 
     permissions:
       id-token: write
@@ -115,7 +115,7 @@ jobs:
 
     environment:
       name: test-pypi
-      url: https://pypi.org/p/fairchem-applications-cattsunami/
+      url: https://test.pypi.org/p/fairchem-applications-cattsunami/
 
     permissions:
       id-token: write
