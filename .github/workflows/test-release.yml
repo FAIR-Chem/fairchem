@@ -1,13 +1,6 @@
-name: release
+name: test-release
 
 on:
-  release:
-    types: [published]
-    inputs:
-      release-pypi:
-        required: true
-        type: boolean
-        default: true
   workflow_dispatch:
     inputs:
       release-pypi:
@@ -36,8 +29,8 @@ jobs:
       github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_core-') || startsWith(github.event.release.tag_name, 'fairchem_core-') )
 
     environment:
-      name: pypi
-      url: https://pypi.org/p/fairchem-core/
+      name: test-pypi
+      url: https://test.pypi.org/p/fairchem-core/
 
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
@@ -50,6 +43,7 @@ jobs:
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          repository-url: https://test.pypi.org/legacy/
           packages-dir: dist-core/
           skip-existing: true
           verbose: true
@@ -61,8 +55,8 @@ jobs:
       github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_data_oc-') || startsWith(github.event.release.tag_name, 'fairchem_data_oc-') )
 
     environment:
-      name: pypi
-      url: https://pypi.org/p/fairchem-data-oc/
+      name: test-pypi
+      url: https://test.pypi.org/p/fairchem-data-oc/
 
     permissions:
       id-token: write
@@ -70,11 +64,12 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dist-data-oc
-          path: dist-data-oc
+          name: dist-core
+          path: dist-core
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          repository-url: https://test.pypi.org/legacy/
           verbose: true
           packages-dir: dist-data-oc/
           skip-existing: true
@@ -86,8 +81,8 @@ jobs:
       github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_demo_ocpapi-') || startsWith(github.event.release.tag_name, 'fairchem_demo_ocpapi-') )
 
     environment:
-      name: pypi
-      url: https://pypi.org/p/fairchem-demo-ocpapi/
+      name: test-pypi
+      url: https://test.pypi.org/p/fairchem-demo-ocpapi/
 
     permissions:
       id-token: write
@@ -95,11 +90,12 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dist-demo-ocpapi
-          path: dist-demo-ocpapi
+          name: dist-core
+          path: dist-core
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          repository-url: https://test.pypi.org/legacy/
           verbose: true
           packages-dir: dist-demo-ocpapi/
           skip-existing: true
@@ -111,8 +107,8 @@ jobs:
       github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_applications_cattsunami-') || startsWith(github.event.release.tag_name, 'fairchem_applications_cattsunami-') )
 
     environment:
-      name: pypi
-      url: https://pypi.org/p/fairchem-applications-cattsunami/
+      name: test-pypi
+      url: https://test.pypi.org/p/fairchem-applications-cattsunami/
 
     permissions:
       id-token: write
@@ -125,6 +121,7 @@ jobs:
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          repository-url: https://test.pypi.org/legacy/
           verbose: true
           packages-dir: dist-applications-cattsunami/
           skip-existing: true
