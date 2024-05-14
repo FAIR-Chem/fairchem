@@ -144,7 +144,7 @@ class BalancedBatchSampler(BatchSampler):
             f"Created BalancedBatchSampler with {sampler=}, {batch_size=}, {drop_last=}"
         )
 
-    def _data_sizes(self, batch_idx: list[int]):
+    def _get_natoms(self, batch_idx: list[int]):
         dataset = self.sampler.dataset
         try:
             dataset = _ensure_supported(dataset)
@@ -195,7 +195,7 @@ class BalancedBatchSampler(BatchSampler):
             return
 
         for batch_idx in super().__iter__():
-            sizes = self._data_sizes(batch_idx)
+            sizes = self._get_natoms(batch_idx)
             if sizes is None:  # on_error == "warn_and_no_balance" is set
                 yield batch_idx
                 continue
