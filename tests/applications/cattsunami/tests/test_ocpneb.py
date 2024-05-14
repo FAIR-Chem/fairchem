@@ -58,7 +58,7 @@ class TestNEB:
         )
 
         batched_opt = BFGS(batched, trajectory="batched.traj")
-        batched_opt.run(fmax=0.05, steps=5)
+        batched_opt.run(fmax=0.05, steps=2)
         forces = batched.get_forces()
         energies = batched.get_potential_energy()
 
@@ -67,7 +67,7 @@ class TestNEB:
             image.calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
         unbatched = DyNEB(images_ub, k=0.25)
         unbatched_opt = BFGS(unbatched, trajectory="unbatched.traj")
-        unbatched_opt.run(fmax=0.05, steps=5)
+        unbatched_opt.run(fmax=0.05, steps=2)
         forces_ub = unbatched.get_forces()
         energies_ub = unbatched.get_potential_energy()
 

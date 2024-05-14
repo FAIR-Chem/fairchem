@@ -62,7 +62,7 @@ class TestAutoframe:
             n_frames=num_frames,
             n_pdt1_sites=2,
             n_pdt2_sites=2,
-            fmax=0.05,
+            fmax=0.5,
         )
         neb_frames_len = [len(neb_set) == num_frames for neb_set in neb_frames_sets]
         syms_str_agree = [

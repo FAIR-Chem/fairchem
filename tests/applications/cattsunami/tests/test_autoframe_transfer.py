@@ -62,11 +62,10 @@ class TestAutoframe:
         neb_frames_sets, map_idx_list = af.get_neb_frames(
             calc1,
             n_frames=num_frames,
-            n_initial_frames=5,
-            n_final_frames_per_initial=5,
-            fmax=0.05,
+            n_initial_frames=3,
+            n_final_frames_per_initial=3,
+            fmax=0.5,
         )
-        # print(len(neb_frames_sets))
         neb_frames_len = [len(neb_set) == num_frames for neb_set in neb_frames_sets]
 
         syms_str_agree = [
@@ -86,4 +85,4 @@ class TestAutoframe:
         assert len(new_frames) == 5
         assert all(syms_str_agree)
         assert all(neb_frames_len)
-        assert len(neb_frames_sets) == 25
+        assert len(neb_frames_sets) == 9

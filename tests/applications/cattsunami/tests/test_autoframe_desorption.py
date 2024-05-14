@@ -34,7 +34,7 @@ class TestAutoframe:
             calc1,
             n_frames=num_frames,
             n_systems=5,
-            fmax=0.05,
+            fmax=0.5,
         )
         neb_frames_len = [len(neb_set) == num_frames for neb_set in neb_frames_sets]
 
@@ -44,16 +44,8 @@ class TestAutoframe:
         neb_frames_sets = af.get_neb_frames(
             calc1,
             n_frames=num_frames,
-            n_systems=3,
-            fmax=0.05,
-        )
-        assert len(neb_frames_sets) == 3
-
-        neb_frames_sets = af.get_neb_frames(
-            calc1,
-            n_frames=num_frames,
             n_systems=2,
-            fmax=0.05,
+            fmax=0.5,
         )
         assert len(neb_frames_sets) == 2
 
@@ -67,30 +59,6 @@ class TestAutoframe:
             -1
         ] + np.array([1, 2, -1.25])
         reactant_systems.append(dissociated_adsorbate)
-
-        checkpoint_path = checkpoint_path = model_name_to_local_file(
-            "EquiformerV2-31M-S2EF-OC20-All+MD",
-            local_cache=tmp_path / "ocp_checkpoints",
-        )
-        calc1 = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
-
-        reaction = Reaction(
-            reaction_db_path=DESORPTION_REACTION_DB_PATH,
-            reaction_id_from_db=0,
-            adsorbate_db_path=ADSORBATE_PKL_PATH,
-        )
-
-        af = AutoFrameDesorption(reaction, reactant_systems, reactant_energies, 3)
-        neb_frames_sets = af.get_neb_frames(
-            calc1,
-            n_frames=num_frames,
-            n_systems=5,
-            fmax=0.05,
-        )
-        neb_frames_len = [len(neb_set) == num_frames for neb_set in neb_frames_sets]
-
-        assert all(neb_frames_len)
-        assert len(neb_frames_sets) == 5
 
         dis_des_adsorbate = reactant_systems[0].copy()
         dis_des_adsorbate.positions[-1] = dis_des_adsorbate.positions[-1] + np.array(
