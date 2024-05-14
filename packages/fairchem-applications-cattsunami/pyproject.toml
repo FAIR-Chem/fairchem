@@ -19,7 +19,7 @@ root = "../../"
 git_describe_command = 'git describe --tags --match fairchem_applications_cattsunami-*'
 
 [tool.hatch.build]
-directory = "../../dist"
+directory = "../../dist-applications-cattsunami"
 
 [tool.hatch.build.targets.sdist]
 only-include = ["src/fairchem/applications/cattsunami"]
