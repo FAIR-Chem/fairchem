@@ -21,9 +21,9 @@ setup_logging()
 @pytest.fixture()
 def configs():
     return {
-        "escn": Path("src/fairchem/core/tests/models/test_configs/test_escn.yml"),
-        "gemnet": Path("src/fairchem/core/tests/models/test_configs/test_gemnet.yml"),
-        "equiformer_v2": Path("src/fairchem/core/tests/models/test_configs/test_equiformerv2.yml"),
+        "escn": Path("tests/core/models/test_configs/test_escn.yml"),
+        "gemnet": Path("tests/core/models/test_configs/test_gemnet.yml"),
+        "equiformer_v2": Path("tests/core/models/test_configs/test_equiformerv2.yml"),
     }
 
 
