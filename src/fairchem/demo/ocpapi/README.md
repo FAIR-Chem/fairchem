@@ -1,4 +1,4 @@
-# ocpapi
+# fairchem-demo-ocpapi
 
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/Open-Catalyst-Project/ocpapi/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/Open-Catalyst-Project/ocpapi/tree/main) [![codecov](https://codecov.io/gh/Open-Catalyst-Project/ocpapi/graph/badge.svg?token=66Z7Y7QUUW)](https://codecov.io/gh/Open-Catalyst-Project/ocpapi)
 
@@ -6,10 +6,10 @@ Python library for programmatic use of the [Open Catalyst Demo](https://open-cat
 
 ## Installation
 
-Ensure you have Python 3.9.1 or newer, and install `ocpapi` using:
+Ensure you have Python 3.9.1 or newer, and install `fairchem-demo-ocpapi` using:
 
 ```sh
-pip install ocpapi
+pip install fairchem-demo-ocpapi
 ```
 
 ## Quickstart
@@ -41,7 +41,7 @@ results = await find_adsorbate_binding_sites(
 )
 ```
 
-Users will be prompted to select one or more surfaces that should be relaxed. 
+Users will be prompted to select one or more surfaces that should be relaxed.
 
 Input to this function includes:
 
@@ -113,10 +113,7 @@ Relaxation results can be viewed in a web UI. For example, https://open-catalyst
 
 Extending the examples above, the URLs to visualize the results of relaxations on each Pt surface can be obtained with:
 ```python
-urls = [
-    slab.ui_url
-    for slab in results.slabs
-]
+urls = [slab.ui_url for slab in results.slabs]
 ```
 
 ## Advanced usage
@@ -155,7 +152,10 @@ results = await find_adsorbate_binding_sites(
 
 Run relaxations only for slabs with Miller Indices in the input set:
 ```python
-from fairchem.demo.ocpapi import find_adsorbate_binding_sites, keep_slabs_with_miller_indices
+from fairchem.demo.ocpapi import (
+    find_adsorbate_binding_sites,
+    keep_slabs_with_miller_indices,
+)
 
 results = await find_adsorbate_binding_sites(
     adsorbate="*OH",
@@ -195,11 +195,11 @@ write("POSCAR", ase_atoms, "vasp")
 
 ## License
 
-`ocpapi` is released under the [MIT License](LICENSE).
+`fairchem-demo-ocpapi` is released under the [MIT License](LICENSE).
 
-## Citing `ocpapi`
+## Citing `fairchem-demo-ocpapi`
 
-If you use `ocpapi` in your research, please consider citing the [AdsorbML paper](https://www.nature.com/articles/s41524-023-01121-5) (in addition to the relevant datasets / models used):
+If you use `fairchem-demo-ocpapi` in your research, please consider citing the [AdsorbML paper](https://www.nature.com/articles/s41524-023-01121-5) (in addition to the relevant datasets / models used):
 
 ```bibtex
 @article{lan2023adsorbml,

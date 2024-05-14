@@ -26,7 +26,7 @@ only-include = ["src/fairchem/applications/cattsunami"]
 
 [tool.hatch.build.targets.wheel]
 sources = ["src"]
-only-include = ["src/fairchem/demo/ocpapi"]
+only-include = ["src/fairchem/applications/cattsunami"]
 
 [tool.hatch.metadata.hooks.fancy-pypi-readme]
 content-type = "text/markdown"
