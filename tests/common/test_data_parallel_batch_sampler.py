@@ -98,7 +98,7 @@ def test_invalid_dataset(invalid_dataset) -> None:
             mode="atoms",
             on_error="raise",
         )
-        _ = sampler._data_sizes(list(range(len(SIZE_ATOMS))))
+        _ = sampler._get_natoms(list(range(len(SIZE_ATOMS))))
 
 
 def test_valid_dataset(valid_dataset) -> None:
@@ -112,7 +112,7 @@ def test_valid_dataset(valid_dataset) -> None:
         on_error="raise",
     )
     assert (
-        sampler._data_sizes(list(range(len(SIZE_ATOMS))))
+        sampler._get_natoms(list(range(len(SIZE_ATOMS))))
         == np.array(SIZE_ATOMS)
     ).all()
 

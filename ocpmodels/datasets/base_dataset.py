@@ -69,9 +69,6 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
             )
             self.lin_ref = torch.nn.Parameter(lin_ref, requires_grad=False)
 
-    def data_sizes(self, indices: ArrayLike) -> NDArray[int]:
-        return self.metadata.natoms[indices]
-
     def __len__(self) -> int:
         return self.num_samples
 
