@@ -1,8 +1,10 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
 
 import torch
 from torch_scatter import segment_coo
@@ -129,10 +131,7 @@ def get_mixed_triplets(
         value=value_in,
         sparse_sizes=(num_atoms, num_atoms),
     )
-    if to_outedge:
-        adj_edges = adj_in[idx_out_s]
-    else:
-        adj_edges = adj_in[idx_out_t]
+    adj_edges = adj_in[idx_out_s] if to_outedge else adj_in[idx_out_t]
 
     # Edge indices (b->a, c->a) for triplets.
     idx_in = adj_edges.storage.value()
@@ -152,9 +151,7 @@ def get_mixed_triplets(
         cell_offsets_sum = (
             graph_out["cell_offset"][idx_out] - graph_in["cell_offset"][idx_in]
         )
-    mask = (idx_atom_in != idx_atom_out) | torch.any(
-        cell_offsets_sum != 0, dim=-1
-    )
+    mask = (idx_atom_in != idx_atom_out) | torch.any(cell_offsets_sum != 0, dim=-1)
 
     idx = {}
     if return_adj:
@@ -243,11 +240,7 @@ def get_quadruplets(
     # ---------------- Quadruplets -----------------
     # Repeat indices by counting the number of input triplets per
     # intermediate edge ba. segment_coo assumes sorted idx['triplet_in']['out']
-    ones = (
-        idx["triplet_in"]["out"]
-        .new_ones(1)
-        .expand_as(idx["triplet_in"]["out"])
-    )
+    ones = idx["triplet_in"]["out"].new_ones(1).expand_as(idx["triplet_in"]["out"])
     num_trip_in_per_inter = segment_coo(
         ones, idx["triplet_in"]["out"], dim_size=idx_qint_s.size(0)
     )
@@ -278,9 +271,7 @@ def get_quadruplets(
         ),
         layout="coo",
     )
-    adj_trip_in_per_trip_out = idx["triplet_in"]["adj_edges"][
-        idx["triplet_out"]["in"]
-    ]
+    adj_trip_in_per_trip_out = idx["triplet_in"]["adj_edges"][idx["triplet_out"]["in"]]
     # Rows in adj_trip_in_per_trip_out are intermediate edges ba
     idx["trip_in_to_quad"] = adj_trip_in_per_trip_out.storage.value()
     idx_in = idx["triplet_in"]["in"][idx["trip_in_to_quad"]]
@@ -296,9 +287,7 @@ def get_quadruplets(
         + qint_graph["cell_offset"][idx_inter]
         - main_graph["cell_offset"][idx["out"]]
     )
-    mask_cd = (idx_atom_c != idx_atom_d) | torch.any(
-        cell_offset_cd != 0, dim=-1
-    )
+    mask_cd = (idx_atom_c != idx_atom_d) | torch.any(cell_offset_cd != 0, dim=-1)
 
     idx["out"] = idx["out"][mask_cd]
     idx["trip_out_to_quad"] = idx["trip_out_to_quad"][mask_cd]

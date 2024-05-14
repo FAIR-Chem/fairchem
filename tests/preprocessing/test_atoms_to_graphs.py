@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import os
 
 import numpy as np
@@ -69,9 +71,7 @@ class TestAtomsToGraphs:
             primitive=NewPrimitiveNeighborList,
         )
         n.update(self.atoms)
-        ase_neighbors = [
-            n.get_neighbors(index) for index in range(len(self.atoms))
-        ]
+        ase_neighbors = [n.get_neighbors(index) for index in range(len(self.atoms))]
         ase_s_index = []
         ase_n_index = []
         ase_offsets = []

@@ -1,9 +1,11 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
 
 import logging
 import os
@@ -19,9 +21,7 @@ class BaseTask:
     def setup(self, trainer) -> None:
         self.trainer = trainer
         if self.config["checkpoint"] is not None:
-            self.trainer.load_checkpoint(
-                checkpoint_path=self.config["checkpoint"]
-            )
+            self.trainer.load_checkpoint(checkpoint_path=self.config["checkpoint"])
 
         # save checkpoint path to runner state for slurm resubmissions
         self.chkpt_path = os.path.join(
@@ -49,9 +49,7 @@ class TrainTask(BaseTask):
     def run(self) -> None:
         try:
             self.trainer.train(
-                disable_eval_tqdm=self.config.get(
-                    "hide_eval_progressbar", False
-                )
+                disable_eval_tqdm=self.config.get("hide_eval_progressbar", False)
             )
         except RuntimeError as e:
             self._process_error(e)
@@ -88,7 +86,7 @@ class ValidateTask(BaseTask):
 
 
 @registry.register_task("run-relaxations")
-class RelxationTask(BaseTask):
+class RelaxationTask(BaseTask):
     def run(self) -> None:
         assert isinstance(
             self.trainer, OCPTrainer

@@ -1,8 +1,10 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
 
 import logging
 
@@ -48,8 +50,7 @@ class ForceScaler:
             create_graph=True,
         )[0]
         # (nAtoms, 3)
-        forces = self.unscale(forces_scaled)
-        return forces
+        return self.unscale(forces_scaled)
 
     def calc_forces_and_update(self, energy, pos):
         if self.enabled:
@@ -72,9 +73,9 @@ class ForceScaler:
                             "Breaking scaling loop."
                         )
                         break
-                    else:
-                        # Delete graph to save memory
-                        del forces
+
+                    # Delete graph to save memory
+                    del forces
                 else:
                     self.finite_force_results += 1
                 self.update()

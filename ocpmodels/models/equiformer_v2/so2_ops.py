@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import copy
 import math
-from typing import List, Optional
 
 import torch
 import torch.nn as nn
@@ -27,10 +28,10 @@ class SO2_m_Convolution(torch.nn.Module):
         m: int,
         sphere_channels: int,
         m_output_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
     ) -> None:
-        super(SO2_m_Convolution, self).__init__()
+        super().__init__()
 
         self.m = m
         self.sphere_channels = sphere_channels
@@ -44,16 +45,12 @@ class SO2_m_Convolution(torch.nn.Module):
             num_coefficents = 0
             if self.mmax_list[i] >= self.m:
                 num_coefficents = self.lmax_list[i] - self.m + 1
-            num_channels = (
-                num_channels + num_coefficents * self.sphere_channels
-            )
+            num_channels = num_channels + num_coefficents * self.sphere_channels
         assert num_channels > 0
 
         self.fc = Linear(
             num_channels,
-            2
-            * self.m_output_channels
-            * (num_channels // self.sphere_channels),
+            2 * self.m_output_channels * (num_channels // self.sphere_channels),
             bias=False,
         )
         self.fc.weight.data.mul_(1 / math.sqrt(2))
@@ -61,18 +58,10 @@ class SO2_m_Convolution(torch.nn.Module):
     def forward(self, x_m):
         x_m = self.fc(x_m)
         x_r = x_m.narrow(2, 0, self.fc.out_features // 2)
-        x_i = x_m.narrow(
-            2, self.fc.out_features // 2, self.fc.out_features // 2
-        )
-        x_m_r = x_r.narrow(1, 0, 1) - x_i.narrow(
-            1, 1, 1
-        )  # x_r[:, 0] - x_i[:, 1]
-        x_m_i = x_r.narrow(1, 1, 1) + x_i.narrow(
-            1, 0, 1
-        )  # x_r[:, 1] + x_i[:, 0]
-        x_out = torch.cat((x_m_r, x_m_i), dim=1)
-
-        return x_out
+        x_i = x_m.narrow(2, self.fc.out_features // 2, self.fc.out_features // 2)
+        x_m_r = x_r.narrow(1, 0, 1) - x_i.narrow(1, 1, 1)  # x_r[:, 0] - x_i[:, 1]
+        x_m_i = x_r.narrow(1, 1, 1) + x_i.narrow(1, 0, 1)  # x_r[:, 1] + x_i[:, 0]
+        return torch.cat((x_m_r, x_m_i), dim=1)
 
 
 class SO2_Convolution(torch.nn.Module):
@@ -94,14 +83,14 @@ class SO2_Convolution(torch.nn.Module):
         self,
         sphere_channels: int,
         m_output_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         mappingReduced,
         internal_weights: bool = True,
-        edge_channels_list: Optional[List[int]] = None,
-        extra_m0_output_channels: Optional[int] = None,
+        edge_channels_list: list[int] | None = None,
+        extra_m0_output_channels: int | None = None,
     ):
-        super(SO2_Convolution, self).__init__()
+        super().__init__()
         self.sphere_channels = sphere_channels
         self.m_output_channels = m_output_channels
         self.lmax_list = lmax_list
@@ -117,18 +106,14 @@ class SO2_Convolution(torch.nn.Module):
         num_channels_m0 = 0
         for i in range(self.num_resolutions):
             num_coefficients = self.lmax_list[i] + 1
-            num_channels_m0 = (
-                num_channels_m0 + num_coefficients * self.sphere_channels
-            )
+            num_channels_m0 = num_channels_m0 + num_coefficients * self.sphere_channels
 
         # SO(2) convolution for m = 0
         m0_output_channels = self.m_output_channels * (
             num_channels_m0 // self.sphere_channels
         )
         if self.extra_m0_output_channels is not None:
-            m0_output_channels = (
-                m0_output_channels + self.extra_m0_output_channels
-            )
+            m0_output_channels = m0_output_channels + self.extra_m0_output_channels
         self.fc_m0 = Linear(num_channels_m0, m0_output_channels)
         num_channels_rad = num_channels_rad + self.fc_m0.in_features
 
@@ -144,9 +129,7 @@ class SO2_Convolution(torch.nn.Module):
                     self.mmax_list,
                 )
             )
-            num_channels_rad = (
-                num_channels_rad + self.so2_m_conv[-1].fc.in_features
-            )
+            num_channels_rad = num_channels_rad + self.so2_m_conv[-1].fc.in_features
 
         # Embedding function of distance
         self.rad_func = None
@@ -156,7 +139,6 @@ class SO2_Convolution(torch.nn.Module):
             self.rad_func = RadialFunction(self.edge_channels_list)
 
     def forward(self, x, x_edge):
-
         num_edges = len(x_edge)
         out = []
 
@@ -195,9 +177,7 @@ class SO2_Convolution(torch.nn.Module):
         offset = self.mappingReduced.m_size[0]
         for m in range(1, max(self.mmax_list) + 1):
             # Get the m order coefficients
-            x_m = x.embedding.narrow(
-                1, offset, 2 * self.mappingReduced.m_size[m]
-            )
+            x_m = x.embedding.narrow(1, offset, 2 * self.mappingReduced.m_size[m])
             x_m = x_m.reshape(num_edges, 2, -1)
 
             # Perform SO(2) convolution
@@ -225,9 +205,7 @@ class SO2_Convolution(torch.nn.Module):
             dtype=x.dtype,
         )
         out_embedding.set_embedding(out)
-        out_embedding.set_lmax_mmax(
-            self.lmax_list.copy(), self.mmax_list.copy()
-        )
+        out_embedding.set_lmax_mmax(self.lmax_list.copy(), self.mmax_list.copy())
 
         # Reshape the spherical harmonics based on l (degree)
         out_embedding._l_primary(self.mappingReduced)
@@ -256,13 +234,13 @@ class SO2_Linear(torch.nn.Module):
         self,
         sphere_channels: int,
         m_output_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         mappingReduced,
         internal_weights: bool = False,
-        edge_channels_list: Optional[List[int]] = None,
+        edge_channels_list: list[int] | None = None,
     ):
-        super(SO2_Linear, self).__init__()
+        super().__init__()
         self.sphere_channels = sphere_channels
         self.m_output_channels = m_output_channels
         self.lmax_list = lmax_list
@@ -277,9 +255,7 @@ class SO2_Linear(torch.nn.Module):
         num_channels_m0 = 0
         for i in range(self.num_resolutions):
             num_coefficients = self.lmax_list[i] + 1
-            num_channels_m0 = (
-                num_channels_m0 + num_coefficients * self.sphere_channels
-            )
+            num_channels_m0 = num_channels_m0 + num_coefficients * self.sphere_channels
 
         # SO(2) linear for m = 0
         self.fc_m0 = Linear(
@@ -302,8 +278,7 @@ class SO2_Linear(torch.nn.Module):
             assert num_in_channels > 0
             fc = Linear(
                 num_in_channels,
-                self.m_output_channels
-                * (num_in_channels // self.sphere_channels),
+                self.m_output_channels * (num_in_channels // self.sphere_channels),
                 bias=False,
             )
             num_channels_rad = num_channels_rad + fc.in_features
@@ -317,7 +292,6 @@ class SO2_Linear(torch.nn.Module):
             self.rad_func = RadialFunction(self.edge_channels_list)
 
     def forward(self, x, x_edge):
-
         batch_size = x.embedding.shape[0]
         out = []
 
@@ -344,9 +318,7 @@ class SO2_Linear(torch.nn.Module):
         offset = self.mappingReduced.m_size[0]
         for m in range(1, max(self.mmax_list) + 1):
             # Get the m order coefficients
-            x_m = x.embedding.narrow(
-                1, offset, 2 * self.mappingReduced.m_size[m]
-            )
+            x_m = x.embedding.narrow(1, offset, 2 * self.mappingReduced.m_size[m])
             x_m = x_m.reshape(batch_size, 2, -1)
             if self.rad_func is not None:
                 x_edge_m = x_edge.narrow(
@@ -374,9 +346,7 @@ class SO2_Linear(torch.nn.Module):
             dtype=x.dtype,
         )
         out_embedding.set_embedding(out)
-        out_embedding.set_lmax_mmax(
-            self.lmax_list.copy(), self.mmax_list.copy()
-        )
+        out_embedding.set_lmax_mmax(self.lmax_list.copy(), self.mmax_list.copy())
 
         # Reshape the spherical harmonics based on l (degree)
         out_embedding._l_primary(self.mappingReduced)

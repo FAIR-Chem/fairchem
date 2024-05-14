@@ -1,20 +1,20 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import Optional
+from __future__ import annotations
 
 import torch
 from torch_scatter import scatter
 from torch_scatter.utils import broadcast
 
 from ocpmodels.common import gp_utils
+from ocpmodels.models.gemnet_gp.initializers import he_orthogonal_init
 from ocpmodels.modules.scaling import ScaleFactor
 
-from ..initializers import he_orthogonal_init
 from .base_layers import Dense, ResidualLayer
 
 
@@ -22,8 +22,8 @@ def scatter_sum(
     src: torch.Tensor,
     index: torch.Tensor,
     dim: int = -1,
-    out: Optional[torch.Tensor] = None,
-    dim_size: Optional[int] = None,
+    out: torch.Tensor | None = None,
+    dim_size: int | None = None,
 ) -> torch.Tensor:
     """
     Clone of torch_scatter.scatter_sum but without in-place operations
@@ -66,27 +66,23 @@ class AtomUpdateBlock(torch.nn.Module):
         emb_size_edge: int,
         emb_size_rbf: int,
         nHidden: int,
-        activation: Optional[str] = None,
+        activation: str | None = None,
         name: str = "atom_update",
     ) -> None:
         super().__init__()
         self.name = name
 
-        self.dense_rbf = Dense(
-            emb_size_rbf, emb_size_edge, activation=None, bias=False
-        )
+        self.dense_rbf = Dense(emb_size_rbf, emb_size_edge, activation=None, bias=False)
         self.scale_sum = ScaleFactor(name + "_sum")
 
-        self.layers = self.get_mlp(
-            emb_size_edge, emb_size_atom, nHidden, activation
-        )
+        self.layers = self.get_mlp(emb_size_edge, emb_size_atom, nHidden, activation)
 
     def get_mlp(
         self,
         units_in: int,
         units: int,
         nHidden: int,
-        activation: Optional[str],
+        activation: str | None,
     ):
         dense1 = Dense(units_in, units, activation=activation, bias=False)
         mlp = [dense1]
@@ -156,7 +152,7 @@ class OutputBlock(AtomUpdateBlock):
         emb_size_rbf: int,
         nHidden: int,
         num_targets: int,
-        activation: Optional[str] = None,
+        activation: str | None = None,
         direct_forces: bool = True,
         output_init: str = "HeOrthogonal",
         name: str = "output",
@@ -177,9 +173,7 @@ class OutputBlock(AtomUpdateBlock):
         self.direct_forces = direct_forces
 
         self.seq_energy = self.layers  # inherited from parent class
-        self.out_energy = Dense(
-            emb_size_atom, num_targets, bias=False, activation=None
-        )
+        self.out_energy = Dense(emb_size_atom, num_targets, bias=False, activation=None)
 
         if self.direct_forces:
             self.scale_rbf_F = ScaleFactor(name + "_had")

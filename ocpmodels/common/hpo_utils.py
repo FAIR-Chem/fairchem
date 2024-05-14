@@ -1,9 +1,11 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
 
 import math
 
@@ -39,10 +41,7 @@ def tune_reporter(
             val[metric_to_opt] = 100000.0
         if min_max == "max":
             val[metric_to_opt] = 0.0
-    if test_metrics:
-        test = label_metric_dict(test_metrics, "test")
-    else:
-        test = {}
+    test = label_metric_dict(test_metrics, "test") if test_metrics else {}
     # report results to Ray Tune
     tune.report(**iters, **train, **val, **test)
 
@@ -50,6 +49,5 @@ def tune_reporter(
 def label_metric_dict(metric_dict, split):
     new_dict = {}
     for key in metric_dict:
-        new_dict["{}_{}".format(split, key)] = metric_dict[key]
-    metric_dict = new_dict
-    return metric_dict
+        new_dict[f"{split}_{key}"] = metric_dict[key]
+    return new_dict
