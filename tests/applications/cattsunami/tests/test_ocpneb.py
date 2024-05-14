@@ -24,7 +24,7 @@ class TestNEB:
             images=images,
             checkpoint_path=checkpoint_path,
             cpu=True,
-            batch_size=4,
+            batch_size=1,
             k=0.25,
         )
 
@@ -53,7 +53,7 @@ class TestNEB:
             images=images,
             checkpoint_path=checkpoint_path,
             cpu=True,
-            batch_size=4,
+            batch_size=1,
             k=0.25,
         )
 
