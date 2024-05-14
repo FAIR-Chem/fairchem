@@ -8,6 +8,7 @@ This page contains auto-generated API reference documentation [#f1]_.
 
    /autoapi/core/index
    /autoapi/data/index
+   /autoapi/cattsunami/index
    /autoapi/ocpapi/index
 
 .. [#f1] Created with `sphinx-autoapi <https://github.com/readthedocs/sphinx-autoapi>`_

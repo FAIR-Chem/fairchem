@@ -1,7 +1,7 @@
-:py:mod:`ocpneb.core.reaction`
-==============================
+:py:mod:`cattsunami.core.reaction`
+==================================
 
-.. py:module:: ocpneb.core.reaction
+.. py:module:: cattsunami.core.reaction
 
 
 Module Contents
@@ -12,7 +12,7 @@ Classes
 
 .. autoapisummary::
 
-   ocpneb.core.reaction.Reaction
+   cattsunami.core.reaction.Reaction
 
 
 

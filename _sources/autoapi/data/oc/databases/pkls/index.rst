@@ -11,7 +11,7 @@ Package Contents
 
    
 
-.. py:data:: ADSORBATES_PKL_PATH
+.. py:data:: ADSORBATE_PKL_PATH
 
    
 

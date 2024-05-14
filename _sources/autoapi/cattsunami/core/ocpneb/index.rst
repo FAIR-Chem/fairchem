@@ -1,7 +1,7 @@
-:py:mod:`ocpneb.core.ocpneb`
-============================
+:py:mod:`cattsunami.core.ocpneb`
+================================
 
-.. py:module:: ocpneb.core.ocpneb
+.. py:module:: cattsunami.core.ocpneb
 
 
 Module Contents
@@ -12,7 +12,7 @@ Classes
 
 .. autoapisummary::
 
-   ocpneb.core.ocpneb.OCPNEB
+   cattsunami.core.ocpneb.OCPNEB
 
 
 

@@ -1,7 +1,7 @@
-:py:mod:`ocpneb.databases`
-==========================
+:py:mod:`cattsunami.databases`
+==============================
 
-.. py:module:: ocpneb.databases
+.. py:module:: cattsunami.databases
 
 
 Package Contents

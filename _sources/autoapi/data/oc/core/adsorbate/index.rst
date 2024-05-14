@@ -25,7 +25,7 @@ Functions
 
 
 
-.. py:class:: Adsorbate(adsorbate_atoms: ase.Atoms = None, adsorbate_id_from_db: int = None, adsorbate_smiles_from_db: str = None, adsorbate_db_path: str = ADSORBATES_PKL_PATH, adsorbate_db: Dict[int, Tuple[Any, Ellipsis]] = None, adsorbate_binding_indices: list = None)
+.. py:class:: Adsorbate(adsorbate_atoms: ase.Atoms = None, adsorbate_id_from_db: int = None, adsorbate_smiles_from_db: str = None, adsorbate_db_path: str = ADSORBATE_PKL_PATH, adsorbate_db: Dict[int, Tuple[Any, Ellipsis]] = None, adsorbate_binding_indices: list = None)
 
 
    Initializes an adsorbate object in one of 4 ways:

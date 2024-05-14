@@ -1,7 +1,7 @@
-:py:mod:`ocpneb.run_validation.run_validation`
-==============================================
+:py:mod:`cattsunami.run_validation.run_validation`
+==================================================
 
-.. py:module:: ocpneb.run_validation.run_validation
+.. py:module:: cattsunami.run_validation.run_validation
 
 .. autoapi-nested-parse::
 
@@ -19,15 +19,15 @@ Functions
 
 .. autoapisummary::
 
-   ocpneb.run_validation.run_validation.get_results_sp
-   ocpneb.run_validation.run_validation.get_results_ml
-   ocpneb.run_validation.run_validation.all_converged
-   ocpneb.run_validation.run_validation.both_barrierless
-   ocpneb.run_validation.run_validation.both_barriered
-   ocpneb.run_validation.run_validation.barrierless_converged
-   ocpneb.run_validation.run_validation.is_failed_sp
-   ocpneb.run_validation.run_validation.parse_neb_info
-   ocpneb.run_validation.run_validation.get_single_point
+   cattsunami.run_validation.run_validation.get_results_sp
+   cattsunami.run_validation.run_validation.get_results_ml
+   cattsunami.run_validation.run_validation.all_converged
+   cattsunami.run_validation.run_validation.both_barrierless
+   cattsunami.run_validation.run_validation.both_barriered
+   cattsunami.run_validation.run_validation.barrierless_converged
+   cattsunami.run_validation.run_validation.is_failed_sp
+   cattsunami.run_validation.run_validation.parse_neb_info
+   cattsunami.run_validation.run_validation.get_single_point
 
 
 
@@ -36,7 +36,7 @@ Attributes
 
 .. autoapisummary::
 
-   ocpneb.run_validation.run_validation.parser
+   cattsunami.run_validation.run_validation.parser
 
 
 .. py:function:: get_results_sp(df2: pandas.DataFrame)
