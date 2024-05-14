@@ -13,8 +13,8 @@ import copy
 import torch
 from fairchem.data.oc.utils import DetectTrajAnomaly
 import networkx as nx
-import ocpneb
 from copy import deepcopy
+from fairchem.applications.cattsunami.core import Reaction
 
 
 class AutoFrame:
@@ -156,7 +156,7 @@ class AutoFrame:
 class AutoFrameDissociation(AutoFrame):
     def __init__(
         self,
-        reaction: ocpneb.core.Reaction,
+        reaction: Reaction,
         reactant_system: ase.Atoms,
         product1_systems: list,
         product1_energies: list,
@@ -480,7 +480,7 @@ class AutoFrameDissociation(AutoFrame):
 class AutoFrameTransfer(AutoFrame):
     def __init__(
         self,
-        reaction: ocpneb.core.Reaction,
+        reaction: Reaction,
         reactant1_systems: list,
         reactant2_systems: list,
         reactant1_energies: list,
@@ -902,7 +902,7 @@ class AutoFrameTransfer(AutoFrame):
 class AutoFrameDesorption(AutoFrame):
     def __init__(
         self,
-        reaction: ocpneb.core.Reaction,
+        reaction: Reaction,
         reactant_systems: list,
         reactant_energies: list,
         z_desorption: float,
@@ -911,7 +911,7 @@ class AutoFrameDesorption(AutoFrame):
         Initialize class to handle the automatic generation of NEB frames for desorption reactions.
 
         Args:
-            reaction (ocpneb.core.Reaction): the reaction object which provides pertinent info
+            reaction (Reaction): the reaction object which provides pertinent info
             reactant_systems (list[ase.Atoms]): the relaxed atoms objects of the adsorbed system.
                 A list of multiple relaxed adsorbate placements should be provided so that multiple
                 possible NEBs can be created.
@@ -1038,7 +1038,7 @@ def interpolate_and_correct_frames(
     initial: ase.Atoms,
     final: ase.Atoms,
     n_frames: int,
-    reaction: ocpneb.core.Reaction,
+    reaction: Reaction,
     map_idx: int,
 ):
     """
@@ -1050,7 +1050,7 @@ def interpolate_and_correct_frames(
         initial (ase.Atoms): the initial frame of the NEB
         final (ase.Atoms): the proposed final frame of the NEB
         n_frames (int): The desired number of frames for the NEB (not including initial and final)
-        reaction (ocpneb.core.Reaction): the reaction object which provides pertinent info
+        reaction (Reaction): the reaction object which provides pertinent info
         map_idx (int): the index of the mapping to use for the final frame
     """
     # Perform checks
@@ -1139,7 +1139,7 @@ def get_shortest_path(
 
 
 def traverse_adsorbate_transfer(
-    reaction: ocpneb.core.Reaction,
+    reaction: Reaction,
     initial: ase.Atoms,
     final: ase.Atoms,
     initial_tiled: ase.Atoms,
@@ -1153,7 +1153,7 @@ def traverse_adsorbate_transfer(
     and avoids accidental bond breaking events over pbc.
 
     Args:
-        reaction (ocpneb.core.Reaction): the reaction object which provides pertinent info
+        reaction (Reaction): the reaction object which provides pertinent info
         initial (ase.Atoms): the initial frame of the NEB
         final (ase.Atoms): the proposed final frame of the NEB to be corrected
         initial_tiled (ase.Atoms): the initial frame tiled (3,3,1)
@@ -1248,7 +1248,7 @@ def traverse_adsorbate_transfer(
 
 
 def traverse_adsorbate_dissociation(
-    reaction: ocpneb.core.Reaction,
+    reaction: Reaction,
     initial: ase.Atoms,
     final: ase.Atoms,
     initial_tiled: ase.Atoms,
@@ -1262,7 +1262,7 @@ def traverse_adsorbate_dissociation(
     and avoids accidental bond breaking events over pbc.
 
     Args:
-        reaction (ocpneb.core.Reaction): the reaction object which provides pertinent info
+        reaction (Reaction): the reaction object which provides pertinent info
         initial (ase.Atoms): the initial frame of the NEB
         final (ase.Atoms): the proposed final frame of the NEB to be corrected
         initial_tiled (ase.Atoms): the initial frame tiled (3,3,1)
@@ -1341,7 +1341,7 @@ def traverse_adsorbate_dissociation(
 
 
 def traverse_adsorbate_desorption(
-    reaction: ocpneb.core.Reaction,
+    reaction: Reaction,
     initial: ase.Atoms,
     final: ase.Atoms,
     initial_tiled: ase.Atoms,
@@ -1354,7 +1354,7 @@ def traverse_adsorbate_desorption(
     and avoids accidental bond breaking events over pbc.
 
     Args:
-        reaction (ocpneb.core.Reaction): the reaction object which provides pertinent info
+        reaction (Reaction): the reaction object which provides pertinent info
         initial (ase.Atoms): the initial frame of the NEB
         final (ase.Atoms): the proposed final frame of the NEB to be corrected
         initial_tiled (ase.Atoms): the initial frame tiled (3,3,1)
@@ -1399,7 +1399,7 @@ def traverse_adsorbate_desorption(
 
 
 def get_product2_idx(
-    reaction: ocpneb.core.Reaction,
+    reaction: Reaction,
     edge_list_final: list,
     traversal_rxt1_final: list,
 ):
@@ -1409,7 +1409,7 @@ def get_product2_idx(
     as the binding index for traversal in `traverse_adsorbate_dissociation`.
 
     Args:
-        reaction (ocpneb.core.Reaction): the reaction object which provides pertinent info
+        reaction (Reaction): the reaction object which provides pertinent info
         edge_list_final (list): the edge list of the final frame corrected with mapping
             idx changes
         traversal_rxt1_final (list): the traversal of reactant 1 for the final frame
@@ -1473,7 +1473,7 @@ def traverse_adsorbate_general(
 def unwrap_atoms(
     initial: ase.Atoms,
     final: ase.Atoms,
-    reaction: ocpneb.core.Reaction,
+    reaction: Reaction,
     map_idx: int,
 ):
     """
@@ -1487,7 +1487,7 @@ def unwrap_atoms(
         initial (ase.Atoms): the initial atoms object to which the final atoms should
             be proximate
         final (ase.Atoms): the final atoms object to be corrected
-        reaction (ocpneb.core.Reaction): the reaction object which provides pertinent info
+        reaction (Reaction): the reaction object which provides pertinent info
         map_idx (int): the index of the mapping to use for the final frame
     """
 
