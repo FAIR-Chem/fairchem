@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs", "hatch-fancy-pypi-readme>=24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fairchem-applications-cattsunami"
+dynamic = ["version", "readme"]
+description = "Accelerating Transition State Energy Calculations with Pre-trained Graph Neural Networks"
+license = {text = "MIT License"}
+
+[project.urls]
+repository = "http://github.com/Fair-Chem/src/fairchem/applications/cattsunami"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+root = "../../"
+git_describe_command = 'git describe --tags --match fairchem_applications_cattsunami-*'
+
+[tool.hatch.build]
+directory = "../../dist-applications-cattsunami"
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src/fairchem/applications/cattsunami"]
+
+[tool.hatch.build.targets.wheel]
+sources = ["src"]
+only-include = ["src/fairchem/demo/ocpapi"]
+
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+fragments = [
+  { path = "src/fairchem/applications/cattsunami/README.md" },
+  { path = "src/fairchem/applications/cattsunami/DATASET.md" }
+]

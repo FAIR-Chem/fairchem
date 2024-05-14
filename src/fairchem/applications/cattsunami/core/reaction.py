@@ -1,6 +1,5 @@
 import pickle
 import random
-import pytest
 
 
 class Reaction:
