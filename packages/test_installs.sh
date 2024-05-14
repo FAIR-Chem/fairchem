@@ -6,9 +6,10 @@ install_reqs() {
     for req in $reqs; do
         pip install -r $req
     done
+    pip install syrupy
 }
 
-build_install_and_test_from_gi_and_test() {( set -e
+build_install_and_test_from_git_and_test() {( set -e
     py=$1
     install_reqs
 
@@ -50,7 +51,8 @@ for py in $pys; do
     echo Building and testing $py in $tmpdir/${py_bn}
     ${py} -m venv ./venv_${py_bn}
     source ./venv_${py_bn}/bin/activate
-    build_install_and_test_from_gi_and_test $py 2>&1 > ${py_bn}_log.txt
+    #build_install_and_test_from_git_and_test $py 2>&1 > ${py_bn}_log.txt
+    build_install_and_test_from_pip_clone_git_and_test $py 2>&1 > ${py_bn}_log.txt
     echo $py $? >> test_log
     deactivate 
 
