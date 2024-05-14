@@ -173,7 +173,8 @@ def generate_yml_config(checkpoint_path, yml="run.yml", delete=(), update=()):
     for _key in update:
         keys = _key.split(".")
         nested_set(config, keys, update[_key])
-
+    
+    # TODO : Do not rename keys in utils.py when reading a config 
     config["evaluation_metrics"]=config["eval_metrics"]
     config.pop("eval_metrics")
 
