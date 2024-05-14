@@ -16,18 +16,18 @@ on:
         description: "if true a release is made on PyPI"
 
 jobs:
-#  test:
-#    uses: ./.github/workflows/test.yml
-#    secrets: inherit
+  test:
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
 
   build:
-    # needs: test
+    needs: test
     uses: ./.github/workflows/build.yml
 
-#  docs:
-#    needs: test
-#    uses: ./.github/workflows/docs.yml
-#    secrets: inherit
+  docs:
+    needs: test
+    uses: ./.github/workflows/docs.yml
+    secrets: inherit
 
   release-core-pypi:
     needs: [ build ]
@@ -36,7 +36,7 @@ jobs:
       github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_core-') || startsWith(github.event.release.tag_name, 'fairchem_core-') )
 
     environment:
-      name: test-pypi
+      name: pypi
       url: https://pypi.org/p/fairchem-core/
 
     permissions:
@@ -50,7 +50,6 @@ jobs:
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: https://test.pypi.org/legacy/
           packages-dir: dist-core/
           skip-existing: true
           verbose: true
@@ -62,7 +61,7 @@ jobs:
       github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_data_oc-') || startsWith(github.event.release.tag_name, 'fairchem_data_oc-') )
 
     environment:
-      name: test-pypi
+      name: pypi
       url: https://pypi.org/p/fairchem-core/
 
     permissions:
@@ -76,7 +75,6 @@ jobs:
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: https://test.pypi.org/legacy/
           verbose: true
           packages-dir: dist-data-oc/
           skip-existing: true
@@ -88,7 +86,7 @@ jobs:
       github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_demo_ocpapi-') || startsWith(github.event.release.tag_name, 'fairchem_demo_ocpapi-') )
 
     environment:
-      name: test-pypi
+      name: pypi
       url: https://pypi.org/p/fairchem-core/
 
     permissions:
@@ -102,7 +100,6 @@ jobs:
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: https://test.pypi.org/legacy/
           verbose: true
           packages-dir: dist-demo-ocpapi/
           skip-existing: true

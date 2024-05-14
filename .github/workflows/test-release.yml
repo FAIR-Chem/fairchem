@@ -1,7 +1,7 @@
 name: test-release
 
 on:
-  release:
+  release:  # TODO this needs to be deleted
     types: [published]
     inputs:
       release-pypi:
@@ -16,18 +16,18 @@ on:
         description: "if true a release is made on PyPI"
 
 jobs:
-#  test:
-#    uses: ./.github/workflows/test.yml
-#    secrets: inherit
+  test:
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
 
   build:
-    # needs: test
+    needs: test
     uses: ./.github/workflows/build.yml
 
-#  docs:
-#    needs: test
-#    uses: ./.github/workflows/docs.yml
-#    secrets: inherit
+  docs:
+    needs: test
+    uses: ./.github/workflows/docs.yml
+    secrets: inherit
 
   release-core-pypi:
     needs: [ build ]
