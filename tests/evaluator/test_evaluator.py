@@ -5,15 +5,13 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import numpy as np
 import pytest
 import torch
 
-from ocpmodels.modules.evaluator import (
-    Evaluator,
-    cosine_similarity,
-    magnitude_error,
-)
+from ocpmodels.modules.evaluator import Evaluator, cosine_similarity, magnitude_error
 
 
 @pytest.fixture(scope="class")
@@ -22,16 +20,12 @@ def load_evaluator_s2ef(request) -> None:
     prediction = {
         "energy": torch.randn(6),
         "forces": torch.randn(1000000, 3),
-        "natoms": torch.tensor(
-            (100000, 200000, 300000, 200000, 100000, 100000)
-        ),
+        "natoms": torch.tensor((100000, 200000, 300000, 200000, 100000, 100000)),
     }
     target = {
         "energy": torch.randn(6),
         "forces": torch.randn(1000000, 3),
-        "natoms": torch.tensor(
-            (100000, 200000, 300000, 200000, 100000, 100000)
-        ),
+        "natoms": torch.tensor((100000, 200000, 300000, 200000, 100000, 100000)),
     }
     request.cls.metrics = request.cls.evaluator.eval(prediction, target)
 
@@ -71,9 +65,7 @@ class TestMetrics:
         v1, v2 = torch.randn(1000000, 3), torch.randn(1000000, 3)
         res = cosine_similarity(v1, v2)
         np.testing.assert_almost_equal(res["metric"], 0, decimal=2)
-        np.testing.assert_almost_equal(
-            res["total"] / res["numel"], res["metric"]
-        )
+        np.testing.assert_almost_equal(res["total"] / res["numel"], res["metric"])
 
     def test_magnitude_error(self) -> None:
         v1, v2 = (

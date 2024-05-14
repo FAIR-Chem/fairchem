@@ -1,5 +1,5 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -7,11 +7,11 @@ LICENSE file in the root directory of this source tree.
 
 # Borrowed from https://github.com/rusty1s/pytorch_geometric/blob/master/torch_geometric/transforms/random_rotate.py
 # with changes to keep track of the rotation / inverse rotation matrices.
+from __future__ import annotations
 
 import math
 import numbers
 import random
-from typing import List
 
 import torch
 import torch_geometric
@@ -30,10 +30,13 @@ class RandomRotate:
         axes (int, optional): The rotation axes. (default: `[0, 1, 2]`)
     """
 
-    def __init__(self, degrees, axes: List[int] = [0, 1, 2]) -> None:
+    def __init__(self, degrees, axes: list[int] | None = None) -> None:
+        if axes is None:
+            axes = [0, 1, 2]
         if isinstance(degrees, numbers.Number):
             degrees = (-abs(degrees), abs(degrees))
-        assert isinstance(degrees, (tuple, list)) and len(degrees) == 2
+        assert isinstance(degrees, (tuple, list))
+        assert len(degrees) == 2
         self.degrees = degrees
         self.axes = axes
 
@@ -74,6 +77,4 @@ class RandomRotate:
         )
 
     def __repr__(self) -> str:
-        return "{}({}, axis={})".format(
-            self.__class__.__name__, self.degrees, self.axis
-        )
+        return f"{self.__class__.__name__}({self.degrees}, axis={self.axis})"

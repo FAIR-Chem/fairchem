@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import logging
-from typing import Optional
 
 import torch
 from torch import nn
@@ -45,6 +46,7 @@ class AtomwiseL2Loss(nn.Module):
             return torch.mean(loss)
         elif self.reduction == "sum":
             return torch.sum(loss)
+        return None
 
 
 class DDPLoss(nn.Module):
@@ -68,8 +70,8 @@ class DDPLoss(nn.Module):
         self,
         input: torch.Tensor,
         target: torch.Tensor,
-        natoms: Optional[torch.Tensor] = None,
-        batch_size: Optional[int] = None,
+        natoms: torch.Tensor | None = None,
+        batch_size: int | None = None,
     ):
         # ensure torch doesn't do any unwanted broadcasting
         assert (
@@ -89,13 +91,9 @@ class DDPLoss(nn.Module):
 
         if self.reduction == "mean":
             num_samples = (
-                batch_size
-                if self.loss_name.startswith("atomwise")
-                else input.shape[0]
+                batch_size if self.loss_name.startswith("atomwise") else input.shape[0]
             )
-            num_samples = distutils.all_reduce(
-                num_samples, device=input.device
-            )
+            num_samples = distutils.all_reduce(num_samples, device=input.device)
             # Multiply by world size since gradients are averaged
             # across DDP replicas
             return loss * distutils.get_world_size() / num_samples

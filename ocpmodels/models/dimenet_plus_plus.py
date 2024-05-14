@@ -1,5 +1,5 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -32,7 +32,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from typing import Optional
+from __future__ import annotations
 
 import torch
 from torch import nn
@@ -70,7 +70,7 @@ class InteractionPPBlock(torch.nn.Module):
         act="silu",
     ) -> None:
         act = activation_resolver(act)
-        super(InteractionPPBlock, self).__init__()
+        super().__init__()
         self.act = act
 
         # Transformations of Bessel and spherical basis representations.
@@ -91,17 +91,11 @@ class InteractionPPBlock(torch.nn.Module):
 
         # Residual layers before and after skip connection.
         self.layers_before_skip = torch.nn.ModuleList(
-            [
-                ResidualLayer(hidden_channels, act)
-                for _ in range(num_before_skip)
-            ]
+            [ResidualLayer(hidden_channels, act) for _ in range(num_before_skip)]
         )
         self.lin = nn.Linear(hidden_channels, hidden_channels)
         self.layers_after_skip = torch.nn.ModuleList(
-            [
-                ResidualLayer(hidden_channels, act)
-                for _ in range(num_after_skip)
-            ]
+            [ResidualLayer(hidden_channels, act) for _ in range(num_after_skip)]
         )
 
         self.reset_parameters()
@@ -170,7 +164,7 @@ class OutputPPBlock(torch.nn.Module):
         act: str = "silu",
     ) -> None:
         act = activation_resolver(act)
-        super(OutputPPBlock, self).__init__()
+        super().__init__()
         self.act = act
 
         self.lin_rbf = nn.Linear(num_radial, hidden_channels, bias=False)
@@ -190,7 +184,7 @@ class OutputPPBlock(torch.nn.Module):
             lin.bias.data.fill_(0)
         self.lin.weight.data.fill_(0)
 
-    def forward(self, x, rbf, i, num_nodes: Optional[int] = None):
+    def forward(self, x, rbf, i, num_nodes: int | None = None):
         x = self.lin_rbf(rbf) * x
         x = scatter(x, i, dim=0, dim_size=num_nodes)
         x = self.lin_up(x)
@@ -246,7 +240,7 @@ class DimeNetPlusPlus(torch.nn.Module):
     ) -> None:
         act = activation_resolver(act)
 
-        super(DimeNetPlusPlus, self).__init__()
+        super().__init__()
 
         self.cutoff = cutoff
 
@@ -366,7 +360,7 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
         self.otf_graph = otf_graph
         self.max_neighbors = 50
 
-        super(DimeNetPlusPlusWrap, self).__init__(
+        super().__init__(
             hidden_channels=hidden_channels,
             out_channels=num_targets,
             num_blocks=num_blocks,
@@ -438,9 +432,7 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
             x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
             P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
-        energy = P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
-
-        return energy
+        return P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
 
     def forward(self, data):
         if self.regress_forces:
@@ -449,13 +441,16 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
         outputs = {"energy": energy}
 
         if self.regress_forces:
-            forces = -1 * (
-                torch.autograd.grad(
-                    energy,
-                    data.pos,
-                    grad_outputs=torch.ones_like(energy),
-                    create_graph=True,
-                )[0]
+            forces = (
+                -1
+                * (
+                    torch.autograd.grad(
+                        energy,
+                        data.pos,
+                        grad_outputs=torch.ones_like(energy),
+                        create_graph=True,
+                    )[0]
+                )
             )
             outputs["forces"] = forces
 

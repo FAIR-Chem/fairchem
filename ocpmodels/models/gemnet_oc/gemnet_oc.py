@@ -1,31 +1,24 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, Optional, Union
 
 import numpy as np
 import torch
 from torch_scatter import segment_coo
 
 from ocpmodels.common.registry import registry
-from ocpmodels.common.utils import (
-    conditional_grad,
-    get_max_neighbors_mask,
-    scatter_det,
-)
+from ocpmodels.common.utils import conditional_grad, get_max_neighbors_mask, scatter_det
 from ocpmodels.models.base import BaseModel
 from ocpmodels.modules.scaling.compat import load_scales_compat
 
 from .initializers import get_initializer
-from .interaction_indices import (
-    get_mixed_triplets,
-    get_quadruplets,
-    get_triplets,
-)
+from .interaction_indices import get_mixed_triplets, get_quadruplets, get_triplets
 from .layers.atom_update_block import OutputBlock
 from .layers.base_layers import Dense, ResidualLayer
 from .layers.efficient import BasisEmbedding
@@ -182,7 +175,7 @@ class GemNetOC(BaseModel):
 
     def __init__(
         self,
-        num_atoms: Optional[int],
+        num_atoms: int | None,
         bond_feat_dim: int,
         num_targets: int,
         num_spherical: int,
@@ -211,22 +204,19 @@ class GemNetOC(BaseModel):
         use_pbc: bool = True,
         scale_backprop_forces: bool = False,
         cutoff: float = 6.0,
-        cutoff_qint: Optional[float] = None,
-        cutoff_aeaint: Optional[float] = None,
-        cutoff_aint: Optional[float] = None,
+        cutoff_qint: float | None = None,
+        cutoff_aeaint: float | None = None,
+        cutoff_aint: float | None = None,
         max_neighbors: int = 50,
-        max_neighbors_qint: Optional[int] = None,
-        max_neighbors_aeaint: Optional[int] = None,
-        max_neighbors_aint: Optional[int] = None,
+        max_neighbors_qint: int | None = None,
+        max_neighbors_aeaint: int | None = None,
+        max_neighbors_aint: int | None = None,
         enforce_max_neighbors_strictly: bool = True,
-        rbf: Dict[str, str] = {"name": "gaussian"},
-        rbf_spherical: Optional[dict] = None,
-        envelope: Dict[str, Union[str, int]] = {
-            "name": "polynomial",
-            "exponent": 5,
-        },
-        cbf: Dict[str, str] = {"name": "spherical_harmonics"},
-        sbf: Dict[str, str] = {"name": "spherical_harmonics"},
+        rbf: dict[str, str] | None = None,
+        rbf_spherical: dict | None = None,
+        envelope: dict[str, str | int] | None = None,
+        cbf: dict[str, str] | None = None,
+        sbf: dict[str, str] | None = None,
         extensive: bool = True,
         forces_coupled: bool = False,
         output_init: str = "HeOrthogonal",
@@ -236,12 +226,22 @@ class GemNetOC(BaseModel):
         edge_atom_interaction: bool = False,
         atom_interaction: bool = False,
         scale_basis: bool = False,
-        qint_tags: list = [0, 1, 2],
+        qint_tags: list | None = None,
         num_elements: int = 83,
         otf_graph: bool = False,
-        scale_file: Optional[str] = None,
+        scale_file: str | None = None,
         **kwargs,  # backwards compatibility with deprecated arguments
     ) -> None:
+        if qint_tags is None:
+            qint_tags = [0, 1, 2]
+        if sbf is None:
+            sbf = {"name": "spherical_harmonics"}
+        if cbf is None:
+            cbf = {"name": "spherical_harmonics"}
+        if envelope is None:
+            envelope = {"name": "polynomial", "exponent": 5}
+        if rbf is None:
+            rbf = {"name": "gaussian"}
         super().__init__()
         if len(kwargs) > 0:
             logging.warning(f"Unrecognized arguments: {list(kwargs.keys())}")
@@ -353,9 +353,7 @@ class GemNetOC(BaseModel):
             for _ in range(num_global_out_layers)
         ]
         self.out_mlp_E = torch.nn.Sequential(*out_mlp_E)
-        self.out_energy = Dense(
-            emb_size_atom, num_targets, bias=False, activation=None
-        )
+        self.out_energy = Dense(emb_size_atom, num_targets, bias=False, activation=None)
         if direct_forces:
             out_mlp_F = [
                 Dense(
@@ -555,9 +553,7 @@ class GemNetOC(BaseModel):
                 activation=None,
                 bias=False,
             )
-            self.mlp_cbf_qint = BasisEmbedding(
-                num_radial, emb_size_cbf, num_spherical
-            )
+            self.mlp_cbf_qint = BasisEmbedding(num_radial, emb_size_cbf, num_spherical)
             self.mlp_sbf_qint = BasisEmbedding(
                 num_radial, emb_size_sbf, num_spherical**2
             )
@@ -569,9 +565,7 @@ class GemNetOC(BaseModel):
                 activation=None,
                 bias=False,
             )
-            self.mlp_cbf_aeint = BasisEmbedding(
-                num_radial, emb_size_cbf, num_spherical
-            )
+            self.mlp_cbf_aeint = BasisEmbedding(num_radial, emb_size_cbf, num_spherical)
         if self.edge_atom_interaction:
             self.mlp_rbf_eaint = Dense(
                 num_radial,
@@ -579,9 +573,7 @@ class GemNetOC(BaseModel):
                 activation=None,
                 bias=False,
             )
-            self.mlp_cbf_eaint = BasisEmbedding(
-                num_radial, emb_size_cbf, num_spherical
-            )
+            self.mlp_cbf_eaint = BasisEmbedding(num_radial, emb_size_cbf, num_spherical)
         if self.atom_interaction:
             self.mlp_rbf_aint = BasisEmbedding(num_radial, emb_size_rbf)
 
@@ -591,9 +583,7 @@ class GemNetOC(BaseModel):
             activation=None,
             bias=False,
         )
-        self.mlp_cbf_tint = BasisEmbedding(
-            num_radial, emb_size_cbf, num_spherical
-        )
+        self.mlp_cbf_tint = BasisEmbedding(num_radial, emb_size_cbf, num_spherical)
 
         # Share the dense Layer of the atom embedding block accross the interaction blocks
         self.mlp_rbf_h = Dense(
@@ -731,8 +721,7 @@ class GemNetOC(BaseModel):
         sign = 1 - 2 * opposite_neg
         tensor_cat = torch.cat([tensor_directed, sign * tensor_directed])
         # Reorder everything so the edges of every image are consecutive
-        tensor_ordered = tensor_cat[reorder_idx]
-        return tensor_ordered
+        return tensor_cat[reorder_idx]
 
     def symmetrize_edges(
         self,
@@ -755,10 +744,7 @@ class GemNetOC(BaseModel):
         # Distinguish edges between the same (periodic) atom by ordering the cells
         cell_earlier = (
             (graph["cell_offset"][:, 0] < 0)
-            | (
-                (graph["cell_offset"][:, 0] == 0)
-                & (graph["cell_offset"][:, 1] < 0)
-            )
+            | ((graph["cell_offset"][:, 0] == 0) & (graph["cell_offset"][:, 1] < 0))
             | (
                 (graph["cell_offset"][:, 0] == 0)
                 & (graph["cell_offset"][:, 1] == 0)
@@ -770,9 +756,9 @@ class GemNetOC(BaseModel):
         mask = mask_sep_atoms | mask_same_atoms
 
         # Mask out counter-edges
-        edge_index_directed = graph["edge_index"][
-            mask[None, :].expand(2, -1)
-        ].view(2, -1)
+        edge_index_directed = graph["edge_index"][mask[None, :].expand(2, -1)].view(
+            2, -1
+        )
 
         # Concatenate counter-edges after normal edges
         edge_index_cat = torch.cat(
@@ -875,8 +861,7 @@ class GemNetOC(BaseModel):
         empty_image = subgraph["num_neighbors"] == 0
         if torch.any(empty_image):
             raise ValueError(
-                f"An image has no neighbors: id={data.id[empty_image]}, "
-                f"sid={data.sid[empty_image]}, fid={data.fid[empty_image]}"
+                f"An image has no neighbors: sid={data.sid[empty_image]}"
             )
         return subgraph
 
@@ -911,22 +896,14 @@ class GemNetOC(BaseModel):
         }
 
         # Mask interaction edges if required
-        if otf_graph or np.isclose(cutoff, 6):
-            select_cutoff = None
-        else:
-            select_cutoff = cutoff
-        if otf_graph or max_neighbors == 50:
-            select_neighbors = None
-        else:
-            select_neighbors = max_neighbors
-        graph = self.subselect_edges(
+        select_cutoff = None if otf_graph or np.isclose(cutoff, 6) else cutoff
+        select_neighbors = None if otf_graph or max_neighbors == 50 else max_neighbors
+        return self.subselect_edges(
             data=data,
             graph=graph,
             cutoff=select_cutoff,
             max_neighbors=select_neighbors,
         )
-
-        return graph
 
     def subselect_graph(
         self,
@@ -941,10 +918,7 @@ class GemNetOC(BaseModel):
         subselect the edges of a given graph.
         """
         # Check if embedding edges are different from interaction edges
-        if np.isclose(cutoff, cutoff_orig):
-            select_cutoff = None
-        else:
-            select_cutoff = cutoff
+        select_cutoff = None if np.isclose(cutoff, cutoff_orig) else cutoff
         if max_neighbors == max_neighbors_orig:
             select_neighbors = None
         else:
@@ -987,9 +961,7 @@ class GemNetOC(BaseModel):
                 self.max_neighbors_aint,
             )
         else:
-            main_graph = self.generate_graph_dict(
-                data, self.cutoff, self.max_neighbors
-            )
+            main_graph = self.generate_graph_dict(data, self.cutoff, self.max_neighbors)
             a2a_graph = {}
             a2ee2a_graph = {}
         if self.quad_interaction:
@@ -1025,12 +997,8 @@ class GemNetOC(BaseModel):
             qint_tag_mask_s = (tags_s[..., None] == self.qint_tags).any(dim=-1)
             qint_tag_mask_t = (tags_t[..., None] == self.qint_tags).any(dim=-1)
             qint_tag_mask = qint_tag_mask_s | qint_tag_mask_t
-            qint_graph["edge_index"] = qint_graph["edge_index"][
-                :, qint_tag_mask
-            ]
-            qint_graph["cell_offset"] = qint_graph["cell_offset"][
-                qint_tag_mask, :
-            ]
+            qint_graph["edge_index"] = qint_graph["edge_index"][:, qint_tag_mask]
+            qint_graph["cell_offset"] = qint_graph["cell_offset"][qint_tag_mask, :]
             qint_graph["distance"] = qint_graph["distance"][qint_tag_mask]
             qint_graph["vector"] = qint_graph["vector"][qint_tag_mask, :]
             del qint_graph["num_neighbors"]
@@ -1133,9 +1101,7 @@ class GemNetOC(BaseModel):
                 angle_cabd,
             )
         if self.atom_edge_interaction:
-            basis_rad_a2ee2a_raw = self.radial_basis_aeaint(
-                a2ee2a_graph["distance"]
-            )
+            basis_rad_a2ee2a_raw = self.radial_basis_aeaint(a2ee2a_graph["distance"])
             cosφ_cab_a2e = inner_product_clamped(
                 main_graph["vector"][trip_idx_a2e["out"]],
                 a2ee2a_graph["vector"][trip_idx_a2e["in"]],

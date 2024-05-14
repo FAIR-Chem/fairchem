@@ -5,9 +5,11 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
+import contextlib
 import logging
 import time
-from typing import List
 
 import torch
 import torch.nn as nn
@@ -29,10 +31,8 @@ from ocpmodels.models.scn.smearing import (
     SiLUSmearing,
 )
 
-try:
+with contextlib.suppress(ImportError):
     from e3nn import o3
-except ImportError:
-    pass
 
 
 @registry.register_model("escn")
@@ -74,8 +74,8 @@ class eSCN(BaseModel):
         cutoff: float = 8.0,
         max_num_elements: int = 90,
         num_layers: int = 8,
-        lmax_list: List[int] = [6],
-        mmax_list: List[int] = [2],
+        lmax_list: list[int] | None = None,
+        mmax_list: list[int] | None = None,
         sphere_channels: int = 128,
         hidden_channels: int = 256,
         edge_channels: int = 128,
@@ -86,14 +86,16 @@ class eSCN(BaseModel):
         distance_resolution: float = 0.02,
         show_timing_info: bool = False,
     ) -> None:
+        if mmax_list is None:
+            mmax_list = [2]
+        if lmax_list is None:
+            lmax_list = [6]
         super().__init__()
 
         import sys
 
         if "e3nn" not in sys.modules:
-            logging.error(
-                "You need to install the e3nn library to use the SCN model"
-            )
+            logging.error("You need to install the e3nn library to use the SCN model")
             raise ImportError
 
         self.regress_forces = regress_forces
@@ -114,9 +116,7 @@ class eSCN(BaseModel):
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
         self.num_resolutions: int = len(self.lmax_list)
-        self.sphere_channels_all: int = (
-            self.num_resolutions * self.sphere_channels
-        )
+        self.sphere_channels_all: int = self.num_resolutions * self.sphere_channels
         self.basis_width_scalar = basis_width_scalar
         self.distance_function = distance_function
 
@@ -209,7 +209,7 @@ class eSCN(BaseModel):
         )
 
         # For each spherical point, compute the spherical harmonic coefficient weights
-        sphharm_weights: List[nn.Parameter] = []
+        sphharm_weights: list[nn.Parameter] = []
         for i in range(self.num_resolutions):
             sphharm_weights.append(
                 nn.Parameter(
@@ -247,16 +247,12 @@ class eSCN(BaseModel):
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(
-            data, edge_index, edge_distance_vec
-        )
+        edge_rot_mat = self._init_edge_rot_mat(data, edge_index, edge_distance_vec)
 
         # Initialize the WignerD matrices and other values for spherical harmonic calculations
         self.SO3_edge_rot = nn.ModuleList()
         for i in range(self.num_resolutions):
-            self.SO3_edge_rot.append(
-                SO3_Rotation(edge_rot_mat, self.lmax_list[i])
-            )
+            self.SO3_edge_rot.append(SO3_Rotation(edge_rot_mat, self.lmax_list[i]))
 
         ###############################################################
         # Initialize node embeddings
@@ -276,16 +272,14 @@ class eSCN(BaseModel):
         offset = 0
         # Initialize the l=0,m=0 coefficients for each resolution
         for i in range(self.num_resolutions):
-            x.embedding[:, offset_res, :] = self.sphere_embedding(
-                atomic_numbers
-            )[:, offset : offset + self.sphere_channels]
+            x.embedding[:, offset_res, :] = self.sphere_embedding(atomic_numbers)[
+                :, offset : offset + self.sphere_channels
+            ]
             offset = offset + self.sphere_channels
             offset_res = offset_res + int((self.lmax_list[i] + 1) ** 2)
 
         # This can be expensive to compute (not implemented efficiently), so only do it once and pass it along to each layer
-        mappingReduced = CoefficientMapping(
-            self.lmax_list, self.mmax_list, device
-        )
+        mappingReduced = CoefficientMapping(self.lmax_list, self.mmax_list, device)
 
         ###############################################################
         # Update spherical node embeddings
@@ -358,12 +352,7 @@ class eSCN(BaseModel):
         if self.show_timing_info is True:
             torch.cuda.synchronize()
             logging.info(
-                "{} Time: {}\tMemory: {}\t{}".format(
-                    self.counter,
-                    time.time() - start_time,
-                    len(data.pos),
-                    torch.cuda.max_memory_allocated() / 1000000,
-                )
+                f"{self.counter} Time: {time.time() - start_time}\tMemory: {len(data.pos)}\t{torch.cuda.max_memory_allocated() / 1000000}"
             )
 
         self.counter = self.counter + 1
@@ -378,19 +367,11 @@ class eSCN(BaseModel):
         # Make sure the atoms are far enough apart
         if torch.min(edge_vec_0_distance) < 0.0001:
             logging.error(
-                "Error edge_vec_0_distance: {}".format(
-                    torch.min(edge_vec_0_distance)
-                )
+                f"Error edge_vec_0_distance: {torch.min(edge_vec_0_distance)}"
             )
             (minval, minidx) = torch.min(edge_vec_0_distance, 0)
             logging.error(
-                "Error edge_vec_0_distance: {} {} {} {} {}".format(
-                    minidx,
-                    edge_index[0, minidx],
-                    edge_index[1, minidx],
-                    data.pos[edge_index[0, minidx]],
-                    data.pos[edge_index[1, minidx]],
-                )
+                f"Error edge_vec_0_distance: {minidx} {edge_index[0, minidx]} {edge_index[1, minidx]} {data.pos[edge_index[0, minidx]]} {data.pos[edge_index[1, minidx]]}"
             )
 
         norm_x = edge_vec_0 / (edge_vec_0_distance.view(-1, 1))
@@ -407,37 +388,23 @@ class eSCN(BaseModel):
         edge_vec_2c = edge_vec_2.clone()
         edge_vec_2c[:, 1] = -edge_vec_2[:, 2]
         edge_vec_2c[:, 2] = edge_vec_2[:, 1]
-        vec_dot_b = torch.abs(torch.sum(edge_vec_2b * norm_x, dim=1)).view(
-            -1, 1
-        )
-        vec_dot_c = torch.abs(torch.sum(edge_vec_2c * norm_x, dim=1)).view(
-            -1, 1
-        )
+        vec_dot_b = torch.abs(torch.sum(edge_vec_2b * norm_x, dim=1)).view(-1, 1)
+        vec_dot_c = torch.abs(torch.sum(edge_vec_2c * norm_x, dim=1)).view(-1, 1)
 
         vec_dot = torch.abs(torch.sum(edge_vec_2 * norm_x, dim=1)).view(-1, 1)
-        edge_vec_2 = torch.where(
-            torch.gt(vec_dot, vec_dot_b), edge_vec_2b, edge_vec_2
-        )
+        edge_vec_2 = torch.where(torch.gt(vec_dot, vec_dot_b), edge_vec_2b, edge_vec_2)
         vec_dot = torch.abs(torch.sum(edge_vec_2 * norm_x, dim=1)).view(-1, 1)
-        edge_vec_2 = torch.where(
-            torch.gt(vec_dot, vec_dot_c), edge_vec_2c, edge_vec_2
-        )
+        edge_vec_2 = torch.where(torch.gt(vec_dot, vec_dot_c), edge_vec_2c, edge_vec_2)
 
         vec_dot = torch.abs(torch.sum(edge_vec_2 * norm_x, dim=1))
         # Check the vectors aren't aligned
         assert torch.max(vec_dot) < 0.99
 
         norm_z = torch.cross(norm_x, edge_vec_2, dim=1)
-        norm_z = norm_z / (
-            torch.sqrt(torch.sum(norm_z**2, dim=1, keepdim=True))
-        )
-        norm_z = norm_z / (
-            torch.sqrt(torch.sum(norm_z**2, dim=1)).view(-1, 1)
-        )
+        norm_z = norm_z / (torch.sqrt(torch.sum(norm_z**2, dim=1, keepdim=True)))
+        norm_z = norm_z / (torch.sqrt(torch.sum(norm_z**2, dim=1)).view(-1, 1))
         norm_y = torch.cross(norm_x, norm_z, dim=1)
-        norm_y = norm_y / (
-            torch.sqrt(torch.sum(norm_y**2, dim=1, keepdim=True))
-        )
+        norm_y = norm_y / (torch.sqrt(torch.sum(norm_y**2, dim=1, keepdim=True)))
 
         # Construct the 3D rotation matrix
         norm_x = norm_x.view(-1, 3, 1)
@@ -477,14 +444,14 @@ class LayerBlock(torch.nn.Module):
         sphere_channels: int,
         hidden_channels: int,
         edge_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         distance_expansion,
         max_num_elements: int,
         SO3_grid: SO3_Grid,
         act,
     ) -> None:
-        super(LayerBlock, self).__init__()
+        super().__init__()
         self.layer_idx = layer_idx
         self.act = act
         self.lmax_list = lmax_list
@@ -583,14 +550,14 @@ class MessageBlock(torch.nn.Module):
         sphere_channels: int,
         hidden_channels: int,
         edge_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         distance_expansion,
         max_num_elements: int,
         SO3_grid: SO3_Grid,
         act,
     ) -> None:
-        super(MessageBlock, self).__init__()
+        super().__init__()
         self.layer_idx = layer_idx
         self.act = act
         self.hidden_channels = hidden_channels
@@ -695,11 +662,11 @@ class SO2Block(torch.nn.Module):
         sphere_channels: int,
         hidden_channels: int,
         edge_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         act,
     ) -> None:
-        super(SO2Block, self).__init__()
+        super().__init__()
         self.sphere_channels = sphere_channels
         self.hidden_channels = hidden_channels
         self.lmax_list = lmax_list
@@ -710,18 +677,12 @@ class SO2Block(torch.nn.Module):
         num_channels_m0 = 0
         for i in range(self.num_resolutions):
             num_coefficents = self.lmax_list[i] + 1
-            num_channels_m0 = (
-                num_channels_m0 + num_coefficents * self.sphere_channels
-            )
+            num_channels_m0 = num_channels_m0 + num_coefficents * self.sphere_channels
 
         # SO(2) convolution for m=0
         self.fc1_dist0 = nn.Linear(edge_channels, self.hidden_channels)
-        self.fc1_m0 = nn.Linear(
-            num_channels_m0, self.hidden_channels, bias=False
-        )
-        self.fc2_m0 = nn.Linear(
-            self.hidden_channels, num_channels_m0, bias=False
-        )
+        self.fc1_m0 = nn.Linear(num_channels_m0, self.hidden_channels, bias=False)
+        self.fc2_m0 = nn.Linear(self.hidden_channels, num_channels_m0, bias=False)
 
         # SO(2) convolution for non-zero m
         self.so2_conv = nn.ModuleList()
@@ -775,9 +736,7 @@ class SO2Block(torch.nn.Module):
             # Perform SO(2) convolution
             x_m = self.so2_conv[m - 1](x_m, x_edge)
             x_m = x_m.view(num_edges, -1, x.num_channels)
-            x.embedding[
-                :, offset : offset + 2 * mappingReduced.m_size[m]
-            ] = x_m
+            x.embedding[:, offset : offset + 2 * mappingReduced.m_size[m]] = x_m
 
             offset = offset + 2 * mappingReduced.m_size[m]
 
@@ -807,11 +766,11 @@ class SO2Conv(torch.nn.Module):
         sphere_channels: int,
         hidden_channels: int,
         edge_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         act,
     ) -> None:
-        super(SO2Conv, self).__init__()
+        super().__init__()
         self.hidden_channels = hidden_channels
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
@@ -826,9 +785,7 @@ class SO2Conv(torch.nn.Module):
             if self.mmax_list[i] >= m:
                 num_coefficents = self.lmax_list[i] - m + 1
 
-            num_channels = (
-                num_channels + num_coefficents * self.sphere_channels
-            )
+            num_channels = num_channels + num_coefficents * self.sphere_channels
 
         assert num_channels > 0
 
@@ -881,7 +838,7 @@ class EdgeBlock(torch.nn.Module):
         max_num_elements,
         act,
     ) -> None:
-        super(EdgeBlock, self).__init__()
+        super().__init__()
         self.in_channels = distance_expansion.num_output
         self.distance_expansion = distance_expansion
         self.act = act
@@ -892,12 +849,8 @@ class EdgeBlock(torch.nn.Module):
         self.fc1_dist = nn.Linear(self.in_channels, self.edge_channels)
 
         # Embedding function of the atomic numbers
-        self.source_embedding = nn.Embedding(
-            self.max_num_elements, self.edge_channels
-        )
-        self.target_embedding = nn.Embedding(
-            self.max_num_elements, self.edge_channels
-        )
+        self.source_embedding = nn.Embedding(self.max_num_elements, self.edge_channels)
+        self.target_embedding = nn.Embedding(self.max_num_elements, self.edge_channels)
         nn.init.uniform_(self.source_embedding.weight.data, -0.001, 0.001)
         nn.init.uniform_(self.target_embedding.weight.data, -0.001, 0.001)
 
@@ -918,9 +871,7 @@ class EdgeBlock(torch.nn.Module):
 
         # Compute invariant edge embedding
         x_edge = self.act(source_embedding + target_embedding + x_dist)
-        x_edge = self.act(self.fc1_edge_attr(x_edge))
-
-        return x_edge
+        return self.act(self.fc1_edge_attr(x_edge))
 
 
 class EnergyBlock(torch.nn.Module):
@@ -939,7 +890,7 @@ class EnergyBlock(torch.nn.Module):
         num_sphere_samples: int,
         act,
     ) -> None:
-        super(EnergyBlock, self).__init__()
+        super().__init__()
         self.num_channels = num_channels
         self.num_sphere_samples = num_sphere_samples
         self.act = act
@@ -954,9 +905,7 @@ class EnergyBlock(torch.nn.Module):
         x_pt = self.act(self.fc2(x_pt))
         x_pt = self.fc3(x_pt)
         x_pt = x_pt.view(-1, self.num_sphere_samples, 1)
-        node_energy = torch.sum(x_pt, dim=1) / self.num_sphere_samples
-
-        return node_energy
+        return torch.sum(x_pt, dim=1) / self.num_sphere_samples
 
 
 class ForceBlock(torch.nn.Module):
@@ -975,7 +924,7 @@ class ForceBlock(torch.nn.Module):
         num_sphere_samples: int,
         act,
     ) -> None:
-        super(ForceBlock, self).__init__()
+        super().__init__()
         self.num_channels = num_channels
         self.num_sphere_samples = num_sphere_samples
         self.act = act
@@ -991,6 +940,4 @@ class ForceBlock(torch.nn.Module):
         x_pt = self.fc3(x_pt)
         x_pt = x_pt.view(-1, self.num_sphere_samples, 1)
         forces = x_pt * sphere_points.view(1, self.num_sphere_samples, 3)
-        forces = torch.sum(forces, dim=1) / self.num_sphere_samples
-
-        return forces
+        return torch.sum(forces, dim=1) / self.num_sphere_samples

@@ -1,14 +1,16 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 from collections import defaultdict
-from typing import Optional
+from itertools import chain
 
 import numpy as np
 import torch
@@ -85,10 +87,12 @@ class OCPTrainer(BaseTrainer):
         local_rank=0,
         amp=False,
         cpu=False,
-        slurm={},
+        slurm=None,
         noddp=False,
         name="ocp",
     ):
+        if slurm is None:
+            slurm = {}
         super().__init__(
             task=task,
             model=model,
@@ -115,19 +119,12 @@ class OCPTrainer(BaseTrainer):
     def train(self, disable_eval_tqdm: bool = False) -> None:
         ensure_fitted(self._unwrapped_model, warn=True)
 
-        eval_every = self.config["optim"].get(
-            "eval_every", len(self.train_loader)
-        )
-        checkpoint_every = self.config["optim"].get(
-            "checkpoint_every", eval_every
-        )
+        eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
+        checkpoint_every = self.config["optim"].get("checkpoint_every", eval_every)
         primary_metric = self.evaluation_metrics.get(
             "primary_metric", self.evaluator.task_primary_metric[self.name]
         )
-        if (
-            not hasattr(self, "primary_metric")
-            or self.primary_metric != primary_metric
-        ):
+        if not hasattr(self, "primary_metric") or self.primary_metric != primary_metric:
             self.best_val_metric = 1e9 if "mae" in primary_metric else -1.0
         else:
             primary_metric = self.primary_metric
@@ -137,14 +134,9 @@ class OCPTrainer(BaseTrainer):
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // len(self.train_loader)
 
-        for epoch_int in range(
-            start_epoch, self.config["optim"]["max_epochs"]
-        ):
+        for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
             skip_steps = self.step % len(self.train_loader)
-            self.train_sampler.set_epoch_and_start_iteration(
-                epoch_int, skip_steps
-            )
-
+            self.train_sampler.set_epoch_and_start_iteration(epoch_int, skip_steps)
             train_loader_iter = iter(self.train_loader)
 
             for i in range(skip_steps, len(self.train_loader)):
@@ -167,10 +159,7 @@ class OCPTrainer(BaseTrainer):
                     self.evaluator,
                     self.metrics,
                 )
-
-                self.metrics = self.evaluator.update(
-                    "loss", loss.item(), self.metrics
-                )
+                self.metrics = self.evaluator.update("loss", loss.item(), self.metrics)
 
                 loss = self.scaler.scale(loss) if self.scaler else loss
                 self._backward(loss)
@@ -188,9 +177,7 @@ class OCPTrainer(BaseTrainer):
                     self.step % self.config["cmd"]["print_every"] == 0
                     and distutils.is_master()
                 ):
-                    log_str = [
-                        "{}: {:.2e}".format(k, v) for k, v in log_dict.items()
-                    ]
+                    log_str = [f"{k}: {v:.2e}" for k, v in log_dict.items()]
                     logging.info(", ".join(log_str))
                     self.metrics = {}
 
@@ -201,13 +188,8 @@ class OCPTrainer(BaseTrainer):
                         split="train",
                     )
 
-                if (
-                    checkpoint_every != -1
-                    and self.step % checkpoint_every == 0
-                ):
-                    self.save(
-                        checkpoint_file="checkpoint.pt", training_state=True
-                    )
+                if checkpoint_every != -1 and self.step % checkpoint_every == 0:
+                    self.save(checkpoint_file="checkpoint.pt", training_state=True)
 
                 # Evaluate on val set every `eval_every` iterations.
                 if self.step % eval_every == 0:
@@ -264,9 +246,7 @@ class OCPTrainer(BaseTrainer):
             ## parent property
             else:
                 _max_rank = 0
-                for subtarget_key in self.output_targets[target_key][
-                    "decomposition"
-                ]:
+                for subtarget_key in self.output_targets[target_key]["decomposition"]:
                     _max_rank = max(
                         _max_rank,
                         self.output_targets[subtarget_key]["irrep_dim"],
@@ -276,9 +256,7 @@ class OCPTrainer(BaseTrainer):
                     (batch_size, irreps_sum(_max_rank)), device=self.device
                 )
 
-                for subtarget_key in self.output_targets[target_key][
-                    "decomposition"
-                ]:
+                for subtarget_key in self.output_targets[target_key]["decomposition"]:
                     irreps = self.output_targets[subtarget_key]["irrep_dim"]
                     _pred = out[subtarget_key]
 
@@ -356,10 +334,11 @@ class OCPTrainer(BaseTrainer):
         for lc in loss:
             assert hasattr(lc, "grad_fn")
 
-        loss = sum(loss)
-        return loss
+        return sum(loss)
 
-    def _compute_metrics(self, out, batch, evaluator, metrics={}):
+    def _compute_metrics(self, out, batch, evaluator, metrics=None):
+        if metrics is None:
+            metrics = {}
         # this function changes the values in the out dictionary,
         # make a copy instead of changing them in the callers version
         out = {k: v.clone() for k, v in out.items()}
@@ -406,8 +385,7 @@ class OCPTrainer(BaseTrainer):
         targets["natoms"] = natoms
         out["natoms"] = natoms
 
-        metrics = evaluator.eval(out, targets, prev_metrics=metrics)
-        return metrics
+        return evaluator.eval(out, targets, prev_metrics=metrics)
 
     # Takes in a new data source and generates predictions on it.
     @torch.no_grad()
@@ -415,13 +393,11 @@ class OCPTrainer(BaseTrainer):
         self,
         data_loader,
         per_image: bool = True,
-        results_file: Optional[str] = None,
+        results_file: str | None = None,
         disable_tqdm: bool = False,
     ):
         if self.is_debug and per_image:
-            raise FileNotFoundError(
-                "Predictions require debug mode to be turned off."
-            )
+            raise FileNotFoundError("Predictions require debug mode to be turned off.")
 
         ensure_fitted(self._unwrapped_model, warn=True)
 
@@ -446,14 +422,13 @@ class OCPTrainer(BaseTrainer):
 
         predictions = defaultdict(list)
 
-        for i, batch in tqdm(
+        for _i, batch in tqdm(
             enumerate(data_loader),
             total=len(data_loader),
             position=rank,
-            desc="device {}".format(rank),
+            desc=f"device {rank}",
             disable=disable_tqdm,
         ):
-
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
 
@@ -469,12 +444,9 @@ class OCPTrainer(BaseTrainer):
                             "prediction_dtype", "float16"
                         )
                         == "float32"
-                        or self.config["task"].get(
-                            "prediction_dtype", "float16"
-                        )
+                        or self.config["task"].get("prediction_dtype", "float16")
                         == "float32"
-                        or self.config["task"].get("dataset", "lmdb")
-                        == "oc22_lmdb"
+                        or self.config["task"].get("dataset", "lmdb") == "oc22_lmdb"
                     ):
                         dtype = torch.float32
                     else:
@@ -485,9 +457,7 @@ class OCPTrainer(BaseTrainer):
                     if self.config["outputs"][target_key]["level"] == "atom":
                         batch_natoms = batch.natoms
                         batch_fixed = batch.fixed
-                        per_image_pred = torch.split(
-                            pred, batch_natoms.tolist()
-                        )
+                        per_image_pred = torch.split(pred, batch_natoms.tolist())
 
                         ### Save out only free atom, EvalAI does not need fixed atoms
                         _per_image_fixed = torch.split(
@@ -495,15 +465,10 @@ class OCPTrainer(BaseTrainer):
                         )
                         _per_image_free_preds = [
                             _pred[(fixed == 0).tolist()].numpy()
-                            for _pred, fixed in zip(
-                                per_image_pred, _per_image_fixed
-                            )
+                            for _pred, fixed in zip(per_image_pred, _per_image_fixed)
                         ]
                         _chunk_idx = np.array(
-                            [
-                                free_pred.shape[0]
-                                for free_pred in _per_image_free_preds
-                            ]
+                            [free_pred.shape[0] for free_pred in _per_image_free_preds]
                         )
                         per_image_pred = _per_image_free_preds
                     ### Assumes system level properties are of the same dimension
@@ -517,9 +482,7 @@ class OCPTrainer(BaseTrainer):
                         if target_key == "forces":
                             predictions["chunk_idx"].extend(_chunk_idx)
                         else:
-                            predictions[f"{target_key}_chunk_idx"].extend(
-                                _chunk_idx
-                            )
+                            predictions[f"{target_key}_chunk_idx"].extend(_chunk_idx)
                 else:
                     predictions[f"{target_key}"] = pred.detach()
 
@@ -528,9 +491,7 @@ class OCPTrainer(BaseTrainer):
 
             ### Get unique system identifiers
             sids = (
-                batch.sid.tolist()
-                if isinstance(batch.sid, torch.Tensor)
-                else batch.sid
+                batch.sid.tolist() if isinstance(batch.sid, torch.Tensor) else batch.sid
             )
             ## Support naming structure for OC20 S2EF
             if "fid" in batch:
@@ -544,9 +505,6 @@ class OCPTrainer(BaseTrainer):
                 systemids = [f"{sid}" for sid in sids]
 
             predictions["ids"].extend(systemids)
-
-        for key in predictions:
-            predictions[key] = np.array(predictions[key])
 
         self.save_results(predictions, results_file)
 
@@ -609,8 +567,8 @@ class OCPTrainer(BaseTrainer):
             relaxed_batch = ml_relax(
                 batch=batch,
                 model=self,
-                steps=self.config["task"].get("relaxation_steps", 200),
-                fmax=self.config["task"].get("relaxation_fmax", 0.0),
+                steps=self.config["task"].get("relaxation_steps", 300),
+                fmax=self.config["task"].get("relaxation_fmax", 0.02),
                 relax_opt=self.config["task"]["relax_opt"],
                 save_full_traj=self.config["task"].get("save_full_traj", True),
                 device=self.device,
@@ -637,9 +595,7 @@ class OCPTrainer(BaseTrainer):
                 s_idx = 0
                 natoms_free = []
                 for natoms in relaxed_batch.natoms:
-                    natoms_free.append(
-                        torch.sum(mask[s_idx : s_idx + natoms]).item()
-                    )
+                    natoms_free.append(torch.sum(mask[s_idx : s_idx + natoms]).item())
                     s_idx += natoms
 
                 target = {
@@ -670,52 +626,30 @@ class OCPTrainer(BaseTrainer):
                 )
 
         if self.config["task"].get("write_pos", False):
-            rank = distutils.get_rank()
-            pos_filename = os.path.join(
-                self.config["cmd"]["results_dir"], f"relaxed_pos_{rank}.npz"
+            results = distutils.gather_objects(
+                {"ids": ids, "pos": relaxed_positions, "chunk_idx": chunk_idx}
             )
-            np.savez_compressed(
-                pos_filename,
-                ids=ids,
-                pos=np.array(relaxed_positions, dtype=object),
-                chunk_idx=chunk_idx,
-            )
-
             distutils.synchronize()
             if distutils.is_master():
-                gather_results = defaultdict(list)
-                full_path = os.path.join(
-                    self.config["cmd"]["results_dir"],
-                    "relaxed_positions.npz",
-                )
-
-                for i in range(distutils.get_world_size()):
-                    rank_path = os.path.join(
-                        self.config["cmd"]["results_dir"],
-                        f"relaxed_pos_{i}.npz",
-                    )
-                    rank_results = np.load(rank_path, allow_pickle=True)
-                    gather_results["ids"].extend(rank_results["ids"])
-                    gather_results["pos"].extend(rank_results["pos"])
-                    gather_results["chunk_idx"].extend(
-                        rank_results["chunk_idx"]
-                    )
-                    os.remove(rank_path)
+                gather_results = {
+                    key: list(chain(*(result[key] for result in results)))
+                    for key in results[0]
+                }
 
                 # Because of how distributed sampler works, some system ids
                 # might be repeated to make no. of samples even across GPUs.
                 _, idx = np.unique(gather_results["ids"], return_index=True)
                 gather_results["ids"] = np.array(gather_results["ids"])[idx]
-
                 gather_results["pos"] = np.concatenate(
-                    np.array(gather_results["pos"])[idx]
+                    [gather_results["pos"][i] for i in idx]
                 )
                 gather_results["chunk_idx"] = np.cumsum(
-                    np.array(gather_results["chunk_idx"])[idx]
-                )[
-                    :-1
-                ]  # np.split does not need last idx, assumes n-1:end
+                    [gather_results["chunk_idx"][i] for i in idx]
+                )[:-1]  # np.split does not need last idx, assumes n-1:end
 
+                full_path = os.path.join(
+                    self.config["cmd"]["results_dir"], "relaxed_positions.npz"
+                )
                 logging.info(f"Writing results to {full_path}")
                 np.savez_compressed(full_path, **gather_results)
 
@@ -737,15 +671,12 @@ class OCPTrainer(BaseTrainer):
                         ),
                     }
                     aggregated_metrics[k]["metric"] = (
-                        aggregated_metrics[k]["total"]
-                        / aggregated_metrics[k]["numel"]
+                        aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
                     )
                 metrics = aggregated_metrics
 
                 # Make plots.
-                log_dict = {
-                    f"{task}_{k}": metrics[k]["metric"] for k in metrics
-                }
+                log_dict = {f"{task}_{k}": metrics[k]["metric"] for k in metrics}
                 if self.logger is not None:
                     self.logger.log(
                         log_dict,
