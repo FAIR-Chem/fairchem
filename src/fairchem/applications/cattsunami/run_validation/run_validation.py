@@ -3,15 +3,22 @@ A python script to run a validation of the ML NEB model on a set of NEB calculat
 This script has not been written to run in parallel, but should be modified to do so.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from ase.io import read
-from ocpneb.core.ocpneb import OCPNEB
 from ase.optimize import BFGS
 import torch
 import argparse
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
+from fairchem.applications.cattsunami.core.ocpneb import OCPNEB
 import os
 import pandas as pd
 import numpy as np
+
+if TYPE_CHECKING:
+    import ase
 
 
 def get_results_sp(df2: pd.DataFrame):
@@ -26,22 +33,17 @@ def get_results_sp(df2: pd.DataFrame):
         (tuple[str]): a tuple of strings containing the % success and
             % convergence
     """
-    n_converged = df2[df2.all_converged | ((df2.barrierless_ml))].shape[0]
+    n_converged = df2[df2.all_converged | (df2.barrierless_ml)].shape[0]
     n_calculated = df2[~(df2.failed_sp)].shape[0]
 
     n = len(
-        df2[
-            ((df2.sp_residual <= 0.05) & (df2.both_barriered))
-            | ((df2.both_barrierless))
-        ]
+        df2[((df2.sp_residual <= 0.05) & (df2.both_barriered)) | (df2.both_barrierless)]
     )
     d = len(df2[~(df2.failed_sp)])
     prop_05_uc_f = n * 100 / d
 
     n = len(
-        df2[
-            ((df2.sp_residual <= 0.1) & (df2.both_barriered)) | ((df2.both_barrierless))
-        ]
+        df2[((df2.sp_residual <= 0.1) & (df2.both_barriered)) | (df2.both_barrierless)]
     )
     d = len(df2[~(df2.failed_sp)])
     prop_1_uc_f = n * 100 / d
@@ -49,7 +51,7 @@ def get_results_sp(df2: pd.DataFrame):
     n = len(
         df2[
             ((df2.sp_residual <= 0.05) & (df2.all_converged) & (df2.both_barriered))
-            | ((df2.barrierless_converged))
+            | (df2.barrierless_converged)
         ]
     )
     d = len(df2[df2.all_converged | ((df2.barrierless_ml) & df2.converged_ml)])
@@ -58,7 +60,7 @@ def get_results_sp(df2: pd.DataFrame):
     n = len(
         df2[
             ((df2.sp_residual <= 0.1) & (df2.all_converged) & (df2.both_barriered))
-            | ((df2.barrierless_converged))
+            | (df2.barrierless_converged)
         ]
     )
     d = len(df2[df2.all_converged | ((df2.barrierless_ml) & df2.converged_ml)])
@@ -89,18 +91,13 @@ def get_results_ml(df2):
     n_calculated = len(df2)
 
     n = len(
-        df2[
-            ((df2.ml_residual <= 0.05) & (df2.both_barriered))
-            | ((df2.both_barrierless))
-        ]
+        df2[((df2.ml_residual <= 0.05) & (df2.both_barriered)) | (df2.both_barrierless)]
     )
     d = len(df2)
     prop_05_uc_f = n * 100 / d
 
     n = len(
-        df2[
-            ((df2.ml_residual <= 0.1) & (df2.both_barriered)) | ((df2.both_barrierless))
-        ]
+        df2[((df2.ml_residual <= 0.1) & (df2.both_barriered)) | (df2.both_barrierless)]
     )
     d = len(df2)
     prop_1_uc_f = n * 100 / d
@@ -108,7 +105,7 @@ def get_results_ml(df2):
     n = len(
         df2[
             ((df2.ml_residual <= 0.05) & (df2.all_converged_ml) & (df2.both_barriered))
-            | ((df2.barrierless_converged))
+            | (df2.barrierless_converged)
         ]
     )
     d = len(df2[df2.all_converged_ml])
@@ -117,7 +114,7 @@ def get_results_ml(df2):
     n = len(
         df2[
             ((df2.ml_residual <= 0.1) & (df2.all_converged_ml) & (df2.both_barriered))
-            | ((df2.barrierless_converged))
+            | (df2.barrierless_converged)
         ]
     )
     d = len(df2[df2.all_converged_ml])
@@ -272,7 +269,8 @@ def get_single_point(
             f_vasp = atoms.get_forces()
         except:
             print(
-                "Single point calculation terminated in error. Unfortunately, this is a normal occurance despite the DFT calculation running fine."
+                "Single point calculation terminated in error. Unfortunately, this is a normal occurance despite the"
+                "DFT calculation running fine."
             )
             atoms = read(f"{vasp_dir}/vasprun.xml")
             e_vasp = atoms.get_potential_energy()
@@ -312,7 +310,6 @@ if __name__ == "__main__":
 
     # Iterate over the systems and perform an ML NEB calculation
     for entry in entries:
-
         file = entry["trajectory_name"]
         try:
             neb_id = entry["neb_id"]

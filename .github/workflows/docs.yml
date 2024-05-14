@@ -29,6 +29,7 @@ jobs:
         pip install -e packages/fairchem-core[docs,adsorbml]
         pip install -e packages/fairchem-data-oc[dev]
         pip install -e packages/fairchem-demo-ocpapi[dev]
+        pip install -e packages/fairchem-applications-cattsunami
 
     # Build the book
     - name: Build the book
@@ -49,4 +50,3 @@ jobs:
         external_repository: FAIR-Chem/fair-chem.github.io
         publish_branch: gh-pages
         publish_dir: docs/_build/html
-
