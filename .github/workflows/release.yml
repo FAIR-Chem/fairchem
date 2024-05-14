@@ -62,7 +62,7 @@ jobs:
 
     environment:
       name: pypi
-      url: https://pypi.org/p/fairchem-core/
+      url: https://pypi.org/p/fairchem-data-oc/
 
     permissions:
       id-token: write
@@ -87,7 +87,7 @@ jobs:
 
     environment:
       name: pypi
-      url: https://pypi.org/p/fairchem-core/
+      url: https://pypi.org/p/fairchem-demo-ocpapi/
 
     permissions:
       id-token: write
@@ -102,4 +102,29 @@ jobs:
         with:
           verbose: true
           packages-dir: dist-demo-ocpapi/
+          skip-existing: true
+
+  release-applications-cattsunami-pypi:
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    if: |
+      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_applications_cattsunami-') || startsWith(github.event.release.tag_name, 'fairchem_applications_cattsunami-') )
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/fairchem-applications-cattsunami/
+
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-applications-cattsunami
+          path: dist-applications-cattsunami
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+          packages-dir: dist-applications-cattsunami/
           skip-existing: true
