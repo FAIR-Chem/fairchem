@@ -7,10 +7,16 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import tarfile
 from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 import numpy as np
 import pytest
+import requests
+import torch
 from syrupy.extensions.amber import AmberSnapshotExtension
 
 if TYPE_CHECKING:
@@ -137,3 +143,32 @@ class ApproxExtension(AmberSnapshotExtension):
 @pytest.fixture()
 def snapshot(snapshot):
     return snapshot.use_extension(ApproxExtension)
+
+
+@pytest.fixture()
+def torch_deterministic():
+    # Setup
+    torch.use_deterministic_algorithms(True)
+    yield True  # Usability: prints `torch_deterministic=True` if a test fails
+    # Tear down
+    torch.use_deterministic_algorithms(False)
+
+
+@pytest.fixture(scope="session")
+def tutorial_dataset_path(tmp_path_factory) -> Path:
+    """
+    Download the tutorial dataset and extract it to a temporary directory.
+    This directory will persist until restart to avoid eating bandwidth.
+    """
+    TUTORIAL_DATASET_URL = (
+        "http://dl.fbaipublicfiles.com/opencatalystproject/data/tutorial_data.tar.gz"
+    )
+
+    tmpdir = tmp_path_factory.getbasetemp()
+
+    response = requests.get(TUTORIAL_DATASET_URL, stream=True)
+    assert response.status_code == 200
+
+    tarfile.open(fileobj=response.raw, mode="r|gz").extractall(path=tmpdir)
+
+    return tmpdir
