@@ -1,13 +1,6 @@
 name: test-release
 
 on:
-  release:  # TODO this needs to be deleted
-    types: [published]
-    inputs:
-      release-pypi:
-        required: true
-        type: boolean
-        default: true
   workflow_dispatch:
     inputs:
       release-pypi:
