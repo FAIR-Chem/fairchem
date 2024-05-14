@@ -2,15 +2,16 @@
 
 ![summary](https://github.com/Open-Catalyst-Project/CatTSunami/blob/master/summary_fig.png)
 
-CatTSunami is a framework for high-throughput enumeration of nudged elastic band (NEB) frame sets. It was built for use with machine learned (ML) models trained on [OC20](https://arxiv.org/abs/2010.09990), which were demonstrated to be performant on this auxiliary task. To train your own model or obtain pre-trained checkpoints, please see [`ocp`](https://github.com/Open-Catalyst-Project/ocp).
+CatTSunami is a framework for high-throughput enumeration of nudged elastic band (NEB) frame sets. It was built for use with machine learned (ML) models trained on [OC20](https://arxiv.org/abs/2010.09990), which were demonstrated to be performant on this auxiliary task. To train your own model or obtain pre-trained checkpoints, please see [`fairchem-core`](https://github.com/FAIR-Chem/fairchem/tree/cattsunami-package/src/fairchem/core).
 
 This repository contains the validation dataset, framework for enumeration, and accompanying code to run ML-accelerated NEBs and validate new models. For more information, please read the manuscript [paper](https://arxiv.org/abs/2405.02078).
 
 ### Getting started
-1. Install [`Open-Catalyst-Dataset`](https://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset) and [`ocp`](https://github.com/Open-Catalyst-Project/ocp)
-2. Clone this repository
-3. `cd CatTSunami && python setup.py develop`
-4. Check out the [tutorial notebook](https://github.com/Open-Catalyst-Project/CatTSunami/blob/master/tutorial/workbook.ipynb) 
+Configured for local development
+1. Clone the [`fairchem repo`](https://github.com/FAIR-Chem/fairchem/tree/main) 
+2. Install `fairchem-data-oc` and `fairchem-core`:  [`instructions`](https://fair-chem.github.io/core/install.html)
+3. Install this repository `pip install -e packages/fairchem-applications-cattsunami`
+4. Check out the [tutorial notebook](https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/applications/cattsunami/tutorial/workbook.ipynb)
 
 
 ### Validation Dataset

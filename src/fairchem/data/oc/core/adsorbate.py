@@ -5,7 +5,7 @@ from typing import Any, Dict, Tuple
 import ase
 import numpy as np
 
-from fairchem.data.oc.databases.pkls import ADSORBATES_PKL_PATH
+from fairchem.data.oc.databases.pkls import ADSORBATE_PKL_PATH
 
 
 class Adsorbate:
@@ -36,7 +36,7 @@ class Adsorbate:
         adsorbate_atoms: ase.Atoms = None,
         adsorbate_id_from_db: int = None,
         adsorbate_smiles_from_db: str = None,
-        adsorbate_db_path: str = ADSORBATES_PKL_PATH,
+        adsorbate_db_path: str = ADSORBATE_PKL_PATH,
         adsorbate_db: Dict[int, Tuple[Any, ...]] = None,
         adsorbate_binding_indices: list = None,
     ):
