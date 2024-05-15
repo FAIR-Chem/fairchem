@@ -7,9 +7,17 @@ CatTSunami is a framework for high-throughput enumeration of nudged elastic band
 This repository contains the validation dataset, framework for enumeration, and accompanying code to run ML-accelerated NEBs and validate new models. For more information, please read the manuscript [paper](https://arxiv.org/abs/2405.02078).
 
 ### Getting started
-Configured for local development
-1. Clone the [`fairchem repo`](https://github.com/FAIR-Chem/fairchem/tree/main) 
-2. Install `fairchem-data-oc` and `fairchem-core`:  [`instructions`](https://fair-chem.github.io/core/install.html)
+Configured for use:
+1. Install fairchem-core and fairchem-data-oc [instructions](https://fair-chem.github.io/core/install.html)
+2. Pip innstall fairchem-applications-cattsunami 
+3. Check out the [tutorial notebook](https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/applications/cattsunami/tutorial/workbook.ipynb)
+```
+pip install fairchem-applications-cattsunami
+```
+
+Configured for local development:
+1. Clone the [fairchem repo](https://github.com/FAIR-Chem/fairchem/tree/main) 
+2. Install `fairchem-data-oc` and `fairchem-core`:  [instructions](https://fair-chem.github.io/core/install.html)
 3. Install this repository `pip install -e packages/fairchem-applications-cattsunami`
 4. Check out the [tutorial notebook](https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/applications/cattsunami/tutorial/workbook.ipynb)
 
