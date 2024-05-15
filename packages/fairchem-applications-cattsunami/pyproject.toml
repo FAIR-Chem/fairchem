@@ -19,6 +19,7 @@ dependencies = [
 
 [project.urls]
 repository = "http://github.com/Fair-Chem/src/fairchem/applications/cattsunami"
+documentation = "https://fair-chem.github.io/"
 
 [tool.hatch.version]
 source = "vcs"
