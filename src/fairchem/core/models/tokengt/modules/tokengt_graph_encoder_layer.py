@@ -1,5 +1,5 @@
 """
-Modified from https://github.com/microsoft/Graphormer
+Modified from https://github.com/jw9730/tokengt
 """
 
 from typing import Callable, Optional

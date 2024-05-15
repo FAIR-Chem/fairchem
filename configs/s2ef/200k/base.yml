@@ -1,13 +1,15 @@
 trainer: forces
 
 dataset:
-  - src: /data/ericqu/OC20/200k/s2ef/200k/train/
+  train:
+    src: /data/ericqu/OC20/200k/s2ef/200k/train/
     normalize_labels: True
     target_mean: -0.7554450631141663
     target_std: 2.887317180633545
     grad_target_mean: 0.0
     grad_target_std: 2.887317180633545
-  - src: /data/ericqu/OC20/val_id/s2ef/all/val_id
+  val: 
+    src: /data/ericqu/OC20/val_id/s2ef/all/val_id
     limit: 10000
 
 logger: wandb

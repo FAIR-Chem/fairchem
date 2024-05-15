@@ -12,6 +12,7 @@ import logging
 import torch
 import torch.nn as nn
 from torch_geometric.nn import radius_graph
+from torch_geometric.utils import to_dense_adj
 
 from fairchem.core.common.utils import (
     compute_neighbors,
@@ -38,6 +39,8 @@ class BaseModel(nn.Module):
         use_pbc=None,
         otf_graph=None,
         enforce_max_neighbors_strictly=None,
+        calc_lap=False,
+        lap_dim=128,
     ):
         cutoff = cutoff or self.cutoff
         max_neighbors = max_neighbors or self.max_neighbors
@@ -109,6 +112,18 @@ class BaseModel(nn.Module):
             )
             neighbors = compute_neighbors(data, edge_index)
 
+        if calc_lap:
+            lap_vec = lap_eigvec(data.batch, edge_index, data.natoms, dim=lap_dim)
+            return (
+                edge_index,
+                edge_dist,
+                distance_vec,
+                lap_vec,
+                cell_offsets,
+                cell_offset_distances,
+                neighbors,
+            )
+
         return (
             edge_index,
             edge_dist,
@@ -130,3 +145,37 @@ class BaseModel(nn.Module):
             if "embedding" in name or "frequencies" in name or "bias" in name:
                 no_wd_list.append(name)
         return no_wd_list
+
+def eig(sym_mat):
+    # (sorted) eigenvectors with numpy
+    _, EigVec = torch.linalg.eigh(sym_mat)
+
+    # for eigval, take abs because numpy sometimes computes the first eigenvalue approaching 0 from the negative
+    eigvec = EigVec.float()  # [N, N (channels)]
+    return eigvec  # [N, N (channels)]
+
+def lap_eigvec(batch, edge_index, natoms, dim=128):
+    """
+    Graph positional encoding v/ Laplacian eigenvectors
+    https://github.com/DevinKreuzer/SAN/blob/main/data/molecules.py
+    Modified to git OTF graph construction
+    """
+    output = torch.zeros(len(batch), dim)
+    for i in range(batch.max() + 1):
+        edges = edge_index[:, (batch[edge_index] == i).all(0)]
+        offset = edges.min()
+        edges = edges - offset
+        dense_adj = to_dense_adj(edges).float()[0]
+        in_degree = dense_adj.sum(1)
+
+        # Laplacian
+        A = dense_adj
+        N = torch.diag(in_degree.clip(1) ** -0.5)
+        L = torch.eye(natoms[i]) - N @ A @ N
+
+        eigvec = eig(L)
+        if natoms[i] <= dim:
+            output[offset: offset+natoms[i], :natoms[i]] = eigvec
+        else:
+            output[offset: offset+natoms[i]] = eigvec[:, :dim]
+    return output 

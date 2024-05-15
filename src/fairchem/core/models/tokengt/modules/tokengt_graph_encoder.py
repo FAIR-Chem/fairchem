@@ -1,5 +1,5 @@
 """
-Modified from https://github.com/microsoft/Graphormer
+Modified from https://github.com/jw9730/tokengt
 """
 
 from typing import Optional, Tuple
@@ -20,7 +20,7 @@ def init_graphormer_params(module):
     Initialize the weights specific to the Graphormer Model.
     """
 
-    def normal_(data):
+    def normal_(data: torch.Tensor):
         # with FSDP, module params will be on CUDA, so we cast them back to CPU
         # so that the RNG is consistent with and without FSDP
         data.copy_(data.cpu().normal_(mean=0.0, std=0.02).to(data.device))
@@ -42,21 +42,14 @@ def init_graphormer_params(module):
 class TokenGTGraphEncoder(nn.Module):
     def __init__(
             self,
-            num_atoms: int,
-            num_in_degree: int,
-            num_out_degree: int,
-            num_edges: int,
-            num_spatial: int,
-            num_edge_dis: int,
-            edge_type: str,
-            multi_hop_max_dist: int,
-
+            num_atoms: int = 100,
+            num_edges: int = 9,
             rand_node_id: bool = False,
             rand_node_id_dim: int = 64,
             orf_node_id: bool = False,
             orf_node_id_dim: int = 64,
             lap_node_id: bool = False,
-            lap_node_id_k: int = 8,
+            lap_node_id_dim: int = 8,
             lap_node_id_sign_flip: bool = False,
             lap_node_id_eig_dropout: float = 0.0,
             type_id: bool = False,
@@ -89,9 +82,6 @@ class TokenGTGraphEncoder(nn.Module):
             traceable: bool = False,
             q_noise: float = 0.0,
             qn_block_size: int = 8,
-
-            return_attention: bool = False
-
     ) -> None:
 
         super().__init__()
@@ -113,7 +103,7 @@ class TokenGTGraphEncoder(nn.Module):
             orf_node_id=orf_node_id,
             orf_node_id_dim=orf_node_id_dim,
             lap_node_id=lap_node_id,
-            lap_node_id_k=lap_node_id_k,
+            lap_node_id_dim=lap_node_id_dim,
             lap_node_id_sign_flip=lap_node_id_sign_flip,
             lap_node_id_eig_dropout=lap_node_id_eig_dropout,
             type_id=type_id,
@@ -183,7 +173,6 @@ class TokenGTGraphEncoder(nn.Module):
                     q_noise=q_noise,
                     qn_block_size=qn_block_size,
                     layernorm_style=layernorm_style,
-                    return_attention=return_attention,
                 )
                 for layer_idx in range(num_encoder_layers)
             ]
@@ -246,7 +235,6 @@ class TokenGTGraphEncoder(nn.Module):
             q_noise,
             qn_block_size,
             layernorm_style,
-            return_attention,
     ):
         return TokenGTGraphEncoderLayer(
             embedding_dim=embedding_dim,
@@ -265,26 +253,33 @@ class TokenGTGraphEncoder(nn.Module):
             q_noise=q_noise,
             qn_block_size=qn_block_size,
             layernorm_style=layernorm_style,
-            return_attention=return_attention
         )
 
     def forward(
             self,
-            batched_data,
-            perturb=None,
-            last_state_only: bool = False,
-            token_embeddings: Optional[torch.Tensor] = None,
-            attn_mask: Optional[torch.Tensor] = None,
-    ):
-        is_tpu = False
+            batch,
+            pos, 
+            natoms,
+            atomic_numbers, 
+            edge_index,
+            edge_distance_vec, 
+            edge_data,
+            lap_vec,
+        ):
 
         if self.performer and self.performer_auto_check_redraw:
             self.performer_proj_updater.redraw_projections()
 
-        if token_embeddings is not None:
-            raise NotImplementedError
-        else:
-            x, padding_mask, padded_index = self.graph_feature(batched_data, perturb)
+        x, padding_mask, padded_node_mask = self.graph_feature(
+            batch,
+            pos, 
+            natoms,
+            atomic_numbers, 
+            edge_index,
+            edge_distance_vec, 
+            edge_data,
+            lap_vec,
+        )
 
         # x: B x T x C
 
@@ -298,33 +293,11 @@ class TokenGTGraphEncoder(nn.Module):
             x = self.emb_layer_norm(x)
 
         x = self.dropout_module(x)
-
-        # account for padding while computing the representation
-
         # B x T x C -> T x B x C
         x = x.transpose(0, 1)
 
-        inner_states = []
-        if not last_state_only:
-            inner_states.append(x)
-
-        if attn_mask is not None:
-            raise NotImplementedError
-
-        attn_dict = {'maps': {}, 'padded_index': padded_index}
         for i in range(len(self.layers)):
             layer = self.layers[i]
-            x, attn = layer(x, self_attn_padding_mask=padding_mask, self_attn_mask=attn_mask, self_attn_bias=None)
-            if not last_state_only:
-                inner_states.append(x)
-            attn_dict['maps'][i] = attn
-
-        graph_rep = x[0, :, :]
-
-        if last_state_only:
-            inner_states = [x]
-
-        if self.traceable:
-            return torch.stack(inner_states), graph_rep, attn_dict
-        else:
-            return inner_states, graph_rep, attn_dict
+            x = layer(x, self_attn_padding_mask=padding_mask, self_attn_bias=None)
+        
+        return x, padded_node_mask

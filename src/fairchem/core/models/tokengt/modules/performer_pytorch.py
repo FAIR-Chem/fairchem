@@ -1,5 +1,5 @@
 """
-https://github.com/lucidrains/performer-pytorch/blob/main/performer_pytorch/performer_pytorch.py
+https://github.com/jw9730/tokengt
 """
 
 import math

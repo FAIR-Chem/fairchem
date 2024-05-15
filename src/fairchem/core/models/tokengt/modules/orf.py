@@ -1,5 +1,5 @@
 """
-Modified from https://github.com/lucidrains/performer-pytorch/blob/main/performer_pytorch/performer_pytorch.py
+Modified from https://github.com/jw9730/tokengt
 """
 
 import torch

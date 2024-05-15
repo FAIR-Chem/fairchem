@@ -1,3 +1,7 @@
+"""
+modified from https://github.com/jw9730/tokengt
+"""
+
 import torch
 import torch.nn as nn
 from fairseq import utils

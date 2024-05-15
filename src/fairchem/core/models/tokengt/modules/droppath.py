@@ -1,4 +1,5 @@
 """
+https://github.com/jw9730/tokengt
 https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/layers/drop.py
 https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/vision_transformer.py
 """

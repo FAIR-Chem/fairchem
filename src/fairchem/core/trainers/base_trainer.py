@@ -22,7 +22,7 @@ import torch
 import torch.nn as nn
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 
 from fairchem.core.common import distutils, gp_utils
@@ -285,6 +285,7 @@ class BaseTrainer(ABC):
             self.train_dataset = registry.get_dataset_class(
                 self.config["dataset"].get("format", "lmdb")
             )(self.config["dataset"])
+
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
                 self.config["optim"]["batch_size"],
@@ -301,10 +302,21 @@ class BaseTrainer(ABC):
                     val_config.update(self.config["val_dataset"])
                 else:
                     val_config = self.config["val_dataset"]
-
+                logging.info("Loading validation set.")
                 self.val_dataset = registry.get_dataset_class(
                     val_config.get("format", "lmdb")
                 )(val_config)
+
+                if val_config.get("limit"):
+                    # to make sampling deterministic, seed rng
+                    indx = np.random.default_rng(seed=0).choice(
+                        len(self.val_dataset), 
+                        val_config.get("limit"), 
+                        replace=False
+                    )
+                    self.val_dataset = Subset(self.val_dataset, torch.tensor(indx))
+                    logging.info("Subsetted validation set.")
+
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,
                     self.config["optim"].get(
