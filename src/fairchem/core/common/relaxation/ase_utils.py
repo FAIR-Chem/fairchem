@@ -108,6 +108,10 @@ class OCPCalculator(Calculator):
         Calculator.__init__(self)
 
         if model_name is not None:
+            if checkpoint_path is not None:
+                raise RuntimeError(
+                    "model_name and checkpoint_path were both specified, please use only one at a time"
+                )
             if local_cache is None:
                 raise NotImplementedError(
                     "Local cache must be set when specifying a model name"
