@@ -1,9 +1,11 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
 
 import torch
 from torch_scatter import segment_csr
@@ -77,9 +79,7 @@ def repeat_blocks(
         insert_dummy = False
 
     # Get repeats for each group using group lengths/sizes
-    r1 = torch.repeat_interleave(
-        torch.arange(len(sizes), device=sizes.device), repeats
-    )
+    r1 = torch.repeat_interleave(torch.arange(len(sizes), device=sizes.device), repeats)
 
     # Get total size of output array, as needed to initialize output indexing array
     N = (sizes * repeats).sum()
@@ -103,9 +103,7 @@ def repeat_blocks(
 
         # Add block increments
         if isinstance(block_inc, torch.Tensor):
-            insert_val += segment_csr(
-                block_inc[: r1[-1]], indptr, reduce="sum"
-            )
+            insert_val += segment_csr(block_inc[: r1[-1]], indptr, reduce="sum")
         else:
             insert_val += block_inc * (indptr[1:] - indptr[:-1])
             if insert_dummy:
@@ -150,19 +148,14 @@ def repeat_blocks(
     id_ar[0] += start_idx
 
     # Finally index into input array for the group repeated o/p
-    res = id_ar.cumsum(0)
-    return res
+    return id_ar.cumsum(0)
 
 
 def get_edge_id(edge_idx, cell_offsets, num_atoms: int):
     cell_basis = cell_offsets.max() - cell_offsets.min() + 1
     cell_id = (
-        (
-            cell_offsets
-            * cell_offsets.new_tensor([[1, cell_basis, cell_basis**2]])
-        )
+        (cell_offsets * cell_offsets.new_tensor([[1, cell_basis, cell_basis**2]]))
         .sum(-1)
         .long()
     )
-    edge_id = edge_idx[0] + edge_idx[1] * num_atoms + cell_id * num_atoms**2
-    return edge_id
+    return edge_idx[0] + edge_idx[1] * num_atoms + cell_id * num_atoms**2
