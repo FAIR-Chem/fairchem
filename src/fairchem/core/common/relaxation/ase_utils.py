@@ -89,6 +89,11 @@ class OCPCalculator(Calculator):
                 Path to yaml config or could be a dictionary.
             checkpoint_path (str):
                 Path to trained checkpoint.
+            model_name (str):
+                Model name to use. Pretrained model checkpoint will be
+                downloaded if not found in your local_cache.
+            local_cache (str):
+                Directory to save pretrained model checkpoints.
             trainer (str):
                 OCP trainer to be used. "forces" for S2EF, "energy" for IS2RE.
             cutoff (int):
@@ -103,9 +108,14 @@ class OCPCalculator(Calculator):
         Calculator.__init__(self)
 
         if model_name is not None:
+            if checkpoint_path is not None:
+                raise RuntimeError(
+                    "model_name and checkpoint_path were both specified, please use only one at a time"
+                )
             if local_cache is None:
-                logging.error("Local cahce must be set when using model name")
-                return
+                raise NotImplementedError(
+                    "Local cache must be set when specifying a model name"
+                )
             checkpoint_path = model_name_to_local_file(
                 model_name=model_name, local_cache=local_cache
             )
