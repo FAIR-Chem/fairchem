@@ -3,11 +3,7 @@ name: release
 on:
   release:
     types: [published]
-    inputs:
-      release-pypi:
-        required: true
-        type: boolean
-        default: true
+
   workflow_dispatch:
     inputs:
       release-pypi:
