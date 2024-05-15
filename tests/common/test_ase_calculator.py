@@ -5,80 +5,65 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-import io
+from __future__ import annotations
+
 import random
+from typing import TYPE_CHECKING
 
 import pytest
-import requests
 import torch
 from ase.build import add_adsorbate, fcc111
 from ase.optimize import BFGS
 
 from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from ocpmodels.models.model_registry import model_name_to_local_file
+
+if TYPE_CHECKING:
+    from ase import Atoms
 
 
 # Following the OCP tutorial: https://github.com/Open-Catalyst-Project/tutorial
-@pytest.fixture(scope="class")
-def atoms(request) -> None:
+@pytest.fixture()
+def atoms() -> Atoms:
     atoms = fcc111("Pt", size=(2, 2, 5), vacuum=10.0)
     add_adsorbate(atoms, "O", height=1.2, position="fcc")
     return atoms
 
 
-def get_with_retry(url, retries=10):
-    retry = 0
-    while retry < retries:
-        try:
-            r = requests.get(url, timeout=10)
-            r.raise_for_status()
-            return r
-        except ConnectionError as e:
-            retry += 1
-            if retry == retries:
-                raise e
-    raise ConnectionError
+@pytest.fixture(
+    params=[
+        "SchNet-S2EF-OC20-All",
+        "DimeNet++-S2EF-OC20-All",
+        "GemNet-dT-S2EF-OC20-All",
+        "PaiNN-S2EF-OC20-All",
+        "GemNet-OC-Large-S2EF-OC20-All+MD",
+        "SCN-S2EF-OC20-All+MD",
+        # Equiformer v2  # already tested in test_relaxation_final_energy
+        # "EquiformerV2-153M-S2EF-OC20-All+MD"
+        # eSCNm # already tested in test_random_seed_final_energy
+        # "eSCN-L4-M2-Lay12-S2EF-OC20-2M"
+    ]
+)
+def checkpoint_path(request, tmp_path):
+    return model_name_to_local_file(request.param, tmp_path)
 
 
 # First let's just make sure all checkpoints are being loaded without any
 # errors as part of the ASE calculator setup.
-@pytest.mark.parametrize(
-    "model_url",
-    [
-        # SchNet
-        "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/schnet_all_large.pt",
-        # DimeNet++
-        "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/s2ef/dimenetpp_all.pt",
-        # GemNet-dT
-        "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_08/s2ef/gemnet_t_direct_h512_all.pt",
-        # PaiNN
-        "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_05/s2ef/painn_h512_s2ef_all.pt",
-        # GemNet-OC
-        "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/gemnet_oc_base_s2ef_all_md.pt",
-        # SCN
-        "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/scn_all_md_s2ef.pt",
-        # Equiformer v2  # already tested in test_relaxation_final_energy
-        # "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_153M_ec4_allmd.pt",
-        # eSCNm # already tested in test_random_seed_final_energy
-        # "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/escn_l6_m3_lay20_all_md_s2ef.pt",
-    ],
-)
-def test_calculator_setup(model_url):
-    with get_with_retry(model_url) as r:
-        r.raise_for_status()
-        _ = OCPCalculator(checkpoint_path=io.BytesIO(r.content), cpu=True)
+def test_calculator_setup(checkpoint_path):
+    _ = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
 
 
-def test_relaxation_final_energy(atoms, snapshot):
-    # Run an adslab relaxation using the ASE calculator and ase.optimize.BFGS
-    # with one model and compare the final energy.
+# test relaxation with EqV2
+def test_relaxation_final_energy(atoms, tmp_path, snapshot) -> None:
     random.seed(1)
     torch.manual_seed(1)
-
-    equiformerv2_url = "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_153M_ec4_allmd.pt"
-
-    with get_with_retry(equiformerv2_url) as r:
-        r.raise_for_status()
-        calc = OCPCalculator(checkpoint_path=io.BytesIO(r.content), cpu=True)
+    calc = OCPCalculator(
+        checkpoint_path=model_name_to_local_file(
+            "EquiformerV2-153M-S2EF-OC20-All+MD", tmp_path
+        ),
+        cpu=True,
+    )
 
     assert "energy" in calc.implemented_properties
     assert "forces" in calc.implemented_properties
@@ -90,30 +75,28 @@ def test_relaxation_final_energy(atoms, snapshot):
     assert snapshot == round(atoms.get_potential_energy(), 2)
 
 
-def test_random_seed_final_energy(atoms):
-    # too big to run on CircleCI or github
-    # escn_url = "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/escn_l6_m3_lay20_all_md_s2ef.pt"
-    escn_url = "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/escn_l4_m2_lay12_2M_s2ef.pt"
+# test random seed final energy with eSCN
+def test_random_seed_final_energy(atoms, tmp_path):
+    # too big to run on CircleCI on github
     seeds = [100, 200, 100]
     results_by_seed = {}
     # compute the value for each seed , make sure repeated seeds have the exact same output
 
-    with get_with_retry(escn_url) as r:
-        for seed in seeds:
-            calc = OCPCalculator(
-                checkpoint_path=io.BytesIO(r.content),
-                cpu=True,
-                seed=seed,
-            )
+    checkpoint_path = model_name_to_local_file(
+        "eSCN-L4-M2-Lay12-S2EF-OC20-2M", tmp_path
+    )
 
-            atoms.set_calculator(calc)
+    for seed in seeds:
+        calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True, seed=seed)
 
-            energy = atoms.get_potential_energy()
-            if seed in results_by_seed:
-                assert results_by_seed[seed] == energy
-            else:
-                results_by_seed[seed] = energy
-        # make sure different seeds give slightly different results , expected due to discretization error in grid
-        for seed_a in set(seeds):
-            for seed_b in set(seeds) - set([seed_a]):
-                assert results_by_seed[seed_a] != results_by_seed[seed_b]
+        atoms.set_calculator(calc)
+
+        energy = atoms.get_potential_energy()
+        if seed in results_by_seed:
+            assert results_by_seed[seed] == energy
+        else:
+            results_by_seed[seed] = energy
+    # make sure different seeds give slightly different results , expected due to discretization error in grid
+    for seed_a in set(seeds):
+        for seed_b in set(seeds) - {seed_a}:
+            assert results_by_seed[seed_a] != results_by_seed[seed_b]

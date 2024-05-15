@@ -1,5 +1,5 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -9,6 +9,7 @@ LICENSE file in the root directory of this source tree.
 Utilities to interface OCP models/trainers with the Atomic Simulation
 Environment (ASE)
 """
+
 from __future__ import annotations
 
 import copy
@@ -29,6 +30,7 @@ from ocpmodels.common.utils import (
     update_config,
 )
 from ocpmodels.datasets import data_list_collater
+from ocpmodels.models.model_registry import model_name_to_local_file
 from ocpmodels.preprocessing import AtomsToGraphs
 
 if TYPE_CHECKING:
@@ -44,7 +46,7 @@ def batch_to_atoms(batch: Batch):
     positions = torch.split(batch.pos, natoms)
     tags = torch.split(batch.tags, natoms)
     cells = batch.cell
-    energies = batch.y.tolist()
+    energies = batch.y.view(-1).tolist()
 
     atoms_objects = []
     for idx in range(n_systems):
@@ -76,6 +78,8 @@ class OCPCalculator(Calculator):
         self,
         config_yml: str | None = None,
         checkpoint_path: str | None = None,
+        model_name: str | None = None,
+        local_cache: str | None = None,
         trainer: str | None = None,
         cpu: bool = True,
         seed: int | None = None,
@@ -97,15 +101,21 @@ class OCPCalculator(Calculator):
         setup_logging()
         super().__init__()
 
+        if model_name is not None:
+            if local_cache is None:
+                logging.error("Local cahce must be set when using model name")
+                return
+            checkpoint_path = model_name_to_local_file(
+                model_name=model_name, local_cache=local_cache
+            )
+
         # Either the config path or the checkpoint path needs to be provided
         assert config_yml or checkpoint_path is not None
 
         checkpoint = None
         if config_yml is not None:
             if isinstance(config_yml, str):
-                config, duplicates_warning, duplicates_error = load_config(
-                    config_yml
-                )
+                config, duplicates_warning, duplicates_error = load_config(config_yml)
                 if len(duplicates_warning) > 0:
                     logging.warning(
                         f"Overwritten config parameters from included configs "
@@ -126,9 +136,7 @@ class OCPCalculator(Calculator):
                 config["dataset"] = config["dataset"].get("train", None)
         else:
             # Loads the config from the checkpoint directly (always on CPU).
-            checkpoint = torch.load(
-                checkpoint_path, map_location=torch.device("cpu")
-            )
+            checkpoint = torch.load(checkpoint_path, map_location=torch.device("cpu"))
             config = checkpoint["config"]
 
         if trainer is not None:
@@ -148,7 +156,18 @@ class OCPCalculator(Calculator):
         # Calculate the edge indices on the fly
         config["model"]["otf_graph"] = True
 
-        # Save config so obj can be transported over network (pkl)
+        ### backwards compatability with OCP v<2.0
+        ### TODO: better format check for older configs
+        ### Taken from base_trainer
+        if not config.get("loss_fns"):
+            logging.warning(
+                "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
+            )
+            config = update_config(config)
+
+        ### backwards compatability with OCP v<2.0
+        ### TODO: better format check for older configs
+        ### Taken from base_trainer
         if not config.get("loss_fns"):
             logging.warning(
                 "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
@@ -176,9 +195,7 @@ class OCPCalculator(Calculator):
         )
 
         if checkpoint_path is not None:
-            self.load_checkpoint(
-                checkpoint_path=checkpoint_path, checkpoint=checkpoint
-            )
+            self.load_checkpoint(checkpoint_path=checkpoint_path, checkpoint=checkpoint)
 
         seed = seed if seed is not None else self.trainer.config["cmd"]["seed"]
         if seed is None:
@@ -214,9 +231,7 @@ class OCPCalculator(Calculator):
         except NotImplementedError:
             logging.warning("Unable to load checkpoint!")
 
-    def calculate(
-        self, atoms: Atoms | Batch, properties, system_changes
-    ) -> None:
+    def calculate(self, atoms: Atoms | Batch, properties, system_changes) -> None:
         """Calculate implemented properties for a single Atoms object or a Batch of them."""
         super().calculate(atoms, properties, system_changes)
         if isinstance(atoms, Atoms):
@@ -225,15 +240,11 @@ class OCPCalculator(Calculator):
         else:
             batch = atoms
 
-        predictions = self.trainer.predict(
-            batch, per_image=False, disable_tqdm=True
-        )
+        predictions = self.trainer.predict(batch, per_image=False, disable_tqdm=True)
 
         for key in predictions:
             _pred = predictions[key]
             _pred = _pred.item() if _pred.numel() == 1 else _pred.cpu().numpy()
             if key in OCPCalculator._reshaped_props:
-                _pred = _pred.reshape(
-                    OCPCalculator._reshaped_props[key]
-                ).squeeze()
+                _pred = _pred.reshape(OCPCalculator._reshaped_props[key]).squeeze()
             self.results[key] = _pred

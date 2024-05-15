@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import inspect
 import math
 from bisect import bisect
-from typing import List, Optional
 
 import torch
 
@@ -30,10 +31,9 @@ def cosine_lr_lambda(current_step: int, scheduler_params):
     else:
         if current_step >= max_epochs:
             return lr_min_factor
-        lr_scale = lr_min_factor + 0.5 * (1 - lr_min_factor) * (
+        return lr_min_factor + 0.5 * (1 - lr_min_factor) * (
             1 + math.cos(math.pi * (current_step / max_epochs))
         )
-        return lr_scale
 
 
 class CosineLRLambda:
@@ -51,16 +51,15 @@ class CosineLRLambda:
         else:
             if current_step >= self.max_epochs:
                 return self.lr_min_factor
-            lr_scale = self.lr_min_factor + 0.5 * (1 - self.lr_min_factor) * (
+            return self.lr_min_factor + 0.5 * (1 - self.lr_min_factor) * (
                 1 + math.cos(math.pi * (current_step / self.max_epochs))
             )
-            return lr_scale
 
 
 def multistep_lr_lambda(current_step: int, scheduler_params) -> float:
     warmup_epochs = aii(scheduler_params["warmup_epochs"], int)
     lr_warmup_factor = aii(scheduler_params["warmup_factor"], float)
-    lr_decay_epochs: List[int] = scheduler_params["decay_epochs"]
+    lr_decay_epochs: list[int] = scheduler_params["decay_epochs"]
     lr_gamma = aii(scheduler_params["decay_rate"], float)
 
     if current_step <= warmup_epochs:
@@ -122,8 +121,8 @@ class LRScheduler:
         self.optimizer = optimizer
         self.config = config.copy()
 
-        assert "scheduler" in self.config.keys()
-        assert "scheduler_params" in self.config.keys()
+        assert "scheduler" in self.config
+        assert "scheduler_params" in self.config
         self.scheduler_type = aii(self.config["scheduler"], str)
         self.scheduler_params = self.config["scheduler_params"].copy()
 
@@ -141,9 +140,7 @@ class LRScheduler:
             self.scheduler_params["lr_lambda"] = scheduler_lambda_fn
 
         if self.scheduler_type != "Null":
-            self.scheduler = getattr(
-                torch.optim.lr_scheduler, self.scheduler_type
-            )
+            self.scheduler = getattr(torch.optim.lr_scheduler, self.scheduler_type)
             scheduler_args = self.filter_kwargs(self.scheduler_params)
             self.scheduler = self.scheduler(optimizer, **scheduler_args)
 
@@ -152,9 +149,7 @@ class LRScheduler:
             return
         if self.scheduler_type == "ReduceLROnPlateau":
             if metrics is None:
-                raise Exception(
-                    "Validation set required for ReduceLROnPlateau."
-                )
+                raise Exception("Validation set required for ReduceLROnPlateau.")
             self.scheduler.step(metrics)
         else:
             self.scheduler.step()
@@ -168,11 +163,9 @@ class LRScheduler:
             if param.kind == param.POSITIONAL_OR_KEYWORD
         ]
         filter_keys.remove("optimizer")
-        scheduler_args = {
-            arg: config[arg] for arg in config if arg in filter_keys
-        }
-        return scheduler_args
+        return {arg: config[arg] for arg in config if arg in filter_keys}
 
-    def get_lr(self) -> Optional[float]:
+    def get_lr(self) -> float | None:
         for group in self.optimizer.param_groups:
             return aii(group["lr"], float)
+        return None

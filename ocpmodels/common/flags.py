@@ -1,9 +1,11 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
 
 import argparse
 from pathlib import Path
@@ -127,12 +129,8 @@ class Flags:
             default="nccl",
             help="Backend for DDP",
         )
-        self.parser.add_argument(
-            "--local_rank", default=0, type=int, help="Local rank"
-        )
-        self.parser.add_argument(
-            "--no-ddp", action="store_true", help="Do not use DDP"
-        )
+        self.parser.add_argument("--local-rank", default=0, type=int, help="Local rank")
+        self.parser.add_argument("--no-ddp", action="store_true", help="Do not use DDP")
         self.parser.add_argument(
             "--gp-gpus",
             type=int,

@@ -1,9 +1,11 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
 
 import torch
 
@@ -13,15 +15,9 @@ def _standardize(kernel):
     Makes sure that N*Var(W) = 1 and E[W] = 0
     """
     eps = 1e-6
-
-    if len(kernel.shape) == 3:
-        axis = [0, 1]  # last dimension is output dimension
-    else:
-        axis = 1
-
+    axis = [0, 1] if len(kernel.shape) == 3 else 1
     var, mean = torch.var_mean(kernel, dim=axis, unbiased=True, keepdim=True)
-    kernel = (kernel - mean) / (var + eps) ** 0.5
-    return kernel
+    return (kernel - mean) / (var + eps) ** 0.5
 
 
 def he_orthogonal_init(tensor: torch.Tensor) -> torch.Tensor:
@@ -35,10 +31,7 @@ def he_orthogonal_init(tensor: torch.Tensor) -> torch.Tensor:
     """
     tensor = torch.nn.init.orthogonal_(tensor)
 
-    if len(tensor.shape) == 3:
-        fan_in = tensor.shape[:-1].numel()
-    else:
-        fan_in = tensor.shape[1]
+    fan_in = tensor.shape[:-1].numel() if len(tensor.shape) == 3 else tensor.shape[1]
 
     with torch.no_grad():
         tensor.data = _standardize(tensor.data)

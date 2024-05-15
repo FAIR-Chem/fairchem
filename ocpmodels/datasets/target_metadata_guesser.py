@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 import numpy as np
@@ -14,7 +16,7 @@ def uniform_atoms_lengths(atoms_lens) -> bool:
 def target_constant_shape(atoms_lens, target_samples) -> bool:
     # Given a bunch of atoms lengths, and the corresponding samples for the target,
     # determine whether the shape is always the same regardless of atom size
-    return len(set([sample.shape for sample in target_samples])) == 1
+    return len({sample.shape for sample in target_samples}) == 1
 
 
 def target_per_atom(atoms_lens, target_samples) -> bool:
@@ -26,24 +28,18 @@ def target_per_atom(atoms_lens, target_samples) -> bool:
         return False
 
     first_dim_proportional = all(
-        [
-            np.array(sample).shape[0] == alen
-            for alen, sample in zip(atoms_lens, target_samples)
-        ]
+        np.array(sample).shape[0] == alen
+        for alen, sample in zip(atoms_lens, target_samples)
     )
 
     if len(np.array(target_samples[0]).shape) == 1:
         other_dim_constant = True
     else:
         other_dim_constant = (
-            len(set([np.array(sample).shape[1:] for sample in target_samples]))
-            == 1
+            len({np.array(sample).shape[1:] for sample in target_samples}) == 1
         )
 
-    if first_dim_proportional and other_dim_constant:
-        return True
-    else:
-        return False
+    return bool(first_dim_proportional and other_dim_constant)
 
 
 def target_extensive(atoms_lens, target_samples, threshold: float = 0.2):
@@ -61,10 +57,7 @@ def target_extensive(atoms_lens, target_samples, threshold: float = 0.2):
     # Get the per-atom normalized properties
     try:
         compiled_target_array = np.array(
-            [
-                sample / atom_len
-                for sample, atom_len in zip(atoms_lens, target_samples)
-            ]
+            [sample / atom_len for sample, atom_len in zip(atoms_lens, target_samples)]
         )
     except TypeError:
         return False
@@ -80,13 +73,12 @@ def target_extensive(atoms_lens, target_samples, threshold: float = 0.2):
     )
     if extensive_guess.shape == ():
         return extensive_guess
-    elif (
-        target_samples_normalized.std(axis=0)
-        < (threshold * target_samples_normalized.mean(axis=0))
-    ).all():
-        return True
-    else:
-        return False
+    return bool(
+        (
+            target_samples_normalized.std(axis=0)
+            < threshold * target_samples_normalized.mean(axis=0)
+        ).all()
+    )
 
 
 def guess_target_metadata(atoms_len, target_samples):
@@ -165,25 +157,19 @@ def guess_property_metadata(atoms_list):
     if hasattr(atoms, "info"):
         for key in atoms.info:
             # Grab the property samples from the list of atoms
-            target_samples = [
-                np.array(atoms.info[key]) for atoms in atoms_list
-            ]
+            target_samples = [np.array(atoms.info[key]) for atoms in atoms_list]
 
             # Guess the metadata
-            targets[f"info.{key}"] = guess_target_metadata(
-                atoms_len, target_samples
-            )
+            targets[f"info.{key}"] = guess_target_metadata(atoms_len, target_samples)
 
             # Log a warning so the user knows what's happening
             logging.warning(
-                f'Guessed metadata for atoms.info["{key}"]: {str(targets[f"info.{key}"])}'
+                f'Guessed metadata for atoms.info["{key}"]: {targets[f"info.{key}"]!s}'
             )
     if hasattr(atoms, "calc") and atoms.calc is not None:
         for key in atoms.calc.results:
             # Grab the property samples from the list of atoms
-            target_samples = [
-                np.array(atoms.calc.results[key]) for atoms in atoms_list
-            ]
+            target_samples = [np.array(atoms.calc.results[key]) for atoms in atoms_list]
 
             # stress needs to be handled separately in case it was saved in voigt (6, ) notation
             # atoms2graphs will always request voigt=False so turn it into full 3x3
@@ -196,13 +182,11 @@ def guess_property_metadata(atoms_list):
                 ]
 
             # Guess the metadata
-            targets[f"{key}"] = guess_target_metadata(
-                atoms_len, target_samples
-            )
+            targets[f"{key}"] = guess_target_metadata(atoms_len, target_samples)
 
             # Log a warning so the user knows what's happening
             logging.warning(
-                f'Guessed metadata for ASE calculator property ["{key}"]: {str(targets[key])}'
+                f'Guessed metadata for ASE calculator property ["{key}"]: {targets[key]!s}'
             )
 
     return targets
