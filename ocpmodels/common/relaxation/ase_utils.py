@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import copy
 import logging
+from types import MappingProxyType
 from typing import TYPE_CHECKING
 
 import torch
@@ -72,7 +73,9 @@ def batch_to_atoms(batch: Batch):
 class OCPCalculator(Calculator):
     """ASE based calculator using an OCP model"""
 
-    _reshaped_props = {"stress": (-1, 3, 3), "dielectric_tensor": (-1, 3, 3)}
+    _reshaped_props = MappingProxyType(
+        {"stress": (-1, 3, 3), "dielectric_tensor": (-1, 3, 3)}
+    )
 
     def __init__(
         self,
@@ -246,5 +249,5 @@ class OCPCalculator(Calculator):
             _pred = predictions[key]
             _pred = _pred.item() if _pred.numel() == 1 else _pred.cpu().numpy()
             if key in OCPCalculator._reshaped_props:
-                _pred = _pred.reshape(OCPCalculator._reshaped_props[key]).squeeze()
+                _pred = _pred.reshape(OCPCalculator._reshaped_props.get(key)).squeeze()
             self.results[key] = _pred
