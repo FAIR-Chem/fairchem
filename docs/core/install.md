@@ -54,8 +54,23 @@ pip install -e pip install packages/fairchem-{package-to-install}
 
 ## Dev install
 
-If you plan to make contributions you will need to clone the repo and install `fairchem-core` in editable mode with dev
+If you plan to make contributions you will need to clone (for windows user please see next section) the repo and install `fairchem-core` in editable mode with dev
 dependencies,
 ```bash
 pip install -e pip install packages/fairchem-core[dev]
+```
+
+## Cloning git repository on windows
+
+Our build system requires the use of symlinks which are not available by default on windows. To properly build fairchem packages you must enable symlinks and clone the repository with them enabled.
+
+1) When installing git on your machine make sure "enable symbolic links" is checked  ([download git installer](https://git-scm.com/download/win))
+
+![Enable symlinks on git install](https://i.stack.imgur.com/kZmPI.png)
+
+2) Enable developer mode ([instructions](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development)) or run the following commands as administrator
+
+3) Run the git clone command with symlinks enabled
+```
+git clone -c core.symlinks=true https://github.com/FAIR-Chem/fairchem.git
 ```
