@@ -1,0 +1,150 @@
+LAMMPS (23 Jun 2022 - Update 3)
+OMP_NUM_THREADS environment is not set. Defaulting to 1 thread. (src/comm.cpp:98)
+  using 1 OpenMP thread(s) per MPI task
+units           real
+atom_style      full
+boundary        p p p
+
+pair_style      lj/long/coul/long cut long 12.5
+kspace_style    ewald 1e-5
+bond_style      harmonic
+angle_style     hybrid fourier cosine/periodic harmonic
+dihedral_style  harmonic
+improper_style  fourier
+
+pair_modify     shift yes mix arithmetic
+dielectric      1.0
+box tilt        large
+read_data       data.frame extra/atom/types 2 extra/bond/types 1 extra/angle/types 1 extra/dihedral/types 0 extra/improper/types 0
+Reading data file ...
+  triclinic box = (0 0 0) to (13.9233 17.2479 6.87231) with tilt (-0.000843 -9.6e-05 0.000288)
+  1 by 2 by 1 MPI processor grid
+  reading atoms ...
+  88 atoms
+  scanning bonds ...
+  6 = max bonds/atom
+  scanning angles ...
+  15 = max angles/atom
+  scanning dihedrals ...
+  16 = max dihedrals/atom
+  scanning impropers ...
+  2 = max impropers/atom
+  reading bonds ...
+  112 bonds
+  reading angles ...
+  228 angles
+  reading dihedrals ...
+  208 dihedrals
+  reading impropers ...
+  48 impropers
+Finding 1-2 1-3 1-4 neighbors ...
+  special bond factors lj:    0        0        0       
+  special bond factors coul:  0        0        0       
+     6 = max # of 1-2 neighbors
+    10 = max # of 1-3 neighbors
+    28 = max # of 1-4 neighbors
+    18 = max # of special neighbors
+  special bonds CPU = 0.000 seconds
+  read_data CPU = 0.031 seconds
+read_data       data.ads add append offset 6 8 13 3 1
+Reading data file ...
+  triclinic box = (0 0 0) to (13.9233 17.2479 6.87231) with tilt (-0.000843 -9.6e-05 0.000288)
+  1 by 2 by 1 MPI processor grid
+  reading atoms ...
+  3 atoms
+  scanning bonds ...
+  2 = max bonds/atom
+  scanning angles ...
+  1 = max angles/atom
+  reading bonds ...
+  2 bonds
+  reading angles ...
+  1 angles
+Finding 1-2 1-3 1-4 neighbors ...
+  special bond factors lj:    0        0        0       
+  special bond factors coul:  0        0        0       
+     6 = max # of 1-2 neighbors
+    10 = max # of 1-3 neighbors
+    28 = max # of 1-4 neighbors
+    18 = max # of special neighbors
+  special bonds CPU = 0.000 seconds
+  read_data CPU = 0.019 seconds
+
+group           frame type 1:6
+88 atoms in group frame
+group           ads type 7:8
+3 atoms in group ads
+
+########################################## analysis ####################################################
+dump            forces all custom 1 forces.dump id type fx fy fz
+compute         int frame group/group ads pair yes kspace yes boundary yes
+variable        energy2 equal c_int
+thermo_style    custom step etotal evdwl ecoul elong epair etail c_int
+
+########################################## run #########################################################
+run             0
+WARNING: No fixes with time integration, atoms won't move (src/verlet.cpp:60)
+Ewald initialization ...
+WARNING: System is not charge neutral, net charge = -4e-05 (src/kspace.cpp:327)
+  using 12-bit tables for long-range coulomb (src/kspace.cpp:342)
+  G vector (1/distance) = 0.21522906
+  estimated absolute RMS force accuracy = 0.0033221052
+  estimated relative force accuracy = 1.0004421e-05
+  KSpace vectors: actual max1d max3d = 81 4 364
+                  kxmax kymax kzmax  = 3 4 2
+Generated 28 of 28 mixed pair_coeff terms from arithmetic mixing rule
+Neighbor list info ...
+  update every 1 steps, delay 10 steps, check yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 14.5
+  ghost atom cutoff = 14.5
+  binsize = 7.25, bins = 2 3 1
+  2 neighbor lists, perpetual/occasional/extra = 1 1 0
+  (1) pair lj/long/coul/long, perpetual
+      attributes: half, newton on
+      pair build: half/bin/newton/tri
+      stencil: half/bin/3d/tri
+      bin: standard
+  (2) compute group/group, occasional, copy from (1)
+      attributes: half, newton on
+      pair build: copy
+      stencil: none
+      bin: none
+WARNING: Inconsistent image flags (src/domain.cpp:819)
+WARNING: Bond/angle/dihedral extent > half of periodic box length (src/domain.cpp:940)
+Per MPI rank memory allocation (min/avg/max) = 25.69 | 25.7 | 25.71 Mbytes
+   Step         TotEng         E_vdwl         E_coul         E_long         E_pair         E_tail         c_int     
+         0   4008.9155     -33.733527      349.65487     -381.83889     -65.917539      0             -5.2343605    
+WARNING: Bond/angle/dihedral extent > half of periodic box length (src/domain.cpp:940)
+Loop time of 1.49935e-05 on 2 procs for 0 steps with 91 atoms
+
+93.4% CPU use with 2 MPI tasks x 1 OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 0          | 0          | 0          |   0.0 |  0.00
+Bond    | 0          | 0          | 0          |   0.0 |  0.00
+Kspace  | 0          | 0          | 0          |   0.0 |  0.00
+Neigh   | 0          | 0          | 0          |   0.0 |  0.00
+Comm    | 0          | 0          | 0          |   0.0 |  0.00
+Output  | 0          | 0          | 0          |   0.0 |  0.00
+Modify  | 0          | 0          | 0          |   0.0 |  0.00
+Other   |            | 1.499e-05  |            |       |100.00
+
+Nlocal:           45.5 ave          51 max          40 min
+Histogram: 1 0 0 0 0 0 0 0 0 1
+Nghost:         3154.5 ave        3160 max        3149 min
+Histogram: 1 0 0 0 0 0 0 0 0 1
+Neighs:        16161.5 ave       18027 max       14296 min
+Histogram: 1 0 0 0 0 0 0 0 0 1
+
+Total # of neighbors = 32323
+Ave neighs/atom = 355.1978
+Ave special neighs/atom = 13.340659
+Neighbor list builds = 0
+Dangerous builds = 0
+print           ${energy2} file Eint.out
+print           -5.23436052989285 file Eint.out
+-5.23436052989285
+Total wall time: 0:00:00
