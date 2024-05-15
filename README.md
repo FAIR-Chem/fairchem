@@ -1,81 +1,69 @@
-# `ocp` by Open Catalyst Project
+<h1 align="center"> <code>fairchem</code> by FAIR Chemistry </h1>
 
-![tests](https://github.com/Open-Catalyst-Project/ocp/actions/workflows/test.yml/badge.svg?branch=main)
-[![codecov](https://codecov.io/gh/Open-Catalyst-Project/ocp/graph/badge.svg?token=M606LH5LK6)](https://codecov.io/gh/Open-Catalyst-Project/ocp)
+<p align="center">
+  <img width="559" height="200" src="https://github.com/FAIR-Chem/fairchem/assets/45150244/5872c21c-8f39-41af-b703-af9817f0affe"?
+</p>
 
-`ocp` is the [Open Catalyst Project](https://opencatalystproject.org/)'s
-library of state-of-the-art machine learning algorithms for catalysis.
 
-<div align="left">
-    <img src="https://user-images.githubusercontent.com/1156489/170388229-642c6619-dece-4c88-85ef-b46f4d5f1031.gif">
-</div>
+<h4 align="center">
 
-## [OCP Documentation](https://open-catalyst-project.github.io/ocp/)
-Full documentation, released data/checkpoints, and tutorials are now available.
+![tests](https://github.com/FAIR-Chem/fairchem/actions/workflows/test.yml/badge.svg?branch=main)
+[![documentation](https://github.com/FAIR-Chem/fairchem/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/FAIR-Chem/fairchem/actions/workflows/docs.yml)
+[![Static Badge](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
 
-- [Installation](https://open-catalyst-project.github.io/ocp/core/install.html)
-- [Pretrained models](https://open-catalyst-project.github.io/ocp/core/models.html)
-- [FAQ](https://open-catalyst-project.github.io/ocp/core/model_faq.html)
+</h4>
 
-`ocp` provides training and evaluation code for tasks and models that take arbitrary
-chemical structures as input to predict energies / forces / positions / stresses,
-and can be used as a base scaffold for research projects. For an overview of
-tasks, data, and metrics, please read the documentations and respective papers:
- - [OC20](https://open-catalyst-project.github.io/ocp/core/datasets/oc20.html)
- - [OC22](https://open-catalyst-project.github.io/ocp/core/datasets/oc22.html)
- - [ODAC23](https://open-catalyst-project.github.io/ocp/core/datasets/odac.html)
+`fairchem` is the [FAIR](https://ai.meta.com/research/) Chemistry's centralized repository of all its data, models, demos, and application efforts for materials science and quantum chemistry.
 
-Projects and models built on `ocp`:
+### Documentation
+If you are looking for `Open-Catalyst-Project/ocp`, it can now be found at [`fairchem.core`](src/fairchem/core). Visit its corresponding documentation [here](https://fair-chem.github.io/).
 
-- SchNet [[`arXiv`](https://arxiv.org/abs/1706.08566)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/models/schnet.py)]
-- DimeNet++ [[`arXiv`](https://arxiv.org/abs/2011.14115)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/main/ocpmodels/models/dimenet_plus_plus.py)]
-- GemNet-dT [[`arXiv`](https://arxiv.org/abs/2106.08903)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/gemnet)]
-- PaiNN [[`arXiv`](https://arxiv.org/abs/2102.03150)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/painn)]
-- Graph Parallelism [[`arXiv`](https://arxiv.org/abs/2203.09697)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/gemnet_gp)]
-- GemNet-OC [[`arXiv`](https://arxiv.org/abs/2204.02782)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/gemnet_oc)]
-- SCN [[`arXiv`](https://arxiv.org/abs/2206.14331)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/scn)]
-- AdsorbML [[`arXiv`](https://arxiv.org/abs/2211.16486)] [[`code`](https://github.com/open-catalyst-project/adsorbml)]
-- eSCN [[`arXiv`](https://arxiv.org/abs/2302.03655)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/escn)]
-- EquiformerV2 [[`arXiv`](https://arxiv.org/abs/2306.12059)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/tree/main/ocpmodels/models/equiformer_v2)]
+### Contents
+The repository is organized into several directories to help you find what you are looking for:
 
-Older model implementations that are no longer supported:
+- [`fairchem.core`](src/fairchem/core): State of the art machine learning models for materials science and chemistry
+- [`fairchem.data`](src/fairchem/data): Dataset downloads and input generation codes
+- [`fairchem.demo`](src/fairchem/demo): Python API for the [Open Catalyst Demo](https://open-catalyst.metademolab.com/)
+- [`fairchem.applications`](src/fairchem/applications): Follow up applications and works (AdsorbML, CatTSunami, etc.)
 
-- CGCNN [[`arXiv`](https://arxiv.org/abs/1710.10324)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/cgcnn.py)]
-- DimeNet [[`arXiv`](https://arxiv.org/abs/2003.03123)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/dimenet.py)]
-- SpinConv [[`arXiv`](https://arxiv.org/abs/2106.09575)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/spinconv.py)]
-- ForceNet [[`arXiv`](https://arxiv.org/abs/2103.01436)] [[`code`](https://github.com/Open-Catalyst-Project/ocp/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/forcenet.py)]
-
-## Discussion
-
-For all non-codebase related questions and to keep up-to-date with the latest OCP
-announcements, please join the [discussion board](https://discuss.opencatalystproject.org/).
-
-All code-related questions and issues should be posted directly on our
-[issues page](https://github.com/Open-Catalyst-Project/ocp/issues).
-Make sure to first go through the [FAQ](https://github.com/Open-Catalyst-Project/ocp/tree/main/FAQ.md)
-to check if your question's answered already.
-
-## Acknowledgements
-
-- This codebase was initially forked from [CGCNN](https://github.com/txie-93/cgcnn)
-by [Tian Xie](http://txie.me), but has undergone significant changes since.
-- A lot of engineering ideas have been borrowed from [github.com/facebookresearch/mmf](https://github.com/facebookresearch/mmf).
-- The DimeNet++ implementation is based on the [author's Tensorflow implementation](https://github.com/klicperajo/dimenet) and the [DimeNet implementation in Pytorch Geometric](https://github.com/rusty1s/pytorch_geometric/blob/master/torch_geometric/nn/models/dimenet.py).
-
-## License
-
-`ocp` is released under the [MIT](https://github.com/Open-Catalyst-Project/ocp/blob/main/LICENSE.md) license.
-
-## Citing `ocp`
-
-If you use this codebase in your work, please consider citing:
-
-```bibtex
-@article{ocp_dataset,
-    author = {Chanussot*, Lowik and Das*, Abhishek and Goyal*, Siddharth and Lavril*, Thibaut and Shuaibi*, Muhammed and Riviere, Morgane and Tran, Kevin and Heras-Domingo, Javier and Ho, Caleb and Hu, Weihua and Palizhati, Aini and Sriram, Anuroop and Wood, Brandon and Yoon, Junwoong and Parikh, Devi and Zitnick, C. Lawrence and Ulissi, Zachary},
-    title = {Open Catalyst 2020 (OC20) Dataset and Community Challenges},
-    journal = {ACS Catalysis},
-    year = {2021},
-    doi = {10.1021/acscatal.0c04525},
-}
+### Installation
+Packages can be installed in your environment by the following:
 ```
+pip install -e packages/fairchem-{fairchem-package-name}
+```
+
+`fairchem.core` requires you to first create your environment
+- [Installation Guide](https://fair-chem.github.io/core/install.html)
+
+### Quick Start
+Pretrained models can be used directly with ASE through our `OCPCalculator` interface:
+
+```python
+from ase.build import fcc100, add_adsorbate, molecule
+from ase.optimize import LBFGS
+from fairchem.core import OCPCalculator
+
+# Set up your system as an ASE atoms object
+slab = fcc100('Cu', (3, 3, 3), vacuum=8)
+adsorbate = molecule("CO")
+add_adsorbate(slab, adsorbate, 2.0, 'bridge')
+
+calc = OCPCalculator(
+    model_name="EquiformerV2-31M-S2EF-OC20-All+MD",
+    local_cache="pretrained_models",
+    cpu=False,
+)
+slab.calc = calc
+
+# Set up LBFGS dynamics object
+dyn = LBFGS(slab)
+dyn.run(0.05, 100)
+```
+
+If you are interested in training your own models or fine-tuning on your datasets, visit the [documentation](https://fair-chem.github.io/) for more details and examples.
+
+### Why a single repository?
+Since many of our repositories rely heavily on our other repositories, a single repository makes it really easy to test and ensure consistency across repositories. This should also help simplify the installation process for users who are interested in integrating many of the efforts into one place.
+
+### LICENSE
+`fairchem` is available under a [MIT License](LICENSE.md).

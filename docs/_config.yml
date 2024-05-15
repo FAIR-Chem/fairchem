@@ -5,21 +5,21 @@
 
 #######################################################################################
 # Book settings
-title                       : Open Catalyst Project Documentation  # The title of the book. Will be placed in the left navbar.
-author                      : The Open Catalyst Project  # The author of the book
+title                       : FAIR Chemistry Documentation  # The title of the book. Will be placed in the left navbar.
+author                      : FAIR Chemistry & Collaborators  # The author of the book
 copyright                   : "2024"  # Copyright year to be placed in the footer
 logo                        : logo.png  # A path to the book logo
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
 execute:
-  execute_notebooks: cache
+  execute_notebooks: force
   timeout: 1800
 
 # Define the name of the latex output file for PDF builds
 latex:
   latex_documents:
-    targetname: ocp.tex
+    targetname: fairchem.tex
 
 # Add a bibtex file so that we can create citations
 bibtex_bibfiles:
@@ -27,9 +27,9 @@ bibtex_bibfiles:
 
 # Information about where the book exists on the web
 repository:
-  url: https://github.com/Open-Catalyst-Project/ocp  # Online location of your book
+  url: https://github.com/FAIR-Chem/fairchem  # Online location of your book
   path_to_book: docs  # Optional path to your book, relative to the repository root
-  branch: ocp_documentation  # Which branch of the repository should be used when creating links (optional)
+  branch: main  # Which branch of the repository should be used when creating links (optional)
   
 # Add GitHub buttons to your book
 # See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
@@ -50,4 +50,5 @@ sphinx:
   - 'autoapi.extension'
   config:
     autosummary_generate: True
-    autoapi_dirs: ['../ocpmodels']
+    autoapi_dirs: ['../src/fairchem/core','../src/fairchem/data','../src/fairchem/applications/AdsorbML/adsorbml','../src/fairchem/applications/cattsunami','../src/fairchem/demo/ocpapi']
+    autoapi_python_use_implicit_namespaces: True

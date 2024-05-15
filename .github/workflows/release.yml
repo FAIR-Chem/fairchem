@@ -14,9 +14,6 @@ on:
         required: true
         type: boolean
         description: "if true a release is made on PyPI"
-      release-test-pypi:
-        type: boolean
-        description: "if true a release is made on Test PyPI"
 
 jobs:
   test:
@@ -32,13 +29,15 @@ jobs:
     uses: ./.github/workflows/docs.yml
     secrets: inherit
 
-  release-pypi:
-    needs: [build]
+  release-core:
+    needs: [ build ]
     runs-on: ubuntu-latest
-    if: github.event.inputs.release-pypi == 'true' && startsWith(github.ref, 'refs/tags/')
+    if: |
+      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_core-') || startsWith(github.event.release.tag_name, 'fairchem_core-') )
+
     environment:
       name: pypi
-      url: https://pypi.org/p/ocp-models
+      url: https://pypi.org/p/fairchem-core/
 
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
@@ -46,36 +45,86 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: artifact
-          path: dist
+          name: dist-core
+          path: dist-core
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          packages-dir: dist-core/
+          skip-existing: true
           verbose: true
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
 
-  release-test-pypi:
-    needs: [build]
+  release-data-oc:
+    needs: [ build ]
     runs-on: ubuntu-latest
-    # if: github.event.inputs.release-test-pypi == 'true'
+    if: |
+      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_data_oc-') || startsWith(github.event.release.tag_name, 'fairchem_data_oc-') )
 
     environment:
-      name: testpypi
-      url: https://test.pypi.org/p/ocp-models
+      name: pypi
+      url: https://pypi.org/p/fairchem-data-oc/
 
     permissions:
-      id-token: write  # IMPORTANT: mandatory for trusted publishing
+      id-token: write
 
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: artifact
-          path: dist
+          name: dist-data-oc
+          path: dist-data-oc
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verbose: true
-          user: __token__
-          repository-url: https://test.pypi.org/legacy/
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          packages-dir: dist-data-oc/
+          skip-existing: true
+
+  release-demo-ocpapi:
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    if: |
+      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_demo_ocpapi-') || startsWith(github.event.release.tag_name, 'fairchem_demo_ocpapi-') )
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/fairchem-demo-ocpapi/
+
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-demo-ocpapi
+          path: dist-demo-ocpapi
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+          packages-dir: dist-demo-ocpapi/
+          skip-existing: true
+
+  release-applications-cattsunami:
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    if: |
+      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_applications_cattsunami-') || startsWith(github.event.release.tag_name, 'fairchem_applications_cattsunami-') )
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/fairchem-applications-cattsunami/
+
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-applications-cattsunami
+          path: dist-applications-cattsunami
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+          packages-dir: dist-applications-cattsunami/
+          skip-existing: true
