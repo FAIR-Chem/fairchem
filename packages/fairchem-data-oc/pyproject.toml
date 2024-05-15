@@ -11,8 +11,8 @@ dependencies = [
     "numpy>=1.25.0",
     "scipy",
     "matplotlib",
-    "ase",
-    "pymatgen>=2023.10.3",
+    "ase",  #  this was pinned to 3.22.1
+    "pymatgen>=2023.10.3",  # this was pinned to 2023.5.10
     "tqdm"
 ]
 
