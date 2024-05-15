@@ -46,21 +46,6 @@ _AVG_NUM_NODES = 77.81317
 _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
 
 
-def checksum_nn(m):
-    return torch.hstack([x.abs().reshape(-1) for x in m.parameters()]).mean()
-
-
-def checksum_eq_blocks(m):
-    print("EQ CHECKSUM", checksum_nn(m))
-    for idx in range(len(m.blocks)):
-        print(f" > EQ {idx}", checksum_nn(m.blocks[idx]).item())
-
-
-def checksum_seq_linear(m):
-    if isinstance(m, (torch.nn.Linear, SO3_LinearV2)):
-        print(m, checksum_nn(m).item())
-
-
 @registry.register_model("equiformer_v2")
 class EquiformerV2_OC20(BaseModel):
     """
