@@ -113,10 +113,7 @@ for config in product2_configs:
 
 ## Enumerate NEBs
 Here we use the class we created to handle automatic generation of NEB frames to create frames using the structures we just relaxed as input.
-
-```{code-cell} ipython3
-Image(filename="dissociation_scheme.png")
-```
+![dissociation_scheme](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/applications/cattsunami/tutorial/dissociation_scheme.png)
 
 ```{code-cell} ipython3
 af = AutoFrameDissociation(
