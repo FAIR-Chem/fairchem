@@ -2,12 +2,10 @@
 
 ### conda or better yet [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html) - easy
 
-We do not have official conda recipes (yet!), so to install with conda or mamba you will need to clone the
-[fairchem](https://github.com/FAIR-Chem/fairchem) and run the following from inside the repo directory to create an environment with all the
-necessary dependencies. You can use the following environment yaml files for CPU
-[env.cpu.yml](https://raw.githubusercontent.com/FAIR-Chem/fairchem/main/packages/env.cpu.yml)
-and GPU [env.gpu.yml](https://raw.githubusercontent.com/FAIR-Chem/fairchem/main/packages/env.gpu.yml) to set up a
-working environment.
+We do not have official conda recipes (yet!); in the meantime you can use the
+following environment yaml files for CPU [env.cpu.yml](https://raw.githubusercontent.com/FAIR-Chem/fairchem/main/packages/env.cpu.yml)
+and GPU [env.gpu.yml](https://raw.githubusercontent.com/FAIR-Chem/fairchem/main/packages/env.gpu.yml) to easily set up a
+working environment and install `fairchem-core`.
 
 1. Create an environment to install *fairchem*
    1. **GPU**
