@@ -46,7 +46,7 @@ root = "../../"
 git_describe_command = 'git describe --tags --match fairchem_core-*'
 
 [tool.hatch.build]
-directory = "../../dist"
+directory = "../../dist-core"
 
 [tool.hatch.build.targets.sdist]
 only-include = ["src/fairchem/core", "src/fairchem/experimental"]

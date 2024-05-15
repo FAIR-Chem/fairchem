@@ -18,6 +18,9 @@ source = "vcs"
 root = "../../"
 git_describe_command = 'git describe --tags --match  fairchem_applications_adsorbml-*'
 
+[tool.hatch.build]
+directory = "../../dist-applications-adsorbml"
+
 [tool.hatch.build.targets.sdist]
 sources = ["src"]
 only-include = ["src/fairchem/applications/AdsorbML"]
