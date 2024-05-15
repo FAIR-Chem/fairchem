@@ -19,7 +19,7 @@ root = "../../"
 git_describe_command = 'git describe --tags --match  fairchem_data_oc-*'
 
 [tool.hatch.build]
-directory = "../../dist"
+directory = "../../dist-data-oc"
 
 [tool.hatch.build.targets.sdist]
 only-include = ["src/fairchem/data/oc"]

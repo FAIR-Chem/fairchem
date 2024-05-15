@@ -795,9 +795,9 @@ Lets download it locally,
 
 ```{code-cell} ipython3
 %%bash
-https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc-large.pt
-wget https://github.com/FAIR-Chem/fairchem/blob/main/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
-wget https://github.com/FAIR-Chem/fairchem/blob/main/configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json
+wget https://github.com/FAIR-Chem/fairchem/raw/main/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc-large.pt
+wget https://github.com/FAIR-Chem/fairchem/raw/main/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
+wget https://github.com/FAIR-Chem/fairchem/raw/main/configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json
 ```
 
 
@@ -1388,7 +1388,7 @@ relax_dataset = "data/is2re/val_20/data.lmdb"
 
 from fairchem.core.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-dT All', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-dT-S2EF-OC20-All', local_cache='/tmp/ocp_checkpoints/')
 
 ```
 
@@ -2021,7 +2021,7 @@ For this tutorial we download one of our earlier model checkpoints: GemNet-T
 
 from fairchem.core.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-dT All', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-dT-S2EF-OC20-All', local_cache='/tmp/ocp_checkpoints/')
 
 ```
 

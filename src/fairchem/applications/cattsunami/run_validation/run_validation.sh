@@ -10,4 +10,4 @@ python run_validation.py \
     --get_ts_sp \
     --vasp_command "<vasp-command>" \
     --fmax 0.05  \
-    --mapping_file_path "mapping_files/dissociation_mapping.pkl" 
+    --mapping_file_path "mapping_files/dissociation_mapping.pkl"

@@ -10,7 +10,7 @@ from __future__ import annotations
 from importlib.metadata import PackageNotFoundError, version
 
 try:
-    __version__ = version("fairchem.data.oc")
+    __version__ = version("fairchem.applications.cattsunami")
 except PackageNotFoundError:
     # package is not installed
     __version__ = ""

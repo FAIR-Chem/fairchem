@@ -50,5 +50,5 @@ sphinx:
   - 'autoapi.extension'
   config:
     autosummary_generate: True
-    autoapi_dirs: ['../src/fairchem/core','../src/fairchem/data','../src/fairchem/applications/AdsorbML/adsorbml','../src/fairchem/applications/CatTSunami/ocpneb','../src/fairchem/demo/ocpapi']
+    autoapi_dirs: ['../src/fairchem/core','../src/fairchem/data','../src/fairchem/applications/AdsorbML/adsorbml','../src/fairchem/applications/cattsunami','../src/fairchem/demo/ocpapi']
     autoapi_python_use_implicit_namespaces: True
