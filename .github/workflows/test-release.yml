@@ -22,7 +22,7 @@ jobs:
     uses: ./.github/workflows/docs.yml
     secrets: inherit
 
-  release-core-pypi:
+  release-core:
     needs: [ build ]
     runs-on: ubuntu-latest
     if: |
@@ -48,7 +48,7 @@ jobs:
           skip-existing: true
           verbose: true
 
-  release-data-oc-pypi:
+  release-data-oc:
     needs: [ build ]
     runs-on: ubuntu-latest
     if: |
@@ -64,8 +64,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dist-core
-          path: dist-core
+          name: dist-data-oc
+          path: dist-data-oc
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -74,7 +74,7 @@ jobs:
           packages-dir: dist-data-oc/
           skip-existing: true
 
-  release-demo-ocpapi-pypi:
+  release-demo-ocpapi:
     needs: [ build ]
     runs-on: ubuntu-latest
     if: |
@@ -90,8 +90,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dist-core
-          path: dist-core
+          name: dist-demo-ocpapi
+          path: dist-demo-ocpapi
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -100,7 +100,7 @@ jobs:
           packages-dir: dist-demo-ocpapi/
           skip-existing: true
 
-  release-applications-cattsunami-pypi:
+  release-applications-cattsunami:
     needs: [ build ]
     runs-on: ubuntu-latest
     if: |
