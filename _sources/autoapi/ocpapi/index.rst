@@ -3,6 +3,14 @@
 
 .. py:module:: ocpapi
 
+.. autoapi-nested-parse::
+
+   Copyright (c) Meta, Inc. and its affiliates.
+
+   This source code is licensed under the MIT license found in the
+   LICENSE file in the root directory of this source tree.
+
+
 
 Subpackages
 -----------
@@ -75,9 +83,14 @@ Attributes
 
 .. autoapisummary::
 
+   ocpapi.__version__
    ocpapi.NO_LIMIT
    ocpapi.NoLimitType
 
+
+.. py:data:: __version__
+
+   
 
 .. py:class:: Client(host: str = 'open-catalyst-api.metademolab.com', scheme: str = 'https')
 
