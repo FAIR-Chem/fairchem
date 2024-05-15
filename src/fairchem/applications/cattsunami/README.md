@@ -1,6 +1,6 @@
 ## CatTSunami: Accelerating Transition State Energy Calculations with Pre-trained Graph Neural Networks
 
-![summary](https://github.com/Open-Catalyst-Project/CatTSunami/blob/master/summary_fig.png)
+![summary](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/applications/cattsunami/summary_fig.png)
 
 CatTSunami is a framework for high-throughput enumeration of nudged elastic band (NEB) frame sets. It was built for use with machine learned (ML) models trained on [OC20](https://arxiv.org/abs/2010.09990), which were demonstrated to be performant on this auxiliary task. To train your own model or obtain pre-trained checkpoints, please see [`fairchem-core`](https://github.com/FAIR-Chem/fairchem/tree/cattsunami-package/src/fairchem/core).
 
@@ -15,7 +15,7 @@ Configured for local development
 
 
 ### Validation Dataset
-The validation dataset is comprised of 932 DFT NEB calculations to assess model performance on this important task. There are 3 different reaction classes considered: desorptions, dissociations, and transfers. For more information see the [dataset markdown file](https://github.com/Open-Catalyst-Project/CatTSunami/blob/master/DATASET.md).
+The validation dataset is comprised of 932 DFT NEB calculations to assess model performance on this important task. There are 3 different reaction classes considered: desorptions, dissociations, and transfers. For more information see the [dataset markdown file](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/applications/cattsunami/DATASET.md).
 
 |Splits |Size of compressed version (in bytes)  |Size of uncompressed version (in bytes)    | MD5 checksum (download link)   |
 |---    |---    |---    |---    |
