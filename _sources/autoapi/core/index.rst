@@ -37,10 +37,3 @@ Submodules
    _cli/index.rst
 
 
-Package Contents
-----------------
-
-.. py:data:: __version__
-
-   
-
