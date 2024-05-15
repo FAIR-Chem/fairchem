@@ -40,10 +40,10 @@ parts:
   - file: core/model_faq
 - caption: Catalysis Case Studies & Tutorials
   chapters:
-  - file: tutorials/cattsunami_walkthrough
-  - file: tutorials/adsorbml_walkthrough
   - file: tutorials/intro
   - file: tutorials/OCP-introduction
+  - file: tutorials/adsorbml_walkthrough
+  - file: tutorials/cattsunami_walkthrough
   - file: tutorials/NRR/NRR_toc
     sections:
     - file: tutorials/NRR/NRR_example
