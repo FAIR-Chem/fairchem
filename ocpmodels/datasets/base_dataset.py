@@ -3,47 +3,52 @@ Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
 from __future__ import annotations
 
 from abc import ABCMeta
-from collections import namedtuple
+from collections.abc import Sequence
 from functools import cached_property
 from pathlib import Path
-from typing import Any, TypeVar, Sequence
+from typing import TYPE_CHECKING, Any, NamedTuple, TypeVar
 
 import numpy as np
 import torch
-from numpy.typing import ArrayLike, NDArray
 from torch import randperm
 from torch.utils.data import Dataset
 from torch.utils.data import Subset as Subset_
 
 from ocpmodels.common.registry import registry
 
+if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
+
+
 T_co = TypeVar("T_co", covariant=True)
-DatasetMetadata = namedtuple(
-    "DatasetMetadata",
-    [
-        "natoms",
-    ],
-    defaults=[
-        None,
-    ],
-)
+
+
+class DatasetMetadata(NamedTuple):
+    natoms: ArrayLike | None = None
 
 
 class Subset(Subset_):
     """A pytorch subset that also takes metadata if given."""
-    def __init__(self, dataset: Dataset[T_co], indices: Sequence[int], metadata: DatasetMetadata | None = None) -> None:
+
+    def __init__(
+        self,
+        dataset: Dataset[T_co],
+        indices: Sequence[int],
+        metadata: DatasetMetadata | None = None,
+    ) -> None:
         super().__init__(dataset, indices)
 
-        metadata = {}
+        metadata_dict = {}
         for field in DatasetMetadata._fields:
             value = getattr(metadata, field)
             if isinstance(value, Sequence):
                 value = value[indices]
-            metadata[field] = value
-        self.metadata = DatasetMetadata(**metadata)
+            metadata_dict[field] = value
+        self.metadata = DatasetMetadata(**metadata_dict)
 
 
 class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
@@ -95,9 +100,7 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
 
         metadata = DatasetMetadata(
             **{
-                field: np.concatenate(
-                    [metadata[field] for metadata in metadata_npzs]
-                )
+                field: np.concatenate([metadata[field] for metadata in metadata_npzs])
                 for field in DatasetMetadata._fields
             }
         )
@@ -162,16 +165,12 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
 
     try:
         indices = indices[:max_index]
-    except IndexError:
+    except IndexError as error:
         msg = (
             f"Cannot take {max_index} data points from a dataset of only length {len(indices)}.\n"
             f"Make sure to set first_n or sample_n to a number =< the total samples in dataset."
         )
         if max_atoms is not None:
-            msg = (
-                msg[:-1]
-                + f"that are smaller than the given max_atoms {max_atoms}."
-            )
-        raise ValueError(msg)
-    subset = Subset(dataset, indices, metadata=dataset.metadata)
-    return subset
+            msg = msg[:-1] + f"that are smaller than the given max_atoms {max_atoms}."
+        raise ValueError(msg) from error
+    return Subset(dataset, indices, metadata=dataset.metadata)
