@@ -4,6 +4,7 @@ Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
 from __future__ import annotations
 
 import heapq
@@ -14,16 +15,17 @@ import numba
 import numpy as np
 import torch
 import torch.distributed
-from numpy.typing import NDArray
 from torch.utils.data import BatchSampler, Dataset, DistributedSampler
 from typing_extensions import override
 
 from ocpmodels.common import distutils, gp_utils
 from ocpmodels.datasets import data_list_collater
-from ocpmodels.datasets.base_dataset import DatasetMetadata
 
 if TYPE_CHECKING:
+    from numpy.typing import NDArray
     from torch_geometric.data import Batch, Data
+
+    from ocpmodels.datasets.base_dataset import DatasetMetadata
 
 
 class OCPCollater:
@@ -31,8 +33,7 @@ class OCPCollater:
         self.otf_graph = otf_graph
 
     def __call__(self, data_list: list[Data]) -> Batch:
-        batch = data_list_collater(data_list, otf_graph=self.otf_graph)
-        return batch
+        return data_list_collater(data_list, otf_graph=self.otf_graph)
 
 
 @numba.njit
@@ -42,17 +43,14 @@ def _balanced_partition(sizes: NDArray[np.int_], num_parts: int):
     the largest element into the smallest partition.
     """
     sort_idx = np.argsort(-sizes)  # Sort in descending order
-    heap: list[tuple[list[int], list[int]]] = []
-    for idx in sort_idx[:num_parts]:
-        heap.append((sizes[idx], [idx]))
+    heap = [(sizes[idx], [idx]) for idx in sort_idx[:num_parts]]
     heapq.heapify(heap)
     for idx in sort_idx[num_parts:]:
         smallest_part = heapq.heappop(heap)
         new_size = smallest_part[0] + sizes[idx]
         new_idx = smallest_part[1] + [idx]
         heapq.heappush(heap, (new_size, new_idx))
-    idx_balanced = [part[1] for part in heap]
-    return idx_balanced
+    return [part[1] for part in heap]
 
 
 class UnsupportedDatasetError(ValueError):
@@ -66,9 +64,7 @@ class DatasetWithSizes(Protocol):
 
 def _ensure_supported(dataset: Any):
     if not isinstance(dataset, Dataset):
-        raise UnsupportedDatasetError(
-            "BalancedBatchSampler requires a dataset."
-        )
+        raise UnsupportedDatasetError("BalancedBatchSampler requires a dataset.")
 
     if not isinstance(dataset, DatasetWithSizes):
         raise UnsupportedDatasetError(
@@ -90,9 +86,7 @@ class BalancedBatchSampler(BatchSampler):
         device: torch.device,
         mode: bool | Literal["atoms"] = "atoms",
         shuffle: bool = True,
-        on_error: Literal[
-            "warn_and_balance", "warn_and_no_balance", "raise"
-        ] = "raise",
+        on_error: Literal["warn_and_balance", "warn_and_no_balance", "raise"] = "raise",
         drop_last: bool = False,
     ):
         """
@@ -122,9 +116,7 @@ class BalancedBatchSampler(BatchSampler):
                 f"Only mode='atoms' or mode=True is supported, got {mode=}."
             )
         elif num_replicas == 1:
-            logging.warning(
-                f"Disabled BalancedBatchSampler because {num_replicas=}."
-            )
+            logging.warning(f"Disabled BalancedBatchSampler because {num_replicas=}.")
             self.disabled = True
 
         sampler = StatefulDistributedSampler(
@@ -149,25 +141,23 @@ class BalancedBatchSampler(BatchSampler):
         try:
             dataset = _ensure_supported(dataset)
             return dataset.metadata.natoms[batch_idx]
-        except UnsupportedDatasetError as e:
+        except UnsupportedDatasetError as error:
             if self.on_error == "raise":
-                raise e
-            elif self.on_error == "warn_and_balance":
+                raise error
+            if self.on_error == "warn_and_balance":
                 logging.warning(
-                    f"Failed to get data sizes from metadata, loading data to get sizes (THIS IS SLOW). {e}"
+                    f"Failed to get data sizes from metadata, loading data to get sizes (THIS IS SLOW). {error}"
                 )
                 return np.array([dataset[idx].num_nodes for idx in batch_idx])
             elif self.on_error == "warn_and_no_balance":
                 logging.warning(
-                    f"Failed to get data sizes, falling back to uniform partitioning. {e}"
+                    f"Failed to get data sizes, falling back to uniform partitioning. {error}"
                 )
                 return None
             else:
-                raise ValueError(f"Unknown on_error={self.on_error}") from e
+                raise ValueError(f"Unknown on_error={self.on_error}") from error
 
-    def set_epoch_and_start_iteration(
-        self, epoch: int, start_iteration: int
-    ) -> None:
+    def set_epoch_and_start_iteration(self, epoch: int, start_iteration: int) -> None:
         if not isinstance(self.sampler, StatefulDistributedSampler):
             if start_iteration != 0:
                 raise NotImplementedError(
@@ -183,10 +173,7 @@ class BalancedBatchSampler(BatchSampler):
 
     @staticmethod
     def _dist_enabled():
-        return (
-            torch.distributed.is_available()
-            and torch.distributed.is_initialized()
-        )
+        return torch.distributed.is_available() and torch.distributed.is_initialized()
 
     @override
     def __iter__(self):
