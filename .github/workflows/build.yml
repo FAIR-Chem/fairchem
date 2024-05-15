@@ -53,8 +53,7 @@ jobs:
           name: dist-demo-ocpapi
           path: dist-demo-ocpapi/*
 
-
-      - name: Upload demo-ocpapi artifact
+      - name: Upload applications-cattsunami artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist-applications-cattsunami
