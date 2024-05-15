@@ -3,6 +3,9 @@ Atomic radii in picometers
 
 NaN stored for unavailable parameters.
 """
+
+from __future__ import annotations
+
 ATOMIC_RADII = {
     0: float("NaN"),
     1: 25.0,

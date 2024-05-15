@@ -1,22 +1,21 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
 from __future__ import annotations
 
 import bisect
 import logging
 import pickle
 import warnings
-from pathlib import Path
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 import lmdb
 import numpy as np
 import torch
 from torch_geometric.data import Batch
-from torch_geometric.data.data import BaseData
 
 from ocpmodels.common.registry import registry
 from ocpmodels.common.typing import assert_is_instance
@@ -25,6 +24,11 @@ from ocpmodels.datasets._utils import rename_data_object_keys
 from ocpmodels.datasets.base_dataset import BaseDataset
 from ocpmodels.datasets.target_metadata_guesser import guess_property_metadata
 from ocpmodels.modules.transforms import DataTransforms
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from torch_geometric.data.data import BaseData
 
 T_co = TypeVar("T_co", covariant=True)
 
@@ -94,9 +98,7 @@ class LmdbDataset(BaseDataset):
             else:
                 # Get the number of stores data from the number of entries
                 # in the LMDB
-                num_entries = assert_is_instance(
-                    self.env.stat()["entries"], int
-                )
+                num_entries = assert_is_instance(self.env.stat()["entries"], int)
 
             self._keys = list(range(num_entries))
             self.num_samples = num_entries
@@ -146,16 +148,12 @@ class LmdbDataset(BaseDataset):
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
 
         if self.key_mapping is not None:
-            data_object = rename_data_object_keys(
-                data_object, self.key_mapping
-            )
+            data_object = rename_data_object_keys(data_object, self.key_mapping)
 
-        data_object = self.transforms(data_object)
-
-        return data_object
+        return self.transforms(data_object)
 
     def connect_db(self, lmdb_path: Path | None = None) -> lmdb.Environment:
-        env = lmdb.open(
+        return lmdb.open(
             str(lmdb_path),
             subdir=False,
             readonly=True,
@@ -164,7 +162,6 @@ class LmdbDataset(BaseDataset):
             meminit=False,
             max_readers=1,
         )
-        return env
 
     def close_db(self) -> None:
         if not self.path.is_file():
@@ -182,17 +179,18 @@ class LmdbDataset(BaseDataset):
         example_pyg_data = self.__getitem__(0)
 
         # Check for all properties we've used for OCP datasets in the past
-        props = []
-        for potential_prop in [
-            "y",
-            "y_relaxed",
-            "stress",
-            "stresses",
-            "force",
-            "forces",
-        ]:
-            if hasattr(example_pyg_data, potential_prop):
-                props.append(potential_prop)
+        props = [
+            potential_prop
+            for potential_prop in (
+                "y",
+                "y_relaxed",
+                "stress",
+                "stresses",
+                "force",
+                "forces",
+            )
+            if hasattr(example_pyg_data, potential_prop)
+        ]
 
         # Get a bunch of random data samples and the number of atoms
         sample_pyg = [
@@ -204,7 +202,7 @@ class LmdbDataset(BaseDataset):
         atoms_lens = [data.natoms for data in sample_pyg]
 
         # Guess the metadata for targets for each found property
-        metadata = {
+        return {
             "targets": {
                 prop: guess_property_metadata(
                     atoms_lens, [getattr(data, prop) for data in sample_pyg]
@@ -213,12 +211,10 @@ class LmdbDataset(BaseDataset):
             }
         }
 
-        return metadata
-
 
 class SinglePointLmdbDataset(LmdbDataset):
     def __init__(self, config, transform=None) -> None:
-        super(SinglePointLmdbDataset, self).__init__(config, transform)
+        super().__init__(config)
         warnings.warn(
             "SinglePointLmdbDataset is deprecated and will be removed in the future."
             "Please use 'LmdbDataset' instead.",
@@ -228,7 +224,7 @@ class SinglePointLmdbDataset(LmdbDataset):
 
 class TrajectoryLmdbDataset(LmdbDataset):
     def __init__(self, config, transform=None) -> None:
-        super(TrajectoryLmdbDataset, self).__init__(config, transform)
+        super().__init__(config)
         warnings.warn(
             "TrajectoryLmdbDataset is deprecated and will be removed in the future."
             "Please use 'LmdbDataset' instead.",
@@ -236,9 +232,7 @@ class TrajectoryLmdbDataset(LmdbDataset):
         )
 
 
-def data_list_collater(
-    data_list: list[BaseData], otf_graph: bool = False
-) -> BaseData:
+def data_list_collater(data_list: list[BaseData], otf_graph: bool = False) -> BaseData:
     batch = Batch.from_data_list(data_list)
 
     if not otf_graph:

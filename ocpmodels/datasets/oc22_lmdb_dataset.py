@@ -1,9 +1,10 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
 from __future__ import annotations
 
 import bisect
@@ -81,14 +82,13 @@ class OC22LmdbDataset(BaseDataset):
                 index = 0
                 self.indices = []
                 for txt_path in txt_paths:
-                    lines = open(txt_path).read().splitlines()
+                    with open(txt_path) as fp:
+                        lines = fp.read().splitlines()
                     for line in lines:
-                        if self.data2train == "adslabs":
-                            if "clean" not in line:
-                                self.indices.append(index)
-                        if self.data2train == "slabs":
-                            if "clean" in line:
-                                self.indices.append(index)
+                        if self.data2train == "adslabs" and "clean" not in line:
+                            self.indices.append(index)
+                        if self.data2train == "slabs" and "clean" in line:
+                            self.indices.append(index)
                         index += 1
                 self.num_samples = len(self.indices)
         else:
@@ -114,7 +114,8 @@ class OC22LmdbDataset(BaseDataset):
             "train_on_oc20_total_energies", False
         )
         if self.train_on_oc20_total_energies:
-            self.oc20_ref = pickle.load(open(config["oc20_ref"], "rb"))
+            with open(config["oc20_ref"], "rb") as fp:
+                self.oc20_ref = pickle.load(fp)
         self.subsample = aii(self.config.get("subsample", False), bool)
 
     def __len__(self) -> int:
@@ -195,9 +196,7 @@ class OC22LmdbDataset(BaseDataset):
             data_object[attr] -= lin_energy
 
         if self.key_mapping is not None:
-            data_object = rename_data_object_keys(
-                data_object, self.key_mapping
-            )
+            data_object = rename_data_object_keys(data_object, self.key_mapping)
 
         # to jointly train on oc22+oc20, need to delete these oc20-only attributes
         # ensure otf_graph=1 in your model configuration
@@ -208,12 +207,10 @@ class OC22LmdbDataset(BaseDataset):
         if "distances" in data_object:
             del data_object.distances
 
-        data_object = self.transforms(data_object)
-
-        return data_object
+        return self.transforms(data_object)
 
     def connect_db(self, lmdb_path=None):
-        env = lmdb.open(
+        return lmdb.open(
             str(lmdb_path),
             subdir=False,
             readonly=True,
@@ -222,7 +219,6 @@ class OC22LmdbDataset(BaseDataset):
             meminit=False,
             max_readers=1,
         )
-        return env
 
     def close_db(self) -> None:
         if not self.path.is_file():

@@ -5,8 +5,10 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import functools
-from typing import List, TypeVar
+from typing import TypeVar
 
 import numpy as np
 import pytest
@@ -17,6 +19,7 @@ from ocpmodels.common.data_parallel import (
     StatefulDistributedSampler,
     UnsupportedDatasetError,
 )
+from ocpmodels.datasets.base_dataset import DatasetMetadata
 
 DATA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 SIZE_ATOMS = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
@@ -24,11 +27,10 @@ SIZE_ATOMS = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 T_co = TypeVar("T_co", covariant=True)
 
 
-@pytest.fixture
+@pytest.fixture()
 def valid_dataset():
     class _Dataset(Dataset[T_co]):
-        def data_sizes(self, batch_idx: List[int]) -> np.ndarray:
-            return np.array(SIZE_ATOMS)[batch_idx]
+        metadata = DatasetMetadata(natoms=np.array(SIZE_ATOMS))
 
         def __init__(self, data) -> None:
             self.data = data
@@ -39,10 +41,10 @@ def valid_dataset():
         def __getitem__(self, idx):
             return self.data[idx]
 
-    yield _Dataset(DATA)
+    return _Dataset(DATA)
 
 
-@pytest.fixture
+@pytest.fixture()
 def invalid_dataset():
     class _Dataset(Dataset):
         def __init__(self, data) -> None:
@@ -112,8 +114,7 @@ def test_valid_dataset(valid_dataset) -> None:
         on_error="raise",
     )
     assert (
-        sampler._get_natoms(list(range(len(SIZE_ATOMS))))
-        == np.array(SIZE_ATOMS)
+        sampler._get_natoms(list(range(len(SIZE_ATOMS)))) == np.array(SIZE_ATOMS)
     ).all()
 
 
@@ -202,9 +203,7 @@ def test_stateful_distributed_sampler(valid_dataset) -> None:
             num_replicas=1,
         )
         loaded_sampler.set_epoch_and_start_iteration(0, offset_step)
-        assert (
-            list(loaded_sampler) == original_order[offset_step * batch_size :]
-        )
+        assert list(loaded_sampler) == original_order[offset_step * batch_size :]
 
         diff_sampler = StatefulDistributedSampler(
             dataset=valid_dataset,
@@ -234,9 +233,7 @@ def test_stateful_distributed_sampler_numreplicas(valid_dataset) -> None:
                 ]
 
                 # make sure each subset only differs by at most one element in size
-                len_samplers = np.array(
-                    [len(list(sampler)) for sampler in samplers]
-                )
+                len_samplers = np.array([len(list(sampler)) for sampler in samplers])
                 assert ((len_samplers - len_samplers.min()) <= 1).all()
 
                 concat_idxs = functools.reduce(
@@ -268,9 +265,7 @@ def test_stateful_distributed_sampler_numreplicas_drop_last(
             ]
 
             # make sure each subset only differs by at most one element in size
-            len_samplers = np.array(
-                [len(list(sampler)) for sampler in samplers]
-            )
+            len_samplers = np.array([len(list(sampler)) for sampler in samplers])
             assert ((len_samplers - len_samplers.min()) <= 1).all()
 
             # make sure each subset is mutually exclusive and union covers the fullset
@@ -278,7 +273,4 @@ def test_stateful_distributed_sampler_numreplicas_drop_last(
                 lambda x, y: x + y, [list(sampler) for sampler in samplers]
             )
             assert len(concat_idxs) == len(np.unique(concat_idxs))
-            assert (
-                len(concat_idxs)
-                == (len(fullset) // num_replicas) * num_replicas
-            )
+            assert len(concat_idxs) == (len(fullset) // num_replicas) * num_replicas

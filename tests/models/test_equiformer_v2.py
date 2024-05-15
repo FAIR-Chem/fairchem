@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from __future__ import annotations
+
 import io
 import os
 
@@ -16,10 +18,7 @@ from ase.io import read
 from ocpmodels.common.registry import registry
 from ocpmodels.common.utils import load_state_dict, setup_imports
 from ocpmodels.datasets import data_list_collater
-from ocpmodels.models.equiformer_v2.so3 import (
-    CoefficientMappingModule,
-    SO3_Embedding,
-)
+from ocpmodels.models.equiformer_v2.so3 import CoefficientMappingModule, SO3_Embedding
 from ocpmodels.preprocessing import AtomsToGraphs
 
 
@@ -52,9 +51,7 @@ def load_model(request):
     # and then load it with torch.load
     r = requests.get(checkpoint_url, stream=True)
     r.raise_for_status()
-    checkpoint = torch.load(
-        io.BytesIO(r.content), map_location=torch.device("cpu")
-    )
+    checkpoint = torch.load(io.BytesIO(r.content), map_location=torch.device("cpu"))
 
     model = registry.get_model_class("equiformer_v2")(
         None,
@@ -93,9 +90,7 @@ def load_model(request):
         weight_init="uniform",
     )
 
-    new_dict = {
-        k[len("module.") * 2 :]: v for k, v in checkpoint["state_dict"].items()
-    }
+    new_dict = {k[len("module.") * 2 :]: v for k, v in checkpoint["state_dict"].items()}
     load_state_dict(model, new_dict)
 
     # Precision errors between mac vs. linux compound with multiple layers,
@@ -157,9 +152,7 @@ class TestMPrimaryLPrimary:
                         test_matrix_lp.append(v)
 
                 test_matrix_lp = (
-                    torch.tensor(test_matrix_lp)
-                    .reshape(1, -1, 1)
-                    .to(torch.float32)
+                    torch.tensor(test_matrix_lp).reshape(1, -1, 1).to(torch.float32)
                 )
 
                 """
@@ -178,9 +171,7 @@ class TestMPrimaryLPrimary:
                             test_matrix_mp.append(v)
 
                 test_matrix_mp = (
-                    torch.tensor(test_matrix_mp)
-                    .reshape(1, -1, 1)
-                    .to(torch.float32)
+                    torch.tensor(test_matrix_mp).reshape(1, -1, 1).to(torch.float32)
                 )
 
                 embedding.embedding = test_matrix_lp.clone()

@@ -1,8 +1,10 @@
 """
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
+from __future__ import annotations
 
 import math
 
@@ -503,11 +505,9 @@ class QuadrupletInteraction(torch.nn.Module):
             # Merge interaction of c->a and a->c
             x_ac = x_ac[id_swap]  # swap to add to edge a->c and not c->a
             x_res = x_ca + x_ac
-            x_res = x_res * self.inv_sqrt_2
-            return x_res
+            return x_res * self.inv_sqrt_2
         else:
-            x_res = self.up_projection_ca(x)
-            return x_res
+            return self.up_projection_ca(x)
 
 
 class TripletInteraction(torch.nn.Module):
@@ -661,13 +661,11 @@ class TripletInteraction(torch.nn.Module):
             # Merge interaction of c->a and a->c
             x_ac = x_ac[id_swap]  # swap to add to edge a->c and not c->a
             x_res = x_ca + x_ac
-            x_res = x_res * self.inv_sqrt_2
-            return x_res
+            return x_res * self.inv_sqrt_2
         else:
             if self.swap_output:
                 x = x[id_swap]
-            x_res = self.up_projection_ca(x)  # (nEdges, emb_size_edge)
-            return x_res
+            return self.up_projection_ca(x)  # (nEdges, emb_size_edge)
 
 
 class PairInteraction(torch.nn.Module):
@@ -753,6 +751,4 @@ class PairInteraction(torch.nn.Module):
         h_out = self.scale_rbf_sum(h_out, ref=x_ba)
         # (num_atoms, emb_size_edge)
 
-        h_out = self.up_projection(h_out)  # (num_atoms, emb_size_atom)
-
-        return h_out
+        return self.up_projection(h_out)  # (num_atoms, emb_size_atom)

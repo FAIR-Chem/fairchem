@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import copy
 import math
-from typing import List
 
 import torch
 import torch.nn as nn
@@ -62,8 +63,8 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
         attn_alpha_channels: int,
         attn_value_channels: int,
         output_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         SO3_rotation,
         mappingReduced,
         SO3_grid,
@@ -78,7 +79,7 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
         use_sep_s2_act: bool = True,
         alpha_drop: float = 0.0,
     ):
-        super(SO2EquivariantGraphAttention, self).__init__()
+        super().__init__()
 
         self.sphere_channels = sphere_channels
         self.hidden_channels = hidden_channels
@@ -126,9 +127,7 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
         # Create SO(2) convolution blocks
         extra_m0_output_channels = None
         if not self.use_s2_act_attn:
-            extra_m0_output_channels = (
-                self.num_heads * self.attn_alpha_channels
-            )
+            extra_m0_output_channels = self.num_heads * self.attn_alpha_channels
             if self.use_gate_act:
                 extra_m0_output_channels = (
                     extra_m0_output_channels
@@ -141,8 +140,9 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
                     )
 
         if self.use_m_share_rad:
-            self.edge_channels_list = self.edge_channels_list + [
-                2 * self.sphere_channels * (max(self.lmax_list) + 1)
+            self.edge_channels_list = [
+                *self.edge_channels_list,
+                2 * self.sphere_channels * (max(self.lmax_list) + 1),
             ]
             self.rad_func = RadialFunction(self.edge_channels_list)
             expand_index = torch.zeros([(max(self.lmax_list) + 1) ** 2]).long()
@@ -158,7 +158,7 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
             self.lmax_list,
             self.mmax_list,
             self.mappingReduced,
-            internal_weights=(False if not self.use_m_share_rad else True),
+            internal_weights=(bool(self.use_m_share_rad)),
             edge_channels_list=(
                 self.edge_channels_list if not self.use_m_share_rad else None
             ),
@@ -230,16 +230,11 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
         edge_distance: torch.Tensor,
         edge_index,
     ):
-
         # Compute edge scalar features (invariant to rotations)
         # Uses atomic numbers and edge distance as inputs
         if self.use_atom_edge_embedding:
-            source_element = atomic_numbers[
-                edge_index[0]
-            ]  # Source atom atomic number
-            target_element = atomic_numbers[
-                edge_index[1]
-            ]  # Target atom atomic number
+            source_element = atomic_numbers[edge_index[0]]  # Source atom atomic number
+            target_element = atomic_numbers[edge_index[1]]  # Target atom atomic number
             source_embedding = self.source_embedding(source_element)
             target_embedding = self.target_embedding(target_element)
             x_edge = torch.cat(
@@ -253,9 +248,7 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
         x_source._expand_edge(edge_index[0, :])
         x_target._expand_edge(edge_index[1, :])
 
-        x_message_data = torch.cat(
-            (x_source.embedding, x_target.embedding), dim=2
-        )
+        x_message_data = torch.cat((x_source.embedding, x_target.embedding), dim=2)
         x_message = SO3_Embedding(
             0,
             x_target.lmax_list.copy(),
@@ -298,9 +291,7 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
             x_0_alpha = x_0_extra.narrow(
                 1, 0, x_alpha_num_channels
             )  # for attention weights
-            x_message.embedding = self.gate_act(
-                x_0_gating, x_message.embedding
-            )
+            x_message.embedding = self.gate_act(x_0_gating, x_message.embedding)
         else:
             if self.use_sep_s2_act:
                 x_0_gating = x_0_extra.narrow(
@@ -316,9 +307,7 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
                 )
             else:
                 x_0_alpha = x_0_extra
-                x_message.embedding = self.s2_act(
-                    x_message.embedding, self.SO3_grid
-                )
+                x_message.embedding = self.s2_act(x_message.embedding, self.SO3_grid)
             # x_message._grid_act(self.SO3_grid, self.value_act, self.mappingReduced)
 
         # Second SO(2)-convolution
@@ -331,9 +320,7 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
         if self.use_s2_act_attn:
             alpha = x_0_extra
         else:
-            x_0_alpha = x_0_alpha.reshape(
-                -1, self.num_heads, self.attn_alpha_channels
-            )
+            x_0_alpha = x_0_alpha.reshape(-1, self.num_heads, self.attn_alpha_channels)
             x_0_alpha = self.alpha_norm(x_0_alpha)
             x_0_alpha = self.alpha_act(x_0_alpha)
             alpha = torch.einsum("bik, ik -> bi", x_0_alpha, self.alpha_dot)
@@ -365,9 +352,7 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
         x_message._reduce_edge(edge_index[1], len(x.embedding))
 
         # Project
-        out_embedding = self.proj(x_message)
-
-        return out_embedding
+        return self.proj(x_message)
 
 
 class FeedForwardNetwork(torch.nn.Module):
@@ -395,15 +380,15 @@ class FeedForwardNetwork(torch.nn.Module):
         sphere_channels: int,
         hidden_channels: int,
         output_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         SO3_grid,
         activation: str = "scaled_silu",
         use_gate_act: bool = False,
         use_grid_mlp: bool = False,
         use_sep_s2_act: bool = True,
     ):
-        super(FeedForwardNetwork, self).__init__()
+        super().__init__()
         self.sphere_channels = sphere_channels
         self.hidden_channels = hidden_channels
         self.output_channels = output_channels
@@ -434,17 +419,11 @@ class FeedForwardNetwork(torch.nn.Module):
             else:
                 self.scalar_mlp = None
             self.grid_mlp = nn.Sequential(
-                nn.Linear(
-                    self.hidden_channels, self.hidden_channels, bias=False
-                ),
+                nn.Linear(self.hidden_channels, self.hidden_channels, bias=False),
                 nn.SiLU(),
-                nn.Linear(
-                    self.hidden_channels, self.hidden_channels, bias=False
-                ),
+                nn.Linear(self.hidden_channels, self.hidden_channels, bias=False),
                 nn.SiLU(),
-                nn.Linear(
-                    self.hidden_channels, self.hidden_channels, bias=False
-                ),
+                nn.Linear(self.hidden_channels, self.hidden_channels, bias=False),
             )
         else:
             if self.use_gate_act:
@@ -460,9 +439,7 @@ class FeedForwardNetwork(torch.nn.Module):
                     self.gating_linear = torch.nn.Linear(
                         self.sphere_channels_all, self.hidden_channels
                     )
-                    self.s2_act = SeparableS2Activation(
-                        self.max_lmax, self.max_lmax
-                    )
+                    self.s2_act = SeparableS2Activation(self.max_lmax, self.max_lmax)
                 else:
                     self.gating_linear = None
                     self.s2_act = S2Activation(self.max_lmax, self.max_lmax)
@@ -471,7 +448,6 @@ class FeedForwardNetwork(torch.nn.Module):
         )
 
     def forward(self, input_embedding):
-
         gating_scalars = None
         if self.use_grid_mlp:
             if self.use_sep_s2_act:
@@ -525,9 +501,7 @@ class FeedForwardNetwork(torch.nn.Module):
                         input_embedding.embedding, self.SO3_grid
                     )
 
-        input_embedding = self.so3_linear_2(input_embedding)
-
-        return input_embedding
+        return self.so3_linear_2(input_embedding)
 
 
 class TransBlockV2(torch.nn.Module):
@@ -579,13 +553,13 @@ class TransBlockV2(torch.nn.Module):
         attn_value_channels: int,
         ffn_hidden_channels: int,
         output_channels: int,
-        lmax_list: List[int],
-        mmax_list: List[int],
+        lmax_list: list[int],
+        mmax_list: list[int],
         SO3_rotation,
         mappingReduced,
         SO3_grid,
         max_num_elements: int,
-        edge_channels_list: List[int],
+        edge_channels_list: list[int],
         use_atom_edge_embedding: bool = True,
         use_m_share_rad: bool = False,
         attn_activation: str = "silu",
@@ -600,7 +574,7 @@ class TransBlockV2(torch.nn.Module):
         drop_path_rate: float = 0.0,
         proj_drop: float = 0.0,
     ) -> None:
-        super(TransBlockV2, self).__init__()
+        super().__init__()
 
         max_lmax = max(lmax_list)
         self.norm_1 = get_normalization_layer(
@@ -631,13 +605,9 @@ class TransBlockV2(torch.nn.Module):
             alpha_drop=alpha_drop,
         )
 
-        self.drop_path = (
-            GraphDropPath(drop_path_rate) if drop_path_rate > 0.0 else None
-        )
+        self.drop_path = GraphDropPath(drop_path_rate) if drop_path_rate > 0.0 else None
         self.proj_drop = (
-            EquivariantDropoutArraySphericalHarmonics(
-                proj_drop, drop_graph=False
-            )
+            EquivariantDropoutArraySphericalHarmonics(proj_drop, drop_graph=False)
             if proj_drop > 0.0
             else None
         )
@@ -674,7 +644,6 @@ class TransBlockV2(torch.nn.Module):
         edge_index,
         batch,  # for GraphDropPath
     ):
-
         output_embedding = x
 
         x_res = output_embedding.embedding
