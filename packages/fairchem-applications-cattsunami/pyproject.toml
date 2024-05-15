@@ -12,7 +12,7 @@ dependencies = [
     "numpy>=1.25.0",
     "scipy",
     "ase",
-    "netoworkx",
+    "networkx",
     "fairchem-core",
     "fairchem-data-oc"
 ]
