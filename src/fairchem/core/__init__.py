@@ -7,9 +7,9 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from fairchem.core.common.relaxation.ase_utils import OCPCalculator
-
 from importlib.metadata import PackageNotFoundError, version
+
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 
 __all__ = ["OCPCalculator"]
 
