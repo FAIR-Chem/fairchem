@@ -153,13 +153,11 @@ def lap_eigvec(batch, edge_index, natoms, dim=128):
     Modified to git OTF graph construction
     """
     output = torch.zeros(len(batch), dim, device=batch.device)
-    for i in range(batch.max() + 1):
+    for i, offset in enumerate(torch.cumsum(natoms, dim=0) - natoms):
         edges = edge_index[:, (batch[edge_index] == i).all(0)]
-        offset = edges.min()
         edges = edges - offset
-        dense_adj = to_dense_adj(edges).float()[0]
+        dense_adj = to_dense_adj(edges, max_num_nodes=natoms[i]).float()[0]
         in_degree = dense_adj.sum(1)
-
         # Laplacian
         A = dense_adj
         N = torch.diag(in_degree.clip(1) ** -0.5)
