@@ -6,11 +6,15 @@ root: index
 parts:
 - caption: Quickstart & Installation
   chapters:
-  - file: core/intro_series
   - file: core/install
   - file: core/quickstart
   - file: core/gotchas
   - file: core/license
+- caption: Learn More
+  chapters:
+  - file: core/intro_series
+  - file: videos/technical_talks
+  - file: core/papers_using_models
 - caption: OCP API & Demo
   chapters:
   - url: https://open-catalyst.metademolab.com/
@@ -32,13 +36,10 @@ parts:
   - file: core/inference
   - file: core/fine-tuning/fine-tuning-oxides
   - file: core/model_faq
-- caption: Videos and Talks
+- caption: Catalysis Case Studies & Tutorials
   chapters:
-  - file: videos/technical_talks
-- caption: Case Studies & Tutorials
-  chapters:
+  - file: tutorials/cattsunami_walkthrough
   - file: tutorials/adsorbml_walkthrough
-  - file: core/papers_using_models
   - file: tutorials/intro
   - file: tutorials/OCP-introduction
   - file: tutorials/NRR/NRR_toc
@@ -53,7 +54,7 @@ parts:
     - file: legacy_tutorials/OCP_Tutorial
     - file: legacy_tutorials/data_preprocessing
     - file: legacy_tutorials/data_visualization
-- caption: ocpmodels documentation
+- caption: fairchem documentation
   chapters:
   - file: autoapi/index
 - caption: Notebook execution times
