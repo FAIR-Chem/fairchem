@@ -13,7 +13,6 @@ from fairseq.modules import (
 )
 
 from fairchem.core.common.registry import registry
-from fairchem.core.common.utils import conditional_grad
 from fairchem.core.models.base import BaseModel
 
 from ..modules import init_graphormer_params, TokenGTGraphEncoder
@@ -97,8 +96,11 @@ class TokenGTModel(BaseModel):
     """
     def __init__(
             self,
-            num_atoms: int,
-            num_edges: int,
+            num_atoms: int,  # not used
+            bond_feat_dim: int,  # not used
+            num_targets: int,  # not used
+            num_elements: int = 100,
+            num_edges: int = 9,
             use_pbc: bool = True,
             regress_forces: bool = True,
             otf_graph: bool = True,
@@ -143,11 +145,11 @@ class TokenGTModel(BaseModel):
         self.otf_graph = otf_graph
         self.regress_forces = regress_forces
         self.max_neighbors = max_neighbors
-        self.max_radius = max_radius
+        self.cutoff = max_radius
         self.lap_node_id_dim = lap_node_id_dim
 
         self.encoder = TokenGTEncoder(
-            num_atoms=num_atoms,
+            num_elements=num_elements,
             num_edges=num_edges,
             regress_forces=regress_forces,
             act_dropout=act_dropout,
@@ -182,7 +184,6 @@ class TokenGTModel(BaseModel):
         if performer_finetune:
             self.encoder.performer_finetune_setup()
 
-    @conditional_grad(torch.enable_grad())
     def forward(self, data):
         # OTF graph construction
         (
@@ -226,7 +227,7 @@ class TokenGTModel(BaseModel):
 class TokenGTEncoder(nn.Module):
     def __init__(
             self,
-            num_atoms: int,
+            num_elements: int,
             num_edges: int,
             regress_forces: bool,
             act_dropout: float =  0.0,
@@ -259,8 +260,7 @@ class TokenGTEncoder(nn.Module):
             postnorm: bool = False,
         ):
         super().__init__()
-        assert not (prenorm and postnorm)
-        assert prenorm or postnorm
+        assert (prenorm != postnorm)
         self.encoder_layers = encoder_layers
         self.num_attention_heads = encoder_attention_heads
 
@@ -273,7 +273,7 @@ class TokenGTEncoder(nn.Module):
 
         self.graph_encoder = TokenGTGraphEncoder(
             # <
-            num_atoms=num_atoms,
+            num_elements=num_elements,
             num_edges=num_edges,
             # >
             # < for tokenization
@@ -320,29 +320,35 @@ class TokenGTEncoder(nn.Module):
 
     def forward(
             self, 
-            pos,
-            natoms,
             batch,
+            pos, 
+            natoms,
             atomic_numbers, 
-            edge_index, 
-            edge_distance_vec,
+            edge_index,
+            edge_distance_vec, 
+            edge_data,
+            lap_vec,
         ):
 
-        x = self.graph_encoder(
-            pos, 
+        x, padded_node_mask = self.graph_encoder(
             batch,
+            pos, 
             natoms,
             atomic_numbers, 
-            edge_index, 
-            edge_distance_vec,
-        ).transpose(0, 1) # [B, T]
+            edge_index,
+            edge_distance_vec, 
+            edge_data,
+            lap_vec,
+        ) # [B, T]
 
-        x, padded_node_mask = self.layer_norm(self.activation_fn(self.lm_head_transform_weight(x)))
+        x = x.transpose(0, 1)
+
+        x = self.layer_norm(self.activation_fn(self.lm_head_transform_weight(x)))
 
         # project back to output sizes
         energy = self.energy_out(x[:, 0])
         if self.regress_forces:
-            forces = self.forces_out(x[2:][padded_node_mask])
+            forces = self.forces_out(x[:, 2:][padded_node_mask])
             assert forces.shape[0] == pos.shape[0]
         else:
             forces = None

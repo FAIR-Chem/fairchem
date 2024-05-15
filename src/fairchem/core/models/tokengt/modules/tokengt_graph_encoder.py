@@ -42,7 +42,7 @@ def init_graphormer_params(module):
 class TokenGTGraphEncoder(nn.Module):
     def __init__(
             self,
-            num_atoms: int = 100,
+            num_elements: int = 100,
             num_edges: int = 9,
             rand_node_id: bool = False,
             rand_node_id_dim: int = 64,
@@ -96,7 +96,7 @@ class TokenGTGraphEncoder(nn.Module):
         self.performer_finetune = performer_finetune
 
         self.graph_feature = GraphFeatureTokenizer(
-            num_atoms=num_atoms,
+            num_elements=num_elements,
             num_edges=num_edges,
             rand_node_id=rand_node_id,
             rand_node_id_dim=rand_node_id_dim,

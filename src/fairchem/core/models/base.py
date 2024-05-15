@@ -146,21 +146,13 @@ class BaseModel(nn.Module):
                 no_wd_list.append(name)
         return no_wd_list
 
-def eig(sym_mat):
-    # (sorted) eigenvectors with numpy
-    _, EigVec = torch.linalg.eigh(sym_mat)
-
-    # for eigval, take abs because numpy sometimes computes the first eigenvalue approaching 0 from the negative
-    eigvec = EigVec.float()  # [N, N (channels)]
-    return eigvec  # [N, N (channels)]
-
 def lap_eigvec(batch, edge_index, natoms, dim=128):
     """
     Graph positional encoding v/ Laplacian eigenvectors
     https://github.com/DevinKreuzer/SAN/blob/main/data/molecules.py
     Modified to git OTF graph construction
     """
-    output = torch.zeros(len(batch), dim)
+    output = torch.zeros(len(batch), dim, device=batch.device)
     for i in range(batch.max() + 1):
         edges = edge_index[:, (batch[edge_index] == i).all(0)]
         offset = edges.min()
@@ -171,11 +163,12 @@ def lap_eigvec(batch, edge_index, natoms, dim=128):
         # Laplacian
         A = dense_adj
         N = torch.diag(in_degree.clip(1) ** -0.5)
-        L = torch.eye(natoms[i]) - N @ A @ N
+        L = torch.eye(natoms[i], device=natoms.device) - N @ A @ N
 
-        eigvec = eig(L)
+        _, eigvec = torch.linalg.eigh(L)
         if natoms[i] <= dim:
-            output[offset: offset+natoms[i], :natoms[i]] = eigvec
+            output[offset: offset+natoms[i], :natoms[i]] = eigvec.float()
         else:
-            output[offset: offset+natoms[i]] = eigvec[:, :dim]
+            output[offset: offset+natoms[i]] = eigvec[:, :dim].float()
+
     return output 

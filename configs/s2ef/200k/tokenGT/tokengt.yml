@@ -2,26 +2,24 @@ includes:
   - configs/s2ef/200k/base.yml
 
 model:
-  num_atoms: 100
-  num_edges: 9
-  use_pbc: True
+  name: tokengt
   regress_forces: True
   otf_graph: True
-  max_neighbors: 10
-  max_radius: 12
+  max_neighbors: 5
+  max_radius: 6
   act_dropout: 0.1
   attention_dropout: 0.1
   dropout: 0.
-  encoder_ffn_embed_dim: 768
-  encoder_layers: 12
+  encoder_ffn_embed_dim: 128
+  encoder_layers: 8
   encoder_attention_heads: 8
-  encoder_embed_dim: 768
+  encoder_embed_dim: 128
   rand_node_id: False
   rand_node_id_dim: null
   orf_node_id: False
   orf_node_id_dim: null
   lap_node_id: True
-  lap_node_id_dim: 128
+  lap_node_id_dim: 64
   lap_node_id_sign_flip: True
   lap_node_id_eig_dropout: 0
   type_id: True
@@ -34,7 +32,7 @@ model:
   apply_graphormer_init: True
   activation_fn: gelu
   encoder_normalize_before: True
-  prenorm: False
+  prenorm: True
   postnorm: False
 
 optim:

@@ -170,7 +170,7 @@ class TokenGTGraphEncoderLayer(nn.Module):
         if self.layernorm_style == "prenorm":
             residual = x
             x = self.self_attn_layer_norm(x)
-            x, attn = self.self_attn(
+            x, _ = self.self_attn(
                 query=x,
                 key=x,
                 value=x,
@@ -192,7 +192,7 @@ class TokenGTGraphEncoderLayer(nn.Module):
 
         elif self.layernorm_style == "postnorm":
             residual = x
-            x, attn = self.self_attn(
+            x, _ = self.self_attn(
                 query=x,
                 key=x,
                 value=x,
@@ -213,4 +213,4 @@ class TokenGTGraphEncoderLayer(nn.Module):
 
         else:
             raise NotImplementedError
-        return x, attn
+        return x
