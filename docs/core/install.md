@@ -4,7 +4,7 @@
 
 We do not have official conda recipes (yet!); in the meantime you can use the
 following environment yaml files for CPU [env.cpu.yml](https://raw.githubusercontent.com/FAIR-Chem/fairchem/main/packages/env.cpu.yml)
-and GPU [env.gpu.yml](https://raw.githubusercontent.com/FAIR-Chem/fairchem/main/packages/env.gpu.yml) to easily set up a
+or GPU [env.gpu.yml](https://raw.githubusercontent.com/FAIR-Chem/fairchem/main/packages/env.gpu.yml) to easily set up a
 working environment and install `fairchem-core`.
 
 1. Create an environment to install *fairchem*
@@ -39,7 +39,7 @@ You can also install `pytorch` and `torch_geometric` dependencies from PyPI to s
 
 3. Install `fairchem-core` from PyPi
    ```bash
-   pip install -i fairchem-core
+   pip install fairchem-core
    ```
 
 
@@ -57,12 +57,12 @@ If you plan to make contributions you will need to clone (for windows user pleas
 `fairchem-core` in editable mode with dev
 dependencies,
 ```bash
-pip install -e pip install packages/fairchem-core[dev]
+pip install -e packages/fairchem-core[dev]
 ```
 
 And similarly for any other namespace package:
 ```bash
-pip install packages/fairchem-{package-to-install}
+pip install -e packages/fairchem-{package-to-install}
 ```
 
 ### Cloning and installing the git repository on windows
