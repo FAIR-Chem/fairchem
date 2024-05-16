@@ -92,10 +92,6 @@ multitask_required_keys = {
 }
 
 
-class MissingConfigKeyError(KeyError):
-    pass
-
-
 class Complete:
     def __call__(self, data):
         device = data.edge_index.device
@@ -1012,8 +1008,9 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
                 if required_key in config
             }
             if len(missing_keys) > 0:
-                logging.error(f"Required key missing from config: {missing_keys!s}")
-                raise MissingConfigKeyError
+                raise RuntimeError(
+                    f"Required key missing from config: {missing_keys!s}"
+                )
             trainer = trainer_cls(
                 tasks=config.get("tasks", {}),
                 dataset_configs=config["datasets"],
