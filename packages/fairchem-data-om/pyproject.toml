@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs", "hatch-fancy-pypi-readme>=24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fairchem.data.om"
+dynamic = ["version", "readme"]
+description = "Code for generating OMOL input configurations"
+license = {text = "MIT License"}
+dependencies = [
+    "ase@git+https://gitlab.com/ase/ase.git@dc86a19a280741aa2b42a08d0fa63a8d0348e225",
+    "quacc[sella]>=0.7.6",
+    "sella==2.3.3",
+]
+
+[project.urls]
+repository = "https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/data/om"
+documentation = "https://fair-chem.github.io/"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+root = "../../"
+git_describe_command = 'git describe --tags --match fairchem_data_om-*'
+
+[tool.hatch.build]
+directory = "../../dist-data-om"
+
+[tool.hatch.build]
+directory = "../../dist"
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src/fairchem/data/om"]
+
+[tool.hatch.build.targets.wheel]
+sources = ["src"]
+only-include = ["src/fairchem/data/om"]
+
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+fragments = [
+  { path = "src/fairchem/data/om/README.md" },
+  { path = "src/fairchem/data/om/LICENSE.md" },
+]

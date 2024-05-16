@@ -20,7 +20,7 @@ In the previous example, we constructed slab models of adsorbates on desired sit
 
 
 ```{code-cell} ipython3
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 import ase.io
 from ase.optimize import BFGS
 import sys
@@ -29,17 +29,17 @@ import pickle
 import matplotlib.pyplot as plt
 import time
 
-from ocdata.core import Adsorbate, AdsorbateSlabConfig, Bulk, Slab
+from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig, Bulk, Slab
 import os
 from glob import glob
 import pandas as pd
-from ocdata.utils import DetectTrajAnomaly
+from fairchem.data.oc.utils import DetectTrajAnomaly
 ```
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path
 ```
 
@@ -57,12 +57,12 @@ To do this, we will enumerate adsorbate-slab configurations and run ML relaxatio
 
 +++
 
-Be sure to set the path in `ocdata/configs/paths.py` to point to the correct place or pass the paths as an argument. The database pickles can be found in `ocdata/databases/pkls`. We will show one explicitly here as an example and then run all of them in an automated fashion for brevity.
+Be sure to set the path in `fairchem/data/oc/configs/paths.py` to point to the correct place or pass the paths as an argument. The database pickles can be found in `fairchem/data/oc/databases/pkls`. We will show one explicitly here as an example and then run all of them in an automated fashion for brevity.
 
 ```{code-cell} ipython3
-import ocdata
+import fairchem.data.oc
 from pathlib import Path
-db = Path(ocdata.__file__).parent / Path('databases/pkls/adsorbates.pkl')
+db = Path(fairchem.data.oc.__file__).parent / Path('databases/pkls/adsorbates.pkl')
 db
 ```
 

@@ -1,32 +1,35 @@
 # Installation
 
-## conda or better yet [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html) - easy
+### conda or better yet [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html) - easy
 
-We do not have official conda recipes (yet!), so to install with conda or mamba you will need to clone the
-[ocp repo](https://github.com/Open-Catalyst-Project/ocp) and run the following from inside the repo directory to create an environment with all the
-necessary dependencies.
+We do not have official conda recipes (yet!); in the meantime you can use the
+following environment yaml files for CPU [env.cpu.yml](https://raw.githubusercontent.com/FAIR-Chem/fairchem/main/packages/env.cpu.yml)
+or GPU [env.gpu.yml](https://raw.githubusercontent.com/FAIR-Chem/fairchem/main/packages/env.gpu.yml) to easily set up a
+working environment and install `fairchem-core`.
 
-1. Create an *ocp-models* environment
+1. Create an environment to install *fairchem*
    1. **GPU**
 
       The default environment uses cuda 11.8, if you need a different version you will have to edit *pytorch-cuda* version
       accordingly.
       ```bash
-      conda create -f env.gpu.yml
+      conda env create -f env.gpu.yml
       ```
 
    2. **CPU**
       ```bash
-      conda create -f env.cpu.yml
+      conda env create -f env.cpu.yml
       ```
 
-2. Activate the environment and install `ocpmodels`
+2. Activate the environment and install `fairchem-core` from PyPi
    ```bash
-   conda activate ocp-models
-   pip install .
+   conda activate fair-chem
+   pip install fairchem-core
    ```
 
-## PyPi - flexible
+### PyPi - flexible
+You can also install `pytorch` and `torch_geometric` dependencies from PyPI to select specific CPU or CUDA versions.
+
 1. Install `pytorch` by selecting your installer, OS and CPU or CUDA version following the official
 [Pytorch docs](https://pytorch.org/get-started/locally/)
 
@@ -34,21 +37,45 @@ necessary dependencies.
    similarly by selecting the appropriate versions in the official
    [PyG docs](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html)
 
-3. Install `ocpmodels`
-   1. From test-PyPi (until we have our official release on PyPi soon!)
-      ```bash
-      pip install -i https://test.pypi.org/simple/ ocp-models
-      ```
-   2. Or by cloning the repo and then using pip
-      ```bash
-      pip install .
-      ```
+3. Install `fairchem-core` from PyPi
+   ```bash
+   pip install fairchem-core
+   ```
 
+
+## Additional packages
+
+`fairchem` is a namespace package, meaning all packages are installed seperately. If you need
+to install other packages you can do so by:
+```bash
+pip install fairchem-{package-to-install}
+```
 
 ## Dev install
 
-If you plan to make contributions you will need to clone the repo and install `ocp-models` in editable mode with dev
+If you plan to make contributions you will need to clone (for windows user please see next section) the repo and install
+`fairchem-core` in editable mode with dev
 dependencies,
 ```bash
-pip install -e .[dev]
+pip install -e packages/fairchem-core[dev]
+```
+
+And similarly for any other namespace package:
+```bash
+pip install -e packages/fairchem-{package-to-install}
+```
+
+### Cloning and installing the git repository on windows
+
+Our build system requires the use of symlinks which are not available by default on windows. To properly build fairchem packages you must enable symlinks and clone the repository with them enabled.
+
+1) When installing git on your machine make sure "enable symbolic links" is checked  ([download git installer](https://git-scm.com/download/win))
+
+![Enable symlinks on git install](https://i.stack.imgur.com/kZmPI.png)
+
+2) Enable developer mode ([instructions](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development)) or run the following commands as administrator
+
+3) Run the git clone command with symlinks enabled
+```
+git clone -c core.symlinks=true https://github.com/FAIR-Chem/fairchem.git
 ```

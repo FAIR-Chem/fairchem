@@ -27,9 +27,9 @@ sys.path.insert(0, os.path.abspath("../../"))
 
 # -- Project information -----------------------------------------------------
 
-project = "Open Catalyst Project"
+project = "FAIR Chem"
 copyright = "2020, Facebook, Inc."
-author = "Anuroop Sriram"
+author = "Anuroop Sriram, Zach Ulissi"
 
 
 # -- General configuration ---------------------------------------------------
