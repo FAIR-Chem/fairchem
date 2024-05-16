@@ -25,6 +25,7 @@ from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from fairchem.core import __version__
 from fairchem.core.common import distutils, gp_utils
 from fairchem.core.common.data_parallel import BalancedBatchSampler, OCPCollater
 from fairchem.core.common.registry import registry
@@ -119,6 +120,7 @@ class BaseTrainer(ABC):
                 "seed": seed,
                 "timestamp_id": self.timestamp_id,
                 "commit": commit_hash,
+                "version": __version__,
                 "checkpoint_dir": os.path.join(
                     run_dir, "checkpoints", self.timestamp_id
                 ),
@@ -131,7 +133,7 @@ class BaseTrainer(ABC):
             "noddp": noddp,
         }
         # AMP Scaler
-        self.scaler = torch.cuda.amp.GradScaler() if amp else None
+        self.scaler = torch.cuda.amp.GradScaler() if amp and not self.cpu else None
 
         # Fill in SLURM information in config, if applicable
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:

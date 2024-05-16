@@ -1115,7 +1115,8 @@ def get_commit_hash():
     try:
         commit_hash = (
             subprocess.check_output(
-                ["git", "-C", fairchem.core.__path__[0], "describe", "--always"]
+                ["git", "-C", fairchem.core.__path__[0], "describe", "--always"],
+                stderr=subprocess.DEVNULL,
             )
             .strip()
             .decode("ascii")
