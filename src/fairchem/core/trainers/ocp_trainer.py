@@ -430,7 +430,9 @@ class OCPTrainer(BaseTrainer):
             desc=f"device {rank}",
             disable=disable_tqdm,
         ):
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+            with torch.cuda.amp.autocast(
+                enabled=self.scaler is not None and not self.cpu
+            ):
                 out = self._forward(batch)
 
             for target_key in self.config["outputs"]:

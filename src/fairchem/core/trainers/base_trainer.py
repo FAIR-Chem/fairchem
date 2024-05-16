@@ -131,7 +131,7 @@ class BaseTrainer(ABC):
             "noddp": noddp,
         }
         # AMP Scaler
-        self.scaler = torch.cuda.amp.GradScaler() if amp else None
+        self.scaler = torch.cuda.amp.GradScaler() if amp and not self.cpu else None
 
         # Fill in SLURM information in config, if applicable
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
