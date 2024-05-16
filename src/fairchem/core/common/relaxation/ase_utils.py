@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 import torch
 from ase import Atoms
 from ase.calculators.calculator import Calculator
-from ase.calculators.singlepoint import SinglePointCalculator as sp
+from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms
 
 from fairchem.core.common.registry import registry
@@ -59,7 +59,7 @@ def batch_to_atoms(batch: Batch):
             constraint=FixAtoms(mask=fixed[idx].tolist()),
             pbc=[True, True, True],
         )
-        calc = sp(
+        calc = SinglePointCalculator(
             atoms=atoms,
             energy=energies[idx],
             forces=forces[idx].cpu().detach().numpy(),
