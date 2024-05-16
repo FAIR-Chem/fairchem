@@ -28,6 +28,7 @@ dependencies = [
 [project.urls]
 repository = "https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/demo/ocpapi"
 home = "https://open-catalyst.metademolab.com/"
+documentation = "https://fair-chem.github.io/"
 
 [project.optional-dependencies]
 dev = [
