@@ -17,7 +17,7 @@ kernelspec:
 This notebook provides an overview of converting ASE Atoms objects to PyTorch Geometric Data objects. To better understand the raw data contained within OC20, check out the following tutorial first: https://github.com/Open-Catalyst-Project/ocp/blob/master/docs/source/tutorials/data_visualization.ipynb
 
 ```{code-cell} ipython3
-from ocpmodels.preprocessing import AtomsToGraphs
+from fairchem.core.preprocessing import AtomsToGraphs
 import ase.io
 from ase.build import bulk
 from ase.build import fcc100, add_adsorbate, molecule
