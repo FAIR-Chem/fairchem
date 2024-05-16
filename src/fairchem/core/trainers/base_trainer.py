@@ -44,6 +44,8 @@ from fairchem.core.modules.normalizer import Normalizer
 from fairchem.core.modules.scaling.compat import load_scales_compat
 from fairchem.core.modules.scaling.util import ensure_fitted
 from fairchem.core.modules.scheduler import LRScheduler
+from fairchem.core import __version__
+
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -119,6 +121,7 @@ class BaseTrainer(ABC):
                 "seed": seed,
                 "timestamp_id": self.timestamp_id,
                 "commit": commit_hash,
+                "version": __version__,
                 "checkpoint_dir": os.path.join(
                     run_dir, "checkpoints", self.timestamp_id
                 ),
