@@ -7,9 +7,18 @@ name = "fairchem-data-oc"
 dynamic = ["version", "readme"]
 description = "Code for generating adsorbate-catalyst input configurations"
 license = {text = "MIT License"}
+dependencies = [
+    "numpy>=1.25.0",
+    "scipy",
+    "matplotlib",
+    "ase",  #  this was pinned to 3.22.1
+    "pymatgen>=2023.10.3",  # this was pinned to 2023.5.10
+    "tqdm"
+]
 
 [project.urls]
 repository = "https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/data/oc"
+documentation = "https://fair-chem.github.io/"
 
 [tool.hatch.version]
 source = "vcs"
