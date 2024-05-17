@@ -39,7 +39,7 @@ default:
       res_updown:
         hidden_channels: 128
         norm: batch1d # batch1d, layer or null
-    deup_features: [s, energy_pred_std]
+    deup_features: [s, energy_pred_std]  # add q for density if it exists
   optim:
     batch_size: 256
     eval_batch_size: 256
