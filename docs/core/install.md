@@ -1,6 +1,6 @@
 # Installation
  
-To install `fairchem-core` you will need to setup the `fairchem-core` environment (using [conda](#Conda) or [pip](#PyPi)) and then either install `fairchem-core` package [directly](#Install-fairchem-core) or install [development version](#Development-install) from our git.
+To install `fairchem-core` you will need to setup the `fairchem-core` environment (using [conda](#Conda) or [pip](#PyPi)) and then either install `fairchem-core` package [directly](#Install-fairchem-core) or install [development version](#Development-install) from our git repository.
 
 ## Environment 
 
@@ -12,7 +12,8 @@ We do not have official conda recipes (yet!); in the meantime you can use the
 following environment yaml files to setup on CPU or GPU. If conda is too slow for you, please consider using [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html)
 
 1. Create an environment to install *fairchem*
-   1. **GPU**
+
+   a. **GPU**
 
       The default environment uses cuda 11.8, if you need a different version you will have to edit *pytorch-cuda* version
       accordingly.
@@ -21,13 +22,13 @@ following environment yaml files to setup on CPU or GPU. If conda is too slow fo
       conda env create -f env.gpu.yml
       ```
 
-   2. **CPU**
+   b. **CPU**
       ```bash
       wget https://raw.githubusercontent.com/FAIR-Chem/fairchem/main/packages/env.cpu.yml
       conda env create -f env.cpu.yml
       ```
 
-2. Activate the environment and install `fairchem-core` from PyPi
+2. Activate the environment
    ```bash
    conda activate fair-chem
    ```
@@ -58,7 +59,7 @@ pip install fairchem-{package-to-install}
 
 ## Development install
 
-If you plan to make contributions you will need to clone (for windows user please see next section) the repo and install
+If you plan to make contributions you will need to fork and clone (for windows user please see next section) the repo, set up the environment, and install from source.
 `fairchem-core` in editable mode with dev
 dependencies,
 ```bash
