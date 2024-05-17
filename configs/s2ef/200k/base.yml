@@ -12,7 +12,9 @@ dataset:
     src: /data/ericqu/OC20/val_id/s2ef/all/val_id
     limit: 10000
 
-logger: wandb
+logger: 
+  name: wandb
+  project: OC20
 
 task:
   dataset: trajectory_lmdb

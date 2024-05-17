@@ -2,18 +2,17 @@ includes:
   - configs/s2ef/200k/base.yml
 
 model:
-  name: tokengt
+  name: tokengt_torch
   regress_forces: True
   otf_graph: True
-  max_neighbors: 10
+  max_neighbors: 20
   max_radius: 12
-  act_dropout: 0.
   attention_dropout: 0.
   dropout: 0.
-  encoder_ffn_embed_dim: 256
+  encoder_ffn_embed_dim: 512
   encoder_layers: 12
   encoder_attention_heads: 8
-  encoder_embed_dim: 128
+  encoder_embed_dim: 256
   rand_node_id: False
   rand_node_id_dim: null
   orf_node_id: False
@@ -23,17 +22,11 @@ model:
   lap_node_id_sign_flip: True
   lap_node_id_eig_dropout: 0
   type_id: True
-  stochastic_depth: False
-  performer: False
-  performer_nb_features: null
-  performer_feature_redraw_interval: null
-  performer_generalized_attention: null
-  performer_finetune: null
-  apply_graphormer_init: True
   activation_fn: gelu
   encoder_normalize_before: True
   prenorm: True
   postnorm: False
+  multipole: True
 
 optim:
   batch_size: 4

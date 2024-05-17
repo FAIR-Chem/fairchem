@@ -43,7 +43,6 @@ class TokenGTGraphEncoder(nn.Module):
     def __init__(
             self,
             num_elements: int = 100,
-            num_edges: int = 9,
             rand_node_id: bool = False,
             rand_node_id_dim: int = 64,
             orf_node_id: bool = False,
@@ -97,7 +96,6 @@ class TokenGTGraphEncoder(nn.Module):
 
         self.graph_feature = GraphFeatureTokenizer(
             num_elements=num_elements,
-            num_edges=num_edges,
             rand_node_id=rand_node_id,
             rand_node_id_dim=rand_node_id_dim,
             orf_node_id=orf_node_id,
@@ -263,7 +261,7 @@ class TokenGTGraphEncoder(nn.Module):
             atomic_numbers, 
             edge_index,
             edge_distance_vec, 
-            edge_data,
+            edge_distance,
             lap_vec,
         ):
 
@@ -277,7 +275,7 @@ class TokenGTGraphEncoder(nn.Module):
             atomic_numbers, 
             edge_index,
             edge_distance_vec, 
-            edge_data,
+            edge_distance,
             lap_vec,
         )
 

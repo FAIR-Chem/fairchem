@@ -1,0 +1,37 @@
+includes:
+  - configs/s2ef/200k/base.yml
+
+model:
+  name: transformer
+  num_elements: 100
+  emb_dim: 512
+  ff_dim: 1024
+  num_layers: 12
+  dropout: 0.
+  heads: 8
+  otf_graph: True
+  max_neighbors: 30
+  max_radius: 12
+  multipole: True
+
+optim:
+  batch_size: 64
+  eval_batch_size: 64
+  load_balancing: atoms
+  num_workers: 8
+  lr_initial: 0.0004
+
+  optimizer: AdamW
+  optimizer_params:
+    weight_decay: 0.001
+  scheduler: ReduceLROnPlateau
+  mode: min
+  factor: 0.8
+  patience: 3
+  max_epochs: 80
+  force_coefficient: 100
+  energy_coefficient: 1
+  ema_decay: 0.999
+  clip_grad_norm: 10
+  loss_energy: mae
+  loss_force: l2mae

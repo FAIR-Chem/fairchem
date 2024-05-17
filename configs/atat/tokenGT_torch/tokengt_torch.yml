@@ -1,19 +1,18 @@
 includes:
-  - configs/s2ef/200k/base.yml
+  - configs/atat/base.yml
 
 model:
-  name: tokengt
+  name: tokengt_torch
   regress_forces: True
   otf_graph: True
-  max_neighbors: 10
+  max_neighbors: 30
   max_radius: 12
-  act_dropout: 0.
   attention_dropout: 0.
   dropout: 0.
-  encoder_ffn_embed_dim: 256
+  encoder_ffn_embed_dim: 512
   encoder_layers: 12
   encoder_attention_heads: 8
-  encoder_embed_dim: 128
+  encoder_embed_dim: 256
   rand_node_id: False
   rand_node_id_dim: null
   orf_node_id: False
@@ -23,23 +22,17 @@ model:
   lap_node_id_sign_flip: True
   lap_node_id_eig_dropout: 0
   type_id: True
-  stochastic_depth: False
-  performer: False
-  performer_nb_features: null
-  performer_feature_redraw_interval: null
-  performer_generalized_attention: null
-  performer_finetune: null
-  apply_graphormer_init: True
   activation_fn: gelu
   encoder_normalize_before: True
   prenorm: True
   postnorm: False
+  multipole: False
 
 optim:
-  batch_size: 4
-  eval_batch_size: 4
+  batch_size: 16
+  eval_batch_size: 16
   load_balancing: atoms
-  num_workers: 8
+  num_workers: 16
   lr_initial: 0.0004
 
   optimizer: AdamW
@@ -48,9 +41,9 @@ optim:
   scheduler: ReduceLROnPlateau
   mode: min
   factor: 0.8
-  patience: 3
-  max_epochs: 80
-  force_coefficient: 100
+  patience: 5
+  max_epochs: 1000
+  force_coefficient: 3
   energy_coefficient: 1
   ema_decay: 0.999
   clip_grad_norm: 10

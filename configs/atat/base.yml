@@ -1,0 +1,29 @@
+trainer: forces
+
+dataset:
+  train:
+    src: /data/ericqu/md22/lmdb/AT-AT/AT-AT/train/
+    normalize_labels: True
+    target_mean: -50080.08
+    target_std: 0.47309175
+    grad_target_mean: 0.0
+    grad_target_std: 1.2109985
+  val: 
+    src: /data/ericqu/md22/lmdb/AT-AT/AT-AT/val/
+  test:
+    src: /data/ericqu/md22/lmdb/AT-AT/AT-AT/test/
+
+logger: 
+  name: wandb
+  project: ATAT
+
+task:
+  dataset: trajectory_lmdb
+  description: "Regressing to energies and forces for DFT trajectories from MD22"
+  type: regression
+  metric: mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
+  train_on_free_atoms: True
+  eval_on_free_atoms: True

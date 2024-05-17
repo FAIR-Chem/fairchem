@@ -1,0 +1,37 @@
+includes:
+  - configs/atat/base.yml
+
+model:
+  name: transformer
+  num_elements: 100
+  emb_dim: 512
+  ff_dim: 1024
+  num_layers: 12
+  dropout: 0.1
+  heads: 8
+  otf_graph: True
+  rbf_radius: 12
+  num_gaussians: 128
+  multipole: False
+
+optim:
+  batch_size: 32
+  eval_batch_size: 32
+  load_balancing: atoms
+  num_workers: 16
+  lr_initial: 0.0004
+
+  optimizer: AdamW
+  optimizer_params:
+    weight_decay: 0.001
+  scheduler: ReduceLROnPlateau
+  mode: min
+  factor: 0.8
+  patience: 5
+  max_epochs: 1000
+  force_coefficient: 3
+  energy_coefficient: 1
+  ema_decay: 0.999
+  clip_grad_norm: 10
+  loss_energy: mae
+  loss_force: l2mae
