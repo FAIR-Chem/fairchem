@@ -82,7 +82,6 @@ class Transformer(BaseModel):
         self.pair_embedding = PairEmbed(
             ff_dim=ff_dim,
             dropout=dropout,
-            num_elements=num_elements,
             num_head=heads,
             num_layers=num_layers,
             rbf_radius=rbf_radius,
@@ -103,15 +102,15 @@ class Transformer(BaseModel):
                 emb_dim=emb_dim,
                 ff_dim=ff_dim,
                 dropout=dropout,
-                multipole=multipole
-            ) for _ in range(num_layers + 1)
+                multipole=multipole,
+                scale=math.exp(-i)
+            ) for i in range(num_layers + 1)
         ])
 
     def forward(self, data):
 
         # extract data
         pos = data.pos
-        batch = data.batch
         natoms = data.natoms
         atomic_numbers = data.atomic_numbers.long()
 
@@ -131,10 +130,10 @@ class Transformer(BaseModel):
 
         # encode the sequence
         x = self.pos_encoder(padded_pos) + self.atomic_number_encoder(padded_anum)
-        key_padding_mask = ~padded_node_mask
+        key_padding_mask = (~padded_node_mask).float()
 
         # pair embed
-        attn_masks, pairs = self.pair_embedding(padded_pos, padded_anum, padded_node_mask)
+        attn_masks, pairs = self.pair_embedding(x, padded_pos, padded_node_mask)
 
         # initialize outputs
         energy, forces = self.output_modules[0](
@@ -168,7 +167,8 @@ class OutputModule(nn.Module):
         emb_dim: int = 512,
         ff_dim: int = 1024,
         dropout: float = 0,
-        multipole: bool = False
+        multipole: bool = False,
+        scale: float = 0,
     ):
         super().__init__()
 
@@ -176,39 +176,39 @@ class OutputModule(nn.Module):
             nn.Linear(emb_dim, ff_dim),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Linear(ff_dim, ff_dim)
+            nn.Linear(ff_dim, emb_dim)
         )
 
         self.dst_encoder = nn.Sequential(
             nn.Linear(emb_dim, ff_dim),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Linear(ff_dim, ff_dim)
+            nn.Linear(ff_dim, emb_dim)
         )
 
         self.energy_out = nn.Sequential(
-            nn.Linear(ff_dim, ff_dim),
+            nn.Linear(emb_dim, ff_dim),
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(ff_dim, 1)
         )
-        self.energy_scale = nn.Parameter(torch.zeros(1))
+        self.energy_scale = nn.Parameter(torch.tensor(scale))
 
         if multipole:
             self.forces_out = nn.Sequential(
-                nn.Linear(ff_dim, ff_dim),
+                nn.Linear(emb_dim, ff_dim),
                 nn.GELU(),
                 nn.Dropout(dropout),
                 nn.Linear(ff_dim, 4) # for now, use dipole for proof-of-concept
             )
         else:
             self.forces_out = nn.Sequential(
-                nn.Linear(ff_dim, ff_dim),
+                nn.Linear(emb_dim, ff_dim),
                 nn.GELU(),
                 nn.Dropout(dropout),
                 nn.Linear(ff_dim, 1)
             )
-        self.forces_scale = nn.Parameter(torch.zeros(1))
+        self.forces_scale = nn.Parameter(torch.tensor(scale))
         
         self.multipole = multipole
 
@@ -260,9 +260,9 @@ class OutputModule(nn.Module):
 class PairEmbed(nn.Module):
     def __init__(
         self,
+        emb_dim: int = 512,
         ff_dim: int = 1024,
         dropout: float = 0,
-        num_elements: int = 100,
         num_head = 8,
         num_layers = 12,
         num_gaussians: int = 50,
@@ -278,43 +278,32 @@ class PairEmbed(nn.Module):
             nn.Linear(num_gaussians, ff_dim),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Linear(ff_dim, ff_dim)
-        )
-
-        self.src_anum_encoder = nn.Embedding(
-            num_elements,
-            ff_dim,
-            padding_idx=0
-        )
-
-        self.dst_anum_encoder = nn.Embedding(
-            num_elements,
-            ff_dim,
-            padding_idx=0
+            nn.Linear(ff_dim, emb_dim)
         )
 
         self.attn_encoder = nn.Sequential(
-            nn.Linear(ff_dim, ff_dim),
+            nn.Linear(emb_dim, ff_dim),
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(ff_dim, num_layers * num_head)
         )
 
         self.output_encoder = nn.Sequential(
-            nn.Linear(ff_dim, ff_dim),
+            nn.Linear(emb_dim, ff_dim),
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(ff_dim, ff_dim)
         )
 
-        self.scale = nn.Parameter(torch.zeros(num_layers, 1, 1, 1))
+        # initialize the scale to be 1 tenth of the MHA
+        self.scale = nn.Parameter(- math.log(10) * torch.ones(num_layers, 1, 1, 1))
         self.num_layers = num_layers
         self.num_heads = num_head
 
     def forward(
         self,
+        x: torch.Tensor,
         padded_pos: torch.Tensor,
-        padded_anum: torch.Tensor,
         padded_node_mask: torch.Tensor,
     ):
         # extend to pairs
@@ -322,7 +311,7 @@ class PairEmbed(nn.Module):
         diagonals = torch.eye(entries.size(0), dtype=bool, device=entries.device)[..., None]
 
         # calculate distances
-        vec = padded_pos[:, None]  - padded_pos[None, :] # [L, L, N, 3]
+        vec = padded_pos[:, None] - padded_pos[None, :] # [L, L, N, 3]
         dist = torch.linalg.norm(vec, dim=-1) # [L, L, N]
 
         # compute rbfs and embeddings
@@ -331,21 +320,19 @@ class PairEmbed(nn.Module):
 
         # mask out paddings and diagonals
         rbf.masked_fill_((~entries | diagonals)[..., None], 0)
-        x = self.dist_encoder(rbf) # [L, L, N, FF]
-
-        # add atomic number embeddings
-        x += self.src_anum_encoder(padded_anum)[:, None] + self.dst_anum_encoder(padded_anum)[None, :]
+        x = x[:, None] + x[None, :] + self.dist_encoder(rbf) # [L, L, N, FF]
 
         # project to attn
         attn = self.attn_encoder(x) # [L, L, N, H * layers]
-        attn.masked_fill_((~entries | diagonals)[..., None], 0)
+        attn.masked_fill_((~entries)[..., None], -torch.inf)
 
         # reshape to fit attn mask shape requirement
         attn = attn.permute(2, 3, 0, 1) # [N, H * layers, L, L]
         attn = attn.reshape(attn.size(0), self.num_layers, self.num_heads, attn.size(2), attn.size(3)) # [N, layers, H, L, L]
         attn = attn.permute(1, 0, 2, 3, 4) # [layers, N, H, L, L]
         attn = attn.reshape(attn.size(0), -1, attn.size(3), attn.size(4)) # [layers, N * H, L, L]
-        attn = self.scale * attn
+        attn = F.softmax(attn, dim=3)
+        attn = F.softplus(self.scale) * attn
         
         # project into embeddings
         output = self.output_encoder(x)
@@ -392,8 +379,6 @@ class SelfAttentionLayer(nn.Module):
         self.norm_ff = nn.LayerNorm(d_model)
         self.activation = activation
 
-        self.inv_sqrt_2 = 1 / math.sqrt(2)
-
     def forward(
         self,
         x: torch.Tensor,
@@ -412,10 +397,8 @@ class SelfAttentionLayer(nn.Module):
         z = self.norm_attn(x)
         self_attn, *_ = self.self_attn(z, z, z, key_padding_mask=padding_mask, attn_mask=attn_mask)
         x = x + self.dropout(self_attn)
-        x = self.inv_sqrt_2 * x
         z = self.norm_ff(x)
         ff = self.feed_forward(z)
         x = x + self.dropout(ff)
-        x = self.inv_sqrt_2 * x
         
         return x

@@ -5,7 +5,7 @@ model:
   name: transformer
   num_elements: 100
   emb_dim: 512
-  ff_dim: 1024
+  ff_dim: 512
   num_layers: 12
   dropout: 0.1
   heads: 8
