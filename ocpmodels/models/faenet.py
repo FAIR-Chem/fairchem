@@ -711,7 +711,7 @@ class FAENet(BaseModel):
                 edge_attr = edge_attr[edge_mask]
                 rel_pos = rel_pos[edge_mask]
 
-        if q is None:
+        if not hasattr(data, "deup_q"):
             # Embedding block
             h, e = self.embed_block(z, rel_pos, edge_attr, data.tags)
 
@@ -754,6 +754,7 @@ class FAENet(BaseModel):
             # WARNING
             # q which is NOT the hidden state h if it was stored as a scattered
             # version of h. This works for GPs, NOT for MC-dropout
+            q = data.deup_q   # No need to clone # TODO: check that it's not a problem (move to deup models)
             h = q
             alpha = None
 
@@ -766,7 +767,8 @@ class FAENet(BaseModel):
         elif self.skip_co == "add":
             energy = sum(energy_skip_co)
 
-        if q and len(q) > len(energy):
+        # Store graph-level representation. # TODO: maybe want node-level rep
+        if q is not None and len(q) > len(energy):  # N_atoms x hidden_channels
             q = scatter(q, batch, dim=0, reduce="mean")  # N_graphs x hidden_channels
 
         preds = {

@@ -329,6 +329,7 @@ class DeupDatasetCreator:
                     pred_mean, batch.y_relaxed.to(pred_mean.device)
                 )
                 # Store deup samples
+                assert len(preds["q"]) == len(batch)
                 deup_samples += [
                     {
                         "energy_target": batch.y_relaxed.clone(),
@@ -481,6 +482,7 @@ if __name__ == "__main__":
     # base_config = make_config_from_conf_str("faenet-is2re-all")
     # base_datasets_config = base_config["dataset"]
 
+    # Load deup dataset
     deup_dataset = DeupDataset(
         {
             **base_datasets_config,

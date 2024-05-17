@@ -92,6 +92,6 @@ class DepFAENet(FAENet):
     def energy_forward(self, data, q=None):
         # We need to save the tags so this step is necessary.
         self.output_block.tags_saver(data.tags)
-        pred = super().energy_forward(data)
+        pred = super().energy_forward(data, q)
 
         return pred

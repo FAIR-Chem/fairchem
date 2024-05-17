@@ -30,6 +30,7 @@ class DeupDepOutputBlock(DiscOutputBlock):
             )
 
     def forward(self, h, edge_index, edge_weight, batch, alpha, data=None):
+        # If sample density is used as feature, we need to add the extra dimension
         if self._set_q_dim:
             assert data is not None
             assert "deup_q" in data.to_dict().keys()
@@ -58,13 +59,14 @@ class DeupDepOutputBlock(DiscOutputBlock):
         }:
             h = h * alpha
 
-        # Global pooling -- get final graph rep
-        out = scatter(
-            h,
-            batch,
-            dim=0,
-            reduce="mean" if self.deup_extra_dim > 0 else "add",
-        )
+        # Pool into a graph rep if necessary
+        if len(h) > len(batch):
+            h = scatter(
+                h,
+                batch,
+                dim=0,
+                reduce="mean" if self.deup_extra_dim > 0 else "add",
+            )
 
         # Concat graph representation with deup features (s, kde(q), std)
         # and apply MLPs
@@ -76,7 +78,7 @@ class DeupDepOutputBlock(DiscOutputBlock):
                 + f" from the data dict ({data_keys})"
             )
             out = torch.cat(
-                [out]
+                [h]
                 + [data[f"deup_{k}"][:, None].float() for k in self.deup_features],
                 dim=-1,
             )
@@ -87,7 +89,7 @@ class DeupDepOutputBlock(DiscOutputBlock):
         return out
 
 @registry.register_model("deup_depfaenet")
-class DeupFAENet(DepFAENet):
+class DeupDepFAENet(DepFAENet):
     def __init__(self, *args, **kwargs):
         kwargs["dropout_edge"] = 0
         super().__init__(*args, **kwargs)

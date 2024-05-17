@@ -58,12 +58,13 @@ class DeupOutputBlock(OutputBlock):
             h = h * alpha
 
         # Global pooling -- get final graph rep
-        out = scatter(
-            h,
-            batch,
-            dim=0,
-            reduce="mean" if self.deup_extra_dim > 0 else "add",
-        )
+        if len(h) > len(batch):
+            h = scatter(
+                h,
+                batch,
+                dim=0,
+                reduce="mean" if self.deup_extra_dim > 0 else "add",
+            )
 
         # Concat graph representation with deup features (s, kde(q), std)
         # and apply MLPs
@@ -75,7 +76,7 @@ class DeupOutputBlock(OutputBlock):
                 + f" from the data dict ({data_keys})"
             )
             out = torch.cat(
-                [out]
+                [h]
                 + [data[f"deup_{k}"][:, None].float() for k in self.deup_features],
                 dim=-1,
             )
