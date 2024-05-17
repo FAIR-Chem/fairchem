@@ -1,13 +1,12 @@
 # Installation
+ 
+To install `fairchem-core` you will need to setup the `fairchem-core` environment (using [conda](#Conda) or [pip](#PyPi)) and then either install `fairchem-core` package [directly](#Install-fairchem-core) or install [development version](#Development-install) from our git repository.
 
-To install `fairchem-core` you will need to setup the `fairchem-core` environment (using [conda](#Conda) or [pip](#PyPi))
-and then either install `fairchem-core` package [directly](#Install-fairchem-core) or install a [development version](#Development-install) from our git repository.
-
-## Environment
+## Environment 
 
 You can install the environment using either conda or pip
 
-### Conda
+### Conda 
 
 We do not have official conda recipes (yet!); in the meantime you can use the
 following environment yaml files to setup on CPU or GPU. If conda is too slow for you, please consider using [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html)
@@ -60,8 +59,9 @@ pip install fairchem-{package-to-install}
 
 ## Development install
 
-If you plan to make contributions you will need to fork and clone (for windows user please see next section) the repo,
-set up the environment, and install fairchem-core from source in editable mode with dev dependencies,
+If you plan to make contributions you will need to fork and clone (for windows user please see next section) the repo, set up the environment, and install from source.
+`fairchem-core` in editable mode with dev
+dependencies,
 ```bash
 git clone https://github.com/FAIR-Chem/fairchem.git
 cd fairchem

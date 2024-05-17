@@ -1,5 +1,4 @@
-
-<h2 align="center"> <code>fairchem</code> by FAIR Chemistry </h2>
+<h1 align="center"> <code>fairchem</code> by FAIR Chemistry </h1>
 
 <p align="center">
   <img width="559" height="200" src="https://github.com/FAIR-Chem/fairchem/assets/45150244/5872c21c-8f39-41af-b703-af9817f0affe"?
@@ -12,8 +11,6 @@
 
 </h4>
 
-#### FAIR-Chem overview
-
 `fairchem` is the [FAIR](https://ai.meta.com/research/) Chemistry's centralized repository of all its data, models, demos, and application efforts
 for materials science and quantum chemistry. Collaborative projects that contribute or use the models and approaches in
 this repo:
@@ -25,7 +22,7 @@ We re-organized and rebranded the repository in 2024 (previously the `fairchem` 
 general usability of these models beyond catalysis, including things like direct air capture.
 ```
 
-#### Datasets in `fairchem`:
+### Datasets in `fairchem`:
 `fairchem` provides training and evaluation code for tasks and models that take arbitrary
 chemical structures as input to predict energies / forces / positions / stresses,
 and can be used as a base scaffold for research projects. For an overview of
@@ -36,7 +33,7 @@ tasks, data, and metrics, please read the documentations and respective papers:
  - [OC20Dense](core/datasets/oc20dense)
  - [OC20NEB](core/datasets/oc20neb)
 
-#### Projects and models built on `fairchem`:
+### Projects and models built on `fairchem`:
 
 - SchNet [[`arXiv`](https://arxiv.org/abs/1706.08566)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/schnet.py)]
 - DimeNet++ [[`arXiv`](https://arxiv.org/abs/2011.14115)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/models/dimenet_plus_plus.py)]
@@ -56,7 +53,7 @@ Older model implementations that are no longer supported:
 - SpinConv [[`arXiv`](https://arxiv.org/abs/2106.09575)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/spinconv.py)]
 - ForceNet [[`arXiv`](https://arxiv.org/abs/2103.01436)] [[`code`](https://github.com/FAIR-Chem/fairchem/blob/e7a8745eb307e8a681a1aa9d30c36e8c41e9457e/ocpmodels/models/forcenet.py)]
 
-### Discussion
+## Discussion
 
 For all non-codebase related questions and to keep up-to-date with the latest OCP
 announcements, please join the [discussion board](https://discuss.opencatalystproject.org/).
@@ -64,7 +61,7 @@ announcements, please join the [discussion board](https://discuss.opencatalystpr
 All code-related questions and issues should be posted directly on our
 [issues page](https://github.com/FAIR-Chem/fairchem/issues).
 
-### Acknowledgements
+## Acknowledgements
 
 - This codebase was initially forked from [CGCNN](https://github.com/txie-93/cgcnn)
 by [Tian Xie](http://txie.me), but has undergone significant changes since.
@@ -73,11 +70,11 @@ by [Tian Xie](http://txie.me), but has undergone significant changes since.
 - It was then developed as the OCP repo, and includes many contributions from the community and collaborators.
 - Much of the documentation was developed for various papers or as part of a comprehensive tutorial for the 2023 ACS Fall Chemistry conference.
 
-### License
+## License
 
 `fairchem` is released under the [MIT](https://github.com/FAIR-Chem/fairchem/blob/main/LICENSE.md) license.
 
-### Citing `fairchem`
+## Citing `fairchem`
 
 If you use this codebase in your work, please consider citing:
 
