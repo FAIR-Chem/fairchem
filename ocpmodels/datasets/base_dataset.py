@@ -85,13 +85,19 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
     def metadata(self) -> DatasetMetadata:
         # logic to read metadata file here
         metadata_npzs = []
-        for path in self.paths:
-            if path.is_file():
-                metadata_file = path.parent / "metadata.npz"
-            else:
-                metadata_file = path / "metadata.npz"
-            if metadata_file.is_file():
-                metadata_npzs.append(np.load(metadata_file, allow_pickle=True))
+        if self.config.get("metadata_path", None) is not None:
+            metadata_npzs.append(
+                np.load(self.config["metadata_path"], allow_pickle=True)
+            )
+
+        else:
+            for path in self.paths:
+                if path.is_file():
+                    metadata_file = path.parent / "metadata.npz"
+                else:
+                    metadata_file = path / "metadata.npz"
+                if metadata_file.is_file():
+                    metadata_npzs.append(np.load(metadata_file, allow_pickle=True))
 
         if len(metadata_npzs) == 0:
             raise ValueError(
