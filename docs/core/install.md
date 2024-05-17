@@ -1,11 +1,15 @@
 # Installation
+ 
+To install `fairchem-core` you will need to setup the `fairchem-core` environment (using [conda](#Conda) or [pip](#PyPi)) and then either install `fairchem-core` package [directly](#Install-fairchem-core) or install [development version](#Development-install) from our git.
 
-### conda or better yet [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html) - easy
+## Environment 
+
+You can install the environment using either conda or pip
+
+### Conda 
 
 We do not have official conda recipes (yet!); in the meantime you can use the
-following environment yaml files for CPU [env.cpu.yml](https://raw.githubusercontent.com/FAIR-Chem/fairchem/main/packages/env.cpu.yml)
-or GPU [env.gpu.yml](https://raw.githubusercontent.com/FAIR-Chem/fairchem/main/packages/env.gpu.yml) to easily set up a
-working environment and install `fairchem-core`.
+following environment yaml files to setup on CPU or GPU. If conda is too slow for you, please consider using [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html)
 
 1. Create an environment to install *fairchem*
    1. **GPU**
@@ -13,21 +17,22 @@ working environment and install `fairchem-core`.
       The default environment uses cuda 11.8, if you need a different version you will have to edit *pytorch-cuda* version
       accordingly.
       ```bash
+      wget https://raw.githubusercontent.com/FAIR-Chem/fairchem/main/packages/env.gpu.yml
       conda env create -f env.gpu.yml
       ```
 
    2. **CPU**
       ```bash
+      wget https://raw.githubusercontent.com/FAIR-Chem/fairchem/main/packages/env.cpu.yml
       conda env create -f env.cpu.yml
       ```
 
 2. Activate the environment and install `fairchem-core` from PyPi
    ```bash
    conda activate fair-chem
-   pip install fairchem-core
    ```
 
-### PyPi - flexible
+### PyPi
 You can also install `pytorch` and `torch_geometric` dependencies from PyPI to select specific CPU or CUDA versions.
 
 1. Install `pytorch` by selecting your installer, OS and CPU or CUDA version following the official
@@ -37,11 +42,11 @@ You can also install `pytorch` and `torch_geometric` dependencies from PyPI to s
    similarly by selecting the appropriate versions in the official
    [PyG docs](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html)
 
-3. Install `fairchem-core` from PyPi
-   ```bash
-   pip install fairchem-core
-   ```
-
+## Install fairchem-core
+Install `fairchem-core` from PyPi
+```bash
+pip install fairchem-core
+```
 
 ## Additional packages
 
@@ -51,12 +56,14 @@ to install other packages you can do so by:
 pip install fairchem-{package-to-install}
 ```
 
-## Dev install
+## Development install
 
 If you plan to make contributions you will need to clone (for windows user please see next section) the repo and install
 `fairchem-core` in editable mode with dev
 dependencies,
 ```bash
+git clone https://github.com/FAIR-Chem/fairchem.git
+cd fairchem
 pip install -e packages/fairchem-core[dev]
 ```
 
@@ -69,9 +76,7 @@ pip install -e packages/fairchem-{package-to-install}
 
 Our build system requires the use of symlinks which are not available by default on windows. To properly build fairchem packages you must enable symlinks and clone the repository with them enabled.
 
-1) When installing git on your machine make sure "enable symbolic links" is checked  ([download git installer](https://git-scm.com/download/win))
-
-![Enable symlinks on git install](https://i.stack.imgur.com/kZmPI.png)
+1) When installing git on your machine make sure "enable symbolic links" is checked  ([download git installer](https://git-scm.com/download/win)) ([see here](https://stackoverflow.com/a/65563980) for detailed instructions )
 
 2) Enable developer mode ([instructions](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development)) or run the following commands as administrator
 
