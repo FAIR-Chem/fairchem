@@ -5,14 +5,10 @@
 
 This repository hosts the adsorbate-catalyst input generation workflow used in the [Open Catalyst Project](https://opencatalystproject.org/).
 
-## Setup
+## Install
 
-The easiest way to install prerequisites is via [conda](https://conda.io/docs/index.html). After installing [conda](http://conda.pydata.org/), run the following commands:
-
-* Create a new environment: `conda create -n ocp python=3.9`
-* Activate the newly created environment: `conda activate ocp`
-* Install specific versions of Pymatgen and ASE: `pip install pymatgen==2023.5.10 ase==3.22.1`
-* Clone this repo and install with: `pip install -e .`
+To install just run in your favorite environment with python >= 3.9
+* `pip install fairchem-data-oc`
 
 ## Workflow
 

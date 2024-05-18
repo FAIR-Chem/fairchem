@@ -10,22 +10,25 @@ import bisect
 import logging
 import pickle
 import warnings
-from pathlib import Path
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 import lmdb
 import numpy as np
 import torch
-from torch.utils.data import Dataset
 from torch_geometric.data import Batch
-from torch_geometric.data.data import BaseData
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.typing import assert_is_instance
 from fairchem.core.common.utils import pyg2_data_transform
 from fairchem.core.datasets._utils import rename_data_object_keys
+from fairchem.core.datasets.base_dataset import BaseDataset
 from fairchem.core.datasets.target_metadata_guesser import guess_property_metadata
 from fairchem.core.modules.transforms import DataTransforms
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from torch_geometric.data.data import BaseData
 
 T_co = TypeVar("T_co", covariant=True)
 
@@ -33,8 +36,7 @@ T_co = TypeVar("T_co", covariant=True)
 @registry.register_dataset("lmdb")
 @registry.register_dataset("single_point_lmdb")
 @registry.register_dataset("trajectory_lmdb")
-class LmdbDataset(Dataset[T_co]):
-    metadata_path: Path
+class LmdbDataset(BaseDataset):
     sharded: bool
 
     r"""Dataset class to load from LMDB files containing relaxation
@@ -50,19 +52,20 @@ class LmdbDataset(Dataset[T_co]):
     """
 
     def __init__(self, config) -> None:
-        super().__init__()
-        self.config = config
+        super().__init__(config)
 
         assert not self.config.get(
             "train_on_oc20_total_energies", False
         ), "For training on total energies set dataset=oc22_lmdb"
 
-        self.path = Path(self.config["src"])
+        assert (
+            len(self.paths) == 1
+        ), f"{type(self)} does not support a list of src paths."
+        self.path = self.paths[0]
+
         if not self.path.is_file():
             db_paths = sorted(self.path.glob("*.lmdb"))
             assert len(db_paths) > 0, f"No LMDBs found in '{self.path}'"
-
-            self.metadata_path = self.path / "metadata.npz"
 
             self._keys = []
             self.envs = []
@@ -86,7 +89,6 @@ class LmdbDataset(Dataset[T_co]):
             self._keylen_cumulative = np.cumsum(keylens).tolist()
             self.num_samples = sum(keylens)
         else:
-            self.metadata_path = self.path.parent / "metadata.npz"
             self.env = self.connect_db(self.path)
 
             # If "length" encoded as ascii is present, use that
@@ -113,19 +115,15 @@ class LmdbDataset(Dataset[T_co]):
                 self.indices, self.config.get("total_shards", 1)
             )
             # limit each process to see a subset of data based off defined shard
-            self.available_indices = self.shards[self.config.get("shard", 0)]
-            self.num_samples = len(self.available_indices)
+            self.indices = self.shards[self.config.get("shard", 0)]
+            self.num_samples = len(self.indices)
 
         self.key_mapping = self.config.get("key_mapping", None)
         self.transforms = DataTransforms(self.config.get("transforms", {}))
 
-    def __len__(self) -> int:
-        return self.num_samples
-
     def __getitem__(self, idx: int) -> T_co:
         # if sharding, remap idx to appropriate idx of the sharded set
-        if self.sharded:
-            idx = self.available_indices[idx]
+        idx = self.indices[idx]
         if not self.path.is_file():
             # Figure out which db this should be indexed from.
             db_idx = bisect.bisect(self._keylen_cumulative, idx)
@@ -214,7 +212,7 @@ class LmdbDataset(Dataset[T_co]):
         }
 
 
-class SinglePointLmdbDataset(LmdbDataset[BaseData]):
+class SinglePointLmdbDataset(LmdbDataset):
     def __init__(self, config, transform=None) -> None:
         super().__init__(config)
         warnings.warn(
@@ -224,7 +222,7 @@ class SinglePointLmdbDataset(LmdbDataset[BaseData]):
         )
 
 
-class TrajectoryLmdbDataset(LmdbDataset[BaseData]):
+class TrajectoryLmdbDataset(LmdbDataset):
     def __init__(self, config, transform=None) -> None:
         super().__init__(config)
         warnings.warn(

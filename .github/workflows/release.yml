@@ -3,11 +3,7 @@ name: release
 on:
   release:
     types: [published]
-    inputs:
-      release-pypi:
-        required: true
-        type: boolean
-        default: true
+
   workflow_dispatch:
     inputs:
       release-pypi:
@@ -33,7 +29,7 @@ jobs:
     needs: [ build ]
     runs-on: ubuntu-latest
     if: |
-      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_core-') || startsWith(github.event.release.tag_name, 'fairchem_core-') )
+      ( github.event.inputs.release-pypi == 'true' && startsWith(github.ref_name, 'fairchem_core-') ) || startsWith(github.event.release.tag_name, 'fairchem_core-')
 
     environment:
       name: pypi
@@ -58,7 +54,7 @@ jobs:
     needs: [ build ]
     runs-on: ubuntu-latest
     if: |
-      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_data_oc-') || startsWith(github.event.release.tag_name, 'fairchem_data_oc-') )
+      ( github.event.inputs.release-pypi == 'true' && startsWith(github.ref_name, 'fairchem_data_oc-') ) || startsWith(github.event.release.tag_name, 'fairchem_data_oc-')
 
     environment:
       name: pypi
@@ -83,7 +79,7 @@ jobs:
     needs: [ build ]
     runs-on: ubuntu-latest
     if: |
-      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_demo_ocpapi-') || startsWith(github.event.release.tag_name, 'fairchem_demo_ocpapi-') )
+      ( github.event.inputs.release-pypi == 'true' && startsWith(github.ref_name, 'fairchem_demo_ocpapi-') ) || startsWith(github.event.release.tag_name, 'fairchem_demo_ocpapi-')
 
     environment:
       name: pypi
@@ -108,7 +104,7 @@ jobs:
     needs: [ build ]
     runs-on: ubuntu-latest
     if: |
-      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_applications_cattsunami-') || startsWith(github.event.release.tag_name, 'fairchem_applications_cattsunami-') )
+      ( github.event.inputs.release-pypi == 'true' && startsWith(github.ref_name, 'fairchem_applications_cattsunami-') ) || startsWith(github.event.release.tag_name, 'fairchem_applications_cattsunami-')
 
     environment:
       name: pypi
