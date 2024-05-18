@@ -3,12 +3,6 @@ name: documentation
 on:
   workflow_call:
   workflow_dispatch:
-  push:
-    branches:
-      - ocp_documentation
-    paths:
-      - 'docs/**'
-      - '.github/workflows/docs.yml'
 
 # This job installs dependencies, build the book, and pushes it to `gh-pages`
 jobs:
@@ -30,21 +24,29 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        if [ -f requirements-optional.txt ]; then pip install -r requirements-optional.txt; fi
-        pip install -e .[docs,adsorbml]
-        pip install git+https://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset.git
-        pip install git+https://github.com/Open-Catalyst-Project/ocpapi.git
-        # pip install git+https://github.com/Open-Catalyst-Project/CatTSunami.git
+        if [ -f packages/requirements.txt ]; then pip install -r packages/requirements.txt; fi
+        if [ -f packages/requirements-optional.txt ]; then pip install -r packages/requirements-optional.txt; fi
+        pip install -e packages/fairchem-core[docs,adsorbml]
+        pip install -e packages/fairchem-data-oc[dev]
+        pip install -e packages/fairchem-demo-ocpapi[dev]
+        pip install -e packages/fairchem-applications-cattsunami
 
     # Build the book
     - name: Build the book
       run: |
         jupyter-book build docs
 
-    # Deploy the book's HTML to gh-pages branch
-    - name: Deploy
+    # Deploy the book's HTML to gh-pages branch # TODO remove once ODAC link updated
+    - name: Deploy to ghpages branch
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: docs/_build/html
+
+    - name: Deploy to fair-chem.github.io
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+        external_repository: FAIR-Chem/fair-chem.github.io
+        publish_branch: gh-pages
         publish_dir: docs/_build/html

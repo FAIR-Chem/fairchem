@@ -11,7 +11,7 @@ kernelspec:
   name: python3
 ---
 
-Common gotchas with OCP
+Common gotchas with fairchem
 ---------------------------------
 
 # OutOfMemoryError
@@ -43,9 +43,9 @@ RuntimeError: cannot reshape tensor of 0 elements into shape [0, -1] because the
 The problem here is that no neighbors are found for the single atom which causes an error. This may be model dependent. There is currently no way to get atomic energies for some models.
 
 ```{code-cell} ipython3
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-from ocpmodels.models.model_registry import model_name_to_local_file
-checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.models.model_registry import model_name_to_local_file
+checkpoint_path = model_name_to_local_file('GemNet-OC-S2EFS-OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
 
@@ -76,10 +76,10 @@ add_adsorbate(slab, 'O', height=1.2, position='fcc')
 ```
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.models.model_registry import model_name_to_local_file
 
 # OC20 model - trained on adsorption energies
-checkpoint_path = model_name_to_local_file('GemNet-OC All', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OC-S2EF-OC20-All', local_cache='/tmp/ocp_checkpoints/')
 
 with contextlib.redirect_stdout(StringIO()) as _:
     calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
@@ -92,7 +92,7 @@ slab.get_potential_energy()
 
 ```{code-cell} ipython3
 # An OC22 checkpoint - trained on total energy
-checkpoint_path = model_name_to_local_file('GemNet-OCOC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OC-S2EFS-OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 
 with contextlib.redirect_stdout(StringIO()) as _:
     calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
@@ -105,7 +105,7 @@ slab.get_potential_energy()
 
 ```{code-cell} ipython3
 # This eSCN model is trained on adsorption energies
-checkpoint_path = model_name_to_local_file('eSCN-L4-M2-Lay12 2M', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('eSCN-L4-M2-Lay12-S2EF-OC20-2M', local_cache='/tmp/ocp_checkpoints/')
 
 with contextlib.redirect_stdout(StringIO()) as _:
     calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=False)
@@ -128,12 +128,12 @@ WARNING:root:Unrecognized arguments: ['symmetric_edge_symmetrization']
 
 You can ignore this warning, it is not important for predictions.
 
-## Unable to identify OCP trainer
+## Unable to identify ocp trainer
 
 The trainer is not specified in some checkpoints, and defaults to `forces` which means energy and forces are calculated. This is the default for the ASE OCP calculator, and this warning just alerts you it is setting that.
 
 ```
-WARNING:root:Unable to identify OCP trainer, defaulting to `forces`. Specify the `trainer` argument into OCPCalculator if otherwise.
+WARNING:root:Unable to identify ocp trainer, defaulting to `forces`. Specify the `trainer` argument into OCPCalculator if otherwise.
 ```
 
 +++
@@ -154,11 +154,11 @@ Gemnet in particular seems to require at least 4 atoms. This has to do with inte
 
 ```{code-cell} ipython3
 %%capture
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.models.model_registry import model_name_to_local_file
 import os
 
-checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OC-S2EFS-OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 
 calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
@@ -180,11 +180,11 @@ Some models use tags to determine which atoms to calculate energies for. For exa
 
 ```{code-cell} ipython3
 %%capture
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.models.model_registry import model_name_to_local_file
 import os
 
-checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OC-S2EFS-OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
 
@@ -205,11 +205,11 @@ atoms.get_potential_energy()
 Not all models require tags though. This EquiformerV2 model does not use them. This is another detail that is important to keep in mind.
 
 ```{code-cell} ipython3
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
-from ocpmodels.models.model_registry import model_name_to_local_file
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.models.model_registry import model_name_to_local_file
 import os
 
-checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
 
 calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```
@@ -224,14 +224,14 @@ atoms.get_potential_energy()
 # Stochastic simulation results
 
 Some models are not deterministic (SCN/eSCN/EqV2), i.e. you can get slightly different answers each time you run it.
-An example is shown below. See [Issue 563](https://github.com/Open-Catalyst-Project/ocp/issues/563) for more discussion.
+An example is shown below. See [Issue 563](https://github.com/FAIR-Chem/fairchem/issues/563) for more discussion.
 This happens because a random selection of is made to sample edges, and a different selection is made each time you run it.
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import model_name_to_local_file
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.models.model_registry import model_name_to_local_file
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 
-checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
 calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
 
 from ase.build import fcc111, add_adsorbate
@@ -254,13 +254,13 @@ for result in results:
 
 # The forces don't sum to zero
 
-In DFT, the forces on all the atoms should sum to zero; otherwise, there is a net translational or rotational force present. This is not enforced in OCP models. Instead, individual forces are predicted, with no constraint that they sum to zero. If the force predictions are very accurate, then they sum close to zero. You can further improve this if you subtract the mean force from each atom.
+In DFT, the forces on all the atoms should sum to zero; otherwise, there is a net translational or rotational force present. This is not enforced in fairchem models. Instead, individual forces are predicted, with no constraint that they sum to zero. If the force predictions are very accurate, then they sum close to zero. You can further improve this if you subtract the mean force from each atom.
 
 ```{code-cell} ipython3
-from ocpmodels.models.model_registry import model_name_to_local_file
-checkpoint_path = model_name_to_local_file('EquiformerV2 (31M) All+MD', local_cache='/tmp/ocp_checkpoints/')
+from fairchem.core.models.model_registry import model_name_to_local_file
+checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
 
-from ocpmodels.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
 
 from ase.build import fcc111, add_adsorbate

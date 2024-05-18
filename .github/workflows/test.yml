@@ -2,11 +2,6 @@ name: tests
 
 on:
   push:
-
-  pull_request:
-    branches:
-      - main
-
   workflow_call:
 
 jobs:
@@ -33,18 +28,19 @@ jobs:
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
 
-      - name: Install dependencies and package
-        # this can be added along with a dependabot config to run tests with latest versions
-        # pip install -r requirements.txt
-        # pip install -r requirements-optional.txt
+      - name: Install core dependencies and package
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-optional.txt ]; then pip install -r requirements-optional.txt; fi
-          pip install -e .[dev]
-      - name: Test with pytest
+          if [ -f packages/requirements.txt ]; then pip install -r packages/requirements.txt; fi
+          if [ -f packages/requirements-optional.txt ]; then pip install -r packages/requirements-optional.txt; fi
+          pip install -e packages/fairchem-core[dev]
+          pip install -e packages/fairchem-data-oc[dev]
+          pip install -e packages/fairchem-demo-ocpapi[dev]
+          pip install -e packages/fairchem-applications-cattsunami
+
+      - name: Test core with pytest
         run: |
-          pytest tests -vv --cov-report=xml --cov=ocpmodels
+          pytest tests -vv --skip-ocpapi-integration --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml
 
       - if: ${{ matrix.python_version == '3.11' }}
         name: codecov-report

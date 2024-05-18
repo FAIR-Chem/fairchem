@@ -1,5 +1,5 @@
 wandb
-data
+/data
 checkpoints
 results
 logs
@@ -118,7 +118,7 @@ env.yml
 docs/legacy_tutorials/videos/
 
 # No ASE dbs, or OCP LMDBs!
-*.pt
+/*.pt
 *.lmdb
 *.lmdb-lock
 out.txt
