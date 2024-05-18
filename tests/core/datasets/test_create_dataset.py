@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from ocpmodels.datasets import LMDBDatabase, create_dataset
+from fairchem.core.datasets import LMDBDatabase, create_dataset
 
 
 @pytest.mark.parametrize("max_atoms", [3, None])
