@@ -1,0 +1,44 @@
+version: 2.1
+
+orbs:
+  codecov: codecov/codecov@3.2.4
+
+workflows:
+  analyze-and-test:
+    jobs:
+      - lint
+      - test
+
+jobs:
+  lint:
+    docker:
+      - image: cimg/python:3.9.13
+    steps:
+      - checkout
+      - run:
+          name: Setup
+          command: pip install black==23.9.1 isort==5.12.0 autoflake==2.2.1
+      - run:
+          name: Format
+          command: black . --check
+      - run:
+          name: Import order
+          command: isort . --check-only
+      - run:
+          name: Unused imports
+          command: autoflake . --remove-all-unused-imports --check
+  test:
+    docker:
+      - image: cimg/python:3.9.13
+    steps:
+      - checkout
+      - run:
+          name: Setup
+          command: |
+            pip install --upgrade setuptools 
+            pip install pytest-cov
+            pip install .[dev]
+      - run:
+          name: Test
+          command: pytest --cov --cov-report=xml
+      - codecov/upload
