@@ -25,6 +25,7 @@ from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from fairchem.core import __version__
 from fairchem.core.common import distutils, gp_utils
 from fairchem.core.common.data_parallel import BalancedBatchSampler, OCPCollater
 from fairchem.core.common.registry import registry
@@ -119,6 +120,7 @@ class BaseTrainer(ABC):
                 "seed": seed,
                 "timestamp_id": self.timestamp_id,
                 "commit": commit_hash,
+                "version": __version__,
                 "checkpoint_dir": os.path.join(
                     run_dir, "checkpoints", self.timestamp_id
                 ),
@@ -131,7 +133,7 @@ class BaseTrainer(ABC):
             "noddp": noddp,
         }
         # AMP Scaler
-        self.scaler = torch.cuda.amp.GradScaler() if amp else None
+        self.scaler = torch.cuda.amp.GradScaler() if amp and not self.cpu else None
 
         # Fill in SLURM information in config, if applicable
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
@@ -235,12 +237,16 @@ class BaseTrainer(ABC):
     def get_sampler(
         self, dataset, batch_size: int, shuffle: bool
     ) -> BalancedBatchSampler:
-        if "load_balancing" in self.config["optim"]:
-            balancing_mode = self.config["optim"]["load_balancing"]
-            force_balancing = True
+        balancing_mode = self.config["optim"].get("load_balancing", None)
+        on_error = self.config["optim"].get("load_balancing_on_error", None)
+        if balancing_mode is not None:
+            if on_error is None:
+                on_error = "raise"
         else:
             balancing_mode = "atoms"
-            force_balancing = False
+
+        if on_error is None:
+            on_error = "warn_and_no_balance"
 
         if gp_utils.initialized():
             num_replicas = gp_utils.get_dp_world_size()
@@ -258,6 +264,7 @@ class BaseTrainer(ABC):
             shuffle=shuffle,
             force_balancing=force_balancing,
             seed=self.config["cmd"]["seed"],
+            on_error=on_error,
         )
 
     def get_dataloader(self, dataset, sampler) -> DataLoader:

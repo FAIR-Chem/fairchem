@@ -9,22 +9,21 @@ from __future__ import annotations
 
 import bisect
 import pickle
-from pathlib import Path
 
 import lmdb
 import numpy as np
 import torch
-from torch.utils.data import Dataset
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.typing import assert_is_instance as aii
 from fairchem.core.common.utils import pyg2_data_transform
 from fairchem.core.datasets._utils import rename_data_object_keys
+from fairchem.core.datasets.base_dataset import BaseDataset
 from fairchem.core.modules.transforms import DataTransforms
 
 
 @registry.register_dataset("oc22_lmdb")
-class OC22LmdbDataset(Dataset):
+class OC22LmdbDataset(BaseDataset):
     r"""Dataset class to load from LMDB files containing relaxation
     trajectories or single point computations.
 
@@ -43,10 +42,13 @@ class OC22LmdbDataset(Dataset):
     """
 
     def __init__(self, config, transform=None) -> None:
-        super().__init__()
-        self.config = config
+        super().__init__(config)
 
-        self.path = Path(self.config["src"])
+        assert (
+            len(self.paths) == 1
+        ), f"{type(self)} does not support a list of src paths."
+        self.path = self.paths[0]
+
         self.data2train = self.config.get("data2train", "all")
         if not self.path.is_file():
             db_paths = sorted(self.path.glob("*.lmdb"))
@@ -114,9 +116,6 @@ class OC22LmdbDataset(Dataset):
         if self.train_on_oc20_total_energies:
             with open(config["oc20_ref"], "rb") as fp:
                 self.oc20_ref = pickle.load(fp)
-        if self.config.get("lin_ref", False):
-            coeff = np.load(self.config["lin_ref"], allow_pickle=True)["coeff"]
-            self.lin_ref = torch.nn.Parameter(torch.tensor(coeff), requires_grad=False)
         self.subsample = aii(self.config.get("subsample", False), bool)
 
     def __len__(self) -> int:
@@ -125,8 +124,6 @@ class OC22LmdbDataset(Dataset):
         return self.num_samples
 
     def __getitem__(self, idx):
-        if self.data2train != "all":
-            idx = self.indices[idx]
         if not self.path.is_file():
             # Figure out which db this should be indexed from.
             db_idx = bisect.bisect(self._keylen_cumulative, idx)

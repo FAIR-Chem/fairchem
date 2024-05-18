@@ -1,20 +1,20 @@
 #######################################################################################
 # A default configuration that will be loaded for all jupyter books
-# See the documentation for help and more options: 
+# See the documentation for help and more options:
 # https://jupyterbook.org/customize/config.html
 
 #######################################################################################
 # Book settings
-title                       : FAIR Chemistry Documentation  # The title of the book. Will be placed in the left navbar.
+title                       : "" # FAIR Chemistry Documentation  # The title of the book. Will be placed in the left navbar.
 author                      : FAIR Chemistry & Collaborators  # The author of the book
 copyright                   : "2024"  # Copyright year to be placed in the footer
-logo                        : logo.png  # A path to the book logo
+# logo                        : logo.png  # A path to the book logo - no logo looks better than old logo
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
 execute:
-  execute_notebooks: force
-  timeout: 1800
+  execute_notebooks: 'off' # auto
+  timeout: 3600
 
 # Define the name of the latex output file for PDF builds
 latex:
@@ -30,7 +30,6 @@ repository:
   url: https://github.com/FAIR-Chem/fairchem  # Online location of your book
   path_to_book: docs  # Optional path to your book, relative to the repository root
   branch: main  # Which branch of the repository should be used when creating links (optional)
-  
 # Add GitHub buttons to your book
 # See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
 html:
@@ -43,7 +42,7 @@ parse:
     # including those that are enabled by default!
     - amsmath
     - dollarmath
-    
+
 sphinx:
   extra_extensions:
   - 'sphinx.ext.napoleon'

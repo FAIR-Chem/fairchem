@@ -25,13 +25,15 @@ from experimental.foundation_models.multi_task_dataloader.transforms.data_object
     DataTransforms,
 )
 from torch import tensor
-from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from fairchem.core.common.registry import registry
 from fairchem.core.datasets._utils import rename_data_object_keys
+from fairchem.core.datasets.base_dataset import BaseDataset
 from fairchem.core.datasets.lmdb_database import LMDBDatabase
 from fairchem.core.datasets.target_metadata_guesser import guess_property_metadata
+
+# from fairchem.core.modules.transforms import DataTransforms
 from fairchem.core.preprocessing import AtomsToGraphs
 
 
@@ -62,7 +64,7 @@ def apply_one_tags(
     return atoms
 
 
-class AseAtomsDataset(Dataset, ABC):
+class AseAtomsDataset(BaseDataset, ABC):
     """
     This is an abstract Dataset that includes helpful utilities for turning
     ASE atoms objects into OCP-usable data objects. This should not be instantiated directly
@@ -83,7 +85,7 @@ class AseAtomsDataset(Dataset, ABC):
         config: dict,
         atoms_transform: Callable[[ase.Atoms, Any, ...], ase.Atoms] = apply_one_tags,
     ) -> None:
-        self.config = config
+        super().__init__(config)
 
         a2g_args = config.get("a2g_args", {}) or {}
 
@@ -98,28 +100,19 @@ class AseAtomsDataset(Dataset, ABC):
         self.key_mapping = self.config.get("key_mapping", None)
         self.transforms = DataTransforms(self.config.get("transforms", {}))
 
-        self.lin_ref = None
-        if self.config.get("lin_ref", False):
-            lin_ref = torch.tensor(
-                np.load(self.config["lin_ref"], allow_pickle=True)["coeff"]
-            )
-            self.lin_ref = torch.nn.Parameter(lin_ref, requires_grad=False)
-
         self.atoms_transform = atoms_transform
 
         if self.config.get("keep_in_memory", False):
             self.__getitem__ = cache(self.__getitem__)
 
         self.ids = self._load_dataset_get_ids(config)
+        self.num_samples = len(self.ids)
 
         if len(self.ids) == 0:
             raise ValueError(
                 rf"No valid ase data found!"
                 f"Double check that the src path and/or glob search pattern gives ASE compatible data: {config['src']}"
             )
-
-    def __len__(self) -> int:
-        return len(self.ids)
 
     def __getitem__(self, idx):
         # Handle slicing
