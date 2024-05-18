@@ -18,7 +18,7 @@ from torch import randperm
 from torch.utils.data import Dataset
 from torch.utils.data import Subset as Subset_
 
-from ocpmodels.common.registry import registry
+from fairchem.core.common.registry import registry
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike

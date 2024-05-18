@@ -19,7 +19,7 @@ from fairchem.core.common.data_parallel import (
     StatefulDistributedSampler,
     UnsupportedDatasetError,
 )
-from ocpmodels.datasets.base_dataset import DatasetMetadata
+from fairchem.core.datasets.base_dataset import DatasetMetadata
 
 DATA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 SIZE_ATOMS = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]

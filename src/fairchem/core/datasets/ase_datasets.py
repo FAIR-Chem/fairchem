@@ -25,6 +25,7 @@ from tqdm import tqdm
 
 from fairchem.core.common.registry import registry
 from fairchem.core.datasets._utils import rename_data_object_keys
+from fairchem.core.datasets.base_dataset import BaseDataset
 from fairchem.core.datasets.lmdb_database import LMDBDatabase
 from fairchem.core.datasets.target_metadata_guesser import guess_property_metadata
 from fairchem.core.modules.transforms import DataTransforms

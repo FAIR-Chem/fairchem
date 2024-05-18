@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from numpy.typing import NDArray
     from torch_geometric.data import Batch, Data
 
-    from ocpmodels.datasets.base_dataset import DatasetMetadata
+    from fairchem.core.datasets.base_dataset import DatasetMetadata
 
 
 class OCPCollater:
