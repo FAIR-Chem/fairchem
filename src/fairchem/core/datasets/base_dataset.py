@@ -45,7 +45,8 @@ class Subset(Subset_):
         metadata_dict = {}
         for field in DatasetMetadata._fields:
             value = getattr(metadata, field)
-            if isinstance(value, Sequence):
+            # TODO should we always set value based on indices?
+            if isinstance(value, (Sequence, np.ndarray)):
                 value = value[indices]
             metadata_dict[field] = value
         self.metadata = DatasetMetadata(**metadata_dict)
