@@ -262,8 +262,8 @@ class BaseTrainer(ABC):
             device=self.device,
             mode=balancing_mode,
             shuffle=shuffle,
-            force_balancing=force_balancing,
-            seed=self.config["cmd"]["seed"],
+            #force_balancing=force_balancing,
+            #seed=self.config["cmd"]["seed"],
             on_error=on_error,
         )
 
