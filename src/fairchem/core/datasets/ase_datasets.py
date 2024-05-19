@@ -20,7 +20,6 @@ from typing import Any, Callable
 
 import ase
 import numpy as np
-import torch.nn
 from torch import tensor
 from tqdm import tqdm
 
@@ -30,12 +29,11 @@ from fairchem.core.datasets.base_dataset import BaseDataset
 from fairchem.core.datasets.lmdb_database import LMDBDatabase
 from fairchem.core.datasets.target_metadata_guesser import guess_property_metadata
 
+# from fairchem.core.modules.transforms import DataTransforms
+from fairchem.core.preprocessing import AtomsToGraphs
 from fairchem.experimental.foundation_models.multi_task_dataloader.transforms.data_object import (
     DataTransforms,
 )
-
-# from fairchem.core.modules.transforms import DataTransforms
-from fairchem.core.preprocessing import AtomsToGraphs
 
 
 def apply_one_tags(
