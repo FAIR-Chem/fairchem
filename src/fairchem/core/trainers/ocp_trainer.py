@@ -232,7 +232,18 @@ class OCPTrainer(BaseTrainer):
             self.test_dataset.close_db()
 
     def _forward(self, batch):
+        # TODO put all denorming and linear references here so that the model is trained on it
+        # TODO and the output is always, literally always = std * out + mean + linref!
         out = self.model(batch.to(self.device))
+
+        # denorm all targets
+        for target_name in self.output_targets:
+            if self.normalizers.get(target_name, False):
+                out[target_name] = self.normalizers[target_name].denorm(
+                    out[target_name]
+                )
+
+        # apply any linear references
 
         ### TODO: Move into BaseModel in OCP 2.0
         outputs = {}
@@ -259,9 +270,6 @@ class OCPTrainer(BaseTrainer):
                 for subtarget_key in self.output_targets[target_key]["decomposition"]:
                     irreps = self.output_targets[subtarget_key]["irrep_dim"]
                     _pred = out[subtarget_key]
-
-                    if self.normalizers.get(subtarget_key, False):
-                        _pred = self.normalizers[subtarget_key].denorm(_pred)
 
                     ## Fill in the corresponding irreps prediction
                     ## Reshape irrep prediction to (batch_size, irrep_dim)
@@ -311,8 +319,8 @@ class OCPTrainer(BaseTrainer):
                 natoms = natoms[mask]
 
             num_atoms_in_batch = natoms.numel()
-            if self.normalizers.get(target_name, False):
-                target = self.normalizers[target_name].norm(target)
+            # if self.normalizers.get(target_name, False):
+            #     target = self.normalizers[target_name].norm(target)
 
             ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
             if self.output_targets[target_name]["level"] == "atom":
@@ -378,10 +386,6 @@ class OCPTrainer(BaseTrainer):
                 target = target.view(batch_size, -1)
 
             targets[target_name] = target
-            if self.normalizers.get(target_name, False):
-                out[target_name] = self.normalizers[target_name].denorm(
-                    out[target_name]
-                )
 
         targets["natoms"] = natoms
         out["natoms"] = natoms
@@ -423,7 +427,7 @@ class OCPTrainer(BaseTrainer):
 
         predictions = defaultdict(list)
 
-        for _i, batch in tqdm(
+        for _, batch in tqdm(
             enumerate(data_loader),
             total=len(data_loader),
             position=rank,
@@ -435,8 +439,6 @@ class OCPTrainer(BaseTrainer):
 
             for target_key in self.config["outputs"]:
                 pred = out[target_key]
-                if self.normalizers.get(target_key, False):
-                    pred = self.normalizers[target_key].denorm(pred)
 
                 if per_image:
                     ### Save outputs in desired precision, default float16
