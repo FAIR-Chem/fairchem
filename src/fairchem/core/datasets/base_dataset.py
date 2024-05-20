@@ -6,11 +6,18 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import logging
 from abc import ABCMeta
-from collections.abc import Sequence
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, NamedTuple, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    NamedTuple,
+    Protocol,
+    TypeVar,
+    runtime_checkable,
+)
 
 import numpy as np
 import torch
@@ -21,6 +28,8 @@ from torch.utils.data import Subset as Subset_
 from fairchem.core.common.registry import registry
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from numpy.typing import ArrayLike
 
 
@@ -31,7 +40,19 @@ class DatasetMetadata(NamedTuple):
     natoms: ArrayLike | None = None
 
 
-class Subset(Subset_):
+class UnsupportedDatasetError(ValueError):
+    pass
+
+
+@runtime_checkable
+class DatasetWithSizes(Protocol):
+    # metadata: DatasetMetadata
+
+    def get_metadata(self, attr, idxs):
+        """get metadata attr for the given idx or idxs"""
+
+
+class Subset(Subset_, DatasetWithSizes):
     """A pytorch subset that also takes metadata if given."""
 
     def __init__(
@@ -41,23 +62,16 @@ class Subset(Subset_):
         metadata: DatasetMetadata | None = None,
     ) -> None:
         super().__init__(dataset, indices)
+        self.metadata = metadata
+        self.indices = indices
 
     def get_metadata(self, attr, idx):
         if isinstance(idx, list):
             return getattr(self.dataset.metadata, attr)[[self.indices[i] for i in idx]]
         return getattr(self.dataset.metadata, attr)[self.indices[idx]]
 
-        """metadata_dict = {}
-        for field in DatasetMetadata._fields:
-            value = getattr(metadata, field)
-            # TODO should we always set value based on indices?
-            if isinstance(value, (Sequence, np.ndarray)):
-                value = value[indices]
-            metadata_dict[field] = value
-        self.metadata = DatasetMetadata(**metadata_dict)"""
 
-
-class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
+class BaseDataset(Dataset[T_co], DatasetWithSizes, metaclass=ABCMeta):
     """Base Dataset class for all OCP datasets."""
 
     def __init__(self, config: dict):
@@ -83,7 +97,7 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
     def __len__(self) -> int:
         return self.num_samples
 
-    @property
+    @cached_property
     def indices(self):
         return np.arange(self.num_samples, dtype=int)
 
@@ -123,6 +137,12 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
 
         return metadata
 
+    def get_metadata(self, attr, idx):
+        metadata_attr = getattr(self.metadata, attr)
+        if isinstance(idx, list):
+            return [metadata_attr[_idx] for _idx in idx]
+        return metadata_attr[idx]
+
 
 def create_dataset(config: dict[str, Any], split: str) -> Subset:
     """Create a dataset from a config dictionary
@@ -141,7 +161,6 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
     # remove information about other splits, only keep specified split
     # this may only work with the mt config not main config
     current_split_config = config.copy()
-
     if "splits" in current_split_config:
         current_split_config.pop("splits")
         current_split_config.update(config["splits"][split])
