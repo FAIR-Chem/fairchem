@@ -2,20 +2,24 @@ includes:
   - configs/atat/base.yml
 
 model:
-  name: transformer
+  name: TokenGT
   num_elements: 100
-  emb_dim: 128
+  embed_dim: 128
   ff_dim: 128
+  num_heads: 8
   num_layers: 12
-  dropout: 0.1
-  heads: 8
+  use_pbc: True
   otf_graph: True
-  rbf_radius: 12
-  num_gaussians: 64
+  max_neighbors: 20
+  max_radius: 12.
+  dropout: 0.1
+  lap_node_id_dim: 64
+  num_gaussians: 32
+  use_attn_mask: False
 
 optim:
-  batch_size: 128
-  eval_batch_size: 128
+  batch_size: 4
+  eval_batch_size: 4
   load_balancing: atoms
   num_workers: 16
   lr_initial: 0.0004
@@ -25,11 +29,11 @@ optim:
     weight_decay: 0.001
   scheduler: ReduceLROnPlateau
   mode: min
-  factor: 0.9
-  patience: 100
-  max_epochs: 10000
+  factor: 0.8
+  patience: 5
+  max_epochs: 1000
   force_coefficient: 10
-  energy_coefficient: 1
+  energy_coefficient: 0.1
   ema_decay: 0.999
   clip_grad_norm: 10
   loss_energy: mae

@@ -21,7 +21,7 @@ from ..modules import init_graphormer_params, TokenGTGraphEncoder
 
 logger = logging.getLogger(__name__)
 
-@registry.register_model("tokengt")
+@registry.register_model("tokengt_origin")
 class TokenGTModel(BaseModel):
     """
     TokenGT, Tokenized Graph Transformer
@@ -191,13 +191,16 @@ class TokenGTModel(BaseModel):
             edge_index,
             edge_distance,
             edge_distance_vec,
-            lap_vec,
             *_ # unused outputs
         ) = self.generate_graph(
             data,
-            calc_lap=self.lap_node_id_dim,
-            lap_dim=self.lap_node_id_dim
         )
+        if self.lap_node_id_dim > 0:
+            lap_vec = self.calc_lap(
+                data, edge_index, self.lap_node_id_dim
+            )
+        else:
+            lap_vec = None
         # extract data
         pos = data.pos
         batch = data.batch

@@ -39,8 +39,6 @@ class BaseModel(nn.Module):
         use_pbc=None,
         otf_graph=None,
         enforce_max_neighbors_strictly=None,
-        calc_lap=False,
-        lap_dim=128,
     ):
         cutoff = cutoff or self.cutoff
         max_neighbors = max_neighbors or self.max_neighbors
@@ -112,18 +110,6 @@ class BaseModel(nn.Module):
             )
             neighbors = compute_neighbors(data, edge_index)
 
-        if calc_lap:
-            lap_vec = lap_eigvec(data.batch, edge_index, data.natoms, dim=lap_dim)
-            return (
-                edge_index,
-                edge_dist,
-                distance_vec,
-                lap_vec,
-                cell_offsets,
-                cell_offset_distances,
-                neighbors,
-            )
-
         return (
             edge_index,
             edge_dist,
@@ -132,6 +118,15 @@ class BaseModel(nn.Module):
             cell_offset_distances,
             neighbors,
         )
+    
+    def calc_lap(
+        self,
+        data,
+        edge_index,
+        lap_dim
+    ):
+        lap_vec = lap_eigvec(data.batch, edge_index, data.natoms, dim=lap_dim)
+        return lap_vec
 
     @property
     def num_params(self) -> int:
@@ -163,10 +158,10 @@ def lap_eigvec(batch, edge_index, natoms, dim=128):
         N = torch.diag(in_degree.clip(1) ** -0.5)
         L = torch.eye(natoms[i], device=natoms.device) - N @ A @ N
 
-        _, eigvec = torch.linalg.eigh(L)
+        eigval, eigvec = torch.linalg.eigh(L)
         if natoms[i] <= dim:
             output[offset: offset+natoms[i], :natoms[i]] = eigvec.float()
         else:
-            output[offset: offset+natoms[i]] = eigvec[:, :dim].float()
+            output[offset: offset+natoms[i]] = eigvec[:, eigvec.size(1) - dim:].float()
 
     return output 

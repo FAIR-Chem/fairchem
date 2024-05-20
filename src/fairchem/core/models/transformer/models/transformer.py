@@ -35,8 +35,6 @@ class Transformer(BaseModel):
         dropout rate
     heads: int
         number of attention heads
-    multipole: bool
-        to use multipole expansion
     otf_graph: bool
         calculate graph on-the-fly
     rbf_radius: float
@@ -55,7 +53,6 @@ class Transformer(BaseModel):
             num_layers: int = 12,
             dropout: float = 0.,
             heads: int = 8,
-            multipole: bool = False,
             otf_graph: bool = False,
             rbf_radius: float = 5.0,
             num_gaussians: int = 50,
@@ -63,9 +60,7 @@ class Transformer(BaseModel):
 
         super().__init__()
 
-        self.multipole = multipole
-        self.otf_graph=True
-        
+        self.otf_graph=otf_graph
         self.pos_encoder = nn.Sequential(
             nn.Linear(3, ff_dim),
             nn.GELU(),
@@ -80,6 +75,7 @@ class Transformer(BaseModel):
         )
 
         self.pair_embedding = PairEmbed(
+            emb_dim=emb_dim,
             ff_dim=ff_dim,
             dropout=dropout,
             num_head=heads,
@@ -102,10 +98,11 @@ class Transformer(BaseModel):
                 emb_dim=emb_dim,
                 ff_dim=ff_dim,
                 dropout=dropout,
-                multipole=multipole,
-                scale=math.exp(-i)
             ) for i in range(num_layers + 1)
         ])
+
+        self.energy_scale = 1 / (num_layers * 60 * 60)
+        self.force_scale = 1 / (num_layers * 60)
 
     def forward(self, data):
 
@@ -130,7 +127,8 @@ class Transformer(BaseModel):
 
         # encode the sequence
         x = self.pos_encoder(padded_pos) + self.atomic_number_encoder(padded_anum)
-        key_padding_mask = (~padded_node_mask).float()
+        key_padding_mask = torch.zeros_like(padded_node_mask, dtype=torch.float)
+        key_padding_mask.masked_fill_(~padded_node_mask, -torch.inf)
 
         # pair embed
         attn_masks, pairs = self.pair_embedding(x, padded_pos, padded_node_mask)
@@ -155,6 +153,9 @@ class Transformer(BaseModel):
             energy += E
             forces += F
 
+        energy = self.energy_scale * energy
+        forces = self.force_scale * forces
+
         return {"energy": energy, "forces": forces}
     
     @property
@@ -167,8 +168,6 @@ class OutputModule(nn.Module):
         emb_dim: int = 512,
         ff_dim: int = 1024,
         dropout: float = 0,
-        multipole: bool = False,
-        scale: float = 0,
     ):
         super().__init__()
 
@@ -192,25 +191,13 @@ class OutputModule(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(ff_dim, 1)
         )
-        self.energy_scale = nn.Parameter(torch.tensor(scale))
 
-        if multipole:
-            self.forces_out = nn.Sequential(
-                nn.Linear(emb_dim, ff_dim),
-                nn.GELU(),
-                nn.Dropout(dropout),
-                nn.Linear(ff_dim, 4) # for now, use dipole for proof-of-concept
-            )
-        else:
-            self.forces_out = nn.Sequential(
-                nn.Linear(emb_dim, ff_dim),
-                nn.GELU(),
-                nn.Dropout(dropout),
-                nn.Linear(ff_dim, 1)
-            )
-        self.forces_scale = nn.Parameter(torch.tensor(scale))
-        
-        self.multipole = multipole
+        self.forces_out = nn.Sequential(
+            nn.Linear(emb_dim, ff_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(ff_dim, 1)
+        )
 
     def forward(
             self, 
@@ -233,26 +220,14 @@ class OutputModule(nn.Module):
 
         # regress outputs
         energy_pairs = self.energy_out(x) # [L, L, N, 1]
-
-        if self.multipole:
-            multipoles = self.forces_out(x) # [L, L, N, 4]
-            force_pairs = (
-                - multipoles[..., :1] * vec_hat / dist.pow(2) # monopole
-                - 3 * vec_hat / dist.pow(3) * (multipoles[:, 1:4] * vec_hat).sum(-1, keepdim=True) # dipole
-                + multipoles[:, 1:4] / dist.pow(3) # dipole
-            )
-        else:
-            force_magnitudes = self.forces_out(x) # [L, L, N, 1]
-            force_pairs = force_magnitudes * vec_hat # [L, L, N, 3]
+        force_magnitudes = self.forces_out(x) # [L, L, N, 1]
+        force_pairs = force_magnitudes * vec_hat # [L, L, N, 3]
 
         force_pairs.masked_fill_(~entries | diagonals, 0)
 
         energy = (energy_pairs * entries.float()).sum(0).mean(0) # [N, 1]
         forces = (force_pairs * entries.float()).sum(0) # [L, N, 3]
         forces = forces.transpose(0, 1)[padded_node_mask] # [S, 3]
-
-        energy = self.energy_scale * energy
-        forces = self.forces_scale * forces
 
         return energy, forces
         
@@ -295,8 +270,6 @@ class PairEmbed(nn.Module):
             nn.Linear(ff_dim, ff_dim)
         )
 
-        # initialize the scale to be 1 tenth of the MHA
-        self.scale = nn.Parameter(- math.log(10) * torch.ones(num_layers, 1, 1, 1))
         self.num_layers = num_layers
         self.num_heads = num_head
 
@@ -331,8 +304,6 @@ class PairEmbed(nn.Module):
         attn = attn.reshape(attn.size(0), self.num_layers, self.num_heads, attn.size(2), attn.size(3)) # [N, layers, H, L, L]
         attn = attn.permute(1, 0, 2, 3, 4) # [layers, N, H, L, L]
         attn = attn.reshape(attn.size(0), -1, attn.size(3), attn.size(4)) # [layers, N * H, L, L]
-        attn = F.softmax(attn, dim=3)
-        attn = F.softplus(self.scale) * attn
         
         # project into embeddings
         output = self.output_encoder(x)

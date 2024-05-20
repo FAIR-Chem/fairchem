@@ -78,8 +78,6 @@ class TokenGTModel(BaseModel):
         apply layernorm before self-attention and ffn
     postnorm: bool
         apply layernorm after self-attention and ffn
-    multipole: bool
-        use multipole expansion
     """
     def __init__(
             self,
@@ -112,7 +110,6 @@ class TokenGTModel(BaseModel):
             encoder_normalize_before: bool = True,
             prenorm: bool = False,
             postnorm: bool = False,
-            multipole: bool = False
         ):
         super().__init__()
 
@@ -147,7 +144,6 @@ class TokenGTModel(BaseModel):
             encoder_normalize_before=encoder_normalize_before,
             prenorm=prenorm,
             postnorm=postnorm,
-            multipole=multipole
         )
 
     def forward(self, data):
@@ -156,13 +152,16 @@ class TokenGTModel(BaseModel):
             edge_index,
             edge_distance,
             edge_distance_vec,
-            lap_vec,
             *_ # unused outputs
         ) = self.generate_graph(
             data,
-            calc_lap=self.lap_node_id_dim,
-            lap_dim=self.lap_node_id_dim
         )
+        if self.lap_node_id_dim > 0:
+            lap_vec = self.calc_lap(
+                data, edge_index, self.lap_node_id_dim
+            )
+        else:
+            lap_vec = None
         # extract data
         pos = data.pos
         batch = data.batch
@@ -214,7 +213,6 @@ class TokenGTEncoder(nn.Module):
             encoder_normalize_before: bool = True,
             prenorm: bool = False,
             postnorm: bool = False,
-            multipole: bool = False,
         ):
         super().__init__()
         assert (prenorm != postnorm)
@@ -264,23 +262,14 @@ class TokenGTEncoder(nn.Module):
             nn.Linear(encoder_embed_dim, 1)
         )
 
-        if multipole:
-            self.forces_out = nn.Sequential(
-                nn.Linear(2 * encoder_embed_dim, encoder_embed_dim),
-                nn.GELU(),
-                nn.Dropout(dropout),
-                nn.Linear(encoder_embed_dim, 4) # for now, use dipole for proof-of-concept
-            )
-        else:
-            self.forces_out = nn.Sequential(
-                nn.Linear(2 * encoder_embed_dim, encoder_embed_dim),
-                nn.GELU(),
-                nn.Dropout(dropout),
-                nn.Linear(encoder_embed_dim, 1)
-            )
+        self.forces_out = nn.Sequential(
+            nn.Linear(2 * encoder_embed_dim, encoder_embed_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(encoder_embed_dim, 1)
+        )
 
         self.regress_forces = regress_forces
-        self.multipole = multipole
 
     def forward(
             self, 
@@ -308,35 +297,17 @@ class TokenGTEncoder(nn.Module):
         # project back to output sizes
         energy = self.energy_out(x[:, 0])
         if self.regress_forces:
-            if self.multipole:
-                nodes = x[:, 2:][padded_node_mask]
-                edge_inputs = torch.cat([nodes[edge_index[0]], nodes[edge_index[1]]], dim = 1)
-                multipoles = self.forces_out(edge_inputs)
-                force_pairs = (
-                    - multipoles[:, :1] * edge_distance_vec / edge_distance[:, None].pow(3) # monopole
-                    - 3 * edge_distance_vec / edge_distance[:, None].pow(5) *
-                        (multipoles[:, 1:4] * edge_distance_vec).sum(-1, keepdim=True) # dipole
-                    + multipoles[:, 1:4] / edge_distance[:, None].pow(3) # dipole
-                )
-                forces = scatter(
-                    src=force_pairs,
-                    index=edge_index[0],
-                    dim=0,
-                    dim_size=len(batch),
-                    reduce="sum"
-                )
-            else:
-                nodes = x[:, 2:][padded_node_mask]
-                edge_inputs = torch.cat([nodes[edge_index[0]], nodes[edge_index[1]]], dim = 1)
-                force_magnitudes = self.forces_out(edge_inputs)
-                force_pairs = force_magnitudes * edge_distance_vec / edge_distance[:, None]
-                forces = scatter(
-                    src=force_pairs,
-                    index=edge_index[0],
-                    dim=0,
-                    dim_size=len(batch),
-                    reduce="sum"
-                )
+            nodes = x[padded_node_mask]
+            edge_inputs = torch.cat([nodes[edge_index[0]], nodes[edge_index[1]]], dim = 1)
+            force_magnitudes = self.forces_out(edge_inputs)
+            force_pairs = force_magnitudes * edge_distance_vec / edge_distance[:, None]
+            forces = scatter(
+                src=force_pairs,
+                index=edge_index[0],
+                dim=0,
+                dim_size=len(batch),
+                reduce="sum"
+            )
         else:
             forces = None
         return energy, forces

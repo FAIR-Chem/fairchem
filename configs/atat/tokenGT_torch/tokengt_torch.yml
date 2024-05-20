@@ -26,7 +26,6 @@ model:
   encoder_normalize_before: True
   prenorm: True
   postnorm: False
-  multipole: False
 
 optim:
   batch_size: 16
