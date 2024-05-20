@@ -42,14 +42,19 @@ class Subset(Subset_):
     ) -> None:
         super().__init__(dataset, indices)
 
-        metadata_dict = {}
+    def get_metadata(self, attr, idx):
+        if isinstance(idx, list):
+            return getattr(self.dataset.metadata, attr)[[self.indices[i] for i in idx]]
+        return getattr(self.dataset.metadata, attr)[self.indices[idx]]
+
+        """metadata_dict = {}
         for field in DatasetMetadata._fields:
             value = getattr(metadata, field)
             # TODO should we always set value based on indices?
             if isinstance(value, (Sequence, np.ndarray)):
                 value = value[indices]
             metadata_dict[field] = value
-        self.metadata = DatasetMetadata(**metadata_dict)
+        self.metadata = DatasetMetadata(**metadata_dict)"""
 
 
 class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
