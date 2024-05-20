@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import heapq
 import logging
-from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Literal
 
 import numba
 import numpy as np
@@ -20,12 +20,14 @@ from typing_extensions import override
 
 from fairchem.core.common import distutils, gp_utils
 from fairchem.core.datasets import data_list_collater
+from fairchem.core.datasets.base_dataset import (
+    DatasetWithSizes,
+    UnsupportedDatasetError,
+)
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
     from torch_geometric.data import Batch, Data
-
-    from fairchem.core.datasets.base_dataset import DatasetMetadata
 
 
 class OCPCollater:
@@ -48,18 +50,11 @@ def _balanced_partition(sizes: NDArray[np.int_], num_parts: int):
     for idx in sort_idx[num_parts:]:
         smallest_part = heapq.heappop(heap)
         new_size = smallest_part[0] + sizes[idx]
-        new_idx = smallest_part[1] + [idx]
+        new_idx = smallest_part[1] + [
+            idx
+        ]  # TODO should this be append to save time/space
         heapq.heappush(heap, (new_size, new_idx))
     return [part[1] for part in heap]
-
-
-class UnsupportedDatasetError(ValueError):
-    pass
-
-
-@runtime_checkable
-class DatasetWithSizes(Protocol):
-    metadata: DatasetMetadata
 
 
 def _ensure_supported(dataset: Any):
@@ -140,7 +135,7 @@ class BalancedBatchSampler(BatchSampler):
         dataset = self.sampler.dataset
         try:
             dataset = _ensure_supported(dataset)
-            return dataset.metadata.natoms[batch_idx]
+            return dataset.get_metadata("natoms", batch_idx)
         except UnsupportedDatasetError as error:
             if self.on_error == "raise":
                 raise error
