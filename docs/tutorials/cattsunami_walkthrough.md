@@ -14,6 +14,9 @@ kernelspec:
 # CatTSunami tutorial
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 from fairchem.applications.cattsunami.core import Reaction
 from fairchem.data.oc.core import Slab, Adsorbate, Bulk, AdsorbateSlabConfig
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
@@ -40,6 +43,9 @@ To start, we generate placements for the reactant and product species on the sur
 
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Instantiate the reaction class for the reaction of interest
 reaction = Reaction(reaction_str_from_db="*CH -> *C + *H",
                     reaction_db_path=DISSOCIATION_REACTION_DB_PATH,
@@ -68,6 +74,9 @@ product2_configs = AdsorbateSlabConfig(slab = slab[0], adsorbate = product2,
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Instantiate the calculator
 # NOTE: If you have a GPU, use cpu = False
 # NOTE: Change the checkpoint path to locally downloaded files as needed
@@ -87,6 +96,9 @@ There are 2 options for how to do this.
 You need to provide the calculator with a path to a model checkpoint file. That can be downloaded [here](../core/model_checkpoints)
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Relax the reactant systems
 reactant_energies = []
 for config in reactant_configs:
@@ -113,12 +125,12 @@ for config in product2_configs:
 
 ## Enumerate NEBs
 Here we use the class we created to handle automatic generation of NEB frames to create frames using the structures we just relaxed as input.
+![dissociation_scheme](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/applications/cattsunami/tutorial/dissociation_scheme.png)
 
 ```{code-cell} ipython3
-Image(filename="dissociation_scheme.png")
-```
-
-```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 af = AutoFrameDissociation(
             reaction = reaction,
             reactant_system = reactant_configs[reactant_energies.index(min(reactant_energies))],
@@ -143,6 +155,9 @@ frame_sets, mapping_idxs = af.get_neb_frames(calc,
 Here we use the custom child class we created to run NEB relaxations using ML. The class we created allows the frame relaxations to be batched, improving efficiency.
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 ## This will run all NEBs enumerated - to just run one, run the code cell below.
 # On GPU, each NEB takes an average of ~1 minute so this could take around a half hour on GPU
 # But much longer on CPU
@@ -175,6 +190,9 @@ Here we use the custom child class we created to run NEB relaxations using ML. T
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # If you run the above cell -- dont run this one
 fmax = 0.05 # [eV / ang**2]
 delta_fmax_climb = 0.4
