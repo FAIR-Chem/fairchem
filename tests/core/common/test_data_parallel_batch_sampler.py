@@ -18,18 +18,19 @@ from fairchem.core.common.data_parallel import (
     BalancedBatchSampler,
     StatefulDistributedSampler,
     UnsupportedDatasetError,
+    _balanced_partition,
 )
-from fairchem.core.datasets.base_dataset import DatasetMetadata
+from fairchem.core.datasets.base_dataset import DatasetMetadata, DatasetWithSizes
 
 DATA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-SIZE_ATOMS = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+SIZE_ATOMS = [2, 20, 3, 51, 10, 11, 41, 31, 13, 14]
 
 T_co = TypeVar("T_co", covariant=True)
 
 
 @pytest.fixture()
 def valid_dataset():
-    class _Dataset(Dataset[T_co]):
+    class _Dataset(Dataset[T_co], DatasetWithSizes):
         metadata = DatasetMetadata(natoms=np.array(SIZE_ATOMS))
 
         def __init__(self, data) -> None:
@@ -40,6 +41,13 @@ def valid_dataset():
 
         def __getitem__(self, idx):
             return self.data[idx]
+
+        def get_metadata(self, attr, idx):
+            assert attr == "natoms"
+            metadata_attr = getattr(self.metadata, attr)
+            if isinstance(idx, list):
+                return [metadata_attr[_idx] for _idx in idx]
+            return metadata_attr[idx]
 
     return _Dataset(DATA)
 
@@ -274,3 +282,10 @@ def test_stateful_distributed_sampler_numreplicas_drop_last(
             )
             assert len(concat_idxs) == len(np.unique(concat_idxs))
             assert len(concat_idxs) == (len(fullset) // num_replicas) * num_replicas
+
+
+def test_balancedbatchsampler_partition(valid_dataset) -> None:
+    assert np.array(
+        _balanced_partition(np.array(SIZE_ATOMS), 4)
+        == [[1, 9, 5, 0], [7, 8, 2], [3], [6, 4]]
+    )
