@@ -7,7 +7,7 @@ def make_mlp(
     hidden_dim: int = 1024,
     output_dim: int = 512,
     dropout: float = 0., 
-) -> nn.Module:
+):
     return nn.Sequential(
         nn.Linear(input_dim, hidden_dim),
         nn.Dropout(dropout),

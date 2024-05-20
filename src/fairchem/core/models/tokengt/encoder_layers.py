@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -39,7 +39,7 @@ class TokenGTEncoderLayer(nn.Module):
         x: torch.Tensor,
         key_padding_mask: torch.Tensor,
         attn_mask: Optional[torch.Tensor] = None,
-    ):
+    ) -> torch.Tensor:
         
         z = self.attn_norm(x)
         self_attn, *_ = self.attn(z, z, z, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
@@ -72,7 +72,7 @@ class AttentionBias(nn.Module):
         padded_mask: torch.Tensor, 
         padded_node_mask: torch.Tensor, 
         padded_index: torch.Tensor,
-    ):
+    ) -> torch.Tensor:
         # transpose to get the correct shape
         padded_mask, padded_node_mask, padded_index = \
             padded_mask.transpose(0, 1), padded_node_mask.transpose(0, 1), padded_index.transpose(0, 1)
@@ -119,7 +119,7 @@ class OutputModule(nn.Module):
         edge_index: torch.Tensor,
         padded_node_mask: torch.Tensor, 
         padded_edge_mask: torch.Tensor, 
-    ):
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         # prepare inputs
         x = x.transpose(0, 1)
         nodes = x[padded_node_mask]
