@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 from torch_geometric.nn.models.schnet import GaussianSmearing
 
-from .utils import make_mlp
+from .utils import ResMLP
 
 class GraphFeatureTokenizer(nn.Module):
     """
@@ -39,14 +39,14 @@ class GraphFeatureTokenizer(nn.Module):
             num_gaussians=num_gaussians
         )
 
-        self.rbf_encoder = make_mlp(
+        self.rbf_encoder = ResMLP(
             input_dim=num_gaussians,
             hidden_dim=ff_dim,
             output_dim=embed_dim,
             dropout=dropout,
         )
 
-        self.direction_encoder = make_mlp(
+        self.direction_encoder = ResMLP(
             input_dim=3,
             hidden_dim=ff_dim,
             output_dim=embed_dim,

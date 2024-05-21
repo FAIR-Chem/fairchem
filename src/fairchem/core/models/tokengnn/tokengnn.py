@@ -14,7 +14,6 @@ from fairchem.core.models.base import BaseModel
 
 from .encoder_layers import TokenGNNEncoderLayer, OutputModule
 from .tokenizer import GraphFeatureTokenizer
-from .utils import make_mlp
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +70,7 @@ class TokenGNN(BaseModel):
         max_radius: float = 5.0,
         dropout: float = 0.1,
         num_gaussians: int = 50,
+        output_layers: int = 3,
     ):
 
         super().__init__()
@@ -87,6 +87,8 @@ class TokenGNN(BaseModel):
                 ff_dim=ff_dim,
                 dropout=dropout,
                 num_heads=num_heads,
+                max_radius=max_radius,
+                num_gaussians=num_gaussians
             ) for _ in range(num_layers)
         ])
 
@@ -94,7 +96,10 @@ class TokenGNN(BaseModel):
             OutputModule(
                 embed_dim=embed_dim,
                 ff_dim=ff_dim,
+                hidden_layers=output_layers,
                 dropout=dropout,
+                num_gaussians=num_gaussians,
+                max_radius=max_radius
             ) for _ in range(num_layers + 1)
         ])
 
@@ -112,37 +117,50 @@ class TokenGNN(BaseModel):
         
 
     def forward(self, data):
+
         # prepare inputs
         batch = data.batch.long()
+        natoms = data.natoms.long()
         pos = data.pos
         atomic_numbers = data.atomic_numbers.long()
+
         # OTF graph construction
         (
             edge_index,
             *_ # unused outputs
         ) = self.generate_graph(data)
 
+        # symmetrize the graph
+        order = edge_index[0] >  edge_index[1]
+        edge_index[:, order] = edge_index[:, order].flip(0)
+        edge_index = torch.unique(edge_index, dim=1)
+        edge_index = torch.cat([edge_index, edge_index.flip(0)], dim=1)
+
         # tokenization
         (
-            x, edges, masks
-        ) = self.tokenizer(pos, atomic_numbers, edge_index)
+            x, edges, vec_hat, all_dist, dist ,cosine_dd, cosine_ss
+        ) = self.tokenizer(pos, natoms, atomic_numbers, edge_index)
         
         # first pass
         energy, forces = self.output_modules[0](
             x,
             pos,
+            dist,
+            vec_hat,
             batch,
             edge_index,
         )
 
         # encoder layers
         for i, layer in enumerate(self.layers):
-            x = layer(x, edges, masks)
+            x = layer(x, edges, all_dist, dist, cosine_dd, cosine_ss)
             e, f = self.output_modules[i+1](
                 x,
                 pos,
+                dist,
+                vec_hat,
                 batch,
-                edge_index
+                edge_index,
             )
             energy += e
             forces += f

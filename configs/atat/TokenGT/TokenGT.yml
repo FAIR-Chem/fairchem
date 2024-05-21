@@ -10,12 +10,13 @@ model:
   num_layers: 12
   use_pbc: True
   otf_graph: True
-  max_neighbors: 20
-  max_radius: 12.
-  dropout: 0.1
+  max_neighbors: 50
+  max_radius: 5.
+  dropout: 0.
   lap_node_id_dim: 64
-  num_gaussians: 32
+  num_gaussians: 50
   use_attn_mask: False
+  output_layers: 4
 
 optim:
   batch_size: 4
@@ -33,7 +34,7 @@ optim:
   patience: 5
   max_epochs: 1000
   force_coefficient: 10
-  energy_coefficient: 0.1
+  energy_coefficient: 1
   ema_decay: 0.999
   clip_grad_norm: 10
   loss_energy: mae

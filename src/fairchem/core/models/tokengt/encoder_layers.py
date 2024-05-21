@@ -6,7 +6,9 @@ import torch.nn.functional as F
 
 from torch_scatter import scatter
 
-from .utils import make_mlp
+from torch_geometric.nn.models.schnet import GaussianSmearing
+
+from .utils import ResMLP
 
 class TokenGTEncoderLayer(nn.Module):
     def __init__(
@@ -24,7 +26,7 @@ class TokenGTEncoderLayer(nn.Module):
             dropout=dropout
         )
 
-        self.feed_forward = make_mlp(
+        self.feed_forward = ResMLP(
             input_dim=embed_dim,
             hidden_dim=ff_dim,
             output_dim=embed_dim,
@@ -61,7 +63,7 @@ class AttentionBias(nn.Module):
     ):
         super().__init__()
 
-        self.projection = make_mlp(
+        self.projection = ResMLP(
             6, ff_dim, num_heads * num_layers, dropout=dropout
         )
         self.num_heads = num_heads
@@ -100,16 +102,41 @@ class OutputModule(nn.Module):
         embed_dim: int = 512,
         ff_dim: int = 1024,
         dropout: float = 0,
+        hidden_layers: int = 3,
+        num_gaussians: int = 50,
+        max_radius: float = 12.
     ):
         super().__init__()
 
-        self.energy_output = make_mlp(
-            3 * embed_dim, ff_dim, 1, dropout
+        self.energy_input = ResMLP(
+            input_dim=3*embed_dim,
+            hidden_dim=ff_dim,
+            output_dim=embed_dim,
+            num_layers=hidden_layers,
+            dropout=dropout
         )
 
-        self.forces_output = make_mlp(
-            3 * embed_dim, ff_dim, 1, dropout
+        self.energy_rbf = nn.Sequential(
+            GaussianSmearing(0, max_radius, num_gaussians),
+            nn.Linear(num_gaussians, embed_dim, bias=False),
         )
+
+        self.energy_output = nn.Linear(embed_dim, 1, bias=False)
+
+        self.forces_input = ResMLP(
+            input_dim=3*embed_dim,
+            hidden_dim=ff_dim,
+            output_dim=embed_dim,
+            num_layers=hidden_layers,
+            dropout=dropout
+        )
+
+        self.forces_rbf = nn.Sequential(
+            GaussianSmearing(0, max_radius, num_gaussians),
+            nn.Linear(num_gaussians, embed_dim, bias=False),
+        )
+
+        self.forces_output = nn.Linear(embed_dim, 1, bias=False)
 
     def forward(
         self,
@@ -120,6 +147,7 @@ class OutputModule(nn.Module):
         padded_node_mask: torch.Tensor, 
         padded_edge_mask: torch.Tensor, 
     ) -> Tuple[torch.Tensor, torch.Tensor]:
+        
         # prepare inputs
         x = x.transpose(0, 1)
         nodes = x[padded_node_mask]
@@ -127,10 +155,13 @@ class OutputModule(nn.Module):
         inputs = torch.cat([nodes[edge_index[0]], nodes[edge_index[1]], edges], dim = -1)
         vec = pos[edge_index[0]] - pos[edge_index[1]]
         vec_hat = F.normalize(vec, dim = -1)
+        dist = torch.linalg.norm(vec, dim=-1)
 
         # regress energy and forces
-        energy_pairs = self.energy_output(inputs)
-        force_pairs = self.forces_output(inputs) * vec_hat
+        energy_pairs = self.energy_input(inputs) * self.energy_rbf(dist)
+        force_pairs = self.forces_input(inputs) * self.forces_rbf(dist)
+        energy_pairs = self.energy_output(energy_pairs)
+        force_pairs = self.forces_output(force_pairs) * vec_hat
         energy = scatter(energy_pairs, batch[edge_index[0]], dim = 0, reduce="sum")
         forces = scatter(force_pairs, edge_index[0], dim = 0, reduce="sum")
 

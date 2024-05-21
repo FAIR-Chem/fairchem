@@ -11,14 +11,15 @@ model:
   use_pbc: True
   otf_graph: True
   avg_atoms: 60
-  max_neighbors: 20
-  max_radius: 12.
-  dropout: 0.1
-  num_gaussians: 32
+  max_neighbors: 50
+  max_radius: 5.
+  dropout: 0.
+  num_gaussians: 50
+  output_layers: 4
 
 optim:
-  batch_size: 16
-  eval_batch_size: 16
+  batch_size: 12
+  eval_batch_size: 12
   load_balancing: atoms
   num_workers: 16
   lr_initial: 0.0004
@@ -32,7 +33,7 @@ optim:
   patience: 5
   max_epochs: 1000
   force_coefficient: 10
-  energy_coefficient: 0.1
+  energy_coefficient: 1
   ema_decay: 0.999
   clip_grad_norm: 10
   loss_energy: mae

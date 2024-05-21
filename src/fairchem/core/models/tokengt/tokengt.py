@@ -14,7 +14,7 @@ from fairchem.core.models.base import BaseModel
 
 from .encoder_layers import AttentionBias, TokenGTEncoderLayer, OutputModule
 from .tokenizer import GraphFeatureTokenizer
-from .utils import make_mlp
+from .utils import ResMLP
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +73,7 @@ class TokenGT(BaseModel):
         lap_node_id_dim: int = 0,
         num_gaussians: int = 50,
         use_attn_mask: bool = True,
+        output_layers: int = 3,
     ):
         super().__init__()
 
@@ -98,6 +99,9 @@ class TokenGT(BaseModel):
                 embed_dim=embed_dim,
                 ff_dim=ff_dim,
                 dropout=dropout,
+                hidden_layers=output_layers,
+                num_gaussians=num_gaussians,
+                max_radius=max_radius
             ) for _ in range(num_layers + 1)
         ])
 
@@ -110,7 +114,7 @@ class TokenGT(BaseModel):
             )
 
         if lap_node_id_dim > 0:
-            self.lap_emb = make_mlp(
+            self.lap_emb = ResMLP(
                 input_dim=lap_node_id_dim,
                 hidden_dim=ff_dim,
                 output_dim=embed_dim,
