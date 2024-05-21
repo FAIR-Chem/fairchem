@@ -232,18 +232,14 @@ class OCPTrainer(BaseTrainer):
             self.test_dataset.close_db()
 
     def _forward(self, batch):
-        # TODO put all denorming and linear references here so that the model is trained on it
-        # TODO and the output is always, literally always = std * out + mean + linref!
         out = self.model(batch.to(self.device))
 
-        # denorm all targets
+        # The normalizer wil denorm normed model outputs and add atom reference if set
         for target_name in self.output_targets:
             if self.normalizers.get(target_name, False):
-                out[target_name] = self.normalizers[target_name].denorm(
-                    out[target_name]
+                out[target_name] = self.normalizers[target_name](
+                    out[target_name], batch
                 )
-
-        # apply any linear references
 
         ### TODO: Move into BaseModel in OCP 2.0
         outputs = {}

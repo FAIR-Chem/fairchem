@@ -41,7 +41,7 @@ from fairchem.core.common.utils import (
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
-from fairchem.core.modules.normalizer import Normalizer
+from fairchem.core.modules.normalizer import build_normalizer
 from fairchem.core.modules.scaling.compat import load_scales_compat
 from fairchem.core.modules.scaling.util import ensure_fitted
 from fairchem.core.modules.scheduler import LRScheduler
@@ -364,9 +364,11 @@ class BaseTrainer(ABC):
         self.normalizers = {}
         if normalizer:
             for target in normalizer:
-                self.normalizers[target] = Normalizer(
-                    mean=normalizer[target].get("mean", 0),
-                    std=normalizer[target].get("stdev", 1),
+                self.normalizers[target] = build_normalizer(
+                    file=normalizer[target].get("file"),
+                    mean=normalizer[target].get("mean"),
+                    std=normalizer[target].get("stdev"),
+                    atomref=normalizer[target].get("atomref"),
                 )
 
         self.output_targets = {}
