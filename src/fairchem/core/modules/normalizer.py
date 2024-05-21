@@ -148,6 +148,13 @@ def build_normalizer(
         mean = torch.tensor(mean)
         std = torch.tensor(std)
 
+    # if mean and std are still None than raise an error
+    if mean is None or std is None:
+        raise ValueError(
+            "Incorrect inputs. One of the following sets of inputs must be given: ",
+            "a file path to a .pt or .npz file, or mean and std values, or a tensor of target values",
+        )
+
     if atomref is not None:
         atomref = LinearReference(atomref)
 
