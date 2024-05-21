@@ -359,6 +359,8 @@ class BaseTrainer(ABC):
             )
 
     def load_task(self):
+        # TODO load_datasets is already complete when this is done, so we can fit normalizers and linear references
+        # TODO or call a function that does so here
         # Normalizer for the dataset.
         normalizer = self.config["dataset"].get("transforms", {}).get("normalizer", {})
         self.normalizers = {}
@@ -368,7 +370,6 @@ class BaseTrainer(ABC):
                     file=normalizer[target].get("file"),
                     mean=normalizer[target].get("mean"),
                     std=normalizer[target].get("stdev"),
-                    atomref=normalizer[target].get("atomref"),
                 )
 
         self.output_targets = {}

@@ -237,9 +237,7 @@ class OCPTrainer(BaseTrainer):
         # The normalizer wil denorm normed model outputs and add atom reference if set
         for target_name in self.output_targets:
             if self.normalizers.get(target_name, False):
-                out[target_name] = self.normalizers[target_name](
-                    out[target_name], batch
-                )
+                out[target_name] = self.normalizers[target_name](out[target_name])
 
         ### TODO: Move into BaseModel in OCP 2.0
         outputs = {}
@@ -315,8 +313,6 @@ class OCPTrainer(BaseTrainer):
                 natoms = natoms[mask]
 
             num_atoms_in_batch = natoms.numel()
-            # if self.normalizers.get(target_name, False):
-            #     target = self.normalizers[target_name].norm(target)
 
             ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
             if self.output_targets[target_name]["level"] == "atom":

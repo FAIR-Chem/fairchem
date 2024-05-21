@@ -7,8 +7,9 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Mapping, Any
 from pathlib import Path
+
 import numpy as np
 
 import torch
@@ -30,10 +31,11 @@ class LinearReference(nn.Module):
             max_num_elements (int): max number of elements - 118 is a stretch
         """
         super().__init__()
-        self.lin_ref = (
-            linear_reference
+        self.register_buffer(
+            name="linref",
+            tensor=linear_reference
             if linear_reference is not None
-            else torch.zeros(max_num_elements)
+            else torch.zeros(max_num_elements),
         )
 
     def get_composition_matrix(self, batch: Batch) -> torch.Tensor:
@@ -47,11 +49,11 @@ class LinearReference(nn.Module):
         """
         data_list = batch.to_data_list()
         composition_matrix = torch.zeros(
-            len(data_list), len(self.lin_ref), dtype=torch.int
+            len(data_list), len(self.linref), dtype=torch.int
         )
         for i, data in enumerate(data_list):
             composition_matrix[i] = torch.bincount(
-                data.atomic_numbers.int(), minlength=len(self.lin_ref)
+                data.atomic_numbers.int(), minlength=len(self.linref)
             )
 
         return composition_matrix
@@ -71,17 +73,19 @@ class Normalizer(nn.Module):
 
     def __init__(
         self,
-        mean: torch.Tensor | None = None,
-        std: torch.Tensor | None = None,
-        atomref: nn.Module | None = None,
-        device: str = "cpu",
+        mean: float | torch.Tensor = 0.0,
+        std: float | torch.Tensor = 1.0,
     ):
         """tensor is taken as a sample to calculate the mean and std"""
         super().__init__()
-        self.mean = torch.Tensor(mean)
-        self.std = torch.Tensor(std)
-        self.atomref = atomref
-        self.to(device)
+
+        if isinstance(mean, float):
+            mean = torch.tensor(mean)
+        if isinstance(std, float):
+            std = torch.tensor(std)
+
+        self.register_buffer(name="mean", tensor=mean)
+        self.register_buffer(name="std", tensor=std)
 
     def norm(self, tensor: torch.Tensor) -> torch.Tensor:
         return (tensor - self.mean) / self.std
@@ -89,36 +93,35 @@ class Normalizer(nn.Module):
     def denorm(self, normed_tensor: torch.Tensor) -> torch.Tensor:
         return normed_tensor * self.std + self.mean
 
-    def forward(self, normed_tensor: torch.Tensor, batch: Batch) -> torch.Tensor:
-        tensor = self.denorm(normed_tensor)
-        if self.atomref is not None:
-            tensor += self.atomref(batch)
-        return tensor
+    def forward(self, normed_tensor: torch.Tensor) -> torch.Tensor:
+        return self.denorm(normed_tensor)
 
-    def state_dict(self):
-        return {"mean": self.mean, "std": self.std}
+    def load_state_dict(
+        self, state_dict: Mapping[str, Any], strict: bool = True, assign: bool = False
+    ):
+        # check if state dict is legacy state dicts
+        if isinstance(state_dict["mean"], float):
+            state_dict.update({k: torch.tensor(state_dict[k]) for k in ("mean", "std")})
 
-    def load_state_dict(self, state_dict) -> None:
-        self.mean = state_dict["mean"].to(self.mean.device)
-        self.std = state_dict["std"].to(self.mean.device)
+        super().load_state_dict(state_dict, strict=strict, assign=assign)
 
 
 def build_normalizer(
     file: str | Path | None = None,
+    state_dict: dict | None = None,
     tensor: torch.Tensor | None = None,
     mean: float | torch.Tensor | None = None,
     std: float | torch.Tensor | None = None,
-    atomref: torch.Tensor | None = None,
     device: str = "cpu",
 ) -> Normalizer:
     """Build a target data normalizers with optional atom ref
 
     Args:
         file (str or Path): path to pt or npz file.
+        state_dict (dict): a state dict for Normalizer module
         tensor (Tensor): a tensor with target values used to compute mean and std
         mean (float | Tensor): mean of target data
         std (float | Tensor): std of target data
-        atomref (Tensor): tensor of linear atomic reference values
         device (str): device
 
     Returns:
@@ -134,11 +137,11 @@ def build_normalizer(
             values = np.load(file)
             mean = values.get("mean")
             std = values.get("std")
-            atomref = values.get("atomref")
-        else:
-            normalizer = Normalizer.load_state_dict(state_dict)
-            normalizer.to(device)
-            return normalizer
+
+    if state_dict is not None:
+        normalizer = Normalizer().load_state_dict(state_dict)
+        normalizer.to(device)
+        return normalizer
 
     # if not then read targent value tensor
     if tensor is not None and mean is not None and std is not None:
@@ -155,7 +158,6 @@ def build_normalizer(
             "a file path to a .pt or .npz file, or mean and std values, or a tensor of target values",
         )
 
-    if atomref is not None:
-        atomref = LinearReference(atomref)
-
-    return Normalizer(mean=mean, std=std, atomref=atomref, device=device)
+    normalizer = Normalizer(mean=mean, std=std)
+    normalizer.to(device)
+    return normalizer
