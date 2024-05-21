@@ -11,15 +11,15 @@ model:
   use_pbc: True
   otf_graph: True
   avg_atoms: 60
-  max_neighbors: 50
-  max_radius: 5.
+  max_neighbors: 30
+  max_radius: 12.
   dropout: 0.
   num_gaussians: 50
   output_layers: 4
 
 optim:
-  batch_size: 12
-  eval_batch_size: 12
+  batch_size: 8
+  eval_batch_size: 8
   load_balancing: atoms
   num_workers: 16
   lr_initial: 0.0004

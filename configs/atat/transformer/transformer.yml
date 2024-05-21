@@ -10,7 +10,7 @@ model:
   dropout: 0.
   heads: 8
   otf_graph: True
-  rbf_radius: 5.
+  rbf_radius: 12.
   num_gaussians: 50
   output_layers: 4
   avg_atoms: 60

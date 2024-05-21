@@ -10,8 +10,8 @@ model:
   num_layers: 12
   use_pbc: True
   otf_graph: True
-  max_neighbors: 50
-  max_radius: 5.
+  max_neighbors: 30
+  max_radius: 12.
   dropout: 0.
   lap_node_id_dim: 64
   num_gaussians: 50
