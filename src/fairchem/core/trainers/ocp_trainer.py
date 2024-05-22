@@ -239,7 +239,9 @@ class OCPTrainer(BaseTrainer):
             if self.normalizers.get(target_name, False):
                 out[target_name] = self.normalizers[target_name](out[target_name])
             if self.elementrefs.get(target_name, False):
-                out[target_name] += self.elementrefs[target_name](batch)
+                out[target_name] = self.elementrefs[target_name](
+                    out[target_name], batch
+                )
 
         ### TODO: Move into BaseModel in OCP 2.0
         outputs = {}

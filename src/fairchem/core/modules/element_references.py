@@ -51,13 +51,13 @@ class LinearReference(nn.Module):
         return composition_matrix
 
     @torch.autocast(device_type="cuda", enabled=False)
-    def forward(self, batch: Batch) -> torch.Tensor:
-        offset = torch.zeros(len(batch), dtype=self.lin_ref.dtype).index_add(
+    def forward(self, target: torch.Tensor, batch: Batch) -> torch.Tensor:
+        target = target.to(self.elementref.dtype).index_add(
             0,
             batch.batch,
-            self.lin_ref[batch.atomic_numbers.int()],
+            self.elementref[batch.atomic_numbers.int()],
         )
-        return offset
+        return target
 
 
 def create_element_references(
@@ -101,4 +101,5 @@ def create_element_references(
     else:
         raise ValueError(f"Invalid element references type={type}.")
 
+    references.to(device)
     return references

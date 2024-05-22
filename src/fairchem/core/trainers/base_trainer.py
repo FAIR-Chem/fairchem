@@ -371,6 +371,7 @@ class BaseTrainer(ABC):
                     file=normalizer[target].get("file"),
                     mean=normalizer[target].get("mean"),
                     std=normalizer[target].get("stdev"),
+                    device=self.device,
                 )
 
         # element references for dataset
@@ -383,6 +384,7 @@ class BaseTrainer(ABC):
                 self.elementrefs[target] = create_element_references(
                     type=elementrefs[target].get("type", "linear"),
                     file=elementrefs[target].get("file"),
+                    device=self.device,
                 )
 
         self.output_targets = {}
