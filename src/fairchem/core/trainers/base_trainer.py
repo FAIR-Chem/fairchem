@@ -631,22 +631,18 @@ class BaseTrainer(ABC):
         training_state: bool = True,
     ) -> str | None:
         if not self.is_debug and distutils.is_master():
-            state = (
-                {
-                    "state_dict": self.model.state_dict(),
-                    "normalizers": {
-                        key: value.state_dict()
-                        for key, value in self.normalizers.items()
-                    },
-                    "elementrefs": {
-                        key: value.state_dict()
-                        for key, value in self.elementrefs.items()
-                    },
-                    "config": self.config,
-                    "val_metrics": metrics,
-                    "amp": self.scaler.state_dict() if self.scaler else None,
+            state = {
+                "state_dict": self.model.state_dict(),
+                "normalizers": {
+                    key: value.state_dict() for key, value in self.normalizers.items()
                 },
-            )
+                "elementrefs": {
+                    key: value.state_dict() for key, value in self.elementrefs.items()
+                },
+                "config": self.config,
+                "val_metrics": metrics,
+                "amp": self.scaler.state_dict() if self.scaler else None,
+            }
             if training_state:
                 state.update(
                     {
