@@ -1,12 +1,22 @@
+"""
+Copyright (c) Meta, Inc. and its affiliates.
+
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.
+"""
+
 from __future__ import annotations
 
-from typing import Literal
-from pathlib import Path
-import numpy as np
+from typing import TYPE_CHECKING, Literal
 
+import numpy as np
 import torch
 from torch import nn
-from torch_geometric.data import Batch
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from torch_geometric.data import Batch
 
 
 class LinearReference(nn.Module):
@@ -52,12 +62,11 @@ class LinearReference(nn.Module):
 
     @torch.autocast(device_type="cuda", enabled=False)
     def forward(self, target: torch.Tensor, batch: Batch) -> torch.Tensor:
-        target = target.to(self.elementref.dtype).index_add(
+        return target.to(self.elementref.dtype).index_add(
             0,
             batch.batch,
             self.elementref[batch.atomic_numbers.int()],
         )
-        return target
 
 
 def create_element_references(

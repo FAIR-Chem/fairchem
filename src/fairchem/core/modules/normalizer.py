@@ -7,13 +7,15 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from typing import Mapping, Any
-from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-
 import torch
 from torch import nn
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+    from pathlib import Path
 
 
 class Normalizer(nn.Module):
