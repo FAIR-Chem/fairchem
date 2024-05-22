@@ -35,6 +35,10 @@ from IPython.display import Image
 
 # Optional
 # from x3dase.x3d import X3D
+
+# Set random seed
+import numpy as np
+np.random.seed(22)
 ```
 
 ## Do enumerations in an AdsorbML style for CH dissociation on Ru (001)
