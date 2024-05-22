@@ -364,23 +364,6 @@ class BaseTrainer(ABC):
                     self.relax_sampler,
                 )
 
-        # # load relaxation dataset
-        # if "relax_dataset" in self.config["task"]:
-        #     self.relax_dataset = registry.get_dataset_class("lmdb")(
-        #         self.config["task"]["relax_dataset"]
-        #     )
-        #     self.relax_sampler = self.get_sampler(
-        #         self.relax_dataset,
-        #         self.config["optim"].get(
-        #             "eval_batch_size", self.config["optim"]["batch_size"]
-        #         ),
-        #         shuffle=False,
-        #     )
-        #     self.relax_loader = self.get_dataloader(
-        #         self.relax_dataset,
-        #         self.relax_sampler,
-        #     )
-
     def load_task(self):
         # Normalizer for the dataset.
         normalizer = self.config["dataset"].get("transforms", {}).get("normalizer", {})
