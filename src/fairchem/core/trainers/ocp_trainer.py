@@ -234,10 +234,12 @@ class OCPTrainer(BaseTrainer):
     def _forward(self, batch):
         out = self.model(batch.to(self.device))
 
-        # The normalizer wil denorm normed model outputs and add atom reference if set
+        # The normalizer will denorm (normed) model outputs and add atom reference if set
         for target_name in self.output_targets:
             if self.normalizers.get(target_name, False):
                 out[target_name] = self.normalizers[target_name](out[target_name])
+            if self.elementrefs.get(target_name, False):
+                out[target_name] += self.elementrefs[target_name](batch)
 
         ### TODO: Move into BaseModel in OCP 2.0
         outputs = {}

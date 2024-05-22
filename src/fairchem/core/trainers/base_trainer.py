@@ -41,7 +41,8 @@ from fairchem.core.common.utils import (
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
-from fairchem.core.modules.normalizer import build_normalizer
+from fairchem.core.modules.normalizer import create_normalizer
+from fairchem.core.modules.element_references import create_element_references
 from fairchem.core.modules.scaling.compat import load_scales_compat
 from fairchem.core.modules.scaling.util import ensure_fitted
 from fairchem.core.modules.scheduler import LRScheduler
@@ -364,12 +365,24 @@ class BaseTrainer(ABC):
         # Normalizer for the dataset.
         normalizer = self.config["dataset"].get("transforms", {}).get("normalizer", {})
         self.normalizers = {}
-        if normalizer:
+        if normalizer is not None:
             for target in normalizer:
-                self.normalizers[target] = build_normalizer(
+                self.normalizers[target] = create_normalizer(
                     file=normalizer[target].get("file"),
                     mean=normalizer[target].get("mean"),
                     std=normalizer[target].get("stdev"),
+                )
+
+        # element references for dataset
+        elementrefs = (
+            self.config["dataset"].get("transforms", {}).get("element_references", {})
+        )
+        self.elementrefs = {}
+        if elementrefs is not None:
+            for target in elementrefs:
+                self.elementrefs[target] = create_element_references(
+                    type=elementrefs[target].get("type", "linear"),
+                    file=elementrefs[target].get("file"),
                 )
 
         self.output_targets = {}
@@ -616,30 +629,41 @@ class BaseTrainer(ABC):
         training_state: bool = True,
     ) -> str | None:
         if not self.is_debug and distutils.is_master():
+            state = (
+                {
+                    "state_dict": self.model.state_dict(),
+                    "normalizers": {
+                        key: value.state_dict()
+                        for key, value in self.normalizers.items()
+                    },
+                    "elementrefs": {
+                        key: value.state_dict()
+                        for key, value in self.elementrefs.items()
+                    },
+                    "config": self.config,
+                    "val_metrics": metrics,
+                    "amp": self.scaler.state_dict() if self.scaler else None,
+                },
+            )
             if training_state:
-                return save_checkpoint(
+                state.update(
                     {
                         "epoch": self.epoch,
                         "step": self.step,
-                        "state_dict": self.model.state_dict(),
                         "optimizer": self.optimizer.state_dict(),
                         "scheduler": self.scheduler.scheduler.state_dict()
                         if self.scheduler.scheduler_type != "Null"
                         else None,
-                        "normalizers": {
-                            key: value.state_dict()
-                            for key, value in self.normalizers.items()
-                        },
-                        "config": self.config,
-                        "val_metrics": metrics,
                         "ema": self.ema.state_dict() if self.ema else None,
-                        "amp": self.scaler.state_dict() if self.scaler else None,
                         "best_val_metric": self.best_val_metric,
                         "primary_metric": self.evaluation_metrics.get(
                             "primary_metric",
                             self.evaluator.task_primary_metric[self.name],
                         ),
                     },
+                )
+                ckpt_path = save_checkpoint(
+                    state,
                     checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
                 )
@@ -648,22 +672,13 @@ class BaseTrainer(ABC):
                     self.ema.store()
                     self.ema.copy_to()
                 ckpt_path = save_checkpoint(
-                    {
-                        "state_dict": self.model.state_dict(),
-                        "normalizers": {
-                            key: value.state_dict()
-                            for key, value in self.normalizers.items()
-                        },
-                        "config": self.config,
-                        "val_metrics": metrics,
-                        "amp": self.scaler.state_dict() if self.scaler else None,
-                    },
+                    state,
                     checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
                 )
                 if self.ema:
                     self.ema.restore()
-                return ckpt_path
+            return ckpt_path
         return None
 
     def update_best(
