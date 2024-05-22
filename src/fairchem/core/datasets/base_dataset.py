@@ -194,7 +194,7 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
         max_index = len(dataset)
         indices = indices if no_shuffle else indices[randperm(len(indices))]
 
-    if max_index >= len(indices):
+    if max_index > len(indices):
         msg = (
             f"Cannot take {max_index} data points from a dataset of only length {len(indices)}.\n"
             f"Make sure to set first_n or sample_n to a number =< the total samples in dataset."
