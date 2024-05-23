@@ -60,12 +60,27 @@ class LinearReference(nn.Module):
 
         return composition_matrix
 
-    @torch.autocast(device_type="cuda", enabled=False)
-    def forward(self, target: torch.Tensor, batch: Batch) -> torch.Tensor:
-        return target.to(self.elementref.dtype).index_add(
+    def dereference(self, target: torch.Tensor, batch: Batch) -> torch.Tensor:
+        # reshape to match the reshaped properties in ocp_trainer.forward.
+        elemrefs = -1 * self.elementref[batch.atomic_numbers.int()].view(
+            batch.natoms.sum(), -1
+        )
+        return target.index_add(
             0,
             batch.batch,
-            self.elementref[batch.atomic_numbers.int()],
+            elemrefs.to(target.dtype),
+        )
+
+    @torch.autocast(device_type="cuda", enabled=False)
+    def forward(self, target: torch.Tensor, batch: Batch) -> torch.Tensor:
+        # reshape to match the reshaped properties in ocp_trainer.forward.
+        elemrefs = self.elementref[
+            batch.atomic_numbers.int()
+        ]  # .view(batch.natoms.sum(), -1)
+        return target.index_add(
+            0,
+            batch.batch,
+            elemrefs.to(target.dtype),
         )
 
 
