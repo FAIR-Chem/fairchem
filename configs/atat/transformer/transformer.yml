@@ -5,15 +5,22 @@ model:
   name: transformer
   num_elements: 100
   embed_dim: 128
-  ff_dim: 128
-  num_layers: 12
+  hidden_dim: 128
   dropout: 0.
-  heads: 8
+  num_layers: 12
+  num_heads: 8
   otf_graph: True
-  rbf_radius: 12.
-  num_gaussians: 50
-  output_layers: 4
+  rbf_radius: 15.0
+  num_gaussians: 64
+  trainable_rbf: True
+  num_pair_embed_layers: 4
+  pair_embed_style: fixed_shared
+  gate_pair_embed: True
+  output_layers: 3
+  gate_output: True
   avg_atoms: 60
+  use_pos: True
+  pos_scale: 6
 
 optim:
   batch_size: 64

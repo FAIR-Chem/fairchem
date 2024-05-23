@@ -14,7 +14,7 @@ class ResMLP(nn.Module):
         assert num_layers >= 2
 
         self.dropout = nn.Dropout(dropout)
-        self.activation = nn.GELU()
+        self.activation = nn.SiLU()
 
         self.linears = nn.ModuleList([
             nn.Linear(hidden_dim, hidden_dim) 

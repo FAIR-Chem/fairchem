@@ -1,25 +1,30 @@
 includes:
-  - configs/atat/base.yml
+  - configs/atat/transformer_ablation/base.yml
 
 model:
-  name: TokenGNN
+  name: transformer
   num_elements: 100
   embed_dim: 128
-  ff_dim: 128
-  num_heads: 8
-  num_layers: 12
-  use_pbc: True
-  otf_graph: True
-  avg_atoms: 60
-  max_neighbors: 30
-  max_radius: 12.
+  hidden_dim: 128
   dropout: 0.
-  num_gaussians: 50
+  num_layers: 12
+  num_heads: 8
+  otf_graph: True
+  rbf_radius: 15.
+  num_gaussians: 64
+  trainable_rbf: True
+  num_pair_embed_layers: 3
+  pair_embed_style: update
+  gate_pair_embed: False
   output_layers: 4
+  gate_output: True
+  avg_atoms: 60
+  use_pos: True
+  pos_scale: 6
 
 optim:
-  batch_size: 6
-  eval_batch_size: 6
+  batch_size: 64
+  eval_batch_size: 64
   load_balancing: atoms
   num_workers: 16
   lr_initial: 0.0004
@@ -29,9 +34,9 @@ optim:
     weight_decay: 0.001
   scheduler: ReduceLROnPlateau
   mode: min
-  factor: 0.8
-  patience: 5
-  max_epochs: 1000
+  factor: 0.9
+  patience: 10
+  max_epochs: 100
   force_coefficient: 10
   energy_coefficient: 1
   ema_decay: 0.999
