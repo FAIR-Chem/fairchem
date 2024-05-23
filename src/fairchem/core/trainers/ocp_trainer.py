@@ -234,16 +234,6 @@ class OCPTrainer(BaseTrainer):
     def _forward(self, batch):
         out = self.model(batch.to(self.device))
 
-        # The normalizer will denorm (normed) model outputs and add atom reference if set
-        for target_name in self.output_targets:
-            if self.normalizers.get(target_name, False):
-                out[target_name] = self.normalizers[target_name](out[target_name])
-            if self.elementrefs.get(target_name, False):
-                out[target_name] = self.elementrefs[target_name](
-                    out[target_name], batch
-                )
-
-        ### TODO: Move into BaseModel in OCP 2.0
         outputs = {}
         batch_size = batch.natoms.numel()
         num_atoms_in_batch = batch.natoms.sum()
@@ -269,6 +259,10 @@ class OCPTrainer(BaseTrainer):
                     irreps = self.output_targets[subtarget_key]["irrep_dim"]
                     _pred = out[subtarget_key]
 
+                    # denorm internal subtargets
+                    if self.normalizers.get(subtarget_key, False):
+                        _pred = self.normalizers[subtarget_key](_pred)
+
                     ## Fill in the corresponding irreps prediction
                     ## Reshape irrep prediction to (batch_size, irrep_dim)
                     pred_irreps[
@@ -281,6 +275,14 @@ class OCPTrainer(BaseTrainer):
                     cg_change_mat(_max_rank, self.device),
                     pred_irreps,
                 )
+
+            # denorm the outputs
+            if self.normalizers.get(target_key, False):
+                pred = self.normalizers[target_key](pred)
+
+            # add element references
+            if self.elementrefs.get(target_key, False):
+                pred = self.elementrefs[target_key](pred, batch)
 
             ### not all models are consistent with the output shape
             ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
@@ -323,6 +325,16 @@ class OCPTrainer(BaseTrainer):
                 target = target.view(num_atoms_in_batch, -1)
             else:
                 target = target.view(batch_size, -1)
+
+            # subtract element references
+            if self.elementrefs.get(target_name, False):
+                target = self.elementrefs[target_name].dereference(target, batch)
+                pred = self.elementrefs[target_name].dereference(pred, batch)
+
+            # norm the targets and outputs
+            if self.normalizers.get(target_name, False):
+                target = self.normalizers[target_name].norm(target)
+                pred = self.normalizers[target_name].norm(pred)
 
             mult = loss_info["coefficient"]
             loss.append(
@@ -375,6 +387,10 @@ class OCPTrainer(BaseTrainer):
                 out[target_name] = out[target_name][mask]
                 num_atoms_in_batch = natoms.sum()
 
+            # subtract element references
+            # if self.elementrefs.get(target_name, False):
+            #     target = self.elementrefs[target_name].remove_references(target, batch)
+
             ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
             if self.output_targets[target_name]["level"] == "atom":
                 target = target.view(num_atoms_in_batch, -1)
@@ -382,6 +398,10 @@ class OCPTrainer(BaseTrainer):
                 target = target.view(batch_size, -1)
 
             targets[target_name] = target
+
+            # denorm the output targets for eval
+            # if self.normalizers.get(target_name, False):
+            #     out[target_name] = self.normalizers[target_name](out[target_name])
 
         targets["natoms"] = natoms
         out["natoms"] = natoms
