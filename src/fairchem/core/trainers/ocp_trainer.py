@@ -276,6 +276,13 @@ class OCPTrainer(BaseTrainer):
                     pred_irreps,
                 )
 
+            ### not all models are consistent with the output shape
+            ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
+            if self.output_targets[target_key]["level"] == "atom":
+                pred = pred.view(num_atoms_in_batch, -1)
+            else:
+                pred = pred.view(batch_size, -1)
+
             # denorm the outputs
             if self.normalizers.get(target_key, False):
                 pred = self.normalizers[target_key](pred)
@@ -283,13 +290,6 @@ class OCPTrainer(BaseTrainer):
             # add element references
             if self.elementrefs.get(target_key, False):
                 pred = self.elementrefs[target_key](pred, batch)
-
-            ### not all models are consistent with the output shape
-            ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
-            if self.output_targets[target_key]["level"] == "atom":
-                pred = pred.view(num_atoms_in_batch, -1)
-            else:
-                pred = pred.view(batch_size, -1)
 
             outputs[target_key] = pred
 
@@ -326,6 +326,8 @@ class OCPTrainer(BaseTrainer):
             else:
                 target = target.view(batch_size, -1)
 
+            # to keep the loss coefficient weights balanced we remove linear references
+            # and normalize outputs
             # subtract element references
             if self.elementrefs.get(target_name, False):
                 target = self.elementrefs[target_name].dereference(target, batch)
@@ -387,10 +389,6 @@ class OCPTrainer(BaseTrainer):
                 out[target_name] = out[target_name][mask]
                 num_atoms_in_batch = natoms.sum()
 
-            # subtract element references
-            # if self.elementrefs.get(target_name, False):
-            #     target = self.elementrefs[target_name].remove_references(target, batch)
-
             ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
             if self.output_targets[target_name]["level"] == "atom":
                 target = target.view(num_atoms_in_batch, -1)
@@ -398,10 +396,6 @@ class OCPTrainer(BaseTrainer):
                 target = target.view(batch_size, -1)
 
             targets[target_name] = target
-
-            # denorm the output targets for eval
-            # if self.normalizers.get(target_name, False):
-            #     out[target_name] = self.normalizers[target_name](out[target_name])
 
         targets["natoms"] = natoms
         out["natoms"] = natoms
