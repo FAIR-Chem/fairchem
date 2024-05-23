@@ -259,6 +259,7 @@ class BaseTrainer(ABC):
             mode=balancing_mode,
             shuffle=shuffle,
             force_balancing=force_balancing,
+            seed=self.config["cmd"]["seed"],
         )
 
     def get_dataloader(self, dataset, sampler) -> DataLoader:
