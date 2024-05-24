@@ -175,16 +175,21 @@ def fit_linear_references(
         for target in targets:
             target_vectors[target][
                 i * batch_size : i * batch_size + next_batch_size
-            ] = batch[target]
+            ] = batch[target].to(torch.float64)
         for j, data in enumerate(batch.to_data_list()):
             composition_matrix[i * batch_size + j] = torch.bincount(
-                data.atomic_numbers.int(), minlength=max_num_elements
-            )
+                data.atomic_numbers.int(),
+                minlength=max_num_elements,
+            ).to(torch.float64)
 
+    # reduce the composition matrix to only features that are non-zero to improve rank
+    mask = composition_matrix.sum(axis=0) != 0.0
+    reduced_composition_matrix = composition_matrix[:, mask]
     elementrefs = {}
     for target in targets:
-        coeffs = torch.linalg.lstsq(composition_matrix, target_vectors[target]).solution
+        coeffs = torch.zeros(max_num_elements)
+        lstsq = torch.linalg.lstsq(reduced_composition_matrix, target_vectors[target])
+        coeffs[mask] = lstsq.solution
         elementrefs[target] = LinearReference(coeffs)
-        elementrefs[target]
 
     return elementrefs
