@@ -8,14 +8,19 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
+import logging
+from functools import partial
 
+from tqdm import tqdm
 import numpy as np
 import torch
 from torch import nn
+from torch.utils.data import Dataset, DataLoader
+
+from fairchem.core.datasets import data_list_collater
 
 if TYPE_CHECKING:
     from pathlib import Path
-
     from torch_geometric.data import Batch
 
 
@@ -40,39 +45,21 @@ class LinearReference(nn.Module):
             else torch.zeros(max_num_elements),
         )
 
-    def get_composition_matrix(self, batch: Batch) -> torch.Tensor:
-        """Returns a composition matrix with the number of each element in its atomic number
-
-        Args:
-            batch (Batch): a batch of data object with atomic graphs
-
-        Returns:
-            torch.Tensor
-        """
-        data_list = batch.to_data_list()
-        composition_matrix = torch.zeros(
-            len(data_list), len(self.linref), dtype=torch.int
-        )
-        for i, data in enumerate(data_list):
-            composition_matrix[i] = torch.bincount(
-                data.atomic_numbers.int(), minlength=len(self.linref)
-            )
-
-        return composition_matrix
-
     def _apply_refs(
         self, target: torch.Tensor, batch: Batch, sign: int
     ) -> torch.Tensor:
         """Apply references batch-wise"""
-        elemrefs = sign * self.elementref[batch.atomic_numbers.int()].view(
-            batch.natoms.sum(), -1
+        indices = batch.atomic_numbers.to(
+            dtype=torch.int, device=batch.atomic_numbers.device
         )
+        elemrefs = sign * self.elementref[indices].view(batch.natoms.sum(), -1)
         return target.index_add(
             0,
             batch.batch,
             elemrefs.to(target.dtype),
         )
 
+    @torch.autocast(device_type="cuda", enabled=False)
     def dereference(self, target: torch.Tensor, batch: Batch) -> torch.Tensor:
         """Remove linear references"""
         return self._apply_refs(target, batch, -1)
@@ -94,6 +81,7 @@ def create_element_references(
     Currently only linear references are supported.
 
     Args:
+        type (str): type of reference (only linear implemented)
         file (str or Path): path to pt or npz file
         state_dict (dict): a state dict of a element reference module
         device (str): device to move element ref into
@@ -126,3 +114,73 @@ def create_element_references(
 
     references.to(device)
     return references
+
+
+def fit_linear_references(
+    targets: list[str],
+    dataset: Dataset,
+    batch_size: int,
+    num_batches: int | None = None,
+    num_workers: int = 1,
+    max_num_elements: int = 118,
+    device: str = "cpu",
+) -> dict[str, LinearReference]:
+    """Fit a set linear references for a list of targets using a given number of batches.
+
+    Args:
+        targets: list of target names
+        dataset: data set to fit linear references with
+        batch_size: size of batch
+        num_batches: number of batches to use in fit. If not given will use all batches
+        num_workers: number of workers to use in data loader
+        max_num_elements: max number of elements in dataset. If not given will use an ambitious value of 118
+        device (str): device to move element ref into
+
+    Returns:
+        dict of fitted LinearReference objects
+    """
+    data_loader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        collate_fn=partial(data_list_collater, otf_graph=True),
+        num_workers=num_workers,
+        pin_memory=True,
+    )
+
+    num_batches = num_batches if num_batches is not None else len(data_loader)
+    composition_matrix = torch.zeros(
+        num_batches * batch_size,
+        max_num_elements,  # dtype=torch.int
+    )
+
+    target_vectors = {
+        target: torch.zeros(num_batches * batch_size) for target in targets
+    }
+
+    logging.info(f"Fitting linear references using {num_batches} batches.")
+    for i, batch in tqdm(
+        enumerate(data_loader), total=num_batches, desc="Loading fitting data"
+    ):
+        if i == num_batches:
+            break
+
+        next_batch_size = (
+            batch.energy.shape[0] if i == len(data_loader) - 1 else batch_size
+        )
+        for target in targets:
+            target_vectors[target][
+                i * batch_size : i * batch_size + next_batch_size
+            ] = batch[target]
+        for j, data in enumerate(batch.to_data_list()):
+            composition_matrix[i * batch_size + j] = torch.bincount(
+                data.atomic_numbers.int(), minlength=max_num_elements
+            )
+
+    elementrefs = {}
+    for target in targets:
+        coeffs = torch.linalg.lstsq(composition_matrix, target_vectors[target]).solution
+        elementrefs[target] = LinearReference(coeffs)
+        elementrefs[target].to(device)
+
+    return elementrefs

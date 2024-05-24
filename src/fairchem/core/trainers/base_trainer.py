@@ -38,7 +38,10 @@ from fairchem.core.common.utils import (
     save_checkpoint,
     update_config,
 )
-from fairchem.core.modules.element_references import create_element_references
+from fairchem.core.modules.element_references import (
+    create_element_references,
+    fit_linear_references,
+)
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
@@ -362,6 +365,42 @@ class BaseTrainer(ABC):
     def load_task(self):
         # TODO load_datasets is already complete when this is done, so we can fit normalizers and linear references
         # TODO or call a function that does so here
+        # element references for dataset
+        elementrefs = (
+            self.config["dataset"].get("transforms", {}).get("element_references", {})
+        )
+        self.elementrefs = {}
+        if elementrefs is not None:
+            for target in elementrefs:
+                if target == "otf_fit":
+                    otf_elementrefs = [
+                        {target: None for target in elementrefs["otf_fit"]["targets"]}
+                    ]
+                    if (
+                        distutils.is_master()
+                    ):  # only carry out the fit on master and then broadcast
+                        otf_elementrefs = [
+                            fit_linear_references(
+                                targets=elementrefs["otf_fit"]["targets"],
+                                dataset=self.train_dataset,
+                                batch_size=self.config["optim"]["batch_size"],
+                                num_batches=elementrefs["otf_fit"].get("num_batches"),
+                                num_workers=self.config["optim"]["num_workers"],
+                                max_num_elements=elementrefs["otf_fit"].get(
+                                    "max_num_elements", 118
+                                ),
+                                device=self.device,
+                            )
+                        ]
+                    distutils.broadcast_object_list(otf_elementrefs, src=0)
+                    self.elementrefs.update(otf_elementrefs[0])
+                else:
+                    self.elementrefs[target] = create_element_references(
+                        type=elementrefs[target].get("type", "linear"),
+                        file=elementrefs[target].get("file"),
+                        device=self.device,
+                    )
+
         # Normalizer for the dataset.
         normalizer = self.config["dataset"].get("transforms", {}).get("normalizer", {})
         self.normalizers = {}
@@ -371,19 +410,6 @@ class BaseTrainer(ABC):
                     file=normalizer[target].get("file"),
                     mean=normalizer[target].get("mean"),
                     std=normalizer[target].get("stdev"),
-                    device=self.device,
-                )
-
-        # element references for dataset
-        elementrefs = (
-            self.config["dataset"].get("transforms", {}).get("element_references", {})
-        )
-        self.elementrefs = {}
-        if elementrefs is not None:
-            for target in elementrefs:
-                self.elementrefs[target] = create_element_references(
-                    type=elementrefs[target].get("type", "linear"),
-                    file=elementrefs[target].get("file"),
                     device=self.device,
                 )
 

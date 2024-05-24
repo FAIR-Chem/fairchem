@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
-from typing import TypeVar
+from typing import TypeVar, Any
 
 import torch
 import torch.distributed as dist
@@ -138,6 +138,14 @@ def broadcast(
     if get_world_size() == 1:
         return
     dist.broadcast(tensor, src, group, async_op)
+
+
+def broadcast_object_list(
+    object_list: list[Any], src: int, group=dist.group.WORLD, device: str | None = None
+) -> None:
+    if get_world_size() == 1:
+        return
+    dist.broadcast_object_list(object_list, src, group, device)
 
 
 def all_reduce(
