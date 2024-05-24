@@ -1,0 +1,27 @@
+For Open-Metal Site information, refer to CoRE 2019 Database (https://zenodo.org/records/3370144).
+
+We use Jmol (https://jmol.sourceforge.net/) to identify the parallel benzene rings, metal-oxygen-metal bridges and uncoordinated nitrogen atoms which are expressed in SMARTS.
+1. parallel benzene rings
+We are considering benzene rings and 6-membered aromatic heterocyclic compounds. We observed that Jmol failed to identify aromatic bonds for a handful of cases, and we use a combination of SMARTS expressions to represent aromatic rings.
+Three criterias have to be satisfied: 1. 2 rings are parallel; 2. the distance one atom from the first ring to the center of the other ring is between 4.5 and 9.5 Angstrom; 3. The distance between the planes where the rings are in are between 5.5 and 8.5 Angstrom
+2. metal-oxygen-metal bridges: [$(select {metal})]~[$(select oxygen)]~[$(select {metal})]
+3. uncoordinated nitrogen atoms: [$([#7X2r5])]
+
+We recommend using the jmolData.jar for high-throughput calculations. jmol.jar, which takes more time to run, is good for visualization and debug.
+Steps:
+1. Change the content of 'list_MOF.txt' to the paths of the MOFs 
+2. Use 'java  -jar JmolData.jar -on  -s features.txt' to run the script
+3. The output will be saved in the 'output.txt' in the same directory by default, and it can be modified at the last line of the code.
+	'output.txt' has 10 columns:
+		1. ID is the index in 'list_MOF.txt'.
+		2. Material is the name of the MOF (.cif stripped from the lines in 'list_MOF.txt').
+		3. CF is the chemical formula.
+		4. M_O_M is whether the MOF has metal-oxigen-metal bridges (0=No, 1=Yes).
+		5. Benzene is whether the MOF has benzene rings or heterocyclic 6-membered rings.
+		6. Parellel is whether the MOF has parallel rings. 
+		7. Parellel68 is whether the distance between the planes where the rings are in is between 5.5 and 8.5 Angstrom.
+		8. DistanceParallel68 is the distance of the planes between 5.5 and 8.5 Angstrom.
+		9. DistanceParallel68Direct is the distance one atom from the first ring to the center of the other ring between 4.5 and 9.5 Angstrom.
+		10. uncoordN is whether the MOF has uncoordinated N atoms.
+
+In this repo, we provided the cif files of the example MOFs in Figure 3 and their outputs. 

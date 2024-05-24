@@ -1,0 +1,18 @@
+changelog:
+  exclude:
+    authors: [github-actions]  # add dependabot if we use it
+  categories:
+    - title: New Features
+      labels: [enhancement]
+    - title: Bug Fixes
+      labels: [bug]
+    - title: 🛠 Enhancements
+      labels: [enhancement]
+    - title: Documentation
+      labels: [documentation]
+    - title: Tests
+      labels: [test]
+    - title: Deprecations
+      labels: [deprecation]
+    - title: Other Changes
+      labels: ["*"]

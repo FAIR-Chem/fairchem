@@ -88,6 +88,8 @@ task:
   num_relaxation_batches: 5
   # Max no. of steps to run relaxations for.
   relaxation_steps: 300
+  # Structure relaxation is terminated when this max force is achieved.
+  relaxation_fmax: 0.02
   # Whether to save out the positions.
   write_pos: True                                                               # True or False
   # Path to initial structures to run relaxations on. Same as the IS2RE set.
@@ -99,10 +101,10 @@ task:
     shard: 0                                                                    # int (optional)
   relax_opt:
     name: lbfgs
-    maxstep: 0.04
+    maxstep: 0.2
     memory: 50
-    damping: 1.0
-    alpha: 70.0
+    damping: 1.2
+    alpha: 80.0
     # Directory to save out trajectories (.traj files) in.
     traj_dir: path/to/traj/directory
   # Whether to save out the full trajectory or just the initial+final frames
@@ -112,7 +114,7 @@ task:
   # since this can be significantly slower.
   set_deterministic_scatter: False                                              # True or False
 
-logger: tensorboard                                                             # 'wandb' or 'tensorboard'
+logger: wandb                                                             # 'wandb' or 'tensorboard'
 
 loss_functions:
 # Specify the different terms in the loss function. For each term, the target property must

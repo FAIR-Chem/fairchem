@@ -1,0 +1,60 @@
+name: build
+
+on: [workflow_dispatch, workflow_call]
+
+jobs:
+
+  build-sdist:
+    name: Build sdist
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Optional, use if you use setuptools_scm
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install hatch
+
+      - name: Build
+        run: |
+          # add packages that are supposed to be built to this list
+          for package in fairchem-core fairchem-data-oc fairchem-demo-ocpapi fairchem-applications-cattsunami
+          do
+            pushd packages/$package
+            hatch build
+            popd
+          done
+
+      # unfortunately there isn't a clean way to upload artifacts separately so just copy
+      # for each new package right now
+      - name: Upload core artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-core
+          path: dist-core/*
+
+      - name: Upload data-oc artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-data-oc
+          path: dist-data-oc/*
+
+      - name: Upload demo-ocpapi artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-demo-ocpapi
+          path: dist-demo-ocpapi/*
+
+      - name: Upload applications-cattsunami artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-applications-cattsunami
+          path: dist-applications-cattsunami/*

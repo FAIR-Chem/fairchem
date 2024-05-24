@@ -1,0 +1,31 @@
+name: lint
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 6
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f packages/requirements.txt ]; then pip install -r packages/requirements.txt; fi
+          if [ -f packages/requirements-optional.txt ]; then pip install -r packages/requirements-optional.txt; fi
+          pip install -e  packages/fairchem-core[dev]
+      - name: ruff
+        run: |
+          ruff --version
+          ruff check --statistics --config packages/fairchem-core/pyproject.toml src/fairchem/core/
+          ruff check --statistics --config packages/fairchem-data-oc/pyproject.toml src/fairchem/data/oc/
+          #ruff check --statistics --config packages/fairchem-data-om/pyproject.toml src/fairchem/data/om/
+          #ruff check --statistics --config packages/fairchem-demo-ocpapi/pyproject.toml src/fairchem/demo/ocpapi/

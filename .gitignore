@@ -1,5 +1,5 @@
 wandb
-data
+/data
 checkpoints
 results
 logs
@@ -111,3 +111,18 @@ Local
 
 # VS Code
 .vscode/
+
+docs/_autosummary/
+env.yml
+
+docs/legacy_tutorials/videos/
+
+# No ASE dbs, or OCP LMDBs!
+/*.pt
+*.lmdb
+*.lmdb-lock
+out.txt
+config.yml
+
+docs/autoapi/
+docs/tutorial/advanced/*.db
