@@ -7,20 +7,21 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
 import logging
 from functools import partial
+from typing import TYPE_CHECKING, Literal
 
-from tqdm import tqdm
 import numpy as np
 import torch
 from torch import nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
 
 from fairchem.core.datasets import data_list_collater
 
 if TYPE_CHECKING:
     from pathlib import Path
+
     from torch_geometric.data import Batch
 
 

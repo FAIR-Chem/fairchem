@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
-from typing import TypeVar, Any
+from typing import Any, TypeVar
 
 import torch
 import torch.distributed as dist
