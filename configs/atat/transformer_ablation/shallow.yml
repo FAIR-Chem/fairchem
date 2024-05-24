@@ -4,18 +4,18 @@ includes:
 model:
   name: transformer
   num_elements: 100
-  embed_dim: 128
-  hidden_dim: 128
+  embed_dim: 256
+  hidden_dim: 256
   dropout: 0.
-  num_layers: 12
+  num_layers: 6
   num_heads: 8
   otf_graph: True
   rbf_radius: 15.
   num_gaussians: 64
-  trainable_rbf: False
-  num_pair_embed_layers: 3
-  pair_embed_style: update
-  gate_pair_embed: False
+  trainable_rbf: True
+  num_pair_embed_layers: 2
+  pair_embed_style: shared
+  gate_pair_embed: True
   output_layers: 4
   gate_output: False
   avg_atoms: 60
@@ -35,8 +35,8 @@ optim:
   scheduler: ReduceLROnPlateau
   mode: min
   factor: 0.9
-  patience: 10
-  max_epochs: 100
+  patience: 100
+  max_epochs: 500
   force_coefficient: 10
   energy_coefficient: 1
   ema_decay: 0.999

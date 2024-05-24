@@ -14,8 +14,8 @@ model:
   num_gaussians: 64
   trainable_rbf: True
   num_pair_embed_layers: 2
-  pair_embed_style: fixed
-  gate_pair_embed: True
+  pair_embed_style: shared
+  gate_pair_embed: False
   output_layers: 4
   gate_output: False
   avg_atoms: 60
@@ -36,7 +36,7 @@ optim:
   mode: min
   factor: 0.9
   patience: 100
-  max_epochs: 1000
+  max_epochs: 500
   force_coefficient: 10
   energy_coefficient: 1
   ema_decay: 0.999

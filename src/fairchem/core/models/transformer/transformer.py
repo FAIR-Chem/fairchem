@@ -45,7 +45,7 @@ class Transformer(BaseModel):
     trainable_rbf: bool
         use trainable RBFs
     pair_embed_style: string
-        can be "update", "fixed", "fixed_shared", or "none", decide the style
+        can be "update", "fixed", "shared", or "none", decide the style
         of edge embedding
     gate_pair_embed: bool
         to gate the mlp with radial basis function or not
@@ -87,7 +87,7 @@ class Transformer(BaseModel):
 
         super().__init__()
 
-        assert pair_embed_style in ["none", "fixed", "fixed_shared", "update"]
+        assert pair_embed_style in ["none", "fixed", "shared", "update"]
 
         self.otf_graph=otf_graph
         self.use_pos = use_pos
@@ -123,7 +123,7 @@ class Transformer(BaseModel):
                     use_gated_mlp=gate_pair_embed
                 ) for _ in range(num_layers)
             ])
-        elif pair_embed_style == "fixed_shared":
+        elif pair_embed_style == "shared":
             self.pair_embeds = PairEmbed(
                     embed_dim=embed_dim,
                     hidden_dim=hidden_dim,
@@ -225,7 +225,7 @@ class Transformer(BaseModel):
         # initialize output
         energy, forces = self.init_output(x, dist, vec_hat, mask)
 
-        if self.pair_embed_style == "fixed_shared":
+        if self.pair_embed_style == "shared":
             attn_masks = self.pair_embeds(x, dist, mask)
 
         # forward passing
@@ -236,7 +236,7 @@ class Transformer(BaseModel):
                 attn_mask = self.pair_embeds[i](x, dist, mask)[0]
             elif self.pair_embed_style == "fixed":
                 attn_mask = self.pair_embeds[i](features, dist, mask)[0]
-            elif self.pair_embed_style == "fixed_shared":
+            elif self.pair_embed_style == "shared":
                 attn_mask = attn_masks[i]
             else:
                 attn_mask = None
