@@ -50,7 +50,7 @@ class LinearReference(nn.Module):
     ) -> torch.Tensor:
         """Apply references batch-wise"""
         indices = batch.atomic_numbers.to(
-            dtype=torch.int, device=batch.atomic_numbers.device
+            dtype=torch.int, device=self.elementref.device
         )
         elemrefs = sign * self.elementref[indices].view(batch.natoms.sum(), -1)
         return target.index_add(
@@ -154,6 +154,7 @@ def fit_linear_references(
         max_num_elements,  # dtype=torch.int
     )
 
+    # This only works with scalar properties
     target_vectors = {
         target: torch.zeros(num_batches * batch_size) for target in targets
     }
