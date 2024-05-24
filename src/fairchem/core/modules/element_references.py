@@ -39,42 +39,45 @@ class LinearReference(nn.Module):
         """
         super().__init__()
         self.register_buffer(
-            name="elementref",
+            name="element_references",
             tensor=element_references
             if element_references is not None
             else torch.zeros(max_num_elements),
         )
 
     def _apply_refs(
-        self, target: torch.Tensor, batch: Batch, sign: int
+        self, target: torch.Tensor, batch: Batch, sign: int, reshaped: bool = True
     ) -> torch.Tensor:
         """Apply references batch-wise"""
         indices = batch.atomic_numbers.to(
-            dtype=torch.int, device=self.elementref.device
+            dtype=torch.int, device=self.element_references.device
         )
-        elemrefs = sign * self.elementref[indices].view(batch.natoms.sum(), -1)
-        return target.index_add(
-            0,
-            batch.batch,
-            elemrefs.to(target.dtype),
-        )
+        elemrefs = sign * self.element_references[indices].to(dtype=target.dtype)
+        # this option should not exist, all tensors should have compatible shapes in dataset and trainer outputs
+        if reshaped:
+            elemrefs = elemrefs.view(batch.natoms.sum(), -1)
+
+        return target.index_add(0, batch.batch, elemrefs)
 
     @torch.autocast(device_type="cuda", enabled=False)
-    def dereference(self, target: torch.Tensor, batch: Batch) -> torch.Tensor:
+    def dereference(
+        self, target: torch.Tensor, batch: Batch, reshaped: bool = True
+    ) -> torch.Tensor:
         """Remove linear references"""
-        return self._apply_refs(target, batch, -1)
+        return self._apply_refs(target, batch, -1, reshaped=reshaped)
 
     @torch.autocast(device_type="cuda", enabled=False)
-    def forward(self, target: torch.Tensor, batch: Batch) -> torch.Tensor:
+    def forward(
+        self, target: torch.Tensor, batch: Batch, reshaped: bool = True
+    ) -> torch.Tensor:
         """Add linear references"""
-        return self._apply_refs(target, batch, 1)
+        return self._apply_refs(target, batch, 1, reshaped=reshaped)
 
 
 def create_element_references(
     type: Literal["linear"] = "linear",
     file: str | Path | None = None,
     state_dict: dict | None = None,
-    device: str = "cpu",
 ) -> LinearReference:
     """Create an element reference module.
 
@@ -84,7 +87,6 @@ def create_element_references(
         type (str): type of reference (only linear implemented)
         file (str or Path): path to pt or npz file
         state_dict (dict): a state dict of a element reference module
-        device (str): device to move element ref into
 
     Returns:
         LinearReference
@@ -101,18 +103,21 @@ def create_element_references(
             state_dict = {}
             # legacy linref files:
             if "coeff" in values:
-                state_dict["elementref"] = torch.tensor(values["coeff"])
+                state_dict["element_references"] = torch.tensor(values["coeff"])
             else:
-                state_dict["elementref"] = torch.tensor(values["elementref"])
+                state_dict["element_references"] = torch.tensor(
+                    values["element_references"]
+                )
 
     if type == "linear":
-        if "elementref" not in state_dict:
+        if "element_references" not in state_dict:
             raise RuntimeError("Unable to load linear element references!")
-        references = LinearReference(element_references=state_dict["elementref"])
+        references = LinearReference(
+            element_references=state_dict["element_references"]
+        )
     else:
         raise ValueError(f"Invalid element references type={type}.")
 
-    references.to(device)
     return references
 
 
@@ -123,7 +128,6 @@ def fit_linear_references(
     num_batches: int | None = None,
     num_workers: int = 1,
     max_num_elements: int = 118,
-    device: str = "cpu",
 ) -> dict[str, LinearReference]:
     """Fit a set linear references for a list of targets using a given number of batches.
 
@@ -134,7 +138,6 @@ def fit_linear_references(
         num_batches: number of batches to use in fit. If not given will use all batches
         num_workers: number of workers to use in data loader
         max_num_elements: max number of elements in dataset. If not given will use an ambitious value of 118
-        device (str): device to move element ref into
 
     Returns:
         dict of fitted LinearReference objects
@@ -161,7 +164,7 @@ def fit_linear_references(
 
     logging.info(f"Fitting linear references using {num_batches} batches.")
     for i, batch in tqdm(
-        enumerate(data_loader), total=num_batches, desc="Loading fitting data"
+        enumerate(data_loader), total=num_batches, desc="Fitting linear references"
     ):
         if i == num_batches:
             break
@@ -182,6 +185,6 @@ def fit_linear_references(
     for target in targets:
         coeffs = torch.linalg.lstsq(composition_matrix, target_vectors[target]).solution
         elementrefs[target] = LinearReference(coeffs)
-        elementrefs[target].to(device)
+        elementrefs[target]
 
     return elementrefs
