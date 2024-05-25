@@ -74,7 +74,9 @@ class Evaluator:
         "ocp": None,
     }
 
-    def __init__(self, task: str = None, eval_metrics: dict | None = None) -> None:
+    def __init__(
+        self, task: str | None = None, eval_metrics: dict | None = None
+    ) -> None:
         if eval_metrics is None:
             eval_metrics = {}
         self.task = task

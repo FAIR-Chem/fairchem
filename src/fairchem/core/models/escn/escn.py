@@ -7,8 +7,6 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import sys
@@ -75,8 +73,8 @@ class eSCN(BaseModel):
         cutoff: float = 8.0,
         max_num_elements: int = 90,
         num_layers: int = 8,
-        lmax_list: list[int] | None = [6],
-        mmax_list: list[int] | None = [2],
+        lmax_list: list[int] | None = None,
+        mmax_list: list[int] | None = None,
         sphere_channels: int = 128,
         hidden_channels: int = 256,
         edge_channels: int = 128,

@@ -110,7 +110,8 @@ class SchNetWrap(BaseModel, SchNet):
             neighbors,
         ) = self.generate_graph(data)
 
-        assert z.dim() == 1 and z.dtype == torch.long
+        assert z.dim() == 1
+        assert z.dtype == torch.long
 
         edge_attr = self.distance_expansion(edge_weight)
 

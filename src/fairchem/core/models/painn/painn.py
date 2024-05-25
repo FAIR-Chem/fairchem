@@ -74,7 +74,7 @@ class PaiNN(BaseModel):
         num_elements: int = 83,
         scale_file: str | None = None,
     ) -> None:
-        super(PaiNN, self).__init__(
+        super().__init__(
             output_targets=output_targets,
             node_embedding_dim=hidden_channels,
             edge_embedding_dim=None,

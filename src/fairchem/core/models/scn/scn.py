@@ -7,8 +7,6 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import sys

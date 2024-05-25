@@ -24,7 +24,7 @@ from fairchem.core.common.utils import (
     radius_graph_pbc,
     scatter_det,
 )
-from ocpmodels.models.gemnet_oc.layers.base_layers import Dense
+from fairchem.core.models.gemnet_oc.layers.base_layers import Dense
 
 
 class BaseModel(nn.Module):
