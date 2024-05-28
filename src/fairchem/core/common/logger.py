@@ -68,6 +68,7 @@ class WandBLogger(Logger):
             name=self.config["cmd"]["identifier"],
             dir=self.config["cmd"]["logs_dir"],
             project=project,
+            entity=self.config["logger"].get("entity", None),
             resume="allow",
         )
 
