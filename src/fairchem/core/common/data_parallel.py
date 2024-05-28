@@ -101,6 +101,7 @@ class BalancedBatchSampler(BatchSampler):
                 - "raise": Raise an error.
             drop_last (bool, optional): Whether to drop the last incomplete batch. Defaults to False.
         """
+        self.max_atoms_in_batch = -1
         self.disabled = False
 
         if mode is False:
@@ -173,7 +174,9 @@ class BalancedBatchSampler(BatchSampler):
     @override
     def __iter__(self):
         if self.disabled or not self._dist_enabled():
-            yield from super().__iter__()
+            for batch_idx in super().__iter__():
+                self.max_atoms_in_batch = sum(self._get_natoms(batch_idx))
+                yield batch_idx
             return
 
         for batch_idx in super().__iter__():
@@ -199,6 +202,11 @@ class BalancedBatchSampler(BatchSampler):
                 sizes_all.numpy(),
                 num_parts=self.sampler.num_replicas,
             )
+
+            self.max_atoms_in_batch = max(
+                [sum(sizes_all[local_idxs]) for local_idxs in local_idx_balanced]
+            )
+
             # Since DistributedSampler pads the last batch
             # this should always have an entry for each replica.
             yield idx_all[local_idx_balanced[self.sampler.rank]]
