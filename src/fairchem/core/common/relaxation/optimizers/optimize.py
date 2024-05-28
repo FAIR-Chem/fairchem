@@ -15,6 +15,8 @@ import numpy as np
 import torch
 from ase.calculators.calculator import PropertyNotImplementedError
 from ase.optimize.optimize import Optimizable
+from fairchem.core.common.relaxation.ase_utils import batch_to_atoms
+from fairchem.core.common.utils import radius_graph_pbc
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -77,17 +79,21 @@ class OptimizableBatch(Optimizable):
 
     ignored_changes: set[str] = {}
 
-    def __init__(self, batch: Batch, trainer: BaseTrainer, numpy: bool = False):
+    def __init__(
+        self, batch: Batch, trainer: BaseTrainer, transform=None, numpy: bool = False
+    ):
         """Initialize Optimizable Batch
 
         Args:
             batch: A batch of atoms graph data
             model: An instance of a BaseTrainer derived class
+            transform: graph transform
             numpy: wether to cast results to numpy arrays
         """
         self.batch = batch
         self.cached_batch = None
         self.trainer = trainer
+        self.transform = transform
         self.numpy = numpy
         self.results = {}
 
@@ -154,6 +160,20 @@ class OptimizableBatch(Optimizable):
             return np.linalg.norm(forces, axis=1).max() < fmax
 
         return torch.linalg.norm(forces, axis=1).max() < fmax
+
+    def get_atoms(self):
+        """Get ase Atoms objects corresponding to the batch"""
+        return batch_to_atoms(self.batch)
+
+    def update_graph(self, atoms):
+        """Update the graph if model does not use otf_graph"""
+        edge_index, cell_offsets, num_neighbors = radius_graph_pbc(atoms, 6, 50)
+        atoms.edge_index = edge_index
+        atoms.cell_offsets = cell_offsets
+        atoms.neighbors = num_neighbors
+        if self.transform is not None:
+            atoms = self.transform(atoms)
+        return atoms
 
     def __len__(self):
         # TODO: return 3 * len(self.atoms), because we want the length
