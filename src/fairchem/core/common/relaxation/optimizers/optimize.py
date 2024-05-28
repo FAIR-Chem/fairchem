@@ -102,7 +102,7 @@ class OptimizableBatch(Optimizable):
 
     def get_property(self, name):
         """Get a predicted property by name."""
-        system_changes = self.check_state(self.cached_batch, self.batch)
+        system_changes = self.check_state(self.batch)
 
         if len(system_changes) > 0:
             self.results = self.trainer.predict(
@@ -123,11 +123,16 @@ class OptimizableBatch(Optimizable):
         return self.results[name]
 
     def get_positions(self):
+        if self.numpy:
+            return self.batch.pos.cpu().numpy()
+
         return self.batch.pos
 
     def set_positions(self, positions: torch.Tensor | NDArray):
         if isinstance(positions, np.ndarray):
-            positions = torch.tensor(positions, dtype=torch.float32)
+            positions = torch.tensor(
+                positions, dtype=torch.float32, device=self.batch.pos.device
+            )
 
         self.batch.pos = positions.to(dtype=torch.float32)
 
