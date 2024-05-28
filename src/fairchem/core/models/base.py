@@ -162,6 +162,6 @@ def lap_eigvec(batch, edge_index, natoms, dim=128):
         if natoms[i] <= dim:
             output[offset: offset+natoms[i], :natoms[i]] = eigvec.float()
         else:
-            output[offset: offset+natoms[i]] = eigvec[:, eigvec.size(1) - dim:].float()
+            output[offset: offset+natoms[i]] = eigvec[:, :dim].float()
 
     return output 

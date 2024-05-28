@@ -4,14 +4,14 @@ includes:
 model:
   name: transformer
   num_elements: 100
-  embed_dim: 256
-  hidden_dim: 256
+  embed_dim: 128
+  hidden_dim: 128
   dropout: 0.
-  num_layers: 6
+  num_layers: 12
   num_heads: 8
   otf_graph: True
   rbf_radius: 15.
-  num_gaussians: 256
+  num_gaussians: 64
   trainable_rbf: True
   num_pair_embed_layers: 2
   pair_embed_style: shared
@@ -19,8 +19,8 @@ model:
   output_layers: 4
   gate_output: False
   avg_atoms: 60
-  pos_emb_style: naive
-  pos_scale: 6
+  pos_emb_style: laplacian
+  lap_heads: 16
 
 optim:
   batch_size: 64

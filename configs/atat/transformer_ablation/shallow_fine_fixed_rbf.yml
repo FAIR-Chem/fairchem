@@ -12,7 +12,7 @@ model:
   otf_graph: True
   rbf_radius: 15.
   num_gaussians: 256
-  trainable_rbf: True
+  trainable_rbf: False
   num_pair_embed_layers: 2
   pair_embed_style: shared
   gate_pair_embed: True

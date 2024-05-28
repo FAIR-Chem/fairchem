@@ -2,6 +2,7 @@
 Author: Ryan Liu
 """
 import logging
+import math
 
 import torch
 import torch.nn as nn
@@ -55,10 +56,12 @@ class Transformer(BaseModel):
         to gate output with radial basis function or not
     avg_atoms: float
         average number of atoms
-    use_pos: bool
-        use positions as node attributes
+    pos_emb_style: str
+        can be "none", "naive", "laplacian"
     pos_scale: float
         the scale of position to normalize by
+    lap_heads: int
+        number of laplacian heads
     """
     def __init__(
             self,
@@ -81,23 +84,40 @@ class Transformer(BaseModel):
             output_layers: int = 3,
             gate_output: bool = False,
             avg_atoms: float = 60,
-            use_pos: bool = True,
-            pos_scale: float = 6,
+            pos_emb_style: str = "naive",
+            pos_scale: float = None,
+            lap_heads: int = None,
         ):
 
         super().__init__()
 
         assert pair_embed_style in ["none", "fixed", "shared", "update"]
+        assert pos_emb_style in ["none", "naive", "laplacian"]
 
         self.otf_graph=otf_graph
-        self.use_pos = use_pos
+        self.pos_emb_style = pos_emb_style
         self.pos_scale = pos_scale
         self.pair_embed_style = pair_embed_style
         self.num_layers = num_layers
 
-        if use_pos:
+        if pos_emb_style == "naive":
             self.pos_encoder=ResMLP(
                 input_dim=3,
+                hidden_dim=hidden_dim,
+                output_dim=embed_dim,
+                dropout=dropout
+            )
+
+        elif pos_emb_style == "laplacian":
+
+            self.lap_k = embed_dim // lap_heads
+            self.register_buffer(
+                "neg_log_var",
+                - 2 * torch.linspace(0, rbf_radius, lap_heads + 1)[1:].log()
+            )
+
+            self.pos_encoder = ResMLP(
+                input_dim=self.lap_k * lap_heads,
                 hidden_dim=hidden_dim,
                 output_dim=embed_dim,
                 dropout=dropout
@@ -170,7 +190,7 @@ class Transformer(BaseModel):
                 use_gated_mlp=gate_output,
                 avg_len=avg_atoms
             ) for _ in range(num_layers)
-        ])
+        ])        
 
     def tokenize(
             self,
@@ -192,17 +212,38 @@ class Transformer(BaseModel):
         padded_anum[mask] = atomic_numbers
         padded_anum = padded_anum.transpose(0, 1).contiguous()
 
+        # calculate pairwise features
+        vec = padded_pos[:, None]  - padded_pos[None, :] # [L, L, N, 3]
+        vec_hat = F.normalize(vec, dim=-1)
+        dist = torch.linalg.norm(vec, dim=-1) # [L, L, N]
+        entries = mask.T[:, None] & mask.T[None, :]
+
         # encode the sequence
-        if self.use_pos:
+        if self.pos_emb_style == "naive":
             norm_pos = padded_pos / self.pos_scale
             features = self.pos_encoder(norm_pos) + self.atomic_number_encoder(padded_anum)
+        elif self.pos_emb_style == "laplacian":
+            # compute laplacian
+            log_A = - 0.5 * dist.square()[..., None] * self.neg_log_var.exp()
+            I = torch.eye(log_A.size(0), device=log_A.device)[..., None, None].expand_as(log_A)
+            log_A[I.bool() | ~entries[..., None]] = - torch.inf
+            L = I - torch.exp(0.5 * (F.log_softmax(log_A, dim=0) + F.log_softmax(log_A, dim=1)))
+            L.masked_fill_(~entries[..., None], 0)
+            L = L.permute(2, 3, 0, 1) # [N, H, L, L]
+            # compute eigenvectors
+            _, ein_vec = torch.linalg.eigh(L) # [N, H, L, L]
+            ein_vec = ein_vec[:, :, :, :self.lap_k] # [N, H, L, d_k]
+            ein_vec = ein_vec.permute(2, 0, 1, 3) # [L, N, H, d_k]
+            ein_vec = ein_vec.reshape(ein_vec.size(0), ein_vec.size(1), -1) # [L, N, H * d_k]
+            # embed eingenvectors
+            features = self.pos_encoder(ein_vec) + self.atomic_number_encoder(padded_anum)
         else:
             features = self.atomic_number_encoder(padded_anum)
             
         key_padding_mask = torch.zeros_like(mask, dtype=torch.float)
         key_padding_mask.masked_fill_(~mask, -torch.inf)
 
-        return features, mask, padded_pos, key_padding_mask
+        return features, mask, padded_pos, key_padding_mask, vec, vec_hat, dist
 
     def forward(self, data):
 
@@ -212,15 +253,10 @@ class Transformer(BaseModel):
         atomic_numbers = data.atomic_numbers.long()
 
         # tokenize implicit batch
-        features, mask, padded_pos, key_padding_mask = self.tokenize(
+        features, mask, padded_pos, key_padding_mask, vec, vec_hat, dist = self.tokenize(
             pos=pos, natoms=natoms, atomic_numbers=atomic_numbers
         )
         x = features
-
-        # calculate pairwise features
-        vec = padded_pos[:, None]  - padded_pos[None, :] # [L, L, N, 3]
-        vec_hat = F.normalize(vec, dim=-1)
-        dist = torch.linalg.norm(vec, dim=-1) # [L, L, N]
 
         # initialize output
         energy, forces = self.init_output(x, dist, vec_hat, mask)

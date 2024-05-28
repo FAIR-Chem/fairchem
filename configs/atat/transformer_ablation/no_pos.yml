@@ -19,8 +19,7 @@ model:
   output_layers: 4
   gate_output: False
   avg_atoms: 60
-  use_pos: False
-  pos_scale: 6
+  pos_emb_style: none
 
 optim:
   batch_size: 64

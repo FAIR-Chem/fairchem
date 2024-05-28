@@ -19,12 +19,12 @@ model:
   output_layers: 4
   gate_output: False
   avg_atoms: 60
-  use_pos: True
+  pos_emb_style: naive
   pos_scale: 6
 
 optim:
-  batch_size: 32
-  eval_batch_size: 32
+  batch_size: 64
+  eval_batch_size: 64
   load_balancing: atoms
   num_workers: 16
   lr_initial: 0.0004

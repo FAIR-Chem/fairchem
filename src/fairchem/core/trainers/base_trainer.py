@@ -289,6 +289,20 @@ class BaseTrainer(ABC):
                 self.config["dataset"].get("format", "lmdb")
             )(self.config["dataset"])
 
+            if "split" in self.config["dataset"]:
+                # to make sampling deterministic, seed rng
+                logging.info(f"original size {len(self.train_dataset)}, target size {self.config['dataset']['split']}")
+                if len(self.train_dataset) >= self.config["dataset"]["split"]:
+                    indx = np.random.default_rng(seed=0).choice(
+                        len(self.train_dataset), 
+                        self.config["dataset"]["split"], 
+                        replace=False
+                    )
+                    self.train_dataset = Subset(self.train_dataset, torch.tensor(indx))
+                    logging.info("Subsetted train set.")
+                else:
+                    logging.info("Original size must be greater than target size!")
+
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
                 self.config["optim"]["batch_size"],
@@ -302,6 +316,7 @@ class BaseTrainer(ABC):
             if self.config.get("val_dataset", None):
                 if self.config["val_dataset"].get("use_train_settings", True):
                     val_config = self.config["dataset"].copy()
+                    val_config.pop("split")
                     val_config.update(self.config["val_dataset"])
                 else:
                     val_config = self.config["val_dataset"]
@@ -310,15 +325,19 @@ class BaseTrainer(ABC):
                     val_config.get("format", "lmdb")
                 )(val_config)
 
-                if val_config.get("limit"):
+                if "split" in val_config:
+                    logging.info(f"original size {len(self.val_dataset)}, target size {val_config['split']}")
                     # to make sampling deterministic, seed rng
-                    indx = np.random.default_rng(seed=0).choice(
-                        len(self.val_dataset), 
-                        val_config.get("limit"), 
-                        replace=False
-                    )
-                    self.val_dataset = Subset(self.val_dataset, torch.tensor(indx))
-                    logging.info("Subsetted validation set.")
+                    if len(self.val_dataset) >= val_config["split"]:
+                        indx = np.random.default_rng(seed=0).choice(
+                            len(self.val_dataset), 
+                            val_config["split"], 
+                            replace=False
+                        )
+                        self.val_dataset = Subset(self.val_dataset, torch.tensor(indx))
+                        logging.info("Subsetted validation set.")
+                    else:
+                        logging.info("Original size must be greater than target size!")
 
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,

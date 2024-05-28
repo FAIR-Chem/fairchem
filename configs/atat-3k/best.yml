@@ -1,5 +1,5 @@
 includes:
-  - configs/atat/transformer_ablation/base.yml
+  - configs/atat-3k/base.yml
 
 model:
   name: transformer
@@ -7,12 +7,12 @@ model:
   embed_dim: 256
   hidden_dim: 256
   dropout: 0.
-  num_layers: 6
-  num_heads: 8
+  num_layers: 12
+  num_heads: 16
   otf_graph: True
   rbf_radius: 15.
-  num_gaussians: 256
-  trainable_rbf: True
+  num_gaussians: 64
+  trainable_rbf: False
   num_pair_embed_layers: 2
   pair_embed_style: shared
   gate_pair_embed: True
@@ -23,20 +23,20 @@ model:
   pos_scale: 6
 
 optim:
-  batch_size: 64
-  eval_batch_size: 64
+  batch_size: 32
+  eval_batch_size: 32
   load_balancing: atoms
   num_workers: 16
   lr_initial: 0.0004
-
+  eval_every: 30000
   optimizer: AdamW
   optimizer_params:
     weight_decay: 0.001
   scheduler: ReduceLROnPlateau
   mode: min
-  factor: 0.9
+  factor: 0.95
   patience: 100
-  max_epochs: 500
+  max_epochs: 10000
   force_coefficient: 10
   energy_coefficient: 1
   ema_decay: 0.999
