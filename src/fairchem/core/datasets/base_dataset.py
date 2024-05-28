@@ -103,6 +103,7 @@ class BaseDataset(Dataset[T_co], DatasetWithSizes, metaclass=ABCMeta):
 
     @cached_property
     def metadata(self) -> DatasetMetadata:
+        return []
         # logic to read metadata file here
         metadata_npzs = []
         if self.config.get("metadata_path", None) is not None:
