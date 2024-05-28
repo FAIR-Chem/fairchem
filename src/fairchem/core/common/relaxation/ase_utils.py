@@ -178,15 +178,6 @@ class OCPCalculator(Calculator):
             )
             config = update_config(config)
 
-        ### backwards compatability with OCP v<2.0
-        ### TODO: better format check for older configs
-        ### Taken from base_trainer
-        if not config.get("loss_fns"):
-            logging.warning(
-                "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
-            )
-            config = update_config(config)
-
         self.config = copy.deepcopy(config)
         self.config["checkpoint"] = checkpoint_path
         del config["dataset"]["src"]
