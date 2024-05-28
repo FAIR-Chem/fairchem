@@ -21,13 +21,16 @@ class RadialBasisFunction(nn.Module):
 
         self.linear = nn.Linear(num_gaussians, embed_dim, bias=False)
 
+        self.trainable = trainable
+
     def forward(self, x: torch.Tensor):
         # compute rbfs and embeddings
         shape = x.shape
         x = x.view(-1, 1) - self.offset.view(1, -1)
         x = - 0.5 * x.square() * self.neg_log_var.view(1, -1).exp()
         x = torch.exp(x)
-        x = x * (self.origin_log_var + self.neg_log_var.view(1, -1)).div(2).exp()
+        if self.trainable:
+            x = x * (self.origin_log_var + self.neg_log_var.view(1, -1)).div(2).exp()
         x = x.view(*shape, -1)
 
         return self.linear(x)

@@ -1,5 +1,32 @@
-includes:
-  - configs/atat-3k/base.yml
+trainer: forces
+
+dataset:
+  train:
+    src: /data/ericqu/md22/lmdb/stachyose/train/
+    normalize_labels: True
+    target_mean: -68463.59
+    target_std: 0.5940788
+    grad_target_mean: 0.0
+    grad_target_std: 1.1104717
+  val: 
+    src: /data/ericqu/md22/lmdb/stachyose/val/
+  test:
+    src: /data/ericqu/md22/lmdb/stachyose/test/
+
+logger: 
+  name: wandb
+  project: MD22
+
+task:
+  dataset: trajectory_lmdb
+  description: "Regressing to energies and forces for DFT trajectories from MD22"
+  type: regression
+  metric: mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
 
 model:
   name: transformer
@@ -7,7 +34,7 @@ model:
   embed_dim: 256
   hidden_dim: 256
   dropout: 0.
-  num_layers: 12
+  num_layers: 8
   num_heads: 16
   otf_graph: True
   rbf_radius: 15.
@@ -28,7 +55,6 @@ optim:
   load_balancing: atoms
   num_workers: 16
   lr_initial: 0.0004
-  eval_every: 1000
   optimizer: AdamW
   optimizer_params:
     weight_decay: 0.001

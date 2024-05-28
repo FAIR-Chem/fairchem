@@ -316,7 +316,7 @@ class BaseTrainer(ABC):
             if self.config.get("val_dataset", None):
                 if self.config["val_dataset"].get("use_train_settings", True):
                     val_config = self.config["dataset"].copy()
-                    val_config.pop("split")
+                    val_config.pop("split", None)
                     val_config.update(self.config["val_dataset"])
                 else:
                     val_config = self.config["val_dataset"]
