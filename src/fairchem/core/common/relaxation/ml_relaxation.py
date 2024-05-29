@@ -17,7 +17,8 @@ from torch_geometric.data import Batch
 from fairchem.core.common.typing import assert_is_instance
 from fairchem.core.datasets.lmdb_dataset import data_list_collater
 
-from .optimizers.lbfgs_torch import LBFGS, TorchCalc
+from .optimizers.lbfgs_torch import LBFGS
+from .optimizers.optimize import OptimizableBatch
 
 
 def ml_relax(
@@ -31,11 +32,11 @@ def ml_relax(
     transform=None,
     early_stop_batch: bool = False,
 ):
-    """
-    Runs ML-based relaxations.
+    """Runs ML-based relaxations.
+
     Args:
-        batch: object
-        model: object
+        batch: a data batch object
+        model: a trainer object with model
         steps: int
             Max number of steps in the structure relaxation.
         fmax: float
@@ -46,19 +47,22 @@ def ml_relax(
         save_full_traj: bool
             Whether to save out the full ASE trajectory. If False, only save out initial and final frames.
     """
+    # if not pbc is set, ignore it when comparing batches
+    if not hasattr(batch, "pbc"):
+        OptimizableBatch.ignored_changes = {"pbc"}
+
     batches = deque([batch])
     relaxed_batches = []
     while batches:
         batch = batches.popleft()
         oom = False
         ids = batch.sid
-        calc = TorchCalc(model, transform)
+        optimizable = OptimizableBatch(batch, trainer=model, transform=transform)
 
         # Run ML-based relaxation
         traj_dir = relax_opt.get("traj_dir", None)
         optimizer = LBFGS(
-            batch,
-            calc,
+            optimizable_batch=optimizable,
             maxstep=relax_opt.get("maxstep", 0.2),
             memory=relax_opt["memory"],
             damping=relax_opt.get("damping", 1.2),
@@ -90,5 +94,8 @@ def ml_relax(
             mid = len(data_list) // 2
             batches.appendleft(data_list_collater(data_list[:mid]))
             batches.appendleft(data_list_collater(data_list[mid:]))
+
+    # reset for good measure
+    OptimizableBatch.ignored_changes = {}
 
     return Batch.from_data_list(relaxed_batches)

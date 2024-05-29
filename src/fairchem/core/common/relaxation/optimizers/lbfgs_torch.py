@@ -15,11 +15,12 @@ import ase
 import torch
 from torch_scatter import scatter
 
-from fairchem.core.common.relaxation.ase_utils import batch_to_atoms
 from fairchem.core.common.relaxation.optimizers.optimize import OptimizableBatch
 
 
 class LBFGS:
+    """Limited memory BFGS optimizer for batch ML relaxations."""
+
     def __init__(
         self,
         optimizable_batch: OptimizableBatch,
@@ -212,7 +213,7 @@ class LBFGS:
 
     def write(self, energy, forces, update_mask) -> None:
         self.optimizable.batch.y, self.optimizable.batch.force = energy, forces
-        atoms_objects = batch_to_atoms(self.optimizable.batch)
+        atoms_objects = self.optimizable.get_atoms_list()
         update_mask_ = torch.split(update_mask, self.optimizable.batch.natoms.tolist())
         for atm, traj, mask in zip(atoms_objects, self.trajectories, update_mask_):
             if mask[0] or not self.save_full:
