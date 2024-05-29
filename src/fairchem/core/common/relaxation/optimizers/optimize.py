@@ -161,7 +161,7 @@ class OptimizableBatch(Optimizable):
 
     def get_potential_energy(self, **kwargs):
         # ASE 3.22.1 expects a check for force_consistent calculations
-        if "force_consistent" in kwargs:
+        if kwargs.get("force_consistent", False) is True:
             raise PropertyNotImplementedError(
                 "force_consistent calculations are not implemented"
             )
