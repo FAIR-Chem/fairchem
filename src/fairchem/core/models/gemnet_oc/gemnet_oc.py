@@ -20,12 +20,12 @@ from fairchem.core.common.utils import (
     scatter_det,
 )
 from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base_layers import Dense, ResidualLayer
+from fairchem.core.models.initializers import get_initializer
 from fairchem.core.modules.scaling.compat import load_scales_compat
 
-from .initializers import get_initializer
 from .interaction_indices import get_mixed_triplets, get_quadruplets, get_triplets
 from .layers.atom_update_block import OutputBlock
-from .layers.base_layers import Dense, ResidualLayer
 from .layers.efficient import BasisEmbedding
 from .layers.embedding_block import AtomEmbedding, EdgeEmbedding
 from .layers.force_scaler import ForceScaler

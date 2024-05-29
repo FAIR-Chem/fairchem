@@ -458,20 +458,19 @@ class DimeNetPlusPlusWrap(BaseModel, DimeNetPlusPlus):
             data.pos.requires_grad_(True)
         outputs = self.forward_energy(data)
 
-        if "forces" in self.output_targets:
-            if self.regress_forces:
-                forces = (
-                    -1
-                    * (
-                        torch.autograd.grad(
-                            outputs["energy"],
-                            data.pos,
-                            grad_outputs=torch.ones_like(outputs["energy"]),
-                            create_graph=True,
-                        )[0]
-                    )
+        if "forces" in self.output_targets and self.regress_forces:
+            forces = (
+                -1
+                * (
+                    torch.autograd.grad(
+                        outputs["energy"],
+                        data.pos,
+                        grad_outputs=torch.ones_like(outputs["energy"]),
+                        create_graph=True,
+                    )[0]
                 )
-                outputs["forces"] = forces
+            )
+            outputs["forces"] = forces
 
         return outputs
 

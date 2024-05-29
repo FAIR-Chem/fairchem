@@ -41,7 +41,7 @@ from torch_scatter import scatter, segment_coo
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
 from fairchem.core.models.base import BaseModel
-from fairchem.core.models.gemnet.layers.base_layers import ScaledSiLU
+from fairchem.core.models.base_layers import ScaledSiLU
 from fairchem.core.models.gemnet.layers.embedding_block import AtomEmbedding
 from fairchem.core.models.gemnet.layers.radial_basis import RadialBasis
 from fairchem.core.modules.scaling import ScaleFactor
@@ -415,22 +415,21 @@ class PaiNN(BaseModel):
             energy = scatter(per_atom_energy, batch, dim=0)
             outputs["energy"] = energy
 
-        if "forces" in self.output_targets:
-            if self.regress_forces:
-                if self.direct_forces:
-                    forces = self.out_forces(x, vec)
-                else:
-                    forces = (
-                        -1
-                        * torch.autograd.grad(
-                            x,
-                            pos,
-                            grad_outputs=torch.ones_like(x),
-                            create_graph=True,
-                        )[0]
-                    )
+        if "forces" in self.output_targets and self.regress_forces:
+            if self.direct_forces:
+                forces = self.out_forces(x, vec)
+            else:
+                forces = (
+                    -1
+                    * torch.autograd.grad(
+                        x,
+                        pos,
+                        grad_outputs=torch.ones_like(x),
+                        create_graph=True,
+                    )[0]
+                )
 
-                outputs["forces"] = forces
+            outputs["forces"] = forces
 
         return outputs
 

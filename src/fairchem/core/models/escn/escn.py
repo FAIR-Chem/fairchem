@@ -200,11 +200,10 @@ class eSCN(BaseModel):
             self.energy_block = EnergyBlock(
                 self.sphere_channels_all, self.num_sphere_samples, self.act
             )
-        if "forces" in self.output_targets:
-            if self.regress_forces:
-                self.force_block = ForceBlock(
-                    self.sphere_channels_all, self.num_sphere_samples, self.act
-                )
+        if "forces" in self.output_targets and self.regress_forces:
+            self.force_block = ForceBlock(
+                self.sphere_channels_all, self.num_sphere_samples, self.act
+            )
 
         # Create a roughly evenly distributed point sampling of the sphere for the output blocks
         self.sphere_points = nn.Parameter(
@@ -354,10 +353,9 @@ class eSCN(BaseModel):
         ###############################################################
         # Force estimation
         ###############################################################
-        if "forces" in self.output_targets:
-            if self.regress_forces:
-                forces = self.force_block(x_pt, self.sphere_points)
-                outputs["forces"] = forces
+        if "forces" in self.output_targets and self.regress_forces:
+            forces = self.force_block(x_pt, self.sphere_points)
+            outputs["forces"] = forces
 
         if self.show_timing_info:
             torch.cuda.synchronize()

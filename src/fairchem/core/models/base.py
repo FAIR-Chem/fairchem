@@ -24,7 +24,8 @@ from fairchem.core.common.utils import (
     radius_graph_pbc,
     scatter_det,
 )
-from fairchem.core.models.gemnet_oc.layers.base_layers import Dense
+
+from .base_layers import Dense
 
 
 class BaseModel(nn.Module):
@@ -147,9 +148,7 @@ class BaseModel(nn.Module):
 
         # aggregate edges per node
         # (nnodes, 2*irrep_dim+1)
-        pred = scatter_det(pred, edge_idx, dim=0, dim_size=self.num_atoms, reduce="add")
-
-        return pred
+        return scatter_det(pred, edge_idx, dim=0, dim_size=self.num_atoms, reduce="add")
 
     def construct_parent_tensor(self, results):
         parent_construction = defaultdict(dict)
