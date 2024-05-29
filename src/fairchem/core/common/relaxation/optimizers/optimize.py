@@ -14,9 +14,19 @@ from typing import TYPE_CHECKING
 import numpy as np
 import torch
 from ase.calculators.calculator import PropertyNotImplementedError
-from ase.optimize.optimize import Optimizable
 from fairchem.core.common.relaxation.ase_utils import batch_to_atoms
 from fairchem.core.common.utils import radius_graph_pbc
+
+# unreleased ASE has Optimizable, last released version 3.22.1 does not
+# thankfully we can get away with backwards compatibility by creating a dummy
+# submit an issue to the ASE repo to make new releases if you find this code ugly :(
+try:
+    from ase.optimize.optimize import Optimizable
+except ImportError:
+
+    class Optimizable:
+        pass
+
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -36,7 +46,7 @@ def compare_batches(
     batch1: Batch | None,
     batch2: Batch,
     tol: float = 1e-6,
-    excluded_properties: list[str] | None = None,
+    excluded_properties: set[str] | None = None,
 ) -> list[str]:
     """Compare properties between two batches
 
@@ -165,7 +175,7 @@ class OptimizableBatch(Optimizable):
 
         return torch.linalg.norm(forces, axis=1).max() < fmax
 
-    def get_atoms(self):
+    def get_atoms_list(self):
         """Get ase Atoms objects corresponding to the batch"""
         return batch_to_atoms(self.batch)
 
