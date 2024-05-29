@@ -152,20 +152,19 @@ class OptimizableBatch(Optimizable):
 
         self.batch.pos = positions.to(dtype=torch.float32)
 
-    def get_forces(self, apply_constraint: bool = False, **kwargs):
-        # ASE 3.22.1 expects a check for force_consistent calculations
-        if "force_consistent" in kwargs:
-            raise PropertyNotImplementedError(
-                "force_consistent calculations are not implemented"
-            )
-
+    def get_forces(self, apply_constraint: bool = False):
         forces = self.get_property("forces")
         if apply_constraint:
             fixed_idx = torch.where(self.batch.fixed == 1)[0]
             forces[fixed_idx] = 0
         return forces
 
-    def get_potential_energy(self):
+    def get_potential_energy(self, **kwargs):
+        # ASE 3.22.1 expects a check for force_consistent calculations
+        if "force_consistent" in kwargs:
+            raise PropertyNotImplementedError(
+                "force_consistent calculations are not implemented"
+            )
         return self.get_property("energy").sum()
 
     def get_potential_energies(self):
