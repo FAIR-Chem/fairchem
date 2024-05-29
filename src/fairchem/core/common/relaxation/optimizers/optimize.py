@@ -142,8 +142,12 @@ class OptimizableBatch(Optimizable):
 
         self.batch.pos = positions.to(dtype=torch.float32)
 
-    def get_forces(self):
-        return self.get_property("forces")
+    def get_forces(self, apply_constraint: bool = False):
+        forces = self.get_property("forces")
+        if apply_constraint:
+            fixed_idx = torch.where(self.batch.fixed == 1)[0]
+            forces[fixed_idx] = 0
+        return forces
 
     def get_potential_energy(self):
         return self.get_property("energy").sum()
@@ -165,15 +169,14 @@ class OptimizableBatch(Optimizable):
         """Get ase Atoms objects corresponding to the batch"""
         return batch_to_atoms(self.batch)
 
-    def update_graph(self, atoms):
+    def update_graph(self):
         """Update the graph if model does not use otf_graph"""
-        edge_index, cell_offsets, num_neighbors = radius_graph_pbc(atoms, 6, 50)
-        atoms.edge_index = edge_index
-        atoms.cell_offsets = cell_offsets
-        atoms.neighbors = num_neighbors
+        edge_index, cell_offsets, num_neighbors = radius_graph_pbc(self.batch, 6, 50)
+        self.batch.edge_index = edge_index
+        self.batch.cell_offsets = cell_offsets
+        self.batch.neighbors = num_neighbors
         if self.transform is not None:
-            atoms = self.transform(atoms)
-        return atoms
+            self.batch = self.transform(self.batch)
 
     def __len__(self):
         # TODO: return 3 * len(self.atoms), because we want the length
