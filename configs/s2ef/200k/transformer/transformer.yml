@@ -3,7 +3,7 @@ includes:
 
 model:
   name: transformer
-  num_elements: 100
+  elements: [1, 6, 7, 8]
   emb_dim: 512
   ff_dim: 1024
   num_layers: 12

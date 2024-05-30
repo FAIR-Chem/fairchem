@@ -3,7 +3,7 @@ includes:
 
 model:
   name: transformer
-  num_elements: 100
+  elements: [1, 6, 7, 8]
   embed_dim: 256
   hidden_dim: 256
   dropout: 0.
@@ -23,11 +23,11 @@ model:
   pos_scale: 6
 
 optim:
-  batch_size: 32
+  batch_size: 8
   eval_batch_size: 32
   load_balancing: atoms
   num_workers: 16
-  lr_initial: 0.0004
+  lr_initial: 0.0001
   eval_every: 1000
   optimizer: AdamW
   optimizer_params:

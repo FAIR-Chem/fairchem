@@ -3,6 +3,7 @@ Author: Ryan Liu
 """
 import logging
 import math
+from typing import List, Union
 
 import torch
 import torch.nn as nn
@@ -25,8 +26,8 @@ class Transformer(BaseModel):
 
     Parameters
     ----------
-    num_elements: int
-        the number of possible elements
+    elements: List[int]
+        list of possible atomic numbers
     embed_dim: int
         the dimensionality of embedding used
     hidden_dim: int
@@ -50,6 +51,8 @@ class Transformer(BaseModel):
         of edge embedding
     gate_pair_embed: bool
         to gate the mlp with radial basis function or not
+    sparse: bool
+        to use sparse attention or not
     output_layers: int
         number of output layers to use
     gate_output: bool
@@ -68,7 +71,7 @@ class Transformer(BaseModel):
             num_atoms: int,  # not used
             bond_feat_dim: int,  # not used
             num_targets: int,  # not used
-            num_elements: int = 100,
+            elements: Union[int, List[int]] = 100,
             embed_dim: int = 128,
             hidden_dim: int = 128,
             dropout: float = 0.,
@@ -81,6 +84,7 @@ class Transformer(BaseModel):
             num_pair_embed_layers: int = 2,
             pair_embed_style: str = "update",
             gate_pair_embed: bool = False,
+            sparse: bool = False,
             output_layers: int = 3,
             gate_output: bool = False,
             avg_atoms: float = 60,
@@ -123,39 +127,49 @@ class Transformer(BaseModel):
                 dropout=dropout
             )
 
+        if isinstance(elements, int):
+            self.register_buffer("atomic_number_mask", torch.arange(elements + 1))
+        elif isinstance(elements, list):
+            atomic_number_mask = - torch.ones(max(elements) + 1, dtype=torch.long)
+            atomic_number_mask[elements] = torch.arange(len(elements))
+            self.register_buffer("atomic_number_mask", atomic_number_mask)
+        else:
+            raise TypeError("elements must be integer or list of integers")
+
         self.atomic_number_encoder = nn.Embedding(
-            num_elements,
+            len(elements),
             embed_dim,
-            padding_idx=0
         )
+
         if pair_embed_style in ["update", "fixed"]:
             self.pair_embeds =  nn.ModuleList([
                 PairEmbed(
                     embed_dim=embed_dim,
                     hidden_dim=hidden_dim,
                     num_heads=num_heads,
-                    num_masks=1,
                     num_gaussians=num_gaussians,
                     rbf_radius=rbf_radius,
                     trainable_rbf=trainable_rbf,
                     dropout=dropout,
                     num_layers=num_pair_embed_layers,
-                    use_gated_mlp=gate_pair_embed
+                    use_gated_mlp=gate_pair_embed,
+                    sparse=sparse,
                 ) for _ in range(num_layers)
             ])
         elif pair_embed_style == "shared":
             self.pair_embeds = PairEmbed(
-                    embed_dim=embed_dim,
-                    hidden_dim=hidden_dim,
-                    num_heads=num_heads,
-                    num_masks=num_layers,
-                    num_gaussians=num_gaussians,
-                    rbf_radius=rbf_radius,
-                    trainable_rbf=trainable_rbf,
-                    dropout=dropout,
-                    num_layers=num_pair_embed_layers,
-                    use_gated_mlp=gate_pair_embed
-                )
+                embed_dim=embed_dim,
+                hidden_dim=hidden_dim,
+                num_heads=num_heads,
+                num_masks=num_layers,
+                num_gaussians=num_gaussians,
+                rbf_radius=rbf_radius,
+                trainable_rbf=trainable_rbf,
+                dropout=dropout,
+                num_layers=num_pair_embed_layers,
+                use_gated_mlp=gate_pair_embed,
+                sparse=sparse,
+            )
 
         self.layers = nn.ModuleList([
             SelfAttentionLayer(
@@ -175,7 +189,8 @@ class Transformer(BaseModel):
             rbf_radius=rbf_radius,
             trainable_rbf=trainable_rbf,
             use_gated_mlp=gate_output,
-            avg_len=avg_atoms
+            avg_len=avg_atoms,
+            sparse=sparse,
         )
 
         self.outputs = nn.ModuleList([
@@ -188,7 +203,8 @@ class Transformer(BaseModel):
                 rbf_radius=rbf_radius,
                 trainable_rbf=trainable_rbf,
                 use_gated_mlp=gate_output,
-                avg_len=avg_atoms
+                avg_len=avg_atoms,
+                sparse=sparse
             ) for _ in range(num_layers)
         ])        
 
@@ -198,6 +214,7 @@ class Transformer(BaseModel):
             natoms: torch.Tensor,
             atomic_numbers: torch.Tensor
         ):
+
         # tokenize the sequence
         nmax = natoms.max()
         batch_size = len(natoms)
@@ -208,8 +225,10 @@ class Transformer(BaseModel):
         padded_pos[mask] = pos
         padded_pos = padded_pos.transpose(0, 1).contiguous()
 
+        assert (self.atomic_number_mask[atomic_numbers] != -1).all()
+
         padded_anum = torch.zeros((batch_size, nmax), device=natoms.device, dtype=torch.long)
-        padded_anum[mask] = atomic_numbers
+        padded_anum[mask] = self.atomic_number_mask[atomic_numbers]
         padded_anum = padded_anum.transpose(0, 1).contiguous()
 
         # calculate pairwise features
@@ -243,7 +262,7 @@ class Transformer(BaseModel):
         key_padding_mask = torch.zeros_like(mask, dtype=torch.float)
         key_padding_mask.masked_fill_(~mask, -torch.inf)
 
-        return features, mask, padded_pos, key_padding_mask, vec, vec_hat, dist
+        return features, mask, key_padding_mask, vec_hat, dist
 
     def forward(self, data):
 
@@ -253,7 +272,7 @@ class Transformer(BaseModel):
         atomic_numbers = data.atomic_numbers.long()
 
         # tokenize implicit batch
-        features, mask, padded_pos, key_padding_mask, vec, vec_hat, dist = self.tokenize(
+        features, mask, key_padding_mask, vec_hat, dist = self.tokenize(
             pos=pos, natoms=natoms, atomic_numbers=atomic_numbers
         )
         x = features

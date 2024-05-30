@@ -3,7 +3,7 @@ includes:
 
 model:
   name: transformer
-  num_elements: 100
+  elements: [1, 6, 7, 8]
   embed_dim: 128
   hidden_dim: 128
   dropout: 0.
@@ -16,6 +16,7 @@ model:
   num_pair_embed_layers: 4
   pair_embed_style: fixed_shared
   gate_pair_embed: True
+
   output_layers: 3
   gate_output: True
   avg_atoms: 60

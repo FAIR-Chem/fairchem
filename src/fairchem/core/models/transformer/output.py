@@ -17,11 +17,14 @@ class OutputModule(nn.Module):
         trainable_rbf: bool = False,
         use_gated_mlp: bool = False,
         avg_len: float = 60.,
+        sparse: bool = False,
     ):
         super().__init__()
 
         self.use_gated_mlp = use_gated_mlp
         self.avg_len = avg_len
+        self.sparse = sparse
+        self.rbf_radius = rbf_radius
 
         self.energy_mlp = ResMLP(
             input_dim=3*embed_dim,
@@ -71,6 +74,8 @@ class OutputModule(nn.Module):
 
         # prepare mask
         entries = mask.T[:, None] & mask.T[None, :] # [L, L, N]
+        if self.sparse:
+            entries &= dist < self.rbf_radius
         entries = entries[..., None]
 
         # prepare pair embeddings

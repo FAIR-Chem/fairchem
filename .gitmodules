@@ -1,0 +1,6 @@
+[submodule "MDsim"]
+	path = MDsim
+	url = git@github.com:kyonofx/MDsim.git
+[submodule "EGAP"]
+	path = EGAP
+	url = git@github.com:EricZQu/EGAP.git

@@ -1,32 +1,5 @@
-trainer: forces
-
-dataset:
-  train:
-    src: /data/ericqu/md22/lmdb/Ac-Ala3-NHMe/train/
-    normalize_labels: True
-    target_mean: -26913.953
-    target_std: 0.35547638
-    grad_target_mean: 0.0
-    grad_target_std: 1.1291506
-  val: 
-    src: /data/ericqu/md22/lmdb/Ac-Ala3-NHMe/val/
-  test:
-    src: /data/ericqu/md22/lmdb/Ac-Ala3-NHMe/test/
-
-logger: 
-  name: wandb
-  project: MD22
-
-task:
-  dataset: trajectory_lmdb
-  description: "Regressing to energies and forces for DFT trajectories from MD22"
-  type: regression
-  metric: mae
-  labels:
-    - potential energy
-  grad_input: atomic forces
-  train_on_free_atoms: True
-  eval_on_free_atoms: True
+includes:
+  - configs/atat/transformer_ablation/base.yml
 
 model:
   name: transformer
@@ -54,14 +27,15 @@ optim:
   load_balancing: atoms
   num_workers: 16
   lr_initial: 0.0004
+
   optimizer: AdamW
   optimizer_params:
     weight_decay: 0.001
   scheduler: ReduceLROnPlateau
   mode: min
   factor: 0.9
-  patience: 50
-  max_epochs: 10000
+  patience: 100
+  max_epochs: 500
   force_coefficient: 10
   energy_coefficient: 1
   ema_decay: 0.999

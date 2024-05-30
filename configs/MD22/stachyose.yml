@@ -30,7 +30,7 @@ task:
 
 model:
   name: transformer
-  num_elements: 100
+  elements: [1, 6, 8]
   embed_dim: 256
   hidden_dim: 256
   dropout: 0.
@@ -46,8 +46,7 @@ model:
   output_layers: 4
   gate_output: False
   avg_atoms: 60
-  pos_emb_style: naive
-  pos_scale: 6
+  pos_emb_style: none
 
 optim:
   batch_size: 32
@@ -60,8 +59,8 @@ optim:
     weight_decay: 0.001
   scheduler: ReduceLROnPlateau
   mode: min
-  factor: 0.95
-  patience: 100
+  factor: 0.9
+  patience: 50
   max_epochs: 10000
   force_coefficient: 10
   energy_coefficient: 1
