@@ -68,10 +68,15 @@ class SchNetWrap(BaseModel, SchNet):
         self.otf_graph = otf_graph
         self.max_neighbors = 50
         self.reduce = readout
-        super().__init__(
+
+        BaseModel.__init__(
+            self,
             output_targets=output_targets,
             node_embedding_dim=hidden_channels,
             edge_embedding_dim=hidden_channels,
+        )
+        SchNet.__init__(
+            self,
             hidden_channels=hidden_channels,
             num_filters=num_filters,
             num_interactions=num_interactions,
@@ -79,22 +84,6 @@ class SchNetWrap(BaseModel, SchNet):
             cutoff=cutoff,
             readout=readout,
         )
-        # SchNet.__init__(
-        #     self,
-        #     hidden_channels=hidden_channels,
-        #     num_filters=num_filters,
-        #     num_interactions=num_interactions,
-        #     num_gaussians=num_gaussians,
-        #     cutoff=cutoff,
-        #     readout=readout,
-        # )
-        # BaseModel.__init__(
-        #     self,
-        #     output_targets=output_targets,
-        #     node_embedding_dim=hidden_channels,
-        #     edge_embedding_dim=hidden_channels,
-        #     _torch_initialized=True,
-        # )
 
     @conditional_grad(torch.enable_grad())
     def _forward_helper(self, data):
