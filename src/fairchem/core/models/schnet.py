@@ -69,14 +69,10 @@ class SchNetWrap(BaseModel, SchNet):
         self.max_neighbors = 50
         self.reduce = readout
 
-        BaseModel.__init__(
-            self,
+        super().__init__(
             output_targets=output_targets,
             node_embedding_dim=hidden_channels,
             edge_embedding_dim=hidden_channels,
-        )
-        SchNet.__init__(
-            self,
             hidden_channels=hidden_channels,
             num_filters=num_filters,
             num_interactions=num_interactions,

@@ -36,7 +36,7 @@ class BaseModel(nn.Module):
         edge_embedding_dim=None,
         **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.output_targets = output_targets or {}
         self.num_targets = len(output_targets)
