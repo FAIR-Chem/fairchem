@@ -6,7 +6,6 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-import logging
 from abc import ABCMeta
 from functools import cached_property
 from pathlib import Path

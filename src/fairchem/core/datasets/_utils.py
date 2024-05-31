@@ -10,12 +10,11 @@ from __future__ import annotations
 import typing
 
 if typing.TYPE_CHECKING:
-    from typing import Union, List
     from torch_geometric.data import Data
 
 
 def rename_data_object_keys(
-    data_object: Data, key_mapping: dict[str, Union[str, List[str]]]
+    data_object: Data, key_mapping: dict[str, str | list[str]]
 ) -> Data:
     """Rename data object keys
 
@@ -27,7 +26,7 @@ def rename_data_object_keys(
         # catch for test data not containing labels
         if _property in data_object:
             list_of_new_keys = key_mapping[_property]
-            if type(list_of_new_keys) is str:
+            if isinstance(list_of_new_keys,str):
                 list_of_new_keys = [list_of_new_keys]
             for new_property in list_of_new_keys:
                 if new_property == _property:
