@@ -191,7 +191,7 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
         max_index = sample_n
         indices = indices[randperm(len(indices))]
     else:
-        max_index = len(dataset)
+        max_index = len(indices)
         indices = indices if no_shuffle else indices[randperm(len(indices))]
 
     if max_index > len(indices):
