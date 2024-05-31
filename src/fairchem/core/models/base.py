@@ -38,6 +38,7 @@ class BaseModel(nn.Module):
         use_pbc=None,
         otf_graph=None,
         enforce_max_neighbors_strictly=None,
+        use_pbc_single=False,
     ):
         cutoff = cutoff or self.cutoff
         max_neighbors = max_neighbors or self.max_neighbors
@@ -69,8 +70,12 @@ class BaseModel(nn.Module):
 
         if use_pbc:
             if otf_graph:
-                edge_index_per_system, cell_offsets_per_system, neighbors_per_system = (
-                    list(
+                if use_pbc_single:
+                    (
+                        edge_index_per_system,
+                        cell_offsets_per_system,
+                        neighbors_per_system,
+                    ) = list(
                         zip(
                             *[
                                 radius_graph_pbc(
@@ -83,30 +88,29 @@ class BaseModel(nn.Module):
                             ]
                         )
                     )
-                )
 
-                # atom indexs in the edge_index need to be offset
-                atom_index_offset = data.natoms.cumsum(dim=0).roll(1)
-                atom_index_offset[0] = 0
-                edge_index = torch.hstack(
-                    [
-                        edge_index_per_system[idx] + atom_index_offset[idx]
-                        for idx in range(len(data))
-                    ]
-                )
-                cell_offsets = torch.vstack(cell_offsets_per_system)
-                neighbors = torch.hstack(neighbors_per_system)
-
-                ## TODO this is the original call, but blows up with memory
-                ## using two different samples
-                ## sid='mp-675045-mp-675045-0-7' (MPTRAJ)
-                ## sid='75396' (OC22)
-                # edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                #     data,
-                #     cutoff,
-                #     max_neighbors,
-                #     enforce_max_neighbors_strictly,
-                # )
+                    # atom indexs in the edge_index need to be offset
+                    atom_index_offset = data.natoms.cumsum(dim=0).roll(1)
+                    atom_index_offset[0] = 0
+                    edge_index = torch.hstack(
+                        [
+                            edge_index_per_system[idx] + atom_index_offset[idx]
+                            for idx in range(len(data))
+                        ]
+                    )
+                    cell_offsets = torch.vstack(cell_offsets_per_system)
+                    neighbors = torch.hstack(neighbors_per_system)
+                else:
+                    ## TODO this is the original call, but blows up with memory
+                    ## using two different samples
+                    ## sid='mp-675045-mp-675045-0-7' (MPTRAJ)
+                    ## sid='75396' (OC22)
+                    edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                        data,
+                        cutoff,
+                        max_neighbors,
+                        enforce_max_neighbors_strictly,
+                    )
                 # assert (_edge_index == edge_index).all().item()
                 # assert (_cell_offsets == cell_offsets).all().item()
                 # assert (_neighbors == neighbors).all().item()
