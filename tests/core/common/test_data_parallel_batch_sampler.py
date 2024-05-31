@@ -8,6 +8,9 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import functools
+import tempfile
+from contextlib import contextmanager
+from pathlib import Path
 from typing import TypeVar
 
 import numpy as np
@@ -20,13 +23,19 @@ from fairchem.core.common.data_parallel import (
     UnsupportedDatasetError,
     _balanced_partition,
 )
-from fairchem.core.datasets.base_dataset import DatasetMetadata, DatasetWithSizes
+from fairchem.core.datasets.base_dataset import DatasetMetadata, DatasetWithSizes, UnsupportedDatasetError
 
 DATA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 SIZE_ATOMS = [2, 20, 3, 51, 10, 11, 41, 31, 13, 14]
+SIZE_NEIGHBORS = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
 
 T_co = TypeVar("T_co", covariant=True)
 
+
+@contextmanager
+def _temp_file(name: str):
+        with tempfile.TemporaryDirectory() as tmpdir:
+                    yield Path(tmpdir) / name
 
 @pytest.fixture()
 def valid_dataset():
@@ -53,6 +62,47 @@ def valid_dataset():
 
 
 @pytest.fixture()
+def valid_path_dataset():
+    class _Dataset(Dataset[T_co], DatasetWithSizes):
+        def __init__(self, data, fpath: Path) -> None:
+            self.data = data
+            self.metadata = DatasetMetadata(natoms=np.load(fpath)['natoms'])
+
+        def __len__(self):
+            return len(self.data)
+
+        def __getitem__(self, idx):
+            assert attr == "natoms"
+            metadata_attr = getattr(self.metadata, attr)
+            if isinstance(idx, list):
+                return [metadata_attr[_idx] for _idx in idx]
+            return metadata_attr[idx]
+
+    with _temp_file("metadata.npz") as file:
+        np.savez(
+            natoms=np.array(SIZE_ATOMS),
+            neighbors=np.array(SIZE_NEIGHBORS),
+            file=file,
+        )
+        yield _Dataset(DATA, file)
+
+
+@pytest.fixture()
+def invalid_path_dataset():
+    class _Dataset(Dataset):
+        def __init__(self, data) -> None:
+            self.data = data
+            self.metadata_path = Path("/tmp/does/not/exist.np")
+
+        def __len__(self):
+            return len(self.data)
+
+        def __getitem__(self, idx):
+            return self.data[idx]
+
+    return _Dataset(DATA)
+
+@pytest.fixture()
 def invalid_dataset():
     class _Dataset(Dataset):
         def __init__(self, data) -> None:
@@ -67,10 +117,28 @@ def invalid_dataset():
     return _Dataset(DATA)
 
 
-def test_invalid_mode(invalid_dataset) -> None:
+def test_lowercase(invalid_dataset) -> None:
     with pytest.raises(
         ValueError,
-        match="Only mode='atoms' or mode=True is supported, got mode='natoms'.",
+        match="Only mode='atoms' or mode=True is supported, got mode='ATOMS'.",
+    ):
+        sampler = BalancedBatchSampler(
+            dataset=invalid_dataset,
+            batch_size=1,
+            rank=0,
+            num_replicas=2,
+            device=None,
+            mode="ATOMS",
+            on_error="raise",
+            seed=0
+        )
+
+
+
+def test_invalid_mode(invalid_dataset) -> None:
+    with pytest.raises(
+            ValueError,
+            match="Only mode='atoms' or mode=True is supported, got mode='natoms'.",
     ):
         _ = BalancedBatchSampler(
             dataset=invalid_dataset,
@@ -80,11 +148,12 @@ def test_invalid_mode(invalid_dataset) -> None:
             device=None,
             mode="natoms",
             on_error="raise",
+            seed=0
         )
 
     with pytest.raises(
-        ValueError,
-        match="Only mode='atoms' or mode=True is supported, got mode='neighbors'.",
+            ValueError,
+            match="Only mode='atoms' or mode=True is supported, got mode='neighbors'.",
     ):
         _ = BalancedBatchSampler(
             dataset=invalid_dataset,
@@ -94,6 +163,7 @@ def test_invalid_mode(invalid_dataset) -> None:
             device=None,
             mode="neighbors",
             on_error="raise",
+            seed=0
         )
 
 
@@ -107,11 +177,54 @@ def test_invalid_dataset(invalid_dataset) -> None:
             device=None,
             mode="atoms",
             on_error="raise",
+            seed=0
+        )
+    with pytest.raises(
+        UnsupportedDatasetError,
+    ):
+        BalancedBatchSampler(
+            dataset=invalid_dataset,
+            batch_size=1,
+            rank=0,
+            num_replicas=2,
+            device=None,
+            mode="atoms",
+            on_error="raise",
+            seed=0
         )
         _ = sampler._get_natoms(list(range(len(SIZE_ATOMS))))
 
 
-def test_valid_dataset(valid_dataset) -> None:
+def test_invalid_path_dataset(invalid_path_dataset) -> None:
+    with pytest.raises(
+        UnsupportedDatasetError,
+    ):
+        BalancedBatchSampler(
+            dataset=invalid_path_dataset,
+            batch_size=1,
+            rank=0,
+            num_replicas=2,
+            device=None,
+            mode="atoms",
+            on_error="raise",
+            seed=0
+        )
+    with pytest.raises(
+        UnsupportedDatasetError,
+    ):
+        BalancedBatchSampler(
+            dataset=invalid_path_dataset,
+            batch_size=1,
+            rank=0,
+            num_replicas=2,
+            device=None,
+            mode="atoms",
+            on_error="raise",
+            seed=0
+        )
+
+
+def test_valid_dataset(valid_dataset,valid_path_dataset) -> None:
     sampler = BalancedBatchSampler(
         dataset=valid_dataset,
         batch_size=1,
@@ -120,21 +233,21 @@ def test_valid_dataset(valid_dataset) -> None:
         device=None,
         mode="atoms",
         on_error="raise",
+        seed=0
     )
-    assert (
-        sampler._get_natoms(list(range(len(SIZE_ATOMS)))) == np.array(SIZE_ATOMS)
-    ).all()
+    assert (sampler._get_natoms(list(range(len(SIZE_ATOMS))))==np.array(SIZE_ATOMS)).all()
 
 
-def test_disabled(valid_dataset) -> None:
+def test_disabled(valid_path_dataset) -> None:
     sampler = BalancedBatchSampler(
-        dataset=valid_dataset,
+        dataset=valid_path_dataset,
         batch_size=1,
         rank=0,
         num_replicas=2,
         device=None,
         mode=False,
         on_error="raise",
+        seed=0
     )
     assert sampler.disabled or not sampler._dist_enabled()
 
@@ -148,6 +261,7 @@ def test_single_node(valid_dataset) -> None:
         device=None,
         mode="atoms",
         on_error="raise",
+        seed=0
     )
     assert sampler.disabled or not sampler._dist_enabled()
 

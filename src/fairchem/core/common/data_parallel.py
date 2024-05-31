@@ -78,6 +78,7 @@ class BalancedBatchSampler(BatchSampler):
         batch_size: int,
         num_replicas: int,
         rank: int,
+        seed: int,
         device: torch.device,
         mode: bool | Literal["atoms"] = "atoms",
         shuffle: bool = True,
@@ -115,6 +116,8 @@ class BalancedBatchSampler(BatchSampler):
             logging.warning(f"Disabled BalancedBatchSampler because {num_replicas=}.")
             self.disabled = True
 
+        _ensure_supported(dataset)
+
         sampler = StatefulDistributedSampler(
             dataset,
             num_replicas=num_replicas,
@@ -122,6 +125,7 @@ class BalancedBatchSampler(BatchSampler):
             shuffle=shuffle,
             drop_last=drop_last,
             batch_size=batch_size,
+            seed=seed
         )
 
         super().__init__(sampler, batch_size=batch_size, drop_last=drop_last)
@@ -135,7 +139,6 @@ class BalancedBatchSampler(BatchSampler):
     def _get_natoms(self, batch_idx: list[int]):
         dataset = self.sampler.dataset
         try:
-            dataset = _ensure_supported(dataset)
             return dataset.get_metadata("natoms", batch_idx)
         except UnsupportedDatasetError as error:
             if self.on_error == "raise":
@@ -175,7 +178,7 @@ class BalancedBatchSampler(BatchSampler):
     def __iter__(self):
         if self.disabled or not self._dist_enabled():
             for batch_idx in super().__iter__():
-                self.max_atoms_in_batch = sum(self._get_natoms(batch_idx))
+                #self.max_atoms_in_batch = sum(self._get_natoms(batch_idx))
                 yield batch_idx
             return
 
