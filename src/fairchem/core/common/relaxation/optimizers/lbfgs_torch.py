@@ -10,12 +10,14 @@ from __future__ import annotations
 import logging
 from collections import deque
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import ase
 import torch
 from torch_scatter import scatter
 
-from fairchem.core.common.relaxation.optimizers.optimizable import OptimizableBatch
+if TYPE_CHECKING:
+    from .optimizable import OptimizableBatch
 
 
 class LBFGS:
