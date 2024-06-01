@@ -18,7 +18,7 @@ from fairchem.core.common.typing import assert_is_instance
 from fairchem.core.datasets.lmdb_dataset import data_list_collater
 
 from .optimizers.lbfgs_torch import LBFGS
-from .optimizers.optimize import OptimizableBatch
+from .optimizers.optimizable import OptimizableBatch
 
 
 def ml_relax(

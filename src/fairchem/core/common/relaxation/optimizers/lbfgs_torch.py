@@ -15,7 +15,7 @@ import ase
 import torch
 from torch_scatter import scatter
 
-from fairchem.core.common.relaxation.optimizers.optimize import OptimizableBatch
+from fairchem.core.common.relaxation.optimizers.optimizable import OptimizableBatch
 
 
 class LBFGS:
