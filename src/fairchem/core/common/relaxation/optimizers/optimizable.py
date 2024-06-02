@@ -10,6 +10,7 @@ Code based on ase.optimize
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar
+from functools import cached_property
 
 import numpy as np
 import torch
@@ -121,6 +122,11 @@ class OptimizableBatch(Optimizable):
     def device(self):
         return self.trainer.device
 
+    @property
+    def batch_indices(self):
+        """Get the batch indices specifying which position/force corresponds to which batch."""
+        return self.batch.batch
+
     def check_state(self, batch: Batch, tol: float = 1e-12):
         """Check for any system changes since last calculation."""
         return compare_batches(
@@ -157,7 +163,7 @@ class OptimizableBatch(Optimizable):
 
     def get_positions(self):
         """Get the batch positions"""
-        return self.batch.pos.cpu().numpy() if self.numpy else self.batch.pos
+        return self.batch.pos.cpu().numpy() if self.numpy else self.batch.pos.clone()
 
     def set_positions(self, positions: torch.Tensor | NDArray):
         "Set the batch positions"
@@ -232,7 +238,7 @@ class OptimizableBatch(Optimizable):
         return len(self.batch.pos)
 
 
-class UnitCellFilter(Optimizable):
+class UnitCellOptimizableBatch(OptimizableBatch):
     """Modify the supercell and the atom positions in relaxations.
 
     Based on ase UnitCellFilter to work on data batches
@@ -240,7 +246,10 @@ class UnitCellFilter(Optimizable):
 
     def __init__(
         self,
-        optimizable_batch: OptimizableBatch,
+        batch: Batch,
+        trainer: BaseTrainer,
+        transform: torch.nn.Module | None = None,
+        numpy: bool = False,
         mask: Sequence[bool] | None = None,
         cell_factor: float | None = None,
         hydrostatic_strain: bool = False,
@@ -254,6 +263,10 @@ class UnitCellFilter(Optimizable):
             Phys. Rev. B 59, 235 (1999)
 
         Args:
+            batch: A batch of atoms graph data
+            model: An instance of a BaseTrainer derived class
+            transform: graph transform
+            numpy: whether to cast results to numpy arrays
             mask: a boolean mask specifying which strain components are allowed to relax
             cell_factor:
                 Factor by which deformation gradient is multiplied to put
@@ -276,19 +289,19 @@ class UnitCellFilter(Optimizable):
                 Applied pressure to use for enthalpy pV term. As above, this
                 breaks energy/force consistency.
         """
+        super().__init__(batch=batch, trainer=trainer, transform=transform, numpy=numpy)
 
-        self.optimizable = optimizable_batch
-        self.orig_cells = self.optimizable.get_cells().clone()
+        self.orig_cells = self.get_cells().clone()
         self.stress = None
 
         if mask is None:
-            mask = torch.eye(3, device=optimizable_batch.device)
+            mask = torch.eye(3, device=self.device)
 
         # TODO make sure mask is on GPU
         if mask.shape == (6,):
             self.mask = torch.tensor(
                 voigt_6_to_full_3x3_stress(mask.detach().cpu()),
-                device=self.optimizable.device,
+                device=self.device,
             )
         elif mask.shape == (3, 3):
             self.mask = mask
@@ -296,37 +309,55 @@ class UnitCellFilter(Optimizable):
             raise ValueError("shape of mask should be (3,3) or (6,)")
 
         if cell_factor is None:
-            cell_factor = self.optimizable.batch.natoms.to(torch.float32).mean().item()
+            cell_factor = self.batch.natoms.to(torch.float32).mean().item()
 
         self.hydrostatic_strain = hydrostatic_strain
         self.constant_volume = constant_volume
-        self.pressure = scalar_pressure * torch.eye(3, device=self.optimizable.device)
+        self.pressure = scalar_pressure * torch.eye(3, device=self.device)
         self.cell_factor = cell_factor
         self.stress = None
         self._batch_trace = torch.vmap(torch.trace)
         self._batch_diag = torch.vmap(lambda x: x * torch.eye(3, device=x.device))
 
+    @cached_property
+    def batch_indices(self):
+        """Get the batch indices specifying which position/force corresponds to which batch.
+
+        We augment this to specify the batch indices for augmented positions and forces.
+        """
+        augmented_batch = torch.repeat_interleave(
+            torch.arange(
+                len(self.batch), dtype=self.batch.batch.dtype, device=self.device
+            ),
+            3,
+        )
+        return torch.cat([self.batch.batch, augmented_batch])
+
     def deform_grad(self):
         """Get the cell deformation matrix"""
         return torch.transpose(
-            torch.linalg.solve(self.orig_cells, self.optimizable.get_cells()), 1, 2
+            torch.linalg.solve(self.orig_cells, self.get_cells()), 1, 2
         )
 
     def get_positions(self):
         """Get positions and cell deformation gradient."""
         cur_deform_grad = self.deform_grad()
-        natoms = self.optimizable.batch.num_nodes
-        pos = torch.zeros((natoms + 3 * len(self.optimizable.get_cells()), 3))
+        natoms = self.batch.num_nodes
+        pos = torch.zeros(
+            (natoms + 3 * len(self.get_cells()), 3),
+            dtype=self.batch.pos.dtype,
+            device=self.device,
+        )
 
         # Augmented positions are the self.atoms.positions but without the applied deformation gradient
         pos[:natoms] = torch.linalg.solve(
-            cur_deform_grad[self.optimizable.batch.batch, :, :],
-            self.optimizable.batch.pos.view(-1, 3, 1),
+            cur_deform_grad[self.batch.batch, :, :],
+            self.batch.pos.view(-1, 3, 1),
         ).view(-1, 3)
 
         # cell DOFs are the deformation gradient times a scaling factor
         pos[natoms:] = self.cell_factor * cur_deform_grad.view(-1, 3)
-        return pos.cpu().numpy() if self.optimizable.numpy else pos
+        return pos.cpu().numpy() if self.numpy else pos
 
     def set_positions(self, positions: torch.Tensor | NDArray):
         """Set positions and cell.
@@ -336,15 +367,11 @@ class UnitCellFilter(Optimizable):
         for each cell.
         """
         if isinstance(positions, np.ndarray):
-            positions = torch.tensor(
-                positions, dtype=torch.float32, device=self.optimizable.device
-            )
+            positions = torch.tensor(positions, dtype=torch.float32, device=self.device)
         else:
-            positions = positions.to(
-                dtype=torch.float32, device=self.optimizable.device
-            )
+            positions = positions.to(dtype=torch.float32, device=self.device)
 
-        natoms = self.optimizable.batch.num_nodes
+        natoms = self.batch.num_nodes
         new_atom_positions = positions[:natoms]
         new_deform_grad = positions[natoms:].view(-1, 3, 3) / self.cell_factor
 
@@ -352,36 +379,36 @@ class UnitCellFilter(Optimizable):
         # Set the new cell from the original cell and the new deformation gradient.  Both current and final structures
         # should preserve symmetry.
         new_cells = torch.bmm(self.orig_cells, torch.transpose(new_deform_grad, 1, 2))
-        self.optimizable.set_cells(new_cells)
+        self.set_cells(new_cells)
 
         # Set the positions from the ones passed in (which are without the deformation gradient applied) and the new
         # deformation gradient. This should also preserve symmetry
         new_atom_positions = torch.bmm(
             new_atom_positions.view(-1, 1, 3),
             torch.transpose(
-                new_deform_grad[self.optimizable.batch.batch, :, :].view(-1, 3, 3), 1, 2
+                new_deform_grad[self.batch.batch, :, :].view(-1, 3, 3), 1, 2
             ),
         )
-        self.optimizable.set_positions(new_atom_positions.view(-1, 3))
+        super().set_positions(new_atom_positions.view(-1, 3))
 
     def get_potential_energy(self, **kwargs):
         """
         returns potential energy including enthalpy PV term.
         """
-        atoms_energy = self.optimizable.get_potential_energy(**kwargs)
-        return atoms_energy + self.pressure[0, 0] * self.optimizable.get_volumes().sum()
+        atoms_energy = self.get_potential_energy(**kwargs)
+        return atoms_energy + self.pressure[0, 0] * self.get_volumes().sum()
 
     def get_forces(self, **kwargs):
         """Get forces and unit cell stress."""
-        stress = self.optimizable.get_property("stress", no_numpy=True).view(-1, 3, 3)
-        atom_forces = self.optimizable.get_property("forces", no_numpy=True)
-        volumes = self.optimizable.get_volumes().view(-1, 1, 1)
+        stress = self.get_property("stress", no_numpy=True).view(-1, 3, 3)
+        atom_forces = self.get_property("forces", no_numpy=True)
+        volumes = self.get_volumes().view(-1, 1, 1)
 
         virial = -volumes * stress + self.pressure.view(-1, 3, 3)
         cur_deform_grad = self.deform_grad()
         atom_forces = torch.bmm(
             atom_forces.view(-1, 1, 3),
-            cur_deform_grad[self.optimizable.batch.batch, :, :].view(-1, 3, 3),
+            cur_deform_grad[self.batch.batch, :, :].view(-1, 3, 3),
         )
         virial = torch.linalg.solve(
             cur_deform_grad, torch.transpose(virial, dim0=1, dim1=2)
@@ -398,23 +425,17 @@ class UnitCellFilter(Optimizable):
         if self.constant_volume:
             virial[:, range(3), range(3)] -= self._batch_trace(virial).view(3, -1) / 3.0
 
-        natoms = self.optimizable.batch.num_nodes
+        natoms = self.batch.num_nodes
         augmented_forces = torch.zeros(
-            (natoms + 3 * len(self.optimizable.get_cells()), 3)
+            (natoms + 3 * len(self.get_cells()), 3),
+            device=self.device,
+            dtype=atom_forces.dtype,
         )
         augmented_forces[:natoms] = atom_forces.view(-1, 3)
         augmented_forces[natoms:] = virial.view(-1, 3) / self.cell_factor
 
         self.stress = -virial.view(-1, 9) / volumes.view(-1, 1)
-        return (
-            augmented_forces.cpu().numpy()
-            if self.optimizable.numpy
-            else augmented_forces
-        )
-
-    def iterimages(self):
-        # XXX document purpose of iterimages - this is just needed to work with ASE optimizers
-        return self.optimizable.iterimages()
+        return augmented_forces.cpu().numpy() if self.numpy else augmented_forces
 
     def __len__(self):
-        return len(self.optimizable.batch.pos) + 3 * len(self.optimizable.get_cells())
+        return len(self.batch.pos) + 3 * len(self.batch)
