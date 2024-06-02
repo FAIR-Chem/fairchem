@@ -9,8 +9,8 @@ Code based on ase.optimize
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar
 from functools import cached_property
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 import torch
