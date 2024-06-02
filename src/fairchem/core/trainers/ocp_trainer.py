@@ -570,6 +570,8 @@ class OCPTrainer(BaseTrainer):
                 model=self,
                 steps=self.config["task"].get("relaxation_steps", 300),
                 fmax=self.config["task"].get("relaxation_fmax", 0.02),
+                relax_cell=self.config["task"].get("relax_cell", False),
+                relax_volume=self.config["task"].get("relax_volume", False),
                 relax_opt=self.config["task"]["relax_opt"],
                 save_full_traj=self.config["task"].get("save_full_traj", True),
                 device=self.device,

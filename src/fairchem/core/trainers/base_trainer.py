@@ -344,7 +344,8 @@ class BaseTrainer(ABC):
 
         # load relaxation dataset
         if "relax_dataset" in self.config["task"]:
-            self.relax_dataset = registry.get_dataset_class("lmdb")(
+            format = self.config["task"]["relax_dataset"].get("format", "lmdb")
+            self.relax_dataset = registry.get_dataset_class(format)(
                 self.config["task"]["relax_dataset"]
             )
             self.relax_sampler = self.get_sampler(
