@@ -70,10 +70,11 @@ class LBFGS:
         if not self.otf_graph and "edge_index" not in self.optimizable.batch:
             self.optimizable.update_graph()
 
-    def set_positions(self, update, update_mask):
+    def set_positions(self, positions, update_mask):
         if not self.early_stop_batch:
-            update = torch.where(update_mask.unsqueeze(1), update, 0.0)
-        self.optimizable.batch.pos += update.to(dtype=torch.float32)
+            positions = torch.where(update_mask.unsqueeze(1), positions, 0.0)
+
+        self.optimizable.set_positions(positions.to(dtype=torch.float32))
 
         if not self.otf_graph:
             self.optimizable.update_graph()
@@ -87,14 +88,14 @@ class LBFGS:
             forces = forces.to(dtype=torch.float64)
 
         max_forces_ = scatter(
-            (forces**2).sum(axis=1).sqrt(), self.optimizable.batch.batch, reduce="max"
+            (forces**2).sum(axis=1).sqrt(), self.optimizable.batch_indices, reduce="max"
         )
         logging.info(
             f"{iteration} " + " ".join(f"{x:0.3f}" for x in max_forces_.tolist())
         )
 
         # (batch_size) -> (nAtoms)
-        max_forces = max_forces_[self.optimizable.batch.batch]
+        max_forces = max_forces_[self.optimizable.batch_indices]
 
         return max_forces.lt(self.fmax), energy, forces
 
@@ -117,9 +118,11 @@ class LBFGS:
 
         iteration = 0
         converged = False
-        converged_mask = torch.zeros_like(
-            self.optimizable.batch.atomic_numbers, device=self.device
-        ).bool()
+        converged_mask = torch.zeros(
+            self.optimizable.batch_indices.shape[0],
+            dtype=torch.bool,
+            device=self.device,
+        )
         while iteration < steps and not converged:
             _converged_mask, energy, forces = self.check_convergence(iteration)
             # Models like GemNet-OC can have random noise in their predictions.
@@ -132,7 +135,12 @@ class LBFGS:
             if self.trajectories is not None and (
                 self.save_full or converged or iteration == steps - 1 or iteration == 0
             ):
-                self.write(energy, forces, update_mask)
+                # forces and mask can be augmented
+                self.write(
+                    energy,
+                    forces[: self.optimizable.batch.pos.shape[0]],
+                    update_mask[: self.optimizable.batch.pos.shape[0]],
+                )
 
             if not converged and iteration < steps - 1:
                 self.step(iteration, forces, update_mask)
@@ -150,10 +158,9 @@ class LBFGS:
                 traj_fl = Path(self.traj_dir / f"{name}.traj_tmp", mode="w")
                 traj_fl.rename(traj_fl.with_suffix(".traj"))
 
-        self.optimizable.batch.y = self.optimizable.get_potential_energies()
-        self.optimizable.batch.force = self.optimizable.get_forces(
-            apply_constraint=False
-        )
+        self.optimizable.batch.energy = energy
+        # forces are augmented
+        self.optimizable.batch.forces = forces[: self.optimizable.batch.pos.shape[0]]
 
         return self.optimizable.batch
 
@@ -165,15 +172,15 @@ class LBFGS:
     ) -> None:
         def _batched_dot(x: torch.Tensor, y: torch.Tensor):
             return scatter(
-                (x * y).sum(dim=-1), self.optimizable.batch.batch, reduce="sum"
+                (x * y).sum(dim=-1), self.optimizable.batch_indices, reduce="sum"
             )
 
         def determine_step(dr):
             steplengths = torch.norm(dr, dim=1)
             longest_steps = scatter(
-                steplengths, self.optimizable.batch.batch, reduce="max"
+                steplengths, self.optimizable.batch_indices, reduce="max"
             )
-            longest_steps = longest_steps[self.optimizable.batch.batch]
+            longest_steps = longest_steps[self.optimizable.batch_indices]
             maxstep = longest_steps.new_tensor(self.maxstep)
             scale = (longest_steps + 1e-7).reciprocal() * torch.min(
                 longest_steps, maxstep
@@ -184,7 +191,7 @@ class LBFGS:
         if forces is None:
             forces = self.optimizable.get_forces(apply_constraint=True)
 
-        r = self.optimizable.batch.pos.clone().to(dtype=torch.float64)
+        r = self.optimizable.get_positions().to(dtype=torch.float64)
 
         # Update s, y, rho
         if iteration > 0:
@@ -202,14 +209,14 @@ class LBFGS:
 
         for i in range(loopmax - 1, -1, -1):
             alpha[i] = self.rho[i] * _batched_dot(self.s[i], q)  # b
-            q -= alpha[i][self.optimizable.batch.batch, ..., None] * self.y[i]
+            q -= alpha[i][self.optimizable.batch_indices, ..., None] * self.y[i]
 
         z = self.H0 * q
         for i in range(loopmax):
             beta = self.rho[i] * _batched_dot(self.y[i], z)
             z += self.s[i] * (
-                alpha[i][self.optimizable.batch.batch, ..., None]
-                - beta[self.optimizable.batch.batch, ..., None]
+                alpha[i][self.optimizable.batch_indices, ..., None]
+                - beta[self.optimizable.batch_indices, ..., None]
             )
 
         # descent direction
@@ -219,13 +226,13 @@ class LBFGS:
             # Same configuration again (maybe a restart):
             return
 
-        self.set_positions(dr, update_mask)
+        self.set_positions(r + dr, update_mask)
 
         self.r0 = r
         self.f0 = forces
 
     def write(self, energy, forces, update_mask) -> None:
-        self.optimizable.batch.y, self.optimizable.batch.force = energy, forces
+        self.optimizable.batch.energy, self.optimizable.batch.forces = energy, forces
         atoms_objects = self.optimizable.get_atoms_list()
         update_mask_ = torch.split(update_mask, self.optimizable.batch.natoms.tolist())
         for atm, traj, mask in zip(atoms_objects, self.trajectories, update_mask_):

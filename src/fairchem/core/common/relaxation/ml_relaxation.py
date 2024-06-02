@@ -18,7 +18,7 @@ from fairchem.core.common.typing import assert_is_instance
 from fairchem.core.datasets.lmdb_dataset import data_list_collater
 
 from .optimizers.lbfgs_torch import LBFGS
-from .optimizers.optimizable import OptimizableBatch
+from .optimizers.optimizable import OptimizableBatch, UnitCellOptimizableBatch
 
 
 def ml_relax(
@@ -26,26 +26,26 @@ def ml_relax(
     model,
     steps: int,
     fmax: float,
-    relax_opt,
-    save_full_traj,
+    relax_opt: dict[str],
+    relax_cell: bool = False,
+    relax_volume: bool = False,
+    save_full_traj: bool = True,
     device: str = "cuda:0",
-    transform=None,
+    transform: torch.nn.Module | None = None,
     early_stop_batch: bool = False,
 ):
     """Runs ML-based relaxations.
 
     Args:
-        batch: a data batch object
-        model: a trainer object with model
-        steps: int
-            Max number of steps in the structure relaxation.
-        fmax: float
-            Structure relaxation terminates when the max force
-            of the system is no bigger than fmax.
-        relax_opt: str
-            Optimizer and corresponding parameters to be used for structure relaxations.
-        save_full_traj: bool
-            Whether to save out the full ASE trajectory. If False, only save out initial and final frames.
+        batch: a data batch object.
+        model: a trainer object with model.q
+        steps: Max number of steps in the structure relaxation.
+        fmax: Structure relaxation terminates when the max force of the system is no bigger than fmax.
+        relax_opt: Optimizer and corresponding parameters to be used for structure relaxations.
+        relax_cell: if true will use stress predictions to relax crystallographic cell.
+            The model given must predict stress
+        relax_volume: if true will relax the cell isotropically. the given model must predict stress.
+        save_full_traj: Whether to save out the full ASE trajectory. If False, only save out initial and final frames.
     """
     # if not pbc is set, ignore it when comparing batches
     if not hasattr(batch, "pbc"):
@@ -57,7 +57,16 @@ def ml_relax(
         batch = batches.popleft()
         oom = False
         ids = batch.sid
-        optimizable = OptimizableBatch(batch, trainer=model, transform=transform)
+
+        if relax_cell or relax_volume:
+            optimizable = UnitCellOptimizableBatch(
+                batch,
+                trainer=model,
+                transform=transform,
+                hydrostatic_strain=relax_volume,
+            )
+        else:
+            optimizable = OptimizableBatch(batch, trainer=model, transform=transform)
 
         # Run ML-based relaxation
         traj_dir = relax_opt.get("traj_dir", None)
@@ -79,6 +88,7 @@ def ml_relax(
             relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
             relaxed_batches.append(relaxed_batch)
         except RuntimeError as err:
+            raise err
             e = err
             oom = True
             torch.cuda.empty_cache()

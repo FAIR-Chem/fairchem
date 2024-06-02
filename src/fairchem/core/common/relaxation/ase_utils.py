@@ -43,11 +43,11 @@ def batch_to_atoms(batch: Batch):
     natoms = batch.natoms.tolist()
     numbers = torch.split(batch.atomic_numbers, natoms)
     fixed = torch.split(batch.fixed.to(torch.bool), natoms)
-    forces = torch.split(batch.force, natoms)
+    forces = torch.split(batch.forces, natoms)
     positions = torch.split(batch.pos, natoms)
     tags = torch.split(batch.tags, natoms)
     cells = batch.cell
-    energies = batch.y.view(-1).tolist()
+    energies = batch.energy.view(-1).tolist()
 
     atoms_objects = []
     for idx in range(n_systems):
