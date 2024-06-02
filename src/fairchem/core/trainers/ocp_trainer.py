@@ -389,7 +389,7 @@ class OCPTrainer(BaseTrainer):
         return evaluator.eval(out, targets, prev_metrics=metrics)
 
     # Takes in a new data source and generates predictions on it.
-    @torch.no_grad()
+    @torch.no_grad
     def predict(
         self,
         data_loader,
@@ -514,6 +514,7 @@ class OCPTrainer(BaseTrainer):
 
         return predictions
 
+    @torch.no_grad
     def run_relaxations(self, split="val"):
         ensure_fitted(self._unwrapped_model)
 

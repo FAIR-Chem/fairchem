@@ -691,7 +691,7 @@ class BaseTrainer(ABC):
                     disable_tqdm=disable_eval_tqdm,
                 )
 
-    @torch.no_grad()
+    @torch.no_grad
     def validate(self, split: str = "val", disable_tqdm: bool = False):
         ensure_fitted(self._unwrapped_model, warn=True)
 
