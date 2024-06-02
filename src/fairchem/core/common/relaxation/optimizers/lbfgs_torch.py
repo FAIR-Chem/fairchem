@@ -164,30 +164,28 @@ class LBFGS:
 
         return self.optimizable.batch
 
+    def _determine_step(self, dr):
+        steplengths = torch.norm(dr, dim=1)
+        longest_steps = scatter(
+            steplengths, self.optimizable.batch_indices, reduce="max"
+        )
+        longest_steps = longest_steps[self.optimizable.batch_indices]
+        maxstep = longest_steps.new_tensor(self.maxstep)
+        scale = (longest_steps + 1e-7).reciprocal() * torch.min(longest_steps, maxstep)
+        dr *= scale.unsqueeze(1)
+        return dr * self.damping
+
+    def _batched_dot(self, x: torch.Tensor, y: torch.Tensor):
+        return scatter(
+            (x * y).sum(dim=-1), self.optimizable.batch_indices, reduce="sum"
+        )
+
     def step(
         self,
         iteration: int,
         forces: torch.Tensor | None,
         update_mask: torch.Tensor,
     ) -> None:
-        def _batched_dot(x: torch.Tensor, y: torch.Tensor):
-            return scatter(
-                (x * y).sum(dim=-1), self.optimizable.batch_indices, reduce="sum"
-            )
-
-        def determine_step(dr):
-            steplengths = torch.norm(dr, dim=1)
-            longest_steps = scatter(
-                steplengths, self.optimizable.batch_indices, reduce="max"
-            )
-            longest_steps = longest_steps[self.optimizable.batch_indices]
-            maxstep = longest_steps.new_tensor(self.maxstep)
-            scale = (longest_steps + 1e-7).reciprocal() * torch.min(
-                longest_steps, maxstep
-            )
-            dr *= scale.unsqueeze(1)
-            return dr * self.damping
-
         if forces is None:
             forces = self.optimizable.get_forces(apply_constraint=True)
 
@@ -201,19 +199,19 @@ class LBFGS:
             y0 = -(forces - self.f0)
             self.y.append(y0)
 
-            self.rho.append(1.0 / _batched_dot(y0, s0))
+            self.rho.append(1.0 / self._batched_dot(y0, s0))
 
         loopmax = min(self.memory, iteration)
         alpha = forces.new_empty(loopmax, self.optimizable.batch.natoms.shape[0])
         q = -forces
 
         for i in range(loopmax - 1, -1, -1):
-            alpha[i] = self.rho[i] * _batched_dot(self.s[i], q)  # b
+            alpha[i] = self.rho[i] * self._batched_dot(self.s[i], q)  # b
             q -= alpha[i][self.optimizable.batch_indices, ..., None] * self.y[i]
 
         z = self.H0 * q
         for i in range(loopmax):
-            beta = self.rho[i] * _batched_dot(self.y[i], z)
+            beta = self.rho[i] * self._batched_dot(self.y[i], z)
             z += self.s[i] * (
                 alpha[i][self.optimizable.batch_indices, ..., None]
                 - beta[self.optimizable.batch_indices, ..., None]
@@ -221,7 +219,7 @@ class LBFGS:
 
         # descent direction
         p = -z
-        dr = determine_step(p)
+        dr = self._determine_step(p)
         if torch.abs(dr).max() < 1e-7:
             # Same configuration again (maybe a restart):
             return
