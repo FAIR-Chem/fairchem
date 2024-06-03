@@ -35,6 +35,33 @@ pip install -e packages/fairchem-{fairchem-package-name}
 `fairchem.core` requires you to first create your environment
 - [Installation Guide](https://fair-chem.github.io/core/install.html)
 
+### Quick Start
+Pretrained models can be used directly with ASE through our `OCPCalculator` interface:
+
+```python
+from ase.build import fcc100, add_adsorbate, molecule
+from ase.optimize import LBFGS
+from fairchem.core import OCPCalculator
+
+# Set up your system as an ASE atoms object
+slab = fcc100('Cu', (3, 3, 3), vacuum=8)
+adsorbate = molecule("CO")
+add_adsorbate(slab, adsorbate, 2.0, 'bridge')
+
+calc = OCPCalculator(
+    model_name="EquiformerV2-31M-S2EF-OC20-All+MD",
+    local_cache="pretrained_models",
+    cpu=False,
+)
+slab.calc = calc
+
+# Set up LBFGS dynamics object
+dyn = LBFGS(slab)
+dyn.run(0.05, 100)
+```
+
+If you are interested in training your own models or fine-tuning on your datasets, visit the [documentation](https://fair-chem.github.io/) for more details and examples.
+
 ### Why a single repository?
 Since many of our repositories rely heavily on our other repositories, a single repository makes it really easy to test and ensure consistency across repositories. This should also help simplify the installation process for users who are interested in integrating many of the efforts into one place.
 

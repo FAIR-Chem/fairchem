@@ -2,7 +2,7 @@ from fairchem.applications.cattsunami.core import Reaction
 import ase
 from fairchem.applications.cattsunami.databases import DISSOCIATION_REACTION_DB_PATH
 from fairchem.data.oc.databases.pkls import ADSORBATE_PKL_PATH
-
+import random
 
 class TestReaction:
     def test_loading_from_id(self):
@@ -32,6 +32,7 @@ class TestReaction:
         assert reaction.edge_list_initial[0] == (0, 1)
 
     def test_loading_from_random(self):
+        random.seed(22)
         reaction = Reaction(
             reaction_db_path=DISSOCIATION_REACTION_DB_PATH,
             adsorbate_db_path=ADSORBATE_PKL_PATH,

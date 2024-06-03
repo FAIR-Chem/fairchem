@@ -22,11 +22,11 @@ jobs:
     uses: ./.github/workflows/docs.yml
     secrets: inherit
 
-  release-core-pypi:
+  release-core:
     needs: [ build ]
     runs-on: ubuntu-latest
     if: |
-      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_core-') || startsWith(github.event.release.tag_name, 'fairchem_core-') )
+      github.event.inputs.release-pypi == 'true' && startsWith(github.ref_name, 'fairchem_core-')
 
     environment:
       name: test-pypi
@@ -48,11 +48,11 @@ jobs:
           skip-existing: true
           verbose: true
 
-  release-data-oc-pypi:
+  release-data-oc:
     needs: [ build ]
     runs-on: ubuntu-latest
     if: |
-      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_data_oc-') || startsWith(github.event.release.tag_name, 'fairchem_data_oc-') )
+      github.event.inputs.release-pypi == 'true' && startsWith(github.ref_name, 'fairchem_data_oc-')
 
     environment:
       name: test-pypi
@@ -64,8 +64,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dist-core
-          path: dist-core
+          name: dist-data-oc
+          path: dist-data-oc
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -74,11 +74,11 @@ jobs:
           packages-dir: dist-data-oc/
           skip-existing: true
 
-  release-demo-ocpapi-pypi:
+  release-demo-ocpapi:
     needs: [ build ]
     runs-on: ubuntu-latest
     if: |
-      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_demo_ocpapi-') || startsWith(github.event.release.tag_name, 'fairchem_demo_ocpapi-') )
+      github.event.inputs.release-pypi == 'true' && startsWith(github.ref_name, 'fairchem_demo_ocpapi-')
 
     environment:
       name: test-pypi
@@ -90,8 +90,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dist-core
-          path: dist-core
+          name: dist-demo-ocpapi
+          path: dist-demo-ocpapi
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -100,11 +100,11 @@ jobs:
           packages-dir: dist-demo-ocpapi/
           skip-existing: true
 
-  release-applications-cattsunami-pypi:
+  release-applications-cattsunami:
     needs: [ build ]
     runs-on: ubuntu-latest
     if: |
-      github.event.inputs.release-pypi == 'true' && ( startsWith(github.ref_name, 'fairchem_applications_cattsunami-') || startsWith(github.event.release.tag_name, 'fairchem_applications_cattsunami-') )
+      github.event.inputs.release-pypi == 'true' && startsWith(github.ref_name, 'fairchem_applications_cattsunami-')
 
     environment:
       name: test-pypi
