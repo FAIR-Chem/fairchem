@@ -5,6 +5,8 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from .optimizers.optimizable import OptimizableBatch, UnitCellOptimizableBatch
+from __future__ import annotations
 
-__all__ = ["OptimizableBatch", "UnitCellOptimizableBatch"]
+from .optimizers.optimizable import OptimizableBatch, OptimizableUnitCellBatch
+
+__all__ = ["OptimizableBatch", "OptimizableUnitCellBatch"]
