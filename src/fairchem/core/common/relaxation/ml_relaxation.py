@@ -18,7 +18,7 @@ from fairchem.core.common.typing import assert_is_instance
 from fairchem.core.datasets.lmdb_dataset import data_list_collater
 
 from .optimizers.lbfgs_torch import LBFGS
-from .optimizers.optimizable import OptimizableBatch, UnitCellOptimizableBatch
+from .optimizers.optimizable import OptimizableBatch, OptimizableUnitCellBatch
 
 
 def ml_relax(
@@ -59,7 +59,7 @@ def ml_relax(
         ids = batch.sid
 
         if relax_cell or relax_volume:
-            optimizable = UnitCellOptimizableBatch(
+            optimizable = OptimizableUnitCellBatch(
                 batch,
                 trainer=model,
                 transform=transform,
@@ -69,7 +69,7 @@ def ml_relax(
             optimizable = OptimizableBatch(batch, trainer=model, transform=transform)
 
         # Run ML-based relaxation
-        traj_dir = relax_opt.get("traj_dir", None)
+        traj_dir = relax_opt.get("traj_dir")
         optimizer = LBFGS(
             optimizable_batch=optimizable,
             maxstep=relax_opt.get("maxstep", 0.2),

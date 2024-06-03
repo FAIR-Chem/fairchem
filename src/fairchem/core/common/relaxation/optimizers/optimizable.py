@@ -238,7 +238,7 @@ class OptimizableBatch(Optimizable):
         return len(self.batch.pos)
 
 
-class UnitCellOptimizableBatch(OptimizableBatch):
+class OptimizableUnitCellBatch(OptimizableBatch):
     """Modify the supercell and the atom positions in relaxations.
 
     Based on ase UnitCellFilter to work on data batches
@@ -395,7 +395,7 @@ class UnitCellOptimizableBatch(OptimizableBatch):
         """
         returns potential energy including enthalpy PV term.
         """
-        atoms_energy = self.get_potential_energy(**kwargs)
+        atoms_energy = super().get_potential_energy(**kwargs)
         return atoms_energy + self.pressure[0, 0] * self.get_volumes().sum()
 
     def get_forces(self, **kwargs):
@@ -415,6 +415,7 @@ class UnitCellOptimizableBatch(OptimizableBatch):
         )
         virial = torch.transpose(virial, dim0=1, dim1=2)
 
+        # TODO this does not work yet! maybe _batch_trace gives an issue
         if self.hydrostatic_strain:
             virial = self._batch_diag(self._batch_trace(virial) / 3.0)
 
