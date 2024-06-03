@@ -90,6 +90,7 @@ def test_lowercase(invalid_dataset) -> None:
         device=None,
         mode="ATOMS",
         throw_on_error=False,
+        seed=0
     )
     assert sampler.mode == "atoms"
 
@@ -101,6 +102,7 @@ def test_lowercase(invalid_dataset) -> None:
         device=None,
         mode="NEIGHBORS",
         throw_on_error=False,
+        seed=0
     )
     assert sampler.mode == "neighbors"
 
@@ -117,6 +119,7 @@ def test_invalid_mode(invalid_dataset) -> None:
             device=None,
             mode="natoms",
             throw_on_error=True,
+            seed=0
         )
 
     with pytest.raises(
@@ -130,6 +133,7 @@ def test_invalid_mode(invalid_dataset) -> None:
             device=None,
             mode="nneighbors",
             throw_on_error=True,
+            seed=0
         )
 
 
@@ -147,6 +151,7 @@ def test_invalid_dataset(invalid_dataset) -> None:
             mode="atoms",
             throw_on_error=True,
             force_balancing=True,
+            seed=0
         )
     with pytest.raises(
         RuntimeError,
@@ -161,6 +166,7 @@ def test_invalid_dataset(invalid_dataset) -> None:
             mode="atoms",
             throw_on_error=True,
             force_balancing=False,
+            seed=0
         )
 
 
@@ -178,6 +184,7 @@ def test_invalid_path_dataset(invalid_path_dataset) -> None:
             mode="atoms",
             throw_on_error=True,
             force_balancing=True,
+            seed=0
         )
     with pytest.raises(
         RuntimeError,
@@ -192,6 +199,7 @@ def test_invalid_path_dataset(invalid_path_dataset) -> None:
             mode="atoms",
             throw_on_error=True,
             force_balancing=False,
+            seed=0
         )
 
 
@@ -204,6 +212,7 @@ def test_valid_dataset(valid_path_dataset) -> None:
         device=None,
         mode="atoms",
         throw_on_error=True,
+        seed=0
     )
     assert (sampler.sizes == np.array(SIZE_ATOMS)).all()
 
@@ -215,6 +224,7 @@ def test_valid_dataset(valid_path_dataset) -> None:
         device=None,
         mode="neighbors",
         throw_on_error=True,
+        seed=0
     )
     assert (sampler.sizes == np.array(SIZE_NEIGHBORS)).all()
 
@@ -228,6 +238,7 @@ def test_disabled(valid_path_dataset) -> None:
         device=None,
         mode=False,
         throw_on_error=True,
+        seed=0
     )
     assert sampler.balance_batches is False
 
@@ -241,6 +252,7 @@ def test_single_node(valid_path_dataset) -> None:
         device=None,
         mode="atoms",
         throw_on_error=True,
+        seed=0
     )
     assert sampler.balance_batches is False
 
