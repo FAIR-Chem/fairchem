@@ -14,10 +14,9 @@ from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 import torch
-from torch_scatter import scatter
-
 from ase.calculators.calculator import PropertyNotImplementedError
 from ase.stress import voigt_6_to_full_3x3_stress
+from torch_scatter import scatter
 
 from fairchem.core.common.relaxation.ase_utils import batch_to_atoms
 from fairchem.core.common.utils import radius_graph_pbc
@@ -36,8 +35,8 @@ except ImportError:
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from numpy.typing import NDArray
     from ase import Atoms
+    from numpy.typing import NDArray
     from torch_geometric.data import Batch
 
     from fairchem.core.trainers import BaseTrainer
@@ -140,23 +139,25 @@ class OptimizableBatch(Optimizable):
             excluded_properties=set(self.ignored_changes),
         )
 
-    def get_property(self, name, no_numpy: bool = False) -> torch.Tensor | NDArray:
-        """Get a predicted property by name."""
+    def _predict(self) -> None:
+        """Run prediction if batch has any changes."""
         system_changes = self.check_state(self.batch)
-
         if len(system_changes) > 0:
             self._torch_results = self.trainer.predict(
                 self.batch, per_image=False, disable_tqdm=True
             )
-            if self.numpy:
-                self.results = {
-                    key: pred.item() if pred.numel() == 1 else pred.cpu().numpy()
-                    for key, pred in self._torch_results.items()
-                }
-            else:
-                self.results = self._torch_results
-
             self.cached_batch = self.batch.clone()
+
+    def get_property(self, name, no_numpy: bool = False) -> torch.Tensor | NDArray:
+        """Get a predicted property by name."""
+        self._predict()
+        if self.numpy:
+            self.results = {
+                key: pred.item() if pred.numel() == 1 else pred.cpu().numpy()
+                for key, pred in self._torch_results.items()
+            }
+        else:
+            self.results = self._torch_results
 
         if name not in self.results:
             raise PropertyNotImplementedError(
@@ -220,10 +221,7 @@ class OptimizableBatch(Optimizable):
     def get_max_forces(self) -> torch.Tensor:
         """Get the maximum forces per structure in batch"""
         forces = self.get_forces()
-        max_forces = scatter(
-            (forces**2).sum(axis=1).sqrt(), self.batch_indices, reduce="max"
-        )
-        return max_forces
+        return scatter((forces**2).sum(axis=1).sqrt(), self.batch_indices, reduce="max")
 
     def get_converged_mask(self, fmax) -> torch.Tensor:
         """Get a boolean tensor specifying masking all atoms of converged structues.
@@ -244,11 +242,8 @@ class OptimizableBatch(Optimizable):
 
     def get_atoms_list(self) -> list[Atoms]:
         """Get ase Atoms objects corresponding to the batch"""
-        return batch_to_atoms(
-            self.batch,
-            energy=self.get_property("energy", True),
-            forces=self.get_property("forces", no_numpy=True),
-        )
+        self._predict()  # in case no predictions have been ran
+        return batch_to_atoms(self.batch, results=self._torch_results)
 
     def update_graph(self):
         """Update the graph if model does not use otf_graph."""

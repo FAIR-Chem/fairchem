@@ -34,7 +34,7 @@ class LBFGS:
         save_full_traj: bool = True,
         traj_dir: Path | None = None,
         traj_names: list[str] | None = None,
-        early_stop_batch: bool = False,
+        mask_converged: bool = True,
     ) -> None:
         """
         Args:
@@ -47,7 +47,7 @@ class LBFGS:
             save_full_traj: wether to save full trajectory
             traj_dir: path to save trajectories in
             traj_names: list of trajectory files names
-            early_stop_batch: whether to mask atoms in batch that are below convergence threshold
+            mask_converged: whether to mask batches where all atoms are below convergence threshold
         """
         self.optimizable = optimizable_batch
         self.maxstep = maxstep
@@ -59,7 +59,7 @@ class LBFGS:
         self.save_full = save_full_traj
         self.traj_dir = traj_dir
         self.traj_names = traj_names
-        self.early_stop_batch = early_stop_batch
+        self.mask_converged = mask_converged
         self.otf_graph = optimizable_batch.trainer._unwrapped_model.otf_graph
 
         assert not self.traj_dir or (
@@ -71,7 +71,7 @@ class LBFGS:
             self.optimizable.update_graph()
 
     def set_positions(self, positions, update_mask):
-        if not self.early_stop_batch:
+        if self.mask_converged:
             positions = torch.where(update_mask.unsqueeze(1), positions, 0.0)
 
         self.optimizable.set_positions(positions.to(dtype=torch.float32))
@@ -79,24 +79,20 @@ class LBFGS:
         if not self.otf_graph:
             self.optimizable.update_graph()
 
-    def check_convergence(self, iteration, forces=None, energy=None):
-        if energy is None:
-            energy = self.optimizable.get_potential_energies()
+    def check_convergence(self, iteration):
+        energy = self.optimizable.get_potential_energies()
 
-        if forces is None:
-            forces = self.optimizable.get_forces(apply_constraint=True)
-            forces = forces.to(dtype=torch.float64)
+        # TODO check why forces are cast to float64
+        forces = self.optimizable.get_forces(apply_constraint=True)
+        forces = forces.to(dtype=torch.float64)
 
-        max_forces_ = scatter(
-            (forces**2).sum(axis=1).sqrt(), self.optimizable.batch_indices, reduce="max"
-        )
+        max_forces = self.optimizable.get_max_forces()
         logging.info(
-            f"{iteration} " + " ".join(f"{x:0.3f}" for x in max_forces_.tolist())
+            f"{iteration} " + " ".join(f"{x:0.3f}" for x in max_forces.tolist())
         )
 
         # (batch_size) -> (nAtoms)
-        max_forces = max_forces_[self.optimizable.batch_indices]
-
+        max_forces = max_forces[self.optimizable.batch_indices]
         return max_forces.lt(self.fmax), energy, forces
 
     def run(self, fmax, steps):
