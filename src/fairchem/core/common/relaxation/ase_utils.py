@@ -38,15 +38,21 @@ if TYPE_CHECKING:
     from torch_geometric.data import Batch
 
 
+# system level model predictions have different shapes than expected by ASE
+ASE_PROP_RESHAPE = MappingProxyType(
+    {"stress": (-1, 3, 3), "dielectric_tensor": (-1, 3, 3)}
+)
+
+
 def batch_to_atoms(
-    batch: Batch, energy: torch.Tensor | None = None, forces: torch.Tensor | None = None
+    batch: Batch, results: dict[str, torch.Tensor] | None = None
 ) -> list[Atoms]:
     """Convert a data batch to ase Atoms
 
     Args:
         batch: data batch
-        energy: predicted energies. if not given it is assumed these are in the batch
-        forces: predicted forces. if not given it is assumed these are in the batch
+        results: dictionary with predicted result tensors. If no results are given,
+            energy and forces are assumed to be included in the batch
 
     Returns:
         list of Atoms
@@ -55,12 +61,24 @@ def batch_to_atoms(
     natoms = batch.natoms.tolist()
     numbers = torch.split(batch.atomic_numbers, natoms)
     fixed = torch.split(batch.fixed.to(torch.bool), natoms)
-    forces = torch.split(forces if forces is not None else batch.forces, natoms)
+    if results is not None:
+        results = {
+            key: val.view(ASE_PROP_RESHAPE.get(key, -1)).tolist()
+            if len(val) == len(batch)
+            else [v.cpu().detach().numpy() for v in torch.split(val, natoms)]
+            for key, val in results.items()
+        }
+    else:
+        results = {
+            "energy": batch.energy.view(-1).tolist(),
+            "forces": [
+                v.cpu().detach().numpy() for v in torch.split(batch.forces, natoms)
+            ],
+        }
+
     positions = torch.split(batch.pos, natoms)
     tags = torch.split(batch.tags, natoms)
     cells = batch.cell
-    energy = energy if energy is not None else batch.energy
-    energies = energy.view(-1).tolist()
 
     atoms_objects = []
     for idx in range(n_systems):
@@ -73,9 +91,7 @@ def batch_to_atoms(
             pbc=[True, True, True],
         )
         calc = SinglePointCalculator(
-            atoms=atoms,
-            energy=energies[idx],
-            forces=forces[idx].cpu().detach().numpy(),
+            atoms=atoms, **{key: val[idx] for key, val in results.items()}
         )
         atoms.set_calculator(calc)
         atoms_objects.append(atoms)
@@ -86,9 +102,7 @@ def batch_to_atoms(
 class OCPCalculator(Calculator):
     """ASE based calculator using an OCP model"""
 
-    _reshaped_props = MappingProxyType(
-        {"stress": (-1, 3, 3), "dielectric_tensor": (-1, 3, 3)}
-    )
+    _reshaped_props = ASE_PROP_RESHAPE
 
     def __init__(
         self,

@@ -32,7 +32,7 @@ def ml_relax(
     save_full_traj: bool = True,
     device: str = "cuda:0",
     transform: torch.nn.Module | None = None,
-    early_stop_batch: bool = False,
+    mask_converged: bool = True,
 ):
     """Runs ML-based relaxations.
 
@@ -46,6 +46,7 @@ def ml_relax(
             The model given must predict stress
         relax_volume: if true will relax the cell isotropically. the given model must predict stress.
         save_full_traj: Whether to save out the full ASE trajectory. If False, only save out initial and final frames.
+        mask_converged: whether to mask batches where all atoms are below convergence threshold
     """
     # if not pbc is set, ignore it when comparing batches
     if not hasattr(batch, "pbc"):
@@ -80,7 +81,7 @@ def ml_relax(
             save_full_traj=save_full_traj,
             traj_dir=Path(traj_dir) if traj_dir is not None else None,
             traj_names=ids,
-            early_stop_batch=early_stop_batch,
+            mask_converged=mask_converged,
         )
 
         e: RuntimeError | None = None
