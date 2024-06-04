@@ -14,6 +14,8 @@ from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 import torch
+from torch_scatter import scatter
+
 from ase.calculators.calculator import PropertyNotImplementedError
 from ase.stress import voigt_6_to_full_3x3_stress
 
@@ -35,6 +37,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from numpy.typing import NDArray
+    from ase import Atoms
     from torch_geometric.data import Batch
 
     from fairchem.core.trainers import BaseTrainer
@@ -86,6 +89,7 @@ def compare_batches(
     return system_changes
 
 
+# TODO implement masking structures internally to be able to use masking with ASE optimizers
 class OptimizableBatch(Optimizable):
     """A Batch version of ase Optimizable Atoms
 
@@ -127,7 +131,7 @@ class OptimizableBatch(Optimizable):
         """Get the batch indices specifying which position/force corresponds to which batch."""
         return self.batch.batch
 
-    def check_state(self, batch: Batch, tol: float = 1e-12):
+    def check_state(self, batch: Batch, tol: float = 1e-12) -> bool:
         """Check for any system changes since last calculation."""
         return compare_batches(
             self.cached_batch,
@@ -136,7 +140,7 @@ class OptimizableBatch(Optimizable):
             excluded_properties=set(self.ignored_changes),
         )
 
-    def get_property(self, name, no_numpy: bool = False):
+    def get_property(self, name, no_numpy: bool = False) -> torch.Tensor | NDArray:
         """Get a predicted property by name."""
         system_changes = self.check_state(self.batch)
 
@@ -161,18 +165,18 @@ class OptimizableBatch(Optimizable):
 
         return self.results[name] if no_numpy is False else self._torch_results[name]
 
-    def get_positions(self):
+    def get_positions(self) -> torch.Tensor | NDArray:
         """Get the batch positions"""
         return self.batch.pos.cpu().numpy() if self.numpy else self.batch.pos.clone()
 
-    def set_positions(self, positions: torch.Tensor | NDArray):
+    def set_positions(self, positions: torch.Tensor | NDArray) -> None:
         "Set the batch positions"
         if isinstance(positions, np.ndarray):
             positions = torch.tensor(positions, dtype=torch.float32, device=self.device)
 
         self.batch.pos = positions.to(dtype=torch.float32, device=self.device)
 
-    def get_forces(self, apply_constraint: bool = False):
+    def get_forces(self, apply_constraint: bool = False) -> torch.Tensor | NDArray:
         """Get predicted batch forces."""
         forces = self.get_property("forces")
         if apply_constraint:
@@ -180,7 +184,7 @@ class OptimizableBatch(Optimizable):
             forces[fixed_idx] = 0
         return forces
 
-    def get_potential_energy(self, **kwargs):
+    def get_potential_energy(self, **kwargs) -> torch.Tensor | NDArray:
         """Get predicted energy as the sum of all batch energies."""
         # ASE 3.22.1 expects a check for force_consistent calculations
         if kwargs.get("force_consistent", False) is True:
@@ -189,40 +193,62 @@ class OptimizableBatch(Optimizable):
             )
         return self.get_property("energy").sum()
 
-    def get_potential_energies(self):
+    def get_potential_energies(self) -> torch.Tensor | NDArray:
         """Get the predicted energy for each system in batch."""
         return self.get_property("energy")
 
-    def get_cells(self):
+    def get_cells(self) -> torch.Tensor:
         """Get batch crystallographic cells."""
         return self.batch.cell
 
-    def set_cells(self, cells: torch.Tensor | NDArray):
+    def set_cells(self, cells: torch.Tensor | NDArray) -> None:
         """Set batch cells."""
         assert self.batch.cell.shape == cells.shape, "Cell shape mismatch"
         if isinstance(cells, np.ndarray):
             cells = torch.tensor(cells, dtype=torch.float32, device=self.device)
         self.batch.cell = cells.to(dtype=torch.float32, device=self.device)
 
-    def get_volumes(self):
+    def get_volumes(self) -> torch.Tensor:
         """Get a tensor of volumes for each cell in batch"""
         cells = self.get_cells()
         return torch.linalg.det(cells)
 
-    def iterimages(self):
+    def iterimages(self) -> Batch:
         # XXX document purpose of iterimages - this is just needed to work with ASE optimizers
         yield self.batch
 
-    def converged(self, forces, fmax):
+    def get_max_forces(self) -> torch.Tensor:
+        """Get the maximum forces per structure in batch"""
+        forces = self.get_forces()
+        max_forces = scatter(
+            (forces**2).sum(axis=1).sqrt(), self.batch_indices, reduce="max"
+        )
+        return max_forces
+
+    def get_converged_mask(self, fmax) -> torch.Tensor:
+        """Get a boolean tensor specifying masking all atoms of converged structues.
+
+        The mask is a tensor of shape natoms in batch where an atom is masked only when all atoms
+        in its batch are below fmax
+        """
+        # num batches -> num atoms
+        max_forces = self.get_max_forces()[self.batch_indices]
+        return max_forces.lt(fmax)
+
+    def converged(self, forces, fmax) -> bool:
         """Check if norm of all predicted forces are below fmax"""
         if self.numpy:
             return np.linalg.norm(forces, axis=1).max() < fmax
 
         return torch.linalg.norm(forces, axis=1).max() < fmax
 
-    def get_atoms_list(self):
+    def get_atoms_list(self) -> list[Atoms]:
         """Get ase Atoms objects corresponding to the batch"""
-        return batch_to_atoms(self.batch)
+        return batch_to_atoms(
+            self.batch,
+            energy=self.get_property("energy", True),
+            forces=self.get_property("forces", no_numpy=True),
+        )
 
     def update_graph(self):
         """Update the graph if model does not use otf_graph."""
@@ -233,7 +259,7 @@ class OptimizableBatch(Optimizable):
         if self.transform is not None:
             self.batch = self.transform(self.batch)
 
-    def __len__(self):
+    def __len__(self) -> int:
         # TODO: this might be changed in ASE to be 3 * len(self.atoms)
         return len(self.batch.pos)
 

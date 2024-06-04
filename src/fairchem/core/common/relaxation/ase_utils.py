@@ -38,16 +38,29 @@ if TYPE_CHECKING:
     from torch_geometric.data import Batch
 
 
-def batch_to_atoms(batch: Batch):
+def batch_to_atoms(
+    batch: Batch, energy: torch.Tensor | None = None, forces: torch.Tensor | None = None
+) -> list[Atoms]:
+    """Convert a data batch to ase Atoms
+
+    Args:
+        batch: data batch
+        energy: predicted energies. if not given it is assumed these are in the batch
+        forces: predicted forces. if not given it is assumed these are in the batch
+
+    Returns:
+        list of Atoms
+    """
     n_systems = batch.natoms.shape[0]
     natoms = batch.natoms.tolist()
     numbers = torch.split(batch.atomic_numbers, natoms)
     fixed = torch.split(batch.fixed.to(torch.bool), natoms)
-    forces = torch.split(batch.forces, natoms)
+    forces = torch.split(forces if forces is not None else batch.forces, natoms)
     positions = torch.split(batch.pos, natoms)
     tags = torch.split(batch.tags, natoms)
     cells = batch.cell
-    energies = batch.energy.view(-1).tolist()
+    energy = energy if energy is not None else batch.energy
+    energies = energy.view(-1).tolist()
 
     atoms_objects = []
     for idx in range(n_systems):
