@@ -778,8 +778,13 @@ class BaseTrainer(ABC):
         return metrics
 
     def _backward(self, loss) -> None:
-        self.optimizer.zero_grad()
-        loss.backward()
+        self.optimizer.zero_grad(set_to_none=self.config['optim'].get('zero_grad_none',False))
+        if isinstance(loss, list):
+            for idx in range(len(loss)-1):
+                loss[idx].backward(retain_graph=True)
+            loss[len(loss)-1].backward(retain_graph=False)
+        else:
+            loss.backward()
         # Scale down the gradients of shared parameters
         if hasattr(self.model, "shared_parameters"):
             for p, factor in self.model.shared_parameters:
