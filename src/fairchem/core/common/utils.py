@@ -415,10 +415,14 @@ def load_config(path: str, previous_includes: list | None = None):
     config = {}
     duplicates_warning = []
     duplicates_error = []
-
     for include in includes:
+        include_filename = include
+        if not os.path.exists(include_filename):
+            include_filename = os.path.join(os.path.dirname(path), include)
+            if not os.path.exists(include_filename):
+                raise ValueError(f"Cannot find include YML {include}")
         include_config, inc_dup_warning, inc_dup_error = load_config(
-            include, previous_includes
+            include_filename, previous_includes
         )
         duplicates_warning += inc_dup_warning
         duplicates_error += inc_dup_error
@@ -430,7 +434,6 @@ def load_config(path: str, previous_includes: list | None = None):
     # Duplicates between included and main file causes warnings
     config, merge_dup_warning = merge_dicts(config, direct_config)
     duplicates_warning += merge_dup_warning
-
     return config, duplicates_warning, duplicates_error
 
 
