@@ -39,7 +39,6 @@ class SelfAttentionLayer(nn.Module):
             dropout=dropout,
         )
 
-        self.dropout = nn.Dropout(dropout)
         self.norm_attn = nn.LayerNorm(embed_dim)
         self.norm_ff = nn.LayerNorm(embed_dim)
         self.activation = activation
@@ -61,9 +60,9 @@ class SelfAttentionLayer(nn.Module):
 
         z = self.norm_attn(x)
         self_attn, *_ = self.self_attn(z, z, z, key_padding_mask=padding_mask, attn_mask=attn_mask)
-        x = x + self.dropout(self_attn)
+        x = x + self_attn
         z = self.norm_ff(x)
         ff = self.feed_forward(z)
-        x = x + self.dropout(ff)
+        x = x + ff
         
         return x

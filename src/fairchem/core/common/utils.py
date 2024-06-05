@@ -1272,6 +1272,17 @@ def update_config(base_config):
         ### Define key mapping
         config["dataset"]["key_mapping"] = {"y": "energy", "force": "forces"}
 
+    if "reg_coefficient" in config["optim"]:
+        _loss_fns.append(
+            {
+                "regularizer": {
+                    "fn": config["optim"].get("loss_reg", "mse"),
+                    "coefficient": config["optim"].get("reg_coefficient", 1),
+                },
+            }
+        )
+        _outputs["regularizer"] = {"level": "system"}
+
     if config["dataset"].get("normalize_labels", False):
         normalizer = {
             "energy": {

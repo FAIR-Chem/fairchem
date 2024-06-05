@@ -13,6 +13,7 @@ model:
   rbf_radius: 6.
   num_gaussians: 64
   num_pair_embed_layers: 2
+  use_vec_hat: True
   output_layers: 4
   avg_atoms: 60
 

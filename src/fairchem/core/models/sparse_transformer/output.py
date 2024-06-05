@@ -17,12 +17,10 @@ class OutputModule(nn.Module):
         num_gaussians: int = 50,
         rbf_radius: float = 12.,
         avg_len: float = 60.,
-        connectivity: float = 32.,
     ):
         super().__init__()
 
         self.avg_len = avg_len
-        self.connectivity = connectivity
         self.rbf_radius = rbf_radius
 
         self.energy_mlp = ResMLP(
@@ -75,7 +73,7 @@ class OutputModule(nn.Module):
             dim = 0,
             dim_size = batch.max() + 1,
             reduce = "sum"
-        ) / (self.avg_len * self.connectivity)
+        ) / (self.avg_len ** 2)
 
         forces = scatter(
             src = force_pairs, 
@@ -83,6 +81,6 @@ class OutputModule(nn.Module):
             dim = 0,
             dim_size = x.size(0),
             reduce = "sum"
-        ) / (self.connectivity)
+        ) / self.avg_len
 
         return energy, forces

@@ -61,7 +61,6 @@ optim:
   batch_size: 16
   eval_batch_size: 16
   load_balancing: atoms
-  eval_every: 5000
   num_workers: 2
   lr_initial: 5.e-4
   optimizer: AdamW

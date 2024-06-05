@@ -2,7 +2,7 @@ includes:
   - configs/atat/transformer_ablation/base.yml
 
 model:
-  name: transformer
+  name: sparse_transformer
   elements: [1, 6, 7, 8]
   embed_dim: 256
   hidden_dim: 256
@@ -10,15 +10,12 @@ model:
   num_layers: 12
   num_heads: 16
   otf_graph: True
-  rbf_radius: 15.
+  rbf_radius: 6.
   num_gaussians: 64
-  trainable_rbf: False
   pair_embed_style: efficient
+  num_pair_embed_layers: 2
   output_layers: 4
-  gate_output: False
   avg_atoms: 60
-  pos_emb_style: naive
-  pos_scale: 6
 
 optim:
   batch_size: 32
@@ -34,9 +31,10 @@ optim:
   mode: min
   factor: 0.9
   patience: 100
-  max_epochs: 500
+  max_epochs: 10000
   force_coefficient: 10
   energy_coefficient: 1
+  reg_coefficient: 1
   ema_decay: 0.999
   clip_grad_norm: 10
   loss_energy: mae

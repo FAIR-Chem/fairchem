@@ -16,6 +16,7 @@ from .attn import SelfAttentionLayer
 from .output import OutputModule
 from .pair_embed import PairEmbed
 from .mlp import ResMLP
+from .rbf import GaussianSmearing
 
 logger = logging.getLogger(__name__)
 
@@ -312,3 +313,20 @@ class Transformer(BaseModel):
     @property
     def num_params(self):
         return sum(p.numel() for p in self.parameters())
+    
+    @torch.jit.ignore
+    def no_weight_decay(self):
+        # no weight decay on layer norms and embeddings
+        # ref: https://discuss.pytorch.org/t/weight-decay-in-the-optimizers-is-a-bad-idea-especially-with-batchnorm/16994
+        no_wd_list = []
+        named_parameters_list = [name for name, _ in self.named_parameters()]
+        for module_name, module in self.named_modules():
+            if isinstance(module, (nn.Linear, nn.Embedding, nn.LayerNorm, GaussianSmearing)):
+                for parameter_name, _ in module.named_parameters():
+                    if isinstance(module, torch.nn.Linear):
+                        if "weight" in parameter_name:
+                            continue
+                    global_parameter_name = module_name + "." + parameter_name
+                    assert global_parameter_name in named_parameters_list
+                    no_wd_list.append(global_parameter_name)
+        return set(no_wd_list)
