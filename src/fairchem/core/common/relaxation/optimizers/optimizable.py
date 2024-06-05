@@ -103,6 +103,8 @@ class OptimizableBatch(Optimizable):
         batch: Batch,
         trainer: BaseTrainer,
         transform: torch.nn.Module | None = None,
+        mask_converged: bool = True,
+        cumulative_mask: bool = True,
         numpy: bool = False,
     ):
         """Initialize Optimizable Batch
@@ -111,15 +113,26 @@ class OptimizableBatch(Optimizable):
             batch: A batch of atoms graph data
             model: An instance of a BaseTrainer derived class
             transform: graph transform
+            mask_converged: if true will mask systems in batch that are already converged
+            cumulative_mask: if true, once system is masked then it remains masked even if new predictions give forces
+                above threshold, ie. once masked always masked. Note if this is used make sure to check convergence with
+                the same fmax always
             numpy: whether to cast results to numpy arrays
         """
         self.batch = batch.to(trainer.device)
         self.trainer = trainer
         self.transform = transform
         self.numpy = numpy
-        self.cached_batch = None
+        self.mask_converged = mask_converged
+        self._cached_batch = None
+        self._update_mask = None
+        self._cumulative_mask = cumulative_mask
         self._torch_results = {}
         self.results = {}
+
+        self._otf_graph = trainer._unwrapped_model.otf_graph
+        if not self._otf_graph and "edge_index" not in self.batch:
+            self.update_graph()
 
     @property
     def device(self):
@@ -130,10 +143,22 @@ class OptimizableBatch(Optimizable):
         """Get the batch indices specifying which position/force corresponds to which batch."""
         return self.batch.batch
 
+    @property
+    def converged_mask(self):
+        if self._update_mask is None:
+            return torch.logical_not(self._update_mask)
+        return None
+
+    @property
+    def update_mask(self):
+        if self._update_mask is None:
+            return torch.ones(len(self.batch), dtype=bool)
+        return self._update_mask
+
     def check_state(self, batch: Batch, tol: float = 1e-12) -> bool:
         """Check for any system changes since last calculation."""
         return compare_batches(
-            self.cached_batch,
+            self._cached_batch,
             batch,
             tol=tol,
             excluded_properties=set(self.ignored_changes),
@@ -146,7 +171,7 @@ class OptimizableBatch(Optimizable):
             self._torch_results = self.trainer.predict(
                 self.batch, per_image=False, disable_tqdm=True
             )
-            self.cached_batch = self.batch.clone()
+            self._cached_batch = self.batch.clone()
 
     def get_property(self, name, no_numpy: bool = False) -> torch.Tensor | NDArray:
         """Get a predicted property by name."""
@@ -173,9 +198,17 @@ class OptimizableBatch(Optimizable):
     def set_positions(self, positions: torch.Tensor | NDArray) -> None:
         "Set the batch positions"
         if isinstance(positions, np.ndarray):
-            positions = torch.tensor(positions, dtype=torch.float32, device=self.device)
+            positions = torch.tensor(positions)
 
-        self.batch.pos = positions.to(dtype=torch.float32, device=self.device)
+        positions = positions.to(dtype=torch.float32, device=self.device)
+        if self.mask_converged and self._update_mask is not None:
+            mask = self.update_mask[self.batch.batch]
+            self.batch.pos[mask] = positions[mask]
+        else:
+            self.batch.pos = positions
+
+        if not self._otf_graph:
+            self.optimizable.update_graph()
 
     def get_forces(self, apply_constraint: bool = False) -> torch.Tensor | NDArray:
         """Get predicted batch forces."""
@@ -207,7 +240,8 @@ class OptimizableBatch(Optimizable):
         assert self.batch.cell.shape == cells.shape, "Cell shape mismatch"
         if isinstance(cells, np.ndarray):
             cells = torch.tensor(cells, dtype=torch.float32, device=self.device)
-        self.batch.cell = cells.to(dtype=torch.float32, device=self.device)
+        cells = cells.to(dtype=torch.float32, device=self.device)
+        self.batch.cell[self.update_mask] = cells[self.update_mask]
 
     def get_volumes(self) -> torch.Tensor:
         """Get a tensor of volumes for each cell in batch"""
@@ -223,22 +257,22 @@ class OptimizableBatch(Optimizable):
         forces = self.get_forces()
         return scatter((forces**2).sum(axis=1).sqrt(), self.batch_indices, reduce="max")
 
-    def get_converged_mask(self, fmax) -> torch.Tensor:
-        """Get a boolean tensor specifying masking all atoms of converged structues.
-
-        The mask is a tensor of shape natoms in batch where an atom is masked only when all atoms
-        in its batch are below fmax
-        """
-        # num batches -> num atoms
-        max_forces = self.get_max_forces()[self.batch_indices]
-        return max_forces.lt(fmax)
-
-    def converged(self, forces, fmax) -> bool:
+    def converged(self, fmax) -> bool:
         """Check if norm of all predicted forces are below fmax"""
-        if self.numpy:
-            return np.linalg.norm(forces, axis=1).max() < fmax
+        max_forces = self.get_max_forces()
+        update_mask = max_forces.ge(fmax)
+        # update cached mask
+        if self.mask_converged:
+            if self._update_mask is None or self._cumulative_mask is False:
+                self._update_mask = update_mask
+            else:
+                # some models can have random noise in their predictions, so the mask is updated by
+                # keeping all previously converged structures masked even if new force predictions
+                # push it slightly above threshold
+                self._update_mask = torch.logical_and(self._update_mask, update_mask)
+            update_mask = self._update_mask
 
-        return torch.linalg.norm(forces, axis=1).max() < fmax
+        return not torch.all(update_mask).item()
 
     def get_atoms_list(self) -> list[Atoms]:
         """Get ase Atoms objects corresponding to the batch"""
@@ -271,6 +305,8 @@ class OptimizableUnitCellBatch(OptimizableBatch):
         trainer: BaseTrainer,
         transform: torch.nn.Module | None = None,
         numpy: bool = False,
+        mask_converged: bool = True,
+        cumulative_mask: bool = True,
         mask: Sequence[bool] | None = None,
         cell_factor: float | None = None,
         hydrostatic_strain: bool = False,
@@ -288,6 +324,10 @@ class OptimizableUnitCellBatch(OptimizableBatch):
             model: An instance of a BaseTrainer derived class
             transform: graph transform
             numpy: whether to cast results to numpy arrays
+            mask_converged: if true will mask systems in batch that are already converged
+            cumulative_mask: if true, once system is masked then it remains masked even if new predictions give forces
+                above threshold, ie. once masked always masked. Note if this is used make sure to check convergence with
+                the same fmax always
             mask: a boolean mask specifying which strain components are allowed to relax
             cell_factor:
                 Factor by which deformation gradient is multiplied to put
@@ -310,7 +350,14 @@ class OptimizableUnitCellBatch(OptimizableBatch):
                 Applied pressure to use for enthalpy pV term. As above, this
                 breaks energy/force consistency.
         """
-        super().__init__(batch=batch, trainer=trainer, transform=transform, numpy=numpy)
+        super().__init__(
+            batch=batch,
+            trainer=trainer,
+            transform=transform,
+            numpy=numpy,
+            mask_converged=mask_converged,
+            cumulative_mask=cumulative_mask,
+        )
 
         self.orig_cells = self.get_cells().clone()
         self.stress = None
@@ -388,10 +435,9 @@ class OptimizableUnitCellBatch(OptimizableBatch):
         for each cell.
         """
         if isinstance(positions, np.ndarray):
-            positions = torch.tensor(positions, dtype=torch.float32, device=self.device)
-        else:
-            positions = positions.to(dtype=torch.float32, device=self.device)
+            positions = torch.tensor(positions)
 
+        positions = positions.to(dtype=torch.float32, device=self.device)
         natoms = self.batch.num_nodes
         new_atom_positions = positions[:natoms]
         new_deform_grad = positions[natoms:].view(-1, 3, 3) / self.cell_factor

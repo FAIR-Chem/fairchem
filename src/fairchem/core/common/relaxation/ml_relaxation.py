@@ -33,6 +33,7 @@ def ml_relax(
     device: str = "cuda:0",
     transform: torch.nn.Module | None = None,
     mask_converged: bool = True,
+    cumulative_mask: bool = True,
 ):
     """Runs ML-based relaxations.
 
@@ -47,6 +48,9 @@ def ml_relax(
         relax_volume: if true will relax the cell isotropically. the given model must predict stress.
         save_full_traj: Whether to save out the full ASE trajectory. If False, only save out initial and final frames.
         mask_converged: whether to mask batches where all atoms are below convergence threshold
+        cumulative_mask: if true, once system is masked then it remains masked even if new predictions give forces
+                above threshold, ie. once masked always masked. Note if this is used make sure to check convergence with
+                the same fmax always
     """
     # if not pbc is set, ignore it when comparing batches
     if not hasattr(batch, "pbc"):
@@ -64,10 +68,18 @@ def ml_relax(
                 batch,
                 trainer=model,
                 transform=transform,
+                mask_converged=mask_converged,
+                cumulative_mask=cumulative_mask,
                 hydrostatic_strain=relax_volume,
             )
         else:
-            optimizable = OptimizableBatch(batch, trainer=model, transform=transform)
+            optimizable = OptimizableBatch(
+                batch,
+                trainer=model,
+                transform=transform,
+                mask_converged=mask_converged,
+                cumulative_mask=cumulative_mask,
+            )
 
         # Run ML-based relaxation
         traj_dir = relax_opt.get("traj_dir")
@@ -81,7 +93,6 @@ def ml_relax(
             save_full_traj=save_full_traj,
             traj_dir=Path(traj_dir) if traj_dir is not None else None,
             traj_names=ids,
-            mask_converged=mask_converged,
         )
 
         e: RuntimeError | None = None
