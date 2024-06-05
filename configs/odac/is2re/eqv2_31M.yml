@@ -67,11 +67,7 @@ optim:
     lr_min_factor: 0.01
 
   max_epochs: 30
-  force_coefficient: 100
-  energy_coefficient: 4
   clip_grad_norm: 100
   ema_decay: 0.999
-  loss_energy: mae
-  loss_force: l2mae
 
   eval_every: 2500
