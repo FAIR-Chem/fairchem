@@ -83,23 +83,21 @@ class LBFGS:
         iteration = 0
         converged = False
         while iteration < steps and not converged:
+            max_forces = self.optimizable.get_max_forces()
             logging.info(
-                f"{iteration} "
-                + " ".join(
-                    f"{x:0.3f}" for x in self.optimizable.get_max_forces().tolist()
-                )
+                f"{iteration} " + " ".join(f"{x:0.3f}" for x in max_forces.tolist())
             )
 
             if self.trajectories is not None and (
                 self.save_full or converged or iteration == steps - 1 or iteration == 0
             ):
-                # forces and mask can be augmented
                 self.write()
 
             self.step(iteration)
+            converged = self.optimizable.converged(
+                forces=None, fmax=self.fmax, max_forces=max_forces
+            )
             iteration += 1
-            # this is calling get max forces twice since it is called for logging above, not super bueno
-            converged = self.optimizable.converged(self.fmax)
 
         # GPU memory usage as per nvidia-smi seems to gradually build up as
         # batches are processed. This releases unoccupied cached memory.
@@ -118,7 +116,7 @@ class LBFGS:
 
         return self.optimizable.batch
 
-    def _determine_step(self, dr):
+    def determine_step(self, dr):
         steplengths = torch.norm(dr, dim=1)
         longest_steps = scatter(
             steplengths, self.optimizable.batch_indices, reduce="max"
@@ -166,7 +164,7 @@ class LBFGS:
 
         # descent direction
         p = -z
-        dr = self._determine_step(p)
+        dr = self.determine_step(p)
         if torch.abs(dr).max() < 1e-7:
             # Same configuration again (maybe a restart):
             return
@@ -180,5 +178,7 @@ class LBFGS:
         for atm, traj, mask in zip(
             atoms_objects, self.trajectories, self.optimizable.update_mask
         ):
-            if mask or not self.save_full:
+            if (
+                mask or not self.save_full
+            ):  # should this be "if mask or self.save_full"?
                 traj.write(atm)
