@@ -7,6 +7,9 @@ def setup_vasp_calc_mof(atoms: ase.Atoms, path: Path):
     """
     Create a VASP calculator for MOF relaxation and write VASP input files to path. 
     """
+    # Setting number of k-points to 1x1x1. Increase number of k-points 
+    # if unit cell size is too small.
+    kpoints = (1, 1, 1),
     calc = Vasp(
         nwrite=2,
         istart=0,
@@ -33,7 +36,7 @@ def setup_vasp_calc_mof(atoms: ase.Atoms, path: Path):
         lreal="Auto",
         lplane=True,
         ncore=4,
-        kpts=(1, 1, 1),
+        kpts=kpoints,
         gamma=True,
         isym=0,
         directory=path
@@ -51,6 +54,9 @@ def setup_vasp_mof_and_ads(atoms: ase.Atoms, path: Path):
     Create a VASP calculator for MOF + Adsorbate(s) relaxation and write VASP input files to path. 
     For these relaxations, the MOF has already been pre-relaxed. 
     """
+    # Setting number of k-points to 1x1x1. Increase number of k-points 
+    # if unit cell size is too small.
+    kpoints = (1, 1, 1),
     calc = Vasp(
         nwrite=2,
         istart=0,
@@ -77,7 +83,7 @@ def setup_vasp_mof_and_ads(atoms: ase.Atoms, path: Path):
         lreal="Auto",
         lplane=True,
         ncore=4,
-        kpts=(1, 1, 1),
+        kpts=kpoints,
         gamma=True,
         isym=0,
         directory=path

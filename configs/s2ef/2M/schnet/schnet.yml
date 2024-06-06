@@ -1,6 +1,14 @@
 includes:
 - configs/s2ef/2M/base.yml
 
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 1
+  - forces:
+      fn: l2mae
+      coefficient: 100
+
 model:
   name: schnet
   hidden_channels: 1024
@@ -28,4 +36,3 @@ optim:
   warmup_steps: 31250
   warmup_factor: 0.2
   max_epochs: 30
-  force_coefficient: 100
