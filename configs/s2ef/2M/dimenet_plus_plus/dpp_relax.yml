@@ -1,13 +1,30 @@
-trainer: forces
+trainer: ocp
+
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 1
+  - forces:
+      fn: l2mae
+      coefficient: 50
 
 dataset:
-  - src: data/s2ef/2M/train/
-    normalize_labels: True
-    target_mean: -0.7554450631141663
-    target_std: 2.887317180633545
-    grad_target_mean: 0.0
-    grad_target_std: 2.887317180633545
-  - src: data/s2ef/all/val_id/
+  train:
+    format: lmdb
+    src: data/s2ef/2M/train/
+    key_mapping:
+      y: energy
+      force: forces
+    transforms:
+      normalizer:
+        energy:
+          mean: -0.7554450631141663
+          stdev: 2.887317180633545
+        forces:
+          mean: 0
+          stdev: 2.887317180633545
+  val:
+    src: data/s2ef/all/val_id/
 
 logger: wandb
 
@@ -65,4 +82,3 @@ optim:
   warmup_steps: 10416
   warmup_factor: 0.2
   max_epochs: 15
-  force_coefficient: 50

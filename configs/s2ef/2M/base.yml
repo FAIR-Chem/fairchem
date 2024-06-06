@@ -1,23 +1,51 @@
-trainer: forces
+trainer: ocp
 
 dataset:
-  - src: data/s2ef/2M/train/
-    normalize_labels: True
-    target_mean: -0.7554450631141663
-    target_std: 2.887317180633545
-    grad_target_mean: 0.0
-    grad_target_std: 2.887317180633545
-  - src: data/s2ef/all/val_id/
+  train:
+    format: lmdb
+    src: data/s2ef/2M/train/
+    key_mapping:
+      y: energy
+      force: forces
+    transforms:
+      normalizer:
+        energy:
+          mean: -0.7554450631141663
+          stdev: 2.887317180633545
+        forces:
+          mean: 0
+          stdev: 2.887317180633545
+  val:
+    src: data/s2ef/all/val_id/
 
 logger: wandb
 
-task:
-  dataset: trajectory_lmdb
-  description: "Regressing to energies and forces for DFT trajectories from OCP"
-  type: regression
-  metric: mae
-  labels:
-    - potential energy
-  grad_input: atomic forces
-  train_on_free_atoms: True
-  eval_on_free_atoms: True
+outputs:
+  energy:
+    shape: 1
+    level: system
+  forces:
+    irrep_dim: 1
+    level: atom
+    train_on_free_atoms: True
+    eval_on_free_atoms: True
+
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 2
+  - forces:
+      fn: l2mae
+      coefficient: 100
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+    forces:
+      - mae
+      - cosine_similarity
+      - magnitude_error
+    misc:
+      - energy_forces_within_threshold
+  primary_metric: forces_mae

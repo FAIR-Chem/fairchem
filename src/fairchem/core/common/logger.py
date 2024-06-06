@@ -61,6 +61,11 @@ class WandBLogger(Logger):
             if isinstance(self.config["logger"], dict)
             else None
         )
+        entity = (
+            self.config["logger"].get("entity", None)
+            if isinstance(self.config["logger"], dict)
+            else None
+        )
 
         wandb.init(
             config=self.config,
@@ -68,6 +73,7 @@ class WandBLogger(Logger):
             name=self.config["cmd"]["identifier"],
             dir=self.config["cmd"]["logs_dir"],
             project=project,
+            entity=entity,
             resume="allow",
         )
 
