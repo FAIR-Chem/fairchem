@@ -10,6 +10,7 @@ Code based on ase.optimize
 from __future__ import annotations
 
 from functools import cached_property
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
@@ -42,12 +43,12 @@ if TYPE_CHECKING:
     from fairchem.core.trainers import BaseTrainer
 
 
-ALL_CHANGES = [
+ALL_CHANGES: set[str] = {
     "pos",
     "atomic_numbers",
     "cell",
     "pbc",
-]
+}
 
 
 def compare_batches(
@@ -96,7 +97,7 @@ class OptimizableBatch(Optimizable):
     or in ase relaxations classes, i.e. ase.optimize.lbfgs
     """
 
-    ignored_changes: ClassVar[dict[str]] = {}
+    ignored_changes: ClassVar[set[str]] = set()
 
     def __init__(
         self,
@@ -145,7 +146,7 @@ class OptimizableBatch(Optimizable):
 
     @property
     def converged_mask(self):
-        if self._update_mask is None:
+        if self._update_mask is not None:
             return torch.logical_not(self._update_mask)
         return None
 
@@ -171,7 +172,13 @@ class OptimizableBatch(Optimizable):
             self._torch_results = self.trainer.predict(
                 self.batch, per_image=False, disable_tqdm=True
             )
-            self._cached_batch = self.batch.clone()
+            # save only subset of props in simple namespace instead of cloning the whole batch to save memory
+            self._cached_batch = SimpleNamespace(
+                **{
+                    prop: self.batch[prop].clone()
+                    for prop in ALL_CHANGES - self.ignored_changes
+                }
+            )
 
     def get_property(self, name, no_numpy: bool = False) -> torch.Tensor | NDArray:
         """Get a predicted property by name."""
@@ -208,7 +215,7 @@ class OptimizableBatch(Optimizable):
             self.batch.pos = positions
 
         if not self._otf_graph:
-            self.optimizable.update_graph()
+            self.update_graph()
 
     def get_forces(self, apply_constraint: bool = False) -> torch.Tensor | NDArray:
         """Get predicted batch forces."""
@@ -252,14 +259,26 @@ class OptimizableBatch(Optimizable):
         # XXX document purpose of iterimages - this is just needed to work with ASE optimizers
         yield self.batch
 
-    def get_max_forces(self) -> torch.Tensor:
+    def get_max_forces(self, forces: torch.Tensor | None = None) -> torch.Tensor:
         """Get the maximum forces per structure in batch"""
-        forces = self.get_forces()
+        if forces is None:
+            forces = self.get_forces()
         return scatter((forces**2).sum(axis=1).sqrt(), self.batch_indices, reduce="max")
 
-    def converged(self, fmax) -> bool:
+    def converged(
+        self,
+        forces: torch.Tensor | NDArray | None,
+        fmax: float,
+        max_forces: torch.Tensor | None = None,
+    ) -> bool:
         """Check if norm of all predicted forces are below fmax"""
-        max_forces = self.get_max_forces()
+        if forces is not None:
+            if isinstance(forces, np.ndarray):
+                forces = torch.tensor(forces, device=self.device, dtype=torch.float32)
+            max_forces = self.get_max_forces(forces)
+        elif max_forces is None:
+            raise ValueError("One of forces or max_forces must be given!")
+
         update_mask = max_forces.ge(fmax)
         # update cached mask
         if self.mask_converged:
@@ -272,7 +291,7 @@ class OptimizableBatch(Optimizable):
                 self._update_mask = torch.logical_and(self._update_mask, update_mask)
             update_mask = self._update_mask
 
-        return not torch.all(update_mask).item()
+        return not torch.any(update_mask).item()
 
     def get_atoms_list(self) -> list[Atoms]:
         """Get ase Atoms objects corresponding to the batch"""
