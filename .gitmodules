@@ -4,3 +4,6 @@
 [submodule "EGAP"]
 	path = EGAP
 	url = git@github.com:EricZQu/EGAP.git
+[submodule "xformers"]
+	path = xformers
+	url = git@github.com:facebookresearch/xformers.git
