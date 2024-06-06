@@ -5,7 +5,13 @@ import numpy.testing as npt
 
 from ase import build
 from ase.optimize import LBFGS, FIRE
-from ase.filters import UnitCellFilter
+
+try:
+    from ase.filters import UnitCellFilter
+except ModuleNotFoundError:
+    # older ase version, import UnitCellFilterOld
+    from ase.constraints import UnitCellFilter
+
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.preprocessing.atoms_to_graphs import AtomsToGraphs
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
@@ -55,7 +61,7 @@ def test_ase_relaxation(atoms_list, batch, calculator, optimizer_cls):
         opt = optimizer_cls(atoms)
         opt.run(0.01, 20)
 
-    # TODO relaxations with FIRE give nans for positions which leads to a criptic
+    # TODO relaxations with LBFGS give nans for positions which leads to a criptic
     #  eror in edge_rot_mat (since edges are empty)
     # optimize atoms in batch using ASE
     batch_optimizer = optimizer_cls(obatch)
