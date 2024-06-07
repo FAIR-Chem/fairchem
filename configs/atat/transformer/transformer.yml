@@ -4,24 +4,18 @@ includes:
 model:
   name: transformer
   elements: [1, 6, 7, 8]
-  embed_dim: 128
-  hidden_dim: 128
+  embed_dim: 256
+  hidden_dim: 256
   dropout: 0.
+  att_dropout: 0.
   num_layers: 12
-  num_heads: 8
+  num_heads: 16
   otf_graph: True
-  rbf_radius: 15.0
-  num_gaussians: 64
-  trainable_rbf: True
-  num_pair_embed_layers: 4
-  pair_embed_style: fixed_shared
-  gate_pair_embed: True
-
-  output_layers: 3
-  gate_output: True
+  rbf_radius: 8.0
+  use_pbc: False
+  num_gaussians: 128
+  output_layers: 4
   avg_atoms: 60
-  pos_emb_style: naive
-  pos_scale: 6
 
 optim:
   batch_size: 64
@@ -39,7 +33,7 @@ optim:
   patience: 100
   max_epochs: 10000
   force_coefficient: 10
-  energy_coefficient: 1
+  energy_coefficient: 0.1
   ema_decay: 0.999
   clip_grad_norm: 10
   loss_energy: mae

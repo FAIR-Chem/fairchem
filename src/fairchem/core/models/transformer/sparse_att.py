@@ -36,9 +36,8 @@ def _from_coo(m, n, rows, cols, vals):
         # if used for other sparse operation consider modify this!
         mask = torch.argsort(vals.amax(-1))[len(vals)%4:]
         rows, cols, vals = rows[mask], cols[mask], vals[mask]
-    
-    indx = torch.argsort(rows)
-    rows, cols, vals = rows[indx], cols[indx], vals[indx]
+        indx = torch.argsort(rows)
+        rows, cols, vals = rows[indx], cols[indx], vals[indx]
 
     row_offsets, column_indices = _coo_to_csr(m, n, rows, cols)
     return SparseCSRTensor(row_offsets, column_indices, vals.T, (vals.size(1), m, n))

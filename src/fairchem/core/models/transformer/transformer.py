@@ -11,19 +11,18 @@ import torch.nn.functional as F
 
 from fairchem.core.common.registry import registry
 from fairchem.core.models.base import BaseModel
+from torch_scatter import scatter_min
 
-from scipy.spatial.transform import Rotation as R
-
-from .scatter_attn import SelfAttentionLayer
+from .self_attn import AttentionLayer
 from .output import OutputModule
-from .pair_embed import PairEmbed, EfficientPairEmbed
+from .pair_embed import PairEmbed
 
 logger = logging.getLogger(__name__)
 
-@registry.register_model("sparse_transformer")
-class SparseTransformer(BaseModel):
+@registry.register_model("transformer")
+class Transformer(BaseModel):
     """
-    Sparse Transformer
+    Transformer
 
     Parameters
     ----------
@@ -69,14 +68,13 @@ class SparseTransformer(BaseModel):
             embed_dim: int = 128,
             hidden_dim: int = 128,
             dropout: float = 0.,
+            att_dropout: float = 0.,
             num_layers: int = 12,
             num_heads: int = 8,
             otf_graph: bool = True,
             rbf_radius: float = 5.0,
             use_pbc: bool = False,
             num_gaussians: int = 50,
-            pair_embed_style: str = "default",
-            num_pair_embed_layers: int = 2,
             output_layers: int = 3,
             avg_atoms: float = 60,
         ):
@@ -87,9 +85,6 @@ class SparseTransformer(BaseModel):
         self.cutoff = rbf_radius
         self.use_pbc = use_pbc
         self.num_layers = num_layers
-        self.pair_embed_style = pair_embed_style
-
-        assert pair_embed_style in ["default", "efficient"]
 
         if isinstance(elements, int):
             self.register_buffer("atomic_number_mask", torch.arange(elements + 1))
@@ -104,32 +99,25 @@ class SparseTransformer(BaseModel):
             len(elements),
             embed_dim,
         )
-        if pair_embed_style == "default":
-            self.pair_embed = PairEmbed(
-                embed_dim=embed_dim,
-                hidden_dim=hidden_dim,
-                num_heads=num_heads,
-                num_masks=num_layers,
-                num_gaussians=num_gaussians,
-                rbf_radius=rbf_radius,
-                dropout=dropout,
-                num_layers=num_pair_embed_layers,
-            )
-        elif pair_embed_style == "efficient":
-            self.pair_embed = EfficientPairEmbed(
-                num_elements=len(elements),
-                num_heads=num_heads,
-                num_masks=num_layers,
-                num_gaussians=num_gaussians,
-                rbf_radius=rbf_radius,
-            )
+        
+        self.pair_embed = PairEmbed(
+            num_elements=len(elements),
+            embed_dim=embed_dim,
+            hidden_dim=hidden_dim,
+            num_heads=num_heads,
+            num_masks=num_layers,
+            num_gaussians=num_gaussians,
+            rbf_radius=rbf_radius,
+        )
 
         self.layers = nn.ModuleList([
-            SelfAttentionLayer(
+            AttentionLayer(
                 embed_dim=embed_dim,
                 hidden_dim=hidden_dim,
                 num_heads=num_heads,
                 dropout=dropout,
+                att_dropout=att_dropout,
+                attention="sparse"
             ) for _ in range(num_layers)
         ])
 
@@ -181,21 +169,11 @@ class SparseTransformer(BaseModel):
         dist = torch.cat([dist, torch.zeros(batch.size(0), device=dist.device)], dim=0)
         vec = torch.cat([vec, torch.zeros((batch.size(0), 3), device=vec.device)], dim=0)
 
-        # sort them to give better caching performance
-        indx = torch.argsort(edge_index[0])
-        edge_index, dist, vec = edge_index[:, indx], dist[indx], vec[indx]
+        # coalease duplicated entries
+        edge_index, inv = torch.unique(edge_index, dim=1, return_inverse=True)
+        dist, argmin = scatter_min(dist, inv, dim=0)
+        vec = vec[argmin]
         vec_hat = F.normalize(vec, dim=-1)
-
-        # randomly rotate vec_hat for data augmentation
-        if self.training:
-            rotations = torch.tensor(
-                R.random(batch.max() + 1).as_matrix(),
-                dtype=torch.float,
-                device=vec_hat.device
-            )
-            rot_vec_hat = torch.bmm(rotations[batch[edge_index[0]]], vec_hat[..., None]).squeeze(-1)
-        else:
-            rot_vec_hat = vec_hat
 
         # initialize inputs
         x = self.atomic_number_encoder(atomic_numbers)
@@ -204,15 +182,12 @@ class SparseTransformer(BaseModel):
         energy, forces = self.init_output(x, edge_index, batch, dist, vec_hat)
 
         # get pair embeddings
-        if self.pair_embed_style == "default":
-            attn_masks = self.pair_embed(x, edge_index, dist)
-        elif self.pair_embed_style == "efficient":
-            attn_masks = self.pair_embed(atomic_numbers, edge_index, dist)
+        att_bias = self.pair_embed(atomic_numbers, edge_index, dist)
 
         # forward passing
         for i in range(self.num_layers):
             # attention block
-            x = self.layers[i](x, edge_index, attn_masks[i], rot_vec_hat)
+            x = self.layers[i](x, edge_index, att_bias[i])
 
             # residual outputs
             e, f = self.outputs[i](x, edge_index, batch, dist, vec_hat)
@@ -222,7 +197,7 @@ class SparseTransformer(BaseModel):
         energy = energy / (self.num_layers + 1)
         forces = forces / (self.num_layers + 1)
 
-        return {"energy": energy, "forces": forces, "regularizer": None}
+        return {"energy": energy, "forces": forces}
     
     @property
     def num_params(self):
@@ -235,7 +210,7 @@ class SparseTransformer(BaseModel):
         no_wd_list = []
         named_parameters_list = [name for name, _ in self.named_parameters()]
         for module_name, module in self.named_modules():
-            if isinstance(module, (nn.Linear, nn.Embedding, nn.LayerNorm, EfficientPairEmbed)):
+            if isinstance(module, (nn.Linear, nn.Embedding, nn.LayerNorm)):
                 for parameter_name, _ in module.named_parameters():
                     if isinstance(module, torch.nn.Linear):
                         if "weight" in parameter_name:
