@@ -140,7 +140,6 @@ class AttentionOutputModule(nn.Module):
             att_bias: torch.Tensor,
             pos: torch.Tensor,
             batch: torch.Tensor,
-            need_weights: Optional[bool] = False
         ):
 
         # normalize inputs
@@ -161,11 +160,12 @@ class AttentionOutputModule(nn.Module):
         att = att - value
 
         # combine batched dimensions
-        att = att.permute(1, 0, 2).view(x.size(0), -1)
+        att = att.permute(1, 0, 2).reshape(x.size(0), -1)
 
         # normalize for mlp
         z_mlp = self.norm_mlp(x)
         energy = self.energy_mlp(z_mlp)
+        energy = scatter(energy, batch, dim=0, reduce="sum") / self.avg_len
         forces = self.forces_mlp(torch.cat([z_mlp, att], dim=-1))
 
         return energy, forces

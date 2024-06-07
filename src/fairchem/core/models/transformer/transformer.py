@@ -14,7 +14,7 @@ from fairchem.core.models.base import BaseModel
 from torch_scatter import scatter_min
 
 from .self_attn import AttentionLayer
-from .output import OutputModule
+from .output import OutputModule, AttentionOutputModule
 from .pair_embed import PairEmbed
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,8 @@ class Transformer(BaseModel):
         the hidde channels of feed forward
     dropout: float
         dropout rate
+    att_dropout: float
+        attention dropout rate
     num_layers: int
         the number of layers to use
     num_heads: int
@@ -44,10 +46,6 @@ class Transformer(BaseModel):
         rbf radius
     use_pbc: bool
         to use periodic boundary condition or not
-    pair_embed_style: str
-        can be either "default" or "efficient"
-    num_pair_embed_layers: int
-        number of pair embedding layers to use
     max_neighbors: int
         maximum number of neighbors
     num_gaussians: int
@@ -74,6 +72,7 @@ class Transformer(BaseModel):
             otf_graph: bool = True,
             rbf_radius: float = 5.0,
             use_pbc: bool = False,
+            use_att_output: bool = False,
             num_gaussians: int = 50,
             output_layers: int = 3,
             avg_atoms: float = 60,
@@ -105,7 +104,7 @@ class Transformer(BaseModel):
             embed_dim=embed_dim,
             hidden_dim=hidden_dim,
             num_heads=num_heads,
-            num_masks=num_layers,
+            num_masks=2*num_layers+1,
             num_gaussians=num_gaussians,
             rbf_radius=rbf_radius,
         )
@@ -121,24 +120,24 @@ class Transformer(BaseModel):
             ) for _ in range(num_layers)
         ])
 
-        self.init_output = OutputModule(
+        self.init_output = AttentionOutputModule(
             embed_dim=embed_dim,
             hidden_dim=hidden_dim,
             dropout=dropout,
-            hidden_layers=output_layers,
-            num_gaussians=num_gaussians,
-            rbf_radius=rbf_radius,
+            att_dropout=att_dropout,
+            layers=output_layers,
+            num_heads=num_heads,
             avg_len=avg_atoms,
         )
 
         self.outputs = nn.ModuleList([
-            OutputModule(
+            AttentionOutputModule(
                 embed_dim=embed_dim,
                 hidden_dim=hidden_dim,
                 dropout=dropout,
-                hidden_layers=output_layers,
-                num_gaussians=num_gaussians,
-                rbf_radius=rbf_radius,
+                att_dropout=att_dropout,
+                layers=output_layers,
+                num_heads=num_heads,
                 avg_len=avg_atoms,
             ) for _ in range(num_layers)
         ])        
@@ -146,6 +145,7 @@ class Transformer(BaseModel):
     def forward(self, data):
 
         # extract data
+        pos = data.pos
         batch = data.batch
         atomic_numbers = self.atomic_number_mask[data.atomic_numbers.long()]
 
@@ -178,11 +178,12 @@ class Transformer(BaseModel):
         # initialize inputs
         x = self.atomic_number_encoder(atomic_numbers)
 
-        # initialize output
-        energy, forces = self.init_output(x, edge_index, batch, dist, vec_hat)
-
         # get pair embeddings
         att_bias = self.pair_embed(atomic_numbers, edge_index, dist)
+        att_bias, output_att_bias = att_bias[:self.num_layers], att_bias[self.num_layers:]
+
+        # initialize output
+        energy, forces = self.init_output(x, edge_index, output_att_bias[0], pos, batch)
 
         # forward passing
         for i in range(self.num_layers):
@@ -190,7 +191,7 @@ class Transformer(BaseModel):
             x = self.layers[i](x, edge_index, att_bias[i])
 
             # residual outputs
-            e, f = self.outputs[i](x, edge_index, batch, dist, vec_hat)
+            e, f = self.outputs[i](x, edge_index, output_att_bias[i+1], pos, batch)
             energy += e
             forces += f
 
