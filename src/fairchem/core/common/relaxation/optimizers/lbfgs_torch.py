@@ -58,6 +58,15 @@ class LBFGS:
         self.traj_dir = traj_dir
         self.traj_names = traj_names
 
+        self.fmax = None
+        self.steps = None
+
+        self.s = deque(maxlen=self.memory)
+        self.y = deque(maxlen=self.memory)
+        self.rho = deque(maxlen=self.memory)
+        self.r0 = None
+        self.f0 = None
+
         assert not self.traj_dir or (
             traj_dir and len(traj_names)
         ), "Trajectory names should be specified to save trajectories"
@@ -67,9 +76,9 @@ class LBFGS:
         self.fmax = fmax
         self.steps = steps
 
-        self.s = deque(maxlen=self.memory)
-        self.y = deque(maxlen=self.memory)
-        self.rho = deque(maxlen=self.memory)
+        self.s.clear()
+        self.y.clear()
+        self.rho.clear()
         self.r0 = self.f0 = None
 
         self.trajectories = None

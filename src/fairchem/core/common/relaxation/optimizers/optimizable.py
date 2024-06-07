@@ -128,7 +128,7 @@ class OptimizableBatch(Optimizable):
         self._cached_batch = None
         self._update_mask = None
         self._cumulative_mask = cumulative_mask
-        self._torch_results = {}
+        self.torch_results = {}
         self.results = {}
 
         self._otf_graph = trainer._unwrapped_model.otf_graph
@@ -169,15 +169,13 @@ class OptimizableBatch(Optimizable):
         """Run prediction if batch has any changes."""
         system_changes = self.check_state(self.batch)
         if len(system_changes) > 0:
-            self._torch_results = self.trainer.predict(
+            self.torch_results = self.trainer.predict(
                 self.batch, per_image=False, disable_tqdm=True
             )
             # save only subset of props in simple namespace instead of cloning the whole batch to save memory
+            changes = ALL_CHANGES - set(self.ignored_changes)
             self._cached_batch = SimpleNamespace(
-                **{
-                    prop: self.batch[prop].clone()
-                    for prop in ALL_CHANGES - self.ignored_changes
-                }
+                **{prop: self.batch[prop].clone() for prop in changes}
             )
 
     def get_property(self, name, no_numpy: bool = False) -> torch.Tensor | NDArray:
@@ -186,17 +184,17 @@ class OptimizableBatch(Optimizable):
         if self.numpy:
             self.results = {
                 key: pred.item() if pred.numel() == 1 else pred.cpu().numpy()
-                for key, pred in self._torch_results.items()
+                for key, pred in self.torch_results.items()
             }
         else:
-            self.results = self._torch_results
+            self.results = self.torch_results
 
         if name not in self.results:
             raise PropertyNotImplementedError(
                 f"{name} not present in this " "calculation"
             )
 
-        return self.results[name] if no_numpy is False else self._torch_results[name]
+        return self.results[name] if no_numpy is False else self.torch_results[name]
 
     def get_positions(self) -> torch.Tensor | NDArray:
         """Get the batch positions"""
@@ -217,11 +215,15 @@ class OptimizableBatch(Optimizable):
         if not self._otf_graph:
             self.update_graph()
 
-    def get_forces(self, apply_constraint: bool = False) -> torch.Tensor | NDArray:
+    def get_forces(
+        self, apply_constraint: bool = False, no_numpy: bool = False
+    ) -> torch.Tensor | NDArray:
         """Get predicted batch forces."""
-        forces = self.get_property("forces")
+        forces = self.get_property("forces", no_numpy=no_numpy)
         if apply_constraint:
             fixed_idx = torch.where(self.batch.fixed == 1)[0]
+            if isinstance(forces, np.ndarray):
+                fixed_idx = fixed_idx.tolist()
             forces[fixed_idx] = 0
         return forces
 
@@ -262,7 +264,7 @@ class OptimizableBatch(Optimizable):
     def get_max_forces(self, forces: torch.Tensor | None = None) -> torch.Tensor:
         """Get the maximum forces per structure in batch"""
         if forces is None:
-            forces = self.get_forces()
+            forces = self.get_forces(no_numpy=True)
         return scatter((forces**2).sum(axis=1).sqrt(), self.batch_indices, reduce="max")
 
     def converged(
@@ -296,7 +298,7 @@ class OptimizableBatch(Optimizable):
     def get_atoms_list(self) -> list[Atoms]:
         """Get ase Atoms objects corresponding to the batch"""
         self._predict()  # in case no predictions have been ran
-        return batch_to_atoms(self.batch, results=self._torch_results)
+        return batch_to_atoms(self.batch, results=self.torch_results)
 
     def update_graph(self):
         """Update the graph if model does not use otf_graph."""

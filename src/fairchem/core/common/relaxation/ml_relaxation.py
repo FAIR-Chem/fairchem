@@ -100,7 +100,6 @@ def ml_relax(
             relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
             relaxed_batches.append(relaxed_batch)
         except RuntimeError as err:
-            raise err
             e = err
             oom = True
             torch.cuda.empty_cache()
