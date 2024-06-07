@@ -11,11 +11,12 @@ import torch.nn.functional as F
 
 from fairchem.core.common.registry import registry
 from fairchem.core.models.base import BaseModel
-from torch_scatter import scatter_min
+from torch_scatter import scatter, scatter_min
 
-from .self_attn import AttentionLayer
-from .output import OutputModule, AttentionOutputModule
+from .encoder_layer import EncoderLayer
+from .pos_feat import PositionFeaturizer
 from .pair_embed import PairEmbed
+from .mlp import ResMLP
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,6 @@ class Transformer(BaseModel):
             otf_graph: bool = True,
             rbf_radius: float = 5.0,
             use_pbc: bool = False,
-            use_att_output: bool = False,
             num_gaussians: int = 50,
             output_layers: int = 3,
             avg_atoms: float = 60,
@@ -104,43 +104,48 @@ class Transformer(BaseModel):
             embed_dim=embed_dim,
             hidden_dim=hidden_dim,
             num_heads=num_heads,
-            num_masks=2*num_layers+1,
+            num_masks=2*num_layers,
             num_gaussians=num_gaussians,
             rbf_radius=rbf_radius,
         )
 
         self.layers = nn.ModuleList([
-            AttentionLayer(
+            EncoderLayer(
                 embed_dim=embed_dim,
                 hidden_dim=hidden_dim,
                 num_heads=num_heads,
                 dropout=dropout,
                 att_dropout=att_dropout,
-                attention="sparse"
             ) for _ in range(num_layers)
         ])
 
-        self.init_output = AttentionOutputModule(
-            embed_dim=embed_dim,
-            hidden_dim=hidden_dim,
-            dropout=dropout,
-            att_dropout=att_dropout,
-            layers=output_layers,
-            num_heads=num_heads,
-            avg_len=avg_atoms,
-        )
-
-        self.outputs = nn.ModuleList([
-            AttentionOutputModule(
+        self.pos_feat = nn.ModuleList([
+            PositionFeaturizer(
                 embed_dim=embed_dim,
                 hidden_dim=hidden_dim,
                 dropout=dropout,
                 att_dropout=att_dropout,
-                layers=output_layers,
                 num_heads=num_heads,
-                avg_len=avg_atoms,
             ) for _ in range(num_layers)
-        ])        
+        ])
+
+        self.forces_out = ResMLP(
+            input_dim=embed_dim,
+            hidden_dim=hidden_dim,
+            output_dim=3,
+            num_layers=output_layers,
+            dropout=dropout,
+        )
+
+        self.energy_out = ResMLP(
+            input_dim=embed_dim,
+            hidden_dim=hidden_dim,
+            output_dim=1,
+            num_layers=output_layers,
+            dropout=dropout,
+        )
+        
+        self.avg_atoms = avg_atoms
 
     def forward(self, data):
 
@@ -173,30 +178,26 @@ class Transformer(BaseModel):
         edge_index, inv = torch.unique(edge_index, dim=1, return_inverse=True)
         dist, argmin = scatter_min(dist, inv, dim=0)
         vec = vec[argmin]
-        vec_hat = F.normalize(vec, dim=-1)
 
         # initialize inputs
         x = self.atomic_number_encoder(atomic_numbers)
 
         # get pair embeddings
         att_bias = self.pair_embed(atomic_numbers, edge_index, dist)
-        att_bias, output_att_bias = att_bias[:self.num_layers], att_bias[self.num_layers:]
-
-        # initialize output
-        energy, forces = self.init_output(x, edge_index, output_att_bias[0], pos, batch)
+        att_bias, pos_att_bias = att_bias[:self.num_layers], att_bias[self.num_layers:]
 
         # forward passing
         for i in range(self.num_layers):
             # attention block
             x = self.layers[i](x, edge_index, att_bias[i])
+            # position featurizer 
+            x = self.pos_feat[i](x, edge_index, pos_att_bias[i], pos)
+        
+        # get outputs
+        energy = self.energy_out(x)
+        forces = self.forces_out(x)
 
-            # residual outputs
-            e, f = self.outputs[i](x, edge_index, output_att_bias[i+1], pos, batch)
-            energy += e
-            forces += f
-
-        energy = energy / (self.num_layers + 1)
-        forces = forces / (self.num_layers + 1)
+        energy = scatter(energy, batch, dim=0, reduce="sum") / self.avg_atoms
 
         return {"energy": energy, "forces": forces}
     
