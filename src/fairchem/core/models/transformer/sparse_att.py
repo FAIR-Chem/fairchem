@@ -158,6 +158,9 @@ class SparseSelfAttention(nn.Module):
         att_bias: Optional[torch.Tensor] = None,
         need_weights: Optional[bool] = False
     ):
+        """
+        Current implementation requires implicit batching!
+        """
         # project to qkv
         query = self.query_proj(x)
         key = self.key_proj(x)
