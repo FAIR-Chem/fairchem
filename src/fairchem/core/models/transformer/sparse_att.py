@@ -6,7 +6,6 @@ from torch import nn
 import torch.nn.functional as F
 
 from xformers.components.attention import Attention
-
 from xformers.sparse import SparseCSRTensor
 from xformers.sparse.utils import _coo_to_csr
 from xformers.ops import masked_matmul
@@ -37,7 +36,7 @@ def _from_coo(m, n, rows, cols, vals):
         # remove the four smallest item
         # only make sense for additive attention mask
         # if used for other sparse operation consider modify this!
-        mask = torch.argsort(vals.amin(-1))[len(vals)%4:]
+        mask = torch.argsort(vals.amax(-1))[len(vals)%4:]
         rows, cols, vals = rows[mask], cols[mask], vals[mask]
 
     row_offsets, column_indices = _coo_to_csr(m, n, rows, cols)
