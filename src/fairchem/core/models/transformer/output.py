@@ -1,6 +1,8 @@
+import math
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+
+from torch_scatter import scatter
 
 from .mlp import ResMLP
 from .rbf import RadialBasisFunction
@@ -14,16 +16,11 @@ class OutputModule(nn.Module):
         hidden_layers: int = 3,
         num_gaussians: int = 50,
         rbf_radius: float = 12.,
-        trainable_rbf: bool = False,
-        use_gated_mlp: bool = False,
         avg_len: float = 60.,
-        sparse: bool = False,
     ):
         super().__init__()
 
-        self.use_gated_mlp = use_gated_mlp
         self.avg_len = avg_len
-        self.sparse = sparse
         self.rbf_radius = rbf_radius
 
         self.energy_mlp = ResMLP(
@@ -45,57 +42,45 @@ class OutputModule(nn.Module):
         self.input_rbf = RadialBasisFunction(
             rbf_radius=rbf_radius,
             num_gaussians=num_gaussians,
-            embed_dim=embed_dim,
-            trainable=trainable_rbf,
+            embed_dim=embed_dim
         )
-
-        if use_gated_mlp:
-            self.energy_rbf = RadialBasisFunction(
-                rbf_radius=rbf_radius,
-                num_gaussians=num_gaussians,
-                embed_dim=hidden_dim,
-                trainable=trainable_rbf,
-            )
-
-            self.forces_rbf = RadialBasisFunction(
-                rbf_radius=rbf_radius,
-                num_gaussians=num_gaussians,
-                embed_dim=hidden_dim,
-                trainable=trainable_rbf,
-            )
 
     def forward(
             self, 
             x: torch.Tensor,
+            edge_index: torch.Tensor,
+            batch: torch.Tensor,
             dist: torch.Tensor,
             vec_hat: torch.Tensor,
-            mask: torch.Tensor,
         ):
-
-        # prepare mask
-        entries = mask.T[:, None] & mask.T[None, :] # [L, L, N]
-        if self.sparse:
-            entries &= dist < self.rbf_radius
-        entries = entries[..., None]
 
         # prepare pair embeddings
         rbf = self.input_rbf(dist)
-        x = torch.cat([
-            x[:, None].expand_as(rbf), 
-            x[None, :].expand_as(rbf), 
+
+        inputs = torch.cat([
+            x[edge_index[0]], 
+            x[edge_index[1]], 
             rbf
-        ], dim=-1) # [L, L, N, 3D]
+        ], dim=-1) # [L, 3D]
 
         # regress outputs
-        if self.use_gated_mlp:
-            energy_pairs = self.energy_mlp(x, gate=self.energy_rbf(dist))
-            force_pairs = self.forces_mlp(x, gate=self.forces_rbf(dist)) * vec_hat
-        else:
-            energy_pairs = self.energy_mlp(x)
-            force_pairs = self.forces_mlp(x) * vec_hat
+        energy_pairs = self.energy_mlp(inputs)
+        force_pairs = self.forces_mlp(inputs) * vec_hat
 
-        energy = (energy_pairs * entries.float()).sum((0, 1)) / (self.avg_len ** 2) # [N, 1]
-        forces = (force_pairs * entries.float()).sum(0) / self.avg_len # [L, N, 3]
-        forces = forces.transpose(0, 1)[mask] # [S, 3]
+        energy = scatter(
+            src = energy_pairs, 
+            index = batch[edge_index[0]], 
+            dim = 0,
+            dim_size = batch.max() + 1,
+            reduce = "sum"
+        ) / (self.avg_len ** 2)
+
+        forces = scatter(
+            src = force_pairs, 
+            index = edge_index[0], 
+            dim = 0,
+            dim_size = x.size(0),
+            reduce = "sum"
+        ) / self.avg_len
 
         return energy, forces
