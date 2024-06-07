@@ -62,9 +62,7 @@ class SparseScaledDotProduct(Attention):
         q: torch.Tensor,
         k: torch.Tensor,
         v: torch.Tensor,
-        mask: SparseCSRTensor = None,
-        *args,
-        **kwargs,
+        mask: SparseCSRTensor,
     ) -> torch.Tensor:
         r"""
         mask must be a 3D additive SparseCSRTensor mask.
