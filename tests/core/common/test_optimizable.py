@@ -99,7 +99,7 @@ def test_batch_relaxation_mask(atoms_list, calculator, mask_converged):
 
     if mask_converged:
         # assert preconverged structure was not changed at all
-        assert np.allclose(batch.pos[batch.batch == 0].cpu().numpy(), atoms.positions)
+        npt.assert_allclose(batch.pos[batch.batch == 0].cpu().numpy(), atoms.positions)
         assert not np.allclose(
             batch.pos[batch.batch == 1].cpu().numpy(), atoms_list[1].positions
         )
