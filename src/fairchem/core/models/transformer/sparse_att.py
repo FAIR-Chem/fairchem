@@ -1,7 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All rights reserved.
-#
-# This source code is licensed under the BSD license found in the
-# LICENSE file in the root directory of this source tree.
 import math
 from typing import Optional
 
@@ -38,6 +34,9 @@ def _from_coo(m, n, rows, cols, vals):
     rows, cols, vals = rows[indx], cols[indx], vals[indx]
 
     if len(vals) % 4 != 0:
+        # remove the four smallest item
+        # only make sense for additive attention mask
+        # if used for other sparse operation consider modify this!
         mask = torch.argsort(vals.amin(-1))[len(vals)%4:]
         rows, cols, vals = rows[mask], cols[mask], vals[mask]
 
