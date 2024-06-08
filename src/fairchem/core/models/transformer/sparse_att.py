@@ -150,7 +150,8 @@ class SparseSelfAttention(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        edge_index: torch.Tensor,
+        row_index: torch.Tensor, 
+        col_index: torch.Tensor,
         att_bias: Optional[torch.Tensor] = None,
         need_weights: Optional[bool] = False
     ):
@@ -163,7 +164,7 @@ class SparseSelfAttention(nn.Module):
         value = self.value_proj(x)
 
         # construct CSR format mask
-        mask = _from_coo(x.size(0), x.size(0), edge_index[0], edge_index[1], att_bias)
+        mask = _from_coo(x.size(0), x.size(0), row_index, col_index, att_bias)
 
         # compute scaled dot product attention
         self_att, logits = self.attention(query, key, value, mask)

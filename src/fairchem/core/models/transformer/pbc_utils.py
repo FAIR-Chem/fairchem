@@ -103,10 +103,7 @@ def radius_graph_pbc(
     src_pos = src_pos[indx]
     org_to_src = index2[indx]
 
-    edge_index = torch.stack([index1, index2])
-    src_index = torch.stack([index1, src_index])
-
-    return edge_index, dist, src_pos, src_index, org_to_src
+    return index1, index2, src_index, dist, src_pos, org_to_src
 
 def build_radius_graph(
     data,
@@ -124,4 +121,4 @@ def build_radius_graph(
             max_num_neighbors=data.natoms.max(),
         )
         dist = torch.linalg.norm(data.pos[edge_index[0]] - data.pos[edge_index[1]], dim=-1)
-        return edge_index, dist, data.pos, edge_index, torch.arange(data.pos.size(0), device=dist.device)
+        return edge_index[0], edge_index[1], edge_index[1], dist, data.pos, torch.arange(data.pos.size(0), device=dist.device)

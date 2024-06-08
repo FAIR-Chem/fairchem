@@ -48,7 +48,8 @@ class EncoderLayer(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        edge_index: torch.Tensor,
+        row_index: torch.Tensor, 
+        col_index: torch.Tensor,
         att_bias: torch.Tensor,
     ) -> torch.tensor:
         """
@@ -56,14 +57,15 @@ class EncoderLayer(nn.Module):
         arguments:
             x: input sequence of shape (L, C)
             pos: input positions of shape (L, 3)
-            edge_index: coo formated sparse matrix of shape (2, E)
+            row_index: coo formated sparse matrix of shape (E,)
+            col_index: coo formated sparse matrix of shape (E,)
             att_bias: a tensor of shape (E, H)
         """
 
         z = self.norm_att(x)
         
         self_att = self.self_att(
-            z, edge_index=edge_index, att_bias=att_bias, need_weights=False
+            x=z, row_index=row_index, col_index=col_index, att_bias=att_bias, need_weights=False
         )
 
         x = x + self_att

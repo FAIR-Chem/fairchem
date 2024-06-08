@@ -41,12 +41,13 @@ class PairEmbed(nn.Module):
     def forward(
         self,
         anum: torch.Tensor,
-        edge_index: torch.Tensor,
+        row_index: torch.Tensor, 
+        col_index: torch.Tensor,
         dist: torch.Tensor,
     ):
         rbf = self.smearing(dist)
-        emb = self.embedding(anum[edge_index[0]] + self.num_elemenets * anum[edge_index[1]])
+        emb = self.embedding(anum[row_index] + self.num_elemenets * anum[col_index])
         attn_bias = self.mlp(torch.cat([rbf, emb], dim=1), gate=rbf)
-        attn_bias = attn_bias.reshape(edge_index.size(1), self.num_heads, self.num_masks)
+        attn_bias = attn_bias.reshape(dist.size(0), self.num_heads, self.num_masks)
         
         return attn_bias.permute(2, 0, 1).contiguous()

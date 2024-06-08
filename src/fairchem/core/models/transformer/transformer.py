@@ -156,21 +156,21 @@ class Transformer(BaseModel):
         atomic_numbers = self.atomic_number_mask[data.atomic_numbers.long()]
 
         # build graph on-the-fly
-        edge_index, dist, src_pos, src_index, org_to_src = build_radius_graph(data, self.rbf_radius, self.use_pbc)
+        row_index, col_index, src_index, dist, src_pos, org_to_src = build_radius_graph(data, self.rbf_radius, self.use_pbc)
         
         # initialize inputs
         x = self.atomic_number_encoder(atomic_numbers)
 
         # get pair embeddings
-        att_bias = self.pair_embed(atomic_numbers, edge_index, dist)
+        att_bias = self.pair_embed(atomic_numbers, row_index, col_index, dist)
         att_bias, pos_att_bias = att_bias[:self.num_layers], att_bias[self.num_layers:]
 
         # forward passing
         for i in range(self.num_layers):
             # attention block
-            x = self.layers[i](x, edge_index, att_bias[i])
+            x = self.layers[i](x, row_index, col_index, att_bias[i])
             # position featurizer 
-            x = self.pos_feat[i](x, src_index, pos_att_bias[i], pos, src_pos, org_to_src)
+            x = self.pos_feat[i](x, row_index, src_index, pos_att_bias[i], pos, src_pos, org_to_src)
         
         # get outputs
         x = self.norm_mlp(x)
@@ -179,7 +179,7 @@ class Transformer(BaseModel):
 
         # averge over all energies
         energy = scatter(
-            energy, batch, dim=0, reduce="mean"
+            energy, batch, dim=0, reduce="sum"
         )
 
         return {"energy": energy, "forces": forces}

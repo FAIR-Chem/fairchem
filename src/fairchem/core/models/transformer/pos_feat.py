@@ -44,6 +44,7 @@ class PositionFeaturizer(nn.Module):
     def forward(
             self, 
             x: torch.Tensor,
+            row_index: torch.Tensor,
             src_index: torch.Tensor,
             att_bias: torch.Tensor,
             pos: torch.Tensor,
@@ -60,7 +61,7 @@ class PositionFeaturizer(nn.Module):
         value = src_pos.expand(self.num_heads, -1, -1)
 
         # construct CSR format mask
-        mask = _from_coo(pos.size(0), src_pos.size(0), src_index[0], src_index[1], att_bias)
+        mask = _from_coo(pos.size(0), src_pos.size(0), row_index, src_index, att_bias)
 
         # compute scaled dot product attention
         feat, _ = self.attention(query, key, value, mask)
