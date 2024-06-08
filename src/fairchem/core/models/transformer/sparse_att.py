@@ -28,20 +28,20 @@ def _apply_dropout(
 def _from_coo(m, n, rows, cols, vals):
     rows, cols = rows.int(), cols.int()
 
-    if len(vals) % 4 != 0:
-        # remove the four smallest item
-        # only make sense for additive attention mask
-        # if used for other sparse operation consider modify this!
-        mask = torch.argsort(vals.amax(-1))[len(vals)%4:]
-        rows, cols, vals = rows[mask], cols[mask], vals[mask]
+    # if rows.size(0) % 4 != 0:
+    #     # remove the four smallest item
+    #     # only make sense for additive attention mask
+    #     # if used for other sparse operation consider modify this!
+    #     mask = torch.argsort(vals.amax(0))[rows.size(0)%4:]
+    #     rows, cols, vals = rows[mask], cols[mask], vals[:, mask]
+    #     indx = torch.argsort(cols, stable=True)
+    #     rows, cols, vals = rows[indx], cols[indx], vals[:, indx]
+    #     indx = torch.argsort(rows, stable=True)
+    #     rows, cols, vals = rows[indx], cols[indx], vals[:, indx]
 
-    indx = torch.argsort(rows, stable=True)
-    rows, cols, vals = rows[indx], cols[indx], vals[indx]
+    row_offsets = rows.add(1).bincount(minlength=m+1).cumsum(0, dtype=rows.dtype)
 
-    row_offsets = rows.bincount(minlength=m).cumsum(0, dtype=rows.dtype)
-    row_offsets = torch.nn.functional.pad(row_offsets, (1, 0))
-
-    return SparseCSRTensor(row_offsets, cols, vals.T, (vals.size(1), m, n))
+    return SparseCSRTensor(row_offsets, cols, vals, (vals.size(0), m, n))
 
 class SparseScaledDotProduct(Attention):
 

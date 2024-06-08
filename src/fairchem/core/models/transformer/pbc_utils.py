@@ -87,6 +87,11 @@ def radius_graph_pbc(
     # Remove pairs that are too far apart
     mask_within_radius = torch.le(dist, radius)
 
+    # add connections such that it is multiple of four
+    if mask_within_radius.sum() % 4 != 0:
+        _, indicies = torch.topk(dist.masked_fill(mask_within_radius, torch.inf).view(-1), 4 - mask_within_radius.sum() % 4, largest=False)
+        mask_within_radius.view(-1)[indicies] = True
+
     index1 = torch.masked_select(index1, mask_within_radius)
     index2 = torch.masked_select(index2, mask_within_radius)
     src_index = torch.masked_select(src_index, mask_within_radius)

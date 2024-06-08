@@ -9,15 +9,15 @@ model:
     46, 47, 48, 49, 50, 51, 52, 55, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
     82, 83
   ]
-  embed_dim: 512
-  hidden_dim: 1024
+  embed_dim: 256
+  hidden_dim: 512
   dropout: 0.
   att_dropout: 0.
   num_layers: 12
   num_heads: 32
   otf_graph: True
   rbf_radius: 8.0
-  use_pbc: True
+  use_pbc: False
   num_gaussians: 128
   output_layers: 4
 

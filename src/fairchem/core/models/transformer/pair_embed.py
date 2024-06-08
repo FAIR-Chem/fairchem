@@ -50,4 +50,4 @@ class PairEmbed(nn.Module):
         attn_bias = self.mlp(torch.cat([rbf, emb], dim=1), gate=rbf)
         attn_bias = attn_bias.reshape(dist.size(0), self.num_heads, self.num_masks)
         
-        return attn_bias.permute(2, 0, 1).contiguous()
+        return attn_bias.permute(2, 1, 0).contiguous()
