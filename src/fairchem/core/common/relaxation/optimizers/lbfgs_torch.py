@@ -57,6 +57,7 @@ class LBFGS:
         self.save_full = save_full_traj
         self.traj_dir = traj_dir
         self.traj_names = traj_names
+        self.trajectories = None
 
         self.fmax = None
         self.steps = None
@@ -88,25 +89,26 @@ class LBFGS:
                 ase.io.Trajectory(self.traj_dir / f"{name}.traj_tmp", mode="w")
                 for name in self.traj_names
             ]
+            self.write()
 
         iteration = 0
-        converged = False
-        while iteration < steps and not converged:
-            max_forces = self.optimizable.get_max_forces()
+        max_forces = self.optimizable.get_max_forces()
+        while iteration < steps and not self.optimizable.converged(
+            forces=None, fmax=self.fmax, max_forces=max_forces
+        ):
             logging.info(
                 f"{iteration} " + " ".join(f"{x:0.3f}" for x in max_forces.tolist())
             )
 
-            if self.trajectories is not None and (
-                self.save_full or converged or iteration == steps - 1 or iteration == 0
-            ):
+            if self.trajectories is not None and self.save_full:
                 self.write()
 
             self.step(iteration)
-            converged = self.optimizable.converged(
-                forces=None, fmax=self.fmax, max_forces=max_forces
-            )
+            max_forces = self.optimizable.get_max_forces()
             iteration += 1
+
+        if iteration > 0:
+            self.write()
 
         # GPU memory usage as per nvidia-smi seems to gradually build up as
         # batches are processed. This releases unoccupied cached memory.

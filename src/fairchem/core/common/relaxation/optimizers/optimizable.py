@@ -89,7 +89,6 @@ def compare_batches(
     return system_changes
 
 
-# TODO implement masking structures internally to be able to use masking with ASE optimizers
 class OptimizableBatch(Optimizable):
     """A Batch version of ase Optimizable Atoms
 
@@ -224,7 +223,7 @@ class OptimizableBatch(Optimizable):
             fixed_idx = torch.where(self.batch.fixed == 1)[0]
             if isinstance(forces, np.ndarray):
                 fixed_idx = fixed_idx.tolist()
-            forces[fixed_idx] = 0
+            forces[fixed_idx] = 0.0
         return forces
 
     def get_potential_energy(self, **kwargs) -> torch.Tensor | NDArray:
@@ -279,7 +278,7 @@ class OptimizableBatch(Optimizable):
                 forces = torch.tensor(forces, device=self.device, dtype=torch.float32)
             max_forces = self.get_max_forces(forces)
         elif max_forces is None:
-            raise ValueError("One of forces or max_forces must be given!")
+            max_forces = self.get_max_forces()
 
         update_mask = max_forces.ge(fmax)
         # update cached mask
@@ -297,7 +296,7 @@ class OptimizableBatch(Optimizable):
 
     def get_atoms_list(self) -> list[Atoms]:
         """Get ase Atoms objects corresponding to the batch"""
-        self._predict()  # in case no predictions have been ran
+        self._predict()  # in case no predictions have been run
         return batch_to_atoms(self.batch, results=self.torch_results)
 
     def update_graph(self):
