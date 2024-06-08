@@ -129,8 +129,6 @@ class Transformer(BaseModel):
                 num_heads=num_heads,
             ) for _ in range(num_layers)
         ])
-        
-        self.norm_mlp = nn.BatchNorm1d(embed_dim)
 
         self.forces_out = ResMLP(
             input_dim=embed_dim,
@@ -150,9 +148,9 @@ class Transformer(BaseModel):
 
     def forward(self, data):
 
-        # extract data
-        pos = data.pos
+        # extract data & normalize
         batch = data.batch
+        pos = data.pos / self.rbf_radius
         atomic_numbers = self.atomic_number_mask[data.atomic_numbers.long()]
 
         # build graph on-the-fly
@@ -173,7 +171,6 @@ class Transformer(BaseModel):
             x = self.pos_feat[i](x, row_index, src_index, pos_att_bias[i], pos, src_pos, org_to_src)
         
         # get outputs
-        x = self.norm_mlp(x)
         energy = self.energy_out(x)
         forces = self.forces_out(x)
 

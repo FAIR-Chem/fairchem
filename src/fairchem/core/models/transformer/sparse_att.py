@@ -38,7 +38,8 @@ def _from_coo(m, n, rows, cols, vals):
     indx = torch.argsort(rows, stable=True)
     rows, cols, vals = rows[indx], cols[indx], vals[indx]
 
-    row_offsets = rows.add(1).bincount(minlength=m+1).cumsum(0, dtype=rows.dtype)
+    row_offsets = rows.bincount(minlength=m).cumsum(0, dtype=rows.dtype)
+    row_offsets = torch.nn.functional.pad(row_offsets, (1, 0))
 
     return SparseCSRTensor(row_offsets, cols, vals.T, (vals.size(1), m, n))
 
