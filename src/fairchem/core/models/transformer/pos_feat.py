@@ -44,9 +44,11 @@ class PositionFeaturizer(nn.Module):
     def forward(
             self, 
             x: torch.Tensor,
-            edge_index: torch.Tensor,
+            src_index: torch.Tensor,
             att_bias: torch.Tensor,
             pos: torch.Tensor,
+            src_pos: torch.Tensor,
+            org_to_src: torch.Tensor,
         ):
 
         # normalize inputs
@@ -54,17 +56,17 @@ class PositionFeaturizer(nn.Module):
 
         # prepare inputs to attention
         query = self.query_proj(z_att)
-        key = self.key_proj(z_att)
-        value = pos.expand(self.num_heads, -1, -1)
+        key = self.key_proj(z_att[org_to_src])
+        value = src_pos.expand(self.num_heads, -1, -1)
 
         # construct CSR format mask
-        mask = _from_coo(x.size(0), x.size(0), edge_index[0], edge_index[1], att_bias)
+        mask = _from_coo(pos.size(0), src_pos.size(0), src_index[0], src_index[1], att_bias)
 
         # compute scaled dot product attention
         feat, _ = self.attention(query, key, value, mask)
 
         # subtract positions to get displacements
-        feat = feat - value
+        feat = feat - pos.expand(self.num_heads, -1, -1)
 
         # combine batched dimensions
         feat = feat.permute(1, 0, 2).reshape(x.size(0), -1)

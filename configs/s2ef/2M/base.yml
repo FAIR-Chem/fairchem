@@ -2,8 +2,7 @@ trainer: ocp
 
 dataset:
   train:
-    format: lmdb
-    src: data/s2ef/2M/train/
+    src: /data/ericqu/OC20/2M/s2ef/2M/train/
     key_mapping:
       y: energy
       force: forces
@@ -15,10 +14,13 @@ dataset:
         forces:
           mean: 0
           stdev: 2.887317180633545
-  val:
-    src: data/s2ef/all/val_id/
+  val: 
+    src: /data/ericqu/OC20/val_id/s2ef/all/val_id
+    split: 100000
 
-logger: wandb
+logger: 
+  name: wandb
+  project: OC20-2M
 
 outputs:
   energy:
@@ -33,7 +35,7 @@ outputs:
 loss_functions:
   - energy:
       fn: mae
-      coefficient: 2
+      coefficient: 1
   - forces:
       fn: l2mae
       coefficient: 100

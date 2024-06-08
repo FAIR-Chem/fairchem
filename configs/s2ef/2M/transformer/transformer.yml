@@ -1,18 +1,23 @@
 includes:
-  - configs/atat/base.yml
+  - configs/s2ef/2M/base.yml
 
 model:
   name: transformer
-  elements: [1, 6, 7, 8]
-  embed_dim: 256
-  hidden_dim: 256
+  elements: [
+    1,  5,  6,  7,  8, 11, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25,
+    26, 27, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43, 44, 45,
+    46, 47, 48, 49, 50, 51, 52, 55, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
+    82, 83
+  ]
+  embed_dim: 512
+  hidden_dim: 1024
   dropout: 0.
   att_dropout: 0.
   num_layers: 12
-  num_heads: 16
+  num_heads: 32
   otf_graph: True
   rbf_radius: 8.0
-  use_pbc: False
+  use_pbc: True
   num_gaussians: 128
   output_layers: 4
 

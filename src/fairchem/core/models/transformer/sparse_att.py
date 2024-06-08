@@ -7,7 +7,6 @@ import torch.nn.functional as F
 
 from xformers.components.attention import Attention
 from xformers.sparse import SparseCSRTensor
-from xformers.sparse.utils import _coo_to_csr
 from xformers.ops import masked_matmul
 
 def _apply_dropout(
@@ -28,7 +27,6 @@ def _apply_dropout(
 
 def _from_coo(m, n, rows, cols, vals):
     rows, cols = rows.int(), cols.int()
-    assert torch.unique(torch.stack([rows, cols]), dim=1).size(1) == len(cols), "coo must be coaleased"
 
     if len(vals) % 4 != 0:
         # remove the four smallest item
@@ -36,11 +34,13 @@ def _from_coo(m, n, rows, cols, vals):
         # if used for other sparse operation consider modify this!
         mask = torch.argsort(vals.amax(-1))[len(vals)%4:]
         rows, cols, vals = rows[mask], cols[mask], vals[mask]
-        indx = torch.argsort(rows)
-        rows, cols, vals = rows[indx], cols[indx], vals[indx]
 
-    row_offsets, column_indices = _coo_to_csr(m, n, rows, cols)
-    return SparseCSRTensor(row_offsets, column_indices, vals.T, (vals.size(1), m, n))
+    indx = torch.argsort(rows, stable=True)
+    rows, cols, vals = rows[indx], cols[indx], vals[indx]
+
+    row_offsets = rows.add(1).bincount(minlength=m+1).cumsum(0, dtype=rows.dtype)
+
+    return SparseCSRTensor(row_offsets, cols, vals.T, (vals.size(1), m, n))
 
 class SparseScaledDotProduct(Attention):
 

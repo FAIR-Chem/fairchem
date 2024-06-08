@@ -38,6 +38,7 @@ class BaseModel(nn.Module):
         max_neighbors=None,
         use_pbc=None,
         otf_graph=None,
+        loop=False,
         enforce_max_neighbors_strictly=None,
     ):
         cutoff = cutoff or self.cutoff
@@ -75,6 +76,7 @@ class BaseModel(nn.Module):
                     cutoff,
                     max_neighbors,
                     enforce_max_neighbors_strictly,
+                    loop,
                 )
 
             out = get_pbc_distances(
@@ -97,6 +99,7 @@ class BaseModel(nn.Module):
                     data.pos,
                     r=cutoff,
                     batch=data.batch,
+                    loop=loop,
                     max_num_neighbors=max_neighbors,
                 )
 

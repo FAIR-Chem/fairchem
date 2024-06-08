@@ -7,16 +7,17 @@ from typing import List, Union
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from fairchem.core.common.registry import registry
 from fairchem.core.models.base import BaseModel
-from torch_scatter import scatter, scatter_min
+
+from torch_scatter import scatter
 
 from .encoder_layer import EncoderLayer
 from .pos_feat import PositionFeaturizer
 from .pair_embed import PairEmbed
 from .mlp import ResMLP
+from .pbc_utils import build_radius_graph
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +82,7 @@ class Transformer(BaseModel):
         super().__init__()
 
         self.otf_graph = otf_graph
-        self.cutoff = rbf_radius
+        self.rbf_radius = rbf_radius
         self.use_pbc = use_pbc
         self.num_layers = num_layers
 
@@ -128,6 +129,8 @@ class Transformer(BaseModel):
                 num_heads=num_heads,
             ) for _ in range(num_layers)
         ])
+        
+        self.norm_mlp = nn.BatchNorm1d(embed_dim)
 
         self.forces_out = ResMLP(
             input_dim=embed_dim,
@@ -144,8 +147,6 @@ class Transformer(BaseModel):
             num_layers=output_layers,
             dropout=dropout,
         )
-        
-        self.avg_atoms = avg_atoms
 
     def forward(self, data):
 
@@ -155,30 +156,8 @@ class Transformer(BaseModel):
         atomic_numbers = self.atomic_number_mask[data.atomic_numbers.long()]
 
         # build graph on-the-fly
-        (
-            edge_index,
-            dist,
-            vec,
-            *_ #unused
-        ) = self.generate_graph(
-            data, 
-            max_neighbors=data.natoms.max(),
-            enforce_max_neighbors_strictly=False
-        )
-
-        # add self loops
-        edge_index = torch.cat([
-            edge_index, 
-            torch.arange(batch.size(0), device=edge_index.device).expand(2, -1)
-        ], dim = 1)
-        dist = torch.cat([dist, torch.zeros(batch.size(0), device=dist.device)], dim=0)
-        vec = torch.cat([vec, torch.zeros((batch.size(0), 3), device=vec.device)], dim=0)
-
-        # coalease duplicated entries
-        edge_index, inv = torch.unique(edge_index, dim=1, return_inverse=True)
-        dist, argmin = scatter_min(dist, inv, dim=0)
-        vec = vec[argmin]
-
+        edge_index, dist, src_pos, src_index, org_to_src = build_radius_graph(data, self.rbf_radius, self.use_pbc)
+        
         # initialize inputs
         x = self.atomic_number_encoder(atomic_numbers)
 
@@ -191,13 +170,17 @@ class Transformer(BaseModel):
             # attention block
             x = self.layers[i](x, edge_index, att_bias[i])
             # position featurizer 
-            x = self.pos_feat[i](x, edge_index, pos_att_bias[i], pos)
+            x = self.pos_feat[i](x, src_index, pos_att_bias[i], pos, src_pos, org_to_src)
         
         # get outputs
+        x = self.norm_mlp(x)
         energy = self.energy_out(x)
         forces = self.forces_out(x)
 
-        energy = scatter(energy, batch, dim=0, reduce="sum") / self.avg_atoms
+        # averge over all energies
+        energy = scatter(
+            energy, batch, dim=0, reduce="mean"
+        )
 
         return {"energy": energy, "forces": forces}
     

@@ -24,7 +24,7 @@ class PairEmbed(nn.Module):
         self.smearing = RadialBasisFunction(
             rbf_radius=rbf_radius,
             num_gaussians=num_gaussians,
-            embed_dim=embed_dim
+            embed_dim=hidden_dim
         )
 
         self.embedding = nn.Embedding(
@@ -33,7 +33,7 @@ class PairEmbed(nn.Module):
         )
 
         self.mlp = ResMLP(
-            input_dim=2*embed_dim,
+            input_dim=hidden_dim+embed_dim,
             hidden_dim=hidden_dim,
             output_dim=num_heads*num_masks
         )
