@@ -3,20 +3,20 @@ trainer: forces
 dataset:
   train:
     format: lmdb
-    src: /data/ericqu/md22/mace_lmdb/Ac-Ala3-NHMe/train/
+    src: /data/ericqu/md22/mace_lmdb/DHA/train/
     key_mapping:
       y: energy
       force: forces
     transforms:
       normalizer:
         energy:
-          mean: -26913.953
-          stdev: 0.35547638
+          mean: -27383.035
+          stdev: 0.41342595
         forces:
           mean: 0
-          stdev: 1.1291506
+          stdev: 1.1258113
   val:
-    src: /data/ericqu/md22/mace_lmdb/Ac-Ala3-NHMe/val/
+    src: /data/ericqu/md22/mace_lmdb/DHA/val/
 
 logger: 
   name: wandb
@@ -35,7 +35,7 @@ task:
 
 model:
   name: transformer
-  elements: [1, 6, 7, 8]
+  elements: [1, 6, 8]
   embed_dim: 256
   hidden_dim: 256
   dropout: 0.
@@ -47,7 +47,7 @@ model:
   use_pbc: False
   num_gaussians: 128
   output_layers: 4
-  avg_atoms: 42
+  avg_atoms: 56
 
 optim:
   batch_size: 64

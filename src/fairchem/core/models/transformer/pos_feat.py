@@ -57,7 +57,7 @@ class PositionFeaturizer(nn.Module):
 
         # prepare inputs to attention
         query = self.query_proj(z_att)
-        key = self.key_proj(z_att[org_to_src])
+        key = self.key_proj(z_att)[:, org_to_src]
         value = src_pos.expand(self.num_heads, -1, -1)
 
         # construct CSR format mask

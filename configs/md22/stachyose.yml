@@ -2,16 +2,21 @@ trainer: forces
 
 dataset:
   train:
-    src: /data/ericqu/md22/lmdb/stachyose/train/
-    normalize_labels: True
-    target_mean: -68463.59
-    target_std: 0.5940788
-    grad_target_mean: 0.0
-    grad_target_std: 1.1104717
-  val: 
-    src: /data/ericqu/md22/lmdb/stachyose/val/
-  test:
-    src: /data/ericqu/md22/lmdb/stachyose/test/
+    format: lmdb
+    src: /data/ericqu/md22/mace_lmdb/stachyose/train/
+    key_mapping:
+      y: energy
+      force: forces
+    transforms:
+      normalizer:
+        energy:
+          mean: -68463.59
+          stdev: 0.5940788
+        forces:
+          mean: 0
+          stdev: 1.1104717
+  val:
+    src: /data/ericqu/md22/mace_lmdb/stachyose/val/
 
 logger: 
   name: wandb
@@ -34,36 +39,33 @@ model:
   embed_dim: 256
   hidden_dim: 256
   dropout: 0.
+  att_dropout: 0.
   num_layers: 12
   num_heads: 16
   otf_graph: True
-  rbf_radius: 15.
-  num_gaussians: 64
-  trainable_rbf: False
-  num_pair_embed_layers: 2
-  pair_embed_style: shared
-  gate_pair_embed: True
+  rbf_radius: 8.0
+  use_pbc: False
+  num_gaussians: 128
   output_layers: 4
-  gate_output: False
-  avg_atoms: 60
-  pos_emb_style: none
+  avg_atoms: 87
 
 optim:
-  batch_size: 24
-  eval_batch_size: 24
+  batch_size: 64
+  eval_batch_size: 64
   load_balancing: atoms
   num_workers: 16
   lr_initial: 0.0004
+
   optimizer: AdamW
   optimizer_params:
     weight_decay: 0.001
   scheduler: ReduceLROnPlateau
   mode: min
   factor: 0.9
-  patience: 50
+  patience: 100
   max_epochs: 10000
   force_coefficient: 10
-  energy_coefficient: 1
+  energy_coefficient: 0.1
   ema_decay: 0.999
   clip_grad_norm: 10
   loss_energy: mae

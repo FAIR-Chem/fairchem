@@ -65,7 +65,7 @@ class EncoderLayer(nn.Module):
         z = self.norm_att(x)
         
         self_att = self.self_att(
-            x, row_index, col_index, att_bias, False
+            z, row_index, col_index, att_bias, False
         )
 
         x = x + self_att

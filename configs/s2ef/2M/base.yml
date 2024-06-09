@@ -38,7 +38,7 @@ loss_functions:
       coefficient: 1
   - forces:
       fn: l2mae
-      coefficient: 100
+      coefficient: 10
 
 evaluation_metrics:
   metrics:

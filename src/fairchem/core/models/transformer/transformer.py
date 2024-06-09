@@ -145,12 +145,14 @@ class Transformer(BaseModel):
             num_layers=output_layers,
             dropout=dropout,
         )
+        
+        self.avg_atoms = avg_atoms
 
     def forward(self, data):
 
         # extract data & normalize
         batch = data.batch
-        pos = data.pos / self.rbf_radius
+        pos = data.pos
         atomic_numbers = self.atomic_number_mask[data.atomic_numbers.long()]
 
         # build graph on-the-fly
@@ -177,7 +179,7 @@ class Transformer(BaseModel):
         # averge over all energies
         energy = scatter(
             energy, batch, dim=0, reduce="sum"
-        )
+        ) / self.avg_atoms
 
         return {"energy": energy, "forces": forces}
     

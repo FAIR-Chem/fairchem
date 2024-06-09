@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import logging
 
 from .mlp import ResMLP
 from .rbf import RadialBasisFunction
@@ -28,7 +29,7 @@ class PairEmbed(nn.Module):
         )
 
         self.embedding = nn.Embedding(
-            num_elements**2,
+            num_embeddings=num_elements**2,
             embedding_dim=embed_dim
         )
 
@@ -47,7 +48,7 @@ class PairEmbed(nn.Module):
     ):
         rbf = self.smearing(dist)
         emb = self.embedding(anum[row_index] + self.num_elemenets * anum[col_index])
-        attn_bias = self.mlp(torch.cat([rbf, emb], dim=1), gate=rbf)
-        attn_bias = attn_bias.reshape(dist.size(0), self.num_heads, self.num_masks)
+        att_bias = self.mlp(torch.cat([rbf, emb], dim=1), gate=rbf)
+        att_bias = att_bias.reshape(dist.size(0), self.num_heads, self.num_masks)
         
-        return attn_bias.permute(2, 1, 0).contiguous()
+        return att_bias.permute(2, 1, 0).contiguous()

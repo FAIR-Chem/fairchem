@@ -87,11 +87,6 @@ def radius_graph_pbc(
     # Remove pairs that are too far apart
     mask_within_radius = torch.le(dist, radius)
 
-    # add connections such that it is multiple of four
-    if mask_within_radius.sum() % 4 != 0:
-        _, indicies = torch.topk(dist.masked_fill(mask_within_radius, torch.inf).view(-1), 4 - mask_within_radius.sum() % 4, largest=False)
-        mask_within_radius.view(-1)[indicies] = True
-
     index1 = torch.masked_select(index1, mask_within_radius)
     index2 = torch.masked_select(index2, mask_within_radius)
     src_index = torch.masked_select(src_index, mask_within_radius)
@@ -116,7 +111,7 @@ def build_radius_graph(
     use_pbc=False,
 ):
     if use_pbc:
-        return radius_graph_pbc(data, radius)
+        row_index, col_index, src_index, dist, src_pos, org_to_src = radius_graph_pbc(data, radius)
     else:
         edge_index = radius_graph(
             data.pos, 
@@ -126,4 +121,24 @@ def build_radius_graph(
             max_num_neighbors=data.natoms.max(),
         )
         dist = torch.linalg.norm(data.pos[edge_index[0]] - data.pos[edge_index[1]], dim=-1)
-        return edge_index[0], edge_index[1], edge_index[1], dist, data.pos, torch.arange(data.pos.size(0), device=dist.device)
+        (
+            row_index,
+            col_index,
+            src_index,
+            dist,
+            src_pos,
+            org_to_src
+        ) = edge_index[0], edge_index[1], edge_index[1], dist, data.pos, torch.arange(data.pos.size(0), device=dist.device)
+
+    if dist.size(0) % 4 != 0:
+        _, indicies = torch.topk(dist, dist.size(0) % 4, largest=True)
+        mask = torch.ones(dist.size(0), device=dist.device, dtype=torch.bool)
+        mask.index_fill_(0, indicies, False)
+        (
+            row_index, 
+            col_index, 
+            src_index, 
+            dist
+        ) = row_index.masked_select(mask), col_index.masked_select(mask), src_index.masked_select(mask), dist.masked_select(mask)
+
+    return row_index, col_index, src_index, dist, src_pos, org_to_src

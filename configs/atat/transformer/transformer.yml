@@ -15,6 +15,7 @@ model:
   use_pbc: False
   num_gaussians: 128
   output_layers: 4
+  avg_atoms: 60
 
 optim:
   batch_size: 64
