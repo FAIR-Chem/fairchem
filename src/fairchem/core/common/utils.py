@@ -1289,8 +1289,8 @@ def update_config(base_config):
         config["dataset"]["transforms"] = transforms
 
     ### Update config
-    config.update({"loss_fns": _loss_fns})
-    config.update({"eval_metrics": _eval_metrics})
+    config.update({"loss_functions": _loss_fns})
+    config.update({"evaluation_metrics": _eval_metrics})
     config.update({"outputs": _outputs})
 
     return config
