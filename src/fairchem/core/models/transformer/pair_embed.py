@@ -15,6 +15,7 @@ class PairEmbed(nn.Module):
         num_masks: int = 1,
         num_gaussians: int = 50,
         rbf_radius: float = 12.,
+        dropout: float = 0.,
     ):
         super().__init__()
 
@@ -36,7 +37,8 @@ class PairEmbed(nn.Module):
         self.mlp = ResMLP(
             input_dim=hidden_dim+embed_dim,
             hidden_dim=hidden_dim,
-            output_dim=num_heads*num_masks
+            output_dim=num_heads*num_masks,
+            dropout=dropout
         )
 
     def forward(

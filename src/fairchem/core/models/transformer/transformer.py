@@ -4,6 +4,7 @@ Author: Ryan Liu
 import logging
 import math
 from typing import List, Union
+from random import random
 
 import torch
 import torch.nn as nn
@@ -77,6 +78,7 @@ class Transformer(BaseModel):
             num_gaussians: int = 50,
             output_layers: int = 3,
             avg_atoms: float = 60,
+            stochastic_depth_p: float = 0.
         ):
 
         super().__init__()
@@ -85,6 +87,7 @@ class Transformer(BaseModel):
         self.rbf_radius = rbf_radius
         self.use_pbc = use_pbc
         self.num_layers = num_layers
+        self.stochastic_depth_p = stochastic_depth_p
 
         if isinstance(elements, int):
             self.register_buffer("atomic_number_mask", torch.arange(elements + 1))
@@ -108,6 +111,7 @@ class Transformer(BaseModel):
             num_masks=2*num_layers,
             num_gaussians=num_gaussians,
             rbf_radius=rbf_radius,
+            dropout=dropout,
         )
 
         self.layers = nn.ModuleList([
@@ -136,6 +140,7 @@ class Transformer(BaseModel):
             output_dim=3,
             num_layers=output_layers,
             dropout=dropout,
+            init_gain=1/math.sqrt(3*num_layers)
         )
 
         self.energy_out = ResMLP(
@@ -144,6 +149,7 @@ class Transformer(BaseModel):
             output_dim=1,
             num_layers=output_layers,
             dropout=dropout,
+            init_gain=1/math.sqrt(3*num_layers)
         )
         
         self.avg_atoms = avg_atoms
@@ -167,10 +173,13 @@ class Transformer(BaseModel):
 
         # forward passing
         for i in range(self.num_layers):
+            # stochastic depth
+            if self.training and random() < (i + 1) / self.num_layers * self.stochastic_depth_p:
+                continue
             # attention block
             x = self.layers[i](x, row_index, col_index, att_bias[i])
             # position featurizer 
-            x = self.pos_feat[i](x, row_index, src_index, pos_att_bias[i], pos, src_pos, org_to_src)
+            x = self.pos_feat[i](x, row_index, src_index, pos_att_bias[i], dist, pos, src_pos, org_to_src)
         
         # get outputs
         energy = self.energy_out(x)

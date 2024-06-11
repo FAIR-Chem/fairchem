@@ -50,8 +50,8 @@ model:
   avg_atoms: 370
 
 optim:
-  batch_size: 64
-  eval_batch_size: 64
+  batch_size: 32
+  eval_batch_size: 32
   load_balancing: atoms
   num_workers: 16
   lr_initial: 0.0004
