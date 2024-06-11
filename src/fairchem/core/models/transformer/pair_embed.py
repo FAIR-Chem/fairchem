@@ -1,14 +1,16 @@
+import math
 import torch
 import torch.nn as nn
 import logging
 
 from .mlp import ResMLP
-from .rbf import RadialBasisFunction
+from .rbf import GaussianSmearing
 
 class PairEmbed(nn.Module):
     def __init__(
         self,
         num_elements: int = 100,
+        embed_dim: int = 256,
         hidden_dim: int = 512,
         num_heads: int = 8,
         num_masks: int = 1,
@@ -20,25 +22,53 @@ class PairEmbed(nn.Module):
 
         self.num_heads = num_heads
         self.num_masks = num_masks
+        self.embed_dim = embed_dim
+        self.hidden_dim = hidden_dim
         self.num_elemenets = num_elements
 
-        self.smearing = RadialBasisFunction(
+        self.smearing = GaussianSmearing(
             rbf_radius=rbf_radius,
             num_gaussians=num_gaussians,
-            embed_dim=hidden_dim
+        )
+
+        self.gate_linear = nn.Linear(
+            num_gaussians, hidden_dim
         )
 
         self.embedding = nn.Embedding(
             num_embeddings=num_elements**2,
-            embedding_dim=hidden_dim
+            embedding_dim=embed_dim
         )
 
         self.mlp = ResMLP(
-            input_dim=hidden_dim,
+            input_dim=embed_dim+num_gaussians,
             hidden_dim=hidden_dim,
             output_dim=num_heads*num_masks,
             dropout=dropout
         )
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        # kaiming initialization, with tweaks
+        nn.init.uniform_(
+            self.mlp.input.weight[:, :self.embed_dim],
+            - math.sqrt(3 / self.embed_dim),
+            math.sqrt(3 / self.embed_dim)
+        )
+        # Gaussaian smearing results in a sum of 2.50663 (eliptic function)
+        nn.init.uniform_(
+            self.mlp.input.weight[:, self.embed_dim:],
+            - math.sqrt(3 / 2.50663),
+            math.sqrt(3 / 2.50663)
+        )
+        # initialize such that the Linear layer outputs unit variance
+        nn.init.uniform_(
+            self.gate_linear.weight,
+            - math.sqrt(3 / self.hidden_dim),
+            math.sqrt(3 / self.hidden_dim)
+        )
+        nn.init.zeros_(self.gate_linear.bias)
 
     def forward(
         self,
@@ -49,7 +79,7 @@ class PairEmbed(nn.Module):
     ):
         rbf = self.smearing(dist)
         emb = self.embedding(anum[row_index] + self.num_elemenets * anum[col_index])
-        att_bias = self.mlp(rbf + emb, gate=rbf)
+        att_bias = self.mlp(torch.cat([emb, rbf], dim=-1) , gate=self.gate_linear(rbf))
         att_bias = att_bias.reshape(dist.size(0), self.num_heads, self.num_masks)
         
         return att_bias.permute(2, 1, 0).contiguous()

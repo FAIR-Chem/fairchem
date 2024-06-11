@@ -37,8 +37,8 @@ class PositionFeaturizer(nn.Module):
             dropout=dropout,
         )
 
-        self.norm_att = nn.LayerNorm(embed_dim, elementwise_affine=False)
-        self.norm_mlp = nn.LayerNorm(embed_dim, elementwise_affine=False)
+        self.norm_att = nn.LayerNorm(embed_dim)
+        self.norm_mlp = nn.LayerNorm(embed_dim)
 
         self.num_heads = num_heads
         self.embed_dim = embed_dim

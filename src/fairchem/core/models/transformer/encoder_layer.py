@@ -41,8 +41,8 @@ class EncoderLayer(nn.Module):
             dropout=dropout,
         )
 
-        self.norm_att = nn.LayerNorm(embed_dim, elementwise_affine=False)
-        self.norm_ff = nn.LayerNorm(embed_dim, elementwise_affine=False)
+        self.norm_att = nn.LayerNorm(embed_dim)
+        self.norm_ff = nn.LayerNorm(embed_dim)
         self.activation = activation
 
     def forward(

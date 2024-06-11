@@ -107,6 +107,7 @@ class Transformer(BaseModel):
         
         self.pair_embed = PairEmbed(
             num_elements=len(elements),
+            embed_dim=embed_dim,
             hidden_dim=hidden_dim,
             num_heads=num_heads,
             num_masks=2*num_layers,
@@ -136,7 +137,7 @@ class Transformer(BaseModel):
         ])
         
         self.forces_out = ResMLP(
-            input_dim=embed_dim, #+3*num_heads*num_layers,
+            input_dim=embed_dim,
             hidden_dim=hidden_dim,
             output_dim=3,
             num_layers=output_layers,
