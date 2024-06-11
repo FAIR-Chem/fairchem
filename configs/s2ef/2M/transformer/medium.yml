@@ -38,6 +38,6 @@ optim:
   patience: 1
   max_epochs: 100
   ema_decay: 0.999
-  clip_grad_norm: 10
+  clip_grad_norm: 20
   loss_energy: mae
   loss_force: l2mae

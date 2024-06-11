@@ -39,7 +39,17 @@ class RadialBasisFunction(nn.Module):
         )
         
         self.linear = nn.Linear(num_gaussians, embed_dim, bias=False)
+        self.reset_parameters()
+    
+    def reset_parameters(self):
+        # initialize such that the Linear layer outputs unit variance
+        # Gaussaian smearing results in a sum of 2.50663 (eliptic function)
+        nn.init.uniform_(
+            self.linear.weight,
+            - math.sqrt(3 / 2.50663),
+            math.sqrt(3 / 2.50663)
+        )
 
     def forward(self, x: torch.Tensor):
-        x = self.smearing(x)
-        return self.linear(x)
+        rbf = self.smearing(x)
+        return self.linear(rbf), rbf

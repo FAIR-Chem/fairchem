@@ -9,7 +9,6 @@ class PairEmbed(nn.Module):
     def __init__(
         self,
         num_elements: int = 100,
-        embed_dim: int = 256,
         hidden_dim: int = 512,
         num_heads: int = 8,
         num_masks: int = 1,
@@ -31,11 +30,11 @@ class PairEmbed(nn.Module):
 
         self.embedding = nn.Embedding(
             num_embeddings=num_elements**2,
-            embedding_dim=embed_dim
+            embedding_dim=hidden_dim
         )
 
         self.mlp = ResMLP(
-            input_dim=hidden_dim+embed_dim,
+            input_dim=hidden_dim,
             hidden_dim=hidden_dim,
             output_dim=num_heads*num_masks,
             dropout=dropout
@@ -50,7 +49,7 @@ class PairEmbed(nn.Module):
     ):
         rbf = self.smearing(dist)
         emb = self.embedding(anum[row_index] + self.num_elemenets * anum[col_index])
-        att_bias = self.mlp(torch.cat([rbf, emb], dim=1), gate=rbf)
+        att_bias = self.mlp(rbf + emb, gate=rbf)
         att_bias = att_bias.reshape(dist.size(0), self.num_heads, self.num_masks)
         
         return att_bias.permute(2, 1, 0).contiguous()

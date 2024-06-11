@@ -41,8 +41,8 @@ class EncoderLayer(nn.Module):
             dropout=dropout,
         )
 
-        self.norm_att = nn.LayerNorm(embed_dim)
-        self.norm_ff = nn.LayerNorm(embed_dim)
+        self.norm_att = nn.LayerNorm(embed_dim, elementwise_affine=False)
+        self.norm_ff = nn.LayerNorm(embed_dim, elementwise_affine=False)
         self.activation = activation
 
     def forward(
@@ -56,9 +56,8 @@ class EncoderLayer(nn.Module):
         transform the input using the attention block
         arguments:
             x: input sequence of shape (L, C)
-            pos: input positions of shape (L, 3)
-            row_index: coo formated sparse matrix of shape (E,)
-            col_index: coo formated sparse matrix of shape (E,)
+            row_index: coo formated sparse matrix of shape (E,), bounded by L
+            col_index: coo formated sparse matrix of shape (E,), bounded by S
             att_bias: a tensor of shape (E, H)
         """
 

@@ -85,11 +85,11 @@ class Projection(nn.Module):
         self.d_k = embed_dim // num_heads
         self.linear = nn.Linear(embed_dim, num_heads * self.d_k)
         self.num_heads = num_heads
-        self._reset_parameters()
+        self.reset_parameters()
 
-    def _reset_parameters(self):
+    def reset_parameters(self):
         nn.init.xavier_uniform_(self.linear.weight)
-        nn.init.constant_(self.linear.bias, 0.)
+        nn.init.zeros_(self.linear.bias)
 
     def forward(
         self,
@@ -132,6 +132,11 @@ class SparseSelfAttention(nn.Module):
         )
 
         self.attention = SparseScaledDotProduct(dropout=dropout)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.xavier_uniform_(self.output.weight)
+        nn.init.zeros_(self.output.bias)
 
     def forward(
         self,

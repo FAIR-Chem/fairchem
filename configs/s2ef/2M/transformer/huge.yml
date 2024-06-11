@@ -13,7 +13,7 @@ model:
   hidden_dim: 1024
   dropout: 0.
   att_dropout: 0.
-  num_layers: 12
+  num_layers: 30
   num_heads: 32
   otf_graph: True
   rbf_radius: 8.0
@@ -23,11 +23,11 @@ model:
   avg_atoms: 80
 
 optim:
-  batch_size: 64
-  eval_batch_size: 64
+  batch_size: 32
+  eval_batch_size: 32
   load_balancing: atoms
   num_workers: 16
-  lr_initial: 0.0001
+  lr_initial: 0.0002
 
   optimizer: AdamW
   optimizer_params:

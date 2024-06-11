@@ -110,6 +110,7 @@ def build_radius_graph(
     radius,
     use_pbc=False,
 ):
+    device=data.pos.device
     if use_pbc:
         row_index, col_index, src_index, dist, src_pos, org_to_src = radius_graph_pbc(data, radius)
     else:
@@ -128,11 +129,11 @@ def build_radius_graph(
             dist,
             src_pos,
             org_to_src
-        ) = edge_index[0], edge_index[1], edge_index[1], dist, data.pos, torch.arange(data.pos.size(0), device=dist.device)
+        ) = edge_index[0], edge_index[1], edge_index[1], dist, data.pos, torch.arange(data.pos.size(0), device=device)
 
     if dist.size(0) % 4 != 0:
         _, indicies = torch.topk(dist, dist.size(0) % 4, largest=True)
-        mask = torch.ones(dist.size(0), device=dist.device, dtype=torch.bool)
+        mask = torch.ones(dist.size(0), device=device, dtype=torch.bool)
         mask.index_fill_(0, indicies, False)
         (
             row_index, 

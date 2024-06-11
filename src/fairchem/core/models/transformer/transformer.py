@@ -78,7 +78,6 @@ class Transformer(BaseModel):
             num_gaussians: int = 50,
             output_layers: int = 3,
             avg_atoms: float = 60,
-            stochastic_depth_p: float = 0.
         ):
 
         super().__init__()
@@ -87,7 +86,10 @@ class Transformer(BaseModel):
         self.rbf_radius = rbf_radius
         self.use_pbc = use_pbc
         self.num_layers = num_layers
-        self.stochastic_depth_p = stochastic_depth_p
+        self.num_heads = num_heads
+        self.embed_dim = embed_dim
+        self.hidden_dim = hidden_dim
+        self.output_layers = output_layers
 
         if isinstance(elements, int):
             self.register_buffer("atomic_number_mask", torch.arange(elements + 1))
@@ -105,7 +107,6 @@ class Transformer(BaseModel):
         
         self.pair_embed = PairEmbed(
             num_elements=len(elements),
-            embed_dim=embed_dim,
             hidden_dim=hidden_dim,
             num_heads=num_heads,
             num_masks=2*num_layers,
@@ -133,14 +134,13 @@ class Transformer(BaseModel):
                 num_heads=num_heads,
             ) for _ in range(num_layers)
         ])
-
+        
         self.forces_out = ResMLP(
-            input_dim=embed_dim,
+            input_dim=embed_dim, #+3*num_heads*num_layers,
             hidden_dim=hidden_dim,
             output_dim=3,
             num_layers=output_layers,
             dropout=dropout,
-            init_gain=1/math.sqrt(3*num_layers)
         )
 
         self.energy_out = ResMLP(
@@ -149,14 +149,31 @@ class Transformer(BaseModel):
             output_dim=1,
             num_layers=output_layers,
             dropout=dropout,
-            init_gain=1/math.sqrt(3*num_layers)
         )
         
         self.avg_atoms = avg_atoms
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.uniform_(
+            self.forces_out.input.weight,
+            -math.sqrt(2 / (self.embed_dim * self.num_layers)),
+            math.sqrt(2 / (self.embed_dim * self.num_layers))
+        )
+        nn.init.uniform_(
+            self.energy_out.input.weight,
+            -math.sqrt(2 / (self.embed_dim * self.num_layers)),
+            math.sqrt(2 / (self.embed_dim * self.num_layers))
+        )
+        nn.init.uniform_(
+            self.energy_out.output.weight,
+            -math.sqrt(1 / (self.hidden_dim * self.avg_atoms * (self.output_layers + 1))),
+            math.sqrt(1 / (self.hidden_dim * self.avg_atoms * (self.output_layers + 1)))
+        )
 
     def forward(self, data):
 
-        # extract data & normalize
+        # extract data
         batch = data.batch
         pos = data.pos
         atomic_numbers = self.atomic_number_mask[data.atomic_numbers.long()]
@@ -173,9 +190,6 @@ class Transformer(BaseModel):
 
         # forward passing
         for i in range(self.num_layers):
-            # stochastic depth
-            if self.training and random() < (i + 1) / self.num_layers * self.stochastic_depth_p:
-                continue
             # attention block
             x = self.layers[i](x, row_index, col_index, att_bias[i])
             # position featurizer 
@@ -188,7 +202,7 @@ class Transformer(BaseModel):
         # averge over all energies
         energy = scatter(
             energy, batch, dim=0, reduce="sum"
-        ) / self.avg_atoms
+        )
 
         return {"energy": energy, "forces": forces}
     

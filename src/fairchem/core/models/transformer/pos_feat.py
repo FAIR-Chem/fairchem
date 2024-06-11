@@ -37,8 +37,8 @@ class PositionFeaturizer(nn.Module):
             dropout=dropout,
         )
 
-        self.norm_att = nn.LayerNorm(embed_dim)
-        self.norm_mlp = nn.LayerNorm(embed_dim)
+        self.norm_att = nn.LayerNorm(embed_dim, elementwise_affine=False)
+        self.norm_mlp = nn.LayerNorm(embed_dim, elementwise_affine=False)
 
         self.num_heads = num_heads
         self.embed_dim = embed_dim
@@ -52,8 +52,8 @@ class PositionFeaturizer(nn.Module):
         )
         nn.init.uniform_(
             self.mlp.input.weight[:, self.embed_dim:],
-            -math.sqrt(1 / self.embed_dim),
-            math.sqrt(1 / self.embed_dim)
+            -math.sqrt(3 / self.num_heads),
+            math.sqrt(3 / self.num_heads)
         )
 
     def forward(
