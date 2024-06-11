@@ -11,6 +11,7 @@ import datetime
 import errno
 import logging
 import os
+import sys
 import random
 from abc import ABC, abstractmethod
 from itertools import chain
@@ -208,6 +209,8 @@ class BaseTrainer(ABC):
         self.load_loss()
         self.load_optimizer()
         self.load_extras()
+        if self.config["optim"].get("load_datasets_and_model_then_exit", False):
+            sys.exit(0)
 
     def set_seed(self, seed) -> None:
         # https://pytorch.org/docs/stable/notes/randomness.html
@@ -392,15 +395,15 @@ class BaseTrainer(ABC):
                         ][target_name].get("level", "system")
                     if "train_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["train_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("train_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "train_on_free_atoms", True
+                            )
                         )
                     if "eval_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["eval_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("eval_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "eval_on_free_atoms", True
+                            )
                         )
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
