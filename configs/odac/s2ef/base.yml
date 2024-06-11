@@ -1,23 +1,58 @@
+trainer: ocp
+
 dataset:
   train:
+    format: lmdb
     src: data_odac/s2ef/train
-    normalize_labels: True
-    target_mean: -0.39596545696258545
-    target_std: 1.451111078262329
-    grad_target_mean: 0.0
-    grad_target_std: 0.04262716323137283
+    key_mapping:
+      y: energy
+      force: forces
+    transforms:
+      normalizer:
+        energy:
+          mean: -0.39596545696258545
+          stdev: 1.451111078262329
+        forces:
+          mean: 0.0
+          stdev: 0.04262716323137283
   val:
     src: data_odac/s2ef/val
 
-logger:
-  name: wandb
+logger: wandb
 
-task:
-  dataset: lmdb
-  train_on_free_atoms: True
-  eval_on_free_atoms: True
+outputs:
+  energy:
+    shape: 1
+    level: system
+  forces:
+    irrep_dim: 1
+    level: atom
+    train_on_free_atoms: True
+    eval_on_free_atoms: True
+
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 4
+  - forces:
+      fn: l2mae
+      coefficient: 100
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+      - mse
+      - energy_within_threshold
+    forces:
+      - mae
+      - cosine_similarity
+      - magnitude_error
+    misc:
+      - energy_forces_within_threshold
   primary_metric: forces_mae
 
+task:
   relaxation_steps: 125
   relaxation_fmax: 0.05
   write_pos: True

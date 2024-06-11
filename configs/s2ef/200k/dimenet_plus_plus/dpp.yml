@@ -1,6 +1,14 @@
 includes:
 - configs/s2ef/200k/base.yml
 
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 1
+  - forces:
+      fn: l2mae
+      coefficient: 50
+
 model:
   name: dimenetplusplus
   hidden_channels: 192
@@ -33,4 +41,3 @@ optim:
   warmup_steps: 3125
   warmup_factor: 0.2
   max_epochs: 30
-  force_coefficient: 50
