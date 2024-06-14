@@ -8,7 +8,7 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import logging
-import math
+import numpy as np
 from typing import Any
 
 import torch
@@ -143,8 +143,10 @@ def _split_tensor(
     dim: int = -1,
     contiguous_chunks: bool = False,
 ):
-    part_size = math.ceil(tensor.size(dim) / num_parts)
-    tensor_list = torch.split(tensor, part_size, dim=dim)
+    part_sizes = [
+        len(part) for part in np.array_split(np.zeros(tensor.size(dim)), num_parts)
+    ]
+    tensor_list = torch.split(tensor, part_sizes, dim=dim)
     if contiguous_chunks:
         return tuple(chunk.contiguous() for chunk in tensor_list)
     return tensor_list
