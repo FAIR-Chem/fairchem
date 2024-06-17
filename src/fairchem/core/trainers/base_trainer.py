@@ -59,8 +59,8 @@ class BaseTrainer(ABC):
         outputs,
         dataset,
         optimizer,
-        loss_fns,
-        eval_metrics,
+        loss_functions,
+        evaluation_metrics,
         identifier: str,
         timestamp_id: str | None = None,
         run_dir: str | None = None,
@@ -109,8 +109,8 @@ class BaseTrainer(ABC):
             "model_attributes": model,
             "outputs": outputs,
             "optim": optimizer,
-            "loss_fns": loss_fns,
-            "eval_metrics": eval_metrics,
+            "loss_functions": loss_functions,
+            "evaluation_metrics": evaluation_metrics,
             "logger": logger,
             "amp": amp,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
@@ -170,7 +170,7 @@ class BaseTrainer(ABC):
 
         ### backwards compatability with OCP v<2.0
         ### TODO: better format check for older configs
-        if not self.config.get("loss_fns"):
+        if not self.config.get("loss_functions"):
             logging.warning(
                 "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
             )
@@ -398,7 +398,7 @@ class BaseTrainer(ABC):
                         )
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
-        self.evaluation_metrics = self.config.get("eval_metrics", {})
+        self.evaluation_metrics = self.config.get("evaluation_metrics", {})
         self.evaluator = Evaluator(
             task=self.name,
             eval_metrics=self.evaluation_metrics.get(
@@ -523,8 +523,8 @@ class BaseTrainer(ABC):
             self.scaler.load_state_dict(checkpoint["amp"])
 
     def load_loss(self) -> None:
-        self.loss_fns = []
-        for _idx, loss in enumerate(self.config["loss_fns"]):
+        self.loss_functions = []
+        for _idx, loss in enumerate(self.config["loss_functions"]):
             for target in loss:
                 loss_name = loss[target].get("fn", "mae")
                 coefficient = loss[target].get("coefficient", 1)
@@ -539,7 +539,7 @@ class BaseTrainer(ABC):
 
                 loss_fn = DDPLoss(loss_fn, loss_name, loss_reduction)
 
-                self.loss_fns.append(
+                self.loss_functions.append(
                     (target, {"fn": loss_fn, "coefficient": coefficient})
                 )
 
