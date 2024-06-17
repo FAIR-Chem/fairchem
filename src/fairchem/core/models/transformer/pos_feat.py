@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from xformers.ops import masked_matmul
 
 from .mlp import ResMLP
-from .sparse_att import SparseScaledDotProduct, Projection, _from_coo, _wrap_value
+from .sparse_att import Projection, _from_coo, _wrap_value
     
 class PositionFeaturizer(nn.Module):
     def __init__(
@@ -94,14 +94,16 @@ class PositionFeaturizer(nn.Module):
         att = att * norm
 
         # Optional dropout, could be part of the masking in the future
-        att = _wrap_value(att, self.att_drop(att.values().clone()))
+        att = _wrap_value(att, self.att_drop(att.values()))
 
         # Get to the predicted values, for all heads
-        feat = torch.bmm(att, value)
-        norm = torch.bmm(att, torch.ones((self.num_heads, src_pos.size(0), 1), device=src_pos.device))
+        dst_vec = torch.bmm(att, value)
+        src_vec = torch.bmm(
+            att, torch.ones((self.num_heads, src_pos.size(0), 1), device=src_pos.device)
+        ) * pos.expand(self.num_heads, -1, -1)
 
         # subtract positions to get displacements
-        feat = feat - norm * pos.expand(self.num_heads, -1, -1)
+        feat = dst_vec - src_vec
 
         # combine batched dimensions
         feat = feat.permute(1, 0, 2).reshape(x.size(0), -1)

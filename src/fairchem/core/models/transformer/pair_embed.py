@@ -65,8 +65,8 @@ class PairEmbed(nn.Module):
         # initialize such that the Linear layer outputs unit variance
         nn.init.uniform_(
             self.gate_linear.weight,
-            - math.sqrt(3 / self.hidden_dim),
-            math.sqrt(3 / self.hidden_dim)
+            - math.sqrt(3 / 2.50663),
+            math.sqrt(3 / 2.50663)
         )
         nn.init.zeros_(self.gate_linear.bias)
 

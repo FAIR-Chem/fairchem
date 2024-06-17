@@ -12,6 +12,7 @@ class ResMLP(nn.Module):
         output_dim: int = 512,
         num_layers: int = 2,
         dropout: float = 0.,
+        bias_output: bool = True
     ):
         super().__init__()
         assert num_layers >= 2
@@ -25,7 +26,8 @@ class ResMLP(nn.Module):
         ])
 
         self.input = nn.Linear(input_dim, hidden_dim)
-        self.output = nn.Linear(hidden_dim, output_dim)
+        self.output = nn.Linear(hidden_dim, output_dim, bias=bias_output)
+        self.bias_output=bias_output
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -51,7 +53,8 @@ class ResMLP(nn.Module):
             - math.sqrt(3 / ((len(self.linears) + 1) * self.output.weight.size(1))),
             math.sqrt(3 / ((len(self.linears) + 1) * self.output.weight.size(1)))
         )
-        nn.init.zeros_(self.output.bias)
+        if self.bias_output:
+            nn.init.zeros_(self.output.bias)
 
     def forward(self, x: torch.Tensor, gate: Optional[torch.Tensor] = None):
 

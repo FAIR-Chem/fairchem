@@ -78,6 +78,7 @@ class Transformer(BaseModel):
             num_gaussians: int = 50,
             output_layers: int = 3,
             avg_atoms: float = 60,
+            stochastic_depth: float = 0.,
         ):
 
         super().__init__()
@@ -90,6 +91,8 @@ class Transformer(BaseModel):
         self.embed_dim = embed_dim
         self.hidden_dim = hidden_dim
         self.output_layers = output_layers
+        self.avg_atoms = avg_atoms
+        self.stochastic_depth = stochastic_depth
 
         if isinstance(elements, int):
             self.register_buffer("atomic_number_mask", torch.arange(elements + 1))
@@ -141,7 +144,7 @@ class Transformer(BaseModel):
             hidden_dim=hidden_dim,
             output_dim=3,
             num_layers=output_layers,
-            dropout=dropout,
+            bias_output=False,
         )
 
         self.energy_out = ResMLP(
@@ -149,10 +152,9 @@ class Transformer(BaseModel):
             hidden_dim=hidden_dim,
             output_dim=1,
             num_layers=output_layers,
-            dropout=dropout,
+            bias_output=False,
         )
-        
-        self.avg_atoms = avg_atoms
+
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -191,6 +193,8 @@ class Transformer(BaseModel):
 
         # forward passing
         for i in range(self.num_layers):
+            if self.training and random() < self.stochastic_depth:
+                continue
             # attention block
             x = self.layers[i](x, row_index, col_index, att_bias[i])
             # position featurizer 

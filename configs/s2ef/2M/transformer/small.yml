@@ -19,23 +19,22 @@ model:
   rbf_radius: 8.0
   use_pbc: True
   num_gaussians: 128
-  output_layers: 2
+  output_layers: 4
   avg_atoms: 80
 
 optim:
-  batch_size: 64
-  eval_batch_size: 64
+  batch_size: 256
+  eval_batch_size: 256
   load_balancing: atoms
-  num_workers: 16
-  lr_initial: 0.0001
+  num_workers: 32
+  lr_initial: 4.e-4
 
   optimizer: AdamW
   optimizer_params:
     weight_decay: 0.001
-  scheduler: ReduceLROnPlateau
-  mode: min
-  factor: 0.9
-  patience: 1
+  scheduler: CosineAnnealingLR
+  T_max: 500000
+  eta_min: 4.e-6
   max_epochs: 100
   ema_decay: 0.999
   clip_grad_norm: 10

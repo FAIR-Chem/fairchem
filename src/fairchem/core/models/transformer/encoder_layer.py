@@ -15,7 +15,6 @@ class EncoderLayer(nn.Module):
         num_heads: int = 8, 
         dropout: float = 0.,
         att_dropout: float = 0.,
-        activation: nn.Module = nn.SiLU(),
     ):
         """
         Initialize an `SelfAttentionLayer` instance
@@ -43,7 +42,6 @@ class EncoderLayer(nn.Module):
 
         self.norm_att = nn.LayerNorm(embed_dim)
         self.norm_ff = nn.LayerNorm(embed_dim)
-        self.activation = activation
 
     def forward(
         self,
