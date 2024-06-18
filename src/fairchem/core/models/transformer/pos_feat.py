@@ -27,18 +27,7 @@ class PositionFeaturizer(nn.Module):
 
         self.att_drop = nn.Dropout(att_dropout)
 
-        self.output = nn.Linear(3*num_heads, embed_dim)
-
         self.num_heads = num_heads
-        self.embed_dim = embed_dim
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        nn.init.uniform_(
-            self.output.weight,
-            -math.sqrt(3 / self.num_heads),
-            math.sqrt(3 / self.num_heads)
-        )
 
     def forward(
             self, 
@@ -89,7 +78,4 @@ class PositionFeaturizer(nn.Module):
         # combine batched dimensions
         feat = feat.permute(1, 0, 2).reshape(x.size(0), -1)
 
-        # output with a linear layer
-        x = self.output(feat)
-
-        return x
+        return feat

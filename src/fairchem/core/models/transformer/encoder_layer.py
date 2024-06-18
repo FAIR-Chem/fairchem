@@ -47,9 +47,17 @@ class EncoderLayer(nn.Module):
             dropout=dropout,
         )
 
+        self.ff_pos = ResMLP(
+            input_dim=embed_dim+3*num_heads,
+            hidden_dim=hidden_dim,
+            output_dim=embed_dim,
+            dropout=dropout,
+        )
+
         self.norm_att = nn.LayerNorm(embed_dim)
         self.norm_pos = nn.LayerNorm(embed_dim)
         self.norm_ff = nn.LayerNorm(embed_dim)
+        self.norm_ff_pos = nn.LayerNorm(embed_dim)
 
     def forward(
         self,
@@ -87,6 +95,10 @@ class EncoderLayer(nn.Module):
 
         x = x + self_att
 
+        z = self.norm_ff(x)
+        ff = self.feed_forward(z)
+        x = x + ff
+
         z = self.norm_pos(x)
         pos_feat = self.pos_feat(
             z,
@@ -98,10 +110,9 @@ class EncoderLayer(nn.Module):
             src_pos,
             org_to_src,
         )
-        x = x + pos_feat
 
-        z = self.norm_ff(x)
-        ff = self.feed_forward(z)
+        z = self.norm_ff_pos(x)
+        ff = self.ff_pos(torch.cat([z, pos_feat], dim=-1))
         x = x + ff
         
         return x
