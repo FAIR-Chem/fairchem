@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing as npt
 
 from ase import build
-from ase.optimize import LBFGS, FIRE
+from ase.optimize import LBFGS, FIRE, BFGS
 
 try:
     from ase.filters import UnitCellFilter
@@ -15,6 +15,7 @@ except ModuleNotFoundError:
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.preprocessing.atoms_to_graphs import AtomsToGraphs
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
+from fairchem.core.common.relaxation.optimizers import LBFGS as LBFGS_torch
 from fairchem.core.common.relaxation import OptimizableBatch, OptimizableUnitCellBatch
 
 
@@ -46,9 +47,34 @@ def batch(atoms_list):
     return data_list_collater([a2g.convert(atoms) for atoms in atoms_list])
 
 
-@pytest.fixture(params=[FIRE, LBFGS])
+@pytest.fixture(params=[FIRE, BFGS])
 def optimizer_cls(request):
     return request.param
+
+
+def test_lbfgs_relaxation(atoms_list, batch, calculator):
+    """Tests batch relaxation using ASE optimizers."""
+    obatch = OptimizableBatch(batch, trainer=calculator.trainer, numpy=False)
+
+    # optimize atoms one-by-one
+    for atoms in atoms_list:
+        atoms.calc = calculator
+        opt = LBFGS(atoms, damping=0.8, alpha=70.0)
+        opt.run(0.01, 20)
+
+    # optimize atoms in batch using ASE
+    batch_optimizer = LBFGS_torch(obatch, damping=0.8, alpha=70.0)
+    batch_optimizer.run(0.01, 20)
+
+    # compare energy and atom positions, this needs pretty slack tols but that should be ok
+    for a1, a2 in zip(atoms_list, obatch.get_atoms_list()):
+        assert a1.get_potential_energy() / len(a1) == pytest.approx(
+            a2.get_potential_energy() / len(a2), abs=0.05
+        )
+        pnorm1 = np.linalg.norm(a1.positions, axis=1)
+        pnorm2 = np.linalg.norm(a2.positions, axis=1)
+        npt.assert_allclose(pnorm1, pnorm2, atol=0.01)
+        npt.assert_allclose(a1.positions, a2.positions, rtol=0.01, atol=0.05)
 
 
 def test_ase_relaxation(atoms_list, batch, calculator, optimizer_cls):
@@ -61,13 +87,13 @@ def test_ase_relaxation(atoms_list, batch, calculator, optimizer_cls):
         opt = optimizer_cls(atoms)
         opt.run(0.01, 20)
 
-    # TODO relaxations with LBFGS give nans for positions which leads to a criptic
-    #  eror in edge_rot_mat (since edges are empty)
+    # TODO relaxations with LBFGS give nans for positions which leads to a cryptic
+    #  error in edge_rot_mat (since edges are empty)
     # optimize atoms in batch using ASE
     batch_optimizer = optimizer_cls(obatch)
     batch_optimizer.run(0.01, 20)
 
-    # compare energy and atom positions
+    # compare energy and atom positions, this needs pretty slack tols but that should be ok
     for a1, a2 in zip(atoms_list, obatch.get_atoms_list()):
         assert a1.get_potential_energy() / len(a1) == pytest.approx(
             a2.get_potential_energy() / len(a2), abs=0.05

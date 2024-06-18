@@ -107,7 +107,8 @@ class LBFGS:
             max_forces = self.optimizable.get_max_forces()
             iteration += 1
 
-        if iteration > 0:
+        # save after converged on all iterations ran
+        if iteration > 0 and self.trajectories is not None:
             self.write()
 
         # GPU memory usage as per nvidia-smi seems to gradually build up as

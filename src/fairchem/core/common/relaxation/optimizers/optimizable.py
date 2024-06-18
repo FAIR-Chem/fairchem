@@ -485,7 +485,9 @@ class OptimizableUnitCellBatch(OptimizableBatch):
         atoms_energy = super().get_potential_energy(**kwargs)
         return atoms_energy + self.pressure[0, 0] * self.get_volumes().sum()
 
-    def get_forces(self, **kwargs):
+    def get_forces(
+        self, apply_constraint: bool = False, no_numpy: bool = False
+    ) -> torch.Tensor | NDArray:
         """Get forces and unit cell stress."""
         stress = self.get_property("stress", no_numpy=True).view(-1, 3, 3)
         atom_forces = self.get_property("forces", no_numpy=True)
@@ -523,7 +525,84 @@ class OptimizableUnitCellBatch(OptimizableBatch):
         augmented_forces[natoms:] = virial.view(-1, 3) / self.cell_factor
 
         self.stress = -virial.view(-1, 9) / volumes.view(-1, 1)
-        return augmented_forces.cpu().numpy() if self.numpy else augmented_forces
+
+        if self.numpy and not no_numpy:
+            augmented_forces = augmented_forces.cpu().numpy()
+
+        return augmented_forces
 
     def __len__(self):
         return len(self.batch.pos) + 3 * len(self.batch)
+
+
+class OptimizableExpCellBatch(OptimizableBatch):
+    """Modify the supercell and the atom positions in relaxations.
+
+    Based on ase FrechetCellFilter to work on data batches and that in JuLIP.jl:
+        https://github.com/JuliaMolSim/JuLIP.jl/blob/master/src/expcell.jl
+    """
+
+    def __init__(
+        self,
+        batch: Batch,
+        trainer: BaseTrainer,
+        transform: torch.nn.Module | None = None,
+        numpy: bool = False,
+        mask_converged: bool = True,
+        cumulative_mask: bool = True,
+        mask: Sequence[bool] | None = None,
+        cell_factor: float | None = None,
+        hydrostatic_strain: bool = False,
+        constant_volume: bool = False,
+        scalar_pressure: float = 0.0,
+    ):
+        """Create a filter that returns the forces and unit cell stresses together, for simultaneous optimization.
+
+        For full details see:
+            E. B. Tadmor, G. S. Smith, N. Bernstein, and E. Kaxiras,
+            Phys. Rev. B 59, 235 (1999)
+
+        Args:
+            batch: A batch of atoms graph data
+            model: An instance of a BaseTrainer derived class
+            transform: graph transform
+            numpy: whether to cast results to numpy arrays
+            mask_converged: if true will mask systems in batch that are already converged
+            cumulative_mask: if true, once system is masked then it remains masked even if new predictions give forces
+                above threshold, ie. once masked always masked. Note if this is used make sure to check convergence with
+                the same fmax always
+            mask: a boolean mask specifying which strain components are allowed to relax
+            cell_factor:
+                Factor by which deformation gradient is multiplied to put
+                it on the same scale as the positions when assembling
+                the combined position/cell vector. The stress contribution to
+                the forces is scaled down by the same factor. This can be thought
+                of as a very simple preconditioners. Default is number of atoms
+                which gives approximately the correct scaling.
+            hydrostatic_strain:
+                Constrain the cell by only allowing hydrostatic deformation.
+                The virial tensor is replaced by np.diag([np.trace(virial)]*3).
+            constant_volume:
+                Project out the diagonal elements of the virial tensor to allow
+                relaxations at constant volume, e.g. for mapping out an
+                energy-volume curve. Note: this only approximately conserves
+                the volume and breaks energy/force consistency so can only be
+                used with optimizers that do require a line minimisation
+                (e.g. FIRE).
+            scalar_pressure:
+                Applied pressure to use for enthalpy pV term. As above, this
+                breaks energy/force consistency.
+        """
+        super().__init__(
+            batch=batch,
+            trainer=trainer,
+            transform=transform,
+            numpy=numpy,
+            mask_converged=mask_converged,
+            cumulative_mask=cumulative_mask,
+            mask=mask,
+            cell_factor=cell_factor,
+            hydrostatic_strain=hydrostatic_strain,
+            constant_volume=constant_volume,
+            scalar_pressure=scalar_pressure,
+        )
