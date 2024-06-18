@@ -38,5 +38,3 @@ optim:
   max_epochs: 100
   ema_decay: 0.999
   clip_grad_norm: 5
-  loss_energy: mae
-  loss_force: l2mae

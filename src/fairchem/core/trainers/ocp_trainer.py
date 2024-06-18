@@ -289,7 +289,7 @@ class OCPTrainer(BaseTrainer):
 
     def _compute_loss(self, out, batch):
         batch_size = batch.natoms.numel()
-        fixed = batch.fixed
+        fixed = batch.fixed if hasattr(batch, "fixed") else torch.zeros(batch.pos.size(0), device=batch.pos.device)
         mask = fixed == 0
 
         loss = []
@@ -325,7 +325,7 @@ class OCPTrainer(BaseTrainer):
                 mult
                 * loss_info["fn"](
                     pred,
-                    target,
+                    target.float(),
                     natoms=natoms,
                     batch_size=batch_size,
                 )
@@ -348,7 +348,7 @@ class OCPTrainer(BaseTrainer):
         batch_size = natoms.numel()
 
         ### Retrieve free atoms
-        fixed = batch.fixed
+        fixed = batch.fixed if hasattr(batch, "fixed") else torch.zeros(batch.pos.size(0), device=batch.pos.device)
         mask = fixed == 0
 
         s_idx = 0
@@ -457,7 +457,7 @@ class OCPTrainer(BaseTrainer):
                     ### Split predictions into per-image predictions
                     if self.config["outputs"][target_key]["level"] == "atom":
                         batch_natoms = batch.natoms
-                        batch_fixed = batch.fixed
+                        batch_fixed = batch.fixed if hasattr(batch, "fixed") else torch.zeros(batch.pos.size(0), device=batch.pos.device)
                         per_image_pred = torch.split(pred, batch_natoms.tolist())
 
                         ### Save out only free atom, EvalAI does not need fixed atoms
@@ -592,7 +592,8 @@ class OCPTrainer(BaseTrainer):
                 ids += systemids
 
             if split == "val":
-                mask = relaxed_batch.fixed == 0
+                fixed = relaxed_batch.fixed if hasattr(relaxed_batch, "fixed") else torch.zeros(relaxed_batch.pos.size(0), device=relaxed_batch.pos.device)
+                mask = fixed == 0
                 s_idx = 0
                 natoms_free = []
                 for natoms in relaxed_batch.natoms:

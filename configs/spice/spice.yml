@@ -21,24 +21,24 @@ outputs:
 dataset:
   train:
     format: lmdb
-    src: /data/ericqu/md22/mace_lmdb/double-walled_nanotube/train/
+    src: /data/tkreiman/spice/lmdb/all_spice/all/train/
     key_mapping:
-      y: energy
+      formation_energy: energy
       force: forces
     transforms:
       normalizer:
         energy:
-          mean: -338224.16
-          stdev: 3.3810701
+          mean: -160.3178
+          stdev: 73.40605
         forces:
           mean: 0
-          stdev: 1.0137014
+          stdev: 1.0111282
   val:
-    src: /data/ericqu/md22/mace_lmdb/double-walled_nanotube/val/
+    src: /data/tkreiman/spice/lmdb/all_spice/all/val/
 
 logger: 
   name: wandb
-  project: MD22
+  project: SPICE
 
 task:
   dataset: trajectory_lmdb
@@ -53,9 +53,9 @@ task:
 
 model:
   name: transformer
-  elements: [1, 6]
-  embed_dim: 256
-  hidden_dim: 256
+  elements: [1, 3, 5, 6, 7, 8, 9, 11, 12, 14, 15, 16, 17, 19, 20, 35, 53]
+  embed_dim: 512
+  hidden_dim: 512
   dropout: 0.
   att_dropout: 0.
   num_layers: 12
@@ -65,14 +65,14 @@ model:
   use_pbc: False
   num_gaussians: 128
   output_layers: 4
-  avg_atoms: 370
+  avg_atoms: 60
 
 optim:
-  batch_size: 32
-  eval_batch_size: 32
+  batch_size: 256
+  eval_batch_size: 256
   load_balancing: atoms
   num_workers: 16
-  lr_initial: 0.0004
+  lr_initial: 4.e-4
 
   optimizer: AdamW
   optimizer_params:
@@ -80,7 +80,7 @@ optim:
   scheduler: CosineAnnealingLR
   T_max: 500000
   eta_min: 1.e-6
-  max_epochs: 10000
+  max_epochs: 1000
   ema_decay: 0.999
   clip_grad_norm: 10
   

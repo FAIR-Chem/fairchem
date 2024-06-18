@@ -4,15 +4,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from xformers.ops import masked_matmul
 
-from .mlp import ResMLP
 from .sparse_att import Projection, _from_coo, _wrap_value
     
 class PositionFeaturizer(nn.Module):
     def __init__(
         self,
         embed_dim: int = 512,
-        hidden_dim: int = 1024,
-        dropout: float = 0.,
         att_dropout: float = 0.,
         num_heads: int = 8,
     ):
@@ -30,15 +27,7 @@ class PositionFeaturizer(nn.Module):
 
         self.att_drop = nn.Dropout(att_dropout)
 
-        self.mlp = ResMLP(
-            input_dim=embed_dim+3*num_heads,
-            hidden_dim=hidden_dim,
-            output_dim=embed_dim,
-            dropout=dropout,
-        )
-
-        self.norm_att = nn.LayerNorm(embed_dim)
-        self.norm_mlp = nn.LayerNorm(embed_dim)
+        self.output = nn.Linear(3*num_heads, embed_dim)
 
         self.num_heads = num_heads
         self.embed_dim = embed_dim
@@ -46,12 +35,7 @@ class PositionFeaturizer(nn.Module):
 
     def reset_parameters(self):
         nn.init.uniform_(
-            self.mlp.input.weight[:, :self.embed_dim],
-            -math.sqrt(3 / self.embed_dim),
-            math.sqrt(3 / self.embed_dim)
-        )
-        nn.init.uniform_(
-            self.mlp.input.weight[:, self.embed_dim:],
+            self.output.weight,
             -math.sqrt(3 / self.num_heads),
             math.sqrt(3 / self.num_heads)
         )
@@ -68,12 +52,9 @@ class PositionFeaturizer(nn.Module):
             org_to_src: torch.Tensor,
         ):
 
-        # normalize inputs
-        z_att = self.norm_att(x)
-
         # prepare inputs to attention
-        query = self.query_proj(z_att)
-        key = self.key_proj(z_att)[:, org_to_src]
+        query = self.query_proj(x)
+        key = self.key_proj(x)[:, org_to_src]
         value = src_pos.expand(self.num_heads, -1, -1)
 
         # construct CSR format mask and normalizer
@@ -94,7 +75,7 @@ class PositionFeaturizer(nn.Module):
         att = att * norm
 
         # Optional dropout, could be part of the masking in the future
-        att = _wrap_value(att, self.att_drop(att.values()))
+        att = self.att_drop(att)
 
         # Get to the predicted values, for all heads
         dst_vec = torch.bmm(att, value)
@@ -108,10 +89,7 @@ class PositionFeaturizer(nn.Module):
         # combine batched dimensions
         feat = feat.permute(1, 0, 2).reshape(x.size(0), -1)
 
-        # normalize for mlp
-        z_mlp = self.norm_mlp(x)
-
-        # output with residual connection
-        x = x + self.mlp(torch.cat([z_mlp, feat], dim=-1))
+        # output with a linear layer
+        x = self.output(feat)
 
         return x

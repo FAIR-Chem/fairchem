@@ -128,16 +128,6 @@ class Transformer(BaseModel):
                 att_dropout=att_dropout,
             ) for _ in range(num_layers)
         ])
-
-        self.pos_feat = nn.ModuleList([
-            PositionFeaturizer(
-                embed_dim=embed_dim,
-                hidden_dim=hidden_dim,
-                dropout=dropout,
-                att_dropout=att_dropout,
-                num_heads=num_heads,
-            ) for _ in range(num_layers)
-        ])
         
         self.forces_out = ResMLP(
             input_dim=embed_dim,
@@ -195,11 +185,20 @@ class Transformer(BaseModel):
         for i in range(self.num_layers):
             if self.training and random() < self.stochastic_depth:
                 continue
-            # attention block
-            x = self.layers[i](x, row_index, col_index, att_bias[i])
-            # position featurizer 
-            x = self.pos_feat[i](x, row_index, src_index, pos_att_bias[i], dist, pos, src_pos, org_to_src)
-        
+            # encoder block
+            x = self.layers[i](
+                x,
+                row_index,
+                col_index,
+                src_index,
+                att_bias[i],
+                pos_att_bias[i],
+                dist,
+                pos,
+                src_pos,
+                org_to_src
+            )
+            
         # get outputs
         energy = self.energy_out(x)
         forces = self.forces_out(x)
@@ -230,4 +229,6 @@ class Transformer(BaseModel):
                     global_parameter_name = module_name + "." + parameter_name
                     assert global_parameter_name in named_parameters_list
                     no_wd_list.append(global_parameter_name)
+        no_wd_list.append("forces_out.output.weight")
+        no_wd_list.append("energy_out.output.weight")
         return set(no_wd_list)
