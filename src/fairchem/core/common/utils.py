@@ -995,8 +995,8 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
             outputs=config.get("outputs", {}),
             dataset=config["dataset"],
             optimizer=config["optim"],
-            loss_fns=config.get("loss_functions", {}),
-            eval_metrics=config.get("evaluation_metrics", {}),
+            loss_functions=config.get("loss_functions", {}),
+            evaluation_metrics=config.get("evaluation_metrics", {}),
             identifier=config["identifier"],
             timestamp_id=config.get("timestamp_id", None),
             run_dir=config.get("run_dir", "./"),
@@ -1289,8 +1289,8 @@ def update_config(base_config):
         config["dataset"]["transforms"] = transforms
 
     ### Update config
-    config.update({"loss_fns": _loss_fns})
-    config.update({"eval_metrics": _eval_metrics})
+    config.update({"loss_functions": _loss_fns})
+    config.update({"evaluation_metrics": _eval_metrics})
     config.update({"outputs": _outputs})
 
     return config
