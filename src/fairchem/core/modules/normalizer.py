@@ -39,7 +39,7 @@ class Normalizer:
             self.std = torch.tensor(std).to(device)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}: mean={self.mean.item()} , stdev={self.stdev.item()}"
+        return f"{self.__class__.__name__}: mean={self.mean.item()} , stdev={self.std.item()}"
 
     def to(self, device) -> None:
         self.mean = self.mean.to(device)
