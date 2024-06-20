@@ -1,7 +1,13 @@
 includes:
   - configs/odac/s2ef/base.yml
 
-trainer: forces
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 1
+  - forces:
+      fn: l2mae
+      coefficient: 50
 
 model:
   name: gemnet_oc
@@ -75,12 +81,8 @@ optim:
     weight_decay: 0.1
   mode: min
   max_epochs: 80
-  force_coefficient: 50
-  energy_coefficient: 1
   ema_decay: 0.999
   clip_grad_norm: 10
-  loss_energy: mae
-  loss_force: l2mae
 
   scheduler: CosineAnnealingLR
   T_max: 2000000
