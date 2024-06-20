@@ -1,11 +1,10 @@
-from unittest.mock import MagicMock, patch
-import pytest
+from unittest.mock import patch
 import sys
 
 from fairchem.core._cli import main
 
 def fake_runner_distributed(distributed: bool, config: dict):
-    assert distributed == True
+    assert distributed
     assert config["local_rank"] == 0
     assert config["world_size"] == 1
 
