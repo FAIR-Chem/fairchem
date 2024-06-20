@@ -54,7 +54,7 @@ def write_images_to_lmdb(mp_arg):
             # subtract off reference energy
             if args.ref_energy and not args.test_data:
                 ref_energy = float(frame_log[2])
-                data_object.y -= ref_energy
+                data_object.energy -= ref_energy
 
             txn = db.begin(write=True)
             txn.put(
