@@ -3,15 +3,14 @@ import sys
 
 from fairchem.core._cli import main
 
-def fake_runner_distributed(distributed: bool, config: dict):
-    assert distributed
+def fake_runner(distributed: bool, config: dict):
+    assert not distributed
     assert config["local_rank"] == 0
     assert config["world_size"] == 1
 
-def test_cli_distributed():
-    with patch('fairchem.core._cli.runner_wrapper',fake_runner_distributed):
+def test_cli():
+    with patch('fairchem.core._cli.runner_wrapper',fake_runner):
         sys_args = ['--debug', 
-                    '--distributed', 
                     '--mode', 
                     'train', 
                     '--identifier', 
