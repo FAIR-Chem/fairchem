@@ -45,7 +45,7 @@ jobs:
       - name: Integration tests
         continue-on-error: true
         run: |
-          pytest tests/demo/ocpapi/tests/integration/ --cov-report=xml --cov=fairchem_integration -c ./packages/fairchem-core/pyproject.toml
+          pytest tests/demo/ocpapi/tests/integration/ -c ./packages/fairchem-core/pyproject.toml
 
       - if: ${{ matrix.python_version == '3.11' }}
         name: codecov-report
