@@ -1,16 +1,17 @@
+import os
 from copy import deepcopy
 from pathlib import Path
-from typing import Callable, Union, List
+from typing import Callable, List, Union
 
-import os
-
+import torch
 import torch.nn as nn
-from torch_geometric.data.data import Data
 from torch_geometric.data.batch import Batch
+from torch_geometric.data.data import Data
 
-from ocpmodels.common.utils import make_trainer_from_dir, resolve
-from ocpmodels.models.faenet import FAENet
+from ocpmodels.common.registry import registry
+from ocpmodels.common.utils import resolve, setup_imports
 from ocpmodels.datasets.data_transforms import get_transforms
+from ocpmodels.models.faenet import FAENet
 
 
 class FAENetWrapper(nn.Module):
@@ -190,6 +191,37 @@ def parse_loc() -> str:
     return loc
 
 
+def reset_data_paths(config):
+    """
+    Reset config data paths to defaults, instead of SLURM temporary paths (inplace).
+
+    Args:
+        config (dict): The trainer config dictionary to modify.
+
+    Returns:
+        dict: The modified config dictionary.
+    """
+    ds_configs = deepcopy(config["dataset"])
+    task_name = config["task"]["name"]
+    if task_name != "is2re":
+        raise NotImplementedError(
+            "Only the is2re task is currently supported for resetting data paths."
+            + " To implement this for other tasks, modify how `base_path` is constructed"
+            " in `reset_data_paths()`"
+        )
+    base_path = Path("/network/projects/ocp/oc20/is2re")
+    for name, ds_config in ds_configs.items():
+        if not isinstance(ds_config, dict):
+            continue
+        if "slurm" in ds_config["src"].lower():
+            ds_config["src"] = str(
+                base_path / ds_config["split"] / Path(ds_config["src"]).name
+            )
+        config["dataset"][name] = ds_config
+
+    return config
+
+
 def find_ckpt(ckpt_paths: dict, release: str) -> Path:
     """
     Finds a checkpoint in a dictionary of paths, based on the current cluster name and
@@ -223,7 +255,7 @@ def find_ckpt(ckpt_paths: dict, release: str) -> Path:
     if path.is_file():
         return path
     path = path / release
-    ckpts = list(path.glob("**/*.ckpt"))
+    ckpts = list(path.glob("**/*.pt"))
     if len(ckpts) == 0:
         raise ValueError(f"No FAENet proxy checkpoint found at {str(path)}.")
     if len(ckpts) > 1:
@@ -256,18 +288,15 @@ def prepare_for_gfn(ckpt_paths: dict, release: str) -> tuple:
     Returns:
         tuple: (model, loaders) where loaders is a dict of loaders for the model.
     """
+    setup_imports()
     ckpt_path = find_ckpt(ckpt_paths, release)
     assert ckpt_path.exists(), f"Path {ckpt_path} does not exist."
-    trainer = make_trainer_from_dir(
-        ckpt_path,
-        mode="continue",
-        overrides={
-            "is_debug": True,
-            "silent": True,
-            "cp_data_to_tmpdir": False,
-        },
-        silent=True,
-    )
+    config = torch.load(ckpt_path, map_location="cpu")["config"]
+    config["is_debug"] = True
+    config["silent"] = True
+    config["cp_data_to_tmpdir"] = False
+    config = reset_data_paths(config)
+    trainer = registry.get_trainer_class(config["trainer"])(**config)
 
     wrapper = FAENetWrapper(
         faenet=trainer.model,
