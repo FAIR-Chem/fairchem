@@ -50,8 +50,8 @@ class OCPTrainer(BaseTrainer):
         outputs (dict): Output property configuration.
         dataset (dict): Dataset configuration. The dataset needs to be a SinglePointLMDB dataset.
         optimizer (dict): Optimizer configuration.
-        loss_fns (dict): Loss function configuration.
-        eval_metrics (dict): Evaluation metrics configuration.
+        loss_functions (dict): Loss function configuration.
+        evaluation_metrics (dict): Evaluation metrics configuration.
         identifier (str): Experiment identifier that is appended to log directory.
         run_dir (str, optional): Path to the run directory where logs are to be saved.
             (default: :obj:`None`)
@@ -79,8 +79,8 @@ class OCPTrainer(BaseTrainer):
         outputs,
         dataset,
         optimizer,
-        loss_fns,
-        eval_metrics,
+        loss_functions,
+        evaluation_metrics,
         identifier,
         timestamp_id=None,
         run_dir=None,
@@ -103,8 +103,8 @@ class OCPTrainer(BaseTrainer):
             outputs=outputs,
             dataset=dataset,
             optimizer=optimizer,
-            loss_fns=loss_fns,
-            eval_metrics=eval_metrics,
+            loss_functions=loss_functions,
+            evaluation_metrics=evaluation_metrics,
             identifier=identifier,
             timestamp_id=timestamp_id,
             run_dir=run_dir,
@@ -304,7 +304,7 @@ class OCPTrainer(BaseTrainer):
         mask = fixed == 0
 
         loss = []
-        for loss_fn in self.loss_fns:
+        for loss_fn in self.loss_functions:
             target_name, loss_info = loss_fn
 
             target = batch[target_name]

@@ -13,7 +13,7 @@ copyright                   : "2024"  # Copyright year to be placed in the foote
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
 execute:
-  execute_notebooks: 'off' # auto
+  execute_notebooks: auto
   timeout: 3600
 
 # Define the name of the latex output file for PDF builds
