@@ -41,6 +41,5 @@ jobs:
           pip install -e packages/fairchem-applications-cattsunami
 
       - name: Integration tests
-        continue-on-error: true
         run: | # skip-ocpapi-integration skips expensive tests with the tag "@pytest.mark.ocpapi_integration_test"
           pytest tests/demo/ocpapi/tests/integration/ --skip-ocpapi-integration -c ./packages/fairchem-core/pyproject.toml

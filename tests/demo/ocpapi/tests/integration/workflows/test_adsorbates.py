@@ -2,6 +2,7 @@ import time
 from typing import List
 from unittest import IsolatedAsyncioTestCase
 
+import pytest
 import requests
 
 from fairchem.demo.ocpapi.client import AdsorbateSlabConfigs, Client, Status
@@ -70,6 +71,7 @@ class TestAdsorbates(IsolatedAsyncioTestCase):
         # when there is a poor connection or the server is busy
         self.assertLess(took, 5)
 
+    @pytest.mark.ocpapi_integration_test
     async def test_find_adsorbate_binding_sites(self) -> None:
         # Run an end-to-end test to find adsorbate binding sites on the
         # surface of a bulk material.
