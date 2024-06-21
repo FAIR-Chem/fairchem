@@ -1,7 +1,7 @@
 name: integration-test
 
 on:
-  push:
+  pull_request:
     paths: # this will only trigger on changes to the demo directory, add more here if required
         - 'src/fairchem/demo/**'
   workflow_call:
