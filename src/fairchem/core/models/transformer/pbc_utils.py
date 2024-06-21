@@ -48,9 +48,30 @@ def radius_graph_pbc(
     pos1 = torch.index_select(atom_pos, 0, index1)
     pos2 = torch.index_select(atom_pos, 0, index2)
 
+    cross_a2a3 = torch.cross(data.cell[:, 1], data.cell[:, 2], dim=-1)
+    cell_vol = torch.sum(data.cell[:, 0] * cross_a2a3, dim=-1, keepdim=True)
+
+    inv_min_dist_a1 = torch.norm(cross_a2a3 / cell_vol, p=2, dim=-1)
+    rep_a1 = torch.ceil(radius * inv_min_dist_a1)
+
+    cross_a3a1 = torch.cross(data.cell[:, 2], data.cell[:, 0], dim=-1)
+    inv_min_dist_a2 = torch.norm(cross_a3a1 / cell_vol, p=2, dim=-1)
+    rep_a2 = torch.ceil(radius * inv_min_dist_a2)
+
+    cross_a1a2 = torch.cross(data.cell[:, 0], data.cell[:, 1], dim=-1)
+    inv_min_dist_a3 = torch.norm(cross_a1a2 / cell_vol, p=2, dim=-1)
+    rep_a3 = torch.ceil(radius * inv_min_dist_a3)
+
+    # Take the max over all images for uniformity. This is essentially padding.
+    # Note that this can significantly increase the number of computed distances
+    # if the required repetitions are very different between images
+    # (which they usually are). Changing this to sparse (scatter) operations
+    # might be worth the effort if this function becomes a bottleneck.
+    max_rep = [rep_a1.max(), rep_a2.max(), rep_a3.max()]
+
     # Tensor of unit cells
     cells_per_dim = [
-        torch.arange(-1, 2, device=device, dtype=torch.float) for _ in range(3)
+        torch.arange(-rep, rep + 1, device=device, dtype=torch.float) for rep in max_rep
     ]
     unit_cell = torch.cartesian_prod(*cells_per_dim)
     num_cells = len(unit_cell)
@@ -69,41 +90,33 @@ def radius_graph_pbc(
     pos2 = pos2.view(-1, 3, 1).expand(-1, -1, num_cells)
     index1 = index1.view(-1, 1).repeat(1, num_cells)
     index2 = index2.view(-1, 1).repeat(1, num_cells)
-    src_index = index2 + data.natoms.sum() * torch.arange(num_cells, device=device)[None]
+    index3 = index2 + data.natoms.sum() * torch.arange(num_cells, device=device)[None]
     # Add the PBC offsets for the second atom
     pos2 = pos2 + pbc_offsets_per_atom
 
     # Compute the squared distance between atoms
     dist = torch.linalg.norm(pos1 - pos2, dim=1)
 
-    # select the one with minimum distance
-    argmin = torch.argmin(dist, dim=1, keepdim=True)
-    dist = dist.gather(1, argmin).squeeze(1)
-    index1 = index1.gather(1, argmin).squeeze(1)
-    index2 = index2.gather(1, argmin).squeeze(1)
-    src_index = src_index.gather(1, argmin).squeeze(1)
-    pos2 = pos2.gather(2, argmin[..., None].expand(-1, 3, -1)).squeeze(2)
-
     # Remove pairs that are too far apart
     mask_within_radius = torch.le(dist, radius)
 
     index1 = torch.masked_select(index1, mask_within_radius)
     index2 = torch.masked_select(index2, mask_within_radius)
-    src_index = torch.masked_select(src_index, mask_within_radius)
-    src_pos = torch.masked_select(pos2, mask_within_radius[:, None]).view(-1, 3)
+    index3 = torch.masked_select(index3, mask_within_radius)
+    src_pos = torch.masked_select(pos2.permute(0, 2, 1), mask_within_radius[..., None]).view(-1, 3)
     dist = torch.masked_select(dist, mask_within_radius)
 
     # sort the indices
-    unique_src_index, src_index = torch.unique(src_index, sorted=True, return_inverse=True)
-    indx = torch.arange(src_index.size(0), dtype=src_index.dtype, device=src_index.device)
-    src_index_fliped, indx = src_index.flip(0), indx.flip(0)
-    indx = src_index_fliped.new_empty(unique_src_index.size(0)).scatter_(0, src_index_fliped, indx)
+    unique_index3, index3 = torch.unique(index3, sorted=True, return_inverse=True)
+    indx = torch.arange(index3.size(0), dtype=index3.dtype, device=index3.device)
+    index3_fliped, indx = index3.flip(0), indx.flip(0)
+    indx = index3_fliped.new_empty(unique_index3.size(0)).scatter_(0, index3_fliped, indx)
     
     # get position and indicies
     src_pos = src_pos[indx]
     org_to_src = index2[indx]
 
-    return index1, index2, src_index, dist, src_pos, org_to_src
+    return index1, index3, dist, src_pos, org_to_src
 
 def build_radius_graph(
     data,
@@ -112,34 +125,23 @@ def build_radius_graph(
 ):
     device=data.pos.device
     if use_pbc:
-        row_index, col_index, src_index, dist, src_pos, org_to_src = radius_graph_pbc(data, radius)
+        row_index, col_index, dist, col_pos, to_col_index = radius_graph_pbc(data, radius)
     else:
-        edge_index = radius_graph(
+        row_index, col_index = radius_graph(
             data.pos, 
             radius, 
             data.batch,
             flow="target_to_source",
             max_num_neighbors=data.natoms.max(),
         )
-        dist = torch.linalg.norm(data.pos[edge_index[0]] - data.pos[edge_index[1]], dim=-1)
-        (
-            row_index,
-            col_index,
-            src_index,
-            dist,
-            src_pos,
-            org_to_src
-        ) = edge_index[0], edge_index[1], edge_index[1], dist, data.pos, torch.arange(data.pos.size(0), device=device)
+        dist = torch.linalg.norm(data.pos[row_index] - data.pos[col_index], dim=-1)
+        col_pos = data.pos
+        to_col_index = None
 
     if dist.size(0) % 4 != 0:
         _, indicies = torch.topk(dist, dist.size(0) % 4, largest=True)
         mask = torch.ones(dist.size(0), device=device, dtype=torch.bool)
         mask.index_fill_(0, indicies, False)
-        (
-            row_index, 
-            col_index, 
-            src_index, 
-            dist
-        ) = row_index.masked_select(mask), col_index.masked_select(mask), src_index.masked_select(mask), dist.masked_select(mask)
-
-    return row_index, col_index, src_index, dist, src_pos, org_to_src
+        row_index, col_index, dist = row_index[mask], col_index[mask], dist[mask]
+        
+    return row_index, col_index, dist, col_pos, to_col_index

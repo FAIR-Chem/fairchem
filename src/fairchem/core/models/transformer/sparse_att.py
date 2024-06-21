@@ -55,7 +55,7 @@ class SparseScaledDotProduct(Attention):
         for head. The remaining should use implicit batching.
         """
 
-        # Attend: (B x nh, S, hs) x (B x nh, hs, S) -> (B x nh, S, S)
+        # scale before attend
         q = q / math.sqrt(k.size(-1))
         
         # this only takes care of QK^T, bias must be added manually.
@@ -65,11 +65,10 @@ class SparseScaledDotProduct(Attention):
         # Softmax to get the attention probabilities
         att = F.softmax(logits, dim=-1)
 
-        #  Optional dropout, could be part of the masking in the future
-        att = _wrap_value(att, self.att_drop(att.values().clone()))
+        # Optional dropout, could be part of the masking in the future
+        att = self.att_drop(att)
 
         # Get to the predicted values, for all heads
-        # y = att @ v  # (N, S, S) x (N, S, hs) -> (N, S, hs)
         y = torch.bmm(att, v)
 
         return y, logits
@@ -143,6 +142,7 @@ class SparseSelfAttention(nn.Module):
         x: torch.Tensor,
         row_index: torch.Tensor, 
         col_index: torch.Tensor,
+        to_col_index: torch.Tensor,
         att_bias: Optional[torch.Tensor] = None,
         need_weights: Optional[bool] = False
     ):
@@ -151,11 +151,15 @@ class SparseSelfAttention(nn.Module):
         """
         # project to qkv
         query = self.query_proj(x)
-        key = self.key_proj(x)
-        value = self.value_proj(x)
+        if to_col_index is not None:
+            key = self.key_proj(x)[:, to_col_index]
+            value = self.value_proj(x)[:, to_col_index]
+        else:
+            key = self.key_proj(x)
+            value = self.value_proj(x)
 
         # construct CSR format mask
-        mask = _from_coo(x.size(0), x.size(0), row_index, col_index, att_bias)
+        mask = _from_coo(query.size(1), key.size(1), row_index, col_index, att_bias)
 
         # compute scaled dot product attention
         self_att, logits = self.attention(query, key, value, mask)

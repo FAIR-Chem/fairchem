@@ -79,7 +79,7 @@ optim:
     weight_decay: 0.001
   scheduler: CosineAnnealingLR
   T_max: 500000
-  eta_min: 1.e-6
+  eta_min: 5.e-6
   max_epochs: 1000
   ema_decay: 0.999
   clip_grad_norm: 10

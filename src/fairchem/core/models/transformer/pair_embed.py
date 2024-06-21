@@ -1,7 +1,6 @@
 import math
 import torch
 import torch.nn as nn
-import logging
 
 from .mlp import ResMLP
 from .rbf import GaussianSmearing
@@ -32,7 +31,7 @@ class PairEmbed(nn.Module):
         )
 
         self.gate_linear = nn.Linear(
-            num_gaussians, hidden_dim
+            num_gaussians, hidden_dim, False
         )
 
         self.embedding = nn.Embedding(
@@ -68,17 +67,19 @@ class PairEmbed(nn.Module):
             - math.sqrt(3 / 2.50663),
             math.sqrt(3 / 2.50663)
         )
-        nn.init.zeros_(self.gate_linear.bias)
-
     def forward(
         self,
         anum: torch.Tensor,
         row_index: torch.Tensor, 
         col_index: torch.Tensor,
+        to_col_index: torch.Tensor,
         dist: torch.Tensor,
     ):
         rbf = self.smearing(dist)
-        emb = self.embedding(anum[row_index] + self.num_elemenets * anum[col_index])
+        if to_col_index is not None:
+            emb = self.embedding(anum[row_index] + self.num_elemenets * anum[to_col_index][col_index])
+        else:
+            emb = self.embedding(anum[row_index] + self.num_elemenets * anum[col_index])
         att_bias = self.mlp(torch.cat([emb, rbf], dim=-1) , gate=self.gate_linear(rbf))
         att_bias = att_bias.reshape(dist.size(0), self.num_heads, self.num_masks)
         

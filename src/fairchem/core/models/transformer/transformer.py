@@ -15,7 +15,6 @@ from fairchem.core.models.base import BaseModel
 from torch_scatter import scatter
 
 from .encoder_layer import EncoderLayer
-from .pos_feat import PositionFeaturizer
 from .pair_embed import PairEmbed
 from .mlp import ResMLP
 from .pbc_utils import build_radius_graph
@@ -172,13 +171,13 @@ class Transformer(BaseModel):
         atomic_numbers = self.atomic_number_mask[data.atomic_numbers.long()]
 
         # build graph on-the-fly
-        row_index, col_index, src_index, dist, src_pos, org_to_src = build_radius_graph(data, self.rbf_radius, self.use_pbc)
+        row_index, col_index, dist, col_pos, to_col_index = build_radius_graph(data, self.rbf_radius, self.use_pbc)
         
         # initialize inputs
         x = self.atomic_number_encoder(atomic_numbers)
 
         # get pair embeddings
-        att_bias = self.pair_embed(atomic_numbers, row_index, col_index, dist)
+        att_bias = self.pair_embed(atomic_numbers, row_index, col_index, to_col_index, dist)
         att_bias, pos_att_bias = att_bias[:self.num_layers], att_bias[self.num_layers:]
 
         # forward passing
@@ -190,13 +189,12 @@ class Transformer(BaseModel):
                 x,
                 row_index,
                 col_index,
-                src_index,
+                to_col_index,
                 att_bias[i],
                 pos_att_bias[i],
                 dist,
                 pos,
-                src_pos,
-                org_to_src
+                col_pos,
             )
             
         # get outputs
