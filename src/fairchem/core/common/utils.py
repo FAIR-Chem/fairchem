@@ -1180,7 +1180,8 @@ def update_config(base_config):
     are now. Update old configs to fit the new expected structure.
     """
     ### TODO: better format check for older configs
-    if "loss_functions" in base_config:
+    # some configs have a loss_functions key with an empty dictionary, those need to be updated as well
+    if len(base_config.get("loss_functions", {})) > 0:
         return base_config
 
     logging.warning(
