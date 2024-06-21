@@ -302,7 +302,7 @@ def setup_experimental_imports(project_root: Path) -> None:
 
     experimental_files = []
     include_file = experimental_dir / ".include"
-
+    
     if include_file.exists():
         with open(include_file) as f:
             include_dirs = [line.rstrip("\n") for line in f.readlines() if line.strip()]
@@ -402,7 +402,9 @@ def create_dict_from_args(args: list, sep: str = "."):
     return return_dict
 
 
-def load_config(path: str, previous_includes: list | None = None):
+def load_config(
+    path: str, previous_includes: list | None = None, include_paths: list = []
+):
     if previous_includes is None:
         previous_includes = []
     path = Path(path)
@@ -420,15 +422,22 @@ def load_config(path: str, previous_includes: list | None = None):
     if not isinstance(includes, list):
         raise AttributeError(f"Includes must be a list, '{type(includes)}' provided")
 
+    def find_include(include, include_paths):
+        if os.path.exists(include):
+            return include
+        for path in include_paths:
+            include_filename = os.path.join(path, include)
+            if os.path.exists(include_filename):
+                return include_filename
+        raise ValueError(f"Cannot find include YML {include}")
+
     config = {}
     duplicates_warning = []
     duplicates_error = []
     for include in includes:
-        include_filename = include
-        if not os.path.exists(include_filename):
-            include_filename = os.path.join(os.path.dirname(path), include)
-            if not os.path.exists(include_filename):
-                raise ValueError(f"Cannot find include YML {include}")
+        include_filename = find_include(
+            include, [os.path.dirname(path)] + include_paths
+        )
         include_config, inc_dup_warning, inc_dup_error = load_config(
             include_filename, previous_includes
         )
@@ -445,8 +454,10 @@ def load_config(path: str, previous_includes: list | None = None):
     return config, duplicates_warning, duplicates_error
 
 
-def build_config(args, args_override):
-    config, duplicates_warning, duplicates_error = load_config(args.config_yml)
+def build_config(args, args_override, include_paths=[]):
+    config, duplicates_warning, duplicates_error = load_config(
+        args.config_yml, include_paths=include_paths
+    )
     if len(duplicates_warning) > 0:
         logging.warning(
             f"Overwritten config parameters from included configs "
@@ -1438,7 +1449,12 @@ def compute_mean_and_std_for_target(target_name, config, concat_dataset, level):
     )
     calculated_stdev = np.sqrt(calculated_variance)
 
-    logging.info(
-        f"Computed mean,stdev for {target_name} , mean={calculated_mean}, stdev={calculated_stdev}"
-    )
+    if len(dataset_means) == 1:
+        logging.info(
+            f"Using pass through mean,stdev for {target_name} , mean={calculated_mean}, stdev={calculated_stdev}, from {dataset_names}"
+        )
+    else:
+        logging.info(
+            f"Computed mean,stdev for {target_name} , mean={calculated_mean}, stdev={calculated_stdev}, across datasets {dataset_names}"
+        )
     return calculated_mean, calculated_stdev
