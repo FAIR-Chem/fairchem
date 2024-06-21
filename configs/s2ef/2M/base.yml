@@ -20,7 +20,7 @@ dataset:
 
 logger: 
   name: wandb
-  project: OC20-2M
+  project: OC20-2M-scale
 
 outputs:
   energy:
@@ -35,7 +35,7 @@ outputs:
 loss_functions:
   - energy:
       fn: mae
-      coefficient: 1
+      coefficient: 0.4
   - forces:
       fn: l2mae
       coefficient: 10

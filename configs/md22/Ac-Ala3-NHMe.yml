@@ -1,5 +1,23 @@
 trainer: forces
 
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 0.1
+  - forces:
+      fn: l2mae
+      coefficient: 10
+
+outputs:
+  energy:
+    shape: 1
+    level: system
+  forces:
+    irrep_dim: 1
+    level: atom
+    train_on_free_atoms: False
+    eval_on_free_atoms: False
+
 dataset:
   train:
     format: lmdb
@@ -59,14 +77,10 @@ optim:
   optimizer: AdamW
   optimizer_params:
     weight_decay: 0.001
-  scheduler: ReduceLROnPlateau
-  mode: min
-  factor: 0.9
-  patience: 100
+  scheduler: CosineAnnealingLR
+  T_max: 500000
+  eta_min: 5.e-6
   max_epochs: 10000
-  force_coefficient: 10
-  energy_coefficient: 0.1
   ema_decay: 0.999
   clip_grad_norm: 10
-  loss_energy: mae
-  loss_force: l2mae
+

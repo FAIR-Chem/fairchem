@@ -10,11 +10,11 @@ model:
     82, 83
   ]
   embed_dim: 512
-  hidden_dim: 1024
+  hidden_dim: 512
   dropout: 0.
   att_dropout: 0.
   num_layers: 12
-  num_heads: 32
+  num_heads: 16
   otf_graph: True
   rbf_radius: 8.0
   use_pbc: True
@@ -23,21 +23,19 @@ model:
   avg_atoms: 80
 
 optim:
-  batch_size: 64
-  eval_batch_size: 64
+  batch_size: 128
+  eval_batch_size: 128
   load_balancing: atoms
-  num_workers: 16
-  lr_initial: 0.0004
+  num_workers: 32
+  lr_initial: 1.4e-4
 
   optimizer: AdamW
   optimizer_params:
     weight_decay: 0.001
-  scheduler: ReduceLROnPlateau
-  mode: min
-  factor: 0.9
-  patience: 100
-  max_epochs: 10000
+  scheduler: CosineAnnealingLR
+  T_max: 500000
+  eta_min: 1.4e-6
+  max_epochs: 100
   ema_decay: 0.999
   clip_grad_norm: 10
-  loss_energy: mae
-  loss_force: l2mae
+  
