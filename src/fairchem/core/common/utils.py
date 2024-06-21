@@ -1176,10 +1176,26 @@ def irreps_sum(ang_mom: int) -> int:
 
 def update_config(base_config):
     """
-    Configs created prior to OCP 2.0 are organized a little different than they
+    Configs created prior to FAIRChem/OCP 2.0 are organized a little different than they
     are now. Update old configs to fit the new expected structure.
     """
+    ### TODO: better format check for older configs
+    if "loss_functions" in base_config:
+        return base_config
+
+    logging.warning(
+        "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
+    )
+
+    # do we need a copy?
     config = copy.deepcopy(base_config)
+
+    # initial fairchem/ocp 2.0 configs renamed loss_functions -> loss_fns and evaluation_metrics -> eval_metrics
+    # so some checkpoints may have configs in new format with the exception of renamed loss_funs and eval_metrics
+    if "loss_fns" in config:
+        config["loss_functions"] = config.pop("loss_fns")
+        config["evaluation_metrics"] = config.pop("eval_metrics")
+        return config
 
     # If config["dataset"]["format"] is missing, get it from the task (legacy location).
     # If it is not there either, default to LMDB.
