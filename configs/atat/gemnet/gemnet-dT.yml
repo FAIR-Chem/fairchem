@@ -1,0 +1,53 @@
+includes:
+- configs/atat/base.yml
+
+model:
+  name: gemnet_t
+  num_spherical: 7
+  num_radial: 6
+  num_blocks: 4
+  emb_size_atom: 128
+  emb_size_edge: 128
+  emb_size_trip: 64
+  emb_size_rbf: 16
+  emb_size_cbf: 16
+  emb_size_bil_trip: 64
+  num_before_skip: 1
+  num_after_skip: 1
+  num_concat: 1
+  num_atom: 2
+  cutoff: 5.0
+  max_neighbors: 50
+  rbf:
+    name: gaussian
+  envelope:
+    name: polynomial
+    exponent: 5
+  cbf:
+    name: spherical_harmonics
+  otf_graph: True
+  output_init: HeOrthogonal
+  activation: silu
+  scale_file: configs/atat/gemnet/gemnet-dT-scale.json
+
+  regress_forces: True
+  direct_forces: True
+
+optim:
+  batch_size: 64
+  eval_batch_size: 64
+  num_workers: 2
+  lr_initial: 5.e-4
+  optimizer: AdamW
+  optimizer_params: {"amsgrad": True}
+  scheduler: ReduceLROnPlateau
+  mode: min
+  factor: 0.9
+  patience: 100
+  max_epochs: 10000
+  force_coefficient: 10
+  energy_coefficient: 1
+  ema_decay: 0.999
+  clip_grad_norm: 10
+  loss_energy: mae
+  loss_force: l2mae

@@ -4,7 +4,6 @@ Author: Ryan Liu
 import logging
 import math
 from typing import List, Union
-from random import random
 
 import torch
 import torch.nn as nn
@@ -15,6 +14,7 @@ from fairchem.core.models.base import BaseModel
 from torch_scatter import scatter
 
 from .encoder_layer import EncoderLayer
+from .pos_feat import PositionFeaturizer
 from .pair_embed import PairEmbed
 from .mlp import ResMLP
 from .pbc_utils import build_radius_graph
@@ -77,7 +77,6 @@ class Transformer(BaseModel):
             num_gaussians: int = 50,
             output_layers: int = 3,
             avg_atoms: float = 60,
-            stochastic_depth: float = 0.,
         ):
 
         super().__init__()
@@ -86,12 +85,6 @@ class Transformer(BaseModel):
         self.rbf_radius = rbf_radius
         self.use_pbc = use_pbc
         self.num_layers = num_layers
-        self.num_heads = num_heads
-        self.embed_dim = embed_dim
-        self.hidden_dim = hidden_dim
-        self.output_layers = output_layers
-        self.avg_atoms = avg_atoms
-        self.stochastic_depth = stochastic_depth
 
         if isinstance(elements, int):
             self.register_buffer("atomic_number_mask", torch.arange(elements + 1))
@@ -115,7 +108,6 @@ class Transformer(BaseModel):
             num_masks=2*num_layers,
             num_gaussians=num_gaussians,
             rbf_radius=rbf_radius,
-            dropout=dropout,
         )
 
         self.layers = nn.ModuleList([
@@ -127,13 +119,23 @@ class Transformer(BaseModel):
                 att_dropout=att_dropout,
             ) for _ in range(num_layers)
         ])
-        
+
+        self.pos_feat = nn.ModuleList([
+            PositionFeaturizer(
+                embed_dim=embed_dim,
+                hidden_dim=hidden_dim,
+                dropout=dropout,
+                att_dropout=att_dropout,
+                num_heads=num_heads,
+            ) for _ in range(num_layers)
+        ])
+
         self.forces_out = ResMLP(
             input_dim=embed_dim,
             hidden_dim=hidden_dim,
             output_dim=3,
             num_layers=output_layers,
-            bias_output=False,
+            dropout=dropout,
         )
 
         self.energy_out = ResMLP(
@@ -141,62 +143,35 @@ class Transformer(BaseModel):
             hidden_dim=hidden_dim,
             output_dim=1,
             num_layers=output_layers,
-            bias_output=False,
+            dropout=dropout,
         )
-
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        nn.init.uniform_(
-            self.forces_out.input.weight,
-            -math.sqrt(2 / (self.embed_dim * self.num_layers)),
-            math.sqrt(2 / (self.embed_dim * self.num_layers))
-        )
-        nn.init.uniform_(
-            self.energy_out.input.weight,
-            -math.sqrt(2 / (self.embed_dim * self.num_layers)),
-            math.sqrt(2 / (self.embed_dim * self.num_layers))
-        )
-        nn.init.uniform_(
-            self.energy_out.output.weight,
-            -math.sqrt(1 / (self.hidden_dim * self.avg_atoms * (self.output_layers + 1))),
-            math.sqrt(1 / (self.hidden_dim * self.avg_atoms * (self.output_layers + 1)))
-        )
+        
+        self.avg_atoms = avg_atoms
 
     def forward(self, data):
 
-        # extract data
+        # extract data & normalize
         batch = data.batch
         pos = data.pos
         atomic_numbers = self.atomic_number_mask[data.atomic_numbers.long()]
 
         # build graph on-the-fly
-        row_index, col_index, dist, col_pos, to_col_index = build_radius_graph(data, self.rbf_radius, self.use_pbc)
+        row_index, col_index, src_index, dist, src_pos, org_to_src = build_radius_graph(data, self.rbf_radius, self.use_pbc)
         
         # initialize inputs
         x = self.atomic_number_encoder(atomic_numbers)
 
         # get pair embeddings
-        att_bias = self.pair_embed(atomic_numbers, row_index, col_index, to_col_index, dist)
+        att_bias = self.pair_embed(atomic_numbers, row_index, col_index, dist)
         att_bias, pos_att_bias = att_bias[:self.num_layers], att_bias[self.num_layers:]
 
         # forward passing
         for i in range(self.num_layers):
-            if self.training and random() < self.stochastic_depth:
-                continue
-            # encoder block
-            x = self.layers[i](
-                x,
-                row_index,
-                col_index,
-                to_col_index,
-                att_bias[i],
-                pos_att_bias[i],
-                dist,
-                pos,
-                col_pos,
-            )
-            
+            # attention block
+            x = self.layers[i](x, row_index, col_index, att_bias[i])
+            # position featurizer 
+            x = self.pos_feat[i](x, row_index, src_index, pos_att_bias[i], pos, src_pos, org_to_src)
+        
         # get outputs
         energy = self.energy_out(x)
         forces = self.forces_out(x)
@@ -204,7 +179,7 @@ class Transformer(BaseModel):
         # averge over all energies
         energy = scatter(
             energy, batch, dim=0, reduce="sum"
-        )
+        ) / self.avg_atoms
 
         return {"energy": energy, "forces": forces}
     
@@ -227,6 +202,4 @@ class Transformer(BaseModel):
                     global_parameter_name = module_name + "." + parameter_name
                     assert global_parameter_name in named_parameters_list
                     no_wd_list.append(global_parameter_name)
-        no_wd_list.append("forces_out.output.weight")
-        no_wd_list.append("energy_out.output.weight")
         return set(no_wd_list)

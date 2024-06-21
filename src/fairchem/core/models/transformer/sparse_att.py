@@ -9,19 +9,21 @@ from xformers.components.attention import Attention
 from xformers.sparse import SparseCSRTensor
 from xformers.ops import masked_matmul
 
-def _wrap_value(
-        tensor: SparseCSRTensor,
-        new_value: torch.Tensor,
+def _apply_dropout(
+        att: SparseCSRTensor,
+        dropout: nn.Module
     ):
-    new_tensor = SparseCSRTensor._wrap(
-        tensor.shape,
-        new_value,
-        tensor._csr_row_indices,
-        tensor._csr_row_offsets,
-        tensor._csr_column_indices,
-        tensor._csr_transp_info,
+    values = att.values().clone()
+    values = dropout(values)
+    att = SparseCSRTensor._wrap(
+        att.shape,
+        values,
+        att._csr_row_indices,
+        att._csr_row_offsets,
+        att._csr_column_indices,
+        att._csr_transp_info,
     )
-    return new_tensor
+    return att
 
 def _from_coo(m, n, rows, cols, vals):
     rows, cols = rows.int(), cols.int()
@@ -55,7 +57,7 @@ class SparseScaledDotProduct(Attention):
         for head. The remaining should use implicit batching.
         """
 
-        # scale before attend
+        # Attend: (B x nh, S, hs) x (B x nh, hs, S) -> (B x nh, S, S)
         q = q / math.sqrt(k.size(-1))
         
         # this only takes care of QK^T, bias must be added manually.
@@ -65,10 +67,11 @@ class SparseScaledDotProduct(Attention):
         # Softmax to get the attention probabilities
         att = F.softmax(logits, dim=-1)
 
-        # Optional dropout, could be part of the masking in the future
-        att = self.att_drop(att)
+        #  Optional dropout, could be part of the masking in the future
+        att = _apply_dropout(att, self.att_drop)
 
         # Get to the predicted values, for all heads
+        # y = att @ v  # (N, S, S) x (N, S, hs) -> (N, S, hs)
         y = torch.bmm(att, v)
 
         return y, logits
@@ -84,11 +87,11 @@ class Projection(nn.Module):
         self.d_k = embed_dim // num_heads
         self.linear = nn.Linear(embed_dim, num_heads * self.d_k)
         self.num_heads = num_heads
-        self.reset_parameters()
+        self._reset_parameters()
 
-    def reset_parameters(self):
+    def _reset_parameters(self):
         nn.init.xavier_uniform_(self.linear.weight)
-        nn.init.zeros_(self.linear.bias)
+        nn.init.constant_(self.linear.bias, 0.)
 
     def forward(
         self,
@@ -131,18 +134,12 @@ class SparseSelfAttention(nn.Module):
         )
 
         self.attention = SparseScaledDotProduct(dropout=dropout)
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        nn.init.xavier_uniform_(self.output.weight)
-        nn.init.zeros_(self.output.bias)
 
     def forward(
         self,
         x: torch.Tensor,
         row_index: torch.Tensor, 
         col_index: torch.Tensor,
-        to_col_index: torch.Tensor,
         att_bias: Optional[torch.Tensor] = None,
         need_weights: Optional[bool] = False
     ):
@@ -151,15 +148,11 @@ class SparseSelfAttention(nn.Module):
         """
         # project to qkv
         query = self.query_proj(x)
-        if to_col_index is not None:
-            key = self.key_proj(x)[:, to_col_index]
-            value = self.value_proj(x)[:, to_col_index]
-        else:
-            key = self.key_proj(x)
-            value = self.value_proj(x)
+        key = self.key_proj(x)
+        value = self.value_proj(x)
 
         # construct CSR format mask
-        mask = _from_coo(query.size(1), key.size(1), row_index, col_index, att_bias)
+        mask = _from_coo(x.size(0), x.size(0), row_index, col_index, att_bias)
 
         # compute scaled dot product attention
         self_att, logits = self.attention(query, key, value, mask)
