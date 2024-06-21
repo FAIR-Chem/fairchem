@@ -92,7 +92,7 @@ class LBFGS:
             self.write()
 
         iteration = 0
-        max_forces = self.optimizable.get_max_forces()
+        max_forces = self.optimizable.get_max_forces(apply_constraint=True)
         while iteration < steps and not self.optimizable.converged(
             forces=None, fmax=self.fmax, max_forces=max_forces
         ):
@@ -104,8 +104,12 @@ class LBFGS:
                 self.write()
 
             self.step(iteration)
-            max_forces = self.optimizable.get_max_forces()
+            max_forces = self.optimizable.get_max_forces(apply_constraint=True)
             iteration += 1
+
+        logging.info(
+            f"{iteration} " + " ".join(f"{x:0.3f}" for x in max_forces.tolist())
+        )
 
         # save after converged on all iterations ran
         if iteration > 0 and self.trajectories is not None:
@@ -126,7 +130,9 @@ class LBFGS:
         for name, value in self.optimizable.results.items():
             setattr(self.optimizable.batch, name, value)
 
-        return self.optimizable.batch
+        return self.optimizable.converged(
+            forces=None, fmax=self.fmax, max_forces=max_forces
+        )
 
     def determine_step(self, dr):
         steplengths = torch.norm(dr, dim=1)

@@ -97,8 +97,8 @@ def ml_relax(
 
         e: RuntimeError | None = None
         try:
-            relaxed_batch = optimizer.run(fmax=fmax, steps=steps)
-            relaxed_batches.append(relaxed_batch)
+            optimizer.run(fmax=fmax, steps=steps)
+            relaxed_batches.append(batch)
         except RuntimeError as err:
             e = err
             oom = True
