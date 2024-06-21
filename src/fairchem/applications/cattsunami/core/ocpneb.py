@@ -96,11 +96,11 @@ class OCPNEB(DyNEB):
             del config["task"]["relax_dataset"]
 
         self.trainer = registry.get_trainer_class(config.get("trainer", "ocp"))(
-            task=config["task"],
+            task=config.get("task", {}),
             model=config["model"],
             outputs={},
-            loss_fns={},
-            eval_metrics={},
+            loss_functions={},
+            evaluation_metrics={},
             dataset=[config["dataset"]],
             optimizer=config["optim"],
             identifier="",

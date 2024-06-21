@@ -9,7 +9,6 @@ description = "Accelerating Transition State Energy Calculations with Pre-traine
 license = {text = "MIT License"}
 dependencies = [
     "torch>=2.2",
-    "numpy>=1.25.0",
     "scipy",
     "ase",
     "networkx",
