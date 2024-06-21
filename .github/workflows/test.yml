@@ -3,6 +3,9 @@ name: tests
 on:
   push:
   workflow_call:
+  pull_request:
+    branches:
+      - main
 
 jobs:
   test:
