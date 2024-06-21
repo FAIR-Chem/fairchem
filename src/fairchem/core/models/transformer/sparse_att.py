@@ -78,10 +78,15 @@ class Projection(nn.Module):
         self,
         embed_dim: int = 512, 
         num_heads: int = 8,
+        d_k: Optional[int] = None,
     ):
         super().__init__()
 
-        self.d_k = embed_dim // num_heads
+        if d_k is None:
+            self.d_k = embed_dim // num_heads
+        else:
+            self.d_k = d_k
+            
         self.linear = nn.Linear(embed_dim, num_heads * self.d_k)
         self.num_heads = num_heads
         self.reset_parameters()

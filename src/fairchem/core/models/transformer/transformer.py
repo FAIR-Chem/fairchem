@@ -149,13 +149,13 @@ class Transformer(BaseModel):
     def reset_parameters(self):
         nn.init.uniform_(
             self.forces_out.input.weight,
-            -math.sqrt(2 / (self.embed_dim * self.num_layers)),
-            math.sqrt(2 / (self.embed_dim * self.num_layers))
+            -math.sqrt(3 / (self.embed_dim * self.num_layers)),
+            math.sqrt(3 / (self.embed_dim * self.num_layers))
         )
         nn.init.uniform_(
             self.energy_out.input.weight,
-            -math.sqrt(2 / (self.embed_dim * self.num_layers)),
-            math.sqrt(2 / (self.embed_dim * self.num_layers))
+            -math.sqrt(3 / (self.embed_dim * self.num_layers)),
+            math.sqrt(3 / (self.embed_dim * self.num_layers))
         )
         nn.init.uniform_(
             self.energy_out.output.weight,
