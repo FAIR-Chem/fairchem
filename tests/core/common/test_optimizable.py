@@ -111,7 +111,8 @@ def test_batch_relaxation_mask(atoms_list, calculator, mask_converged):
     atoms = atoms_list[0]
     atoms.calc = calculator
     opt = LBFGS(atoms)
-    opt.run(0.01, 20)
+    opt.run(0.01, 50)
+    assert (atoms.get_forces() <= 0.01).all()
 
     # now create a batch
     batch = data_list_collater([calculator.a2g.convert(atoms) for atoms in atoms_list])

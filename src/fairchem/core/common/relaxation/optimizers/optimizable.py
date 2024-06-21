@@ -233,6 +233,10 @@ class OptimizableBatch(Optimizable):
             raise PropertyNotImplementedError(
                 "force_consistent calculations are not implemented"
             )
+        if (
+            len(self.batch) == 1
+        ):  # unfortunately batch size 1 returns a float, not a tensor
+            return self.get_property("energy")
         return self.get_property("energy").sum()
 
     def get_potential_energies(self) -> torch.Tensor | NDArray:
@@ -260,10 +264,12 @@ class OptimizableBatch(Optimizable):
         # XXX document purpose of iterimages - this is just needed to work with ASE optimizers
         yield self.batch
 
-    def get_max_forces(self, forces: torch.Tensor | None = None) -> torch.Tensor:
+    def get_max_forces(
+        self, forces: torch.Tensor | None = None, apply_constraint: bool = False
+    ) -> torch.Tensor:
         """Get the maximum forces per structure in batch"""
         if forces is None:
-            forces = self.get_forces(no_numpy=True)
+            forces = self.get_forces(apply_constraint=apply_constraint, no_numpy=True)
         return scatter((forces**2).sum(axis=1).sqrt(), self.batch_indices, reduce="max")
 
     def converged(
@@ -491,6 +497,11 @@ class OptimizableUnitCellBatch(OptimizableBatch):
         """Get forces and unit cell stress."""
         stress = self.get_property("stress", no_numpy=True).view(-1, 3, 3)
         atom_forces = self.get_property("forces", no_numpy=True)
+
+        if apply_constraint:
+            fixed_idx = torch.where(self.batch.fixed == 1)[0]
+            atom_forces[fixed_idx] = 0.0
+
         volumes = self.get_volumes().view(-1, 1, 1)
 
         virial = -volumes * stress + self.pressure.view(-1, 3, 3)
