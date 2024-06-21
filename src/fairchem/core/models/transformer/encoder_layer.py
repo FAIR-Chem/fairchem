@@ -3,7 +3,8 @@ import torch
 import torch.nn as nn
 
 from .mlp import ResMLP
-from .euclid_att import EuclideanAttention
+from .sparse_att import SparseSelfAttention
+from .pos_feat import PositionFeaturizer
 
 class EncoderLayer(nn.Module):
     """
@@ -31,21 +32,48 @@ class EncoderLayer(nn.Module):
         self.embed_dim = embed_dim
         self.num_heads = num_heads
 
-        self.euclid_att = EuclideanAttention(
+        self.self_att = SparseSelfAttention(
+            embed_dim=embed_dim,
+            num_heads=num_heads,
+            dropout=att_dropout
+        )
+
+        self.pos_feat = PositionFeaturizer(
             embed_dim=embed_dim,
             att_dropout=att_dropout,
             num_heads=num_heads
         )
 
-        self.feed_forward = ResMLP(
+        self.feed_forward_att = ResMLP(
             input_dim=embed_dim,
             hidden_dim=hidden_dim,
             output_dim=embed_dim,
             dropout=dropout,
         )
 
+        self.feed_forward_pos = ResMLP(
+            input_dim=embed_dim+4*num_heads,
+            hidden_dim=hidden_dim,
+            output_dim=embed_dim,
+            dropout=dropout,
+        )
+
         self.norm_att = nn.LayerNorm(embed_dim)
-        self.norm_ff = nn.LayerNorm(embed_dim)
+        self.norm_pos = nn.LayerNorm(embed_dim)
+        self.norm_ff_att = nn.LayerNorm(embed_dim)
+        self.norm_ff_pos = nn.LayerNorm(embed_dim)
+
+    def reset_parameters(self):
+        nn.init.uniform_(
+            self.feed_forward_pos.input.weight[:, :self.embed_dim],
+            - math.sqrt(3 / self.embed_dim),
+            math.sqrt(3 / self.embed_dim)
+        )
+        nn.init.uniform_(
+            self.feed_forward_pos.input.weight[:, self.embed_dim:],
+            - math.sqrt(3 / self.num_heads),
+            math.sqrt(3 / self.num_heads)
+        )
 
     def forward(
         self,
@@ -74,7 +102,19 @@ class EncoderLayer(nn.Module):
         """
 
         z = self.norm_att(x)
-        att = self.euclid_att(
+        
+        self_att = self.self_att(
+            z, row_index, col_index, to_col_index, att_bias, False
+        )
+
+        x = x + self_att
+
+        z = self.norm_ff_att(x)
+        ff = self.feed_forward_att(z)
+        x = x + ff
+
+        z = self.norm_pos(x)
+        pos_feat = self.pos_feat(
             z,
             row_index,
             col_index,
@@ -84,11 +124,10 @@ class EncoderLayer(nn.Module):
             pos,
             col_pos,
         )
-        x = x + att
 
         # concatenate here since residual is not well defined for new inputs
-        z = self.norm_ff(x)
-        ff = self.feed_forward(z)
+        z = self.norm_ff_pos(x)
+        ff = self.feed_forward_pos(torch.cat([z, pos_feat], dim=-1))
         x = x + ff
         
         return x
