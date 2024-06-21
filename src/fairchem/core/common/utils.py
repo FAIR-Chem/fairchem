@@ -1194,7 +1194,8 @@ def update_config(base_config):
     # so some checkpoints may have configs in new format with the exception of renamed loss_funs and eval_metrics
     if "loss_fns" in config:
         config["loss_functions"] = config.pop("loss_fns")
-        config["evaluation_metrics"] = config.pop("eval_metrics")
+        if "eval_metrics" in config:
+            config["evaluation_metrics"] = config.pop("eval_metrics")
         return config
 
     # If config["dataset"]["format"] is missing, get it from the task (legacy location).
