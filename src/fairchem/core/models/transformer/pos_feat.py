@@ -39,7 +39,6 @@ class PositionFeaturizer(nn.Module):
 
         self.norm_att = nn.LayerNorm(embed_dim)
         self.norm_mlp = nn.LayerNorm(embed_dim)
-        self.norm_feat = nn.BatchNorm1d(4*num_heads)
 
         self.num_heads = num_heads
 
@@ -85,8 +84,7 @@ class PositionFeaturizer(nn.Module):
         logits = _from_coo(query.size(1), value.size(1), src_index[0], src_index[1], logits)
 
         # softmax to get the attention probabilities
-        # att = F.softmax(logits, dim=-1)
-        att = _wrap_value(logits, F.sigmoid(logits.values()))
+        att = F.softmax(logits, dim=-1)
 
         # optional dropout
         att = self.att_drop(att)
@@ -105,7 +103,6 @@ class PositionFeaturizer(nn.Module):
 
         # normalize for mlp
         z_mlp = self.norm_mlp(x)
-        feat = self.norm_feat(feat)
 
         # output with residual connection
         x = x + self.mlp(torch.cat([z_mlp, feat], dim=-1))

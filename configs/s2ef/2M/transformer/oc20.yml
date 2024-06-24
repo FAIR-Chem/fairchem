@@ -11,8 +11,8 @@ model:
   ]
   embed_dim: 768
   hidden_dim: 768
-  dropout: 0.
-  att_dropout: 0.
+  dropout: 0.1
+  att_dropout: 0.1
   num_layers: 12
   num_heads: 16
   otf_graph: True
