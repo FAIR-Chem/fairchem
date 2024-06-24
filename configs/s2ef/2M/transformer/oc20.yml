@@ -9,25 +9,25 @@ model:
     46, 47, 48, 49, 50, 51, 52, 55, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
     82, 83
   ]
-  embed_dim: 512
-  hidden_dim: 512
+  embed_dim: 768
+  hidden_dim: 768
   dropout: 0.
   att_dropout: 0.
   num_layers: 12
   num_heads: 16
   otf_graph: True
-  rbf_radius: 8.0
+  rbf_radius: 8
   use_pbc: True
-  num_gaussians: 128
+  num_gaussians: 256
   output_layers: 4
   avg_atoms: 80
 
 optim:
-  batch_size: 128
-  eval_batch_size: 128
+  batch_size: 64
+  eval_batch_size: 64
   load_balancing: atoms
   num_workers: 32
-  lr_initial: 1.4e-4
+  lr_initial: 8.e-5
 
   optimizer: AdamW
   optimizer_params:

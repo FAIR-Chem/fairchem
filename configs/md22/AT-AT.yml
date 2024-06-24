@@ -58,7 +58,7 @@ model:
   hidden_dim: 256
   dropout: 0.
   att_dropout: 0.
-  num_layers: 24
+  num_layers: 12
   num_heads: 16
   otf_graph: True
   rbf_radius: 8.0

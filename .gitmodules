@@ -4,3 +4,6 @@
 [submodule "EGAP"]
 	path = EGAP
 	url = git@github.com:EricZQu/EGAP.git
+[submodule "efficient-kan"]
+	path = efficient-kan
+	url = git@github.com:Blealtan/efficient-kan.git

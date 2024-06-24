@@ -20,7 +20,7 @@ dataset:
 
 logger: 
   name: wandb
-  project: OC20-2M-scale
+  project: OC20-2M
 
 outputs:
   energy:

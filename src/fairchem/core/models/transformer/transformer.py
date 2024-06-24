@@ -11,7 +11,7 @@ import torch.nn as nn
 from fairchem.core.common.registry import registry
 from fairchem.core.models.base import BaseModel
 
-from torch_scatter import scatter
+from torch_scatter import scatter, scatter_logsumexp
 
 from .encoder_layer import EncoderLayer
 from .pos_feat import PositionFeaturizer
@@ -85,6 +85,10 @@ class Transformer(BaseModel):
         self.rbf_radius = rbf_radius
         self.use_pbc = use_pbc
         self.num_layers = num_layers
+        self.avg_atoms = avg_atoms
+        self.embed_dim = embed_dim
+        self.hidden_dim = hidden_dim
+        self.output_layers = output_layers
 
         if isinstance(elements, int):
             self.register_buffer("atomic_number_mask", torch.arange(elements + 1))
@@ -145,8 +149,25 @@ class Transformer(BaseModel):
             num_layers=output_layers,
             dropout=dropout,
         )
-        
-        self.avg_atoms = avg_atoms
+    
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.uniform_(
+            self.forces_out.input.weight,
+            -math.sqrt(2 / (self.embed_dim * self.num_layers)),
+            math.sqrt(2 / (self.embed_dim * self.num_layers))
+        )
+        nn.init.uniform_(
+            self.energy_out.input.weight,
+            -math.sqrt(2 / (self.embed_dim * self.num_layers)),
+            math.sqrt(2 / (self.embed_dim * self.num_layers))
+        )
+        nn.init.uniform_(
+            self.energy_out.output.weight,
+            -math.sqrt(1 / (self.hidden_dim * self.avg_atoms * (self.output_layers + 1))),
+            math.sqrt(1 / (self.hidden_dim * self.avg_atoms * (self.output_layers + 1)))
+        )
 
     def forward(self, data):
 
@@ -156,21 +177,24 @@ class Transformer(BaseModel):
         atomic_numbers = self.atomic_number_mask[data.atomic_numbers.long()]
 
         # build graph on-the-fly
-        row_index, col_index, src_index, dist, src_pos, org_to_src = build_radius_graph(data, self.rbf_radius, self.use_pbc)
+        edge_index, src_index, edge_to_src, dist, src_pos = build_radius_graph(data, self.rbf_radius, self.use_pbc)
         
         # initialize inputs
         x = self.atomic_number_encoder(atomic_numbers)
 
         # get pair embeddings
-        att_bias = self.pair_embed(atomic_numbers, row_index, col_index, dist)
+        att_bias = self.pair_embed(atomic_numbers, edge_index, edge_to_src, dist)
         att_bias, pos_att_bias = att_bias[:self.num_layers], att_bias[self.num_layers:]
+
+        if edge_to_src is not None:
+            att_bias = scatter_logsumexp(att_bias, edge_to_src, dim=2, dim_size=edge_index.size(1))
 
         # forward passing
         for i in range(self.num_layers):
             # attention block
-            x = self.layers[i](x, row_index, col_index, att_bias[i])
+            x = self.layers[i](x, edge_index, att_bias[i])
             # position featurizer 
-            x = self.pos_feat[i](x, row_index, src_index, pos_att_bias[i], pos, src_pos, org_to_src)
+            x = self.pos_feat[i](x, edge_index, src_index, edge_to_src, pos_att_bias[i], dist, pos, src_pos)
         
         # get outputs
         energy = self.energy_out(x)
@@ -179,7 +203,7 @@ class Transformer(BaseModel):
         # averge over all energies
         energy = scatter(
             energy, batch, dim=0, reduce="sum"
-        ) / self.avg_atoms
+        )
 
         return {"energy": energy, "forces": forces}
     

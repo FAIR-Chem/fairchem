@@ -1,6 +1,7 @@
 import torch
 
 from torch_cluster import radius_graph
+from torch_scatter import scatter_min
 
 def radius_graph_pbc(
     data,
@@ -48,9 +49,33 @@ def radius_graph_pbc(
     pos1 = torch.index_select(atom_pos, 0, index1)
     pos2 = torch.index_select(atom_pos, 0, index2)
 
+    cross_a2a3 = torch.cross(data.cell[:, 1], data.cell[:, 2], dim=-1)
+    cell_vol = torch.sum(data.cell[:, 0] * cross_a2a3, dim=-1, keepdim=True)
+
+    inv_min_dist_a1 = torch.norm(cross_a2a3 / cell_vol, p=2, dim=-1)
+    rep_a1 = torch.ceil(radius * inv_min_dist_a1)
+
+    cross_a3a1 = torch.cross(data.cell[:, 2], data.cell[:, 0], dim=-1)
+    inv_min_dist_a2 = torch.norm(cross_a3a1 / cell_vol, p=2, dim=-1)
+    rep_a2 = torch.ceil(radius * inv_min_dist_a2)
+
+    cross_a1a2 = torch.cross(data.cell[:, 0], data.cell[:, 1], dim=-1)
+    inv_min_dist_a3 = torch.norm(cross_a1a2 / cell_vol, p=2, dim=-1)
+    rep_a3 = torch.ceil(radius * inv_min_dist_a3)
+
+    # Take the max over all images for uniformity. This is essentially padding.
+    # Note that this can significantly increase the number of computed distances
+    # if the required repetitions are very different between images
+    # (which they usually are). Changing this to sparse (scatter) operations
+    # might be worth the effort if this function becomes a bottleneck.
+    max_rep = [rep_a1.max(), rep_a2.max(), rep_a3.max()]
+
     # Tensor of unit cells
     cells_per_dim = [
-        torch.arange(-1, 2, device=device, dtype=torch.float) for _ in range(3)
+        torch.cat([
+            torch.arange(0, rep + 1, device=device, dtype=torch.float),
+            torch.arange(-rep, 0, device=device, dtype=torch.float)
+        ]) for rep in max_rep
     ]
     unit_cell = torch.cartesian_prod(*cells_per_dim)
     num_cells = len(unit_cell)
@@ -62,56 +87,87 @@ def radius_graph_pbc(
     pbc_offsets = torch.bmm(data_cell, unit_cell_batch)
     pbc_offsets_per_atom = torch.repeat_interleave(
         pbc_offsets, num_atoms_per_image_sqr, dim=0
-    )
+    ).permute(2, 0, 1)
 
     # Expand the positions and indices for the 27 cells
-    pos1 = pos1.view(-1, 3, 1).expand(-1, -1, num_cells)
-    pos2 = pos2.view(-1, 3, 1).expand(-1, -1, num_cells)
-    index1 = index1.view(-1, 1).repeat(1, num_cells)
-    index2 = index2.view(-1, 1).repeat(1, num_cells)
-    src_index = index2 + data.natoms.sum() * torch.arange(num_cells, device=device)[None]
+    pos1 = pos1.expand(num_cells, -1, -1)
+    pos2 = pos2.expand(num_cells, -1, -1)
+    index1 = index1.expand(num_cells, -1)
+    index2 = index2.expand(num_cells, -1)
+    index3 = index2 + data.natoms.sum() * torch.arange(num_cells, device=device)[:, None]
     # Add the PBC offsets for the second atom
     pos2 = pos2 + pbc_offsets_per_atom
 
     # Compute the squared distance between atoms
-    dist = torch.linalg.norm(pos1 - pos2, dim=1)
-
-    # select the one with minimum distance
-    argmin = torch.argmin(dist, dim=1, keepdim=True)
-    dist = dist.gather(1, argmin).squeeze(1)
-    index1 = index1.gather(1, argmin).squeeze(1)
-    index2 = index2.gather(1, argmin).squeeze(1)
-    src_index = src_index.gather(1, argmin).squeeze(1)
-    pos2 = pos2.gather(2, argmin[..., None].expand(-1, 3, -1)).squeeze(2)
+    dist = torch.linalg.norm(pos1 - pos2, dim=-1)
 
     # Remove pairs that are too far apart
     mask_within_radius = torch.le(dist, radius)
 
     index1 = torch.masked_select(index1, mask_within_radius)
     index2 = torch.masked_select(index2, mask_within_radius)
-    src_index = torch.masked_select(src_index, mask_within_radius)
-    src_pos = torch.masked_select(pos2, mask_within_radius[:, None]).view(-1, 3)
+    index3 = torch.masked_select(index3, mask_within_radius)
+    src_pos = torch.masked_select(pos2, mask_within_radius[..., None]).view(-1, 3)
     dist = torch.masked_select(dist, mask_within_radius)
 
+    # sort according to row index
+    indx = torch.argsort(index1, stable=True)
+    index1, index2, index3, src_pos, dist = (
+        index1[indx], index2[indx], index3[indx], src_pos[indx], dist[indx]
+    )
+
     # sort the indices
-    unique_src_index, src_index = torch.unique(src_index, sorted=True, return_inverse=True)
-    indx = torch.arange(src_index.size(0), dtype=src_index.dtype, device=src_index.device)
-    src_index_fliped, indx = src_index.flip(0), indx.flip(0)
-    indx = src_index_fliped.new_empty(unique_src_index.size(0)).scatter_(0, src_index_fliped, indx)
+    unique_index3, index3 = torch.unique(index3, sorted=True, return_inverse=True)
+    indx = torch.arange(index3.size(0), dtype=index3.dtype, device=index3.device)
+    index3_fliped, indx = index3.flip(0), indx.flip(0)
+    indx = index3_fliped.new_empty(unique_index3.size(0)).scatter_(0, index3_fliped, indx)
     
     # get position and indicies
     src_pos = src_pos[indx]
-    org_to_src = index2[indx]
 
-    return index1, index2, src_index, dist, src_pos, org_to_src
+    # construct edges
+    edge_index = torch.stack([index1, index2])
+    src_index = torch.stack([index1, index3])
+
+    # count number of unique elements in edge index
+    unique_edges, inverse, multiplicity = torch.unique(
+        edge_index, dim=1, sorted=True, return_inverse=True, return_counts=True
+    )
+    multiplicity = multiplicity[inverse]
+    num_edges_to_remove = unique_edges.size(1) % 4
+    num_dup_edges_to_remove = (src_index.size(1) - num_edges_to_remove) % 4
+
+
+    # make it multiple of 4 by removing large radius ones
+    mask = torch.ones(dist.size(0), device=device, dtype=torch.bool)
+    if num_edges_to_remove > 0:
+        _, indicies = torch.topk(dist[multiplicity==1], num_edges_to_remove, largest=True)
+        mask[torch.arange(dist.size(0), device=device)[multiplicity==1][indicies]] = False
+        
+    # to avoid cutting the last edge
+    _, argmin = scatter_min(dist, inverse, dim=0)
+    multiplicity[argmin] = 1 
+
+    if num_dup_edges_to_remove > 0:
+        _, indicies = torch.topk(dist[multiplicity>1], num_dup_edges_to_remove, largest=True)
+        mask[torch.arange(dist.size(0), device=device)[multiplicity>1][indicies]] = False
+    edge_index, src_index, dist = edge_index[:, mask], src_index[:, mask], dist[mask]
+
+    # filter edges
+    edge_index, edge_to_src = torch.unique(edge_index, dim=1, sorted=True, return_inverse=True)
+    assert edge_index.size(1) % 4 == 0, f"the edge index must be multiple of 4, found {edge_index.size(1)}"
+    assert src_index.size(1) % 4 == 0, f"the src index must be multiple of 4, found {src_index.size(1)}"
+
+    return edge_index, src_index, edge_to_src, dist, src_pos
 
 def build_radius_graph(
     data,
     radius,
     use_pbc=False,
 ):
+    device=data.pos.device
     if use_pbc:
-        row_index, col_index, src_index, dist, src_pos, org_to_src = radius_graph_pbc(data, radius)
+        edge_index, src_index, edge_to_src, dist, src_pos = radius_graph_pbc(data, radius)
     else:
         edge_index = radius_graph(
             data.pos, 
@@ -121,24 +177,15 @@ def build_radius_graph(
             max_num_neighbors=data.natoms.max(),
         )
         dist = torch.linalg.norm(data.pos[edge_index[0]] - data.pos[edge_index[1]], dim=-1)
-        (
-            row_index,
-            col_index,
-            src_index,
-            dist,
-            src_pos,
-            org_to_src
-        ) = edge_index[0], edge_index[1], edge_index[1], dist, data.pos, torch.arange(data.pos.size(0), device=dist.device)
 
-    if dist.size(0) % 4 != 0:
-        _, indicies = torch.topk(dist, dist.size(0) % 4, largest=True)
-        mask = torch.ones(dist.size(0), device=dist.device, dtype=torch.bool)
-        mask.index_fill_(0, indicies, False)
-        (
-            row_index, 
-            col_index, 
-            src_index, 
-            dist
-        ) = row_index.masked_select(mask), col_index.masked_select(mask), src_index.masked_select(mask), dist.masked_select(mask)
+        if dist.size(0) % 4 != 0:
+            _, indicies = torch.topk(dist, dist.size(0) % 4, largest=True)
+            mask = torch.ones(dist.size(0), device=device, dtype=torch.bool)
+            mask.index_fill_(0, indicies, False)
+            edge_index, dist = edge_index[:, mask], dist[mask]
 
-    return row_index, col_index, src_index, dist, src_pos, org_to_src
+        src_pos = data.pos
+        edge_to_src = None
+        src_index = edge_index
+        
+    return edge_index, src_index, edge_to_src, dist, src_pos

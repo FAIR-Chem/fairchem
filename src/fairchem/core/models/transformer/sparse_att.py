@@ -9,21 +9,19 @@ from xformers.components.attention import Attention
 from xformers.sparse import SparseCSRTensor
 from xformers.ops import masked_matmul
 
-def _apply_dropout(
-        att: SparseCSRTensor,
-        dropout: nn.Module
+def _wrap_value(
+        tensor: SparseCSRTensor,
+        new_value: torch.Tensor,
     ):
-    values = att.values().clone()
-    values = dropout(values)
-    att = SparseCSRTensor._wrap(
-        att.shape,
-        values,
-        att._csr_row_indices,
-        att._csr_row_offsets,
-        att._csr_column_indices,
-        att._csr_transp_info,
+    new_tensor = SparseCSRTensor._wrap(
+        tensor.shape,
+        new_value,
+        tensor._csr_row_indices,
+        tensor._csr_row_offsets,
+        tensor._csr_column_indices,
+        tensor._csr_transp_info,
     )
-    return att
+    return new_tensor
 
 def _from_coo(m, n, rows, cols, vals):
     rows, cols = rows.int(), cols.int()
@@ -68,7 +66,7 @@ class SparseScaledDotProduct(Attention):
         att = F.softmax(logits, dim=-1)
 
         #  Optional dropout, could be part of the masking in the future
-        att = _apply_dropout(att, self.att_drop)
+        att = self.att_drop(att)
 
         # Get to the predicted values, for all heads
         # y = att @ v  # (N, S, S) x (N, S, hs) -> (N, S, hs)
@@ -134,6 +132,12 @@ class SparseSelfAttention(nn.Module):
         )
 
         self.attention = SparseScaledDotProduct(dropout=dropout)
+        
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.xavier_uniform_(self.output.weight)
+        nn.init.zeros_(self.output.bias)
 
     def forward(
         self,
@@ -152,7 +156,7 @@ class SparseSelfAttention(nn.Module):
         value = self.value_proj(x)
 
         # construct CSR format mask
-        mask = _from_coo(x.size(0), x.size(0), row_index, col_index, att_bias)
+        mask = _from_coo(query.size(1), key.size(1), row_index, col_index, att_bias)
 
         # compute scaled dot product attention
         self_att, logits = self.attention(query, key, value, mask)
