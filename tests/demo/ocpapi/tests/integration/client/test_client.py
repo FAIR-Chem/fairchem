@@ -350,7 +350,6 @@ class TestClient(IsolatedAsyncioTestCase):
             self.assertNotEqual(response.system_id, "")
             self.assertEqual(len(response.config_ids), 1)
 
-    @pytest.mark.ocpapi_integration_test
     async def test_get_adsorbate_slab_relaxations_request(self) -> None:
         # Make sure the original request can be fetched for an already-
         # submitted system.
@@ -363,7 +362,6 @@ class TestClient(IsolatedAsyncioTestCase):
         # of the expected fields was returned
         self.assertEqual(response.adsorbate, "*CO")
 
-    @pytest.mark.ocpapi_integration_test
     async def test_get_adsorbate_slab_relaxations_results__all_fields_and_configs(
         self,
     ) -> None:
@@ -390,7 +388,6 @@ class TestClient(IsolatedAsyncioTestCase):
         config_ids = {c.config_id for c in response.configs}
         self.assertEqual(config_ids, set(range(59)))
 
-    @pytest.mark.ocpapi_integration_test
     async def test_get_adsorbate_slab_relaxations_results__limited_fields_and_configs(
         self,
     ) -> None:
