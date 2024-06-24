@@ -197,13 +197,7 @@ class OCPCalculator(Calculator):
         config["model"]["otf_graph"] = True
 
         ### backwards compatability with OCP v<2.0
-        ### TODO: better format check for older configs
-        ### Taken from base_trainer
-        if not config.get("loss_functions"):
-            logging.warning(
-                "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
-            )
-            config = update_config(config)
+        config = update_config(config)
 
         self.config = copy.deepcopy(config)
         self.config["checkpoint"] = checkpoint_path
