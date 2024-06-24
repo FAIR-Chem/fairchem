@@ -67,6 +67,7 @@ class Transformer(BaseModel):
             elements: Union[int, List[int]] = 100,
             embed_dim: int = 128,
             hidden_dim: int = 128,
+            pair_embed_dim: int = 128,
             dropout: float = 0.,
             att_dropout: float = 0.,
             num_layers: int = 12,
@@ -106,8 +107,8 @@ class Transformer(BaseModel):
         
         self.pair_embed = PairEmbed(
             num_elements=len(elements),
-            embed_dim=embed_dim,
-            hidden_dim=hidden_dim,
+            embed_dim=pair_embed_dim,
+            hidden_dim=pair_embed_dim,
             num_heads=num_heads,
             num_masks=2*num_layers,
             num_gaussians=num_gaussians,

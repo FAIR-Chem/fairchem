@@ -56,6 +56,7 @@ model:
   elements: [1, 6, 8]
   embed_dim: 256
   hidden_dim: 256
+  pair_embed_dim: 128
   dropout: 0.
   att_dropout: 0.
   num_layers: 12

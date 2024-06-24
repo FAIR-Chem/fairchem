@@ -10,7 +10,7 @@ class PairEmbed(nn.Module):
         self,
         num_elements: int = 100,
         embed_dim: int = 256,
-        hidden_dim: int = 512,
+        hidden_dim: int = 256,
         num_heads: int = 8,
         num_masks: int = 1,
         num_gaussians: int = 50,

@@ -11,6 +11,8 @@ model:
   ]
   embed_dim: 768
   hidden_dim: 768
+  pair_embed_dim: 128
+  pair_embed_dim: 256
   dropout: 0.1
   att_dropout: 0.1
   num_layers: 12
