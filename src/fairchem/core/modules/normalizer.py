@@ -100,10 +100,10 @@ def create_normalizer(
     if state_dict is not None:
         return Normalizer().load_state_dict(state_dict)
 
-    # if not then read targent value tensor
+    # if not then read target value tensor
     if tensor is not None and mean is None and std is None:
-        mean = torch.mean(tensor, dim=0)
-        std = torch.std(tensor, dim=0)
+        mean = torch.mean(tensor)
+        std = torch.std(tensor)
     elif mean is not None and std is not None:
         mean = torch.tensor(mean)
         std = torch.tensor(std)
