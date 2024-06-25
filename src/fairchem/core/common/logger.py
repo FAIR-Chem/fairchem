@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
+from typing import Any
 
 import torch
 import wandb
@@ -51,6 +52,10 @@ class Logger(ABC):
     def mark_preempting(self) -> None:
         pass
 
+    @abstractmethod
+    def log_summary(self, name: str, value: Any) -> None:
+        pass
+
 
 @registry.register_logger("wandb")
 class WandBLogger(Logger):
@@ -88,6 +93,10 @@ class WandBLogger(Logger):
         assert isinstance(plots, list)
         plots = [wandb.Image(x, caption=caption) for x in plots]
         wandb.log({"data": plots})
+
+    def log_summary(self, summary_dict: dict[str, Any]):
+        for k, v in summary_dict.items():
+            wandb.run.summary[k] = v
 
     def mark_preempting(self) -> None:
         wandb.mark_preempting()
