@@ -53,7 +53,7 @@ class Logger(ABC):
         pass
 
     @abstractmethod
-    def log_summary(self, name: str, value: Any) -> None:
+    def log_summary(self, summary_dict: dict[str, Any]) -> None:
         pass
 
 
