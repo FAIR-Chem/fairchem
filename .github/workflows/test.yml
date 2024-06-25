@@ -2,10 +2,9 @@ name: tests
 
 on:
   workflow_call:
-  push:
-    branches-ignore: [main]  # we ignore main so that tests don't run twice on PR
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   test:
