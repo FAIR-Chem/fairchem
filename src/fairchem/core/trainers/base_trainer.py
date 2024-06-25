@@ -369,64 +369,70 @@ class BaseTrainer(ABC):
             self.config["dataset"].get("transforms", {}).get("element_references", {})
         )
         self.elementrefs = {}
-        if elementrefs is not None:
-            for target in elementrefs:
-                if target == "otf_fit":
+        for target in elementrefs:
+            if target == "otf_fit" and not elementrefs["otf_fit"].get("fitted", False):
+                otf_elementrefs = [
+                    {target: None for target in elementrefs["otf_fit"]["targets"]}
+                ]
+                # only carry out the fit on master and then broadcast
+                if distutils.is_master():
                     otf_elementrefs = [
-                        {target: None for target in elementrefs["otf_fit"]["targets"]}
+                        fit_linear_references(
+                            targets=elementrefs["otf_fit"]["targets"],
+                            dataset=self.train_dataset,
+                            batch_size=self.config["optim"]["batch_size"],
+                            num_batches=elementrefs["otf_fit"].get("num_batches"),
+                            num_workers=self.config["optim"]["num_workers"],
+                            max_num_elements=elementrefs["otf_fit"].get(
+                                "max_num_elements", 118
+                            ),
+                        )
                     ]
-                    # only carry out the fit on master and then broadcast
-                    if distutils.is_master():
-                        otf_elementrefs = [
-                            fit_linear_references(
-                                targets=elementrefs["otf_fit"]["targets"],
-                                dataset=self.train_dataset,
-                                batch_size=self.config["optim"]["batch_size"],
-                                num_batches=elementrefs["otf_fit"].get("num_batches"),
-                                num_workers=self.config["optim"]["num_workers"],
-                                max_num_elements=elementrefs["otf_fit"].get(
-                                    "max_num_elements", 118
-                                ),
-                            )
-                        ]
-                    distutils.broadcast_object_list(otf_elementrefs, src=0)
-                    # make sure all of the element reference modules are on the same device
-                    self.elementrefs.update(otf_elementrefs[0])
-                else:  # load pre-fitted linear references from file
-                    self.elementrefs[target] = create_element_references(
-                        type=elementrefs[target].get("type", "linear"),
-                        file=elementrefs[target].get("file"),
-                    )
+                distutils.broadcast_object_list(otf_elementrefs, src=0)
+                # make sure all of the element reference modules are on the same device
+                self.elementrefs.update(otf_elementrefs[0])
+                # set config so that references are not refit
+                self.config["dataset"]["transforms"]["element_references"]["otf_fit"][
+                    "fitted"
+                ] = True
+            else:  # load pre-fitted linear references from file
+                self.elementrefs[target] = create_element_references(
+                    type=elementrefs[target].get("type", "linear"),
+                    file=elementrefs[target].get("file"),
+                )
 
         # load or fit normalizers for the dataset.
         normalizers = self.config["dataset"].get("transforms", {}).get("normalizer", {})
         self.normalizers = {}
-        if normalizers is not None:
-            for target in normalizers:
-                if target == "otf_fit":
+        for target in normalizers:
+            if target == "otf_fit" and not normalizers["otf_fit"].get("fitted", False):
+                otf_normalizers = [
+                    {target: None for target in normalizers["otf_fit"]["targets"]}
+                ]
+                # only carry out the fit on master and then broadcast
+                if distutils.is_master():
                     otf_normalizers = [
-                        {target: None for target in normalizers["otf_fit"]["targets"]}
+                        fit_normalizers(
+                            targets=normalizers["otf_fit"]["targets"],
+                            element_references=self.elementrefs,
+                            dataset=self.train_dataset,
+                            batch_size=self.config["optim"]["batch_size"],
+                            num_batches=normalizers["otf_fit"].get("num_batches"),
+                            num_workers=self.config["optim"]["num_workers"],
+                        )
                     ]
-                    # only carry out the fit on master and then broadcast
-                    if distutils.is_master():
-                        otf_normalizers = [
-                            fit_normalizers(
-                                targets=normalizers["otf_fit"]["targets"],
-                                element_references=self.elementrefs,
-                                dataset=self.train_dataset,
-                                batch_size=self.config["optim"]["batch_size"],
-                                num_batches=normalizers["otf_fit"].get("num_batches"),
-                                num_workers=self.config["optim"]["num_workers"],
-                            )
-                        ]
-                    distutils.broadcast_object_list(otf_normalizers, src=0)
-                    self.normalizers.update(otf_normalizers[0])
-                else:
-                    self.normalizers[target] = create_normalizer(
-                        file=normalizers[target].get("file"),
-                        mean=normalizers[target].get("mean"),
-                        std=normalizers[target].get("stdev"),
-                    )
+                distutils.broadcast_object_list(otf_normalizers, src=0)
+                self.normalizers.update(otf_normalizers[0])
+                # set config so that normalizers are not refit
+                self.config["dataset"]["transforms"]["normalizer"]["otf_fit"][
+                    "fitted"
+                ] = True
+            else:
+                self.normalizers[target] = create_normalizer(
+                    file=normalizers[target].get("file"),
+                    mean=normalizers[target].get("mean"),
+                    std=normalizers[target].get("stdev"),
+                )
 
         # make sure element refs and normalizers are on this device
         self.elementrefs.update(
