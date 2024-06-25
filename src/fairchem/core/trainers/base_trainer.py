@@ -386,6 +386,7 @@ class BaseTrainer(ABC):
                             max_num_elements=elementrefs["otf_fit"].get(
                                 "max_num_elements", 118
                             ),
+                            driver=elementrefs["otf_fit"].get("driver", None),
                         )
                     ]
                 distutils.broadcast_object_list(otf_elementrefs, src=0)

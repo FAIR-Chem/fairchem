@@ -129,6 +129,7 @@ def fit_linear_references(
     num_batches: int | None = None,
     num_workers: int = 1,
     max_num_elements: int = 118,
+    driver: str | None = None,
 ) -> dict[str, LinearReference]:
     """Fit a set linear references for a list of targets using a given number of batches.
 
@@ -139,6 +140,7 @@ def fit_linear_references(
         num_batches: number of batches to use in fit. If not given will use all batches
         num_workers: number of workers to use in data loader
         max_num_elements: max number of elements in dataset. If not given will use an ambitious value of 118
+        driver: backend used to solve linear system. See torch.linalg.lstsq docs.
 
     Returns:
         dict of fitted LinearReference objects
@@ -153,6 +155,9 @@ def fit_linear_references(
     )
 
     num_batches = num_batches if num_batches is not None else len(data_loader)
+
+    # solving linear system happens on CPU, which allows handling poorly conditioned and
+    # rank deficient matrices, unlike torch lstsq on GPU
     composition_matrix = torch.zeros(
         num_batches * batch_size,
         max_num_elements,  # dtype=torch.int
@@ -162,7 +167,7 @@ def fit_linear_references(
     target_vectors = {
         target: torch.zeros(num_batches * batch_size) for target in targets
     }
-
+    logging.info(f"Using driver {driver}")
     logging.info(f"Fitting linear references using {num_batches} batches.")
     for i, batch in tqdm(
         enumerate(data_loader), total=num_batches, desc="Fitting linear references"
@@ -189,7 +194,9 @@ def fit_linear_references(
     elementrefs = {}
     for target in targets:
         coeffs = torch.zeros(max_num_elements)
-        lstsq = torch.linalg.lstsq(reduced_composition_matrix, target_vectors[target])
+        lstsq = torch.linalg.lstsq(
+            reduced_composition_matrix, target_vectors[target], driver=driver
+        )
         coeffs[mask] = lstsq.solution
         elementrefs[target] = LinearReference(coeffs)
 
