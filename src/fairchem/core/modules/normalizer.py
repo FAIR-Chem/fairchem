@@ -148,12 +148,19 @@ def fit_normalizers(
         pin_memory=True,
     )
 
-    element_references = element_references or {}
     num_batches = num_batches if num_batches is not None else len(data_loader)
+    if num_batches > len(data_loader):
+        logging.warning(
+            f"The give num_batches {num_batches} is larger than total batches of size {batch_size} in dataset. "
+            f"Will ignore num_batches and use the whole dataset"
+        )
+        num_batches = len(data_loader)
+
+    element_references = element_references or {}
     target_vectors = defaultdict(list)
 
     logging.info(
-        f"Estimating mean and std for normalization using {num_batches} batches."
+        f"Estimating mean and std for normalization using {num_batches * batch_size} samples in {num_batches} batches of size {batch_size}."
     )
     for i, batch in tqdm(
         enumerate(data_loader), total=num_batches, desc="Estimating mean and std"

@@ -375,7 +375,9 @@ class BaseTrainer(ABC):
                         fit_linear_references(
                             targets=elementrefs["otf_fit"]["targets"],
                             dataset=self.train_dataset,
-                            batch_size=self.config["optim"]["batch_size"],
+                            batch_size=elementrefs["otf_fit"].get(
+                                "batch_size", self.config["optim"]["batch_size"]
+                            ),
                             num_batches=elementrefs["otf_fit"].get("num_batches"),
                             num_workers=self.config["optim"]["num_workers"],
                             max_num_elements=elementrefs["otf_fit"].get(
@@ -411,7 +413,9 @@ class BaseTrainer(ABC):
                             targets=normalizers["otf_fit"]["targets"],
                             element_references=self.elementrefs,
                             dataset=self.train_dataset,
-                            batch_size=self.config["optim"]["batch_size"],
+                            batch_size=normalizers["otf_fit"].get(
+                                "batch_size", self.config["optim"]["batch_size"]
+                            ),
                             num_batches=normalizers["otf_fit"].get("num_batches"),
                             num_workers=self.config["optim"]["num_workers"],
                         )
