@@ -1,5 +1,5 @@
-:py:mod:`data.oc.databases.update`
-==================================
+data.oc.databases.update
+========================
 
 .. py:module:: data.oc.databases.update
 
@@ -10,12 +10,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -25,16 +21,14 @@ Functions
    data.oc.databases.update.update_dbs
 
 
+Module Contents
+---------------
 
 .. py:function:: pbc_patch(self)
 
-
 .. py:function:: set_pbc_patch(self, pbc)
-
 
 .. py:function:: update_pkls()
 
-
 .. py:function:: update_dbs()
-
 

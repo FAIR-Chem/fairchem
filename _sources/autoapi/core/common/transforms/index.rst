@@ -1,5 +1,5 @@
-:py:mod:`core.common.transforms`
-================================
+core.common.transforms
+======================
 
 .. py:module:: core.common.transforms
 
@@ -12,21 +12,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.common.transforms.RandomRotate
 
 
-
+Module Contents
+---------------
 
 .. py:class:: RandomRotate(degrees, axes: list[int] | None = None)
-
 
    Rotates node positions around a specific axis by a randomly sampled
    factor within a given interval.
@@ -38,6 +35,7 @@ Classes
    :type degrees: tuple or float
    :param axes: The rotation axes. (default: `[0, 1, 2]`)
    :type axes: int, optional
+
 
    .. py:method:: __call__(data)
 

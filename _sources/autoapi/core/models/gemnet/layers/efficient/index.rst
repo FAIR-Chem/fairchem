@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet.layers.efficient`
-=============================================
+core.models.gemnet.layers.efficient
+===================================
 
 .. py:module:: core.models.gemnet.layers.efficient
 
@@ -12,11 +12,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -24,12 +21,13 @@ Classes
    core.models.gemnet.layers.efficient.EfficientInteractionBilinear
 
 
-
+Module Contents
+---------------
 
 .. py:class:: EfficientInteractionDownProjection(num_spherical: int, num_radial: int, emb_size_interm: int)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Down projection in the efficient reformulation.
 
@@ -37,6 +35,7 @@ Classes
    :type emb_size_interm: int
    :param kernel_initializer: Initializer of the weight matrix.
    :type kernel_initializer: callable
+
 
    .. py:method:: reset_parameters() -> None
 
@@ -57,8 +56,8 @@ Classes
 
 .. py:class:: EfficientInteractionBilinear(emb_size: int, emb_size_interm: int, units_out: int)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Efficient reformulation of the bilinear layer and subsequent summation.
 
@@ -66,6 +65,7 @@ Classes
    :type units_out: int
    :param kernel_initializer: Initializer of the weight matrix.
    :type kernel_initializer: callable
+
 
    .. py:method:: reset_parameters() -> None
 

@@ -1,25 +1,25 @@
-:py:mod:`core.common.relaxation`
-================================
+core.common.relaxation
+======================
 
 .. py:module:: core.common.relaxation
 
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   optimizers/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/core/common/relaxation/optimizers/index
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   ase_utils/index.rst
-   ml_relaxation/index.rst
+   /autoapi/core/common/relaxation/ase_utils/index
+   /autoapi/core/common/relaxation/ml_relaxation/index
 
 

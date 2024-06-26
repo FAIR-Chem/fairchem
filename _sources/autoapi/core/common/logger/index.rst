@@ -1,5 +1,5 @@
-:py:mod:`core.common.logger`
-============================
+core.common.logger
+==================
 
 .. py:module:: core.common.logger
 
@@ -12,11 +12,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -25,20 +22,24 @@ Classes
    core.common.logger.TensorboardLogger
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Logger(config)
 
-
    Bases: :py:obj:`abc.ABC`
+
 
    Generic class to interface with various logging modules, e.g. wandb,
    tensorboard, etc.
 
+
    .. py:method:: watch(model)
       :abstractmethod:
 
+
       Monitor parameters and gradients.
+
 
 
    .. py:method:: log(update_dict, step: int, split: str = '')
@@ -46,8 +47,10 @@ Classes
       Log some values.
 
 
+
    .. py:method:: log_plots(plots) -> None
       :abstractmethod:
+
 
 
    .. py:method:: mark_preempting() -> None
@@ -55,17 +58,24 @@ Classes
 
 
 
+   .. py:method:: log_summary(summary_dict: dict[str, Any]) -> None
+      :abstractmethod:
+
+
+
 .. py:class:: WandBLogger(config)
 
-
    Bases: :py:obj:`Logger`
+
 
    Generic class to interface with various logging modules, e.g. wandb,
    tensorboard, etc.
 
+
    .. py:method:: watch(model) -> None
 
       Monitor parameters and gradients.
+
 
 
    .. py:method:: log(update_dict, step: int, split: str = '') -> None
@@ -73,24 +83,29 @@ Classes
       Log some values.
 
 
+
    .. py:method:: log_plots(plots, caption: str = '') -> None
+
+
+   .. py:method:: log_summary(summary_dict: dict[str, Any])
 
 
    .. py:method:: mark_preempting() -> None
 
 
-
 .. py:class:: TensorboardLogger(config)
 
-
    Bases: :py:obj:`Logger`
+
 
    Generic class to interface with various logging modules, e.g. wandb,
    tensorboard, etc.
 
+
    .. py:method:: watch(model) -> bool
 
       Monitor parameters and gradients.
+
 
 
    .. py:method:: log(update_dict, step: int, split: str = '')
@@ -98,10 +113,13 @@ Classes
       Log some values.
 
 
+
    .. py:method:: mark_preempting() -> None
 
 
    .. py:method:: log_plots(plots) -> None
 
+
+   .. py:method:: log_summary(summary_dict: dict[str, Any]) -> None
 
 

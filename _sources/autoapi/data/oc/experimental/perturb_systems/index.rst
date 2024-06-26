@@ -1,21 +1,19 @@
-:py:mod:`data.oc.experimental.perturb_systems`
-==============================================
+data.oc.experimental.perturb_systems
+====================================
 
 .. py:module:: data.oc.experimental.perturb_systems
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    data.oc.experimental.perturb_systems.main
 
 
+Module Contents
+---------------
 
 .. py:function:: main()
 

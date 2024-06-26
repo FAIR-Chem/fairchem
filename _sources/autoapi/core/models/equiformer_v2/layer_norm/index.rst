@@ -1,5 +1,5 @@
-:py:mod:`core.models.equiformer_v2.layer_norm`
-==============================================
+core.models.equiformer_v2.layer_norm
+====================================
 
 .. py:module:: core.models.equiformer_v2.layer_norm
 
@@ -13,11 +13,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -28,9 +25,8 @@ Classes
    core.models.equiformer_v2.layer_norm.EquivariantDegreeLayerScale
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -38,17 +34,17 @@ Functions
    core.models.equiformer_v2.layer_norm.get_l_to_all_m_expand_index
 
 
+Module Contents
+---------------
 
 .. py:function:: get_normalization_layer(norm_type: str, lmax: int, num_channels: int, eps: float = 1e-05, affine: bool = True, normalization: str = 'component')
 
-
 .. py:function:: get_l_to_all_m_expand_index(lmax: int)
-
 
 .. py:class:: EquivariantLayerNormArray(lmax: int, num_channels: int, eps: float = 1e-05, affine: bool = True, normalization: str = 'component')
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -81,9 +77,11 @@ Functions
                    evaluation mode.
    :vartype training: bool
 
+
    .. py:method:: __repr__() -> str
 
       Return repr(self).
+
 
 
    .. py:method:: forward(node_input)
@@ -94,16 +92,18 @@ Functions
 
 .. py:class:: EquivariantLayerNormArraySphericalHarmonics(lmax: int, num_channels: int, eps: float = 1e-05, affine: bool = True, normalization: str = 'component', std_balance_degrees: bool = True)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    1. Normalize over L = 0.
    2. Normalize across all m components from degrees L > 0.
    3. Do not normalize separately for different L (L > 0).
 
+
    .. py:method:: __repr__() -> str
 
       Return repr(self).
+
 
 
    .. py:method:: forward(node_input)
@@ -114,14 +114,16 @@ Functions
 
 .. py:class:: EquivariantRMSNormArraySphericalHarmonics(lmax: int, num_channels: int, eps: float = 1e-05, affine: bool = True, normalization: str = 'component')
 
-
    Bases: :py:obj:`torch.nn.Module`
 
+
    1. Normalize across all m components from degrees L >= 0.
+
 
    .. py:method:: __repr__() -> str
 
       Return repr(self).
+
 
 
    .. py:method:: forward(node_input)
@@ -132,15 +134,17 @@ Functions
 
 .. py:class:: EquivariantRMSNormArraySphericalHarmonicsV2(lmax: int, num_channels: int, eps: float = 1e-05, affine: bool = True, normalization: str = 'component', centering: bool = True, std_balance_degrees: bool = True)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    1. Normalize across all m components from degrees L >= 0.
    2. Expand weights and multiply with normalized feature to prevent slicing and concatenation.
 
+
    .. py:method:: __repr__() -> str
 
       Return repr(self).
+
 
 
    .. py:method:: forward(node_input)
@@ -151,18 +155,19 @@ Functions
 
 .. py:class:: EquivariantDegreeLayerScale(lmax: int, num_channels: int, scale_factor: float = 2.0)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    1. Similar to Layer Scale used in CaiT (Going Deeper With Image Transformers (ICCV'21)), we scale the output of both attention and FFN.
    2. For degree L > 0, we scale down the square root of 2 * L, which is to emulate halving the number of channels when using higher L.
+
 
    .. py:method:: __repr__() -> str
 
       Return repr(self).
 
 
-   .. py:method:: forward(node_input)
 
+   .. py:method:: forward(node_input)
 
 

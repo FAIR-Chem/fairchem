@@ -1,61 +1,57 @@
-:py:mod:`core.models`
-=====================
+core.models
+===========
 
 .. py:module:: core.models
 
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   equiformer_v2/index.rst
-   escn/index.rst
-   gemnet/index.rst
-   gemnet_gp/index.rst
-   gemnet_oc/index.rst
-   painn/index.rst
-   scn/index.rst
-   utils/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/core/models/equiformer_v2/index
+   /autoapi/core/models/escn/index
+   /autoapi/core/models/gemnet/index
+   /autoapi/core/models/gemnet_gp/index
+   /autoapi/core/models/gemnet_oc/index
+   /autoapi/core/models/painn/index
+   /autoapi/core/models/scn/index
+   /autoapi/core/models/utils/index
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   base/index.rst
-   dimenet_plus_plus/index.rst
-   model_registry/index.rst
-   schnet/index.rst
-
-
-Package Contents
-----------------
-
-
-Functions
-~~~~~~~~~
-
-.. autoapisummary::
-
-   core.models.model_name_to_local_file
-
+   /autoapi/core/models/base/index
+   /autoapi/core/models/dimenet_plus_plus/index
+   /autoapi/core/models/model_registry/index
+   /autoapi/core/models/schnet/index
 
 
 Attributes
-~~~~~~~~~~
+----------
 
 .. autoapisummary::
 
    core.models.available_pretrained_models
 
 
-.. py:data:: available_pretrained_models
+Functions
+---------
 
-   
+.. autoapisummary::
+
+   core.models.model_name_to_local_file
+
+
+Package Contents
+----------------
+
+.. py:data:: available_pretrained_models
 
 .. py:function:: model_name_to_local_file(model_name: str, local_cache: str | pathlib.Path) -> str
 

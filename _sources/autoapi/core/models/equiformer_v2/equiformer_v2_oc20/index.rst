@@ -1,24 +1,11 @@
-:py:mod:`core.models.equiformer_v2.equiformer_v2_oc20`
-======================================================
+core.models.equiformer_v2.equiformer_v2_oc20
+============================================
 
 .. py:module:: core.models.equiformer_v2.equiformer_v2_oc20
 
 
-Module Contents
----------------
-
-Classes
-~~~~~~~
-
-.. autoapisummary::
-
-   core.models.equiformer_v2.equiformer_v2_oc20.EquiformerV2_OC20
-
-
-
-
 Attributes
-~~~~~~~~~~
+----------
 
 .. autoapisummary::
 
@@ -26,20 +13,29 @@ Attributes
    core.models.equiformer_v2.equiformer_v2_oc20._AVG_DEGREE
 
 
+Classes
+-------
+
+.. autoapisummary::
+
+   core.models.equiformer_v2.equiformer_v2_oc20.EquiformerV2_OC20
+
+
+Module Contents
+---------------
+
 .. py:data:: _AVG_NUM_NODES
    :value: 77.81317
 
-   
 
 .. py:data:: _AVG_DEGREE
    :value: 23.395238876342773
 
-   
 
 .. py:class:: EquiformerV2_OC20(num_atoms: int, bond_feat_dim: int, num_targets: int, use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = True, max_neighbors: int = 500, max_radius: float = 5.0, max_num_elements: int = 90, num_layers: int = 12, sphere_channels: int = 128, attn_hidden_channels: int = 128, num_heads: int = 8, attn_alpha_channels: int = 32, attn_value_channels: int = 16, ffn_hidden_channels: int = 512, norm_type: str = 'rms_norm_sh', lmax_list: list[int] | None = None, mmax_list: list[int] | None = None, grid_resolution: int | None = None, num_sphere_samples: int = 128, edge_channels: int = 128, use_atom_edge_embedding: bool = True, share_atom_edge_embedding: bool = False, use_m_share_rad: bool = False, distance_function: str = 'gaussian', num_distance_basis: int = 512, attn_activation: str = 'scaled_silu', use_s2_act_attn: bool = False, use_attn_renorm: bool = True, ffn_activation: str = 'scaled_silu', use_gate_act: bool = False, use_grid_mlp: bool = False, use_sep_s2_act: bool = True, alpha_drop: float = 0.1, drop_path_rate: float = 0.05, proj_drop: float = 0.0, weight_init: str = 'normal', enforce_max_neighbors_strictly: bool = True, avg_num_nodes: float | None = None, avg_degree: float | None = None, use_energy_lin_ref: bool | None = False, load_energy_lin_ref: bool | None = False)
 
-
    Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+
 
    Equiformer with graph attention built upon SO(2) convolution and feedforward network built upon S2 activation
 
@@ -126,13 +122,14 @@ Attributes
                                You can't have use_energy_lin_ref = True and load_energy_lin_ref = False, since the model will not have the parameters for the linear references. All other combinations are fine.
    :type load_energy_lin_ref: bool
 
-   .. py:property:: num_params
-
 
    .. py:method:: forward(data)
 
 
    .. py:method:: _init_edge_rot_mat(data, edge_index, edge_distance_vec)
+
+
+   .. py:property:: num_params
 
 
    .. py:method:: _init_weights(m)

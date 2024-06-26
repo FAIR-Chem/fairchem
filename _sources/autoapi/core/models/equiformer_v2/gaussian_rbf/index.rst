@@ -1,37 +1,34 @@
-:py:mod:`core.models.equiformer_v2.gaussian_rbf`
-================================================
+core.models.equiformer_v2.gaussian_rbf
+======================================
 
 .. py:module:: core.models.equiformer_v2.gaussian_rbf
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.equiformer_v2.gaussian_rbf.GaussianRadialBasisLayer
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    core.models.equiformer_v2.gaussian_rbf.gaussian
 
 
+Module Contents
+---------------
 
 .. py:function:: gaussian(x: torch.Tensor, mean, std) -> torch.Tensor
 
-
 .. py:class:: GaussianRadialBasisLayer(num_basis: int, cutoff: float)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -63,6 +60,7 @@ Functions
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(dist: torch.Tensor, node_atom=None, edge_src=None, edge_dst=None)
 

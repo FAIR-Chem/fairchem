@@ -1,15 +1,11 @@
-:py:mod:`data.om.biomolecules.geom.sample_geom_drugs`
-=====================================================
+data.om.biomolecules.geom.sample_geom_drugs
+===========================================
 
 .. py:module:: data.om.biomolecules.geom.sample_geom_drugs
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -18,13 +14,12 @@ Functions
    data.om.biomolecules.geom.sample_geom_drugs.main
 
 
+Module Contents
+---------------
 
 .. py:function:: write_pickle(data, path)
 
-
 .. py:function:: parse_args()
 
-
 .. py:function:: main()
-
 

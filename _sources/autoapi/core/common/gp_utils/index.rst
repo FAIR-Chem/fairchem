@@ -1,5 +1,5 @@
-:py:mod:`core.common.gp_utils`
-==============================
+core.common.gp_utils
+====================
 
 .. py:module:: core.common.gp_utils
 
@@ -12,11 +12,17 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.common.gp_utils._GRAPH_PARALLEL_GROUP
+   core.common.gp_utils._DATA_PARALLEL_GROUP
+
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -26,9 +32,8 @@ Classes
    core.common.gp_utils.GatherFromModelParallelRegion
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -56,82 +61,57 @@ Functions
    core.common.gp_utils.gather_from_model_parallel_region
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.common.gp_utils._GRAPH_PARALLEL_GROUP
-   core.common.gp_utils._DATA_PARALLEL_GROUP
-
+Module Contents
+---------------
 
 .. py:data:: _GRAPH_PARALLEL_GROUP
+   :value: None
 
-   
 
 .. py:data:: _DATA_PARALLEL_GROUP
+   :value: None
 
-   
 
 .. py:function:: ensure_div(a: int, b: int) -> None
 
-
 .. py:function:: divide_and_check_no_remainder(a: int, b: int) -> int
-
 
 .. py:function:: setup_gp(config) -> None
 
-
 .. py:function:: cleanup_gp() -> None
-
 
 .. py:function:: initialized() -> bool
 
-
 .. py:function:: get_dp_group()
-
 
 .. py:function:: get_gp_group()
 
-
 .. py:function:: get_dp_rank() -> int
-
 
 .. py:function:: get_gp_rank() -> int
 
-
 .. py:function:: get_dp_world_size() -> int
-
 
 .. py:function:: get_gp_world_size() -> int
 
-
 .. py:function:: pad_tensor(tensor: torch.Tensor, dim: int = -1, target_size: int | None = None) -> torch.Tensor
-
 
 .. py:function:: trim_tensor(tensor: torch.Tensor, sizes: torch.Tensor | None = None, dim: int = 0)
 
-
 .. py:function:: _split_tensor(tensor: torch.Tensor, num_parts: int, dim: int = -1, contiguous_chunks: bool = False)
-
 
 .. py:function:: _reduce(ctx: Any, input: torch.Tensor) -> torch.Tensor
 
-
 .. py:function:: _split(input: torch.Tensor, dim: int = -1) -> torch.Tensor
-
 
 .. py:function:: _gather(input: torch.Tensor, dim: int = -1) -> torch.Tensor
 
-
 .. py:function:: _gather_with_padding(input: torch.Tensor, dim: int = -1) -> torch.Tensor
-
 
 .. py:class:: CopyToModelParallelRegion(*args, **kwargs)
 
-
    Bases: :py:obj:`torch.autograd.Function`
+
 
    Base class to create custom `autograd.Function`.
 
@@ -165,8 +145,10 @@ Attributes
        >>> # xdoctest: +SKIP
        >>> output = Exp.apply(input)
 
+
    .. py:method:: forward(ctx, input: torch.Tensor) -> torch.Tensor
       :staticmethod:
+
 
       Define the forward of the custom autograd Function.
 
@@ -209,8 +191,10 @@ Attributes
       if they are intended to be used for in ``jvp``.
 
 
+
    .. py:method:: backward(ctx, grad_output: torch.Tensor) -> torch.Tensor
       :staticmethod:
+
 
       Define a formula for differentiating the operation with backward mode automatic differentiation.
 
@@ -237,8 +221,8 @@ Attributes
 
 .. py:class:: ReduceFromModelParallelRegion(*args, **kwargs)
 
-
    Bases: :py:obj:`torch.autograd.Function`
+
 
    Base class to create custom `autograd.Function`.
 
@@ -272,8 +256,10 @@ Attributes
        >>> # xdoctest: +SKIP
        >>> output = Exp.apply(input)
 
+
    .. py:method:: forward(ctx, input: torch.Tensor) -> torch.Tensor
       :staticmethod:
+
 
       Define the forward of the custom autograd Function.
 
@@ -316,8 +302,10 @@ Attributes
       if they are intended to be used for in ``jvp``.
 
 
+
    .. py:method:: backward(ctx, grad_output: torch.Tensor) -> torch.Tensor
       :staticmethod:
+
 
       Define a formula for differentiating the operation with backward mode automatic differentiation.
 
@@ -344,8 +332,8 @@ Attributes
 
 .. py:class:: ScatterToModelParallelRegion(*args, **kwargs)
 
-
    Bases: :py:obj:`torch.autograd.Function`
+
 
    Base class to create custom `autograd.Function`.
 
@@ -379,8 +367,10 @@ Attributes
        >>> # xdoctest: +SKIP
        >>> output = Exp.apply(input)
 
+
    .. py:method:: forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor
       :staticmethod:
+
 
       Define the forward of the custom autograd Function.
 
@@ -423,8 +413,10 @@ Attributes
       if they are intended to be used for in ``jvp``.
 
 
+
    .. py:method:: backward(ctx, grad_output: torch.Tensor)
       :staticmethod:
+
 
       Define a formula for differentiating the operation with backward mode automatic differentiation.
 
@@ -451,8 +443,8 @@ Attributes
 
 .. py:class:: GatherFromModelParallelRegion(*args, **kwargs)
 
-
    Bases: :py:obj:`torch.autograd.Function`
+
 
    Base class to create custom `autograd.Function`.
 
@@ -486,8 +478,10 @@ Attributes
        >>> # xdoctest: +SKIP
        >>> output = Exp.apply(input)
 
+
    .. py:method:: forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor
       :staticmethod:
+
 
       Define the forward of the custom autograd Function.
 
@@ -530,8 +524,10 @@ Attributes
       if they are intended to be used for in ``jvp``.
 
 
+
    .. py:method:: backward(ctx, grad_output: torch.Tensor)
       :staticmethod:
+
 
       Define a formula for differentiating the operation with backward mode automatic differentiation.
 
@@ -558,13 +554,9 @@ Attributes
 
 .. py:function:: copy_to_model_parallel_region(input: torch.Tensor) -> torch.Tensor
 
-
 .. py:function:: reduce_from_model_parallel_region(input: torch.Tensor) -> torch.Tensor
-
 
 .. py:function:: scatter_to_model_parallel_region(input: torch.Tensor, dim: int = -1) -> torch.Tensor
 
-
 .. py:function:: gather_from_model_parallel_region(input: torch.Tensor, dim: int = -1) -> torch.Tensor
-
 

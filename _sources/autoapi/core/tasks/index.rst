@@ -1,23 +1,20 @@
-:py:mod:`core.tasks`
-====================
+core.tasks
+==========
 
 .. py:module:: core.tasks
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   task/index.rst
+   /autoapi/core/tasks/task/index
 
-
-Package Contents
-----------------
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -27,30 +24,29 @@ Classes
    core.tasks.ValidateTask
 
 
-
+Package Contents
+----------------
 
 .. py:class:: PredictTask(config)
 
-
    Bases: :py:obj:`BaseTask`
 
-   .. py:method:: run() -> None
 
+   .. py:method:: run() -> None
 
 
 .. py:class:: RelaxationTask(config)
 
-
    Bases: :py:obj:`BaseTask`
+
 
    .. py:method:: run() -> None
 
 
-
 .. py:class:: TrainTask(config)
 
-
    Bases: :py:obj:`BaseTask`
+
 
    .. py:method:: _process_error(e: RuntimeError) -> None
 
@@ -58,13 +54,11 @@ Classes
    .. py:method:: run() -> None
 
 
-
 .. py:class:: ValidateTask(config)
-
 
    Bases: :py:obj:`BaseTask`
 
-   .. py:method:: run() -> None
 
+   .. py:method:: run() -> None
 
 

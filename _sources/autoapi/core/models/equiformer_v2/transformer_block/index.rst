@@ -1,14 +1,11 @@
-:py:mod:`core.models.equiformer_v2.transformer_block`
-=====================================================
+core.models.equiformer_v2.transformer_block
+===========================================
 
 .. py:module:: core.models.equiformer_v2.transformer_block
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -17,12 +14,13 @@ Classes
    core.models.equiformer_v2.transformer_block.TransBlockV2
 
 
-
+Module Contents
+---------------
 
 .. py:class:: SO2EquivariantGraphAttention(sphere_channels: int, hidden_channels: int, num_heads: int, attn_alpha_channels: int, attn_value_channels: int, output_channels: int, lmax_list: list[int], mmax_list: list[int], SO3_rotation, mappingReduced, SO3_grid, max_num_elements: int, edge_channels_list, use_atom_edge_embedding: bool = True, use_m_share_rad: bool = False, activation='scaled_silu', use_s2_act_attn: bool = False, use_attn_renorm: bool = True, use_gate_act: bool = False, use_sep_s2_act: bool = True, alpha_drop: float = 0.0)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    SO2EquivariantGraphAttention: Perform MLP attention + non-linear message passing
        SO(2) Convolution with radial function -> S2 Activation -> SO(2) Convolution -> attention weights and non-linear messages
@@ -68,14 +66,14 @@ Classes
    :param alpha_drop: Dropout rate for attention weights
    :type alpha_drop: float
 
-   .. py:method:: forward(x: torch.Tensor, atomic_numbers, edge_distance: torch.Tensor, edge_index)
 
+   .. py:method:: forward(x: torch.Tensor, atomic_numbers, edge_distance: torch.Tensor, edge_index)
 
 
 .. py:class:: FeedForwardNetwork(sphere_channels: int, hidden_channels: int, output_channels: int, lmax_list: list[int], mmax_list: list[int], SO3_grid, activation: str = 'scaled_silu', use_gate_act: bool = False, use_grid_mlp: bool = False, use_sep_s2_act: bool = True)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    FeedForwardNetwork: Perform feedforward network with S2 activation or gate activation
 
@@ -98,14 +96,14 @@ Classes
    :param use_sep_s2_act: If `True`, use separable grid MLP when `use_grid_mlp` is True.
    :type use_sep_s2_act: bool
 
-   .. py:method:: forward(input_embedding)
 
+   .. py:method:: forward(input_embedding)
 
 
 .. py:class:: TransBlockV2(sphere_channels: int, attn_hidden_channels: int, num_heads: int, attn_alpha_channels: int, attn_value_channels: int, ffn_hidden_channels: int, output_channels: int, lmax_list: list[int], mmax_list: list[int], SO3_rotation, mappingReduced, SO3_grid, max_num_elements: int, edge_channels_list: list[int], use_atom_edge_embedding: bool = True, use_m_share_rad: bool = False, attn_activation: str = 'silu', use_s2_act_attn: bool = False, use_attn_renorm: bool = True, ffn_activation: str = 'silu', use_gate_act: bool = False, use_grid_mlp: bool = False, use_sep_s2_act: bool = True, norm_type: str = 'rms_norm_sh', alpha_drop: float = 0.0, drop_path_rate: float = 0.0, proj_drop: float = 0.0)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    :param sphere_channels: Number of spherical channels
    :type sphere_channels: int
@@ -159,7 +157,7 @@ Classes
    :param proj_drop: Dropout rate for outputs of attention and FFN
    :type proj_drop: float
 
-   .. py:method:: forward(x, atomic_numbers, edge_distance, edge_index, batch)
 
+   .. py:method:: forward(x, atomic_numbers, edge_distance, edge_index, batch)
 
 

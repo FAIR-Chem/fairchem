@@ -1,5 +1,5 @@
-:py:mod:`cattsunami.run_validation.run_validation`
-==================================================
+cattsunami.run_validation.run_validation
+========================================
 
 .. py:module:: cattsunami.run_validation.run_validation
 
@@ -10,12 +10,16 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   cattsunami.run_validation.run_validation.parser
 
 
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -30,14 +34,8 @@ Functions
    cattsunami.run_validation.run_validation.get_single_point
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   cattsunami.run_validation.run_validation.parser
-
+Module Contents
+---------------
 
 .. py:function:: get_results_sp(df2: pandas.DataFrame)
 
@@ -160,6 +158,4 @@ Attributes
 
 
 .. py:data:: parser
-
-   
 

@@ -1,5 +1,5 @@
-:py:mod:`core.models.scn.smearing`
-==================================
+core.models.scn.smearing
+========================
 
 .. py:module:: core.models.scn.smearing
 
@@ -12,11 +12,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -26,12 +23,13 @@ Classes
    core.models.scn.smearing.SiLUSmearing
 
 
-
+Module Contents
+---------------
 
 .. py:class:: GaussianSmearing(start: float = -5.0, stop: float = 5.0, num_gaussians: int = 50, basis_width_scalar: float = 1.0)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -64,14 +62,14 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
-   .. py:method:: forward(dist) -> torch.Tensor
 
+   .. py:method:: forward(dist) -> torch.Tensor
 
 
 .. py:class:: SigmoidSmearing(start=-5.0, stop=5.0, num_sigmoid=50, basis_width_scalar=1.0)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -104,14 +102,14 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
-   .. py:method:: forward(dist) -> torch.Tensor
 
+   .. py:method:: forward(dist) -> torch.Tensor
 
 
 .. py:class:: LinearSigmoidSmearing(start: float = -5.0, stop: float = 5.0, num_sigmoid: int = 50, basis_width_scalar: float = 1.0)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -143,15 +141,15 @@ Classes
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(dist) -> torch.Tensor
 
 
-
 .. py:class:: SiLUSmearing(start: float = -5.0, stop: float = 5.0, num_output: int = 50, basis_width_scalar: float = 1.0)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -184,7 +182,7 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
-   .. py:method:: forward(dist)
 
+   .. py:method:: forward(dist)
 
 

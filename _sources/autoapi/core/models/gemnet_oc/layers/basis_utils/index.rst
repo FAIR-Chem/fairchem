@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_oc.layers.basis_utils`
-==================================================
+core.models.gemnet_oc.layers.basis_utils
+========================================
 
 .. py:module:: core.models.gemnet_oc.layers.basis_utils
 
@@ -11,12 +11,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -30,6 +26,8 @@ Functions
    core.models.gemnet_oc.layers.basis_utils.get_sph_harm_basis
 
 
+Module Contents
+---------------
 
 .. py:function:: Jn(r: float, n: int)
 

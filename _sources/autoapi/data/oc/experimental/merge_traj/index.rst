@@ -1,15 +1,11 @@
-:py:mod:`data.oc.experimental.merge_traj`
-=========================================
+data.oc.experimental.merge_traj
+===============================
 
 .. py:module:: data.oc.experimental.merge_traj
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -17,9 +13,10 @@ Functions
    data.oc.experimental.merge_traj.main
 
 
+Module Contents
+---------------
 
 .. py:function:: extract_file(zipname, file_to_unzip, extract_to)
-
 
 .. py:function:: main()
 

@@ -1,38 +1,36 @@
-:py:mod:`core.models.scn`
-=========================
+core.models.scn
+===============
 
 .. py:module:: core.models.scn
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   sampling/index.rst
-   scn/index.rst
-   smearing/index.rst
-   spherical_harmonics/index.rst
+   /autoapi/core/models/scn/sampling/index
+   /autoapi/core/models/scn/scn/index
+   /autoapi/core/models/scn/smearing/index
+   /autoapi/core/models/scn/spherical_harmonics/index
 
-
-Package Contents
-----------------
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.scn.SphericalChannelNetwork
 
 
-
+Package Contents
+----------------
 
 .. py:class:: SphericalChannelNetwork(num_atoms: int, bond_feat_dim: int, num_targets: int, use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, max_num_neighbors: int = 20, cutoff: float = 8.0, max_num_elements: int = 90, num_interactions: int = 8, lmax: int = 6, mmax: int = 1, num_resolutions: int = 2, sphere_channels: int = 128, sphere_channels_reduce: int = 128, hidden_channels: int = 256, num_taps: int = -1, use_grid: bool = True, num_bands: int = 1, num_sphere_samples: int = 128, num_basis_functions: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, show_timing_info: bool = False, direct_forces: bool = True)
 
-
    Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+
 
    Spherical Channel Network
    Paper: Spherical Channels for Modeling Atomic Interactions
@@ -82,39 +80,30 @@ Classes
    :param show_timing_info: Show timing and memory info
    :type show_timing_info: bool
 
-   .. py:property:: num_params
-      :type: int
-
 
    .. py:attribute:: energy_fc1
-      :type: torch.nn.Linear
+      :type:  torch.nn.Linear
 
-      
 
    .. py:attribute:: energy_fc2
-      :type: torch.nn.Linear
+      :type:  torch.nn.Linear
 
-      
 
    .. py:attribute:: energy_fc3
-      :type: torch.nn.Linear
+      :type:  torch.nn.Linear
 
-      
 
    .. py:attribute:: force_fc1
-      :type: torch.nn.Linear
+      :type:  torch.nn.Linear
 
-      
 
    .. py:attribute:: force_fc2
-      :type: torch.nn.Linear
+      :type:  torch.nn.Linear
 
-      
 
    .. py:attribute:: force_fc3
-      :type: torch.nn.Linear
+      :type:  torch.nn.Linear
 
-      
 
    .. py:method:: forward(data)
 
@@ -126,6 +115,10 @@ Classes
 
 
    .. py:method:: _rank_edge_distances(edge_distance, edge_index, max_num_neighbors: int) -> torch.Tensor
+
+
+   .. py:property:: num_params
+      :type: int
 
 
 

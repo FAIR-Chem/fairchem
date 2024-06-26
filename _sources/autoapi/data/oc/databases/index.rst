@@ -1,24 +1,24 @@
-:py:mod:`data.oc.databases`
-===========================
+data.oc.databases
+=================
 
 .. py:module:: data.oc.databases
 
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   pkls/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/data/oc/databases/pkls/index
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   update/index.rst
+   /autoapi/data/oc/databases/update/index
 
 

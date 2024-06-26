@@ -1,5 +1,5 @@
-:py:mod:`core.models.painn.painn`
-=================================
+core.models.painn.painn
+=======================
 
 .. py:module:: core.models.painn.painn
 
@@ -36,11 +36,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -51,19 +48,17 @@ Classes
    core.models.painn.painn.GatedEquivariantBlock
 
 
-
+Module Contents
+---------------
 
 .. py:class:: PaiNN(num_atoms: int, bond_feat_dim: int, num_targets: int, hidden_channels: int = 512, num_layers: int = 6, num_rbf: int = 128, cutoff: float = 12.0, max_neighbors: int = 50, rbf: dict[str, str] | None = None, envelope: dict[str, str | int] | None = None, regress_forces: bool = True, direct_forces: bool = True, use_pbc: bool = True, otf_graph: bool = True, num_elements: int = 83, scale_file: str | None = None)
 
-
    Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+
 
    PaiNN model based on the description in Schütt et al. (2021):
    Equivariant message passing for the prediction of tensorial properties
    and molecular spectra, https://arxiv.org/abs/2102.03150.
-
-   .. py:property:: num_params
-      :type: int
 
 
    .. py:method:: reset_parameters() -> None
@@ -85,10 +80,16 @@ Classes
       we always use both directions.
 
 
+
    .. py:method:: generate_graph_values(data)
 
 
    .. py:method:: forward(data)
+
+
+   .. py:property:: num_params
+      :type: int
+
 
 
    .. py:method:: __repr__() -> str
@@ -99,8 +100,8 @@ Classes
 
 .. py:class:: PaiNNMessage(hidden_channels, num_rbf)
 
-
    Bases: :py:obj:`torch_geometric.nn.MessagePassing`
+
 
    Base class for creating message passing layers of the form
 
@@ -164,14 +165,17 @@ Classes
                              true for execution speedups. (default: :obj:`1`)
    :type decomposed_layers: int, optional
 
+
    .. py:method:: reset_parameters() -> None
 
       Resets all learnable parameters of the module.
 
 
+
    .. py:method:: forward(x, vec, edge_index, edge_rbf, edge_vector)
 
       Runs the forward pass of the module.
+
 
 
    .. py:method:: message(xh_j, vec_j, rbfh_ij, r_ij)
@@ -184,6 +188,7 @@ Classes
       Furthermore, tensors passed to :meth:`propagate` can be mapped to the
       respective nodes :math:`i` and :math:`j` by appending :obj:`_i` or
       :obj:`_j` to the variable name, *.e.g.* :obj:`x_i` and :obj:`x_j`.
+
 
 
    .. py:method:: aggregate(features: tuple[torch.Tensor, torch.Tensor], index: torch.Tensor, dim_size: int) -> tuple[torch.Tensor, torch.Tensor]
@@ -199,6 +204,7 @@ Classes
       as specified in :meth:`__init__` by the :obj:`aggr` argument.
 
 
+
    .. py:method:: update(inputs: tuple[torch.Tensor, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]
 
       Updates node embeddings in analogy to
@@ -211,8 +217,8 @@ Classes
 
 .. py:class:: PaiNNUpdate(hidden_channels)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -245,17 +251,17 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
+
    .. py:method:: reset_parameters() -> None
 
 
    .. py:method:: forward(x, vec)
-
 
 
 .. py:class:: PaiNNOutput(hidden_channels)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -288,25 +294,25 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
+
    .. py:method:: reset_parameters() -> None
 
 
    .. py:method:: forward(x, vec)
 
 
-
 .. py:class:: GatedEquivariantBlock(hidden_channels, out_channels)
-
 
    Bases: :py:obj:`torch.nn.Module`
 
+
    Gated Equivariant Block as defined in Schütt et al. (2021):
    Equivariant message passing for the prediction of tensorial properties and molecular spectra
+
 
    .. py:method:: reset_parameters() -> None
 
 
    .. py:method:: forward(x, v)
-
 
 

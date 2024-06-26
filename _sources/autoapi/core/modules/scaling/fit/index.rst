@@ -1,15 +1,11 @@
-:py:mod:`core.modules.scaling.fit`
-==================================
+core.modules.scaling.fit
+========================
 
 .. py:module:: core.modules.scaling.fit
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -18,13 +14,12 @@ Functions
    core.modules.scaling.fit.main
 
 
+Module Contents
+---------------
 
 .. py:function:: _prefilled_input(prompt: str, prefill: str = '') -> str
 
-
 .. py:function:: _train_batch(trainer: fairchem.core.trainers.base_trainer.BaseTrainer, batch) -> None
 
-
 .. py:function:: main(*, num_batches: int = 16) -> None
-
 

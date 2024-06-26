@@ -1,15 +1,11 @@
-:py:mod:`adsorbml.scripts.utils`
-================================
+adsorbml.scripts.utils
+======================
 
 .. py:module:: adsorbml.scripts.utils
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -17,6 +13,8 @@ Functions
    adsorbml.scripts.utils.count_scf
 
 
+Module Contents
+---------------
 
 .. py:function:: converged_oszicar(path, nelm=60, ediff=0.0001, idx=0)
 

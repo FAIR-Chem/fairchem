@@ -1,5 +1,5 @@
-:py:mod:`core.common.flags`
-===========================
+core.common.flags
+=================
 
 .. py:module:: core.common.flags
 
@@ -12,29 +12,26 @@
 
 
 
-Module Contents
----------------
-
-Classes
-~~~~~~~
-
-.. autoapisummary::
-
-   core.common.flags.Flags
-
-
-
-
 Attributes
-~~~~~~~~~~
+----------
 
 .. autoapisummary::
 
    core.common.flags.flags
 
 
-.. py:class:: Flags
+Classes
+-------
 
+.. autoapisummary::
+
+   core.common.flags.Flags
+
+
+Module Contents
+---------------
+
+.. py:class:: Flags
 
    .. py:method:: get_parser() -> argparse.ArgumentParser
 
@@ -42,8 +39,5 @@ Attributes
    .. py:method:: add_core_args() -> None
 
 
-
 .. py:data:: flags
-
-   
 

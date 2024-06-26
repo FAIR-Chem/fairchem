@@ -1,5 +1,5 @@
-:py:mod:`core.models.equiformer_v2.drop`
-========================================
+core.models.equiformer_v2.drop
+==============================
 
 .. py:module:: core.models.equiformer_v2.drop
 
@@ -10,11 +10,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -25,15 +22,16 @@ Classes
    core.models.equiformer_v2.drop.EquivariantDropoutArraySphericalHarmonics
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    core.models.equiformer_v2.drop.drop_path
 
 
+Module Contents
+---------------
 
 .. py:function:: drop_path(x: torch.Tensor, drop_prob: float = 0.0, training: bool = False) -> torch.Tensor
 
@@ -47,10 +45,11 @@ Functions
 
 .. py:class:: DropPath(drop_prob: float)
 
-
    Bases: :py:obj:`torch.nn.Module`
 
+
    Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
+
 
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
@@ -67,10 +66,11 @@ Functions
 
 .. py:class:: GraphDropPath(drop_prob: float)
 
-
    Bases: :py:obj:`torch.nn.Module`
 
+
    Consider batch for graph data when dropping paths.
+
 
    .. py:method:: forward(x: torch.Tensor, batch) -> torch.Tensor
 
@@ -87,8 +87,8 @@ Functions
 
 .. py:class:: EquivariantDropout(irreps, drop_prob: float)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -120,15 +120,15 @@ Functions
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
 
-
 .. py:class:: EquivariantScalarsDropout(irreps, drop_prob: float)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -160,6 +160,7 @@ Functions
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
@@ -176,8 +177,8 @@ Functions
 
 .. py:class:: EquivariantDropoutArraySphericalHarmonics(drop_prob: float, drop_graph: bool = False)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -209,6 +210,7 @@ Functions
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(x: torch.Tensor, batch=None) -> torch.Tensor
 

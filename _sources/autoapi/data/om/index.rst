@@ -1,5 +1,5 @@
-:py:mod:`data.om`
-=================
+data.om
+=======
 
 .. py:module:: data.om
 

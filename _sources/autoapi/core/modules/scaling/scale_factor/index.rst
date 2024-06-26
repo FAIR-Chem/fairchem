@@ -1,14 +1,19 @@
-:py:mod:`core.modules.scaling.scale_factor`
-===========================================
+core.modules.scaling.scale_factor
+=================================
 
 .. py:module:: core.modules.scaling.scale_factor
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.modules.scaling.scale_factor.IndexFn
+
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -16,28 +21,21 @@ Classes
    core.modules.scaling.scale_factor.ScaleFactor
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    core.modules.scaling.scale_factor._check_consistency
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.modules.scaling.scale_factor.IndexFn
-
+Module Contents
+---------------
 
 .. py:class:: _Stats
 
-
    Bases: :py:obj:`TypedDict`
+
 
    dict() -> new empty dictionary
    dict(mapping) -> new dictionary initialized from a mapping object's
@@ -49,33 +47,27 @@ Attributes
    dict(**kwargs) -> new dictionary initialized with the name=value pairs
        in the keyword argument list.  For example:  dict(one=1, two=2)
 
-   .. py:attribute:: variance_in
-      :type: float
 
-      
+   .. py:attribute:: variance_in
+      :type:  float
+
 
    .. py:attribute:: variance_out
-      :type: float
+      :type:  float
 
-      
 
    .. py:attribute:: n_samples
-      :type: int
-
-      
+      :type:  int
 
 
 .. py:data:: IndexFn
 
-   
-
 .. py:function:: _check_consistency(old: torch.Tensor, new: torch.Tensor, key: str) -> None
-
 
 .. py:class:: ScaleFactor(name: str | None = None, enforce_consistency: bool = True)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -108,31 +100,35 @@ Attributes
                    evaluation mode.
    :vartype training: bool
 
+
+   .. py:attribute:: scale_factor
+      :type:  torch.Tensor
+
+
+   .. py:attribute:: name
+      :type:  str | None
+      :value: None
+
+
+
+   .. py:attribute:: index_fn
+      :type:  IndexFn | None
+      :value: None
+
+
+
+   .. py:attribute:: stats
+      :type:  _Stats | None
+      :value: None
+
+
+
+   .. py:method:: _enforce_consistency(state_dict, prefix, _local_metadata, _strict, _missing_keys, _unexpected_keys, _error_msgs) -> None
+
+
    .. py:property:: fitted
       :type: bool
 
-
-   .. py:attribute:: scale_factor
-      :type: torch.Tensor
-
-      
-
-   .. py:attribute:: name
-      :type: str | None
-
-      
-
-   .. py:attribute:: index_fn
-      :type: IndexFn | None
-
-      
-
-   .. py:attribute:: stats
-      :type: _Stats | None
-
-      
-
-   .. py:method:: _enforce_consistency(state_dict, prefix, _local_metadata, _strict, _missing_keys, _unexpected_keys, _error_msgs) -> None
 
 
    .. py:method:: reset_() -> None
@@ -154,6 +150,5 @@ Attributes
 
 
    .. py:method:: forward(x: torch.Tensor, *, ref: torch.Tensor | None = None) -> torch.Tensor
-
 
 

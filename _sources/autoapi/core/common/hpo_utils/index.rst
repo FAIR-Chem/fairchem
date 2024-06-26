@@ -1,5 +1,5 @@
-:py:mod:`core.common.hpo_utils`
-===============================
+core.common.hpo_utils
+=====================
 
 .. py:module:: core.common.hpo_utils
 
@@ -12,12 +12,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -25,6 +21,8 @@ Functions
    core.common.hpo_utils.label_metric_dict
 
 
+Module Contents
+---------------
 
 .. py:function:: tune_reporter(iters, train_metrics, val_metrics, test_metrics=None, metric_to_opt: str = 'val_loss', min_max: str = 'min') -> None
 
@@ -45,5 +43,4 @@ Functions
 
 
 .. py:function:: label_metric_dict(metric_dict, split)
-
 

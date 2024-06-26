@@ -1,5 +1,5 @@
-:py:mod:`core.models.scn.spherical_harmonics`
-=============================================
+core.models.scn.spherical_harmonics
+===================================
 
 .. py:module:: core.models.scn.spherical_harmonics
 
@@ -12,20 +12,24 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.models.scn.spherical_harmonics._Jd
+
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.scn.spherical_harmonics.SphericalHarmonicsHelper
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -33,21 +37,12 @@ Functions
    core.models.scn.spherical_harmonics._z_rot_mat
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.models.scn.spherical_harmonics._Jd
-
+Module Contents
+---------------
 
 .. py:data:: _Jd
 
-   
-
 .. py:class:: SphericalHarmonicsHelper(lmax: int, mmax: int, num_taps: int, num_bands: int)
-
 
    Helper functions for spherical harmonics calculations and representations
 
@@ -59,6 +54,7 @@ Attributes
    :type num_taps: int
    :param num_bands: Number of bands used during message aggregation for the 1x1 pointwise convolution (1 or 2)
    :type num_bands: int
+
 
    .. py:method:: InitWignerDMatrix(edge_rot_mat) -> None
 
@@ -93,10 +89,7 @@ Attributes
    .. py:method:: RotationToWignerDMatrix(edge_rot_mat, start_lmax, end_lmax)
 
 
-
 .. py:function:: wigner_D(l, alpha, beta, gamma)
 
-
 .. py:function:: _z_rot_mat(angle, l)
-
 

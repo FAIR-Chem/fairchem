@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_gp.layers.base_layers`
-==================================================
+core.models.gemnet_gp.layers.base_layers
+========================================
 
 .. py:module:: core.models.gemnet_gp.layers.base_layers
 
@@ -12,11 +12,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -26,12 +23,13 @@ Classes
    core.models.gemnet_gp.layers.base_layers.ResidualLayer
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Dense(num_in_features: int, num_out_features: int, bias: bool = False, activation: str | None = None)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Combines dense layer with scaling for swish activation.
 
@@ -42,17 +40,17 @@ Classes
    :param bias: True if use bias.
    :type bias: bool
 
+
    .. py:method:: reset_parameters(initializer=he_orthogonal_init) -> None
 
 
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
 
-
 .. py:class:: ScaledSiLU
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -85,14 +83,14 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
-   .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
+   .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
 
 .. py:class:: SiQU
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -125,14 +123,14 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
-   .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
+   .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
 
 .. py:class:: ResidualLayer(units: int, nLayers: int = 2, layer=Dense, **layer_kwargs)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Residual block with output scaled by 1/sqrt(2).
 
@@ -143,7 +141,7 @@ Classes
    :param layer_kwargs: Keyword arguments for initializing the layers.
    :type layer_kwargs: str
 
-   .. py:method:: forward(input: torch.Tensor) -> torch.Tensor
 
+   .. py:method:: forward(input: torch.Tensor) -> torch.Tensor
 
 

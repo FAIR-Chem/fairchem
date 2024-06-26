@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_oc.initializers`
-============================================
+core.models.gemnet_oc.initializers
+==================================
 
 .. py:module:: core.models.gemnet_oc.initializers
 
@@ -11,12 +11,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -27,6 +23,8 @@ Functions
    core.models.gemnet_oc.initializers.get_initializer
 
 
+Module Contents
+---------------
 
 .. py:function:: _standardize(kernel)
 
@@ -54,5 +52,4 @@ Functions
 
 
 .. py:function:: get_initializer(name, **init_kwargs)
-
 

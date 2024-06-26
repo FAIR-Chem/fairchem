@@ -1,5 +1,5 @@
-:py:mod:`core.scripts.hpo`
-==========================
+core.scripts.hpo
+================
 
 .. py:module:: core.scripts.hpo
 
@@ -14,11 +14,11 @@
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   run_tune/index.rst
-   run_tune_pbt/index.rst
+   /autoapi/core/scripts/hpo/run_tune/index
+   /autoapi/core/scripts/hpo/run_tune_pbt/index
 
 

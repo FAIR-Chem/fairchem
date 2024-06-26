@@ -1,5 +1,5 @@
-:py:mod:`core.datasets.lmdb_database`
-=====================================
+core.datasets.lmdb_database
+===========================
 
 .. py:module:: core.datasets.lmdb_database
 
@@ -15,46 +15,36 @@
 
 
 
-Module Contents
----------------
-
-Classes
-~~~~~~~
-
-.. autoapisummary::
-
-   core.datasets.lmdb_database.LMDBDatabase
-
-
-
-
 Attributes
-~~~~~~~~~~
+----------
 
 .. autoapisummary::
 
    core.datasets.lmdb_database.RESERVED_KEYS
 
 
+Classes
+-------
+
+.. autoapisummary::
+
+   core.datasets.lmdb_database.LMDBDatabase
+
+
+Module Contents
+---------------
+
 .. py:data:: RESERVED_KEYS
    :value: ['nextid', 'metadata', 'deleted_ids']
 
-   
 
 .. py:class:: LMDBDatabase(filename: str | pathlib.Path | None = None, create_indices: bool = True, use_lock_file: bool = False, serial: bool = False, readonly: bool = False, *args, **kwargs)
 
-
    Bases: :py:obj:`ase.db.core.Database`
+
 
    Base class for all databases.
 
-   .. py:property:: metadata
-
-      Load the metadata from the DB if present
-
-   .. py:property:: _nextid
-
-      Get the id of the next row to be written
 
    .. py:method:: __enter__() -> typing_extensions.Self
 
@@ -79,6 +69,7 @@ Attributes
       Delete rows.
 
 
+
    .. py:method:: _get_row(idx: int, include_data: bool = True)
 
 
@@ -87,7 +78,16 @@ Attributes
       Auxiliary function to get the ith entry, rather than a specific id
 
 
+
    .. py:method:: _select(keys, cmps: list[tuple[str, str, str]], explain: bool = False, verbosity: int = 0, limit: int | None = None, offset: int = 0, sort: str | None = None, include_data: bool = True, columns: str = 'all')
+
+
+   .. py:property:: metadata
+      Load the metadata from the DB if present
+
+
+   .. py:property:: _nextid
+      Get the id of the next row to be written
 
 
    .. py:method:: count(selection=None, **kwargs) -> int
@@ -96,6 +96,7 @@ Attributes
 
       See the select() method for the selection syntax.  Use db.count() or
       len(db) to count all rows.
+
 
 
    .. py:method:: _load_ids() -> None

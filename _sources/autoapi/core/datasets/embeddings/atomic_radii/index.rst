@@ -1,5 +1,5 @@
-:py:mod:`core.datasets.embeddings.atomic_radii`
-===============================================
+core.datasets.embeddings.atomic_radii
+=====================================
 
 .. py:module:: core.datasets.embeddings.atomic_radii
 
@@ -11,10 +11,16 @@
 
 
 
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.datasets.embeddings.atomic_radii.ATOMIC_RADII
+
+
 Module Contents
 ---------------
 
 .. py:data:: ATOMIC_RADII
-
-   
 

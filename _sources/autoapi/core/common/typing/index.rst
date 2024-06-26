@@ -1,15 +1,19 @@
-:py:mod:`core.common.typing`
-============================
+core.common.typing
+==================
 
 .. py:module:: core.common.typing
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.common.typing._T
 
 
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -17,22 +21,12 @@ Functions
    core.common.typing.none_throws
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.common.typing._T
-
+Module Contents
+---------------
 
 .. py:data:: _T
 
-   
-
 .. py:function:: assert_is_instance(obj: object, cls: type[_T]) -> _T
 
-
 .. py:function:: none_throws(x: _T | None, msg: str | None = None) -> _T
-
 

@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_oc.interaction_indices`
-===================================================
+core.models.gemnet_oc.interaction_indices
+=========================================
 
 .. py:module:: core.models.gemnet_oc.interaction_indices
 
@@ -11,12 +11,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -25,6 +21,8 @@ Functions
    core.models.gemnet_oc.interaction_indices.get_quadruplets
 
 
+Module Contents
+---------------
 
 .. py:function:: get_triplets(graph, num_atoms: int)
 

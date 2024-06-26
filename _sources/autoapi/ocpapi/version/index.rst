@@ -1,7 +1,15 @@
-:py:mod:`ocpapi.version`
-========================
+ocpapi.version
+==============
 
 .. py:module:: ocpapi.version
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   ocpapi.version.VERSION
 
 
 Module Contents
@@ -10,5 +18,4 @@ Module Contents
 .. py:data:: VERSION
    :value: '1.0.0'
 
-   
 

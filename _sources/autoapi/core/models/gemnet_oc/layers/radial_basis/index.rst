@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_oc.layers.radial_basis`
-===================================================
+core.models.gemnet_oc.layers.radial_basis
+=========================================
 
 .. py:module:: core.models.gemnet_oc.layers.radial_basis
 
@@ -11,11 +11,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -27,40 +24,41 @@ Classes
    core.models.gemnet_oc.layers.radial_basis.RadialBasis
 
 
-
+Module Contents
+---------------
 
 .. py:class:: PolynomialEnvelope(exponent: int)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Polynomial envelope function that ensures a smooth cutoff.
 
    :param exponent: Exponent of the envelope function.
    :type exponent: int
 
-   .. py:method:: forward(d_scaled: torch.Tensor) -> torch.Tensor
 
+   .. py:method:: forward(d_scaled: torch.Tensor) -> torch.Tensor
 
 
 .. py:class:: ExponentialEnvelope
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Exponential envelope function that ensures a smooth cutoff,
    as proposed in Unke, Chmiela, Gastegger, Schütt, Sauceda, Müller 2021.
    SpookyNet: Learning Force Fields with Electronic Degrees of Freedom
    and Nonlocal Effects
 
-   .. py:method:: forward(d_scaled: torch.Tensor) -> torch.Tensor
 
+   .. py:method:: forward(d_scaled: torch.Tensor) -> torch.Tensor
 
 
 .. py:class:: GaussianBasis(start: float = 0.0, stop: float = 5.0, num_gaussians: int = 50, trainable: bool = False)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -93,14 +91,14 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
-   .. py:method:: forward(dist: torch.Tensor) -> torch.Tensor
 
+   .. py:method:: forward(dist: torch.Tensor) -> torch.Tensor
 
 
 .. py:class:: SphericalBesselBasis(num_radial: int, cutoff: float)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    First-order spherical Bessel basis
 
@@ -109,14 +107,14 @@ Classes
    :param cutoff: Cutoff distance in Angstrom.
    :type cutoff: float
 
-   .. py:method:: forward(d_scaled: torch.Tensor) -> torch.Tensor
 
+   .. py:method:: forward(d_scaled: torch.Tensor) -> torch.Tensor
 
 
 .. py:class:: BernsteinBasis(num_radial: int, pregamma_initial: float = 0.45264)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Bernstein polynomial basis,
    as proposed in Unke, Chmiela, Gastegger, Schütt, Sauceda, Müller 2021.
@@ -130,14 +128,14 @@ Classes
                             inverse softplus -> pregamma = log e**gamma - 1 = 0.45264
    :type pregamma_initial: float
 
-   .. py:method:: forward(d_scaled: torch.Tensor) -> torch.Tensor
 
+   .. py:method:: forward(d_scaled: torch.Tensor) -> torch.Tensor
 
 
 .. py:class:: RadialBasis(num_radial: int, cutoff: float, rbf: dict[str, str] | None = None, envelope: dict[str, str | int] | None = None, scale_basis: bool = False)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    :param num_radial: Number of basis functions. Controls the maximum frequency.
    :type num_radial: int
@@ -150,7 +148,7 @@ Classes
    :param scale_basis: Whether to scale the basis values for better numerical stability.
    :type scale_basis: bool
 
-   .. py:method:: forward(d: torch.Tensor) -> torch.Tensor
 
+   .. py:method:: forward(d: torch.Tensor) -> torch.Tensor
 
 

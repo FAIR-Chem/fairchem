@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_oc.layers.embedding_block`
-======================================================
+core.models.gemnet_oc.layers.embedding_block
+============================================
 
 .. py:module:: core.models.gemnet_oc.layers.embedding_block
 
@@ -11,11 +11,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -23,17 +20,19 @@ Classes
    core.models.gemnet_oc.layers.embedding_block.EdgeEmbedding
 
 
-
+Module Contents
+---------------
 
 .. py:class:: AtomEmbedding(emb_size: int, num_elements: int)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Initial atom embeddings based on the atom type
 
    :param emb_size: Atom embeddings size
    :type emb_size: int
+
 
    .. py:method:: forward(Z) -> torch.Tensor
 
@@ -44,8 +43,8 @@ Classes
 
 .. py:class:: EdgeEmbedding(atom_features: int, edge_features: int, out_features: int, activation: str | None = None)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Edge embedding based on the concatenation of atom embeddings
    and a subsequent dense layer.
@@ -58,6 +57,7 @@ Classes
    :type out_features: int
    :param activation: Activation function used in the dense layer.
    :type activation: str
+
 
    .. py:method:: forward(h: torch.Tensor, m: torch.Tensor, edge_index) -> torch.Tensor
 

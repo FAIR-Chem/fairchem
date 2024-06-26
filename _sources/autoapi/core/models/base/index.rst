@@ -1,5 +1,5 @@
-:py:mod:`core.models.base`
-==========================
+core.models.base
+================
 
 .. py:module:: core.models.base
 
@@ -12,23 +12,21 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.base.BaseModel
 
 
-
+Module Contents
+---------------
 
 .. py:class:: BaseModel(num_atoms=None, bond_feat_dim=None, num_targets=None)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -61,15 +59,18 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
-   .. py:property:: num_params
-      :type: int
-
 
    .. py:method:: forward(data)
       :abstractmethod:
 
 
+
    .. py:method:: generate_graph(data, cutoff=None, max_neighbors=None, use_pbc=None, otf_graph=None, enforce_max_neighbors_strictly=None)
+
+
+   .. py:property:: num_params
+      :type: int
+
 
 
    .. py:method:: no_weight_decay() -> list

@@ -1,5 +1,5 @@
-:py:mod:`core.scripts.make_submission_file`
-===========================================
+core.scripts.make_submission_file
+=================================
 
 .. py:module:: core.scripts.make_submission_file
 
@@ -12,12 +12,17 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.scripts.make_submission_file.SPLITS
+   core.scripts.make_submission_file.parser
 
 
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -26,30 +31,16 @@ Functions
    core.scripts.make_submission_file.main
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.scripts.make_submission_file.SPLITS
-   core.scripts.make_submission_file.parser
-
+Module Contents
+---------------
 
 .. py:data:: SPLITS
 
-   
-
 .. py:function:: write_is2re_relaxations(args) -> None
-
 
 .. py:function:: write_predictions(args) -> None
 
-
 .. py:function:: main(args: argparse.Namespace) -> None
 
-
 .. py:data:: parser
-
-   
 

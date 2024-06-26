@@ -1,23 +1,27 @@
-:py:mod:`data.oc.structure_generator`
-=====================================
+data.oc.structure_generator
+===========================
 
 .. py:module:: data.oc.structure_generator
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   data.oc.structure_generator.args
+
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    data.oc.structure_generator.StructureGenerator
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -27,17 +31,10 @@ Functions
    data.oc.structure_generator.run_placements
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   data.oc.structure_generator.args
-
+Module Contents
+---------------
 
 .. py:class:: StructureGenerator(args, bulk_index, surface_index, adsorbate_index)
-
 
    A class that creates adsorbate/bulk/slab objects given specified indices,
    and writes vasp input files and metadata for multiple placements of the adsorbate
@@ -73,10 +70,12 @@ Attributes
    :param adsorbate_index: Index of the adsorbate within the adsorbate db
    :type adsorbate_index: int
 
+
    .. py:method:: run()
 
       Create adsorbate/bulk/surface objects, generate adslab placements,
       and write to files.
+
 
 
    .. py:method:: _write_adslabs(adslab_obj, mode_str)
@@ -92,14 +91,9 @@ Attributes
 
 .. py:function:: parse_args()
 
-
 .. py:function:: precompute_slabs(bulk_ind)
-
 
 .. py:function:: run_placements(inputs)
 
-
 .. py:data:: args
-
-   
 

@@ -1,5 +1,5 @@
-:py:mod:`core.scripts.preprocess_relaxed`
-=========================================
+core.scripts.preprocess_relaxed
+===============================
 
 .. py:module:: core.scripts.preprocess_relaxed
 
@@ -10,12 +10,16 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.scripts.preprocess_relaxed.parser
 
 
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -23,22 +27,12 @@ Functions
    core.scripts.preprocess_relaxed.main
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.scripts.preprocess_relaxed.parser
-
+Module Contents
+---------------
 
 .. py:function:: write_images_to_lmdb(mp_arg) -> None
 
-
 .. py:function:: main(args, split) -> None
 
-
 .. py:data:: parser
-
-   
 

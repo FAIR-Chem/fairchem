@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_oc.layers.atom_update_block`
-========================================================
+core.models.gemnet_oc.layers.atom_update_block
+==============================================
 
 .. py:module:: core.models.gemnet_oc.layers.atom_update_block
 
@@ -11,11 +11,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -23,12 +20,13 @@ Classes
    core.models.gemnet_oc.layers.atom_update_block.OutputBlock
 
 
-
+Module Contents
+---------------
 
 .. py:class:: AtomUpdateBlock(emb_size_atom: int, emb_size_edge: int, emb_size_rbf: int, nHidden: int, activation=None)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Aggregate the message embeddings of the atoms
 
@@ -43,6 +41,7 @@ Classes
    :param activation: Name of the activation function to use in the dense layers.
    :type activation: callable/str
 
+
    .. py:method:: get_mlp(units_in: int, units: int, nHidden: int, activation)
 
 
@@ -55,8 +54,8 @@ Classes
 
 .. py:class:: OutputBlock(emb_size_atom: int, emb_size_edge: int, emb_size_rbf: int, nHidden: int, nHidden_afteratom: int, activation: str | None = None, direct_forces: bool = True)
 
-
    Bases: :py:obj:`AtomUpdateBlock`
+
 
    Combines the atom update block and subsequent final dense layer.
 
@@ -75,6 +74,7 @@ Classes
    :param direct_forces: If true directly predict forces, i.e. without taking the gradient
                          of the energy potential.
    :type direct_forces: bool
+
 
    .. py:method:: forward(h: torch.Tensor, m: torch.Tensor, basis_rad, idx_atom)
 

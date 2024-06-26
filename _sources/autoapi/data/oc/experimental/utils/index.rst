@@ -1,15 +1,11 @@
-:py:mod:`data.oc.experimental.utils`
-====================================
+data.oc.experimental.utils
+==========================
 
 .. py:module:: data.oc.experimental.utils
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -18,6 +14,8 @@ Functions
    data.oc.experimental.utils.plot_traj
 
 
+Module Contents
+---------------
 
 .. py:function:: v0_check(full_traj, initial)
 

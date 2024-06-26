@@ -1,34 +1,31 @@
-:py:mod:`data.oc.utils`
-=======================
+data.oc.utils
+=============
 
 .. py:module:: data.oc.utils
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   flag_anomaly/index.rst
-   vasp/index.rst
+   /autoapi/data/oc/utils/flag_anomaly/index
+   /autoapi/data/oc/utils/vasp/index
 
-
-Package Contents
-----------------
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    data.oc.utils.DetectTrajAnomaly
 
 
-
+Package Contents
+----------------
 
 .. py:class:: DetectTrajAnomaly(init_atoms, final_atoms, atoms_tag, final_slab_atoms=None, surface_change_cutoff_multiplier=1.5, desorption_cutoff_multiplier=1.5)
-
 
    .. py:method:: is_adsorbate_dissociated()
 
@@ -36,6 +33,7 @@ Classes
 
       :returns: True if the connectivity was not maintained, otherwise False
       :rtype: (bool)
+
 
 
    .. py:method:: has_surface_changed()
@@ -48,6 +46,7 @@ Classes
       :rtype: (bool)
 
 
+
    .. py:method:: is_adsorbate_desorbed()
 
       If the adsorbate binding atoms have no connection with slab atoms,
@@ -55,6 +54,7 @@ Classes
 
       :returns: True if there is desorption, otherwise False
       :rtype: (bool)
+
 
 
    .. py:method:: _get_connectivity(atoms, cutoff_multiplier=1.0)
@@ -69,6 +69,7 @@ Classes
 
       :returns: The connectivity matrix of the atoms object.
       :rtype: (np.ndarray)
+
 
 
    .. py:method:: is_adsorbate_intercalated()

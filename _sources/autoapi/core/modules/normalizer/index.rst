@@ -1,5 +1,5 @@
-:py:mod:`core.modules.normalizer`
-=================================
+core.modules.normalizer
+=======================
 
 .. py:module:: core.modules.normalizer
 
@@ -12,23 +12,21 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.modules.normalizer.Normalizer
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Normalizer(tensor: torch.Tensor | None = None, mean=None, std=None, device=None)
 
-
    Normalize a Tensor and restore it later.
+
 
    .. py:method:: to(device) -> None
 
@@ -43,6 +41,5 @@ Classes
 
 
    .. py:method:: load_state_dict(state_dict) -> None
-
 
 

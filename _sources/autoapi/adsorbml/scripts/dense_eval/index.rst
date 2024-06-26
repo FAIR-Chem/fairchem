@@ -1,5 +1,5 @@
-:py:mod:`adsorbml.scripts.dense_eval`
-=====================================
+adsorbml.scripts.dense_eval
+===========================
 
 .. py:module:: adsorbml.scripts.dense_eval
 
@@ -74,12 +74,17 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   adsorbml.scripts.dense_eval.SUCCESS_THRESHOLD
+   adsorbml.scripts.dense_eval.parser
 
 
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -91,20 +96,12 @@ Functions
    adsorbml.scripts.dense_eval.filter_ml_data
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   adsorbml.scripts.dense_eval.SUCCESS_THRESHOLD
-   adsorbml.scripts.dense_eval.parser
-
+Module Contents
+---------------
 
 .. py:data:: SUCCESS_THRESHOLD
    :value: 0.1
 
-   
 
 .. py:function:: is_successful(best_ml_dft_energy, best_dft_energy)
 
@@ -172,6 +169,4 @@ Attributes
 
 
 .. py:data:: parser
-
-   
 

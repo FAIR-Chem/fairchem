@@ -1,5 +1,5 @@
-:py:mod:`core`
-==============
+core
+====
 
 .. py:module:: core
 
@@ -14,26 +14,26 @@
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   common/index.rst
-   datasets/index.rst
-   models/index.rst
-   modules/index.rst
-   preprocessing/index.rst
-   scripts/index.rst
-   tasks/index.rst
-   trainers/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/core/common/index
+   /autoapi/core/datasets/index
+   /autoapi/core/models/index
+   /autoapi/core/modules/index
+   /autoapi/core/preprocessing/index
+   /autoapi/core/scripts/index
+   /autoapi/core/tasks/index
+   /autoapi/core/trainers/index
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   _cli/index.rst
+   /autoapi/core/_cli/index
 
 

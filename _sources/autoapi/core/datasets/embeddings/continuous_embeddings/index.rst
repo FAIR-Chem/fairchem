@@ -1,5 +1,5 @@
-:py:mod:`core.datasets.embeddings.continuous_embeddings`
-========================================================
+core.datasets.embeddings.continuous_embeddings
+==============================================
 
 .. py:module:: core.datasets.embeddings.continuous_embeddings
 
@@ -22,10 +22,16 @@
 
 
 
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.datasets.embeddings.continuous_embeddings.CONTINUOUS_EMBEDDINGS
+
+
 Module Contents
 ---------------
 
 .. py:data:: CONTINUOUS_EMBEDDINGS
-
-   
 

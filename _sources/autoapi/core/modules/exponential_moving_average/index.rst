@@ -1,5 +1,5 @@
-:py:mod:`core.modules.exponential_moving_average`
-=================================================
+core.modules.exponential_moving_average
+=======================================
 
 .. py:module:: core.modules.exponential_moving_average
 
@@ -10,21 +10,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.modules.exponential_moving_average.ExponentialMovingAverage
 
 
-
+Module Contents
+---------------
 
 .. py:class:: ExponentialMovingAverage(parameters: collections.abc.Iterable[torch.nn.Parameter], decay: float, use_num_updates: bool = False)
-
 
    Maintains (exponential) moving average of a set of parameters.
 
@@ -33,6 +30,7 @@ Classes
    :param decay: The exponential decay.
    :param use_num_updates: Whether to use number of updates when computing
                            averages.
+
 
    .. py:method:: _get_parameters(parameters: collections.abc.Iterable[torch.nn.Parameter] | None) -> collections.abc.Iterable[torch.nn.Parameter]
 
@@ -50,6 +48,7 @@ Classes
                          initialized will be used.
 
 
+
    .. py:method:: copy_to(parameters: collections.abc.Iterable[torch.nn.Parameter] | None = None) -> None
 
       Copy current parameters into given collection of parameters.
@@ -60,6 +59,7 @@ Classes
                          initialized will be used.
 
 
+
    .. py:method:: store(parameters: collections.abc.Iterable[torch.nn.Parameter] | None = None) -> None
 
       Save the current parameters for restoring later.
@@ -67,6 +67,7 @@ Classes
       :param parameters: Iterable of `torch.nn.Parameter`; the parameters to be
                          temporarily stored. If `None`, the parameters of with which this
                          `ExponentialMovingAverage` was initialized will be used.
+
 
 
    .. py:method:: restore(parameters: collections.abc.Iterable[torch.nn.Parameter] | None = None) -> None
@@ -83,9 +84,11 @@ Classes
                          initialized will be used.
 
 
+
    .. py:method:: state_dict() -> dict
 
       Returns the state of the ExponentialMovingAverage as a dict.
+
 
 
    .. py:method:: load_state_dict(state_dict: dict) -> None

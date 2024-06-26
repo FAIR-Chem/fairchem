@@ -1,56 +1,54 @@
-:py:mod:`core.models.equiformer_v2`
-===================================
+core.models.equiformer_v2
+=========================
 
 .. py:module:: core.models.equiformer_v2
 
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   trainers/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/core/models/equiformer_v2/trainers/index
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   activation/index.rst
-   drop/index.rst
-   edge_rot_mat/index.rst
-   equiformer_v2_oc20/index.rst
-   gaussian_rbf/index.rst
-   input_block/index.rst
-   layer_norm/index.rst
-   module_list/index.rst
-   radial_function/index.rst
-   so2_ops/index.rst
-   so3/index.rst
-   transformer_block/index.rst
-   wigner/index.rst
+   /autoapi/core/models/equiformer_v2/activation/index
+   /autoapi/core/models/equiformer_v2/drop/index
+   /autoapi/core/models/equiformer_v2/edge_rot_mat/index
+   /autoapi/core/models/equiformer_v2/equiformer_v2_oc20/index
+   /autoapi/core/models/equiformer_v2/gaussian_rbf/index
+   /autoapi/core/models/equiformer_v2/input_block/index
+   /autoapi/core/models/equiformer_v2/layer_norm/index
+   /autoapi/core/models/equiformer_v2/module_list/index
+   /autoapi/core/models/equiformer_v2/radial_function/index
+   /autoapi/core/models/equiformer_v2/so2_ops/index
+   /autoapi/core/models/equiformer_v2/so3/index
+   /autoapi/core/models/equiformer_v2/transformer_block/index
+   /autoapi/core/models/equiformer_v2/wigner/index
 
-
-Package Contents
-----------------
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.equiformer_v2.EquiformerV2
 
 
-
+Package Contents
+----------------
 
 .. py:class:: EquiformerV2(num_atoms: int, bond_feat_dim: int, num_targets: int, use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = True, max_neighbors: int = 500, max_radius: float = 5.0, max_num_elements: int = 90, num_layers: int = 12, sphere_channels: int = 128, attn_hidden_channels: int = 128, num_heads: int = 8, attn_alpha_channels: int = 32, attn_value_channels: int = 16, ffn_hidden_channels: int = 512, norm_type: str = 'rms_norm_sh', lmax_list: list[int] | None = None, mmax_list: list[int] | None = None, grid_resolution: int | None = None, num_sphere_samples: int = 128, edge_channels: int = 128, use_atom_edge_embedding: bool = True, share_atom_edge_embedding: bool = False, use_m_share_rad: bool = False, distance_function: str = 'gaussian', num_distance_basis: int = 512, attn_activation: str = 'scaled_silu', use_s2_act_attn: bool = False, use_attn_renorm: bool = True, ffn_activation: str = 'scaled_silu', use_gate_act: bool = False, use_grid_mlp: bool = False, use_sep_s2_act: bool = True, alpha_drop: float = 0.1, drop_path_rate: float = 0.05, proj_drop: float = 0.0, weight_init: str = 'normal', enforce_max_neighbors_strictly: bool = True, avg_num_nodes: float | None = None, avg_degree: float | None = None, use_energy_lin_ref: bool | None = False, load_energy_lin_ref: bool | None = False)
 
-
    Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+
 
    Equiformer with graph attention built upon SO(2) convolution and feedforward network built upon S2 activation
 
@@ -137,13 +135,14 @@ Classes
                                You can't have use_energy_lin_ref = True and load_energy_lin_ref = False, since the model will not have the parameters for the linear references. All other combinations are fine.
    :type load_energy_lin_ref: bool
 
-   .. py:property:: num_params
-
 
    .. py:method:: forward(data)
 
 
    .. py:method:: _init_edge_rot_mat(data, edge_index, edge_distance_vec)
+
+
+   .. py:property:: num_params
 
 
    .. py:method:: _init_weights(m)

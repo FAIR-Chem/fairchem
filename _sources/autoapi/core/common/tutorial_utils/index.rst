@@ -1,15 +1,11 @@
-:py:mod:`core.common.tutorial_utils`
-====================================
+core.common.tutorial_utils
+==========================
 
 .. py:module:: core.common.tutorial_utils
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -20,6 +16,8 @@ Functions
    core.common.tutorial_utils.generate_yml_config
 
 
+Module Contents
+---------------
 
 .. py:function:: fairchem_root()
 

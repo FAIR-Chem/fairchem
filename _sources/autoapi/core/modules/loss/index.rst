@@ -1,14 +1,11 @@
-:py:mod:`core.modules.loss`
-===========================
+core.modules.loss
+=================
 
 .. py:module:: core.modules.loss
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -17,12 +14,13 @@ Classes
    core.modules.loss.DDPLoss
 
 
-
+Module Contents
+---------------
 
 .. py:class:: L2MAELoss(reduction: str = 'mean')
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -54,15 +52,15 @@ Classes
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(input: torch.Tensor, target: torch.Tensor)
 
 
-
 .. py:class:: AtomwiseL2Loss(reduction: str = 'mean')
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -94,15 +92,15 @@ Classes
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(input: torch.Tensor, target: torch.Tensor, natoms: torch.Tensor)
 
 
-
 .. py:class:: DDPLoss(loss_fn, loss_name: str = 'mae', reduction: str = 'mean')
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -135,7 +133,7 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
-   .. py:method:: forward(input: torch.Tensor, target: torch.Tensor, natoms: torch.Tensor | None = None, batch_size: int | None = None)
 
+   .. py:method:: forward(input: torch.Tensor, target: torch.Tensor, natoms: torch.Tensor | None = None, batch_size: int | None = None)
 
 

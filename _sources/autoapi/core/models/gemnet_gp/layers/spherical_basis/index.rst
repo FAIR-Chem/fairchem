@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_gp.layers.spherical_basis`
-======================================================
+core.models.gemnet_gp.layers.spherical_basis
+============================================
 
 .. py:module:: core.models.gemnet_gp.layers.spherical_basis
 
@@ -12,23 +12,21 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.gemnet_gp.layers.spherical_basis.CircularBasisLayer
 
 
-
+Module Contents
+---------------
 
 .. py:class:: CircularBasisLayer(num_spherical: int, radial_basis: core.models.gemnet_gp.layers.radial_basis.RadialBasis, cbf, efficient: bool = False)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    2D Fourier Bessel Basis
 
@@ -41,7 +39,7 @@ Classes
    :param efficient: Whether to use the "efficient" summation order
    :type efficient: bool
 
-   .. py:method:: forward(D_ca, cosφ_cab, id3_ca)
 
+   .. py:method:: forward(D_ca, cosφ_cab, id3_ca)
 
 

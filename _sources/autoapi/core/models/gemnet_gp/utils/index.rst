@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_gp.utils`
-=====================================
+core.models.gemnet_gp.utils
+===========================
 
 .. py:module:: core.models.gemnet_gp.utils
 
@@ -12,12 +12,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -32,18 +28,16 @@ Functions
    core.models.gemnet_gp.utils.mask_neighbors
 
 
+Module Contents
+---------------
 
 .. py:function:: read_json(path: str)
 
-
 .. py:function:: update_json(path: str, data) -> None
-
 
 .. py:function:: write_json(path: str, data) -> None
 
-
 .. py:function:: read_value_json(path: str, key)
-
 
 .. py:function:: ragged_range(sizes)
 
@@ -119,5 +113,4 @@ Functions
 
 
 .. py:function:: mask_neighbors(neighbors: torch.Tensor, edge_mask: torch.Tensor)
-
 

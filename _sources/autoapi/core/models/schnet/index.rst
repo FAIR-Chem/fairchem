@@ -1,5 +1,5 @@
-:py:mod:`core.models.schnet`
-============================
+core.models.schnet
+==================
 
 .. py:module:: core.models.schnet
 
@@ -12,23 +12,21 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.schnet.SchNetWrap
 
 
-
+Module Contents
+---------------
 
 .. py:class:: SchNetWrap(num_atoms: int, bond_feat_dim: int, num_targets: int, use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, hidden_channels: int = 128, num_filters: int = 128, num_interactions: int = 6, num_gaussians: int = 50, cutoff: float = 10.0, readout: str = 'add')
 
-
    Bases: :py:obj:`torch_geometric.nn.SchNet`, :py:obj:`fairchem.core.models.base.BaseModel`
+
 
    Wrapper around the continuous-filter convolutional neural network SchNet from the
    `"SchNet: A Continuous-filter Convolutional Neural Network for Modeling
@@ -74,9 +72,6 @@ Classes
                    :obj:`"mean"` global aggregation. (default: :obj:`"add"`)
    :type readout: string, optional
 
-   .. py:property:: num_params
-      :type: int
-
 
    .. py:method:: _forward(data)
 
@@ -93,6 +88,11 @@ Classes
                     to a separate molecule with shape :obj:`[num_atoms]`.
                     (default: :obj:`None`)
       :type batch: torch.Tensor, optional
+
+
+
+   .. py:property:: num_params
+      :type: int
 
 
 

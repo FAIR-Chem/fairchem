@@ -1,34 +1,42 @@
-:py:mod:`ocpapi.client.client`
-==============================
+ocpapi.client.client
+====================
 
 .. py:module:: ocpapi.client.client
 
 
-Module Contents
----------------
+Exceptions
+----------
+
+.. autoapisummary::
+
+   ocpapi.client.client.RequestException
+   ocpapi.client.client.NonRetryableRequestException
+   ocpapi.client.client.RateLimitExceededException
+
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    ocpapi.client.client.Client
 
 
-
+Module Contents
+---------------
 
 .. py:exception:: RequestException(method: str, url: str, cause: str)
 
-
    Bases: :py:obj:`Exception`
+
 
    Exception raised any time there is an error while making an API call.
 
 
 .. py:exception:: NonRetryableRequestException(method: str, url: str, cause: str)
 
-
    Bases: :py:obj:`RequestException`
+
 
    Exception raised when an API call is rejected for a reason that will
    not succeed on retry. For example, this might include a malformed request
@@ -37,8 +45,8 @@ Classes
 
 .. py:exception:: RateLimitExceededException(method: str, url: str, retry_after: Optional[datetime.timedelta] = None)
 
-
    Bases: :py:obj:`RequestException`
+
 
    Exception raised when an API call is rejected because a rate limit has
    been exceeded.
@@ -51,16 +59,18 @@ Classes
 
 .. py:class:: Client(host: str = 'open-catalyst-api.metademolab.com', scheme: str = 'https')
 
-
    Exposes each route in the OCP API as a method.
+
 
    .. py:property:: host
       :type: str
 
       The host being called by this client.
 
+
    .. py:method:: get_models() -> ocpapi.client.models.Models
       :async:
+
 
       Fetch the list of models that are supported in the API.
 
@@ -74,8 +84,10 @@ Classes
       :returns: The models that are supported in the API.
 
 
+
    .. py:method:: get_bulks() -> ocpapi.client.models.Bulks
       :async:
+
 
       Fetch the list of bulk materials that are supported in the API.
 
@@ -89,8 +101,10 @@ Classes
       :returns: The bulks that are supported throughout the API.
 
 
+
    .. py:method:: get_adsorbates() -> ocpapi.client.models.Adsorbates
       :async:
+
 
       Fetch the list of adsorbates that are supported in the API.
 
@@ -104,8 +118,10 @@ Classes
       :returns: The adsorbates that are supported throughout the API.
 
 
+
    .. py:method:: get_slabs(bulk: Union[str, ocpapi.client.models.Bulk]) -> ocpapi.client.models.Slabs
       :async:
+
 
       Get a unique list of slabs for the input bulk structure.
 
@@ -122,8 +138,10 @@ Classes
       :returns: Slabs for each of the unique surfaces of the material.
 
 
+
    .. py:method:: get_adsorbate_slab_configs(adsorbate: str, slab: ocpapi.client.models.Slab) -> ocpapi.client.models.AdsorbateSlabConfigs
       :async:
+
 
       Get a list of possible binding sites for the input adsorbate on the
       input slab.
@@ -142,8 +160,10 @@ Classes
       :returns: Configurations for each adsorbate binding site on the slab.
 
 
+
    .. py:method:: submit_adsorbate_slab_relaxations(adsorbate: str, adsorbate_configs: List[ocpapi.client.models.Atoms], bulk: ocpapi.client.models.Bulk, slab: ocpapi.client.models.Slab, model: str, ephemeral: bool = False) -> ocpapi.client.models.AdsorbateSlabRelaxationsSystem
       :async:
+
 
       Starts relaxations of the input adsorbate configurations on the input
       slab using energies and forces returned by the input model. Relaxations
@@ -173,8 +193,10 @@ Classes
       :returns: IDs of the relaxations.
 
 
+
    .. py:method:: get_adsorbate_slab_relaxations_request(system_id: str) -> ocpapi.client.models.AdsorbateSlabRelaxationsRequest
       :async:
+
 
       Fetches the original relaxations request for the input system.
 
@@ -190,8 +212,10 @@ Classes
       :returns: The original request that was made when submitting relaxations.
 
 
+
    .. py:method:: get_adsorbate_slab_relaxations_results(system_id: str, config_ids: Optional[List[int]] = None, fields: Optional[List[str]] = None) -> ocpapi.client.models.AdsorbateSlabRelaxationsResults
       :async:
+
 
       Fetches relaxation results for the input system.
 
@@ -211,8 +235,10 @@ Classes
       :returns: The relaxation results for each configuration in the system.
 
 
+
    .. py:method:: delete_adsorbate_slab_relaxations(system_id: str) -> None
       :async:
+
 
       Deletes all relaxation results for the input system.
 
@@ -226,8 +252,10 @@ Classes
           is possible, though not guaranteed, that a retry could succeed.
 
 
+
    .. py:method:: _run_request(path: str, method: str, **kwargs) -> str
       :async:
+
 
       Helper method that runs the input request on a thread so that
       it doesn't block the event loop on the calling thread.

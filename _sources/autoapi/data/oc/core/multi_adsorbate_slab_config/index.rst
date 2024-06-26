@@ -1,34 +1,32 @@
-:py:mod:`data.oc.core.multi_adsorbate_slab_config`
-==================================================
+data.oc.core.multi_adsorbate_slab_config
+========================================
 
 .. py:module:: data.oc.core.multi_adsorbate_slab_config
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    data.oc.core.multi_adsorbate_slab_config.MultipleAdsorbateSlabConfig
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    data.oc.core.multi_adsorbate_slab_config.update_distance_map
 
 
+Module Contents
+---------------
 
 .. py:class:: MultipleAdsorbateSlabConfig(slab: fairchem.data.oc.core.Slab, adsorbates: List[fairchem.data.oc.core.Adsorbate], num_sites: int = 100, num_configurations: int = 1, interstitial_gap: float = 0.1, mode: str = 'random_site_heuristic_placement')
 
-
    Bases: :py:obj:`fairchem.data.oc.core.AdsorbateSlabConfig`
+
 
    Class to represent a slab with multiple adsorbates on it. This class only
    returns a fixed combination of adsorbates placed on the surface. Unlike
@@ -72,6 +70,7 @@ Functions
                 overlap with the slab plus `interstitial_gap` along the surface normal.
    :type mode: str
 
+
    .. py:method:: place_adsorbates_on_sites(sites: list, num_configurations: int = 1, interstitial_gap: float = 0.1)
 
       Place the adsorbate at the given binding sites.
@@ -82,6 +81,7 @@ Functions
       While this helps prevent adsorbate overlap it does not gaurantee it
       since non-binding adsorbate atoms can overlap if the right combination
       of angles is sampled.
+
 
 
    .. py:method:: get_metadata_dict(ind)

@@ -1,17 +1,17 @@
-:py:mod:`data`
-==============
+data
+====
 
 .. py:module:: data
 
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   oc/index.rst
-   odac/index.rst
-   om/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/data/oc/index
+   /autoapi/data/odac/index
+   /autoapi/data/om/index
 
 

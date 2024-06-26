@@ -1,23 +1,19 @@
-:py:mod:`data.oc.core.slab`
-===========================
+data.oc.core.slab
+=================
 
 .. py:module:: data.oc.core.slab
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    data.oc.core.slab.Slab
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -35,9 +31,10 @@ Functions
    data.oc.core.slab.standardize_bulk
 
 
+Module Contents
+---------------
 
 .. py:class:: Slab(bulk=None, slab_atoms: ase.Atoms = None, millers: tuple = None, shift: float = None, top: bool = None, oriented_bulk: pymatgen.core.structure.Structure = None, min_ab: float = 0.8)
-
 
    Initializes a slab object, i.e. a particular slab tiled along xyz, in
    one of 2 ways:
@@ -58,24 +55,30 @@ Functions
    :param min_ab: To confirm that the tiled structure spans this distance
    :type min_ab: float
 
+
    .. py:method:: from_bulk_get_random_slab(bulk=None, max_miller=2, min_ab=8.0, save_path=None)
       :classmethod:
+
 
 
    .. py:method:: from_bulk_get_specific_millers(specific_millers, bulk=None, min_ab=8.0, save_path=None)
       :classmethod:
 
 
+
    .. py:method:: from_bulk_get_all_slabs(bulk=None, max_miller=2, min_ab=8.0, save_path=None)
       :classmethod:
+
 
 
    .. py:method:: from_precomputed_slabs_pkl(bulk=None, precomputed_slabs_pkl=None, max_miller=2, min_ab=8.0)
       :classmethod:
 
 
+
    .. py:method:: from_atoms(atoms: ase.Atoms = None, bulk=None, **kwargs)
       :classmethod:
+
 
 
    .. py:method:: has_surface_tagged()
@@ -92,9 +95,11 @@ Functions
       Return str(self).
 
 
+
    .. py:method:: __repr__()
 
       Return repr(self).
+
 
 
    .. py:method:: __eq__(other)

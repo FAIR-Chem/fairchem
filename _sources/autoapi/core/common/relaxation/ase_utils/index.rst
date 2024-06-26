@@ -1,5 +1,5 @@
-:py:mod:`core.common.relaxation.ase_utils`
-==========================================
+core.common.relaxation.ase_utils
+================================
 
 .. py:module:: core.common.relaxation.ase_utils
 
@@ -17,34 +17,31 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.common.relaxation.ase_utils.OCPCalculator
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    core.common.relaxation.ase_utils.batch_to_atoms
 
 
+Module Contents
+---------------
 
 .. py:function:: batch_to_atoms(batch)
 
-
 .. py:class:: OCPCalculator(config_yml: str | None = None, checkpoint_path: str | None = None, model_name: str | None = None, local_cache: str | None = None, trainer: str | None = None, cutoff: int = 6, max_neighbors: int = 50, cpu: bool = True, seed: int | None = None)
 
-
    Bases: :py:obj:`ase.calculators.calculator.Calculator`
+
 
    Base-class for all ASE calculators.
 
@@ -57,11 +54,12 @@ Functions
    properties: 'energy', 'forces', 'stress', 'dipole', 'charges',
    'magmom' and 'magmoms'.
 
+
    .. py:attribute:: implemented_properties
-      :type: ClassVar[list[str]]
+      :type:  ClassVar[list[str]]
       :value: ['energy', 'forces']
 
-      
+
 
    .. py:method:: load_checkpoint(checkpoint_path: str, checkpoint: dict | None = None) -> None
 
@@ -69,6 +67,7 @@ Functions
 
       :param checkpoint_path: string
                               Path to trained model
+
 
 
    .. py:method:: calculate(atoms: ase.Atoms, properties, system_changes) -> None

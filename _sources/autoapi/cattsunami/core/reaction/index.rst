@@ -1,26 +1,24 @@
-:py:mod:`cattsunami.core.reaction`
-==================================
+cattsunami.core.reaction
+========================
 
 .. py:module:: cattsunami.core.reaction
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    cattsunami.core.reaction.Reaction
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Reaction(reaction_db_path: str, adsorbate_db_path: str, reaction_id_from_db: int = None, reaction_str_from_db: str = None, reaction_type: str = None)
 
-
    Initialize Reaction object
+
 
    .. py:method:: get_desorption_mapping(reactant)
 

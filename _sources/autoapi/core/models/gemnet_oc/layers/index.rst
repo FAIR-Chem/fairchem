@@ -1,23 +1,23 @@
-:py:mod:`core.models.gemnet_oc.layers`
-======================================
+core.models.gemnet_oc.layers
+============================
 
 .. py:module:: core.models.gemnet_oc.layers
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   atom_update_block/index.rst
-   base_layers/index.rst
-   basis_utils/index.rst
-   efficient/index.rst
-   embedding_block/index.rst
-   force_scaler/index.rst
-   interaction_block/index.rst
-   radial_basis/index.rst
-   spherical_basis/index.rst
+   /autoapi/core/models/gemnet_oc/layers/atom_update_block/index
+   /autoapi/core/models/gemnet_oc/layers/base_layers/index
+   /autoapi/core/models/gemnet_oc/layers/basis_utils/index
+   /autoapi/core/models/gemnet_oc/layers/efficient/index
+   /autoapi/core/models/gemnet_oc/layers/embedding_block/index
+   /autoapi/core/models/gemnet_oc/layers/force_scaler/index
+   /autoapi/core/models/gemnet_oc/layers/interaction_block/index
+   /autoapi/core/models/gemnet_oc/layers/radial_basis/index
+   /autoapi/core/models/gemnet_oc/layers/spherical_basis/index
 
 

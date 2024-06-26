@@ -1,5 +1,5 @@
-:py:mod:`core.scripts`
-======================
+core.scripts
+============
 
 .. py:module:: core.scripts
 
@@ -14,26 +14,26 @@
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   hpo/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/core/scripts/hpo/index
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   download_data/index.rst
-   gif_maker_parallelized/index.rst
-   make_challenge_submission_file/index.rst
-   make_lmdb_sizes/index.rst
-   make_submission_file/index.rst
-   preprocess_ef/index.rst
-   preprocess_relaxed/index.rst
-   uncompress/index.rst
+   /autoapi/core/scripts/download_data/index
+   /autoapi/core/scripts/gif_maker_parallelized/index
+   /autoapi/core/scripts/make_challenge_submission_file/index
+   /autoapi/core/scripts/make_lmdb_sizes/index
+   /autoapi/core/scripts/make_submission_file/index
+   /autoapi/core/scripts/preprocess_ef/index
+   /autoapi/core/scripts/preprocess_relaxed/index
+   /autoapi/core/scripts/uncompress/index
 
 

@@ -1,5 +1,5 @@
-:py:mod:`data.oc.scripts.precompute_sample_structures`
-======================================================
+data.oc.scripts.precompute_sample_structures
+============================================
 
 .. py:module:: data.oc.scripts.precompute_sample_structures
 
@@ -13,25 +13,8 @@
 
 
 
-Module Contents
----------------
-
-
-Functions
-~~~~~~~~~
-
-.. autoapisummary::
-
-   data.oc.scripts.precompute_sample_structures.enumerate_surfaces_for_saving
-   data.oc.scripts.precompute_sample_structures.standardize_bulk
-   data.oc.scripts.precompute_sample_structures.is_structure_invertible
-   data.oc.scripts.precompute_sample_structures.flip_struct
-   data.oc.scripts.precompute_sample_structures.precompute_enumerate_surface
-
-
-
 Attributes
-~~~~~~~~~~
+----------
 
 .. autoapisummary::
 
@@ -42,25 +25,36 @@ Attributes
    data.oc.scripts.precompute_sample_structures.s
 
 
+Functions
+---------
+
+.. autoapisummary::
+
+   data.oc.scripts.precompute_sample_structures.enumerate_surfaces_for_saving
+   data.oc.scripts.precompute_sample_structures.standardize_bulk
+   data.oc.scripts.precompute_sample_structures.is_structure_invertible
+   data.oc.scripts.precompute_sample_structures.flip_struct
+   data.oc.scripts.precompute_sample_structures.precompute_enumerate_surface
+
+
+Module Contents
+---------------
+
 .. py:data:: __authors__
    :value: ['Kevin Tran', 'Aini Palizhati', 'Siddharth Goyal', 'Zachary Ulissi']
 
-   
 
 .. py:data:: __email__
    :value: ['ktran@andrew.cmu.edu']
 
-   
 
 .. py:data:: BULK_PKL
    :value: '/fill/this/in/with/path/to/bulk/pkl/file'
 
-   
 
 .. py:data:: MAX_MILLER
    :value: 2
 
-   
 
 .. py:function:: enumerate_surfaces_for_saving(bulk_atoms, max_miller=MAX_MILLER)
 
@@ -131,8 +125,5 @@ Attributes
 
 .. py:function:: precompute_enumerate_surface(bulk_database, bulk_index, opfile)
 
-
 .. py:data:: s
-
-   
 

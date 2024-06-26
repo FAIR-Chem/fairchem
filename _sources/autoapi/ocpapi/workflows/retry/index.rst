@@ -1,33 +1,11 @@
-:py:mod:`ocpapi.workflows.retry`
-================================
+ocpapi.workflows.retry
+======================
 
 .. py:module:: ocpapi.workflows.retry
 
 
-Module Contents
----------------
-
-Classes
-~~~~~~~
-
-.. autoapisummary::
-
-   ocpapi.workflows.retry.RateLimitLogging
-   ocpapi.workflows.retry._wait_check_retry_after
-
-
-
-Functions
-~~~~~~~~~
-
-.. autoapisummary::
-
-   ocpapi.workflows.retry.retry_api_calls
-
-
-
 Attributes
-~~~~~~~~~~
+----------
 
 .. autoapisummary::
 
@@ -35,30 +13,52 @@ Attributes
    ocpapi.workflows.retry.NO_LIMIT
 
 
-.. py:class:: RateLimitLogging
+Classes
+-------
 
+.. autoapisummary::
+
+   ocpapi.workflows.retry.RateLimitLogging
+   ocpapi.workflows.retry._wait_check_retry_after
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   ocpapi.workflows.retry.retry_api_calls
+
+
+Module Contents
+---------------
+
+.. py:class:: RateLimitLogging
 
    Controls logging when rate limits are hit.
 
+
    .. py:attribute:: logger
-      :type: logging.Logger
+      :type:  logging.Logger
 
       The logger to use.
 
+
    .. py:attribute:: action
-      :type: str
+      :type:  str
 
       A short description of the action being attempted.
 
 
 .. py:class:: _wait_check_retry_after(default_wait: tenacity.wait.wait_base, rate_limit_logging: Optional[RateLimitLogging] = None)
 
-
    Bases: :py:obj:`tenacity.wait.wait_base`
+
 
    Tenacity wait strategy that first checks whether RateLimitExceededException
    was raised and that it includes a retry-after value; if so wait, for that
    amount of time. Otherwise, fall back to the provided default strategy.
+
 
    .. py:method:: __call__(retry_state: tenacity.RetryCallState) -> float
 
@@ -69,13 +69,10 @@ Attributes
 
 .. py:data:: NoLimitType
 
-   
-
 .. py:data:: NO_LIMIT
-   :type: NoLimitType
+   :type:  NoLimitType
    :value: 0
 
-   
 
 .. py:function:: retry_api_calls(max_attempts: Union[int, NoLimitType] = 3, rate_limit_logging: Optional[RateLimitLogging] = None, fixed_wait_sec: float = 2, max_jitter_sec: float = 1) -> Any
 

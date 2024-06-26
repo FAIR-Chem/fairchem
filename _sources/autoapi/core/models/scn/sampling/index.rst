@@ -1,5 +1,5 @@
-:py:mod:`core.models.scn.sampling`
-==================================
+core.models.scn.sampling
+========================
 
 .. py:module:: core.models.scn.sampling
 
@@ -12,12 +12,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -25,10 +21,10 @@ Functions
    core.models.scn.sampling.CalcSpherePointsRandom
 
 
+Module Contents
+---------------
 
 .. py:function:: CalcSpherePoints(num_points: int, device: str = 'cpu') -> torch.Tensor
 
-
 .. py:function:: CalcSpherePointsRandom(num_points: int, device) -> torch.Tensor
-
 

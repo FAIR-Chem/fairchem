@@ -1,14 +1,11 @@
-:py:mod:`core.models.equiformer_v2.trainers.lr_scheduler`
-=========================================================
+core.models.equiformer_v2.trainers.lr_scheduler
+===============================================
 
 .. py:module:: core.models.equiformer_v2.trainers.lr_scheduler
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -17,9 +14,8 @@ Classes
    core.models.equiformer_v2.trainers.lr_scheduler.LRScheduler
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -28,32 +24,26 @@ Functions
    core.models.equiformer_v2.trainers.lr_scheduler.multistep_lr_lambda
 
 
+Module Contents
+---------------
 
 .. py:function:: multiply(obj, num)
 
-
 .. py:function:: cosine_lr_lambda(current_step: int, scheduler_params)
 
-
 .. py:class:: CosineLRLambda(scheduler_params)
-
 
    .. py:method:: __call__(current_step: int)
 
 
-
 .. py:function:: multistep_lr_lambda(current_step: int, scheduler_params) -> float
 
-
 .. py:class:: MultistepLRLambda(scheduler_params)
-
 
    .. py:method:: __call__(current_step: int) -> float
 
 
-
 .. py:class:: LRScheduler(optimizer, config)
-
 
    .. rubric:: Notes
 
@@ -85,6 +75,7 @@ Functions
    :param config: Optim dict from the input config
    :type config: dict
 
+
    .. py:method:: step(metrics=None, epoch=None)
 
 
@@ -92,6 +83,5 @@ Functions
 
 
    .. py:method:: get_lr() -> float | None
-
 
 

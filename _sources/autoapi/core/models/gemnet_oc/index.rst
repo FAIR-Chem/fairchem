@@ -1,47 +1,45 @@
-:py:mod:`core.models.gemnet_oc`
-===============================
+core.models.gemnet_oc
+=====================
 
 .. py:module:: core.models.gemnet_oc
 
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   layers/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/core/models/gemnet_oc/layers/index
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   gemnet_oc/index.rst
-   initializers/index.rst
-   interaction_indices/index.rst
-   utils/index.rst
+   /autoapi/core/models/gemnet_oc/gemnet_oc/index
+   /autoapi/core/models/gemnet_oc/initializers/index
+   /autoapi/core/models/gemnet_oc/interaction_indices/index
+   /autoapi/core/models/gemnet_oc/utils/index
 
-
-Package Contents
-----------------
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.gemnet_oc.GemNetOC
 
 
-
+Package Contents
+----------------
 
 .. py:class:: GemNetOC(num_atoms: int | None, bond_feat_dim: int, num_targets: int, num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip_in: int, emb_size_trip_out: int, emb_size_quad_in: int, emb_size_quad_out: int, emb_size_aint_in: int, emb_size_aint_out: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_sbf: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, num_output_afteratom: int, num_atom_emb_layers: int = 0, num_global_out_layers: int = 2, regress_forces: bool = True, direct_forces: bool = False, use_pbc: bool = True, scale_backprop_forces: bool = False, cutoff: float = 6.0, cutoff_qint: float | None = None, cutoff_aeaint: float | None = None, cutoff_aint: float | None = None, max_neighbors: int = 50, max_neighbors_qint: int | None = None, max_neighbors_aeaint: int | None = None, max_neighbors_aint: int | None = None, enforce_max_neighbors_strictly: bool = True, rbf: dict[str, str] | None = None, rbf_spherical: dict | None = None, envelope: dict[str, str | int] | None = None, cbf: dict[str, str] | None = None, sbf: dict[str, str] | None = None, extensive: bool = True, forces_coupled: bool = False, output_init: str = 'HeOrthogonal', activation: str = 'silu', quad_interaction: bool = False, atom_edge_interaction: bool = False, edge_atom_interaction: bool = False, atom_interaction: bool = False, scale_basis: bool = False, qint_tags: list | None = None, num_elements: int = 83, otf_graph: bool = False, scale_file: str | None = None, **kwargs)
 
-
    Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+
 
    :param num_atoms (int):
    :type num_atoms (int): Unused argument
@@ -168,9 +166,6 @@ Classes
                      0=sub-surface bulk, 1=surface, 2=adsorbate atoms.
    :type qint_tags: list
 
-   .. py:property:: num_params
-      :type: int
-
 
    .. py:method:: set_cutoffs(cutoff, cutoff_qint, cutoff_aeaint, cutoff_aint)
 
@@ -201,6 +196,7 @@ Classes
                 * **angle_cabd** (*Tensor, shape = (num_quadruplets,)*) -- Dihedral angle between atoms c <- a-b -> d.
 
 
+
    .. py:method:: select_symmetric_edges(tensor: torch.Tensor, mask: torch.Tensor, reorder_idx: torch.Tensor, opposite_neg) -> torch.Tensor
 
       Use a mask to remove values of removed edges and then
@@ -221,6 +217,7 @@ Classes
       :rtype: torch.Tensor
 
 
+
    .. py:method:: symmetrize_edges(graph, batch_idx)
 
       Symmetrize edges to ensure existence of counter-directional edges.
@@ -231,14 +228,17 @@ Classes
       and add others by making it symmetric.
 
 
+
    .. py:method:: subselect_edges(data, graph, cutoff=None, max_neighbors=None)
 
       Subselect edges using a stricter cutoff and max_neighbors.
 
 
+
    .. py:method:: generate_graph_dict(data, cutoff, max_neighbors)
 
       Generate a radius/nearest neighbor graph.
+
 
 
    .. py:method:: subselect_graph(data, graph, cutoff, max_neighbors, cutoff_orig, max_neighbors_orig)
@@ -247,9 +247,11 @@ Classes
       subselect the edges of a given graph.
 
 
+
    .. py:method:: get_graphs_and_indices(data)
 
       "Generate embedding and interaction graphs and indices.
+
 
 
    .. py:method:: get_bases(main_graph, a2a_graph, a2ee2a_graph, qint_graph, trip_idx_e2e, trip_idx_a2e, trip_idx_e2a, quad_idx, num_atoms)
@@ -257,7 +259,12 @@ Classes
       Calculate and transform basis functions.
 
 
+
    .. py:method:: forward(data)
+
+
+   .. py:property:: num_params
+      :type: int
 
 
 

@@ -1,5 +1,5 @@
-:py:mod:`core.datasets.ase_datasets`
-====================================
+core.datasets.ase_datasets
+==========================
 
 .. py:module:: core.datasets.ase_datasets
 
@@ -12,11 +12,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -26,15 +23,16 @@ Classes
    core.datasets.ase_datasets.AseDBDataset
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    core.datasets.ase_datasets.apply_one_tags
 
 
+Module Contents
+---------------
 
 .. py:function:: apply_one_tags(atoms: ase.Atoms, skip_if_nonzero: bool = True, skip_always: bool = False)
 
@@ -55,8 +53,8 @@ Functions
 
 .. py:class:: AseAtomsDataset(config: dict, atoms_transform: Callable[[ase.Atoms, Any, Ellipsis], ase.Atoms] = apply_one_tags)
 
-
    Bases: :py:obj:`torch.utils.data.Dataset`, :py:obj:`abc.ABC`
+
 
    This is an abstract Dataset that includes helpful utilities for turning
    ASE atoms objects into OCP-usable data objects. This should not be instantiated directly
@@ -71,6 +69,7 @@ Functions
 
    Identifiers need not be any particular type.
 
+
    .. py:method:: __len__() -> int
 
 
@@ -81,12 +80,15 @@ Functions
       :abstractmethod:
 
 
+
    .. py:method:: _load_dataset_get_ids(config)
       :abstractmethod:
 
 
+
    .. py:method:: get_relaxed_energy(identifier)
       :abstractmethod:
+
 
 
    .. py:method:: close_db() -> None
@@ -95,11 +97,10 @@ Functions
    .. py:method:: get_metadata(num_samples: int = 100) -> dict
 
 
-
 .. py:class:: AseReadDataset(config: dict, atoms_transform: Callable[[ase.Atoms, Any, Ellipsis], ase.Atoms] = apply_one_tags)
 
-
    Bases: :py:obj:`AseAtomsDataset`
+
 
    This Dataset uses ase.io.read to load data from a directory on disk.
    This is intended for small-scale testing and demonstrations of OCP.
@@ -144,6 +145,7 @@ Functions
                            object. Useful for applying tags, for example.
    :type atoms_transform: callable, optional
 
+
    .. py:method:: _load_dataset_get_ids(config) -> list[pathlib.Path]
 
 
@@ -153,11 +155,10 @@ Functions
    .. py:method:: get_relaxed_energy(identifier) -> float
 
 
-
 .. py:class:: AseReadMultiStructureDataset(config: dict, atoms_transform: Callable[[ase.Atoms, Any, Ellipsis], ase.Atoms] = apply_one_tags)
 
-
    Bases: :py:obj:`AseAtomsDataset`
+
 
    This Dataset can read multiple structures from each file using ase.io.read.
    The disadvantage is that all files must be read at startup.
@@ -217,6 +218,7 @@ Functions
    :param transform: Additional preprocessing function for the Data object
    :type transform: callable, optional
 
+
    .. py:method:: _load_dataset_get_ids(config) -> list[str]
 
 
@@ -229,11 +231,10 @@ Functions
    .. py:method:: get_relaxed_energy(identifier) -> float
 
 
-
 .. py:class:: AseDBDataset(config: dict, atoms_transform: Callable[[ase.Atoms, Any, Ellipsis], ase.Atoms] = apply_one_tags)
 
-
    Bases: :py:obj:`AseAtomsDataset`
+
 
    This Dataset connects to an ASE Database, allowing the storage of atoms objects
    with a variety of backends including JSON, SQLite, and database server options.
@@ -289,6 +290,7 @@ Functions
    :param transform: deprecated?
    :type transform: callable, optional
 
+
    .. py:method:: _load_dataset_get_ids(config: dict) -> list[int]
 
 
@@ -302,8 +304,10 @@ Functions
       :rtype: atoms
 
 
+
    .. py:method:: connect_db(address: str | pathlib.Path, connect_args: dict | None = None) -> ase.db.core.Database
       :staticmethod:
+
 
 
    .. py:method:: close_db() -> None

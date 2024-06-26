@@ -1,5 +1,5 @@
-:py:mod:`core.scripts.make_challenge_submission_file`
-=====================================================
+core.scripts.make_challenge_submission_file
+===========================================
 
 .. py:module:: core.scripts.make_challenge_submission_file
 
@@ -16,12 +16,16 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.scripts.make_challenge_submission_file.parser
 
 
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -30,25 +34,14 @@ Functions
    core.scripts.make_challenge_submission_file.main
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.scripts.make_challenge_submission_file.parser
-
+Module Contents
+---------------
 
 .. py:function:: write_is2re_relaxations(path: str, filename: str, hybrid) -> None
 
-
 .. py:function:: write_predictions(path: str, filename: str) -> None
-
 
 .. py:function:: main(args: argparse.Namespace) -> None
 
-
 .. py:data:: parser
-
-   
 

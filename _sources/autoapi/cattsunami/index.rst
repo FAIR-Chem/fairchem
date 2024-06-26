@@ -1,5 +1,5 @@
-:py:mod:`cattsunami`
-====================
+cattsunami
+==========
 
 .. py:module:: cattsunami
 
@@ -14,18 +14,24 @@
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   core/index.rst
-   databases/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/cattsunami/core/index
+   /autoapi/cattsunami/databases/index
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   cattsunami.__version__
 
 
 Package Contents
 ----------------
 
 .. py:data:: __version__
-
-   
 

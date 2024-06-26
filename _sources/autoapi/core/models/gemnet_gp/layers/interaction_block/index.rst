@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_gp.layers.interaction_block`
-========================================================
+core.models.gemnet_gp.layers.interaction_block
+==============================================
 
 .. py:module:: core.models.gemnet_gp.layers.interaction_block
 
@@ -12,11 +12,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -24,12 +21,13 @@ Classes
    core.models.gemnet_gp.layers.interaction_block.TripletInteraction
 
 
-
+Module Contents
+---------------
 
 .. py:class:: InteractionBlockTripletsOnly(emb_size_atom: int, emb_size_edge: int, emb_size_trip: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_bil_trip: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, activation: str | None = None, name: str = 'Interaction')
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Interaction block for GemNet-T/dT.
 
@@ -56,6 +54,7 @@ Classes
    :param activation: Name of the activation function to use in the dense layers except for the final dense layer.
    :type activation: str
 
+
    .. py:method:: forward(h: torch.Tensor, m: torch.Tensor, rbf3, cbf3, id3_ragged_idx, id_swap, id3_ba, id3_ca, rbf_h, idx_s, idx_t, edge_offset, Kmax, nAtoms)
 
       :returns: * **h** (*torch.Tensor, shape=(nEdges, emb_size_atom)*) -- Atom embeddings.
@@ -68,8 +67,8 @@ Classes
 
 .. py:class:: TripletInteraction(emb_size_edge: int, emb_size_trip: int, emb_size_bilinear: int, emb_size_rbf: int, emb_size_cbf: int, activation: str | None = None, name: str = 'TripletInteraction', **kwargs)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Triplet-based message passing block.
 
@@ -85,6 +84,7 @@ Classes
    :type emb_size_cbf: int
    :param activation: Name of the activation function to use in the dense layers except for the final dense layer.
    :type activation: str
+
 
    .. py:method:: forward(m: torch.Tensor, rbf3, cbf3, id3_ragged_idx, id_swap, id3_ba, id3_ca, edge_offset, Kmax)
 

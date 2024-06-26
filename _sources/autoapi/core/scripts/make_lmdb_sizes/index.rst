@@ -1,5 +1,5 @@
-:py:mod:`core.scripts.make_lmdb_sizes`
-======================================
+core.scripts.make_lmdb_sizes
+============================
 
 .. py:module:: core.scripts.make_lmdb_sizes
 
@@ -10,12 +10,16 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.scripts.make_lmdb_sizes.parser
 
 
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -23,22 +27,12 @@ Functions
    core.scripts.make_lmdb_sizes.main
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.scripts.make_lmdb_sizes.parser
-
+Module Contents
+---------------
 
 .. py:function:: get_data(index)
 
-
 .. py:function:: main(args) -> None
 
-
 .. py:data:: parser
-
-   
 

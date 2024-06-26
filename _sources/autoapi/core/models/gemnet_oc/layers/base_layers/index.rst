@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_oc.layers.base_layers`
-==================================================
+core.models.gemnet_oc.layers.base_layers
+========================================
 
 .. py:module:: core.models.gemnet_oc.layers.base_layers
 
@@ -11,11 +11,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -24,12 +21,13 @@ Classes
    core.models.gemnet_oc.layers.base_layers.ResidualLayer
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Dense(in_features: int, out_features: int, bias: bool = False, activation: str | None = None)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Combines dense layer with scaling for silu activation.
 
@@ -42,17 +40,17 @@ Classes
    :param activation: Name of the activation function to use.
    :type activation: str
 
+
    .. py:method:: reset_parameters(initializer=he_orthogonal_init) -> None
 
 
    .. py:method:: forward(x)
 
 
-
 .. py:class:: ScaledSiLU
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -85,14 +83,14 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
-   .. py:method:: forward(x)
 
+   .. py:method:: forward(x)
 
 
 .. py:class:: ResidualLayer(units: int, nLayers: int = 2, layer=Dense, **layer_kwargs)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Residual block with output scaled by 1/sqrt(2).
 
@@ -105,7 +103,7 @@ Classes
    :param layer_kwargs: Keyword arguments for initializing the layers.
    :type layer_kwargs: str
 
-   .. py:method:: forward(input)
 
+   .. py:method:: forward(input)
 
 

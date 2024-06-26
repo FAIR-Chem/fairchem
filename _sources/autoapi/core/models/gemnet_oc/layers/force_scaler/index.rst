@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_oc.layers.force_scaler`
-===================================================
+core.models.gemnet_oc.layers.force_scaler
+=========================================
 
 .. py:module:: core.models.gemnet_oc.layers.force_scaler
 
@@ -11,25 +11,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.gemnet_oc.layers.force_scaler.ForceScaler
 
 
-
+Module Contents
+---------------
 
 .. py:class:: ForceScaler(init_scale: float = 2.0**8, growth_factor: float = 2.0, backoff_factor: float = 0.5, growth_interval: int = 2000, max_force_iters: int = 50, enabled: bool = True)
-
 
    Scales up the energy and then scales down the forces
    to prevent NaNs and infs in calculations using AMP.
    Inspired by torch.cuda.amp.GradScaler.
+
 
    .. py:method:: scale(energy)
 
@@ -44,6 +42,5 @@ Classes
 
 
    .. py:method:: update() -> None
-
 
 

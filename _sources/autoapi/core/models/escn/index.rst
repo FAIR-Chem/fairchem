@@ -1,36 +1,34 @@
-:py:mod:`core.models.escn`
-==========================
+core.models.escn
+================
 
 .. py:module:: core.models.escn
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   escn/index.rst
-   so3/index.rst
+   /autoapi/core/models/escn/escn/index
+   /autoapi/core/models/escn/so3/index
 
-
-Package Contents
-----------------
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.escn.eSCN
 
 
-
+Package Contents
+----------------
 
 .. py:class:: eSCN(num_atoms: int, bond_feat_dim: int, num_targets: int, use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, max_neighbors: int = 40, cutoff: float = 8.0, max_num_elements: int = 90, num_layers: int = 8, lmax_list: list[int] | None = None, mmax_list: list[int] | None = None, sphere_channels: int = 128, hidden_channels: int = 256, edge_channels: int = 128, use_grid: bool = True, num_sphere_samples: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, show_timing_info: bool = False)
 
-
    Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+
 
    Equivariant Spherical Channel Network
    Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
@@ -71,14 +69,15 @@ Classes
    :param show_timing_info: Show timing and memory info
    :type show_timing_info: bool
 
-   .. py:property:: num_params
-      :type: int
-
 
    .. py:method:: forward(data)
 
 
    .. py:method:: _init_edge_rot_mat(data, edge_index, edge_distance_vec)
+
+
+   .. py:property:: num_params
+      :type: int
 
 
 

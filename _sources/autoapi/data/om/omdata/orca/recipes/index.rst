@@ -1,15 +1,11 @@
-:py:mod:`data.om.omdata.orca.recipes`
-=====================================
+data.om.omdata.orca.recipes
+===========================
 
 .. py:module:: data.om.omdata.orca.recipes
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -17,6 +13,8 @@ Functions
    data.om.omdata.orca.recipes.ase_relaxation
 
 
+Module Contents
+---------------
 
 .. py:function:: single_point_calculation(atoms, charge, spin_multiplicity, xc=ORCA_FUNCTIONAL, basis=ORCA_BASIS, orcasimpleinput=None, orcablocks=None, nprocs=12, outputdir=os.getcwd(), **calc_kwargs)
 

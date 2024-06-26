@@ -1,5 +1,5 @@
-:py:mod:`core.models.equiformer_v2.so3`
-=======================================
+core.models.equiformer_v2.so3
+=============================
 
 .. py:module:: core.models.equiformer_v2.so3
 
@@ -19,11 +19,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -35,22 +32,25 @@ Classes
    core.models.equiformer_v2.so3.SO3_LinearV2
 
 
-
+Module Contents
+---------------
 
 .. py:class:: CoefficientMappingModule(lmax_list: list[int], mmax_list: list[int])
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Helper module for coefficients used to reshape lval <--> m and to get coefficients of specific degree or order
 
    :param lmax_list (list: int):   List of maximum degree of the spherical harmonics
    :param mmax_list (list: int):   List of maximum order of the spherical harmonics
 
+
    .. py:method:: complex_idx(m: int, lmax: int, m_complex, l_harmonic)
 
       Add `m_complex` and `l_harmonic` to the input arguments
       since we cannot use `self.m_complex`.
+
 
 
    .. py:method:: coefficient_idx(lmax: int, mmax: int)
@@ -67,7 +67,6 @@ Classes
 
 .. py:class:: SO3_Embedding(length: int, lmax_list: list[int], num_channels: int, device: torch.device, dtype: torch.dtype)
 
-
    Helper functions for performing operations on irreps embedding
 
    :param length: Batch size
@@ -77,6 +76,7 @@ Classes
    :type num_channels: int
    :param device: Device of the output
    :param dtype: type of the output tensors
+
 
    .. py:method:: clone() -> SO3_Embedding
 
@@ -117,15 +117,15 @@ Classes
    .. py:method:: _from_grid(x_grid, SO3_grid, lmax: int = -1)
 
 
-
 .. py:class:: SO3_Rotation(lmax: int)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Helper functions for Wigner-D rotations
 
    :param lmax_list (list: int):   List of maximum degree of the spherical harmonics
+
 
    .. py:method:: set_wigner(rot_mat3x3)
 
@@ -139,11 +139,10 @@ Classes
    .. py:method:: RotationToWignerDMatrix(edge_rot_mat, start_lmax: int, end_lmax: int) -> torch.Tensor
 
 
-
 .. py:class:: SO3_Grid(lmax: int, mmax: int, normalization: str = 'integral', resolution: int | None = None)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Helper functions for grid representation of the irreps
 
@@ -151,6 +150,7 @@ Classes
    :type lmax: int
    :param mmax: Maximum order of the spherical harmonics
    :type mmax: int
+
 
    .. py:method:: get_to_grid_mat(device)
 
@@ -164,11 +164,10 @@ Classes
    .. py:method:: from_grid(grid, lmax: int, mmax: int)
 
 
-
 .. py:class:: SO3_Linear(in_features: int, out_features: int, lmax: int, bias: bool = True)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -200,6 +199,7 @@ Classes
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(input_embedding, output_scale=None)
 
@@ -212,8 +212,8 @@ Classes
 
 .. py:class:: SO3_LinearV2(in_features: int, out_features: int, lmax: int, bias: bool = True)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -245,6 +245,7 @@ Classes
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(input_embedding)
 

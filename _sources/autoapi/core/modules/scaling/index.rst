@@ -1,38 +1,36 @@
-:py:mod:`core.modules.scaling`
-==============================
+core.modules.scaling
+====================
 
 .. py:module:: core.modules.scaling
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   compat/index.rst
-   fit/index.rst
-   scale_factor/index.rst
-   util/index.rst
+   /autoapi/core/modules/scaling/compat/index
+   /autoapi/core/modules/scaling/fit/index
+   /autoapi/core/modules/scaling/scale_factor/index
+   /autoapi/core/modules/scaling/util/index
 
-
-Package Contents
-----------------
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.modules.scaling.ScaleFactor
 
 
-
+Package Contents
+----------------
 
 .. py:class:: ScaleFactor(name: str | None = None, enforce_consistency: bool = True)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -65,31 +63,35 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
+
+   .. py:attribute:: scale_factor
+      :type:  torch.Tensor
+
+
+   .. py:attribute:: name
+      :type:  str | None
+      :value: None
+
+
+
+   .. py:attribute:: index_fn
+      :type:  IndexFn | None
+      :value: None
+
+
+
+   .. py:attribute:: stats
+      :type:  _Stats | None
+      :value: None
+
+
+
+   .. py:method:: _enforce_consistency(state_dict, prefix, _local_metadata, _strict, _missing_keys, _unexpected_keys, _error_msgs) -> None
+
+
    .. py:property:: fitted
       :type: bool
 
-
-   .. py:attribute:: scale_factor
-      :type: torch.Tensor
-
-      
-
-   .. py:attribute:: name
-      :type: str | None
-
-      
-
-   .. py:attribute:: index_fn
-      :type: IndexFn | None
-
-      
-
-   .. py:attribute:: stats
-      :type: _Stats | None
-
-      
-
-   .. py:method:: _enforce_consistency(state_dict, prefix, _local_metadata, _strict, _missing_keys, _unexpected_keys, _error_msgs) -> None
 
 
    .. py:method:: reset_() -> None
@@ -111,6 +113,5 @@ Classes
 
 
    .. py:method:: forward(x: torch.Tensor, *, ref: torch.Tensor | None = None) -> torch.Tensor
-
 
 

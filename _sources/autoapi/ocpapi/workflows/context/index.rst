@@ -1,21 +1,19 @@
-:py:mod:`ocpapi.workflows.context`
-==================================
+ocpapi.workflows.context
+========================
 
 .. py:module:: ocpapi.workflows.context
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    ocpapi.workflows.context.set_context_var
 
 
+Module Contents
+---------------
 
 .. py:function:: set_context_var(context_var: contextvars.ContextVar, value: Any) -> Generator[None, None, None]
 

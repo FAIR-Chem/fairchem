@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_oc.layers.spherical_basis`
-======================================================
+core.models.gemnet_oc.layers.spherical_basis
+============================================
 
 .. py:module:: core.models.gemnet_oc.layers.spherical_basis
 
@@ -11,11 +11,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -23,12 +20,13 @@ Classes
    core.models.gemnet_oc.layers.spherical_basis.SphericalBasisLayer
 
 
-
+Module Contents
+---------------
 
 .. py:class:: CircularBasisLayer(num_spherical: int, radial_basis: core.models.gemnet_oc.layers.radial_basis.RadialBasis, cbf: dict, scale_basis: bool = False)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    2D Fourier Bessel Basis
 
@@ -41,14 +39,14 @@ Classes
    :param scale_basis: Whether to scale the basis values for better numerical stability.
    :type scale_basis: bool
 
-   .. py:method:: forward(D_ca, cosφ_cab)
 
+   .. py:method:: forward(D_ca, cosφ_cab)
 
 
 .. py:class:: SphericalBasisLayer(num_spherical: int, radial_basis: core.models.gemnet_oc.layers.radial_basis.RadialBasis, sbf: dict, scale_basis: bool = False)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    3D Fourier Bessel Basis
 
@@ -61,7 +59,7 @@ Classes
    :param scale_basis: Whether to scale the basis values for better numerical stability.
    :type scale_basis: bool
 
-   .. py:method:: forward(D_ca, cosφ_cab, θ_cabd)
 
+   .. py:method:: forward(D_ca, cosφ_cab, θ_cabd)
 
 

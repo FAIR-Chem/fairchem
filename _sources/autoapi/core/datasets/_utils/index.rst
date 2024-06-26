@@ -1,5 +1,5 @@
-:py:mod:`core.datasets._utils`
-==============================
+core.datasets._utils
+====================
 
 .. py:module:: core.datasets._utils
 
@@ -12,18 +12,16 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    core.datasets._utils.rename_data_object_keys
 
 
+Module Contents
+---------------
 
 .. py:function:: rename_data_object_keys(data_object: torch_geometric.data.Data, key_mapping: dict[str, str]) -> torch_geometric.data.Data
 

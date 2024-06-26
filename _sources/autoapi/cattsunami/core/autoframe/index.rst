@@ -1,5 +1,5 @@
-:py:mod:`cattsunami.core.autoframe`
-===================================
+cattsunami.core.autoframe
+=========================
 
 .. py:module:: cattsunami.core.autoframe
 
@@ -10,11 +10,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -24,9 +21,8 @@ Classes
    cattsunami.core.autoframe.AutoFrameDesorption
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -44,11 +40,13 @@ Functions
    cattsunami.core.autoframe.is_adsorbate_adsorbed
 
 
+Module Contents
+---------------
 
 .. py:class:: AutoFrame
 
-
    Base class to hold functions that are shared across the reaction types.
+
 
    .. py:method:: reorder_adsorbate(frame: ase.Atoms, idx_mapping: dict)
 
@@ -64,6 +62,7 @@ Functions
       :rtype: ase.Atoms
 
 
+
    .. py:method:: only_keep_unique_systems(systems, energies)
 
       Remove duplicate systems from `systems` and `energies`.
@@ -76,6 +75,7 @@ Functions
       :returns: the systems with duplicates removed
                 list[float]: the energies with duplicates removed
       :rtype: list[ase.Atoms]
+
 
 
    .. py:method:: get_most_proximate_symmetric_group(initial: ase.Atoms, frame: ase.Atoms)
@@ -93,6 +93,7 @@ Functions
       :returns: the mapping to be used which specifies the most apt leaving group
                 int: the index of the mapping to be used
       :rtype: dict
+
 
 
    .. py:method:: are_all_adsorbate_atoms_overlapping(adsorbate1: ase.Atoms, adsorbate2: ase.Atoms)
@@ -117,10 +118,11 @@ Functions
 
 .. py:class:: AutoFrameDissociation(reaction: fairchem.applications.cattsunami.core.Reaction, reactant_system: ase.Atoms, product1_systems: list, product1_energies: list, product2_systems: list, product2_energies: list, r_product1_max: float = None, r_product2_max: float = None, r_product2_min: float = None)
 
-
    Bases: :py:obj:`AutoFrame`
 
+
    Base class to hold functions that are shared across the reaction types.
+
 
    .. py:method:: get_neb_frames(calculator, n_frames: int = 5, n_pdt1_sites: int = 5, n_pdt2_sites: int = 5, fmax: float = 0.05, steps: int = 200)
 
@@ -147,6 +149,7 @@ Functions
       :rtype: list[lists]
 
 
+
    .. py:method:: get_best_sites_for_product1(n_sites: int = 5)
 
       Wrapper to find product 1 placements to be considered for the final frame
@@ -162,6 +165,7 @@ Functions
                 the lowest energy, proximate placements of product
                     1 to be used in the final NEB frames
       :rtype: (list[ase.Atoms])
+
 
 
    .. py:method:: get_best_unique_sites_for_product2(product1: ase.Atoms, n_sites: int = 5)
@@ -183,6 +187,7 @@ Functions
                 the lowest energy, proximate placements of product
                     2 to be used in the final NEB frames
       :rtype: (list[ase.Atoms])
+
 
 
    .. py:method:: get_sites_within_r(center_coordinate: numpy.ndarray, all_systems: list, all_system_energies: list, all_systems_binding_idx: int, allowed_radius_max: float, allowed_radius_min: float, n_sites: int = 5)
@@ -215,10 +220,11 @@ Functions
 
 .. py:class:: AutoFrameTransfer(reaction: fairchem.applications.cattsunami.core.Reaction, reactant1_systems: list, reactant2_systems: list, reactant1_energies: list, reactant2_energies: list, product1_systems: list, product1_energies: list, product2_systems: list, product2_energies: list, r_traverse_max: float, r_react_max: float, r_react_min: float)
 
-
    Bases: :py:obj:`AutoFrame`
 
+
    Base class to hold functions that are shared across the reaction types.
+
 
    .. py:method:: get_neb_frames(calculator, n_frames: int = 10, n_initial_frames: int = 5, n_final_frames_per_initial: int = 5, fmax: float = 0.05, steps: int = 200)
 
@@ -244,6 +250,7 @@ Functions
       :rtype: list[lists]
 
 
+
    .. py:method:: get_system_pairs_initial()
 
       Get the initial frames for the NEB. This is done by finding the closest
@@ -254,6 +261,7 @@ Functions
                 list[float]: the pseudo energies of the initial frames (i.e just the sum of the
                     individual adsorption energies)
       :rtype: list[ase.Atoms]
+
 
 
    .. py:method:: get_system_pairs_final(system1_coord, system2_coord)
@@ -272,10 +280,11 @@ Functions
 
 .. py:class:: AutoFrameDesorption(reaction: fairchem.applications.cattsunami.core.Reaction, reactant_systems: list, reactant_energies: list, z_desorption: float)
 
-
    Bases: :py:obj:`AutoFrame`
 
+
    Base class to hold functions that are shared across the reaction types.
+
 
    .. py:method:: get_neb_frames(calculator, n_frames: int = 5, n_systems: int = 5, fmax: float = 0.05, steps: int = 200)
 

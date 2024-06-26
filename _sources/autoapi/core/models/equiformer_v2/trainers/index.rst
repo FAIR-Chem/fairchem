@@ -1,17 +1,17 @@
-:py:mod:`core.models.equiformer_v2.trainers`
-============================================
+core.models.equiformer_v2.trainers
+==================================
 
 .. py:module:: core.models.equiformer_v2.trainers
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   energy_trainer/index.rst
-   forces_trainer/index.rst
-   lr_scheduler/index.rst
+   /autoapi/core/models/equiformer_v2/trainers/energy_trainer/index
+   /autoapi/core/models/equiformer_v2/trainers/forces_trainer/index
+   /autoapi/core/models/equiformer_v2/trainers/lr_scheduler/index
 
 

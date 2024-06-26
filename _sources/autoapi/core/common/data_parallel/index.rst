@@ -1,5 +1,5 @@
-:py:mod:`core.common.data_parallel`
-===================================
+core.common.data_parallel
+=========================
 
 .. py:module:: core.common.data_parallel
 
@@ -12,11 +12,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -26,21 +23,20 @@ Classes
    core.common.data_parallel.BalancedBatchSampler
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    core.common.data_parallel.balanced_partition
 
 
+Module Contents
+---------------
 
 .. py:class:: OCPCollater(otf_graph: bool = False)
 
-
    .. py:method:: __call__(data_list: list[torch_geometric.data.Data]) -> torch_geometric.data.Batch
-
 
 
 .. py:function:: balanced_partition(sizes: numpy.typing.NDArray[numpy.int_], num_parts: int)
@@ -51,8 +47,8 @@ Functions
 
 .. py:class:: _HasMetadata
 
-
    Bases: :py:obj:`Protocol`
+
 
    Base class for protocol classes.
 
@@ -85,6 +81,7 @@ Functions
            def meth(self) -> T:
                ...
 
+
    .. py:property:: metadata_path
       :type: pathlib.Path
 
@@ -92,8 +89,8 @@ Functions
 
 .. py:class:: StatefulDistributedSampler(dataset, batch_size, **kwargs)
 
-
    Bases: :py:obj:`torch.utils.data.DistributedSampler`
+
 
    More fine-grained state DataSampler that uses training iteration and epoch
    both for shuffling data. PyTorch DistributedSampler only uses epoch
@@ -101,17 +98,17 @@ Functions
    on very large data, we train for one epoch only and when we resume training,
    we want to resume the data sampler from the training iteration.
 
+
    .. py:method:: __iter__()
 
 
    .. py:method:: set_epoch_and_start_iteration(epoch, start_iter)
 
 
-
-.. py:class:: BalancedBatchSampler(dataset, batch_size: int, num_replicas: int, rank: int, device: torch.device, mode: str | bool = 'atoms', shuffle: bool = True, drop_last: bool = False, force_balancing: bool = False, throw_on_error: bool = False)
-
+.. py:class:: BalancedBatchSampler(dataset, batch_size: int, num_replicas: int, rank: int, device: torch.device, seed: int, mode: str | bool = 'atoms', shuffle: bool = True, drop_last: bool = False, force_balancing: bool = False, throw_on_error: bool = False)
 
    Bases: :py:obj:`torch.utils.data.Sampler`
+
 
    Base class for all Samplers.
 
@@ -154,7 +151,8 @@ Functions
              :class:`~torch.utils.data.DataLoader`, but is expected in any
              calculation involving the length of a :class:`~torch.utils.data.DataLoader`.
 
-   .. py:method:: _load_dataset(dataset, mode: Literal[atoms, neighbors])
+
+   .. py:method:: _load_dataset(dataset, mode: Literal['atoms', 'neighbors'])
 
 
    .. py:method:: __len__() -> int
@@ -164,6 +162,5 @@ Functions
 
 
    .. py:method:: __iter__()
-
 
 

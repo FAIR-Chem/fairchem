@@ -1,15 +1,11 @@
-:py:mod:`data.om.biomolecules.geom.write_geom_drugs_structures`
-===============================================================
+data.om.biomolecules.geom.write_geom_drugs_structures
+=====================================================
 
 .. py:module:: data.om.biomolecules.geom.write_geom_drugs_structures
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -17,10 +13,10 @@ Functions
    data.om.biomolecules.geom.write_geom_drugs_structures.main
 
 
+Module Contents
+---------------
 
 .. py:function:: parse_args()
 
-
 .. py:function:: main()
-
 

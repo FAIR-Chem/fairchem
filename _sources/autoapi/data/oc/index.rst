@@ -1,5 +1,5 @@
-:py:mod:`data.oc`
-=================
+data.oc
+=======
 
 .. py:module:: data.oc
 
@@ -14,29 +14,35 @@
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   core/index.rst
-   databases/index.rst
-   tests/index.rst
-   utils/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/data/oc/core/index
+   /autoapi/data/oc/databases/index
+   /autoapi/data/oc/tests/index
+   /autoapi/data/oc/utils/index
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   structure_generator/index.rst
+   /autoapi/data/oc/structure_generator/index
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   data.oc.__version__
 
 
 Package Contents
 ----------------
 
 .. py:data:: __version__
-
-   
 

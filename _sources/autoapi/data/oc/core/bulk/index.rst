@@ -1,24 +1,21 @@
-:py:mod:`data.oc.core.bulk`
-===========================
+data.oc.core.bulk
+=================
 
 .. py:module:: data.oc.core.bulk
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    data.oc.core.bulk.Bulk
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Bulk(bulk_atoms: ase.Atoms = None, bulk_id_from_db: int = None, bulk_src_id_from_db: str = None, bulk_db_path: str = BULK_PKL_PATH, bulk_db: List[Dict[str, Any]] = None)
-
 
    Initializes a bulk object in one of 4 ways:
    - Directly pass in an ase.Atoms object.
@@ -37,6 +34,7 @@ Classes
    :param bulk_db: Already-loaded database.
    :type bulk_db: List[Dict[str, Any]]
 
+
    .. py:method:: _get_bulk_from_random(bulk_db)
 
 
@@ -51,6 +49,7 @@ Classes
       Returns a list of possible slabs for this bulk instance.
 
 
+
    .. py:method:: __len__()
 
 
@@ -59,9 +58,11 @@ Classes
       Return str(self).
 
 
+
    .. py:method:: __repr__()
 
       Return repr(self).
+
 
 
    .. py:method:: __eq__(other) -> bool

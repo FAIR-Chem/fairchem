@@ -1,5 +1,5 @@
-:py:mod:`core.datasets.embeddings.khot_embeddings`
-==================================================
+core.datasets.embeddings.khot_embeddings
+========================================
 
 .. py:module:: core.datasets.embeddings.khot_embeddings
 
@@ -15,10 +15,16 @@
 
 
 
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.datasets.embeddings.khot_embeddings.KHOT_EMBEDDINGS
+
+
 Module Contents
 ---------------
 
 .. py:data:: KHOT_EMBEDDINGS
-
-   
 

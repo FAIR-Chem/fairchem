@@ -1,24 +1,21 @@
-:py:mod:`core.trainers`
-=======================
+core.trainers
+=============
 
 .. py:module:: core.trainers
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   base_trainer/index.rst
-   ocp_trainer/index.rst
+   /autoapi/core/trainers/base_trainer/index
+   /autoapi/core/trainers/ocp_trainer/index
 
-
-Package Contents
-----------------
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -26,27 +23,29 @@ Classes
    core.trainers.OCPTrainer
 
 
+Package Contents
+----------------
 
-
-.. py:class:: BaseTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier: str, timestamp_id: str | None = None, run_dir: str | None = None, is_debug: bool = False, print_every: int = 100, seed: int | None = None, logger: str = 'wandb', local_rank: int = 0, amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm=None, noddp: bool = False)
-
+.. py:class:: BaseTrainer(task, model, outputs, dataset, optimizer, loss_functions, evaluation_metrics, identifier: str, timestamp_id: str | None = None, run_dir: str | None = None, is_debug: bool = False, print_every: int = 100, seed: int | None = None, logger: str = 'wandb', local_rank: int = 0, amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm=None, noddp: bool = False)
 
    Bases: :py:obj:`abc.ABC`
 
+
    Helper class that provides a standard way to create an ABC using
    inheritance.
-
-   .. py:property:: _unwrapped_model
 
 
    .. py:method:: train(disable_eval_tqdm: bool = False) -> None
       :abstractmethod:
 
+
       Run model training iterations.
+
 
 
    .. py:method:: _get_timestamp(device: torch.device, suffix: str | None) -> str
       :staticmethod:
+
 
 
    .. py:method:: load() -> None
@@ -76,6 +75,9 @@ Classes
    .. py:method:: load_model() -> None
 
 
+   .. py:property:: _unwrapped_model
+
+
    .. py:method:: load_checkpoint(checkpoint_path: str, checkpoint: dict | None = None) -> None
 
 
@@ -103,11 +105,10 @@ Classes
    .. py:method:: save_results(predictions: dict[str, numpy.typing.NDArray], results_file: str | None, keys: collections.abc.Sequence[str] | None = None) -> None
 
 
-
-.. py:class:: OCPTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm=None, noddp=False, name='ocp')
-
+.. py:class:: OCPTrainer(task, model, outputs, dataset, optimizer, loss_functions, evaluation_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm=None, noddp=False, name='ocp')
 
    Bases: :py:obj:`fairchem.core.trainers.base_trainer.BaseTrainer`
+
 
    Trainer class for the Structure to Energy & Force (S2EF) and Initial State to
    Relaxed State (IS2RS) tasks.
@@ -128,10 +129,10 @@ Classes
    :type dataset: dict
    :param optimizer: Optimizer configuration.
    :type optimizer: dict
-   :param loss_fns: Loss function configuration.
-   :type loss_fns: dict
-   :param eval_metrics: Evaluation metrics configuration.
-   :type eval_metrics: dict
+   :param loss_functions: Loss function configuration.
+   :type loss_functions: dict
+   :param evaluation_metrics: Evaluation metrics configuration.
+   :type evaluation_metrics: dict
    :param identifier: Experiment identifier that is appended to log directory.
    :type identifier: str
    :param run_dir: Path to the run directory where logs are to be saved.
@@ -161,9 +162,11 @@ Classes
    :param noddp: Run model without DDP.
    :type noddp: bool, optional
 
+
    .. py:method:: train(disable_eval_tqdm: bool = False) -> None
 
       Run model training iterations.
+
 
 
    .. py:method:: _forward(batch)
@@ -179,6 +182,5 @@ Classes
 
 
    .. py:method:: run_relaxations(split='val')
-
 
 

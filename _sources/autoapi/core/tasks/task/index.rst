@@ -1,5 +1,5 @@
-:py:mod:`core.tasks.task`
-=========================
+core.tasks.task
+===============
 
 .. py:module:: core.tasks.task
 
@@ -12,11 +12,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -27,10 +24,10 @@ Classes
    core.tasks.task.RelaxationTask
 
 
-
+Module Contents
+---------------
 
 .. py:class:: BaseTask(config)
-
 
    .. py:method:: setup(trainer) -> None
 
@@ -42,8 +39,8 @@ Classes
 
 .. py:class:: TrainTask(config)
 
-
    Bases: :py:obj:`BaseTask`
+
 
    .. py:method:: _process_error(e: RuntimeError) -> None
 
@@ -51,31 +48,27 @@ Classes
    .. py:method:: run() -> None
 
 
-
 .. py:class:: PredictTask(config)
-
 
    Bases: :py:obj:`BaseTask`
 
-   .. py:method:: run() -> None
 
+   .. py:method:: run() -> None
 
 
 .. py:class:: ValidateTask(config)
 
-
    Bases: :py:obj:`BaseTask`
 
-   .. py:method:: run() -> None
 
+   .. py:method:: run() -> None
 
 
 .. py:class:: RelaxationTask(config)
 
-
    Bases: :py:obj:`BaseTask`
 
-   .. py:method:: run() -> None
 
+   .. py:method:: run() -> None
 
 

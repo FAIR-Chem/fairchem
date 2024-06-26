@@ -1,5 +1,5 @@
-:py:mod:`core.common.distutils`
-===============================
+core.common.distutils
+=====================
 
 .. py:module:: core.common.distutils
 
@@ -12,12 +12,16 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.common.distutils.T
 
 
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -35,51 +39,32 @@ Functions
    core.common.distutils.gather_objects
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.common.distutils.T
-
+Module Contents
+---------------
 
 .. py:data:: T
 
-   
-
 .. py:function:: os_environ_get_or_throw(x: str) -> str
-
 
 .. py:function:: setup(config) -> None
 
-
 .. py:function:: cleanup() -> None
-
 
 .. py:function:: initialized() -> bool
 
-
 .. py:function:: get_rank() -> int
-
 
 .. py:function:: get_world_size() -> int
 
-
 .. py:function:: is_master() -> bool
-
 
 .. py:function:: synchronize() -> None
 
-
 .. py:function:: broadcast(tensor: torch.Tensor, src, group=dist.group.WORLD, async_op: bool = False) -> None
-
 
 .. py:function:: all_reduce(data, group=dist.group.WORLD, average: bool = False, device=None) -> torch.Tensor
 
-
 .. py:function:: all_gather(data, group=dist.group.WORLD, device=None) -> list[torch.Tensor]
-
 
 .. py:function:: gather_objects(data: T, group: torch.distributed.ProcessGroup = dist.group.WORLD) -> list[T]
 

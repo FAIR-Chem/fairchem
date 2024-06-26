@@ -1,5 +1,5 @@
-:py:mod:`core.common`
-=====================
+core.common
+===========
 
 .. py:module:: core.common
 
@@ -14,29 +14,29 @@
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   relaxation/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/core/common/relaxation/index
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   data_parallel/index.rst
-   distutils/index.rst
-   flags/index.rst
-   gp_utils/index.rst
-   hpo_utils/index.rst
-   logger/index.rst
-   registry/index.rst
-   transforms/index.rst
-   tutorial_utils/index.rst
-   typing/index.rst
-   utils/index.rst
+   /autoapi/core/common/data_parallel/index
+   /autoapi/core/common/distutils/index
+   /autoapi/core/common/flags/index
+   /autoapi/core/common/gp_utils/index
+   /autoapi/core/common/hpo_utils/index
+   /autoapi/core/common/logger/index
+   /autoapi/core/common/registry/index
+   /autoapi/core/common/transforms/index
+   /autoapi/core/common/tutorial_utils/index
+   /autoapi/core/common/typing/index
+   /autoapi/core/common/utils/index
 
 

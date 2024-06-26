@@ -1,5 +1,5 @@
-:py:mod:`core.trainers.ocp_trainer`
-===================================
+core.trainers.ocp_trainer
+=========================
 
 .. py:module:: core.trainers.ocp_trainer
 
@@ -12,23 +12,21 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.trainers.ocp_trainer.OCPTrainer
 
 
+Module Contents
+---------------
 
-
-.. py:class:: OCPTrainer(task, model, outputs, dataset, optimizer, loss_fns, eval_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm=None, noddp=False, name='ocp')
-
+.. py:class:: OCPTrainer(task, model, outputs, dataset, optimizer, loss_functions, evaluation_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm=None, noddp=False, name='ocp')
 
    Bases: :py:obj:`fairchem.core.trainers.base_trainer.BaseTrainer`
+
 
    Trainer class for the Structure to Energy & Force (S2EF) and Initial State to
    Relaxed State (IS2RS) tasks.
@@ -49,10 +47,10 @@ Classes
    :type dataset: dict
    :param optimizer: Optimizer configuration.
    :type optimizer: dict
-   :param loss_fns: Loss function configuration.
-   :type loss_fns: dict
-   :param eval_metrics: Evaluation metrics configuration.
-   :type eval_metrics: dict
+   :param loss_functions: Loss function configuration.
+   :type loss_functions: dict
+   :param evaluation_metrics: Evaluation metrics configuration.
+   :type evaluation_metrics: dict
    :param identifier: Experiment identifier that is appended to log directory.
    :type identifier: str
    :param run_dir: Path to the run directory where logs are to be saved.
@@ -82,9 +80,11 @@ Classes
    :param noddp: Run model without DDP.
    :type noddp: bool, optional
 
+
    .. py:method:: train(disable_eval_tqdm: bool = False) -> None
 
       Run model training iterations.
+
 
 
    .. py:method:: _forward(batch)
@@ -100,6 +100,5 @@ Classes
 
 
    .. py:method:: run_relaxations(split='val')
-
 
 

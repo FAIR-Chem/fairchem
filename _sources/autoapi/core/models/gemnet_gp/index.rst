@@ -1,46 +1,44 @@
-:py:mod:`core.models.gemnet_gp`
-===============================
+core.models.gemnet_gp
+=====================
 
 .. py:module:: core.models.gemnet_gp
 
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   layers/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/core/models/gemnet_gp/layers/index
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   gemnet/index.rst
-   initializers/index.rst
-   utils/index.rst
+   /autoapi/core/models/gemnet_gp/gemnet/index
+   /autoapi/core/models/gemnet_gp/initializers/index
+   /autoapi/core/models/gemnet_gp/utils/index
 
-
-Package Contents
-----------------
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.gemnet_gp.GraphParallelGemNetT
 
 
-
+Package Contents
+----------------
 
 .. py:class:: GraphParallelGemNetT(num_atoms: int | None, bond_feat_dim: int, num_targets: int, num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_bil_trip: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, regress_forces: bool = True, direct_forces: bool = False, cutoff: float = 6.0, max_neighbors: int = 50, rbf: dict | None = None, envelope: dict | None = None, cbf: dict | None = None, extensive: bool = True, otf_graph: bool = False, use_pbc: bool = True, output_init: str = 'HeOrthogonal', activation: str = 'swish', scale_num_blocks: bool = False, scatter_atoms: bool = True, scale_file: str | None = None)
 
-
    Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+
 
    GemNet-T, triplets-only variant of GemNet
 
@@ -98,8 +96,6 @@ Classes
    :param scale_file: Path to the json file containing the scaling factors.
    :type scale_file: str
 
-   .. py:property:: num_params
-
 
    .. py:method:: get_triplets(edge_index, num_atoms)
 
@@ -109,6 +105,7 @@ Classes
       :returns: * **id3_ba** (*torch.Tensor, shape (num_triplets,)*) -- Indices of input edge b->a of each triplet b->a<-c
                 * **id3_ca** (*torch.Tensor, shape (num_triplets,)*) -- Indices of output edge c->a of each triplet b->a<-c
                 * **id3_ragged_idx** (*torch.Tensor, shape (num_triplets,)*) -- Indices enumerating the copies of id3_ca for creating a padded matrix
+
 
 
    .. py:method:: select_symmetric_edges(tensor: torch.Tensor, mask, reorder_idx, inverse_neg) -> torch.Tensor
@@ -127,6 +124,7 @@ Classes
       But this does not seem worth it.
 
 
+
    .. py:method:: select_edges(data, edge_index, cell_offsets, neighbors, edge_dist, edge_vector, cutoff=None)
 
 
@@ -135,5 +133,7 @@ Classes
 
    .. py:method:: forward(data)
 
+
+   .. py:property:: num_params
 
 

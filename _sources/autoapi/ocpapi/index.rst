@@ -1,5 +1,5 @@
-:py:mod:`ocpapi`
-================
+ocpapi
+======
 
 .. py:module:: ocpapi
 
@@ -14,28 +14,48 @@
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   client/index.rst
-   workflows/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/ocpapi/client/index
+   /autoapi/ocpapi/workflows/index
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   version/index.rst
+   /autoapi/ocpapi/version/index
 
 
-Package Contents
-----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   ocpapi.__version__
+   ocpapi.NO_LIMIT
+   ocpapi.NoLimitType
+
+
+Exceptions
+----------
+
+.. autoapisummary::
+
+   ocpapi.NonRetryableRequestException
+   ocpapi.RateLimitExceededException
+   ocpapi.RequestException
+   ocpapi.UnsupportedAdsorbateException
+   ocpapi.UnsupportedBulkException
+   ocpapi.UnsupportedModelException
+
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -64,9 +84,8 @@ Classes
    ocpapi.RateLimitLogging
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -77,33 +96,25 @@ Functions
    ocpapi.retry_api_calls
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   ocpapi.__version__
-   ocpapi.NO_LIMIT
-   ocpapi.NoLimitType
-
+Package Contents
+----------------
 
 .. py:data:: __version__
 
-   
-
 .. py:class:: Client(host: str = 'open-catalyst-api.metademolab.com', scheme: str = 'https')
 
-
    Exposes each route in the OCP API as a method.
+
 
    .. py:property:: host
       :type: str
 
       The host being called by this client.
 
+
    .. py:method:: get_models() -> ocpapi.client.models.Models
       :async:
+
 
       Fetch the list of models that are supported in the API.
 
@@ -117,8 +128,10 @@ Attributes
       :returns: The models that are supported in the API.
 
 
+
    .. py:method:: get_bulks() -> ocpapi.client.models.Bulks
       :async:
+
 
       Fetch the list of bulk materials that are supported in the API.
 
@@ -132,8 +145,10 @@ Attributes
       :returns: The bulks that are supported throughout the API.
 
 
+
    .. py:method:: get_adsorbates() -> ocpapi.client.models.Adsorbates
       :async:
+
 
       Fetch the list of adsorbates that are supported in the API.
 
@@ -147,8 +162,10 @@ Attributes
       :returns: The adsorbates that are supported throughout the API.
 
 
+
    .. py:method:: get_slabs(bulk: Union[str, ocpapi.client.models.Bulk]) -> ocpapi.client.models.Slabs
       :async:
+
 
       Get a unique list of slabs for the input bulk structure.
 
@@ -165,8 +182,10 @@ Attributes
       :returns: Slabs for each of the unique surfaces of the material.
 
 
+
    .. py:method:: get_adsorbate_slab_configs(adsorbate: str, slab: ocpapi.client.models.Slab) -> ocpapi.client.models.AdsorbateSlabConfigs
       :async:
+
 
       Get a list of possible binding sites for the input adsorbate on the
       input slab.
@@ -185,8 +204,10 @@ Attributes
       :returns: Configurations for each adsorbate binding site on the slab.
 
 
+
    .. py:method:: submit_adsorbate_slab_relaxations(adsorbate: str, adsorbate_configs: List[ocpapi.client.models.Atoms], bulk: ocpapi.client.models.Bulk, slab: ocpapi.client.models.Slab, model: str, ephemeral: bool = False) -> ocpapi.client.models.AdsorbateSlabRelaxationsSystem
       :async:
+
 
       Starts relaxations of the input adsorbate configurations on the input
       slab using energies and forces returned by the input model. Relaxations
@@ -216,8 +237,10 @@ Attributes
       :returns: IDs of the relaxations.
 
 
+
    .. py:method:: get_adsorbate_slab_relaxations_request(system_id: str) -> ocpapi.client.models.AdsorbateSlabRelaxationsRequest
       :async:
+
 
       Fetches the original relaxations request for the input system.
 
@@ -233,8 +256,10 @@ Attributes
       :returns: The original request that was made when submitting relaxations.
 
 
+
    .. py:method:: get_adsorbate_slab_relaxations_results(system_id: str, config_ids: Optional[List[int]] = None, fields: Optional[List[str]] = None) -> ocpapi.client.models.AdsorbateSlabRelaxationsResults
       :async:
+
 
       Fetches relaxation results for the input system.
 
@@ -254,8 +279,10 @@ Attributes
       :returns: The relaxation results for each configuration in the system.
 
 
+
    .. py:method:: delete_adsorbate_slab_relaxations(system_id: str) -> None
       :async:
+
 
       Deletes all relaxation results for the input system.
 
@@ -269,8 +296,10 @@ Attributes
           is possible, though not guaranteed, that a retry could succeed.
 
 
+
    .. py:method:: _run_request(path: str, method: str, **kwargs) -> str
       :async:
+
 
       Helper method that runs the input request on a thread so that
       it doesn't block the event loop on the calling thread.
@@ -291,8 +320,8 @@ Attributes
 
 .. py:exception:: NonRetryableRequestException(method: str, url: str, cause: str)
 
-
    Bases: :py:obj:`RequestException`
+
 
    Exception raised when an API call is rejected for a reason that will
    not succeed on retry. For example, this might include a malformed request
@@ -301,8 +330,8 @@ Attributes
 
 .. py:exception:: RateLimitExceededException(method: str, url: str, retry_after: Optional[datetime.timedelta] = None)
 
-
    Bases: :py:obj:`RequestException`
+
 
    Exception raised when an API call is rejected because a rate limit has
    been exceeded.
@@ -315,49 +344,52 @@ Attributes
 
 .. py:exception:: RequestException(method: str, url: str, cause: str)
 
-
    Bases: :py:obj:`Exception`
+
 
    Exception raised any time there is an error while making an API call.
 
 
 .. py:class:: Adsorbates
 
-
    Bases: :py:obj:`_DataModel`
+
 
    Stores the response from a request to fetch adsorbates supported in the
    API.
 
+
    .. py:attribute:: adsorbates_supported
-      :type: List[str]
+      :type:  List[str]
 
       List of adsorbates that can be used in the API.
 
 
 .. py:class:: AdsorbateSlabConfigs
 
-
    Bases: :py:obj:`_DataModel`
+
 
    Stores the response from a request to fetch placements of a single
    absorbate on a slab.
 
+
    .. py:attribute:: adsorbate_configs
-      :type: List[Atoms]
+      :type:  List[Atoms]
 
       List of structures, each representing one possible adsorbate placement.
 
+
    .. py:attribute:: slab
-      :type: Slab
+      :type:  Slab
 
       The structure of the slab on which the adsorbate is placed.
 
 
 .. py:class:: AdsorbateSlabRelaxationResult
 
-
    Bases: :py:obj:`_DataModel`
+
 
    Stores information about a single adsorbate slab configuration, including
    outputs for the model used in relaxations.
@@ -366,65 +398,77 @@ Attributes
    in order to limit the size of response payloads. Optional attributes will
    be defined only if they are including the response.
 
+
    .. py:attribute:: config_id
-      :type: int
+      :type:  int
 
       ID of the configuration within the system.
 
+
    .. py:attribute:: status
-      :type: Status
+      :type:  Status
 
       The status of the request for information about this configuration.
 
+
    .. py:attribute:: system_id
-      :type: Optional[str]
+      :type:  Optional[str]
 
       The ID of the system in which the configuration was originally submitted.
 
+
    .. py:attribute:: cell
-      :type: Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]]
+      :type:  Optional[Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]]
 
       3x3 matrix with unit cell vectors.
 
+
    .. py:attribute:: pbc
-      :type: Optional[Tuple[bool, bool, bool]]
+      :type:  Optional[Tuple[bool, bool, bool]]
 
       Whether the structure is periodic along the a, b, and c lattice vectors,
       respectively.
 
+
    .. py:attribute:: numbers
-      :type: Optional[List[int]]
+      :type:  Optional[List[int]]
 
       The atomic number of each atom in the unit cell.
 
+
    .. py:attribute:: positions
-      :type: Optional[List[Tuple[float, float, float]]]
+      :type:  Optional[List[Tuple[float, float, float]]]
 
       The coordinates of each atom in the unit cell, relative to the cartesian
       frame.
 
+
    .. py:attribute:: tags
-      :type: Optional[List[int]]
+      :type:  Optional[List[int]]
 
       Labels for each atom in the unit cell where 0 represents a subsurface atom
       (fixed during optimization), 1 represents a surface atom, and 2 represents
       an adsorbate atom.
 
+
    .. py:attribute:: energy
-      :type: Optional[float]
+      :type:  Optional[float]
 
       The energy of the configuration.
 
+
    .. py:attribute:: energy_trajectory
-      :type: Optional[List[float]]
+      :type:  Optional[List[float]]
 
       The energy of the configuration at each point along the relaxation
       trajectory.
 
+
    .. py:attribute:: forces
-      :type: Optional[List[Tuple[float, float, float]]]
+      :type:  Optional[List[Tuple[float, float, float]]]
 
       The forces on each atom in the relaxed structure.
+
 
    .. py:method:: to_ase_atoms() -> ase.Atoms
 
@@ -441,44 +485,51 @@ Attributes
 
 .. py:class:: AdsorbateSlabRelaxationsRequest
 
-
    Bases: :py:obj:`_DataModel`
+
 
    Stores the request to submit a new batch of adsorbate slab relaxations.
 
+
    .. py:attribute:: adsorbate
-      :type: str
+      :type:  str
 
       Description of the adsorbate.
 
+
    .. py:attribute:: adsorbate_configs
-      :type: List[Atoms]
+      :type:  List[Atoms]
 
       List of adsorbate placements being relaxed.
 
+
    .. py:attribute:: bulk
-      :type: Bulk
+      :type:  Bulk
 
       Information about the original bulk structure used to create the slab.
 
+
    .. py:attribute:: slab
-      :type: Slab
+      :type:  Slab
 
       The structure of the slab on which adsorbates are placed.
 
+
    .. py:attribute:: model
-      :type: str
+      :type:  str
 
       The type of the ML model being used during relaxations.
 
+
    .. py:attribute:: ephemeral
-      :type: Optional[bool]
+      :type:  Optional[bool]
 
       Whether the relaxations can be deleted (assume they cannot be deleted if
       None).
 
+
    .. py:attribute:: adsorbate_reaction
-      :type: Optional[str]
+      :type:  Optional[str]
 
       If possible, an html-formatted string describing the reaction will be added
       to this field.
@@ -486,20 +537,22 @@ Attributes
 
 .. py:class:: AdsorbateSlabRelaxationsResults
 
-
    Bases: :py:obj:`_DataModel`
+
 
    Stores the response from a request for results of adsorbate slab
    relaxations.
 
+
    .. py:attribute:: configs
-      :type: List[AdsorbateSlabRelaxationResult]
+      :type:  List[AdsorbateSlabRelaxationResult]
 
       List of configurations in the system, each representing one placement of
       an adsorbate on a slab surface.
 
+
    .. py:attribute:: omitted_config_ids
-      :type: List[int]
+      :type:  List[int]
 
       List of IDs of configurations that were requested but omitted by the
       server. Results for these IDs can be requested again.
@@ -507,20 +560,22 @@ Attributes
 
 .. py:class:: AdsorbateSlabRelaxationsSystem
 
-
    Bases: :py:obj:`_DataModel`
+
 
    Stores the response from a request to submit a new batch of adsorbate
    slab relaxations.
 
+
    .. py:attribute:: system_id
-      :type: str
+      :type:  str
 
       Unique ID for this set of relaxations which can be used to fetch results
       later.
 
+
    .. py:attribute:: config_ids
-      :type: List[int]
+      :type:  List[int]
 
       The list of IDs assigned to each of the input adsorbate placements, in the
       same order in which they were submitted.
@@ -528,40 +583,46 @@ Attributes
 
 .. py:class:: Atoms
 
-
    Bases: :py:obj:`_DataModel`
+
 
    Subset of the fields from an ASE Atoms object that are used within this
    API.
 
+
    .. py:attribute:: cell
-      :type: Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]
+      :type:  Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]
 
       3x3 matrix with unit cell vectors.
 
+
    .. py:attribute:: pbc
-      :type: Tuple[bool, bool, bool]
+      :type:  Tuple[bool, bool, bool]
 
       Whether the structure is periodic along the a, b, and c lattice vectors,
       respectively.
 
+
    .. py:attribute:: numbers
-      :type: List[int]
+      :type:  List[int]
 
       The atomic number of each atom in the unit cell.
 
+
    .. py:attribute:: positions
-      :type: List[Tuple[float, float, float]]
+      :type:  List[Tuple[float, float, float]]
 
       The coordinates of each atom in the unit cell, relative to the cartesian
       frame.
 
+
    .. py:attribute:: tags
-      :type: List[int]
+      :type:  List[int]
 
       Labels for each atom in the unit cell where 0 represents a subsurface atom
       (fixed during optimization), 1 represents a surface atom, and 2 represents
       an adsorbate atom.
+
 
    .. py:method:: to_ase_atoms() -> ase.Atoms
 
@@ -574,109 +635,121 @@ Attributes
 
 .. py:class:: Bulk
 
-
    Bases: :py:obj:`_DataModel`
+
 
    Stores information about a single bulk material.
 
+
    .. py:attribute:: src_id
-      :type: str
+      :type:  str
 
       The ID of the material.
 
+
    .. py:attribute:: formula
-      :type: str
+      :type:  str
 
       The chemical formula of the material.
 
+
    .. py:attribute:: elements
-      :type: List[str]
+      :type:  List[str]
 
       The list of elements in the material.
 
 
 .. py:class:: Bulks
 
-
    Bases: :py:obj:`_DataModel`
+
 
    Stores the response from a request to fetch bulks supported in the API.
 
+
    .. py:attribute:: bulks_supported
-      :type: List[Bulk]
+      :type:  List[Bulk]
 
       List of bulks that can be used in the API.
 
 
 .. py:class:: Model
 
-
    Bases: :py:obj:`_DataModel`
+
 
    Stores information about a single model supported in the API.
 
+
    .. py:attribute:: id
-      :type: str
+      :type:  str
 
       The ID of the model.
 
 
 .. py:class:: Models
 
-
    Bases: :py:obj:`_DataModel`
+
 
    Stores the response from a request for models supported in the API.
 
+
    .. py:attribute:: models
-      :type: List[Model]
+      :type:  List[Model]
 
       The list of models that are supported.
 
 
 .. py:class:: Slab
 
-
    Bases: :py:obj:`_DataModel`
+
 
    Stores all information about a slab that is returned from the API.
 
+
    .. py:attribute:: atoms
-      :type: Atoms
+      :type:  Atoms
 
       The structure of the slab.
 
+
    .. py:attribute:: metadata
-      :type: SlabMetadata
+      :type:  SlabMetadata
 
       Extra information about the slab.
 
 
 .. py:class:: SlabMetadata
 
-
    Bases: :py:obj:`_DataModel`
+
 
    Stores metadata about a slab that is returned from the API.
 
+
    .. py:attribute:: bulk_src_id
-      :type: str
+      :type:  str
 
       The ID of the bulk material from which the slab was derived.
 
+
    .. py:attribute:: millers
-      :type: Tuple[int, int, int]
+      :type:  Tuple[int, int, int]
 
       The Miller indices of the slab relative to bulk structure.
 
+
    .. py:attribute:: shift
-      :type: float
+      :type:  float
 
       The position along the vector defined by the Miller indices at which a
       cut was taken to generate the slab surface.
 
+
    .. py:attribute:: top
-      :type: bool
+      :type:  bool
 
       If False, the top and bottom surfaces for this millers/shift pair are
       distinct and this slab represents the bottom surface.
@@ -684,45 +757,55 @@ Attributes
 
 .. py:class:: Slabs
 
-
    Bases: :py:obj:`_DataModel`
+
 
    Stores the response from a request to fetch slabs for a bulk structure.
 
+
    .. py:attribute:: slabs
-      :type: List[Slab]
+      :type:  List[Slab]
 
       The list of slabs that were generated from the input bulk structure.
 
 
 .. py:class:: Status(*args, **kwds)
 
-
    Bases: :py:obj:`enum.Enum`
 
+
    Relaxation status of a single adsorbate placement on a slab.
+
 
    .. py:attribute:: NOT_AVAILABLE
       :value: 'not_available'
 
+
       The configuration exists but the result is not yet available. It is
       possible that checking again in the future could yield a result.
+
 
    .. py:attribute:: FAILED_RELAXATION
       :value: 'failed_relaxation'
 
+
       The relaxation failed for this configuration.
+
 
    .. py:attribute:: SUCCESS
       :value: 'success'
 
+
       The relaxation was successful and the requested information about the
       configuration was returned.
+
 
    .. py:attribute:: DOES_NOT_EXIST
       :value: 'does_not_exist'
 
+
       The requested configuration does not exist.
+
 
    .. py:method:: __str__() -> str
 
@@ -744,27 +827,30 @@ Attributes
 
 .. py:class:: AdsorbateBindingSites
 
-
    Stores the inputs and results of a set of relaxations of adsorbate
    placements on the surface of a slab.
 
+
    .. py:attribute:: adsorbate
-      :type: str
+      :type:  str
 
       Description of the adsorbate.
 
+
    .. py:attribute:: bulk
-      :type: fairchem.demo.ocpapi.client.Bulk
+      :type:  fairchem.demo.ocpapi.client.Bulk
 
       The bulk material that was being modeled.
 
+
    .. py:attribute:: model
-      :type: str
+      :type:  str
 
       The type of the model that was run.
 
+
    .. py:attribute:: slabs
-      :type: List[AdsorbateSlabRelaxations]
+      :type:  List[AdsorbateSlabRelaxations]
 
       The list of slabs that were generated from the bulk structure. Each
       contains its own list of adsorbate placements.
@@ -772,52 +858,59 @@ Attributes
 
 .. py:class:: AdsorbateSlabRelaxations
 
-
    Stores the relaxations of adsorbate placements on the surface of a slab.
 
+
    .. py:attribute:: slab
-      :type: fairchem.demo.ocpapi.client.Slab
+      :type:  fairchem.demo.ocpapi.client.Slab
 
       The slab on which the adsorbate was placed.
 
+
    .. py:attribute:: configs
-      :type: List[fairchem.demo.ocpapi.client.AdsorbateSlabRelaxationResult]
+      :type:  List[fairchem.demo.ocpapi.client.AdsorbateSlabRelaxationResult]
 
       Details of the relaxation of each adsorbate placement, including the
       final position.
 
+
    .. py:attribute:: system_id
-      :type: str
+      :type:  str
 
       The ID of the system that stores all of the relaxations.
 
+
    .. py:attribute:: api_host
-      :type: str
+      :type:  str
 
       The API host on which the relaxations were run.
 
+
    .. py:attribute:: ui_url
-      :type: Optional[str]
+      :type:  Optional[str]
 
       The URL at which results can be visualized.
 
 
 .. py:class:: Lifetime(*args, **kwds)
 
-
    Bases: :py:obj:`enum.Enum`
 
+
    Represents different lifetimes when running relaxations.
+
 
    .. py:attribute:: SAVE
 
       The relaxation will be available on API servers indefinitely. It will not
       be possible to delete the relaxation in the future.
 
+
    .. py:attribute:: MARK_EPHEMERAL
 
       The relaxation will be saved on API servers, but can be deleted at any time
       in the future.
+
 
    .. py:attribute:: DELETE
 
@@ -827,30 +920,31 @@ Attributes
 
 .. py:exception:: UnsupportedAdsorbateException(adsorbate: str)
 
-
    Bases: :py:obj:`AdsorbatesException`
+
 
    Exception raised when an adsorbate is not supported in the API.
 
 
 .. py:exception:: UnsupportedBulkException(bulk: str)
 
-
    Bases: :py:obj:`AdsorbatesException`
+
 
    Exception raised when a bulk material is not supported in the API.
 
 
 .. py:exception:: UnsupportedModelException(model: str, allowed_models: List[str])
 
-
    Bases: :py:obj:`AdsorbatesException`
+
 
    Exception raised when a model is not supported in the API.
 
 
 .. py:function:: find_adsorbate_binding_sites(adsorbate: str, bulk: str, model: str = 'equiformer_v2_31M_s2ef_all_md', adslab_filter: Callable[[List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]], Awaitable[List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]]] = _DEFAULT_ADSLAB_FILTER, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT, lifetime: Lifetime = Lifetime.SAVE) -> AdsorbateBindingSites
    :async:
+
 
    Search for adsorbate binding sites on surfaces of a bulk material.
    This executes the following steps:
@@ -890,6 +984,7 @@ Attributes
 .. py:function:: get_adsorbate_slab_relaxation_results(system_id: str, config_ids: Optional[List[int]] = None, fields: Optional[List[str]] = None, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT) -> List[fairchem.demo.ocpapi.client.AdsorbateSlabRelaxationResult]
    :async:
 
+
    Wrapper around Client.get_adsorbate_slab_relaxations_results() that
    handles retries, including re-fetching individual configurations that
    are initially omitted.
@@ -907,6 +1002,7 @@ Attributes
 
 .. py:function:: wait_for_adsorbate_slab_relaxations(system_id: str, check_immediately: bool = False, slow_interval_sec: float = 30, fast_interval_sec: float = 10, pbar: Optional[tqdm.tqdm] = None, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT) -> Dict[int, fairchem.demo.ocpapi.client.Status]
    :async:
+
 
    Blocks until all relaxations in the input system have finished, whether
    successfully or not.
@@ -935,8 +1031,8 @@ Attributes
 
 .. py:class:: keep_all_slabs
 
-
    Adslab filter than returns all slabs.
+
 
    .. py:method:: __call__(adslabs: List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
       :async:
@@ -945,9 +1041,9 @@ Attributes
 
 .. py:class:: keep_slabs_with_miller_indices(miller_indices: Iterable[Tuple[int, int, int]])
 
-
    Adslab filter that keeps any slabs with the configured miller indices.
    Slabs with other miller indices will be ignored.
+
 
    .. py:method:: __call__(adslabs: List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
       :async:
@@ -956,16 +1052,18 @@ Attributes
 
 .. py:class:: prompt_for_slabs_to_keep
 
-
    Adslab filter than presents the user with an interactive prompt to choose
    which of the input slabs to keep.
+
 
    .. py:method:: _sort_key(adslab: fairchem.demo.ocpapi.client.AdsorbateSlabConfigs) -> Tuple[Tuple[int, int, int], float, str]
       :staticmethod:
 
+
       Generates a sort key from the input adslab. Returns the miller indices,
       shift, and top/bottom label so that they will be sorted by those values
       in that order.
+
 
 
    .. py:method:: __call__(adslabs: List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
@@ -974,27 +1072,25 @@ Attributes
 
 
 .. py:data:: NO_LIMIT
-   :type: NoLimitType
+   :type:  NoLimitType
    :value: 0
 
-   
 
 .. py:data:: NoLimitType
 
-   
-
 .. py:class:: RateLimitLogging
-
 
    Controls logging when rate limits are hit.
 
+
    .. py:attribute:: logger
-      :type: logging.Logger
+      :type:  logging.Logger
 
       The logger to use.
 
+
    .. py:attribute:: action
-      :type: str
+      :type:  str
 
       A short description of the action being attempted.
 

@@ -1,5 +1,5 @@
-:py:mod:`core.models.scn.scn`
-=============================
+core.models.scn.scn
+===================
 
 .. py:module:: core.models.scn.scn
 
@@ -12,11 +12,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -26,12 +23,13 @@ Classes
    core.models.scn.scn.DistanceBlock
 
 
-
+Module Contents
+---------------
 
 .. py:class:: SphericalChannelNetwork(num_atoms: int, bond_feat_dim: int, num_targets: int, use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, max_num_neighbors: int = 20, cutoff: float = 8.0, max_num_elements: int = 90, num_interactions: int = 8, lmax: int = 6, mmax: int = 1, num_resolutions: int = 2, sphere_channels: int = 128, sphere_channels_reduce: int = 128, hidden_channels: int = 256, num_taps: int = -1, use_grid: bool = True, num_bands: int = 1, num_sphere_samples: int = 128, num_basis_functions: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, show_timing_info: bool = False, direct_forces: bool = True)
 
-
    Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+
 
    Spherical Channel Network
    Paper: Spherical Channels for Modeling Atomic Interactions
@@ -81,39 +79,30 @@ Classes
    :param show_timing_info: Show timing and memory info
    :type show_timing_info: bool
 
-   .. py:property:: num_params
-      :type: int
-
 
    .. py:attribute:: energy_fc1
-      :type: torch.nn.Linear
+      :type:  torch.nn.Linear
 
-      
 
    .. py:attribute:: energy_fc2
-      :type: torch.nn.Linear
+      :type:  torch.nn.Linear
 
-      
 
    .. py:attribute:: energy_fc3
-      :type: torch.nn.Linear
+      :type:  torch.nn.Linear
 
-      
 
    .. py:attribute:: force_fc1
-      :type: torch.nn.Linear
+      :type:  torch.nn.Linear
 
-      
 
    .. py:attribute:: force_fc2
-      :type: torch.nn.Linear
+      :type:  torch.nn.Linear
 
-      
 
    .. py:attribute:: force_fc3
-      :type: torch.nn.Linear
+      :type:  torch.nn.Linear
 
-      
 
    .. py:method:: forward(data)
 
@@ -127,11 +116,15 @@ Classes
    .. py:method:: _rank_edge_distances(edge_distance, edge_index, max_num_neighbors: int) -> torch.Tensor
 
 
+   .. py:property:: num_params
+      :type: int
+
+
 
 .. py:class:: EdgeBlock(num_resolutions: int, sphere_channels_reduce, hidden_channels_list, cutoff_list, sphharm_list, sphere_channels, distance_expansion, max_num_elements: int, num_basis_functions: int, num_gaussians: int, use_grid: bool, act)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -163,15 +156,15 @@ Classes
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(x, atomic_numbers, edge_distance, edge_index, cutoff_index)
 
 
-
 .. py:class:: MessageBlock(sphere_channels_reduce, hidden_channels, num_basis_functions, sphharm, act)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -203,15 +196,15 @@ Classes
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(x, x_edge, edge_index)
 
 
-
 .. py:class:: DistanceBlock(in_channels, num_basis_functions: int, distance_expansion, max_num_elements: int, act)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -244,7 +237,7 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
-   .. py:method:: forward(edge_distance, source_element, target_element)
 
+   .. py:method:: forward(edge_distance, source_element, target_element)
 
 

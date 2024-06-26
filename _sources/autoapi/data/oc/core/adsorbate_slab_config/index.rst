@@ -1,23 +1,19 @@
-:py:mod:`data.oc.core.adsorbate_slab_config`
-============================================
+data.oc.core.adsorbate_slab_config
+==================================
 
 .. py:module:: data.oc.core.adsorbate_slab_config
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    data.oc.core.adsorbate_slab_config.AdsorbateSlabConfig
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -27,9 +23,10 @@ Functions
    data.oc.core.adsorbate_slab_config.there_is_overlap
 
 
+Module Contents
+---------------
 
 .. py:class:: AdsorbateSlabConfig(slab: fairchem.data.oc.core.Slab, adsorbate: fairchem.data.oc.core.Adsorbate, num_sites: int = 100, num_augmentations_per_site: int = 1, interstitial_gap: float = 0.1, mode: str = 'random')
-
 
    Initializes a list of adsorbate-catalyst systems for a given Adsorbate and Slab.
 
@@ -68,9 +65,11 @@ Functions
                 overlap with the slab plus `interstitial_gap` along the surface normal.
    :type mode: str
 
+
    .. py:method:: get_binding_sites(num_sites: int)
 
       Returns up to `num_sites` sites given the surface atoms' positions.
+
 
 
    .. py:method:: place_adsorbate_on_site(adsorbate: fairchem.data.oc.core.Adsorbate, site: numpy.ndarray, interstitial_gap: float = 0.1)
@@ -78,9 +77,11 @@ Functions
       Place the adsorbate at the given binding site.
 
 
+
    .. py:method:: place_adsorbate_on_sites(sites: list, num_augmentations_per_site: int = 1, interstitial_gap: float = 0.1)
 
       Place the adsorbate at the given binding sites.
+
 
 
    .. py:method:: _get_scaled_normal(adsorbate_c: ase.Atoms, slab_c: ase.Atoms, site: numpy.ndarray, unit_normal: numpy.ndarray, interstitial_gap: float = 0.1)
@@ -118,6 +119,7 @@ Functions
       :rtype: (float)
 
 
+
    .. py:method:: _find_combos_to_check(adsorbate_c2: ase.Atoms, slab_c2: ase.Atoms, unit_normal: numpy.ndarray, interstitial_gap: float)
 
       Find the pairs of surface and adsorbate atoms that would have an intersection event
@@ -142,6 +144,7 @@ Functions
       :rtype: (list[lists])
 
 
+
    .. py:method:: _get_projected_points(adsorbate_c2: ase.Atoms, slab_c2: ase.Atoms, unit_normal: numpy.ndarray)
 
       Find the x and y coordinates of each atom projected onto the surface plane.
@@ -155,6 +158,7 @@ Functions
 
       :returns: {"ads": [[x1, y1], [x2, y2], ...], "slab": [[x1, y1], [x2, y2], ...],}
       :rtype: (dict)
+
 
 
    .. py:method:: get_metadata_dict(ind)

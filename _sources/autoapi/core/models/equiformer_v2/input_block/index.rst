@@ -1,26 +1,24 @@
-:py:mod:`core.models.equiformer_v2.input_block`
-===============================================
+core.models.equiformer_v2.input_block
+=====================================
 
 .. py:module:: core.models.equiformer_v2.input_block
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.equiformer_v2.input_block.EdgeDegreeEmbedding
 
 
-
+Module Contents
+---------------
 
 .. py:class:: EdgeDegreeEmbedding(sphere_channels: int, lmax_list: list[int], mmax_list: list[int], SO3_rotation, mappingReduced, max_num_elements: int, edge_channels_list, use_atom_edge_embedding: bool, rescale_factor)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    :param sphere_channels: Number of spherical channels
    :type sphere_channels: int
@@ -38,7 +36,7 @@ Classes
    :param rescale_factor: Rescale the sum aggregation
    :type rescale_factor: float
 
-   .. py:method:: forward(atomic_numbers, edge_distance, edge_index)
 
+   .. py:method:: forward(atomic_numbers, edge_distance, edge_index)
 
 

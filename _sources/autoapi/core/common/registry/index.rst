@@ -1,5 +1,5 @@
-:py:mod:`core.common.registry`
-==============================
+core.common.registry
+====================
 
 .. py:module:: core.common.registry
 
@@ -28,29 +28,8 @@
 
 
 
-Module Contents
----------------
-
-Classes
-~~~~~~~
-
-.. autoapisummary::
-
-   core.common.registry.Registry
-
-
-
-Functions
-~~~~~~~~~
-
-.. autoapisummary::
-
-   core.common.registry._get_absolute_mapping
-
-
-
 Attributes
-~~~~~~~~~~
+----------
 
 .. autoapisummary::
 
@@ -59,29 +38,43 @@ Attributes
    core.common.registry.registry
 
 
-.. py:data:: R
+Classes
+-------
 
-   
+.. autoapisummary::
+
+   core.common.registry.Registry
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   core.common.registry._get_absolute_mapping
+
+
+Module Contents
+---------------
+
+.. py:data:: R
 
 .. py:data:: NestedDict
 
-   
-
 .. py:function:: _get_absolute_mapping(name: str)
-
 
 .. py:class:: Registry
 
-
    Class for registry object which acts as central source of truth.
 
-   .. py:attribute:: mapping
-      :type: ClassVar[NestedDict]
 
-      
+   .. py:attribute:: mapping
+      :type:  ClassVar[NestedDict]
+
 
    .. py:method:: register_task(name: str)
       :classmethod:
+
 
       Register a new task to registry with key 'name'
       :param name: Key with which the task will be registered.
@@ -94,8 +87,10 @@ Attributes
               ...
 
 
+
    .. py:method:: register_dataset(name: str)
       :classmethod:
+
 
       Register a dataset to registry with key 'name'
 
@@ -111,8 +106,10 @@ Attributes
               ...
 
 
+
    .. py:method:: register_model(name: str)
       :classmethod:
+
 
       Register a model to registry with key 'name'
 
@@ -128,8 +125,10 @@ Attributes
               ...
 
 
+
    .. py:method:: register_logger(name: str)
       :classmethod:
+
 
       Register a logger to registry with key 'name'
 
@@ -144,8 +143,10 @@ Attributes
               ...
 
 
+
    .. py:method:: register_trainer(name: str)
       :classmethod:
+
 
       Register a trainer to registry with key 'name'
 
@@ -160,8 +161,10 @@ Attributes
               ...
 
 
+
    .. py:method:: register(name: str, obj) -> None
       :classmethod:
+
 
       Register an item to registry with key 'name'
 
@@ -174,36 +177,45 @@ Attributes
           registry.register("config", {})
 
 
+
    .. py:method:: __import_error(name: str, mapping_name: str) -> RuntimeError
       :classmethod:
+
 
 
    .. py:method:: get_class(name: str, mapping_name: str)
       :classmethod:
 
 
+
    .. py:method:: get_task_class(name: str)
       :classmethod:
+
 
 
    .. py:method:: get_dataset_class(name: str)
       :classmethod:
 
 
+
    .. py:method:: get_model_class(name: str)
       :classmethod:
+
 
 
    .. py:method:: get_logger_class(name: str)
       :classmethod:
 
 
+
    .. py:method:: get_trainer_class(name: str)
       :classmethod:
 
 
+
    .. py:method:: get(name: str, default=None, no_warning: bool = False)
       :classmethod:
+
 
       Get an item from registry with key 'name'
 
@@ -223,8 +235,10 @@ Attributes
           config = registry.get("config")
 
 
+
    .. py:method:: unregister(name: str)
       :classmethod:
+
 
       Remove an item from registry with key 'name'
 
@@ -239,6 +253,4 @@ Attributes
 
 
 .. py:data:: registry
-
-   
 

@@ -1,5 +1,5 @@
-:py:mod:`core._cli`
-===================
+core._cli
+=========
 
 .. py:module:: core._cli
 
@@ -12,31 +12,30 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core._cli.Runner
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
+   core._cli.runner_wrapper
    core._cli.main
 
 
+Module Contents
+---------------
 
 .. py:class:: Runner(distributed: bool = False)
 
-
    Bases: :py:obj:`submitit.helpers.Checkpointable`
+
 
    Derived callable classes are requeued after timeout with their current
    state dumped at checkpoint.
@@ -50,6 +49,7 @@ Functions
       curate the state (dump a neural network to a standard format and remove it from
       the state so that not to pickle it) and change/remove the initial parameters.
 
+
    .. py:method:: __call__(config: dict) -> None
 
 
@@ -58,6 +58,8 @@ Functions
       Resubmits the same callable with the same arguments
 
 
+
+.. py:function:: runner_wrapper(distributed: bool, config: dict)
 
 .. py:function:: main()
 

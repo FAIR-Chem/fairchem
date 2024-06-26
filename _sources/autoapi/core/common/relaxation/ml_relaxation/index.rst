@@ -1,5 +1,5 @@
-:py:mod:`core.common.relaxation.ml_relaxation`
-==============================================
+core.common.relaxation.ml_relaxation
+====================================
 
 .. py:module:: core.common.relaxation.ml_relaxation
 
@@ -12,18 +12,16 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    core.common.relaxation.ml_relaxation.ml_relax
 
 
+Module Contents
+---------------
 
 .. py:function:: ml_relax(batch, model, steps: int, fmax: float, relax_opt, save_full_traj, device: str = 'cuda:0', transform=None, early_stop_batch: bool = False)
 

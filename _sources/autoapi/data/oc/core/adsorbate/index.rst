@@ -1,32 +1,29 @@
-:py:mod:`data.oc.core.adsorbate`
-================================
+data.oc.core.adsorbate
+======================
 
 .. py:module:: data.oc.core.adsorbate
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    data.oc.core.adsorbate.Adsorbate
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    data.oc.core.adsorbate.randomly_rotate_adsorbate
 
 
+Module Contents
+---------------
 
 .. py:class:: Adsorbate(adsorbate_atoms: ase.Atoms = None, adsorbate_id_from_db: int = None, adsorbate_smiles_from_db: str = None, adsorbate_db_path: str = ADSORBATE_PKL_PATH, adsorbate_db: Dict[int, Tuple[Any, Ellipsis]] = None, adsorbate_binding_indices: list = None)
-
 
    Initializes an adsorbate object in one of 4 ways:
    - Directly pass in an ase.Atoms object.
@@ -46,6 +43,7 @@ Functions
    :param adsorbate_binding_indices: The index/indices of the adsorbate atoms which are expected to bind.
    :type adsorbate_binding_indices: list
 
+
    .. py:method:: __len__()
 
 
@@ -54,9 +52,11 @@ Functions
       Return str(self).
 
 
+
    .. py:method:: __repr__()
 
       Return repr(self).
+
 
 
    .. py:method:: _get_adsorbate_from_random(adsorbate_db)
@@ -71,5 +71,4 @@ Functions
 
 
 .. py:function:: randomly_rotate_adsorbate(adsorbate_atoms: ase.Atoms, mode: str = 'random', binding_idx: int = None)
-
 

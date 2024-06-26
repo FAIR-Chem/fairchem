@@ -1,27 +1,24 @@
-:py:mod:`data.oc.core`
-======================
+data.oc.core
+============
 
 .. py:module:: data.oc.core
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   adsorbate/index.rst
-   adsorbate_slab_config/index.rst
-   bulk/index.rst
-   multi_adsorbate_slab_config/index.rst
-   slab/index.rst
+   /autoapi/data/oc/core/adsorbate/index
+   /autoapi/data/oc/core/adsorbate_slab_config/index
+   /autoapi/data/oc/core/bulk/index
+   /autoapi/data/oc/core/multi_adsorbate_slab_config/index
+   /autoapi/data/oc/core/slab/index
 
-
-Package Contents
-----------------
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -32,10 +29,10 @@ Classes
    data.oc.core.MultipleAdsorbateSlabConfig
 
 
-
+Package Contents
+----------------
 
 .. py:class:: Bulk(bulk_atoms: ase.Atoms = None, bulk_id_from_db: int = None, bulk_src_id_from_db: str = None, bulk_db_path: str = BULK_PKL_PATH, bulk_db: List[Dict[str, Any]] = None)
-
 
    Initializes a bulk object in one of 4 ways:
    - Directly pass in an ase.Atoms object.
@@ -54,6 +51,7 @@ Classes
    :param bulk_db: Already-loaded database.
    :type bulk_db: List[Dict[str, Any]]
 
+
    .. py:method:: _get_bulk_from_random(bulk_db)
 
 
@@ -68,6 +66,7 @@ Classes
       Returns a list of possible slabs for this bulk instance.
 
 
+
    .. py:method:: __len__()
 
 
@@ -76,9 +75,11 @@ Classes
       Return str(self).
 
 
+
    .. py:method:: __repr__()
 
       Return repr(self).
+
 
 
    .. py:method:: __eq__(other) -> bool
@@ -88,7 +89,6 @@ Classes
 
 
 .. py:class:: Slab(bulk=None, slab_atoms: ase.Atoms = None, millers: tuple = None, shift: float = None, top: bool = None, oriented_bulk: pymatgen.core.structure.Structure = None, min_ab: float = 0.8)
-
 
    Initializes a slab object, i.e. a particular slab tiled along xyz, in
    one of 2 ways:
@@ -109,24 +109,30 @@ Classes
    :param min_ab: To confirm that the tiled structure spans this distance
    :type min_ab: float
 
+
    .. py:method:: from_bulk_get_random_slab(bulk=None, max_miller=2, min_ab=8.0, save_path=None)
       :classmethod:
+
 
 
    .. py:method:: from_bulk_get_specific_millers(specific_millers, bulk=None, min_ab=8.0, save_path=None)
       :classmethod:
 
 
+
    .. py:method:: from_bulk_get_all_slabs(bulk=None, max_miller=2, min_ab=8.0, save_path=None)
       :classmethod:
+
 
 
    .. py:method:: from_precomputed_slabs_pkl(bulk=None, precomputed_slabs_pkl=None, max_miller=2, min_ab=8.0)
       :classmethod:
 
 
+
    .. py:method:: from_atoms(atoms: ase.Atoms = None, bulk=None, **kwargs)
       :classmethod:
+
 
 
    .. py:method:: has_surface_tagged()
@@ -143,9 +149,11 @@ Classes
       Return str(self).
 
 
+
    .. py:method:: __repr__()
 
       Return repr(self).
+
 
 
    .. py:method:: __eq__(other)
@@ -155,7 +163,6 @@ Classes
 
 
 .. py:class:: Adsorbate(adsorbate_atoms: ase.Atoms = None, adsorbate_id_from_db: int = None, adsorbate_smiles_from_db: str = None, adsorbate_db_path: str = ADSORBATE_PKL_PATH, adsorbate_db: Dict[int, Tuple[Any, Ellipsis]] = None, adsorbate_binding_indices: list = None)
-
 
    Initializes an adsorbate object in one of 4 ways:
    - Directly pass in an ase.Atoms object.
@@ -175,6 +182,7 @@ Classes
    :param adsorbate_binding_indices: The index/indices of the adsorbate atoms which are expected to bind.
    :type adsorbate_binding_indices: list
 
+
    .. py:method:: __len__()
 
 
@@ -183,9 +191,11 @@ Classes
       Return str(self).
 
 
+
    .. py:method:: __repr__()
 
       Return repr(self).
+
 
 
    .. py:method:: _get_adsorbate_from_random(adsorbate_db)
@@ -200,7 +210,6 @@ Classes
 
 
 .. py:class:: AdsorbateSlabConfig(slab: fairchem.data.oc.core.Slab, adsorbate: fairchem.data.oc.core.Adsorbate, num_sites: int = 100, num_augmentations_per_site: int = 1, interstitial_gap: float = 0.1, mode: str = 'random')
-
 
    Initializes a list of adsorbate-catalyst systems for a given Adsorbate and Slab.
 
@@ -239,9 +248,11 @@ Classes
                 overlap with the slab plus `interstitial_gap` along the surface normal.
    :type mode: str
 
+
    .. py:method:: get_binding_sites(num_sites: int)
 
       Returns up to `num_sites` sites given the surface atoms' positions.
+
 
 
    .. py:method:: place_adsorbate_on_site(adsorbate: fairchem.data.oc.core.Adsorbate, site: numpy.ndarray, interstitial_gap: float = 0.1)
@@ -249,9 +260,11 @@ Classes
       Place the adsorbate at the given binding site.
 
 
+
    .. py:method:: place_adsorbate_on_sites(sites: list, num_augmentations_per_site: int = 1, interstitial_gap: float = 0.1)
 
       Place the adsorbate at the given binding sites.
+
 
 
    .. py:method:: _get_scaled_normal(adsorbate_c: ase.Atoms, slab_c: ase.Atoms, site: numpy.ndarray, unit_normal: numpy.ndarray, interstitial_gap: float = 0.1)
@@ -289,6 +302,7 @@ Classes
       :rtype: (float)
 
 
+
    .. py:method:: _find_combos_to_check(adsorbate_c2: ase.Atoms, slab_c2: ase.Atoms, unit_normal: numpy.ndarray, interstitial_gap: float)
 
       Find the pairs of surface and adsorbate atoms that would have an intersection event
@@ -313,6 +327,7 @@ Classes
       :rtype: (list[lists])
 
 
+
    .. py:method:: _get_projected_points(adsorbate_c2: ase.Atoms, slab_c2: ase.Atoms, unit_normal: numpy.ndarray)
 
       Find the x and y coordinates of each atom projected onto the surface plane.
@@ -328,6 +343,7 @@ Classes
       :rtype: (dict)
 
 
+
    .. py:method:: get_metadata_dict(ind)
 
       Returns a dict containing the atoms object and metadata for
@@ -337,8 +353,8 @@ Classes
 
 .. py:class:: MultipleAdsorbateSlabConfig(slab: fairchem.data.oc.core.Slab, adsorbates: List[fairchem.data.oc.core.Adsorbate], num_sites: int = 100, num_configurations: int = 1, interstitial_gap: float = 0.1, mode: str = 'random_site_heuristic_placement')
 
-
    Bases: :py:obj:`fairchem.data.oc.core.AdsorbateSlabConfig`
+
 
    Class to represent a slab with multiple adsorbates on it. This class only
    returns a fixed combination of adsorbates placed on the surface. Unlike
@@ -382,6 +398,7 @@ Classes
                 overlap with the slab plus `interstitial_gap` along the surface normal.
    :type mode: str
 
+
    .. py:method:: place_adsorbates_on_sites(sites: list, num_configurations: int = 1, interstitial_gap: float = 0.1)
 
       Place the adsorbate at the given binding sites.
@@ -392,6 +409,7 @@ Classes
       While this helps prevent adsorbate overlap it does not gaurantee it
       since non-binding adsorbate atoms can overlap if the right combination
       of angles is sampled.
+
 
 
    .. py:method:: get_metadata_dict(ind)

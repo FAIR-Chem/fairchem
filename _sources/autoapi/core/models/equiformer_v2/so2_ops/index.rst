@@ -1,14 +1,11 @@
-:py:mod:`core.models.equiformer_v2.so2_ops`
-===========================================
+core.models.equiformer_v2.so2_ops
+=================================
 
 .. py:module:: core.models.equiformer_v2.so2_ops
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -17,12 +14,13 @@ Classes
    core.models.equiformer_v2.so2_ops.SO2_Linear
 
 
-
+Module Contents
+---------------
 
 .. py:class:: SO2_m_Convolution(m: int, sphere_channels: int, m_output_channels: int, lmax_list: list[int], mmax_list: list[int])
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    SO(2) Conv: Perform an SO(2) convolution on features corresponding to +- m
 
@@ -35,14 +33,14 @@ Classes
    :param lmax_list (list: int):       List of degrees (l) for each resolution
    :param mmax_list (list: int):       List of orders (m) for each resolution
 
-   .. py:method:: forward(x_m)
 
+   .. py:method:: forward(x_m)
 
 
 .. py:class:: SO2_Convolution(sphere_channels: int, m_output_channels: int, lmax_list: list[int], mmax_list: list[int], mappingReduced, internal_weights: bool = True, edge_channels_list: list[int] | None = None, extra_m0_output_channels: int | None = None)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    SO(2) Block: Perform SO(2) convolutions for all m (orders)
 
@@ -60,14 +58,14 @@ Classes
    :param extra_m0_output_channels: If not None, return `out_embedding` (SO3_Embedding) and `extra_m0_features` (Tensor).
    :type extra_m0_output_channels: int
 
-   .. py:method:: forward(x, x_edge)
 
+   .. py:method:: forward(x, x_edge)
 
 
 .. py:class:: SO2_Linear(sphere_channels: int, m_output_channels: int, lmax_list: list[int], mmax_list: list[int], mappingReduced, internal_weights: bool = False, edge_channels_list: list[int] | None = None)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    SO(2) Linear: Perform SO(2) linear for all m (orders).
 
@@ -83,7 +81,7 @@ Classes
    :type internal_weights: bool
    :param edge_channels_list (list: int):  List of sizes of invariant edge embedding. For example, [input_channels, hidden_channels, hidden_channels].
 
-   .. py:method:: forward(x, x_edge)
 
+   .. py:method:: forward(x, x_edge)
 
 

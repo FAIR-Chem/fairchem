@@ -1,5 +1,5 @@
-:py:mod:`core.scripts.gif_maker_parallelized`
-=============================================
+core.scripts.gif_maker_parallelized
+===================================
 
 .. py:module:: core.scripts.gif_maker_parallelized
 
@@ -18,12 +18,16 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.scripts.gif_maker_parallelized.parser
 
 
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -32,26 +36,15 @@ Functions
    core.scripts.gif_maker_parallelized.get_parser
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.scripts.gif_maker_parallelized.parser
-
+Module Contents
+---------------
 
 .. py:function:: pov_from_atoms(mp_args) -> None
 
-
 .. py:function:: parallelize_generation(traj_path, out_path: str, n_procs) -> None
-
 
 .. py:function:: get_parser() -> argparse.ArgumentParser
 
-
 .. py:data:: parser
-   :type: argparse.ArgumentParser
-
-   
+   :type:  argparse.ArgumentParser
 

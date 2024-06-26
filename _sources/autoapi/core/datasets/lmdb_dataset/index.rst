@@ -1,5 +1,5 @@
-:py:mod:`core.datasets.lmdb_dataset`
-====================================
+core.datasets.lmdb_dataset
+==========================
 
 .. py:module:: core.datasets.lmdb_dataset
 
@@ -11,11 +11,16 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.datasets.lmdb_dataset.T_co
+
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -24,32 +29,23 @@ Classes
    core.datasets.lmdb_dataset.TrajectoryLmdbDataset
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    core.datasets.lmdb_dataset.data_list_collater
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.datasets.lmdb_dataset.T_co
-
+Module Contents
+---------------
 
 .. py:data:: T_co
 
-   
-
 .. py:class:: LmdbDataset(config)
 
-
    Bases: :py:obj:`torch.utils.data.Dataset`\ [\ :py:obj:`T_co`\ ]
+
 
    An abstract class representing a :class:`Dataset`.
 
@@ -68,13 +64,13 @@ Attributes
      sampler that yields integral indices.  To make it work with a map-style
      dataset with non-integral indices/keys, a custom sampler must be provided.
 
-   .. py:attribute:: metadata_path
-      :type: pathlib.Path
 
-      
+   .. py:attribute:: metadata_path
+      :type:  pathlib.Path
+
 
    .. py:attribute:: sharded
-      :type: bool
+      :type:  bool
 
       Dataset class to load from LMDB files containing relaxation
       trajectories or single point computations.
@@ -86,6 +82,7 @@ Attributes
       folder, but lmdb lengths are now calculated directly from the number of keys.
       :param config: Dataset configuration
       :type config: dict
+
 
    .. py:method:: __len__() -> int
 
@@ -102,11 +99,10 @@ Attributes
    .. py:method:: get_metadata(num_samples: int = 100)
 
 
-
 .. py:class:: SinglePointLmdbDataset(config, transform=None)
 
-
    Bases: :py:obj:`LmdbDataset`\ [\ :py:obj:`torch_geometric.data.data.BaseData`\ ]
+
 
    An abstract class representing a :class:`Dataset`.
 
@@ -128,8 +124,8 @@ Attributes
 
 .. py:class:: TrajectoryLmdbDataset(config, transform=None)
 
-
    Bases: :py:obj:`LmdbDataset`\ [\ :py:obj:`torch_geometric.data.data.BaseData`\ ]
+
 
    An abstract class representing a :class:`Dataset`.
 
@@ -150,5 +146,4 @@ Attributes
 
 
 .. py:function:: data_list_collater(data_list: list[torch_geometric.data.data.BaseData], otf_graph: bool = False) -> torch_geometric.data.data.BaseData
-
 

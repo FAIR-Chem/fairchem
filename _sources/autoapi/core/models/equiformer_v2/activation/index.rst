@@ -1,14 +1,11 @@
-:py:mod:`core.models.equiformer_v2.activation`
-==============================================
+core.models.equiformer_v2.activation
+====================================
 
 .. py:module:: core.models.equiformer_v2.activation
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -23,12 +20,13 @@ Classes
    core.models.equiformer_v2.activation.SeparableS2Activation
 
 
-
+Module Contents
+---------------
 
 .. py:class:: ScaledSiLU(inplace: bool = False)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -60,6 +58,7 @@ Classes
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(inputs)
 
@@ -76,8 +75,8 @@ Classes
 
 .. py:class:: ScaledSwiGLU(in_channels: int, out_channels: int, bias: bool = True)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -110,14 +109,14 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
-   .. py:method:: forward(inputs)
 
+   .. py:method:: forward(inputs)
 
 
 .. py:class:: SwiGLU(in_channels: int, out_channels: int, bias: bool = True)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -149,15 +148,15 @@ Classes
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(inputs)
 
 
-
 .. py:class:: SmoothLeakyReLU(negative_slope: float = 0.2)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -189,6 +188,7 @@ Classes
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(x)
 
@@ -205,8 +205,8 @@ Classes
 
 .. py:class:: ScaledSmoothLeakyReLU
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -238,6 +238,7 @@ Classes
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(x)
 
@@ -254,8 +255,8 @@ Classes
 
 .. py:class:: ScaledSigmoid
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -287,15 +288,15 @@ Classes
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
 
-
 .. py:class:: GateActivation(lmax: int, mmax: int, num_channels: int)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -327,6 +328,7 @@ Classes
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: forward(gating_scalars, input_tensors)
 
@@ -337,19 +339,19 @@ Classes
 
 .. py:class:: S2Activation(lmax: int, mmax: int)
 
-
    Bases: :py:obj:`torch.nn.Module`
 
+
    Assume we only have one resolution
+
 
    .. py:method:: forward(inputs, SO3_grid)
 
 
-
 .. py:class:: SeparableS2Activation(lmax: int, mmax: int)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -382,7 +384,7 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
-   .. py:method:: forward(input_scalars, input_tensors, SO3_grid)
 
+   .. py:method:: forward(input_scalars, input_tensors, SO3_grid)
 
 

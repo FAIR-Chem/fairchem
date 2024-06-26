@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_gp.initializers`
-============================================
+core.models.gemnet_gp.initializers
+==================================
 
 .. py:module:: core.models.gemnet_gp.initializers
 
@@ -12,12 +12,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -25,6 +21,8 @@ Functions
    core.models.gemnet_gp.initializers.he_orthogonal_init
 
 
+Module Contents
+---------------
 
 .. py:function:: _standardize(kernel)
 

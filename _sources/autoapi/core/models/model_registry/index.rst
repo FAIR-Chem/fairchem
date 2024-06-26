@@ -1,5 +1,5 @@
-:py:mod:`core.models.model_registry`
-====================================
+core.models.model_registry
+==========================
 
 .. py:module:: core.models.model_registry
 
@@ -12,21 +12,8 @@
 
 
 
-Module Contents
----------------
-
-
-Functions
-~~~~~~~~~
-
-.. autoapisummary::
-
-   core.models.model_registry.model_name_to_local_file
-
-
-
 Attributes
-~~~~~~~~~~
+----------
 
 .. autoapisummary::
 
@@ -34,13 +21,20 @@ Attributes
    core.models.model_registry.available_pretrained_models
 
 
+Functions
+---------
+
+.. autoapisummary::
+
+   core.models.model_registry.model_name_to_local_file
+
+
+Module Contents
+---------------
+
 .. py:data:: MODEL_REGISTRY
 
-   
-
 .. py:data:: available_pretrained_models
-
-   
 
 .. py:function:: model_name_to_local_file(model_name: str, local_cache: str | pathlib.Path) -> str
 

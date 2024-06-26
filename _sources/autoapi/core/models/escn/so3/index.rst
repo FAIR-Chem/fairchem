@@ -1,5 +1,5 @@
-:py:mod:`core.models.escn.so3`
-==============================
+core.models.escn.so3
+====================
 
 .. py:module:: core.models.escn.so3
 
@@ -12,11 +12,16 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.models.escn.so3._Jd
+
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -26,22 +31,12 @@ Classes
    core.models.escn.so3.SO3_Grid
 
 
-
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.models.escn.so3._Jd
-
+Module Contents
+---------------
 
 .. py:data:: _Jd
 
-   
-
 .. py:class:: CoefficientMapping(lmax_list: list[int], mmax_list: list[int], device)
-
 
    Helper functions for coefficients used to reshape l<-->m and to get coefficients of specific degree or order
 
@@ -49,17 +44,17 @@ Attributes
    :param mmax_list (list: int):   List of maximum order of the spherical harmonics
    :param device: Device of the output
 
+
    .. py:method:: complex_idx(m, lmax: int = -1)
 
 
    .. py:method:: coefficient_idx(lmax: int, mmax: int) -> torch.Tensor
 
 
-
 .. py:class:: SO3_Embedding(length: int, lmax_list: list[int], num_channels: int, device: torch.device, dtype: torch.dtype)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Helper functions for irreps embedding
 
@@ -70,6 +65,7 @@ Attributes
    :type num_channels: int
    :param device: Device of the output
    :param dtype: type of the output tensors
+
 
    .. py:method:: clone() -> SO3_Embedding
 
@@ -110,17 +106,17 @@ Attributes
    .. py:method:: _from_grid(x_grid, SO3_grid, lmax: int = -1) -> None
 
 
-
 .. py:class:: SO3_Rotation(rot_mat3x3: torch.Tensor, lmax: list[int])
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Helper functions for Wigner-D rotations
 
    :param rot_mat3x3: Rotation matrix
    :type rot_mat3x3: tensor
    :param lmax_list (list: int):   List of maximum degree of the spherical harmonics
+
 
    .. py:method:: set_lmax(lmax) -> None
 
@@ -140,11 +136,10 @@ Attributes
    .. py:method:: _z_rot_mat(angle: torch.Tensor, lv: int) -> torch.Tensor
 
 
-
 .. py:class:: SO3_Grid(lmax: int, mmax: int)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Helper functions for grid representation of the irreps
 
@@ -152,6 +147,7 @@ Attributes
    :type lmax: int
    :param mmax: Maximum order of the spherical harmonics
    :type mmax: int
+
 
    .. py:method:: _initialize(device: torch.device) -> None
 
@@ -166,6 +162,5 @@ Attributes
 
 
    .. py:method:: from_grid(grid: torch.Tensor, lmax: int, mmax: int) -> torch.Tensor
-
 
 

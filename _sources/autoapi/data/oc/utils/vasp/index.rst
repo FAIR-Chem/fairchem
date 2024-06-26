@@ -1,5 +1,5 @@
-:py:mod:`data.oc.utils.vasp`
-============================
+data.oc.utils.vasp
+==================
 
 .. py:module:: data.oc.utils.vasp
 
@@ -12,23 +12,8 @@
 
 
 
-Module Contents
----------------
-
-
-Functions
-~~~~~~~~~
-
-.. autoapisummary::
-
-   data.oc.utils.vasp._clean_up_inputs
-   data.oc.utils.vasp.calculate_surface_k_points
-   data.oc.utils.vasp.write_vasp_input_files
-
-
-
 Attributes
-~~~~~~~~~~
+----------
 
 .. autoapisummary::
 
@@ -38,23 +23,30 @@ Attributes
    data.oc.utils.vasp.BULK_VASP_FLAGS
 
 
+Functions
+---------
+
+.. autoapisummary::
+
+   data.oc.utils.vasp._clean_up_inputs
+   data.oc.utils.vasp.calculate_surface_k_points
+   data.oc.utils.vasp.write_vasp_input_files
+
+
+Module Contents
+---------------
+
 .. py:data:: __author__
    :value: 'Kevin Tran'
 
-   
 
 .. py:data:: __email__
    :value: 'ktran@andrew.cmu.edu'
 
-   
 
 .. py:data:: VASP_FLAGS
 
-   
-
 .. py:data:: BULK_VASP_FLAGS
-
-   
 
 .. py:function:: _clean_up_inputs(atoms, vasp_flags)
 

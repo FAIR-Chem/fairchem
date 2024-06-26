@@ -1,43 +1,38 @@
-:py:mod:`core.models.painn`
-===========================
+core.models.painn
+=================
 
 .. py:module:: core.models.painn
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   painn/index.rst
-   utils/index.rst
+   /autoapi/core/models/painn/painn/index
+   /autoapi/core/models/painn/utils/index
 
-
-Package Contents
-----------------
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.painn.PaiNN
 
 
-
+Package Contents
+----------------
 
 .. py:class:: PaiNN(num_atoms: int, bond_feat_dim: int, num_targets: int, hidden_channels: int = 512, num_layers: int = 6, num_rbf: int = 128, cutoff: float = 12.0, max_neighbors: int = 50, rbf: dict[str, str] | None = None, envelope: dict[str, str | int] | None = None, regress_forces: bool = True, direct_forces: bool = True, use_pbc: bool = True, otf_graph: bool = True, num_elements: int = 83, scale_file: str | None = None)
 
-
    Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+
 
    PaiNN model based on the description in Schütt et al. (2021):
    Equivariant message passing for the prediction of tensorial properties
    and molecular spectra, https://arxiv.org/abs/2102.03150.
-
-   .. py:property:: num_params
-      :type: int
 
 
    .. py:method:: reset_parameters() -> None
@@ -59,10 +54,16 @@ Classes
       we always use both directions.
 
 
+
    .. py:method:: generate_graph_values(data)
 
 
    .. py:method:: forward(data)
+
+
+   .. py:property:: num_params
+      :type: int
+
 
 
    .. py:method:: __repr__() -> str

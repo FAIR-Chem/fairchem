@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_gp.layers.basis_utils`
-==================================================
+core.models.gemnet_gp.layers.basis_utils
+========================================
 
 .. py:module:: core.models.gemnet_gp.layers.basis_utils
 
@@ -12,12 +12,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -30,6 +26,8 @@ Functions
    core.models.gemnet_gp.layers.basis_utils.real_sph_harm
 
 
+Module Contents
+---------------
 
 .. py:function:: Jn(r: float, n: int)
 

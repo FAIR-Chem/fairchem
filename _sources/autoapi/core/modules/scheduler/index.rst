@@ -1,24 +1,21 @@
-:py:mod:`core.modules.scheduler`
-================================
+core.modules.scheduler
+======================
 
 .. py:module:: core.modules.scheduler
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.modules.scheduler.LRScheduler
 
 
-
+Module Contents
+---------------
 
 .. py:class:: LRScheduler(optimizer, config)
-
 
    Learning rate scheduler class for torch.optim learning rate schedulers
 
@@ -34,6 +31,7 @@ Classes
    :param config: Optim dict from the input config
    :type config: dict
 
+
    .. py:method:: step(metrics=None, epoch=None) -> None
 
 
@@ -41,6 +39,5 @@ Classes
 
 
    .. py:method:: get_lr()
-
 
 

@@ -1,5 +1,5 @@
-:py:mod:`core.scripts.uncompress`
-=================================
+core.scripts.uncompress
+=======================
 
 .. py:module:: core.scripts.uncompress
 
@@ -10,12 +10,16 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.scripts.uncompress.parser
 
 
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -25,29 +29,17 @@ Functions
    core.scripts.uncompress.main
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.scripts.uncompress.parser
-
+Module Contents
+---------------
 
 .. py:function:: read_lzma(inpfile: str, outfile: str) -> None
 
-
 .. py:function:: decompress_list_of_files(ip_op_pair: tuple[str, str]) -> None
-
 
 .. py:function:: get_parser() -> argparse.ArgumentParser
 
-
 .. py:function:: main(args: argparse.Namespace) -> None
 
-
 .. py:data:: parser
-   :type: argparse.ArgumentParser
-
-   
+   :type:  argparse.ArgumentParser
 

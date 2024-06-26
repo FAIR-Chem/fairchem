@@ -1,37 +1,34 @@
-:py:mod:`core.datasets`
-=======================
+core.datasets
+=============
 
 .. py:module:: core.datasets
 
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   embeddings/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/core/datasets/embeddings/index
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   _utils/index.rst
-   ase_datasets/index.rst
-   lmdb_database/index.rst
-   lmdb_dataset/index.rst
-   oc22_lmdb_dataset/index.rst
-   target_metadata_guesser/index.rst
+   /autoapi/core/datasets/_utils/index
+   /autoapi/core/datasets/ase_datasets/index
+   /autoapi/core/datasets/lmdb_database/index
+   /autoapi/core/datasets/lmdb_dataset/index
+   /autoapi/core/datasets/oc22_lmdb_dataset/index
+   /autoapi/core/datasets/target_metadata_guesser/index
 
-
-Package Contents
-----------------
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -45,20 +42,21 @@ Classes
    core.datasets.OC22LmdbDataset
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    core.datasets.data_list_collater
 
 
+Package Contents
+----------------
 
 .. py:class:: AseDBDataset(config: dict, atoms_transform: Callable[[ase.Atoms, Any, Ellipsis], ase.Atoms] = apply_one_tags)
 
-
    Bases: :py:obj:`AseAtomsDataset`
+
 
    This Dataset connects to an ASE Database, allowing the storage of atoms objects
    with a variety of backends including JSON, SQLite, and database server options.
@@ -114,6 +112,7 @@ Functions
    :param transform: deprecated?
    :type transform: callable, optional
 
+
    .. py:method:: _load_dataset_get_ids(config: dict) -> list[int]
 
 
@@ -127,8 +126,10 @@ Functions
       :rtype: atoms
 
 
+
    .. py:method:: connect_db(address: str | pathlib.Path, connect_args: dict | None = None) -> ase.db.core.Database
       :staticmethod:
+
 
 
    .. py:method:: close_db() -> None
@@ -144,8 +145,8 @@ Functions
 
 .. py:class:: AseReadDataset(config: dict, atoms_transform: Callable[[ase.Atoms, Any, Ellipsis], ase.Atoms] = apply_one_tags)
 
-
    Bases: :py:obj:`AseAtomsDataset`
+
 
    This Dataset uses ase.io.read to load data from a directory on disk.
    This is intended for small-scale testing and demonstrations of OCP.
@@ -190,6 +191,7 @@ Functions
                            object. Useful for applying tags, for example.
    :type atoms_transform: callable, optional
 
+
    .. py:method:: _load_dataset_get_ids(config) -> list[pathlib.Path]
 
 
@@ -199,11 +201,10 @@ Functions
    .. py:method:: get_relaxed_energy(identifier) -> float
 
 
-
 .. py:class:: AseReadMultiStructureDataset(config: dict, atoms_transform: Callable[[ase.Atoms, Any, Ellipsis], ase.Atoms] = apply_one_tags)
 
-
    Bases: :py:obj:`AseAtomsDataset`
+
 
    This Dataset can read multiple structures from each file using ase.io.read.
    The disadvantage is that all files must be read at startup.
@@ -263,6 +264,7 @@ Functions
    :param transform: Additional preprocessing function for the Data object
    :type transform: callable, optional
 
+
    .. py:method:: _load_dataset_get_ids(config) -> list[str]
 
 
@@ -275,21 +277,13 @@ Functions
    .. py:method:: get_relaxed_energy(identifier) -> float
 
 
-
 .. py:class:: LMDBDatabase(filename: str | pathlib.Path | None = None, create_indices: bool = True, use_lock_file: bool = False, serial: bool = False, readonly: bool = False, *args, **kwargs)
-
 
    Bases: :py:obj:`ase.db.core.Database`
 
+
    Base class for all databases.
 
-   .. py:property:: metadata
-
-      Load the metadata from the DB if present
-
-   .. py:property:: _nextid
-
-      Get the id of the next row to be written
 
    .. py:method:: __enter__() -> typing_extensions.Self
 
@@ -314,6 +308,7 @@ Functions
       Delete rows.
 
 
+
    .. py:method:: _get_row(idx: int, include_data: bool = True)
 
 
@@ -322,7 +317,16 @@ Functions
       Auxiliary function to get the ith entry, rather than a specific id
 
 
+
    .. py:method:: _select(keys, cmps: list[tuple[str, str, str]], explain: bool = False, verbosity: int = 0, limit: int | None = None, offset: int = 0, sort: str | None = None, include_data: bool = True, columns: str = 'all')
+
+
+   .. py:property:: metadata
+      Load the metadata from the DB if present
+
+
+   .. py:property:: _nextid
+      Get the id of the next row to be written
 
 
    .. py:method:: count(selection=None, **kwargs) -> int
@@ -331,6 +335,7 @@ Functions
 
       See the select() method for the selection syntax.  Use db.count() or
       len(db) to count all rows.
+
 
 
    .. py:method:: _load_ids() -> None
@@ -346,8 +351,8 @@ Functions
 
 .. py:class:: LmdbDataset(config)
 
-
    Bases: :py:obj:`torch.utils.data.Dataset`\ [\ :py:obj:`T_co`\ ]
+
 
    An abstract class representing a :class:`Dataset`.
 
@@ -366,13 +371,13 @@ Functions
      sampler that yields integral indices.  To make it work with a map-style
      dataset with non-integral indices/keys, a custom sampler must be provided.
 
-   .. py:attribute:: metadata_path
-      :type: pathlib.Path
 
-      
+   .. py:attribute:: metadata_path
+      :type:  pathlib.Path
+
 
    .. py:attribute:: sharded
-      :type: bool
+      :type:  bool
 
       Dataset class to load from LMDB files containing relaxation
       trajectories or single point computations.
@@ -384,6 +389,7 @@ Functions
       folder, but lmdb lengths are now calculated directly from the number of keys.
       :param config: Dataset configuration
       :type config: dict
+
 
    .. py:method:: __len__() -> int
 
@@ -400,11 +406,10 @@ Functions
    .. py:method:: get_metadata(num_samples: int = 100)
 
 
-
 .. py:class:: SinglePointLmdbDataset(config, transform=None)
 
-
    Bases: :py:obj:`LmdbDataset`\ [\ :py:obj:`torch_geometric.data.data.BaseData`\ ]
+
 
    An abstract class representing a :class:`Dataset`.
 
@@ -426,8 +431,8 @@ Functions
 
 .. py:class:: TrajectoryLmdbDataset(config, transform=None)
 
-
    Bases: :py:obj:`LmdbDataset`\ [\ :py:obj:`torch_geometric.data.data.BaseData`\ ]
+
 
    An abstract class representing a :class:`Dataset`.
 
@@ -449,11 +454,10 @@ Functions
 
 .. py:function:: data_list_collater(data_list: list[torch_geometric.data.data.BaseData], otf_graph: bool = False) -> torch_geometric.data.data.BaseData
 
-
 .. py:class:: OC22LmdbDataset(config, transform=None)
 
-
    Bases: :py:obj:`torch.utils.data.Dataset`
+
 
    Dataset class to load from LMDB files containing relaxation
    trajectories or single point computations.
@@ -472,6 +476,7 @@ Functions
                      (default: :obj:`None`)
    :type transform: callable, optional
 
+
    .. py:method:: __len__() -> int
 
 
@@ -482,6 +487,5 @@ Functions
 
 
    .. py:method:: close_db() -> None
-
 
 

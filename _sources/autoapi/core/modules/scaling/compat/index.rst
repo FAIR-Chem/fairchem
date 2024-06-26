@@ -1,15 +1,19 @@
-:py:mod:`core.modules.scaling.compat`
-=====================================
+core.modules.scaling.compat
+===========================
 
 .. py:module:: core.modules.scaling.compat
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.modules.scaling.compat.ScaleDict
 
 
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -17,18 +21,10 @@ Functions
    core.modules.scaling.compat.load_scales_compat
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.modules.scaling.compat.ScaleDict
-
+Module Contents
+---------------
 
 .. py:data:: ScaleDict
-
-   
 
 .. py:function:: _load_scale_dict(scale_file: str | ScaleDict | None)
 
@@ -39,5 +35,4 @@ Attributes
 
 
 .. py:function:: load_scales_compat(module: torch.nn.Module, scale_file: str | ScaleDict | None) -> None
-
 

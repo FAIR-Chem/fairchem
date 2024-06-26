@@ -1,5 +1,5 @@
-:py:mod:`core.models.utils.activations`
-=======================================
+core.models.utils.activations
+=============================
 
 .. py:module:: core.models.utils.activations
 
@@ -12,23 +12,21 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.utils.activations.Act
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Act(act: str, slope: float = 0.05)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -61,7 +59,7 @@ Classes
                    evaluation mode.
    :vartype training: bool
 
-   .. py:method:: forward(input: torch.Tensor) -> torch.Tensor
 
+   .. py:method:: forward(input: torch.Tensor) -> torch.Tensor
 
 

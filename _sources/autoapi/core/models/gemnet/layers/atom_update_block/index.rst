@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet.layers.atom_update_block`
-=====================================================
+core.models.gemnet.layers.atom_update_block
+===========================================
 
 .. py:module:: core.models.gemnet.layers.atom_update_block
 
@@ -12,11 +12,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -24,12 +21,13 @@ Classes
    core.models.gemnet.layers.atom_update_block.OutputBlock
 
 
-
+Module Contents
+---------------
 
 .. py:class:: AtomUpdateBlock(emb_size_atom: int, emb_size_edge: int, emb_size_rbf: int, nHidden: int, activation=None, name: str = 'atom_update')
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Aggregate the message embeddings of the atoms
 
@@ -41,6 +39,7 @@ Classes
    :type nHidden: int
    :param activation: Name of the activation function to use in the dense layers.
    :type activation: callable/str
+
 
    .. py:method:: get_mlp(units_in, units, nHidden, activation)
 
@@ -54,8 +53,8 @@ Classes
 
 .. py:class:: OutputBlock(emb_size_atom: int, emb_size_edge: int, emb_size_rbf: int, nHidden: int, num_targets: int, activation=None, direct_forces: bool = True, output_init: str = 'HeOrthogonal', name: str = 'output', **kwargs)
 
-
    Bases: :py:obj:`AtomUpdateBlock`
+
 
    Combines the atom update block and subsequent final dense layer.
 
@@ -73,6 +72,7 @@ Classes
    :type direct_forces: bool
    :param output_init: Kernel initializer of the final dense layer.
    :type output_init: int
+
 
    .. py:method:: reset_parameters() -> None
 

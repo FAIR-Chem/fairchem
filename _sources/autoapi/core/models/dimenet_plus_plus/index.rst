@@ -1,5 +1,5 @@
-:py:mod:`core.models.dimenet_plus_plus`
-=======================================
+core.models.dimenet_plus_plus
+=============================
 
 .. py:module:: core.models.dimenet_plus_plus
 
@@ -39,11 +39,16 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.models.dimenet_plus_plus.sym
+
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -53,24 +58,17 @@ Classes
    core.models.dimenet_plus_plus.DimeNetPlusPlusWrap
 
 
-
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   core.models.dimenet_plus_plus.sym
-
+Module Contents
+---------------
 
 .. py:data:: sym
+   :value: None
 
-   
 
 .. py:class:: InteractionPPBlock(hidden_channels: int, int_emb_size: int, basis_emb_size: int, num_spherical: int, num_radial: int, num_before_skip: int, num_after_skip: int, act='silu')
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -102,6 +100,7 @@ Attributes
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
 
    .. py:method:: reset_parameters() -> None
 
@@ -109,11 +108,10 @@ Attributes
    .. py:method:: forward(x, rbf, sbf, idx_kj, idx_ji)
 
 
-
 .. py:class:: OutputPPBlock(num_radial: int, hidden_channels: int, out_emb_channels: int, out_channels: int, num_layers: int, act: str = 'silu')
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Base class for all neural network modules.
 
@@ -146,17 +144,17 @@ Attributes
                    evaluation mode.
    :vartype training: bool
 
+
    .. py:method:: reset_parameters() -> None
 
 
    .. py:method:: forward(x, rbf, i, num_nodes: int | None = None)
 
 
-
 .. py:class:: DimeNetPlusPlus(hidden_channels: int, out_channels: int, num_blocks: int, int_emb_size: int, basis_emb_size: int, out_emb_channels: int, num_spherical: int, num_radial: int, cutoff: float = 5.0, envelope_exponent: int = 5, num_before_skip: int = 1, num_after_skip: int = 2, num_output_layers: int = 3, act: str = 'silu')
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    DimeNet++ implementation based on https://github.com/klicperajo/dimenet.
 
@@ -190,10 +188,11 @@ Attributes
    :param act: (function, optional): The activation funtion.
                (default: :obj:`silu`)
 
+
    .. py:attribute:: url
       :value: 'https://github.com/klicperajo/dimenet/raw/master/pretrained'
 
-      
+
 
    .. py:method:: reset_parameters() -> None
 
@@ -208,8 +207,8 @@ Attributes
 
 .. py:class:: DimeNetPlusPlusWrap(num_atoms: int, bond_feat_dim: int, num_targets: int, use_pbc: bool = True, regress_forces: bool = True, hidden_channels: int = 128, num_blocks: int = 4, int_emb_size: int = 64, basis_emb_size: int = 8, out_emb_channels: int = 256, num_spherical: int = 7, num_radial: int = 6, otf_graph: bool = False, cutoff: float = 10.0, envelope_exponent: int = 5, num_before_skip: int = 1, num_after_skip: int = 2, num_output_layers: int = 3)
 
-
    Bases: :py:obj:`DimeNetPlusPlus`, :py:obj:`fairchem.core.models.base.BaseModel`
+
 
    DimeNet++ implementation based on https://github.com/klicperajo/dimenet.
 
@@ -243,14 +242,15 @@ Attributes
    :param act: (function, optional): The activation funtion.
                (default: :obj:`silu`)
 
-   .. py:property:: num_params
-      :type: int
-
 
    .. py:method:: _forward(data)
 
 
    .. py:method:: forward(data)
+
+
+   .. py:property:: num_params
+      :type: int
 
 
 

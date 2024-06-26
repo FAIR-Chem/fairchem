@@ -1,5 +1,5 @@
-:py:mod:`core.models.escn.escn`
-===============================
+core.models.escn.escn
+=====================
 
 .. py:module:: core.models.escn.escn
 
@@ -12,11 +12,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -30,12 +27,13 @@ Classes
    core.models.escn.escn.ForceBlock
 
 
-
+Module Contents
+---------------
 
 .. py:class:: eSCN(num_atoms: int, bond_feat_dim: int, num_targets: int, use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, max_neighbors: int = 40, cutoff: float = 8.0, max_num_elements: int = 90, num_layers: int = 8, lmax_list: list[int] | None = None, mmax_list: list[int] | None = None, sphere_channels: int = 128, hidden_channels: int = 256, edge_channels: int = 128, use_grid: bool = True, num_sphere_samples: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, show_timing_info: bool = False)
 
-
    Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+
 
    Equivariant Spherical Channel Network
    Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
@@ -76,9 +74,6 @@ Classes
    :param show_timing_info: Show timing and memory info
    :type show_timing_info: bool
 
-   .. py:property:: num_params
-      :type: int
-
 
    .. py:method:: forward(data)
 
@@ -86,11 +81,15 @@ Classes
    .. py:method:: _init_edge_rot_mat(data, edge_index, edge_distance_vec)
 
 
+   .. py:property:: num_params
+      :type: int
+
+
 
 .. py:class:: LayerBlock(layer_idx: int, sphere_channels: int, hidden_channels: int, edge_channels: int, lmax_list: list[int], mmax_list: list[int], distance_expansion, max_num_elements: int, SO3_grid: fairchem.core.models.escn.so3.SO3_Grid, act)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Layer block: Perform one layer (message passing and aggregation) of the GNN
 
@@ -113,14 +112,14 @@ Classes
    :param act: Non-linear activation function
    :type act: function
 
-   .. py:method:: forward(x, atomic_numbers, edge_distance, edge_index, SO3_edge_rot, mappingReduced)
 
+   .. py:method:: forward(x, atomic_numbers, edge_distance, edge_index, SO3_edge_rot, mappingReduced)
 
 
 .. py:class:: MessageBlock(layer_idx: int, sphere_channels: int, hidden_channels: int, edge_channels: int, lmax_list: list[int], mmax_list: list[int], distance_expansion, max_num_elements: int, SO3_grid: fairchem.core.models.escn.so3.SO3_Grid, act)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Message block: Perform message passing
 
@@ -143,14 +142,14 @@ Classes
    :param act: Non-linear activation function
    :type act: function
 
-   .. py:method:: forward(x, atomic_numbers, edge_distance, edge_index, SO3_edge_rot, mappingReduced)
 
+   .. py:method:: forward(x, atomic_numbers, edge_distance, edge_index, SO3_edge_rot, mappingReduced)
 
 
 .. py:class:: SO2Block(sphere_channels: int, hidden_channels: int, edge_channels: int, lmax_list: list[int], mmax_list: list[int], act)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    SO(2) Block: Perform SO(2) convolutions for all m (orders)
 
@@ -165,14 +164,14 @@ Classes
    :param act: Non-linear activation function
    :type act: function
 
-   .. py:method:: forward(x, x_edge, mappingReduced)
 
+   .. py:method:: forward(x, x_edge, mappingReduced)
 
 
 .. py:class:: SO2Conv(m: int, sphere_channels: int, hidden_channels: int, edge_channels: int, lmax_list: list[int], mmax_list: list[int], act)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    SO(2) Conv: Perform an SO(2) convolution
 
@@ -189,14 +188,14 @@ Classes
    :param act: Non-linear activation function
    :type act: function
 
-   .. py:method:: forward(x_m, x_edge) -> torch.Tensor
 
+   .. py:method:: forward(x_m, x_edge) -> torch.Tensor
 
 
 .. py:class:: EdgeBlock(edge_channels, distance_expansion, max_num_elements, act)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Edge Block: Compute invariant edge representation from edge diatances and atomic numbers
 
@@ -209,14 +208,14 @@ Classes
    :param act: Non-linear activation function
    :type act: function
 
-   .. py:method:: forward(edge_distance, source_element, target_element)
 
+   .. py:method:: forward(edge_distance, source_element, target_element)
 
 
 .. py:class:: EnergyBlock(num_channels: int, num_sphere_samples: int, act)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Energy Block: Output block computing the energy
 
@@ -227,14 +226,14 @@ Classes
    :param act: Non-linear activation function
    :type act: function
 
-   .. py:method:: forward(x_pt) -> torch.Tensor
 
+   .. py:method:: forward(x_pt) -> torch.Tensor
 
 
 .. py:class:: ForceBlock(num_channels: int, num_sphere_samples: int, act)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Force Block: Output block computing the per atom forces
 
@@ -245,7 +244,7 @@ Classes
    :param act: Non-linear activation function
    :type act: function
 
-   .. py:method:: forward(x_pt, sphere_points) -> torch.Tensor
 
+   .. py:method:: forward(x_pt, sphere_points) -> torch.Tensor
 
 

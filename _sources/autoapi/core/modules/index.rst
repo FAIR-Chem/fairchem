@@ -1,5 +1,5 @@
-:py:mod:`core.modules`
-======================
+core.modules
+============
 
 .. py:module:: core.modules
 
@@ -14,24 +14,24 @@
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   scaling/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/core/modules/scaling/index
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   evaluator/index.rst
-   exponential_moving_average/index.rst
-   loss/index.rst
-   normalizer/index.rst
-   scheduler/index.rst
-   transforms/index.rst
+   /autoapi/core/modules/evaluator/index
+   /autoapi/core/modules/exponential_moving_average/index
+   /autoapi/core/modules/loss/index
+   /autoapi/core/modules/normalizer/index
+   /autoapi/core/modules/scheduler/index
+   /autoapi/core/modules/transforms/index
 
 

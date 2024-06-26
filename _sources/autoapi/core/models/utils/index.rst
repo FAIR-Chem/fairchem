@@ -1,16 +1,16 @@
-:py:mod:`core.models.utils`
-===========================
+core.models.utils
+=================
 
 .. py:module:: core.models.utils
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   activations/index.rst
-   basis/index.rst
+   /autoapi/core/models/utils/activations/index
+   /autoapi/core/models/utils/basis/index
 
 

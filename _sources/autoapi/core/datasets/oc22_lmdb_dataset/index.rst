@@ -1,5 +1,5 @@
-:py:mod:`core.datasets.oc22_lmdb_dataset`
-=========================================
+core.datasets.oc22_lmdb_dataset
+===============================
 
 .. py:module:: core.datasets.oc22_lmdb_dataset
 
@@ -12,23 +12,21 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.datasets.oc22_lmdb_dataset.OC22LmdbDataset
 
 
-
+Module Contents
+---------------
 
 .. py:class:: OC22LmdbDataset(config, transform=None)
 
-
    Bases: :py:obj:`torch.utils.data.Dataset`
+
 
    Dataset class to load from LMDB files containing relaxation
    trajectories or single point computations.
@@ -47,6 +45,7 @@ Classes
                      (default: :obj:`None`)
    :type transform: callable, optional
 
+
    .. py:method:: __len__() -> int
 
 
@@ -57,6 +56,5 @@ Classes
 
 
    .. py:method:: close_db() -> None
-
 
 

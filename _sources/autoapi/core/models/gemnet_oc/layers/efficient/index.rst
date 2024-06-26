@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_oc.layers.efficient`
-================================================
+core.models.gemnet_oc.layers.efficient
+======================================
 
 .. py:module:: core.models.gemnet_oc.layers.efficient
 
@@ -11,11 +11,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -23,12 +20,13 @@ Classes
    core.models.gemnet_oc.layers.efficient.EfficientInteractionBilinear
 
 
-
+Module Contents
+---------------
 
 .. py:class:: BasisEmbedding(num_radial: int, emb_size_interm: int, num_spherical: int | None = None)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Embed a basis (CBF, SBF), optionally using the efficient reformulation.
 
@@ -40,10 +38,10 @@ Classes
                          Only required if there is a circular/spherical basis.
    :type num_spherical: int
 
-   .. py:attribute:: weight
-      :type: torch.nn.Parameter
 
-      
+   .. py:attribute:: weight
+      :type:  torch.nn.Parameter
+
 
    .. py:method:: reset_parameters() -> None
 
@@ -77,8 +75,8 @@ Classes
 
 .. py:class:: EfficientInteractionBilinear(emb_size_in: int, emb_size_interm: int, emb_size_out: int)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Efficient reformulation of the bilinear layer and subsequent summation.
 
@@ -88,6 +86,7 @@ Classes
    :type emb_size_interm: int
    :param emb_size_out: Embedding size of output triplets/quadruplets.
    :type emb_size_out: int
+
 
    .. py:method:: forward(basis, m, idx_agg_outer, idx_agg_inner, idx_agg2_outer=None, idx_agg2_inner=None, agg2_out_size=None)
 

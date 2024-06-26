@@ -1,26 +1,24 @@
-:py:mod:`core.models.equiformer_v2.module_list`
-===============================================
+core.models.equiformer_v2.module_list
+=====================================
 
 .. py:module:: core.models.equiformer_v2.module_list
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.models.equiformer_v2.module_list.ModuleListInfo
 
 
-
+Module Contents
+---------------
 
 .. py:class:: ModuleListInfo(info_str, modules=None)
 
-
    Bases: :py:obj:`torch.nn.ModuleList`
+
 
    Holds submodules in a list.
 
@@ -43,6 +41,7 @@ Classes
                for i, l in enumerate(self.linears):
                    x = self.linears[i // 2](x) + l(x)
                return x
+
 
    .. py:method:: __repr__() -> str
 

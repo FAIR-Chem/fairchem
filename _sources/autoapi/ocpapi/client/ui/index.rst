@@ -1,34 +1,30 @@
-:py:mod:`ocpapi.client.ui`
-==========================
+ocpapi.client.ui
+================
 
 .. py:module:: ocpapi.client.ui
 
 
-Module Contents
----------------
-
-
-Functions
-~~~~~~~~~
-
-.. autoapisummary::
-
-   ocpapi.client.ui.get_results_ui_url
-
-
-
 Attributes
-~~~~~~~~~~
+----------
 
 .. autoapisummary::
 
    ocpapi.client.ui._API_TO_UI_HOSTS
 
 
-.. py:data:: _API_TO_UI_HOSTS
-   :type: Dict[str, str]
+Functions
+---------
 
-   
+.. autoapisummary::
+
+   ocpapi.client.ui.get_results_ui_url
+
+
+Module Contents
+---------------
+
+.. py:data:: _API_TO_UI_HOSTS
+   :type:  Dict[str, str]
 
 .. py:function:: get_results_ui_url(api_host: str, system_id: str) -> Optional[str]
 

@@ -1,5 +1,5 @@
-:py:mod:`core.models.painn.utils`
-=================================
+core.models.painn.utils
+=======================
 
 .. py:module:: core.models.painn.utils
 
@@ -12,12 +12,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -25,6 +21,8 @@ Functions
    core.models.painn.utils.get_edge_id
 
 
+Module Contents
+---------------
 
 .. py:function:: repeat_blocks(sizes, repeats, continuous_indexing: bool = True, start_idx: int = 0, block_inc: int = 0, repeat_inc: int = 0) -> torch.Tensor
 
@@ -60,5 +58,4 @@ Functions
 
 
 .. py:function:: get_edge_id(edge_idx, cell_offsets, num_atoms: int)
-
 

@@ -1,5 +1,5 @@
-:py:mod:`core.preprocessing`
-============================
+core.preprocessing
+==================
 
 .. py:module:: core.preprocessing
 
@@ -14,28 +14,25 @@
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   atoms_to_graphs/index.rst
+   /autoapi/core/preprocessing/atoms_to_graphs/index
 
-
-Package Contents
-----------------
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    core.preprocessing.AtomsToGraphs
 
 
-
+Package Contents
+----------------
 
 .. py:class:: AtomsToGraphs(max_neigh: int = 200, radius: int = 6, r_energy: bool = False, r_forces: bool = False, r_distances: bool = False, r_edges: bool = True, r_fixed: bool = True, r_pbc: bool = False, r_stress: bool = False, r_data_keys: collections.abc.Sequence[str] | None = None)
-
 
    A class to help convert periodic atomic structures to graphs.
 
@@ -150,16 +147,19 @@ Classes
 
       
 
+
    .. py:method:: _get_neighbors_pymatgen(atoms: ase.Atoms)
 
       Preforms nearest neighbor search and returns edge index, distances,
       and cell offsets
 
 
+
    .. py:method:: _reshape_features(c_index, n_index, n_distance, offsets)
 
       Stack center and neighbor index and reshapes distances,
       takes in np.arrays and returns torch tensors
+
 
 
    .. py:method:: convert(atoms: ase.Atoms, sid=None)
@@ -176,6 +176,7 @@ Classes
                 and optionally, energy, forces, distances, edges, and periodic boundary conditions.
                 Optional properties can included by setting r_property=True when constructing the class.
       :rtype: data (torch_geometric.data.Data)
+
 
 
    .. py:method:: convert_all(atoms_collection, processed_file_path: str | None = None, collate_and_save=False, disable_tqdm=False)

@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_oc.utils`
-=====================================
+core.models.gemnet_oc.utils
+===========================
 
 .. py:module:: core.models.gemnet_oc.utils
 
@@ -11,12 +11,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -34,6 +30,8 @@ Functions
    core.models.gemnet_oc.utils.get_edge_id
 
 
+Module Contents
+---------------
 
 .. py:function:: ragged_range(sizes)
 
@@ -79,7 +77,6 @@ Functions
 
 
 .. py:function:: masked_select_sparsetensor_flat(src, mask) -> torch_sparse.SparseTensor
-
 
 .. py:function:: calculate_interatomic_vectors(R, id_s, id_t, offsets_st)
 
@@ -156,7 +153,6 @@ Functions
 
 .. py:function:: mask_neighbors(neighbors, edge_mask)
 
-
 .. py:function:: get_neighbor_order(num_atoms: int, index, atom_distance) -> torch.Tensor
 
    Give a mask that filters out edges so that each atom has at most
@@ -172,5 +168,4 @@ Functions
 
 
 .. py:function:: get_edge_id(edge_idx, cell_offsets, num_atoms: int)
-
 

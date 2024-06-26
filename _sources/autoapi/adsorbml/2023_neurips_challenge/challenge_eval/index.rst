@@ -1,15 +1,11 @@
-:py:mod:`adsorbml.2023_neurips_challenge.challenge_eval`
-========================================================
+adsorbml.2023_neurips_challenge.challenge_eval
+==============================================
 
 .. py:module:: adsorbml.2023_neurips_challenge.challenge_eval
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -21,6 +17,8 @@ Functions
    adsorbml.2023_neurips_challenge.challenge_eval.main
 
 
+Module Contents
+---------------
 
 .. py:function:: is_successful(best_pred_energy, best_dft_energy, SUCCESS_THRESHOLD=0.1)
 
@@ -71,7 +69,6 @@ Functions
 
 
 .. py:function:: parse_args()
-
 
 .. py:function:: main()
 

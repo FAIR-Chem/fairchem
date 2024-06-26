@@ -1,15 +1,11 @@
-:py:mod:`core.scripts.hpo.run_tune_pbt`
-=======================================
+core.scripts.hpo.run_tune_pbt
+=============================
 
 .. py:module:: core.scripts.hpo.run_tune_pbt
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -17,10 +13,10 @@ Functions
    core.scripts.hpo.run_tune_pbt.main
 
 
+Module Contents
+---------------
 
 .. py:function:: ocp_trainable(config, checkpoint_dir=None) -> None
 
-
 .. py:function:: main() -> None
-
 

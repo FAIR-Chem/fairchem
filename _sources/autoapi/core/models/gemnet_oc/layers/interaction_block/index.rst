@@ -1,5 +1,5 @@
-:py:mod:`core.models.gemnet_oc.layers.interaction_block`
-========================================================
+core.models.gemnet_oc.layers.interaction_block
+==============================================
 
 .. py:module:: core.models.gemnet_oc.layers.interaction_block
 
@@ -11,11 +11,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -25,12 +22,13 @@ Classes
    core.models.gemnet_oc.layers.interaction_block.PairInteraction
 
 
-
+Module Contents
+---------------
 
 .. py:class:: InteractionBlock(emb_size_atom: int, emb_size_edge: int, emb_size_trip_in: int, emb_size_trip_out: int, emb_size_quad_in: int, emb_size_quad_out: int, emb_size_a2a_in: int, emb_size_a2a_out: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_sbf: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, num_atom_emb_layers: int = 0, quad_interaction: bool = False, atom_edge_interaction: bool = False, edge_atom_interaction: bool = False, atom_interaction: bool = False, activation=None)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Interaction block for GemNet-Q/dQ.
 
@@ -81,6 +79,7 @@ Classes
    :param activation: Name of the activation function to use in the dense layers.
    :type activation: str
 
+
    .. py:method:: forward(h, m, bases_qint, bases_e2e, bases_a2e, bases_e2a, basis_a2a_rad, basis_atom_update, edge_index_main, a2ee2a_graph, a2a_graph, id_swap, trip_idx_e2e, trip_idx_a2e, trip_idx_e2a, quad_idx)
 
       :returns: * **h** (*torch.Tensor, shape=(nEdges, emb_size_atom)*) -- Atom embeddings.
@@ -90,8 +89,8 @@ Classes
 
 .. py:class:: QuadrupletInteraction(emb_size_edge, emb_size_quad_in, emb_size_quad_out, emb_size_rbf, emb_size_cbf, emb_size_sbf, symmetric_mp=True, activation=None)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Quadruplet-based message passing block.
 
@@ -115,6 +114,7 @@ Classes
    :param activation: Name of the activation function to use in the dense layers.
    :type activation: str
 
+
    .. py:method:: forward(m, bases, idx, id_swap)
 
       :returns: **m** -- Edge embeddings (c->a).
@@ -124,8 +124,8 @@ Classes
 
 .. py:class:: TripletInteraction(emb_size_in: int, emb_size_out: int, emb_size_trip_in: int, emb_size_trip_out: int, emb_size_rbf: int, emb_size_cbf: int, symmetric_mp: bool = True, swap_output: bool = True, activation=None)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Triplet-based message passing block.
 
@@ -152,6 +152,7 @@ Classes
    :param activation: Name of the activation function to use in the dense layers.
    :type activation: str
 
+
    .. py:method:: forward(m, bases, idx, id_swap, expand_idx=None, idx_agg2=None, idx_agg2_inner=None, agg2_out_size=None)
 
       :returns: **m** -- Edge embeddings.
@@ -161,8 +162,8 @@ Classes
 
 .. py:class:: PairInteraction(emb_size_atom, emb_size_pair_in, emb_size_pair_out, emb_size_rbf, activation=None)
 
-
    Bases: :py:obj:`torch.nn.Module`
+
 
    Pair-based message passing block.
 
@@ -176,6 +177,7 @@ Classes
    :type emb_size_rbf: int
    :param activation: Name of the activation function to use in the dense layers.
    :type activation: str
+
 
    .. py:method:: forward(h, rad_basis, edge_index, target_neighbor_idx)
 

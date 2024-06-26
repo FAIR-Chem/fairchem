@@ -1,25 +1,22 @@
-:py:mod:`cattsunami.core`
-=========================
+cattsunami.core
+===============
 
 .. py:module:: cattsunami.core
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   autoframe/index.rst
-   ocpneb/index.rst
-   reaction/index.rst
+   /autoapi/cattsunami/core/autoframe/index
+   /autoapi/cattsunami/core/ocpneb/index
+   /autoapi/cattsunami/core/reaction/index
 
-
-Package Contents
-----------------
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -27,12 +24,13 @@ Classes
    cattsunami.core.OCPNEB
 
 
-
+Package Contents
+----------------
 
 .. py:class:: Reaction(reaction_db_path: str, adsorbate_db_path: str, reaction_id_from_db: int = None, reaction_str_from_db: str = None, reaction_type: str = None)
 
-
    Initialize Reaction object
+
 
    .. py:method:: get_desorption_mapping(reactant)
 
@@ -42,8 +40,8 @@ Classes
 
 .. py:class:: OCPNEB(images, checkpoint_path, k=0.1, fmax=0.05, climb=False, parallel=False, remove_rotation_and_translation=False, world=None, dynamic_relaxation=True, scale_fmax=0.0, method='aseneb', allow_shared_calculator=False, precon=None, cpu=False, batch_size=4)
 
-
    Bases: :py:obj:`ase.neb.DyNEB`
+
 
    .. py:method:: load_checkpoint(checkpoint_path: str) -> None
 
@@ -53,15 +51,16 @@ Classes
                               Path to trained model
 
 
+
    .. py:method:: get_forces()
 
       Evaluate and return the forces.
+
 
 
    .. py:method:: set_positions(positions)
 
 
    .. py:method:: get_precon_forces(forces, energies, images)
-
 
 
