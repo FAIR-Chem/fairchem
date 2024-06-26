@@ -110,8 +110,8 @@ def create_element_references(
 
     if "element_references" not in state_dict:
         raise RuntimeError("Unable to load linear element references!")
-    references = LinearReference(element_references=state_dict["element_references"])
-    return references
+
+    return LinearReference(element_references=state_dict["element_references"])
 
 
 def fit_linear_references(
