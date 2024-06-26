@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from functools import partial
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
@@ -76,7 +76,6 @@ class LinearReference(nn.Module):
 
 
 def create_element_references(
-    type: Literal["linear"] = "linear",
     file: str | Path | None = None,
     state_dict: dict | None = None,
 ) -> LinearReference:
@@ -109,15 +108,9 @@ def create_element_references(
                         values["element_references"]
                     )
 
-    if type == "linear":
-        if "element_references" not in state_dict:
-            raise RuntimeError("Unable to load linear element references!")
-        references = LinearReference(
-            element_references=state_dict["element_references"]
-        )
-    else:
-        raise ValueError(f"Invalid element references type={type}.")
-
+    if "element_references" not in state_dict:
+        raise RuntimeError("Unable to load linear element references!")
+    references = LinearReference(element_references=state_dict["element_references"])
     return references
 
 

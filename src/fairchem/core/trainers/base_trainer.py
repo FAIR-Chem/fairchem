@@ -393,7 +393,6 @@ class BaseTrainer(ABC):
                 ] = True
             else:  # load pre-fitted linear references from file
                 self.elementrefs[target] = create_element_references(
-                    type=elementrefs[target].get("type", "linear"),
                     file=elementrefs[target].get("file"),
                 )
 
