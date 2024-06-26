@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
+from typing import Any
 
 import torch
 import wandb
@@ -51,6 +52,10 @@ class Logger(ABC):
     def mark_preempting(self) -> None:
         pass
 
+    @abstractmethod
+    def log_summary(self, summary_dict: dict[str, Any]) -> None:
+        pass
+
 
 @registry.register_logger("wandb")
 class WandBLogger(Logger):
@@ -89,6 +94,10 @@ class WandBLogger(Logger):
         plots = [wandb.Image(x, caption=caption) for x in plots]
         wandb.log({"data": plots})
 
+    def log_summary(self, summary_dict: dict[str, Any]):
+        for k, v in summary_dict.items():
+            wandb.run.summary[k] = v
+
     def mark_preempting(self) -> None:
         wandb.mark_preempting()
 
@@ -114,7 +123,10 @@ class TensorboardLogger(Logger):
                 self.writer.add_scalar(key, update_dict[key], step)
 
     def mark_preempting(self) -> None:
-        pass
+        logging.warning("mark_preempting for Tensorboard not supported")
 
     def log_plots(self, plots) -> None:
-        pass
+        logging.warning("log_plots for Tensorboard not supported")
+
+    def log_summary(self, summary_dict: dict[str, Any]) -> None:
+        logging.warning("log_summary for Tensorboard not supported")
