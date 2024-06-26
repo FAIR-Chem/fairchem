@@ -123,7 +123,10 @@ class TensorboardLogger(Logger):
                 self.writer.add_scalar(key, update_dict[key], step)
 
     def mark_preempting(self) -> None:
-        pass
+        logging.warning("mark_preempting for Tensorboard not supported")
 
     def log_plots(self, plots) -> None:
-        pass
+        logging.warning("log_plots for Tensorboard not supported")
+
+    def log_summary(self, summary_dict: dict[str, Any]) -> None:
+        logging.warning("log_summary for Tensorboard not supported")
