@@ -140,7 +140,6 @@ class Transformer(BaseModel):
             hidden_dim=hidden_dim,
             output_dim=3,
             num_layers=output_layers,
-            dropout=dropout,
         )
 
         self.energy_out = ResMLP(
@@ -148,7 +147,6 @@ class Transformer(BaseModel):
             hidden_dim=hidden_dim,
             output_dim=1,
             num_layers=output_layers,
-            dropout=dropout,
         )
     
         self.reset_parameters()

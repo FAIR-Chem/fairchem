@@ -78,6 +78,7 @@ optim:
   optimizer: AdamW
   optimizer_params:
     weight_decay: 0.001
+    betas: [0.9, 0.999]
   scheduler: CosineAnnealingLR
   T_max: 500000
   eta_min: 5.e-6
