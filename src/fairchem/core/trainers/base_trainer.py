@@ -431,6 +431,7 @@ class BaseTrainer(ABC):
 
         if self.logger is not None:
             self.logger.watch(self.model)
+            self.logger.log_summary({"num_params": self.model.num_params})
 
         if distutils.initialized() and not self.config["noddp"]:
             self.model = DistributedDataParallel(self.model, device_ids=[self.device])
