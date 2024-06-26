@@ -98,7 +98,9 @@ def create_normalizer(
             std = values.get("std")
 
     if state_dict is not None:
-        return Normalizer().load_state_dict(state_dict)
+        normalizer = Normalizer()
+        normalizer.load_state_dict(state_dict)
+        return normalizer
 
     # if not then read target value tensor
     if tensor is not None and mean is None and std is None:
@@ -125,6 +127,7 @@ def fit_normalizers(
     element_references: dict | None = None,
     num_batches: int | None = None,
     num_workers: int = 1,
+    shuffle: bool = True,
 ) -> dict[str, Normalizer]:
     """Estimate mean and std from data to create normalizers
 
@@ -135,6 +138,7 @@ def fit_normalizers(
         element_references:
         num_batches: number of batches to use in fit. If not given will use all batches
         num_workers: number of workers to use in data loader
+        shuffle: whether to shuffle when loading the dataset
 
     Returns:
         dict of normalizer objects
@@ -142,7 +146,7 @@ def fit_normalizers(
     data_loader = DataLoader(
         dataset,
         batch_size=batch_size,
-        shuffle=True,
+        shuffle=shuffle,
         collate_fn=partial(data_list_collater, otf_graph=True),
         num_workers=num_workers,
         pin_memory=True,
@@ -152,7 +156,7 @@ def fit_normalizers(
     if num_batches > len(data_loader):
         logging.warning(
             f"The give num_batches {num_batches} is larger than total batches of size {batch_size} in dataset. "
-            f"Will ignore num_batches and use the whole dataset"
+            f"Will ignore num_batches and use the whole dataset."
         )
         num_batches = len(data_loader)
 

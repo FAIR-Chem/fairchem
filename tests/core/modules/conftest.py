@@ -37,12 +37,12 @@ def dataset(tmpdir_factory, dummy_element_refs):
                 + 0.05 * rng.random() * dummy_element_refs.mean()
             )
             atoms = structure.to_ase_atoms()
-            db.write(atoms, data={"energy": energy})
+            db.write(atoms, data={"energy": energy, "forces": rng.random((2, 3))})
 
     dataset = AseDBDataset(
         config={
             "src": str(tmpdir / "dummy.aselmdb"),
-            "a2g_args": {"r_data_keys": ["energy"]},
+            "a2g_args": {"r_data_keys": ["energy", "forces"]},
         }
     )
     return dataset
