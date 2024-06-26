@@ -43,7 +43,7 @@ class LinearReference(nn.Module):
             name="element_references",
             tensor=element_references
             if element_references is not None
-            else torch.zeros(max_num_elements),
+            else torch.zeros(max_num_elements + 1),
         )
 
     def _apply_refs(
@@ -99,16 +99,15 @@ def create_element_references(
             # try to load a Normalizer pt file
             state_dict = torch.load(file)
         except RuntimeError:  # try to read an npz file
-            # try to load an NPZ file
-            values = np.load(file)
             state_dict = {}
-            # legacy linref files:
-            if "coeff" in values:
-                state_dict["element_references"] = torch.tensor(values["coeff"])
-            else:
-                state_dict["element_references"] = torch.tensor(
-                    values["element_references"]
-                )
+            with np.load(file) as values:
+                # legacy linref files:
+                if "coeff" in values:
+                    state_dict["element_references"] = torch.tensor(values["coeff"])
+                else:
+                    state_dict["element_references"] = torch.tensor(
+                        values["element_references"]
+                    )
 
     if type == "linear":
         if "element_references" not in state_dict:
@@ -130,6 +129,7 @@ def fit_linear_references(
     num_workers: int = 1,
     max_num_elements: int = 118,
     driver: str | None = None,
+    shuffle: bool = True,
 ) -> dict[str, LinearReference]:
     """Fit a set linear references for a list of targets using a given number of batches.
 
@@ -141,6 +141,7 @@ def fit_linear_references(
         num_workers: number of workers to use in data loader
         max_num_elements: max number of elements in dataset. If not given will use an ambitious value of 118
         driver: backend used to solve linear system. See torch.linalg.lstsq docs.
+        shuffle: whether to shuffle when loading the dataset
 
     Returns:
         dict of fitted LinearReference objects
@@ -148,7 +149,7 @@ def fit_linear_references(
     data_loader = DataLoader(
         dataset,
         batch_size=batch_size,
-        shuffle=True,
+        shuffle=shuffle,
         collate_fn=partial(data_list_collater, otf_graph=True),
         num_workers=num_workers,
         pin_memory=True,
@@ -156,18 +157,19 @@ def fit_linear_references(
 
     num_batches = num_batches if num_batches is not None else len(data_loader)
 
+    max_num_elements += 1  # + 1 since H starts at index 1
     # solving linear system happens on CPU, which allows handling poorly conditioned and
     # rank deficient matrices, unlike torch lstsq on GPU
     composition_matrix = torch.zeros(
         num_batches * batch_size,
-        max_num_elements,  # dtype=torch.int
+        max_num_elements,
     )
 
     # This only works with scalar properties
     target_vectors = {
         target: torch.zeros(num_batches * batch_size) for target in targets
     }
-    logging.info(f"Using driver {driver}")
+
     logging.info(f"Fitting linear references using {num_batches} batches.")
     for i, batch in tqdm(
         enumerate(data_loader), total=num_batches, desc="Fitting linear references"
