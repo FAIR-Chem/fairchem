@@ -97,6 +97,12 @@ class Flags:
             help="Name of partition",
         )
         self.parser.add_argument(
+            "--slurm-qos",
+            default=None,
+            type=str,
+            help="Name of qos (ocp_high)",
+        )
+        self.parser.add_argument(
             "--slurm-mem", default=80, type=int, help="Memory (in gigabytes)"
         )
         self.parser.add_argument(
