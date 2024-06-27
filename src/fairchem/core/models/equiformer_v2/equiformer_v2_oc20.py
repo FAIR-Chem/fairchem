@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import contextlib
-from dataclasses import dataclass
 import logging
 import math
 
-from fairchem.core.common import gp_utils
 import torch
 import torch.nn as nn
 
+from fairchem.core.common import gp_utils
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
 from fairchem.core.models.base import BaseModel
@@ -395,7 +394,7 @@ class EquiformerV2_OC20(BaseModel):
         self.apply(self._init_weights)
         self.apply(self._uniform_init_rad_func_linear_weights)
 
-    def _init_gp_values(
+    def _init_gp_partitions(
         self,
         atomic_numbers_full,
         data_batch_full,
@@ -403,25 +402,25 @@ class EquiformerV2_OC20(BaseModel):
         edge_distance,
         edge_distance_vec,
     ):
-        node_offset = 0
-        atomic_numbers = atomic_numbers_full
-        data_batch = data_batch_full
-        if gp_utils.initialized():
-            node_partition = gp_utils.scatter_to_model_parallel_region(
-                torch.arange(len(atomic_numbers_full)).to(self.device)
+        """ Graph Parallel
+        This creates the required partial tensors for each rank given the full tensors.
+        The tensors are split on the dimension along the node index using node_partition.
+        """
+        node_partition = gp_utils.scatter_to_model_parallel_region(
+            torch.arange(len(atomic_numbers_full)).to(self.device)
+        )
+        edge_partition = torch.where(
+            torch.logical_and(
+                edge_index[1] >= node_partition.min(),
+                edge_index[1] <= node_partition.max(),  # TODO: 0 or 1?
             )
-            edge_partition = torch.where(
-                torch.logical_and(
-                    edge_index[1] >= node_partition.min(),
-                    edge_index[1] <= node_partition.max(),  # TODO: 0 or 1?
-                )
-            )[0]
-            edge_index = edge_index[:, edge_partition]
-            edge_distance = edge_distance[edge_partition]
-            edge_distance_vec = edge_distance_vec[edge_partition]
-            atomic_numbers = atomic_numbers_full[node_partition]
-            data_batch = data_batch_full[node_partition]
-            node_offset = node_partition.min().item()
+        )[0]
+        edge_index = edge_index[:, edge_partition]
+        edge_distance = edge_distance[edge_partition]
+        edge_distance_vec = edge_distance_vec[edge_partition]
+        atomic_numbers = atomic_numbers_full[node_partition]
+        data_batch = data_batch_full[node_partition]
+        node_offset = node_partition.min().item()
         return (
             atomic_numbers,
             data_batch,
@@ -451,20 +450,29 @@ class EquiformerV2_OC20(BaseModel):
 
         data_batch_full = data.batch
         atomic_numbers_full = data.atomic_numbers.long()
-        (
-            atomic_numbers,
-            data_batch,
-            node_offset,
-            edge_index,
-            edge_distance,
-            edge_distance_vec,
-        ) = self._init_gp_values(
-            atomic_numbers_full,
-            data_batch_full,
-            edge_index,
-            edge_distance,
-            edge_distance_vec,
-        )
+        node_offset = 0
+        if gp_utils.initialized():
+            (
+                atomic_numbers,
+                data_batch,
+                node_offset,
+                edge_index,
+                edge_distance,
+                edge_distance_vec,
+            ) = self._init_gp_partitions(
+                atomic_numbers_full,
+                data_batch_full,
+                edge_index,
+                edge_distance,
+                edge_distance_vec,
+            )
+        ###############################################################
+        # Entering Graph Parallel Region
+        # after this point, if using gp, then node, edge tensors are split
+        # across the graph parallel ranks, some full tensors such as
+        # atomic_numbers_full are required because we need to index into the
+        # full graph when computing edge embeddings or reducing nodes from neighbors
+        ###############################################################
 
         ###############################################################
         # Initialize data structures

@@ -8,9 +8,9 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import logging
-import numpy as np
 from typing import Any
 
+import numpy as np
 import torch
 from torch import distributed as dist
 
@@ -274,10 +274,12 @@ class GatherFromModelParallelRegion(torch.autograd.Function):
 
 
 def copy_to_model_parallel_region(input: torch.Tensor) -> torch.Tensor:
+    assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
     return CopyToModelParallelRegion.apply(input)
 
 
 def reduce_from_model_parallel_region(input: torch.Tensor) -> torch.Tensor:
+    assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
     return ReduceFromModelParallelRegion.apply(input)
 
 
