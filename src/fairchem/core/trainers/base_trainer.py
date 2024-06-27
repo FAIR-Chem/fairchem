@@ -167,6 +167,7 @@ class BaseTrainer(ABC):
         else:
             self.config["dataset"] = dataset
 
+        os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
         if not is_debug and distutils.is_master():
             os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
             os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
@@ -386,6 +387,18 @@ class BaseTrainer(ABC):
                             driver=elementrefs["otf_fit"].get("driver", None),
                         )
                     ]
+                    # save the linear references for possible subsequent use
+                    if True:  # not self.is_debug:
+                        for target, references in otf_elementrefs[0].items():
+                            path = save_checkpoint(
+                                references,
+                                self.config["cmd"]["checkpoint_dir"],
+                                f"{target}_linref.pt",
+                            )
+                            logging.info(
+                                f"{target} linear references have been saved to: {path}"
+                            )
+
                 distutils.broadcast_object_list(otf_elementrefs, src=0)
                 # make sure all of the element reference modules are on the same device
                 self.elementrefs.update(otf_elementrefs[0])
@@ -420,6 +433,18 @@ class BaseTrainer(ABC):
                             num_workers=self.config["optim"]["num_workers"],
                         )
                     ]
+                    # save the normalization for possible subsequent use
+                    if True:  # not self.is_debug:
+                        for target, norm in otf_normalizers[0].items():
+                            path = save_checkpoint(
+                                norm,
+                                self.config["cmd"]["checkpoint_dir"],
+                                f"{target}_norm.pt",
+                            )
+                            logging.info(
+                                f"{target} normalizers have been saved to: {path}"
+                            )
+
                 distutils.broadcast_object_list(otf_normalizers, src=0)
                 self.normalizers.update(otf_normalizers[0])
                 # set config so that normalizers are not refit
