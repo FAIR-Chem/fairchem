@@ -95,7 +95,7 @@ def create_element_references(
     # path takes priority if given
     if file is not None:
         try:
-            # try to load a Normalizer pt file
+            # try to load a pt file
             state_dict = torch.load(file)
         except RuntimeError:  # try to read an npz file
             state_dict = {}

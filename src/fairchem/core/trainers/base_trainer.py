@@ -167,7 +167,6 @@ class BaseTrainer(ABC):
         else:
             self.config["dataset"] = dataset
 
-        os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
         if not is_debug and distutils.is_master():
             os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
             os.makedirs(self.config["cmd"]["results_dir"], exist_ok=True)
@@ -388,10 +387,10 @@ class BaseTrainer(ABC):
                         )
                     ]
                     # save the linear references for possible subsequent use
-                    if True:  # not self.is_debug:
+                    if not self.is_debug:
                         for target, references in otf_elementrefs[0].items():
                             path = save_checkpoint(
-                                references,
+                                references.state_dict(),
                                 self.config["cmd"]["checkpoint_dir"],
                                 f"{target}_linref.pt",
                             )
@@ -434,10 +433,10 @@ class BaseTrainer(ABC):
                         )
                     ]
                     # save the normalization for possible subsequent use
-                    if True:  # not self.is_debug:
+                    if not self.is_debug:
                         for target, norm in otf_normalizers[0].items():
                             path = save_checkpoint(
-                                norm,
+                                norm.state_dict(),
                                 self.config["cmd"]["checkpoint_dir"],
                                 f"{target}_norm.pt",
                             )
