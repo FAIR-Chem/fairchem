@@ -16,9 +16,9 @@ import requests
 import torch
 from ase.io import read
 from torch.nn.parallel.distributed import DistributedDataParallel
-from fairchem.core.common.test_utils import PGConfig, spawn_multi_process
 
 from fairchem.core.common.registry import registry
+from fairchem.core.common.test_utils import PGConfig, spawn_multi_process
 from fairchem.core.common.utils import load_state_dict, setup_imports
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.models.equiformer_v2.so3 import (
