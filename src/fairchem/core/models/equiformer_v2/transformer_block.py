@@ -3,10 +3,11 @@ from __future__ import annotations
 import copy
 import math
 
-from fairchem.core.common import gp_utils
 import torch
 import torch.nn as nn
 import torch_geometric
+
+from fairchem.core.common import gp_utils
 
 from .activation import (
     GateActivation,
