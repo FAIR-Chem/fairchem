@@ -450,6 +450,7 @@ class EquiformerV2_OC20(BaseModel):
         )
 
         data_batch_full = data.batch
+        data_batch = data.batch
         atomic_numbers_full = atomic_numbers
         node_offset = 0
         if gp_utils.initialized():
@@ -473,7 +474,10 @@ class EquiformerV2_OC20(BaseModel):
         # across the graph parallel ranks, some full tensors such as
         # atomic_numbers_full are required because we need to index into the
         # full graph when computing edge embeddings or reducing nodes from neighbors
+        #
         # all tensors that do not have the suffix "_full" refer to the partial tensors.
+        # if not using gp, the full values are equal to the partial values
+        # ie: atomic_numbers_full == atomic_numbers
         ###############################################################
 
         ###############################################################
