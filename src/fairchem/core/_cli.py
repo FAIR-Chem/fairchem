@@ -69,6 +69,7 @@ def main():
         executor.update_parameters(
             name=args.identifier,
             mem_gb=args.slurm_mem,
+            qos=args.slurm_qos,
             timeout_min=args.slurm_timeout * 60,
             slurm_partition=args.slurm_partition,
             gpus_per_node=args.num_gpus,
