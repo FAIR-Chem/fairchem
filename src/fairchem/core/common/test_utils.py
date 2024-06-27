@@ -37,8 +37,9 @@ class ForkedPdb(pdb.Pdb):
 class PGConfig:
     backend: str
     world_size: int
-    gp_group_size: int
+    gp_group_size: int = 1
     port: str = "12345"
+    use_gp: bool = True
 
 def spawn_multi_process(
     config: PGConfig,
@@ -102,6 +103,7 @@ def _init_pg_and_rank_and_launch_test(
         timeout=timedelta(seconds=10),  # setting up timeout for distributed collectives
     )
     # setup gp
-    config = {"gp_gpus": pg_setup_params.gp_group_size, "distributed_backend": pg_setup_params.backend}
-    setup_gp(config)
+    if pg_setup_params.use_gp:
+        config = {"gp_gpus": pg_setup_params.gp_group_size, "distributed_backend": pg_setup_params.backend}
+        setup_gp(config)
     mp_output_dict[rank] = test_method(*args, **kwargs)  # pyre-fixme
