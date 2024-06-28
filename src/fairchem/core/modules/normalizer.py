@@ -175,7 +175,7 @@ def fit_normalizers(
         for target in targets:
             target_vector = batch[target]
             if target in element_references:
-                target_vector = element_references[target](
+                target_vector = element_references[target].dereference(
                     target_vector, batch, reshaped=False
                 )
             target_vectors[target].append(target_vector)
