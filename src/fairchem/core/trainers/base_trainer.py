@@ -365,25 +365,25 @@ class BaseTrainer(ABC):
         )
         self.elementrefs = {}
         for target in elementrefs:
-            if target == "otf_fit" and not elementrefs["otf_fit"].get("fitted", False):
+            if target == "fit" and not elementrefs["fit"].get("fitted", False):
                 otf_elementrefs = [
-                    {target: None for target in elementrefs["otf_fit"]["targets"]}
+                    {target: None for target in elementrefs["fit"]["targets"]}
                 ]
                 # only carry out the fit on master and then broadcast
                 if distutils.is_master():
                     otf_elementrefs = [
                         fit_linear_references(
-                            targets=elementrefs["otf_fit"]["targets"],
+                            targets=elementrefs["fit"]["targets"],
                             dataset=self.train_dataset,
-                            batch_size=elementrefs["otf_fit"].get(
+                            batch_size=elementrefs["fit"].get(
                                 "batch_size", self.config["optim"]["batch_size"]
                             ),
-                            num_batches=elementrefs["otf_fit"].get("num_batches"),
+                            num_batches=elementrefs["fit"].get("num_batches"),
                             num_workers=self.config["optim"]["num_workers"],
-                            max_num_elements=elementrefs["otf_fit"].get(
+                            max_num_elements=elementrefs["fit"].get(
                                 "max_num_elements", 118
                             ),
-                            driver=elementrefs["otf_fit"].get("driver", None),
+                            driver=elementrefs["fit"].get("driver", None),
                         )
                     ]
                     # save the linear references for possible subsequent use
@@ -402,7 +402,7 @@ class BaseTrainer(ABC):
                 # make sure all of the element reference modules are on the same device
                 self.elementrefs.update(otf_elementrefs[0])
                 # set config so that references are not refit
-                self.config["dataset"]["transforms"]["element_references"]["otf_fit"][
+                self.config["dataset"]["transforms"]["element_references"]["fit"][
                     "fitted"
                 ] = True
             else:  # load pre-fitted linear references from file
@@ -414,42 +414,43 @@ class BaseTrainer(ABC):
         normalizers = self.config["dataset"].get("transforms", {}).get("normalizer", {})
         self.normalizers = {}
         for target in normalizers:
-            if target == "otf_fit" and not normalizers["otf_fit"].get("fitted", False):
+            if target == "fit" and not normalizers["fit"].get("fitted", False):
                 otf_normalizers = [
-                    {target: None for target in normalizers["otf_fit"]["targets"]}
+                    {target: None for target in normalizers["fit"]["targets"]}
                 ]
                 # only carry out the fit on master and then broadcast
                 if distutils.is_master():
                     otf_normalizers = [
                         fit_normalizers(
-                            targets=normalizers["otf_fit"]["targets"],
+                            targets=normalizers["fit"]["targets"],
                             element_references=self.elementrefs,
                             dataset=self.train_dataset,
-                            batch_size=normalizers["otf_fit"].get(
+                            batch_size=normalizers["fit"].get(
                                 "batch_size", self.config["optim"]["batch_size"]
                             ),
-                            num_batches=normalizers["otf_fit"].get("num_batches"),
+                            num_batches=normalizers["fit"].get("num_batches"),
                             num_workers=self.config["optim"]["num_workers"],
                         )
                     ]
                     # save the normalization for possible subsequent use
                     if not self.is_debug:
-                        for target, norm in otf_normalizers[0].items():
-                            path = save_checkpoint(
-                                norm.state_dict(),
-                                self.config["cmd"]["checkpoint_dir"],
-                                f"{target}_norm.pt",
-                            )
-                            logging.info(
-                                f"{target} normalizers have been saved to: {path}"
-                            )
+                        save_checkpoint(
+                            otf_normalizers[0],
+                            self.config["cmd"]["checkpoint_dir"],
+                            "normalizers.pt",
+                        )
+                        logging.info(
+                            f"Normalizers for targets {normalizers["fit"]["targets"]} have been saved to: {path}"
+                        )
 
                 distutils.broadcast_object_list(otf_normalizers, src=0)
                 self.normalizers.update(otf_normalizers[0])
                 # set config so that normalizers are not refit
-                self.config["dataset"]["transforms"]["normalizer"]["otf_fit"][
-                    "fitted"
-                ] = True
+                self.config["dataset"]["transforms"]["normalizer"]["fit"]["fitted"] = (
+                    True
+                )
+            elif target == "file":
+                self.normalizers.update(torch.load(normalizers["file"]))
             else:
                 self.normalizers[target] = create_normalizer(
                     file=normalizers[target].get("file"),
