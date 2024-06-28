@@ -297,49 +297,49 @@ class BaseTrainer(ABC):
                 self.train_sampler,
             )
 
-            if self.config.get("val_dataset", None):
-                if self.config["val_dataset"].get("use_train_settings", True):
-                    val_config = self.config["dataset"].copy()
-                    val_config.update(self.config["val_dataset"])
-                else:
-                    val_config = self.config["val_dataset"]
+        if self.config.get("val_dataset", None):
+            if self.config["val_dataset"].get("use_train_settings", True):
+                val_config = self.config["dataset"].copy()
+                val_config.update(self.config["val_dataset"])
+            else:
+                val_config = self.config["val_dataset"]
 
-                self.val_dataset = registry.get_dataset_class(
-                    val_config.get("format", "lmdb")
-                )(val_config)
-                self.val_sampler = self.get_sampler(
-                    self.val_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.val_loader = self.get_dataloader(
-                    self.val_dataset,
-                    self.val_sampler,
-                )
+            self.val_dataset = registry.get_dataset_class(
+                val_config.get("format", "lmdb")
+            )(val_config)
+            self.val_sampler = self.get_sampler(
+                self.val_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.val_loader = self.get_dataloader(
+                self.val_dataset,
+                self.val_sampler,
+            )
 
-            if self.config.get("test_dataset", None):
-                if self.config["test_dataset"].get("use_train_settings", True):
-                    test_config = self.config["dataset"].copy()
-                    test_config.update(self.config["test_dataset"])
-                else:
-                    test_config = self.config["test_dataset"]
+        if self.config.get("test_dataset", None):
+            if self.config["test_dataset"].get("use_train_settings", True):
+                test_config = self.config["dataset"].copy()
+                test_config.update(self.config["test_dataset"])
+            else:
+                test_config = self.config["test_dataset"]
 
-                self.test_dataset = registry.get_dataset_class(
-                    test_config.get("format", "lmdb")
-                )(test_config)
-                self.test_sampler = self.get_sampler(
-                    self.test_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.test_loader = self.get_dataloader(
-                    self.test_dataset,
-                    self.test_sampler,
-                )
+            self.test_dataset = registry.get_dataset_class(
+                test_config.get("format", "lmdb")
+            )(test_config)
+            self.test_sampler = self.get_sampler(
+                self.test_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.test_loader = self.get_dataloader(
+                self.test_dataset,
+                self.test_sampler,
+            )
 
         # load relaxation dataset
         if "relax_dataset" in self.config["task"]:
