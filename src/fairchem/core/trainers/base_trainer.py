@@ -388,14 +388,14 @@ class BaseTrainer(ABC):
                     ]
                     # save the linear references for possible subsequent use
                     if not self.is_debug:
-                        for target, references in otf_elementrefs[0].items():
+                        for lr_target, references in otf_elementrefs[0].items():
                             path = save_checkpoint(
                                 references.state_dict(),
                                 self.config["cmd"]["checkpoint_dir"],
                                 f"{target}_linref.pt",
                             )
                             logging.info(
-                                f"{target} linear references have been saved to: {path}"
+                                f"{lr_target} linear references have been saved to: {path}"
                             )
 
                 distutils.broadcast_object_list(otf_elementrefs, src=0)

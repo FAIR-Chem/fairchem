@@ -7,12 +7,12 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from pathlib import Path
-import logging
 import argparse
+import logging
+from pathlib import Path
 
 from fairchem.core.common.registry import registry
-from fairchem.core.common.utils import save_checkpoint, load_config
+from fairchem.core.common.utils import load_config, save_checkpoint
 from fairchem.core.modules.element_references import fit_linear_references
 
 
@@ -31,17 +31,17 @@ def fit_linref(config: dict, output_path: str | Path) -> None:
         train_dataset = registry.get_dataset_class(
             config["dataset"]["train"].get("format", "lmdb")
         )(config["dataset"]["train"])
-    except KeyError:
-        raise ValueError("Train dataset is not specified in config!")
+    except KeyError as err:
+        raise ValueError("Train dataset is not specified in config!") from err
 
     try:
         elementref_config = config["dataset"]["train"]["transforms"][
             "element_references"
         ]["fit"]
-    except KeyError:
+    except KeyError as err:
         raise ValueError(
             "The provided config does not specify a 'fit' block for 'element_refereces'!"
-        )
+        ) from err
 
     element_refs = fit_linear_references(
         targets=elementref_config["targets"],

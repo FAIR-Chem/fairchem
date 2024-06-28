@@ -7,14 +7,14 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from pathlib import Path
-import logging
 import argparse
+import logging
+from pathlib import Path
 
 from fairchem.core.common.registry import registry
-from fairchem.core.common.utils import save_checkpoint, load_config
-from fairchem.core.modules.normalizer import fit_normalizers
+from fairchem.core.common.utils import load_config, save_checkpoint
 from fairchem.core.modules.element_references import create_element_references
+from fairchem.core.modules.normalizer import fit_normalizers
 
 
 def fit_norms(
@@ -43,15 +43,15 @@ def fit_norms(
         train_dataset = registry.get_dataset_class(
             config["dataset"]["train"].get("format", "lmdb")
         )(config["dataset"]["train"])
-    except KeyError:
-        raise ValueError("Train dataset is not specified in config!")
+    except KeyError as err:
+        raise ValueError("Train dataset is not specified in config!") from err
 
     try:
         norm_config = config["dataset"]["train"]["transforms"]["normalizer"]["fit"]
-    except KeyError:
+    except KeyError as err:
         raise ValueError(
             "The provided config does not specify a 'fit' block for 'normalizer'!"
-        )
+        ) from err
 
     normalizers = fit_normalizers(
         targets=norm_config["targets"],
