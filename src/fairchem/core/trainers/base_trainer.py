@@ -440,7 +440,7 @@ class BaseTrainer(ABC):
                             "normalizers.pt",
                         )
                         logging.info(
-                            f"Normalizers for targets {normalizers["fit"]["targets"]} have been saved to: {path}"
+                            f"Normalizers for targets {normalizers['fit']['targets']} have been saved to: {path}"
                         )
 
                 distutils.broadcast_object_list(otf_normalizers, src=0)
@@ -450,7 +450,11 @@ class BaseTrainer(ABC):
                     True
                 )
             elif target == "file":
-                self.normalizers.update(torch.load(normalizers["file"]))
+                norms = torch.load(normalizers["file"])
+                self.normalizers.update(norms)
+                logging.info(
+                    f"Loaded normalizers for the following targets: {list(norms.keys())}"
+                )
             else:
                 self.normalizers[target] = create_normalizer(
                     file=normalizers[target].get("file"),
