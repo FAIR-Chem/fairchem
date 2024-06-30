@@ -20,7 +20,7 @@ In the previous example, we constructed slab models of adsorbates on desired sit
 
 
 ```{code-cell} ipython3
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 import ase.io
 from ase.optimize import BFGS
 import sys

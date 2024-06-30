@@ -33,7 +33,7 @@ checkpoint_path
 4. Finally, use this checkpoint in an ASE calculator for a simple relaxation!
 
 ```{code-cell} ipython3
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 from ase.build import fcc111, add_adsorbate
 from ase.optimize import BFGS
 import matplotlib.pyplot as plt

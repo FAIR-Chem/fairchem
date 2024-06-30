@@ -2036,7 +2036,7 @@ colab:
 id: o_MHpzbhPKN_
 outputId: fa4336cf-ba85-43b6-e608-551ffcf3763a
 ---
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 import ase.io
 from ase.optimize import BFGS
 from ase.build import fcc100, add_adsorbate, molecule

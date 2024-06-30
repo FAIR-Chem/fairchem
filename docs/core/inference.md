@@ -161,7 +161,7 @@ We include this here just to show that:
 2. That this is much slower.
 
 ```{code-cell} ipython3
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 calc = FAIRChemCalculator(checkpoint_path=checkpoint_path, cpu=False)
 ```
 

@@ -43,7 +43,7 @@ RuntimeError: cannot reshape tensor of 0 elements into shape [0, -1] because the
 The problem here is that no neighbors are found for the single atom which causes an error. This may be model dependent. There is currently no way to get atomic energies for some models.
 
 ```{code-cell} ipython3
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
 checkpoint_path = model_name_to_local_file('GemNet-OC-S2EFS-OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 calc = FAIRChemCalculator(checkpoint_path=checkpoint_path)
@@ -154,7 +154,7 @@ Gemnet in particular seems to require at least 4 atoms. This has to do with inte
 
 ```{code-cell} ipython3
 %%capture
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
 import os
 
@@ -180,7 +180,7 @@ Some models use tags to determine which atoms to calculate energies for. For exa
 
 ```{code-cell} ipython3
 %%capture
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
 import os
 
@@ -205,7 +205,7 @@ atoms.get_potential_energy()
 Not all models require tags though. This EquiformerV2 model does not use them. This is another detail that is important to keep in mind.
 
 ```{code-cell} ipython3
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
 import os
 
@@ -229,7 +229,7 @@ This happens because a random selection of is made to sample edges, and a differ
 
 ```{code-cell} ipython3
 from fairchem.core.models.model_registry import model_name_to_local_file
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 
 checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
 calc = FAIRChemCalculator(checkpoint_path=checkpoint_path, cpu=True)
@@ -260,7 +260,7 @@ In DFT, the forces on all the atoms should sum to zero; otherwise, there is a ne
 from fairchem.core.models.model_registry import model_name_to_local_file
 checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
 
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 calc = FAIRChemCalculator(checkpoint_path=checkpoint_path, cpu=True)
 
 from ase.build import fcc111, add_adsorbate

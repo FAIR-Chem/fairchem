@@ -21,7 +21,7 @@ from ase.db import connect
 from yaml import dump
 
 import fairchem.core as om
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator 
+from fairchem.core import FAIRChemCalculator 
 
 
 def fairchem_root():

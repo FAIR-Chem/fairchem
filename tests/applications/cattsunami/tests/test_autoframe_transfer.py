@@ -5,7 +5,7 @@ from fairchem.applications.cattsunami.core.autoframe import (
 )
 from fairchem.core.models.model_registry import model_name_to_local_file
 from fairchem.applications.cattsunami.core.reaction import Reaction
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator 
+from fairchem.core import FAIRChemCalculator 
 from fairchem.data.oc.databases.pkls import ADSORBATE_PKL_PATH
 from fairchem.applications.cattsunami.databases import TRANSFER_REACTION_DB_PATH
 

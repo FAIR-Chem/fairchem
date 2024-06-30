@@ -19,7 +19,7 @@ tags: ["skip-execution"]
 ---
 from fairchem.applications.cattsunami.core import Reaction
 from fairchem.data.oc.core import Slab, Adsorbate, Bulk, AdsorbateSlabConfig
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 from ase.optimize import BFGS
 from x3dase.visualize import view_x3d_n
 from ase.io import read

@@ -14,7 +14,7 @@ kernelspec:
 # AdsorbML tutorial
 
 ```{code-cell} ipython3
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 import ase.io
 from ase.optimize import BFGS
 
@@ -71,7 +71,7 @@ There are 2 options for how to do this.
 You need to provide the calculator with a path to a model checkpoint file. That can be downloaded [here](../core/model_checkpoints)
 
 ```{code-cell} ipython3
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
 import os
 

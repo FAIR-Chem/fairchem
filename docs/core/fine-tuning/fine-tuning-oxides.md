@@ -74,7 +74,7 @@ atoms, c['data']['total_energy'], c['data']['forces']
 Next, we will create an OCP calculator that we can use to get predictions from.
 
 ```{code-cell} ipython3
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 calc = FAIRChemCalculator(checkpoint_path=checkpoint_path, trainer='forces', cpu=False)
 ```
 

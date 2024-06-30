@@ -66,7 +66,7 @@ checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', 
 Next we load the checkpoint. The output is somewhat verbose, but it can be informative for debugging purposes.
 
 ```{code-cell}
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 calc = FAIRChemCalculator(checkpoint_path=checkpoint_path, cpu=False)
 # calc = FAIRChemCalculator(checkpoint_path=checkpoint_path, cpu=True)
 ```

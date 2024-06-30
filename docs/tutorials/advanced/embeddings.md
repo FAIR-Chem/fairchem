@@ -54,7 +54,7 @@ import numpy as np
 
 ```{code-cell} ipython3
 %%capture
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator
+from fairchem.core import FAIRChemCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
 
 import os

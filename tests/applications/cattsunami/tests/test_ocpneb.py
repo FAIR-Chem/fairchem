@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from copy import deepcopy
 from fairchem.applications.cattsunami.core import OCPNEB
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator 
+from fairchem.core import FAIRChemCalculator 
 from ase.optimize import BFGS
 from fairchem.core.models.model_registry import model_name_to_local_file
 

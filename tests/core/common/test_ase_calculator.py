@@ -15,7 +15,7 @@ import torch
 from ase.build import add_adsorbate, fcc111
 from ase.optimize import BFGS
 
-from fairchem.core.common.relaxation.ase_utils import FAIRChemCalculator 
+from fairchem.core import FAIRChemCalculator 
 from fairchem.core.models.model_registry import model_name_to_local_file
 
 if TYPE_CHECKING:
