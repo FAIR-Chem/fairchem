@@ -3,6 +3,14 @@
 includes:
   - configs/s2ef/all/base.yml
 
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 4
+  - forces:
+      fn: l2mae
+      coefficient: 100
+
 model:
   name: scn
   num_interactions: 16
@@ -42,9 +50,5 @@ optim:
   warmup_steps: 100
   warmup_factor: 0.2
   max_epochs: 12
-  force_coefficient: 100
-  energy_coefficient: 4
   clip_grad_norm: 100
   ema_decay: 0.999
-  loss_energy: mae
-  loss_force: l2mae
