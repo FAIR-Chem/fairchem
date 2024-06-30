@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version
 
-from fairchem.core import FAIRChemCalculator 
+from fairchem.core import FAIRChemCalculator
 
-__all__ = ["FAIRChemCalculator "]
+__all__ = ["FAIRChemCalculator"]
 
 try:
     __version__ = version("fairchem.core")
