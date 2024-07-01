@@ -63,7 +63,7 @@ fragments = [
 ]
 
 [tool.pytest.ini_options]
-minversion = "8.2.2"
+minversion = "6.0"
 addopts  =  "-p no:warnings -x --quiet -rxXs --color yes"
 filterwarnings  = [
     'ignore::UserWarning',
