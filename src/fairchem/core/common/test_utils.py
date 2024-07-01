@@ -21,7 +21,7 @@ class ForkedPdb(pdb.Pdb):
 
     example usage to debug a torch distributed run on rank 0:
     if torch.distributed.get_rank() == 0:
-        from fairchem.core.common.debug import ForkedPdb
+        from fairchem.core.common.test_utils import ForkedPdb
         ForkedPdb().set_trace()
     """
     def interaction(self, *args, **kwargs):

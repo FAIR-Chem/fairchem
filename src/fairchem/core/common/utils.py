@@ -1010,6 +1010,7 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
             slurm=config.get("slurm", {}),
             noddp=config.get("noddp", False),
             name=task_name,
+            gp_gpus=config.get("gp_gpus"),
         )
 
         task_cls = registry.get_task_class(config["mode"])
