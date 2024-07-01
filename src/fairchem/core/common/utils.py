@@ -43,7 +43,6 @@ from fairchem.experimental.foundation_models.multi_task_dataloader.merge_stats i
     combine_means_and_variances,
 )
 
-
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
@@ -302,7 +301,7 @@ def setup_experimental_imports(project_root: Path) -> None:
 
     experimental_files = []
     include_file = experimental_dir / ".include"
-    
+
     if include_file.exists():
         with open(include_file) as f:
             include_dirs = [line.rstrip("\n") for line in f.readlines() if line.strip()]
@@ -403,8 +402,10 @@ def create_dict_from_args(args: list, sep: str = "."):
 
 
 def load_config(
-    path: str, previous_includes: list | None = None, include_paths: list = []
+    path: str, previous_includes: list | None = None, include_paths: list | None = None
 ):
+    if include_paths is None:
+        include_paths = []
     if previous_includes is None:
         previous_includes = []
     path = Path(path)
@@ -436,7 +437,7 @@ def load_config(
     duplicates_error = []
     for include in includes:
         include_filename = find_include(
-            include, [os.path.dirname(path)] + include_paths
+            include, [os.path.dirname(path), *include_paths]
         )
         include_config, inc_dup_warning, inc_dup_error = load_config(
             include_filename, previous_includes
@@ -454,7 +455,7 @@ def load_config(
     return config, duplicates_warning, duplicates_error
 
 
-def build_config(args, args_override, include_paths=[]):
+def build_config(args, args_override, include_paths=None):
     config, duplicates_warning, duplicates_error = load_config(
         args.config_yml, include_paths=include_paths
     )
@@ -1407,7 +1408,7 @@ def compute_mean_and_std_for_target(target_name, config, concat_dataset, level):
                 dataset_name_to_size_and_stats[dataset_name][
                     "average_atoms_per_system"
                 ] = _AVG_NUM_NODES
-        assert level in set(["atom", "system"])
+        assert level in set("atom", "system")
         if level == "atom":
             dataset_name_to_size_and_stats[dataset_name][
                 "size"
