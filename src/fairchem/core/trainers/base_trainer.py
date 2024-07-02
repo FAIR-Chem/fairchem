@@ -75,6 +75,7 @@ class BaseTrainer(ABC):
         name: str = "ocp",
         slurm=None,
         noddp: bool = False,
+        gp_gpus: int | None = None,
     ) -> None:
         if slurm is None:
             slurm = {}
@@ -133,6 +134,7 @@ class BaseTrainer(ABC):
             },
             "slurm": slurm,
             "noddp": noddp,
+            "gp_gpus": gp_gpus,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp and not self.cpu else None
@@ -440,7 +442,10 @@ class BaseTrainer(ABC):
             )
 
         if self.logger is not None:
-            self.logger.watch(self.model)
+            # only "watch" model if user specify watch: True because logging gradients
+            # spews too much data into W&B and makes the UI slow to respond
+            if "watch" in self.config["logger"]:
+                self.logger.watch(self.model, log_freq = int(self.config["logger"]["watch"]))
             self.logger.log_summary({"num_params": self.model.num_params})
 
         if distutils.initialized() and not self.config["noddp"]:
