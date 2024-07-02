@@ -1047,7 +1047,7 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
                 is_debug=config.get("is_debug", False),
                 print_every=config.get("print_every", 10),
                 seed=config.get("seed", 0),
-                logger=config.get("logger", "tensorboard"),
+                logger=config.get("logger", "wandb"),
                 local_rank=config["local_rank"],
                 amp=config.get("amp", False),
                 cpu=config.get("cpu", False),
@@ -1070,7 +1070,7 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
                 is_debug=config.get("is_debug", False),
                 print_every=config.get("print_every", 10),
                 seed=config.get("seed", 0),
-                logger=config.get("logger", "tensorboard"),
+                logger=config.get("logger", "wandb"),
                 local_rank=config["local_rank"],
                 amp=config.get("amp", False),
                 cpu=config.get("cpu", False),
@@ -1243,10 +1243,28 @@ def irreps_sum(ang_mom: int) -> int:
 
 def update_config(base_config):
     """
-    Configs created prior to OCP 2.0 are organized a little different than they
+    Configs created prior to FAIRChem/OCP 2.0 are organized a little different than they
     are now. Update old configs to fit the new expected structure.
     """
+    ### TODO: better format check for older configs
+    # some configs have a loss_functions key with an empty dictionary, those need to be updated as well
+    if len(base_config.get("loss_functions", {})) > 0:
+        return base_config
+
+    logging.warning(
+        "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
+    )
+
+    # do we need a copy?
     config = copy.deepcopy(base_config)
+
+    # initial fairchem/ocp 2.0 configs renamed loss_functions -> loss_fns and evaluation_metrics -> eval_metrics
+    # so some checkpoints may have configs in new format with the exception of renamed loss_funs and eval_metrics
+    if "loss_fns" in config:
+        config["loss_functions"] = config.pop("loss_fns")
+        if "eval_metrics" in config:
+            config["evaluation_metrics"] = config.pop("eval_metrics")
+        return config
 
     # If config["dataset"]["format"] is missing, get it from the task (legacy location).
     # If it is not there either, default to LMDB.
@@ -1356,8 +1374,8 @@ def update_config(base_config):
         config["dataset"]["transforms"] = transforms
 
     ### Update config
-    config.update({"loss_fns": _loss_fns})
-    config.update({"eval_metrics": _eval_metrics})
+    config.update({"loss_functions": _loss_fns})
+    config.update({"evaluation_metrics": _eval_metrics})
     config.update({"outputs": _outputs})
 
     return config

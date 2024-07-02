@@ -69,7 +69,7 @@ checkpoint_path
 
 ```
 
-We have to update our configuration yml file with the dataset. It is necessary to specify the train and test set for some reason.
+We have to update our configuration yml file with the test dataset.
 
 ```{code-cell} ipython3
 from fairchem.core.common.tutorial_utils import generate_yml_config
@@ -81,11 +81,6 @@ yml = generate_yml_config(checkpoint_path, 'config.yml',
                            'task.dataset': 'ase_db',
                            'task.prediction_dtype': 'float32',
                            'logger':'tensorboard', # don't use wandb!
-                           # Train data
-                           'dataset.train.src': 'data.db',
-                           'dataset.train.a2g_args.r_energy': False,
-                           'dataset.train.a2g_args.r_forces': False,
-                           'dataset.train.select_args.selection': 'natoms>5,xc=PBE',
                             # Test data - prediction only so no regression
                            'dataset.test.src': 'data.db',
                            'dataset.test.a2g_args.r_energy': False,
