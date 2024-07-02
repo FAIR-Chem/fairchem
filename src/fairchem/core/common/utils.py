@@ -470,11 +470,6 @@ def build_config(args, args_override, include_paths=None):
             f"included configs: {duplicates_error}"
         )
 
-    # Check for overridden parameters.
-    if args_override != []:
-        overrides = create_dict_from_args(args_override)
-        config, _ = merge_dicts(config, overrides)
-
     # Some other flags.
     config["mode"] = args.mode
     config["identifier"] = args.identifier
@@ -496,6 +491,11 @@ def build_config(args, args_override, include_paths=None):
     config["distributed_backend"] = args.distributed_backend
     config["noddp"] = args.no_ddp
     config["gp_gpus"] = args.gp_gpus
+
+    # Check for overridden parameters.
+    if args_override != []:
+        overrides = create_dict_from_args(args_override)
+        config, _ = merge_dicts(config, overrides)
 
     return config
 
@@ -1054,6 +1054,7 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
                 slurm=config.get("slurm", {}),
                 noddp=config.get("noddp", False),
                 name=task_name,
+                gp_gpus=config.get("gp_gpus"),
             )
         else:
             trainer = trainer_cls(
@@ -1077,6 +1078,7 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
                 slurm=config.get("slurm", {}),
                 noddp=config.get("noddp", False),
                 name=task_name,
+                gp_gpus=config.get("gp_gpus"),
             )
 
         task_cls = registry.get_task_class(config["mode"])
