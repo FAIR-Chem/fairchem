@@ -1408,7 +1408,7 @@ def compute_mean_and_std_for_target(target_name, config, concat_dataset, level):
                 dataset_name_to_size_and_stats[dataset_name][
                     "average_atoms_per_system"
                 ] = _AVG_NUM_NODES
-        assert level in set("atom", "system")
+        assert level in {"atom", "system"}
         if level == "atom":
             dataset_name_to_size_and_stats[dataset_name][
                 "size"
