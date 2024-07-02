@@ -429,7 +429,11 @@ class BaseTrainer(ABC):
             )
 
         if self.logger is not None:
-            self.logger.watch(self.model)
+            # only "watch" model if user specify watch: True because logging gradients
+            # spews too much data into W&B and makes the UI slow to respond
+            import pdb;pdb.set_trace()
+            if self.config["logger"].get("watch", False):
+                self.logger.watch(self.model)
             self.logger.log_summary({"num_params": self.model.num_params})
 
         if distutils.initialized() and not self.config["noddp"]:
