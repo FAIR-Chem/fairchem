@@ -1,10 +1,10 @@
-name: tests
+name: integration-test
 
 on:
-  workflow_call:
   pull_request:
-    branches: [main]
-  workflow_dispatch:
+    paths: # this will only trigger on changes to the demo directory, add more here if required
+        - 'src/fairchem/demo/**'
+  workflow_call:
 
 jobs:
   test:
@@ -40,15 +40,6 @@ jobs:
           pip install -e packages/fairchem-demo-ocpapi[dev]
           pip install -e packages/fairchem-applications-cattsunami
 
-      - name: Test core with pytest
-        run: |
-          pytest tests -vv --ignore=tests/demo/ocpapi/tests/integration/  --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml
-
-      - if: ${{ matrix.python_version == '3.11' }}
-        name: codecov-report
-        uses: codecov/codecov-action@v4
-        with:
-          fail_ci_if_error: false # optional (default = false)
-          files: ./coverage.xml
-          token: ${{ secrets.CODECOV_TOKEN }} # required
-          verbose: true # optional (default = false)
+      - name: Integration tests
+        run: | # skip-ocpapi-integration skips expensive tests with the tag "@pytest.mark.ocpapi_integration_test"
+          pytest tests/demo/ocpapi/tests/integration/ --skip-ocpapi-integration -c ./packages/fairchem-core/pyproject.toml
