@@ -64,7 +64,7 @@ fragments = [
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts  =  "-p no:warnings --import-mode importlib -x --quiet -rxXs --color yes"
+addopts  =  "-p no:warnings -x --quiet -rxXs --color yes"
 filterwarnings  = [
     'ignore::UserWarning',
     'ignore::FutureWarning',
