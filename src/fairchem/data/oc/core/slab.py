@@ -103,7 +103,7 @@ class Slab:
     def from_bulk_get_specific_millers(
         cls, specific_millers, bulk=None, min_ab=8.0, save_path=None
     ):
-        assert type(specific_millers) == tuple
+        assert isinstance(specific_millers, tuple)
         assert len(specific_millers) == 3
 
         if save_path is not None:
