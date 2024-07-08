@@ -79,21 +79,23 @@ yml = generate_yml_config(checkpoint_path, 'config.yml',
                            'optim.loss_force', # the checkpoint setting causes an error
                            'dataset', 'test_dataset', 'val_dataset'],
                    update={'gpus': 1,
-                           'dataset.format': 'ase_db',
                            'optim.eval_every': 10,
                            'optim.max_epochs': 1,
                            'optim.batch_size': 4,
                            'logger': 'tensorboard', # don't use wandb unless you already are logged in
                            # Train data
                            'dataset.train.src': 'train.db',
+                           'dataset.train.format': 'ase_db',
                            'dataset.train.a2g_args.r_energy': True,
                            'dataset.train.a2g_args.r_forces': True,
                             # Test data - prediction only so no regression
                            'dataset.test.src': 'test.db',
+                           'dataset.test.format': 'ase_db',
                            'dataset.test.a2g_args.r_energy': False,
                            'dataset.test.a2g_args.r_forces': False,
                            # val data
                            'dataset.val.src': 'val.db',
+                           'dataset.val.format': 'ase_db',
                            'dataset.val.a2g_args.r_energy': True,
                            'dataset.val.a2g_args.r_forces': True,
                           })
