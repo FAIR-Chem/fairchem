@@ -59,7 +59,7 @@ def fit_norms(
         dataset=train_dataset,
         batch_size=norm_config.get("batch_size", 32),
         num_batches=norm_config.get("num_batches"),
-        num_workers=config["optim"].get("num_workers", 16),
+        num_workers=config.get("optim", {}).get("num_workers", 16),
     )
     path = save_checkpoint(
         normalizers,

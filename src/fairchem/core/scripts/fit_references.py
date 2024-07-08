@@ -48,7 +48,7 @@ def fit_linref(config: dict, output_path: str | Path) -> None:
         dataset=train_dataset,
         batch_size=elementref_config.get("batch_size", 32),
         num_batches=elementref_config.get("num_batches"),
-        num_workers=config["optim"].get("num_workers", 16),
+        num_workers=config.get("optim", {}).get("num_workers", 16),
         max_num_elements=elementref_config.get("max_num_elements", 118),
         driver=elementref_config.get("driver", None),
     )
