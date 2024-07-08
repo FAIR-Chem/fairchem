@@ -1,13 +1,16 @@
+from __future__ import annotations
+
 import os
 import pickle
 import warnings
-from typing import Any, Dict, List
+from typing import TYPE_CHECKING, Any
 
-import ase
 import numpy as np
-
 from fairchem.data.oc.core.slab import Slab
 from fairchem.data.oc.databases.pkls import BULK_PKL_PATH
+
+if TYPE_CHECKING:
+    import ase
 
 
 class Bulk:
@@ -35,10 +38,10 @@ class Bulk:
     def __init__(
         self,
         bulk_atoms: ase.Atoms = None,
-        bulk_id_from_db: int = None,
-        bulk_src_id_from_db: str = None,
+        bulk_id_from_db: int | None = None,
+        bulk_src_id_from_db: str | None = None,
         bulk_db_path: str = BULK_PKL_PATH,
-        bulk_db: List[Dict[str, Any]] = None,
+        bulk_db: list[dict[str, Any]] | None = None,
     ):
         self.bulk_id_from_db = bulk_id_from_db
         self.bulk_db_path = bulk_db_path

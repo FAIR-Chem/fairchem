@@ -2,6 +2,9 @@
 Script for updating ase pkl and db files from v3.19 to v3.21.
 Run it with ase v3.19.
 """
+
+from __future__ import annotations
+
 import pickle
 
 import ase.io

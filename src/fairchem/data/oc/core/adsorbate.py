@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import pickle
 import warnings
-from typing import Any, Dict, Tuple
+from typing import TYPE_CHECKING, Any
 
-import ase
 import numpy as np
-
 from fairchem.data.oc.databases.pkls import ADSORBATE_PKL_PATH
+
+if TYPE_CHECKING:
+    import ase
 
 
 class Adsorbate:
@@ -34,11 +37,11 @@ class Adsorbate:
     def __init__(
         self,
         adsorbate_atoms: ase.Atoms = None,
-        adsorbate_id_from_db: int = None,
-        adsorbate_smiles_from_db: str = None,
+        adsorbate_id_from_db: int | None = None,
+        adsorbate_smiles_from_db: str | None = None,
         adsorbate_db_path: str = ADSORBATE_PKL_PATH,
-        adsorbate_db: Dict[int, Tuple[Any, ...]] = None,
-        adsorbate_binding_indices: list = None,
+        adsorbate_db: dict[int, tuple[Any, ...]] | None = None,
+        adsorbate_binding_indices: list | None = None,
     ):
         self.adsorbate_id_from_db = adsorbate_id_from_db
         self.adsorbate_db_path = adsorbate_db_path
@@ -100,7 +103,7 @@ class Adsorbate:
         self.adsorbate_id_from_db = np.random.randint(len(adsorbate_db))
         self._load_adsorbate(adsorbate_db[self.adsorbate_id_from_db])
 
-    def _load_adsorbate(self, adsorbate: Tuple[Any, ...]) -> None:
+    def _load_adsorbate(self, adsorbate: tuple[Any, ...]) -> None:
         """
         Saves the fields from an adsorbate stored in a database. Fields added
         after the first revision are conditionally added for backwards
@@ -114,7 +117,7 @@ class Adsorbate:
 
 
 def randomly_rotate_adsorbate(
-    adsorbate_atoms: ase.Atoms, mode: str = "random", binding_idx: int = None
+    adsorbate_atoms: ase.Atoms, mode: str = "random", binding_idx: int | None = None
 ):
     assert mode in ["random", "heuristic", "random_site_heuristic_placement"]
     atoms = adsorbate_atoms.copy()

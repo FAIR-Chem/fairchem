@@ -3,18 +3,24 @@ Home of the AutoFrame classes which facillitate the generation of initial
 and final frames for NEB calculations.
 """
 
-import numpy as np
-import ase
-from ase.data import atomic_numbers, covalent_radii
-from scipy.spatial.distance import euclidean
-from itertools import combinations, product
-from ase.optimize import BFGS
+from __future__ import annotations
+
 import copy
-import torch
-from fairchem.data.oc.utils import DetectTrajAnomaly
-import networkx as nx
 from copy import deepcopy
-from fairchem.applications.cattsunami.core import Reaction
+from itertools import combinations, product
+from typing import TYPE_CHECKING
+
+import ase
+import networkx as nx
+import numpy as np
+import torch
+from ase.data import atomic_numbers, covalent_radii
+from ase.optimize import BFGS
+from fairchem.data.oc.utils import DetectTrajAnomaly
+from scipy.spatial.distance import euclidean
+
+if TYPE_CHECKING:
+    from fairchem.applications.cattsunami.core import Reaction
 
 
 class AutoFrame:
@@ -76,13 +82,11 @@ class AutoFrame:
         # Iterate over the systems and see where there are matches (systems where every adsorbate atom is overlapping)
         for idx in range(len(systems)):
             if not any(
-                [
-                    self.are_all_adsorbate_atoms_overlapping(
-                        adsorbates_stripped_out[unique_system],
-                        adsorbates_stripped_out[idx],
-                    )
-                    for unique_system in unique_systems
-                ]
+                self.are_all_adsorbate_atoms_overlapping(
+                    adsorbates_stripped_out[unique_system],
+                    adsorbates_stripped_out[idx],
+                )
+                for unique_system in unique_systems
             ):
                 unique_systems.append(idx)
                 unique_energies.append(energies[idx])
@@ -162,9 +166,9 @@ class AutoFrameDissociation(AutoFrame):
         product1_energies: list,
         product2_systems: list,
         product2_energies: list,
-        r_product1_max: float = None,
-        r_product2_max: float = None,
-        r_product2_min: float = None,
+        r_product1_max: float | None = None,
+        r_product2_max: float | None = None,
+        r_product2_min: float | None = None,
     ):
         """
         Initialize class to handle the automatic generation of NEB frames for dissociation.
@@ -1071,8 +1075,7 @@ def interpolate_and_correct_frames(
         reaction,
         map_idx,
     )
-    images = interpolate(initial, final, n_frames)
-    return images
+    return interpolate(initial, final, n_frames)
 
 
 def get_shortest_path(
@@ -1122,7 +1125,7 @@ def get_shortest_path(
     # atoms (2) the bound atom of product 1 (3) the atom of product 2 which formed a new bond
     shortest_path_final_positions = []
     equivalent_idx_factors = len(initial) * np.array(list(range(9)))
-    for idx, atom in enumerate(initial):
+    for idx, _atom in enumerate(initial):
         equivalent_indices = equivalent_idx_factors + idx
         final_distances = [
             euclidean(initial.positions[idx], new_atoms_final.positions[i])
@@ -1421,8 +1424,7 @@ def get_product2_idx(
         edge for edge in reaction.edge_list_initial if edge not in edge_list_final
     ][0]
     flat_nodes = [item for sublist in traversal_rxt1_final for item in sublist]
-    product2_binding_idx = [idx for idx in broken_edge if idx not in flat_nodes][0]
-    return product2_binding_idx
+    return [idx for idx in broken_edge if idx not in flat_nodes][0]
 
 
 def traverse_adsorbate_general(
@@ -1556,7 +1558,7 @@ def interpolate(initial_frame: ase.Atoms, final_frame: ase.Atoms, num_frames: in
         atoms_frames.append(atoms_now)
 
     # Iteratively update positions to avoid overlap
-    for i in range(100):
+    for _i in range(100):
         rate = 0.1
 
         frame_dist = []

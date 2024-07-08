@@ -1,8 +1,10 @@
+from __future__ import annotations
+
+import argparse
 import os
 import pickle
-import argparse
-import tqdm
 
+import tqdm
 from rdkit.Chem.rdmolfiles import MolToXYZFile
 
 
@@ -49,7 +51,6 @@ def parse_args():
 
 
 def main():
-
     args = parse_args()
 
     # rdkit folder downloaded 2024-03-01
