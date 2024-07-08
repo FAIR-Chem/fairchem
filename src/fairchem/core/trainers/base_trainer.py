@@ -294,6 +294,8 @@ class BaseTrainer(ABC):
                 self.train_dataset,
                 self.train_sampler,
             )
+        else:
+            self.config["dataset"] = {}
 
         if self.config.get("val_dataset", None):
             if self.config["val_dataset"].get("use_train_settings", True):
@@ -316,6 +318,8 @@ class BaseTrainer(ABC):
                 self.val_dataset,
                 self.val_sampler,
             )
+        else:
+            self.config["val_dataset"] = {}
 
         if self.config.get("test_dataset", None):
             if (
@@ -343,10 +347,13 @@ class BaseTrainer(ABC):
                 self.test_dataset,
                 self.test_sampler,
             )
+        else:
+            self.config["test_dataset"] = {}
 
         # load relaxation dataset
-        if self.config["task"].get("test_dataset", None):
-            self.relax_dataset = registry.get_dataset_class("lmdb")(
+        if self.config["task"].get("relax_dataset", None):
+            dataset_format = self.config["task"]["relax_dataset"].get("format", "lmdb")
+            self.relax_dataset = registry.get_dataset_class(dataset_format)(
                 self.config["task"]["relax_dataset"]
             )
             self.relax_sampler = self.get_sampler(
@@ -363,6 +370,9 @@ class BaseTrainer(ABC):
 
     def load_task(self):
         # Normalizer for the dataset.
+
+        # Is it troublesome that we assume any normalizer info is in train? What if there is no
+        # training dataset? What happens if we just specify a test set?
         normalizer = self.config["dataset"].get("transforms", {}).get("normalizer", {})
         self.normalizers = {}
         if normalizer:
