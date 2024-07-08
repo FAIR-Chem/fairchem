@@ -302,7 +302,7 @@ dyn.run(fmax=0, steps=100)
 traj = ase.io.read("data/toy_c3h8_relax.traj", ":")
 
 # convert traj format to extxyz format (used by OC20 dataset)
-columns = (['symbols','positions', 'move_mask', 'tags'])
+columns = (['symbols','positions', 'move_mask', 'tags', 'forces'])
 with open('data/toy_c3h8_relax.extxyz','w') as f:
     extxyz.write_xyz(f, traj, columns=columns)
 ```
