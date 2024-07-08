@@ -207,7 +207,7 @@ yml = generate_yml_config(checkpoint_path, 'config.yml',
                            'optim.loss_force', # the checkpoint setting causes an error
                            'dataset', 'test_dataset', 'val_dataset'],
                    update={'gpus': 1,
-                           'task.dataset': 'ase_db',
+                           'dataset.format': 'ase_db',
                            'optim.eval_every': 10,
                            'optim.max_epochs': 1,
                            'optim.batch_size': 4,

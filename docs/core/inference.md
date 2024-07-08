@@ -78,7 +78,7 @@ yml = generate_yml_config(checkpoint_path, 'config.yml',
                            'dataset', 'slurm'],
                    update={'amp': True,
                            'gpus': 1,
-                           'task.dataset': 'ase_db',
+                           'dataset.format': 'ase_db',
                            'task.prediction_dtype': 'float32',
                            'logger':'tensorboard', # don't use wandb!
                             # Test data - prediction only so no regression
