@@ -926,7 +926,7 @@ trainer = OCPTrainer(
     optimizer=optimizer,
     outputs={},
     loss_functions={},
-    eval_metrics={},
+    evaluation_metrics={},
     name="s2ef",
     identifier="S2EF-example",
     run_dir=".", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!
@@ -1008,7 +1008,7 @@ pretrained_trainer = OCPTrainer(
     optimizer=optimizer,
     outputs={},
     loss_functions={},
-    eval_metrics={},
+    evaluation_metrics={},
     name="s2ef",
     identifier="S2EF-val-example",
     run_dir="./", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!
@@ -1212,7 +1212,7 @@ energy_trainer = OCPTrainer(
     optimizer=optimizer,
     outputs={},
     loss_functions={},
-    eval_metrics={},
+    evaluation_metrics={},
     name="is2re",
     identifier="IS2RE-example",
     run_dir="./", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!
@@ -1290,7 +1290,7 @@ pretrained_energy_trainer = OCPTrainer(
     optimizer=optimizer,
     outputs={},
     loss_functions={},
-    eval_metrics={},
+    evaluation_metrics={},
     name="is2re",
     identifier="IS2RE-val-example",
     run_dir="./", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!
@@ -1515,7 +1515,7 @@ trainer = OCPTrainer(
     optimizer=optimizer,
     outputs={},
     loss_functions={},
-    eval_metrics={},
+    evaluation_metrics={},
     name="s2ef",
     identifier="is2rs-example",
     run_dir="./", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!
@@ -1905,7 +1905,7 @@ trainer = OCPTrainer(
     optimizer=optimizer,
     outputs={},
     loss_functions={},
-    eval_metrics={},
+    evaluation_metrics={},
     name="s2ef",
     identifier="S2EF-simple",
     run_dir="./", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!
@@ -1981,7 +1981,7 @@ trainer = OCPTrainer(
     optimizer=optimizer,
     outputs={},
     loss_functions={},
-    eval_metrics={},
+    evaluation_metrics={},
     name="s2ef",
     identifier="S2EF-gemnet-t",
     run_dir="./", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!
