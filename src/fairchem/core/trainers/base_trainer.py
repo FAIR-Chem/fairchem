@@ -277,7 +277,7 @@ class BaseTrainer(ABC):
         self.test_loader = None
 
         # load train, val, test datasets
-        if self.config["dataset"].get("src", None):
+        if self.config.get("dataset", None) and self.config["dataset"].get("src", None):
             logging.info(
                 f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
             )
@@ -318,7 +318,12 @@ class BaseTrainer(ABC):
             )
 
         if self.config.get("test_dataset", None):
-            if self.config["test_dataset"].get("use_train_settings", True):
+            if (
+                self.config["test_dataset"].get("use_train_settings", True)
+                and self.config[
+                    "dataset"
+                ]  # if there's no training dataset, we have nothing to copy
+            ):
                 test_config = self.config["dataset"].copy()
                 test_config.update(self.config["test_dataset"])
             else:
@@ -340,7 +345,7 @@ class BaseTrainer(ABC):
             )
 
         # load relaxation dataset
-        if "relax_dataset" in self.config["task"]:
+        if self.config["task"].get("test_dataset", None):
             self.relax_dataset = registry.get_dataset_class("lmdb")(
                 self.config["task"]["relax_dataset"]
             )
@@ -382,16 +387,16 @@ class BaseTrainer(ABC):
                             "outputs"
                         ][target_name].get("level", "system")
                     if "train_on_free_atoms" not in self.output_targets[subtarget]:
-                        self.output_targets[subtarget]["train_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("train_on_free_atoms", True)
+                        self.output_targets[subtarget][
+                            "train_on_free_atoms"
+                        ] = self.config["outputs"][target_name].get(
+                            "train_on_free_atoms", True
                         )
                     if "eval_on_free_atoms" not in self.output_targets[subtarget]:
-                        self.output_targets[subtarget]["eval_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("eval_on_free_atoms", True)
+                        self.output_targets[subtarget][
+                            "eval_on_free_atoms"
+                        ] = self.config["outputs"][target_name].get(
+                            "eval_on_free_atoms", True
                         )
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
@@ -434,7 +439,9 @@ class BaseTrainer(ABC):
             # only "watch" model if user specify watch: True because logging gradients
             # spews too much data into W&B and makes the UI slow to respond
             if "watch" in self.config["logger"]:
-                self.logger.watch(self.model, log_freq = int(self.config["logger"]["watch"]))
+                self.logger.watch(
+                    self.model, log_freq=int(self.config["logger"]["watch"])
+                )
             self.logger.log_summary({"num_params": self.model.num_params})
 
         if distutils.initialized() and not self.config["noddp"]:
