@@ -124,15 +124,16 @@ class AdsorbateSlabConfig:
             simplices = dt.simplices
 
             # Only keep triangles with at least one vertex in central cell.
-            pruned_simplices = []
-            for tri in simplices:
+            pruned_simplices = [
+                tri
+                for tri in simplices
                 if np.any(
                     [
                         tiled_surface_atoms_idx[ver] in unit_surface_atoms_idx
                         for ver in tri
                     ]
-                ):
-                    pruned_simplices.append(tri)
+                )
+            ]
             simplices = np.array(pruned_simplices)
 
             # Uniformly sample sites on each triangle.

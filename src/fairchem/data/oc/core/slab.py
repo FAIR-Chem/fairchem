@@ -69,10 +69,8 @@ class Slab:
             Composition(self.atoms.get_chemical_formula()).reduced_formula
             == Composition(bulk.atoms.get_chemical_formula()).reduced_formula
         ), "Mismatched bulk and surface"
-        assert (
-            np.linalg.norm(self.atoms.cell[0]) >= min_ab
-            and np.linalg.norm(self.atoms.cell[1]) >= min_ab
-        ), "Slab not tiled"
+        assert np.linalg.norm(self.atoms.cell[0]) >= min_ab, "Slab not tiled"
+        assert np.linalg.norm(self.atoms.cell[1]) >= min_ab, "Slab not tiled"
         assert self.has_surface_tagged(), "Slab not tagged"
         assert len(self.atoms.constraints) > 0, "Sub-surface atoms not constrained"
 
@@ -121,18 +119,16 @@ class Slab:
                 max_miller=max(np.abs(specific_millers)),
                 specific_millers=[specific_millers],
             )
-            slabs = []
-            for s in untiled_slabs:
-                slabs.append(
-                    (
-                        tile_and_tag_atoms(s[0], bulk.atoms, min_ab=min_ab),
-                        s[1],
-                        s[2],
-                        s[3],
-                        s[4],
-                    )
+            slabs = [
+                (
+                    tile_and_tag_atoms(s[0], bulk.atoms, min_ab=min_ab),
+                    s[1],
+                    s[2],
+                    s[3],
+                    s[4],
                 )
-
+                for s in untiled_slabs
+            ]
             return [cls(bulk, s[0], s[1], s[2], s[3], s[4]) for s in slabs]
 
     @classmethod
@@ -145,17 +141,16 @@ class Slab:
             bulk.atoms,
             max_miller=max_miller,
         )
-        slabs = []
-        for s in untiled_slabs:
-            slabs.append(
-                (
-                    tile_and_tag_atoms(s[0], bulk.atoms, min_ab=min_ab),
-                    s[1],
-                    s[2],
-                    s[3],
-                    s[4],
-                )
+        slabs = [
+            (
+                tile_and_tag_atoms(s[0], bulk.atoms, min_ab=min_ab),
+                s[1],
+                s[2],
+                s[3],
+                s[4],
             )
+            for s in untiled_slabs
+        ]
 
         # if path is provided, save out the pkl
         if save_path is not None:
@@ -177,7 +172,8 @@ class Slab:
         assert precomputed_slabs_pkl is not None
         assert os.path.exists(precomputed_slabs_pkl)
 
-        slabs = pickle.load(open(precomputed_slabs_pkl, "rb"))
+        with open(precomputed_slabs_pkl, "rb") as fp:
+            slabs = pickle.load(fp)
 
         is_slab_obj = np.all([isinstance(s, Slab) for s in slabs])
         if is_slab_obj:

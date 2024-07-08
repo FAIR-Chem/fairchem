@@ -28,27 +28,26 @@ Atoms.set_pbc = set_pbc_patch
 
 
 def update_pkls():
-    data = pickle.load(
-        open(
-            "ocdata/databases/pkls/adsorbates.pkl",
-            "rb",
-        )
-    )
+    with open(
+        "ocdata/databases/pkls/adsorbates.pkl",
+        "rb",
+    ) as fp:
+        data = pickle.load(fp)
+
     for idx in data:
         pbc = data[idx][0].cell._pbc
         data[idx][0]._pbc = pbc
     with open(
         "ocdata/databases/pkls/adsorbates_new.pkl",
         "wb",
-    ) as f:
-        pickle.dump(data, f)
+    ) as fp:
+        pickle.dump(data, fp)
 
-    data = pickle.load(
-        open(
-            "ocdata/databases/pkls/bulks.pkl",
-            "rb",
-        )
-    )
+    with open(
+        "ocdata/databases/pkls/bulks.pkl",
+        "rb",
+    ) as fp:
+        data = pickle.load(fp)
 
     bulks = []
     for info in tqdm(data):
