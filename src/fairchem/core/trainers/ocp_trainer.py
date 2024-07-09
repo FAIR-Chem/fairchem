@@ -19,6 +19,10 @@ from torch.profiler import ProfilerActivity, profile
 from tqdm import tqdm
 
 from fairchem.core.common import distutils
+from fairchem.core.common.profiler_utils import (
+    get_default_profile_schedule,
+    get_default_profiler_handler,
+)
 from fairchem.core.common.registry import registry
 from fairchem.core.common.relaxation.ml_relaxation import ml_relax
 from fairchem.core.common.utils import cg_change_mat, check_traj_files, irreps_sum
@@ -119,23 +123,6 @@ class OCPTrainer(BaseTrainer):
             gp_gpus=gp_gpus,
         )
 
-    def get_profiler_config(self):
-        def trace_handler(p):
-            if distutils.is_master():
-                trace_name = f"{self.config['cmd']['timestamp_id']}_rank_{distutils.get_rank()}.pt.trace.json"
-                output_path = os.path.join(self.config["cmd"]["results_dir"], trace_name)
-                print(f"Saving trace in {output_path}")
-                p.export_chrome_trace(output_path)
-                if self.logger:
-                    self.logger.log_artifact(name=trace_name, type="profile", file_location=output_path)
-
-        wait = 5
-        warmup = 5
-        active = 2
-        total_profile_steps = wait + warmup + active
-        profile_schedule = torch.profiler.schedule(wait=wait, warmup=warmup, active=active)
-
-        return trace_handler, profile_schedule, total_profile_steps
 
     def train(self, disable_eval_tqdm: bool = False) -> None:
         ensure_fitted(self._unwrapped_model, warn=True)
@@ -155,7 +142,10 @@ class OCPTrainer(BaseTrainer):
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // len(self.train_loader)
 
-        trace_handler, profile_schedule, total_profile_steps = self.get_profiler_config()
+        trace_handler = get_default_profiler_handler(run_id = self.config["cmd"]["timestamp_id"],
+                                                     output_dir = self.config["cmd"]["results_dir"],
+                                                     logger = self.logger)
+        profile_schedule, total_profile_steps = get_default_profile_schedule()
 
         with profile(
             activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
