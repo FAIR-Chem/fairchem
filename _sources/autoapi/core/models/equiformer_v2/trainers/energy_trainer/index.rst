@@ -23,7 +23,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: EquiformerV2EnergyTrainer(task, model, outputs, dataset, optimizer, loss_functions, evaluation_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm=None, noddp=False, name='ocp')
+.. py:class:: EquiformerV2EnergyTrainer(task, model, outputs, dataset, optimizer, loss_functions, evaluation_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm=None, noddp=False, name='ocp', gp_gpus=None)
 
    Bases: :py:obj:`fairchem.core.trainers.OCPTrainer`
 

@@ -34,7 +34,7 @@ Module Contents
    tensorboard, etc.
 
 
-   .. py:method:: watch(model)
+   .. py:method:: watch(model, log_freq: int = 1000)
       :abstractmethod:
 
 
@@ -72,7 +72,7 @@ Module Contents
    tensorboard, etc.
 
 
-   .. py:method:: watch(model) -> None
+   .. py:method:: watch(model, log_freq: int = 1000) -> None
 
       Monitor parameters and gradients.
 
@@ -102,7 +102,7 @@ Module Contents
    tensorboard, etc.
 
 
-   .. py:method:: watch(model) -> bool
+   .. py:method:: watch(model, log_freq: int = 1000) -> bool
 
       Monitor parameters and gradients.
 

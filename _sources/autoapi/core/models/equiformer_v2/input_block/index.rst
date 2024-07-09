@@ -37,6 +37,6 @@ Module Contents
    :type rescale_factor: float
 
 
-   .. py:method:: forward(atomic_numbers, edge_distance, edge_index)
+   .. py:method:: forward(atomic_numbers, edge_distance, edge_index, num_nodes, node_offset=0)
 
 

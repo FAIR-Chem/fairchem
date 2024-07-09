@@ -26,7 +26,7 @@ Classes
 Package Contents
 ----------------
 
-.. py:class:: BaseTrainer(task, model, outputs, dataset, optimizer, loss_functions, evaluation_metrics, identifier: str, timestamp_id: str | None = None, run_dir: str | None = None, is_debug: bool = False, print_every: int = 100, seed: int | None = None, logger: str = 'wandb', local_rank: int = 0, amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm=None, noddp: bool = False)
+.. py:class:: BaseTrainer(task, model, outputs, dataset, optimizer, loss_functions, evaluation_metrics, identifier: str, timestamp_id: str | None = None, run_dir: str | None = None, is_debug: bool = False, print_every: int = 100, seed: int | None = None, logger: str = 'wandb', local_rank: int = 0, amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm=None, noddp: bool = False, gp_gpus: int | None = None)
 
    Bases: :py:obj:`abc.ABC`
 
@@ -105,7 +105,7 @@ Package Contents
    .. py:method:: save_results(predictions: dict[str, numpy.typing.NDArray], results_file: str | None, keys: collections.abc.Sequence[str] | None = None) -> None
 
 
-.. py:class:: OCPTrainer(task, model, outputs, dataset, optimizer, loss_functions, evaluation_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm=None, noddp=False, name='ocp')
+.. py:class:: OCPTrainer(task, model, outputs, dataset, optimizer, loss_functions, evaluation_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm=None, noddp=False, name='ocp', gp_gpus=None)
 
    Bases: :py:obj:`fairchem.core.trainers.base_trainer.BaseTrainer`
 

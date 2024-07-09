@@ -123,6 +123,14 @@ Module Contents
    :type load_energy_lin_ref: bool
 
 
+   .. py:method:: _init_gp_partitions(atomic_numbers_full, data_batch_full, edge_index, edge_distance, edge_distance_vec)
+
+      Graph Parallel
+      This creates the required partial tensors for each rank given the full tensors.
+      The tensors are split on the dimension along the node index using node_partition.
+
+
+
    .. py:method:: forward(data)
 
 

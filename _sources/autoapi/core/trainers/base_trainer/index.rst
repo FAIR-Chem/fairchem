@@ -23,7 +23,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: BaseTrainer(task, model, outputs, dataset, optimizer, loss_functions, evaluation_metrics, identifier: str, timestamp_id: str | None = None, run_dir: str | None = None, is_debug: bool = False, print_every: int = 100, seed: int | None = None, logger: str = 'wandb', local_rank: int = 0, amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm=None, noddp: bool = False)
+.. py:class:: BaseTrainer(task, model, outputs, dataset, optimizer, loss_functions, evaluation_metrics, identifier: str, timestamp_id: str | None = None, run_dir: str | None = None, is_debug: bool = False, print_every: int = 100, seed: int | None = None, logger: str = 'wandb', local_rank: int = 0, amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm=None, noddp: bool = False, gp_gpus: int | None = None)
 
    Bases: :py:obj:`abc.ABC`
 

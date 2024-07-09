@@ -34,6 +34,7 @@ Submodules
    /autoapi/core/common/hpo_utils/index
    /autoapi/core/common/logger/index
    /autoapi/core/common/registry/index
+   /autoapi/core/common/test_utils/index
    /autoapi/core/common/transforms/index
    /autoapi/core/common/tutorial_utils/index
    /autoapi/core/common/typing/index

@@ -67,7 +67,7 @@ Module Contents
    :type alpha_drop: float
 
 
-   .. py:method:: forward(x: torch.Tensor, atomic_numbers, edge_distance: torch.Tensor, edge_index)
+   .. py:method:: forward(x: torch.Tensor, atomic_numbers, edge_distance: torch.Tensor, edge_index, node_offset: int = 0)
 
 
 .. py:class:: FeedForwardNetwork(sphere_channels: int, hidden_channels: int, output_channels: int, lmax_list: list[int], mmax_list: list[int], SO3_grid, activation: str = 'scaled_silu', use_gate_act: bool = False, use_grid_mlp: bool = False, use_sep_s2_act: bool = True)
@@ -158,6 +158,6 @@ Module Contents
    :type proj_drop: float
 
 
-   .. py:method:: forward(x, atomic_numbers, edge_distance, edge_index, batch)
+   .. py:method:: forward(x, atomic_numbers, edge_distance, edge_index, batch, node_offset: int = 0)
 
 
