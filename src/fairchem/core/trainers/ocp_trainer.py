@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 from fairchem.core.common import distutils
 from fairchem.core.common.profiler_utils import (
-    get_default_profile_schedule,
+    get_profile_schedule,
     get_default_profiler_handler,
 )
 from fairchem.core.common.registry import registry
@@ -145,7 +145,7 @@ class OCPTrainer(BaseTrainer):
         trace_handler = get_default_profiler_handler(run_id = self.config["cmd"]["timestamp_id"],
                                                      output_dir = self.config["cmd"]["results_dir"],
                                                      logger = self.logger)
-        profile_schedule, total_profile_steps = get_default_profile_schedule()
+        profile_schedule, total_profile_steps = get_profile_schedule()
 
         with profile(
             activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
