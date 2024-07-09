@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
 import torch
 
 from fairchem.core.common import distutils
-from fairchem.core.common.logger import Logger
 
+if TYPE_CHECKING:
+    from fairchem.core.common.logger import Logger
 
 def get_default_profiler_handler(run_id: str, output_dir: str, logger: Logger):
     """Get a standard callback handle for the pytorch profiler"""
