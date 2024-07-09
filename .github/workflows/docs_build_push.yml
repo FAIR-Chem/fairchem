@@ -1,4 +1,4 @@
-name: documentation
+name: build and deploy docs to gh-pages
 
 on:
   workflow_call:
