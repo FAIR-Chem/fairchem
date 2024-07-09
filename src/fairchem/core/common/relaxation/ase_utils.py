@@ -53,7 +53,7 @@ def batch_to_atoms(batch):
             tags=tags[idx].tolist(),
             cell=cells[idx].cpu().detach().numpy(),
             constraint=FixAtoms(
-                mask=fixed[idx].cpu().detach().numpy().astype(int).tolist()
+                mask=fixed[idx].cpu().detach().numpy().astype(bool).tolist()
             ),
             pbc=[True, True, True],
         )
