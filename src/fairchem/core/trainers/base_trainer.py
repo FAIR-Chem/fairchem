@@ -294,7 +294,7 @@ class BaseTrainer(ABC):
                 self.train_dataset,
                 self.train_sampler,
             )
-        elif ~self.config.get("dataset", None):
+        elif self.config.get("dataset", None) is None:
             self.config["dataset"] = {}
 
         if self.config.get("val_dataset", None):
