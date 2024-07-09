@@ -302,7 +302,7 @@ dyn.run(fmax=0, steps=100)
 traj = ase.io.read("data/toy_c3h8_relax.traj", ":")
 
 # convert traj format to extxyz format (used by OC20 dataset)
-columns = (['symbols','positions', 'move_mask', 'tags'])
+columns = (['symbols','positions', 'move_mask', 'tags', 'forces'])
 with open('data/toy_c3h8_relax.extxyz','w') as f:
     extxyz.write_xyz(f, traj, columns=columns)
 ```
@@ -925,8 +925,8 @@ trainer = OCPTrainer(
     dataset=dataset,
     optimizer=optimizer,
     outputs={},
-    loss_fns={},
-    eval_metrics={},
+    loss_functions={},
+    evaluation_metrics={},
     name="s2ef",
     identifier="S2EF-example",
     run_dir=".", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!
@@ -1007,8 +1007,8 @@ pretrained_trainer = OCPTrainer(
     dataset=dataset,
     optimizer=optimizer,
     outputs={},
-    loss_fns={},
-    eval_metrics={},
+    loss_functions={},
+    evaluation_metrics={},
     name="s2ef",
     identifier="S2EF-val-example",
     run_dir="./", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!
@@ -1211,8 +1211,8 @@ energy_trainer = OCPTrainer(
     dataset=dataset,
     optimizer=optimizer,
     outputs={},
-    loss_fns={},
-    eval_metrics={},
+    loss_functions={},
+    evaluation_metrics={},
     name="is2re",
     identifier="IS2RE-example",
     run_dir="./", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!
@@ -1289,8 +1289,8 @@ pretrained_energy_trainer = OCPTrainer(
     dataset=dataset,
     optimizer=optimizer,
     outputs={},
-    loss_fns={},
-    eval_metrics={},
+    loss_functions={},
+    evaluation_metrics={},
     name="is2re",
     identifier="IS2RE-val-example",
     run_dir="./", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!
@@ -1514,8 +1514,8 @@ trainer = OCPTrainer(
     dataset=dataset,
     optimizer=optimizer,
     outputs={},
-    loss_fns={},
-    eval_metrics={},
+    loss_functions={},
+    evaluation_metrics={},
     name="s2ef",
     identifier="is2rs-example",
     run_dir="./", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!
@@ -1904,8 +1904,8 @@ trainer = OCPTrainer(
     dataset=dataset,
     optimizer=optimizer,
     outputs={},
-    loss_fns={},
-    eval_metrics={},
+    loss_functions={},
+    evaluation_metrics={},
     name="s2ef",
     identifier="S2EF-simple",
     run_dir="./", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!
@@ -1980,8 +1980,8 @@ trainer = OCPTrainer(
     dataset=dataset,
     optimizer=optimizer,
     outputs={},
-    loss_fns={},
-    eval_metrics={},
+    loss_functions={},
+    evaluation_metrics={},
     name="s2ef",
     identifier="S2EF-gemnet-t",
     run_dir="./", # directory to save results if is_debug=False. Prediction files are saved here so be careful not to override!

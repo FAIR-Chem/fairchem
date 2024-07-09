@@ -26,7 +26,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]  # add optional dependencies to be installed as pip install fairchem.core[dev]
-dev = ["pre-commit", "pytest", "pytest-cov", "coverage", "syrupy", "ruff"]
+dev = ["pre-commit", "pytest", "pytest-cov", "coverage", "syrupy", "ruff==0.4.10"]
 docs = ["jupyter-book", "jupytext", "sphinx","sphinx-autoapi", "umap-learn", "vdict"]
 adsorbml = ["dscribe","x3dase","scikit-image"]
 
@@ -64,7 +64,7 @@ fragments = [
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts  =  "-p no:warnings --import-mode importlib -x --quiet -rxXs --color yes"
+addopts  =  "-p no:warnings -x --quiet -rxXs --color yes"
 filterwarnings  = [
     'ignore::UserWarning',
     'ignore::FutureWarning',

@@ -74,6 +74,7 @@ class BaseTrainer(ABC):
         name: str = "ocp",
         slurm=None,
         noddp: bool = False,
+        gp_gpus: int | None = None,
     ) -> None:
         if slurm is None:
             slurm = {}
@@ -131,6 +132,7 @@ class BaseTrainer(ABC):
             },
             "slurm": slurm,
             "noddp": noddp,
+            "gp_gpus": gp_gpus,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp and not self.cpu else None
@@ -275,7 +277,7 @@ class BaseTrainer(ABC):
         self.test_loader = None
 
         # load train, val, test datasets
-        if self.config["dataset"].get("src", None):
+        if self.config.get("dataset", None) and self.config["dataset"].get("src", None):
             logging.info(
                 f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
             )
@@ -292,54 +294,66 @@ class BaseTrainer(ABC):
                 self.train_dataset,
                 self.train_sampler,
             )
+        elif self.config.get("dataset", None) is None:
+            self.config["dataset"] = {}
 
-            if self.config.get("val_dataset", None):
-                if self.config["val_dataset"].get("use_train_settings", True):
-                    val_config = self.config["dataset"].copy()
-                    val_config.update(self.config["val_dataset"])
-                else:
-                    val_config = self.config["val_dataset"]
+        if self.config.get("val_dataset", None):
+            if self.config["val_dataset"].get("use_train_settings", True):
+                val_config = self.config["dataset"].copy()
+                val_config.update(self.config["val_dataset"])
+            else:
+                val_config = self.config["val_dataset"]
 
-                self.val_dataset = registry.get_dataset_class(
-                    val_config.get("format", "lmdb")
-                )(val_config)
-                self.val_sampler = self.get_sampler(
-                    self.val_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.val_loader = self.get_dataloader(
-                    self.val_dataset,
-                    self.val_sampler,
-                )
+            self.val_dataset = registry.get_dataset_class(
+                val_config.get("format", "lmdb")
+            )(val_config)
+            self.val_sampler = self.get_sampler(
+                self.val_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.val_loader = self.get_dataloader(
+                self.val_dataset,
+                self.val_sampler,
+            )
+        else:
+            self.config["val_dataset"] = {}
 
-            if self.config.get("test_dataset", None):
-                if self.config["test_dataset"].get("use_train_settings", True):
-                    test_config = self.config["dataset"].copy()
-                    test_config.update(self.config["test_dataset"])
-                else:
-                    test_config = self.config["test_dataset"]
+        if self.config.get("test_dataset", None):
+            if (
+                self.config["test_dataset"].get("use_train_settings", True)
+                and self.config[
+                    "dataset"
+                ]  # if there's no training dataset, we have nothing to copy
+            ):
+                test_config = self.config["dataset"].copy()
+                test_config.update(self.config["test_dataset"])
+            else:
+                test_config = self.config["test_dataset"]
 
-                self.test_dataset = registry.get_dataset_class(
-                    test_config.get("format", "lmdb")
-                )(test_config)
-                self.test_sampler = self.get_sampler(
-                    self.test_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.test_loader = self.get_dataloader(
-                    self.test_dataset,
-                    self.test_sampler,
-                )
+            self.test_dataset = registry.get_dataset_class(
+                test_config.get("format", "lmdb")
+            )(test_config)
+            self.test_sampler = self.get_sampler(
+                self.test_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.test_loader = self.get_dataloader(
+                self.test_dataset,
+                self.test_sampler,
+            )
+        else:
+            self.config["test_dataset"] = {}
 
         # load relaxation dataset
-        if "relax_dataset" in self.config["task"]:
-            self.relax_dataset = registry.get_dataset_class("lmdb")(
+        if self.config["task"].get("relax_dataset", None):
+            dataset_format = self.config["task"]["relax_dataset"].get("format", "lmdb")
+            self.relax_dataset = registry.get_dataset_class(dataset_format)(
                 self.config["task"]["relax_dataset"]
             )
             self.relax_sampler = self.get_sampler(
@@ -356,6 +370,9 @@ class BaseTrainer(ABC):
 
     def load_task(self):
         # Normalizer for the dataset.
+
+        # Is it troublesome that we assume any normalizer info is in train? What if there is no
+        # training dataset? What happens if we just specify a test
         normalizer = self.config["dataset"].get("transforms", {}).get("normalizer", {})
         self.normalizers = {}
         if normalizer:
@@ -380,16 +397,16 @@ class BaseTrainer(ABC):
                             "outputs"
                         ][target_name].get("level", "system")
                     if "train_on_free_atoms" not in self.output_targets[subtarget]:
-                        self.output_targets[subtarget]["train_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("train_on_free_atoms", True)
+                        self.output_targets[subtarget][
+                            "train_on_free_atoms"
+                        ] = self.config["outputs"][target_name].get(
+                            "train_on_free_atoms", True
                         )
                     if "eval_on_free_atoms" not in self.output_targets[subtarget]:
-                        self.output_targets[subtarget]["eval_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("eval_on_free_atoms", True)
+                        self.output_targets[subtarget][
+                            "eval_on_free_atoms"
+                        ] = self.config["outputs"][target_name].get(
+                            "eval_on_free_atoms", True
                         )
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
@@ -429,7 +446,12 @@ class BaseTrainer(ABC):
             )
 
         if self.logger is not None:
-            self.logger.watch(self.model)
+            # only "watch" model if user specify watch: True because logging gradients
+            # spews too much data into W&B and makes the UI slow to respond
+            if "watch" in self.config["logger"]:
+                self.logger.watch(
+                    self.model, log_freq=int(self.config["logger"]["watch"])
+                )
             self.logger.log_summary({"num_params": self.model.num_params})
 
         if distutils.initialized() and not self.config["noddp"]:
