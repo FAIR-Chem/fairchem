@@ -1,7 +1,7 @@
-from __future__ import annotations
-
+# dataclasses_json breaks if using __future__.annotations, so keep 3.9 typing annotations for compatibility
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import List, Optional, Tuple
 
 from dataclasses_json import CatchAll, Undefined, config, dataclass_json
 
@@ -15,7 +15,7 @@ class _DataModel:
 
     other_fields: CatchAll
     """
-    Fields that may have been added to the API that all not yet supported
+    Fields that may have been added to the API that all not yet supported 
     explicitly in this class.
     """
 
@@ -40,7 +40,7 @@ class Models(_DataModel):
     Stores the response from a request for models supported in the API.
     """
 
-    models: list[Model]
+    models: List[Model]
     """
     The list of models that are supported.
     """
@@ -64,7 +64,7 @@ class Bulk(_DataModel):
     """
 
     # Stored under "els" in the API response
-    elements: list[str] = field(metadata=config(field_name="els"))
+    elements: List[str] = field(metadata=config(field_name="els"))
     """
     The list of elements in the material.
     """
@@ -77,7 +77,7 @@ class Bulks(_DataModel):
     Stores the response from a request to fetch bulks supported in the API.
     """
 
-    bulks_supported: list[Bulk]
+    bulks_supported: List[Bulk]
     """
     List of bulks that can be used in the API.
     """
@@ -91,7 +91,7 @@ class Adsorbates(_DataModel):
     API.
     """
 
-    adsorbates_supported: list[str]
+    adsorbates_supported: List[str]
     """
     List of adsorbates that can be used in the API.
     """
@@ -105,40 +105,40 @@ class Atoms(_DataModel):
     API.
     """
 
-    cell: tuple[
-        tuple[float, float, float],
-        tuple[float, float, float],
-        tuple[float, float, float],
+    cell: Tuple[
+        Tuple[float, float, float],
+        Tuple[float, float, float],
+        Tuple[float, float, float],
     ]
     """
     3x3 matrix with unit cell vectors.
     """
 
-    pbc: tuple[bool, bool, bool]
+    pbc: Tuple[bool, bool, bool]
     """
-    Whether the structure is periodic along the a, b, and c lattice vectors,
+    Whether the structure is periodic along the a, b, and c lattice vectors, 
     respectively.
     """
 
-    numbers: list[int]
+    numbers: List[int]
     """
     The atomic number of each atom in the unit cell.
     """
 
-    positions: list[tuple[float, float, float]]
+    positions: List[Tuple[float, float, float]]
     """
-    The coordinates of each atom in the unit cell, relative to the cartesian
+    The coordinates of each atom in the unit cell, relative to the cartesian 
     frame.
     """
 
-    tags: list[int]
+    tags: List[int]
     """
-    Labels for each atom in the unit cell where 0 represents a subsurface atom
-    (fixed during optimization), 1 represents a surface atom, and 2 represents
+    Labels for each atom in the unit cell where 0 represents a subsurface atom 
+    (fixed during optimization), 1 represents a surface atom, and 2 represents 
     an adsorbate atom.
     """
 
-    def to_ase_atoms(self) -> ASEAtoms:
+    def to_ase_atoms(self) -> "ASEAtoms":
         """
         Creates an ase.Atoms object with the positions, element numbers,
         etc. populated from values on this object.
@@ -174,20 +174,20 @@ class SlabMetadata(_DataModel):
     The ID of the bulk material from which the slab was derived.
     """
 
-    millers: tuple[int, int, int]
+    millers: Tuple[int, int, int]
     """
     The Miller indices of the slab relative to bulk structure.
     """
 
     shift: float
     """
-    The position along the vector defined by the Miller indices at which a
+    The position along the vector defined by the Miller indices at which a 
     cut was taken to generate the slab surface.
     """
 
     top: bool
     """
-    If False, the top and bottom surfaces for this millers/shift pair are
+    If False, the top and bottom surfaces for this millers/shift pair are 
     distinct and this slab represents the bottom surface.
     """
 
@@ -219,7 +219,7 @@ class Slabs(_DataModel):
     Stores the response from a request to fetch slabs for a bulk structure.
     """
 
-    slabs: list[Slab]
+    slabs: List[Slab]
     """
     The list of slabs that were generated from the input bulk structure.
     """
@@ -233,7 +233,7 @@ class AdsorbateSlabConfigs(_DataModel):
     absorbate on a slab.
     """
 
-    adsorbate_configs: list[Atoms]
+    adsorbate_configs: List[Atoms]
     """
     List of structures, each representing one possible adsorbate placement.
     """
@@ -254,11 +254,11 @@ class AdsorbateSlabRelaxationsSystem(_DataModel):
 
     system_id: str
     """
-    Unique ID for this set of relaxations which can be used to fetch results
+    Unique ID for this set of relaxations which can be used to fetch results 
     later.
     """
 
-    config_ids: list[int]
+    config_ids: List[int]
     """
     The list of IDs assigned to each of the input adsorbate placements, in the
     same order in which they were submitted.
@@ -277,7 +277,7 @@ class AdsorbateSlabRelaxationsRequest(_DataModel):
     Description of the adsorbate.
     """
 
-    adsorbate_configs: list[Atoms]
+    adsorbate_configs: List[Atoms]
     """
     List of adsorbate placements being relaxed.
     """
@@ -298,21 +298,21 @@ class AdsorbateSlabRelaxationsRequest(_DataModel):
     """
 
     # Omit from serialization when None
-    ephemeral: bool | None = field(
+    ephemeral: Optional[bool] = field(
         default=None,
         metadata=config(exclude=lambda v: v is None),
     )
     """
-    Whether the relaxations can be deleted (assume they cannot be deleted if
+    Whether the relaxations can be deleted (assume they cannot be deleted if 
     None).
     """
 
-    adsorbate_reaction: str | None = field(
+    adsorbate_reaction: Optional[str] = field(
         default=None,
         metadata=config(exclude=lambda v: v is None),
     )
     """
-    If possible, an html-formatted string describing the reaction will be added
+    If possible, an html-formatted string describing the reaction will be added 
     to this field.
     """
 
@@ -324,7 +324,7 @@ class Status(Enum):
 
     NOT_AVAILABLE = "not_available"
     """
-    The configuration exists but the result is not yet available. It is
+    The configuration exists but the result is not yet available. It is 
     possible that checking again in the future could yield a result.
     """
 
@@ -335,7 +335,7 @@ class Status(Enum):
 
     SUCCESS = "success"
     """
-    The relaxation was successful and the requested information about the
+    The relaxation was successful and the requested information about the 
     configuration was returned.
     """
 
@@ -371,7 +371,7 @@ class AdsorbateSlabRelaxationResult(_DataModel):
     """
 
     # Omit from serialization when None
-    system_id: str | None = field(
+    system_id: Optional[str] = field(
         default=None,
         metadata=config(exclude=lambda v: v is None),
     )
@@ -379,14 +379,13 @@ class AdsorbateSlabRelaxationResult(_DataModel):
     The ID of the system in which the configuration was originally submitted.
     """
 
-    cell: (
-        tuple[
-            tuple[float, float, float],
-            tuple[float, float, float],
-            tuple[float, float, float],
+    cell: Optional[
+        Tuple[
+            Tuple[float, float, float],
+            Tuple[float, float, float],
+            Tuple[float, float, float],
         ]
-        | None
-    ) = field(
+    ] = field(
         default=None,
         metadata=config(exclude=lambda v: v is None),
     )
@@ -394,7 +393,7 @@ class AdsorbateSlabRelaxationResult(_DataModel):
     3x3 matrix with unit cell vectors.
     """
 
-    pbc: tuple[bool, bool, bool] | None = field(
+    pbc: Optional[Tuple[bool, bool, bool]] = field(
         default=None,
         metadata=config(exclude=lambda v: v is None),
     )
@@ -403,7 +402,7 @@ class AdsorbateSlabRelaxationResult(_DataModel):
     respectively.
     """
 
-    numbers: list[int] | None = field(
+    numbers: Optional[List[int]] = field(
         default=None,
         metadata=config(exclude=lambda v: v is None),
     )
@@ -411,7 +410,7 @@ class AdsorbateSlabRelaxationResult(_DataModel):
     The atomic number of each atom in the unit cell.
     """
 
-    positions: list[tuple[float, float, float]] | None = field(
+    positions: Optional[List[Tuple[float, float, float]]] = field(
         default=None,
         metadata=config(exclude=lambda v: v is None),
     )
@@ -420,7 +419,7 @@ class AdsorbateSlabRelaxationResult(_DataModel):
     frame.
     """
 
-    tags: list[int] | None = field(
+    tags: Optional[List[int]] = field(
         default=None,
         metadata=config(exclude=lambda v: v is None),
     )
@@ -430,7 +429,7 @@ class AdsorbateSlabRelaxationResult(_DataModel):
     an adsorbate atom.
     """
 
-    energy: float | None = field(
+    energy: Optional[float] = field(
         default=None,
         metadata=config(exclude=lambda v: v is None),
     )
@@ -438,7 +437,7 @@ class AdsorbateSlabRelaxationResult(_DataModel):
     The energy of the configuration.
     """
 
-    energy_trajectory: list[float] | None = field(
+    energy_trajectory: Optional[List[float]] = field(
         default=None,
         metadata=config(exclude=lambda v: v is None),
     )
@@ -447,7 +446,7 @@ class AdsorbateSlabRelaxationResult(_DataModel):
     trajectory.
     """
 
-    forces: list[tuple[float, float, float]] | None = field(
+    forces: Optional[List[Tuple[float, float, float]]] = field(
         default=None,
         metadata=config(exclude=lambda v: v is None),
     )
@@ -455,7 +454,7 @@ class AdsorbateSlabRelaxationResult(_DataModel):
     The forces on each atom in the relaxed structure.
     """
 
-    def to_ase_atoms(self) -> ASEAtoms:
+    def to_ase_atoms(self) -> "ASEAtoms":
         """
         Creates an ase.Atoms object with the positions, element numbers,
         etc. populated from values on this object.
@@ -497,14 +496,14 @@ class AdsorbateSlabRelaxationsResults(_DataModel):
     relaxations.
     """
 
-    configs: list[AdsorbateSlabRelaxationResult]
+    configs: List[AdsorbateSlabRelaxationResult]
     """
-    List of configurations in the system, each representing one placement of
+    List of configurations in the system, each representing one placement of 
     an adsorbate on a slab surface.
     """
 
-    omitted_config_ids: list[int] = field(default_factory=list)
+    omitted_config_ids: List[int] = field(default_factory=lambda: list())
     """
-    List of IDs of configurations that were requested but omitted by the
+    List of IDs of configurations that were requested but omitted by the 
     server. Results for these IDs can be requested again.
     """
