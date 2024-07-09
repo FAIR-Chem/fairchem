@@ -15,14 +15,9 @@ from itertools import chain
 import numpy as np
 import torch
 import torch_geometric
-from torch.profiler import ProfilerActivity, profile
 from tqdm import tqdm
 
 from fairchem.core.common import distutils
-from fairchem.core.common.profiler_utils import (
-    get_profile_schedule,
-    get_default_profiler_handler,
-)
 from fairchem.core.common.registry import registry
 from fairchem.core.common.relaxation.ml_relaxation import ml_relax
 from fairchem.core.common.utils import cg_change_mat, check_traj_files, irreps_sum
@@ -123,7 +118,6 @@ class OCPTrainer(BaseTrainer):
             gp_gpus=gp_gpus,
         )
 
-
     def train(self, disable_eval_tqdm: bool = False) -> None:
         ensure_fitted(self._unwrapped_model, warn=True)
 
@@ -142,109 +136,96 @@ class OCPTrainer(BaseTrainer):
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // len(self.train_loader)
 
-        trace_handler = get_default_profiler_handler(run_id = self.config["cmd"]["timestamp_id"],
-                                                     output_dir = self.config["cmd"]["results_dir"],
-                                                     logger = self.logger)
-        profile_schedule, total_profile_steps = get_profile_schedule()
+        for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
+            skip_steps = self.step % len(self.train_loader)
+            self.train_sampler.set_epoch_and_start_iteration(epoch_int, skip_steps)
+            train_loader_iter = iter(self.train_loader)
 
-        with profile(
-            activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
-            schedule=profile_schedule,
-            on_trace_ready=trace_handler
-        ) as p:
-            for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
-                skip_steps = self.step % len(self.train_loader)
-                self.train_sampler.set_epoch_and_start_iteration(epoch_int, skip_steps)
-                train_loader_iter = iter(self.train_loader)
+            for i in range(skip_steps, len(self.train_loader)):
+                self.epoch = epoch_int + (i + 1) / len(self.train_loader)
+                self.step = epoch_int * len(self.train_loader) + i + 1
+                self.model.train()
 
-                for i in range(skip_steps, len(self.train_loader)):
-                    self.epoch = epoch_int + (i + 1) / len(self.train_loader)
-                    self.step = epoch_int * len(self.train_loader) + i + 1
-                    self.model.train()
+                # Get a batch.
+                batch = next(train_loader_iter)
 
-                    # Get a batch.
-                    batch = next(train_loader_iter)
+                # Forward, loss, backward.
+                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                    out = self._forward(batch)
+                    loss = self._compute_loss(out, batch)
 
-                    # Forward, loss, backward.
-                    with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-                        out = self._forward(batch)
-                        loss = self._compute_loss(out, batch)
+                # Compute metrics.
+                self.metrics = self._compute_metrics(
+                    out,
+                    batch,
+                    self.evaluator,
+                    self.metrics,
+                )
+                self.metrics = self.evaluator.update("loss", loss.item(), self.metrics)
 
-                    # Compute metrics.
-                    self.metrics = self._compute_metrics(
-                        out,
-                        batch,
-                        self.evaluator,
-                        self.metrics,
+                loss = self.scaler.scale(loss) if self.scaler else loss
+                self._backward(loss)
+
+                # Log metrics.
+                log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
+                log_dict.update(
+                    {
+                        "lr": self.scheduler.get_lr(),
+                        "epoch": self.epoch,
+                        "step": self.step,
+                    }
+                )
+                if (
+                    self.step % self.config["cmd"]["print_every"] == 0
+                    and distutils.is_master()
+                ):
+                    log_str = [f"{k}: {v:.2e}" for k, v in log_dict.items()]
+                    logging.info(", ".join(log_str))
+                    self.metrics = {}
+
+                if self.logger is not None:
+                    self.logger.log(
+                        log_dict,
+                        step=self.step,
+                        split="train",
                     )
-                    self.metrics = self.evaluator.update("loss", loss.item(), self.metrics)
 
-                    loss = self.scaler.scale(loss) if self.scaler else loss
-                    self._backward(loss)
-
-                    # Log metrics.
-                    log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
-                    log_dict.update(
-                        {
-                            "lr": self.scheduler.get_lr(),
-                            "epoch": self.epoch,
-                            "step": self.step,
-                        }
-                    )
-                    if (
-                        self.step % self.config["cmd"]["print_every"] == 0
-                        and distutils.is_master()
-                    ):
-                        log_str = [f"{k}: {v:.2e}" for k, v in log_dict.items()]
-                        logging.info(", ".join(log_str))
-                        self.metrics = {}
-
-                    if self.logger is not None:
-                        self.logger.log(
-                            log_dict,
-                            step=self.step,
-                            split="train",
-                        )
-
-                    if checkpoint_every != -1 and self.step % checkpoint_every == 0:
-                        self.save(checkpoint_file="checkpoint.pt", training_state=True)
-
-                    # Evaluate on val set every `eval_every` iterations.
-                    if self.step % eval_every == 0:
-                        if self.val_loader is not None:
-                            val_metrics = self.validate(
-                                split="val",
-                                disable_tqdm=disable_eval_tqdm,
-                            )
-                            self.update_best(
-                                primary_metric,
-                                val_metrics,
-                                disable_eval_tqdm=disable_eval_tqdm,
-                            )
-
-                        if self.config["task"].get("eval_relaxations", False):
-                            if "relax_dataset" not in self.config["task"]:
-                                logging.warning(
-                                    "Cannot evaluate relaxations, relax_dataset not specified"
-                                )
-                            else:
-                                self.run_relaxations()
-
-                    if self.scheduler.scheduler_type == "ReduceLROnPlateau":
-                        if self.step % eval_every == 0:
-                            self.scheduler.step(
-                                metrics=val_metrics[primary_metric]["metric"],
-                            )
-                    else:
-                        self.scheduler.step()
-                    if i < total_profile_steps:
-                        p.step()
-
-                torch.cuda.empty_cache()
-
-                if checkpoint_every == -1:
+                if checkpoint_every != -1 and self.step % checkpoint_every == 0:
                     self.save(checkpoint_file="checkpoint.pt", training_state=True)
 
+                # Evaluate on val set every `eval_every` iterations.
+                if self.step % eval_every == 0:
+                    if self.val_loader is not None:
+                        val_metrics = self.validate(
+                            split="val",
+                            disable_tqdm=disable_eval_tqdm,
+                        )
+                        self.update_best(
+                            primary_metric,
+                            val_metrics,
+                            disable_eval_tqdm=disable_eval_tqdm,
+                        )
+
+                    if self.config["task"].get("eval_relaxations", False):
+                        if "relax_dataset" not in self.config["task"]:
+                            logging.warning(
+                                "Cannot evaluate relaxations, relax_dataset not specified"
+                            )
+                        else:
+                            self.run_relaxations()
+
+                if self.scheduler.scheduler_type == "ReduceLROnPlateau":
+                    if self.step % eval_every == 0:
+                        self.scheduler.step(
+                            metrics=val_metrics[primary_metric]["metric"],
+                        )
+                else:
+                    self.scheduler.step()
+
+            torch.cuda.empty_cache()
+
+            if checkpoint_every == -1:
+                self.save(checkpoint_file="checkpoint.pt", training_state=True)
 
         self.train_dataset.close_db()
         if self.config.get("val_dataset", False):
