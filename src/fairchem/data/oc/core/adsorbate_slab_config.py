@@ -16,7 +16,7 @@ from scipy.optimize import fsolve
 
 if TYPE_CHECKING:
     import ase
-    from fairchem.data.oc.core import Adsorbate, Slab
+    from fairchem.data.oc.core.slab import Adsorbate, Slab
 
 # warnings.filterwarnings("ignore", "The iteration is not making good progress")
 

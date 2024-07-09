@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 from ase import Atoms
 from ase.data import covalent_radii
-from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig, Slab
+from fairchem.data.oc.core.adsorbate_slab_config import AdsorbateSlabConfig
+
+if TYPE_CHECKING:
+    from fairchem.data.oc.core.adsorbate import Adsorbate
+    from fairchem.data.oc.core.slab import Slab
 
 
 class MultipleAdsorbateSlabConfig(AdsorbateSlabConfig):
