@@ -294,7 +294,7 @@ class BaseTrainer(ABC):
                 self.train_dataset,
                 self.train_sampler,
             )
-        else:
+        elif self.config.get("dataset", None):
             self.config["dataset"] = {}
 
         if self.config.get("val_dataset", None):
@@ -372,7 +372,7 @@ class BaseTrainer(ABC):
         # Normalizer for the dataset.
 
         # Is it troublesome that we assume any normalizer info is in train? What if there is no
-        # training dataset? What happens if we just specify a test set?
+        # training dataset? What happens if we just specify a test
         normalizer = self.config["dataset"].get("transforms", {}).get("normalizer", {})
         self.normalizers = {}
         if normalizer:
