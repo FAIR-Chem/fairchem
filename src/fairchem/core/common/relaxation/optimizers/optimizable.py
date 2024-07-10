@@ -106,6 +106,7 @@ class OptimizableBatch(Optimizable):
         mask_converged: bool = True,
         cumulative_mask: bool = True,
         numpy: bool = False,
+        masked_eps: float = 1e-8,
     ):
         """Initialize Optimizable Batch
 
@@ -118,6 +119,8 @@ class OptimizableBatch(Optimizable):
                 above threshold, ie. once masked always masked. Note if this is used make sure to check convergence with
                 the same fmax always
             numpy: whether to cast results to numpy arrays
+            masked_eps: masking systems that are converged when using ASE optimizers results in divisions by zero
+                from zero differences in masked positions at future steps, we add a small number to prevent this.
         """
         self.batch = batch.to(trainer.device)
         self.trainer = trainer
@@ -129,6 +132,7 @@ class OptimizableBatch(Optimizable):
         self._cumulative_mask = cumulative_mask
         self.torch_results = {}
         self.results = {}
+        self._eps = masked_eps
 
         self._otf_graph = trainer._unwrapped_model.otf_graph
         if not self._otf_graph and "edge_index" not in self.batch:
@@ -189,15 +193,19 @@ class OptimizableBatch(Optimizable):
             self.results = self.torch_results
 
         if name not in self.results:
-            raise PropertyNotImplementedError(
-                f"{name} not present in this " "calculation"
-            )
+            raise PropertyNotImplementedError(f"{name} not present in this calculation")
 
         return self.results[name] if no_numpy is False else self.torch_results[name]
 
     def get_positions(self) -> torch.Tensor | NDArray:
         """Get the batch positions"""
-        return self.batch.pos.cpu().numpy() if self.numpy else self.batch.pos.clone()
+        pos = self.batch.pos.clone()
+        if self.numpy:
+            if self.mask_converged:
+                pos[~self.update_mask[self.batch.batch]] = self._eps
+            pos = pos.cpu().numpy()
+
+        return pos
 
     def set_positions(self, positions: torch.Tensor | NDArray) -> None:
         "Set the batch positions"
@@ -338,6 +346,7 @@ class OptimizableUnitCellBatch(OptimizableBatch):
         hydrostatic_strain: bool = False,
         constant_volume: bool = False,
         scalar_pressure: float = 0.0,
+        masked_eps: float = 1e-8,
     ):
         """Create a filter that returns the forces and unit cell stresses together, for simultaneous optimization.
 
@@ -375,6 +384,8 @@ class OptimizableUnitCellBatch(OptimizableBatch):
             scalar_pressure:
                 Applied pressure to use for enthalpy pV term. As above, this
                 breaks energy/force consistency.
+            masked_eps: masking systems that are converged when using ASE optimizers results in divisions by zero
+                from zero differences in masked positions at future steps, we add a small number to prevent this.
         """
         super().__init__(
             batch=batch,
@@ -383,6 +394,7 @@ class OptimizableUnitCellBatch(OptimizableBatch):
             numpy=numpy,
             mask_converged=mask_converged,
             cumulative_mask=cumulative_mask,
+            masked_eps=masked_eps,
         )
 
         self.orig_cells = self.get_cells().clone()
