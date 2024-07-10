@@ -1,0 +1,81 @@
+trainer: equiformerv2_forces
+
+dataset:
+  train:
+    format: lmdb
+    src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/train/all
+    key_mapping:
+      y: energy
+      force: forces
+    transforms:
+      normalizer:
+        energy:
+          mean: -0.7554450631141663
+          stdev: 2.887317180633545
+        forces:
+          mean: 0
+          stdev: 2.887317180633545
+  val:
+    src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id
+
+logger: wandb
+
+outputs:
+  energy:
+    shape: 1
+    level: system
+  forces:
+    irrep_dim: 1
+    level: atom
+    train_on_free_atoms: True
+    eval_on_free_atoms: True
+
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 4
+  - forces:
+      fn: l2mae
+      coefficient: 100
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+    forces:
+      - mae
+      - cosine_similarity
+      - magnitude_error
+    misc:
+      - energy_forces_within_threshold
+  primary_metric: forces_mae
+
+hide_eval_progressbar: False
+
+
+model:
+  name: debug
+  otf_graph:                True
+
+optim:
+  batch_size:                   8         # 6
+  eval_batch_size:              12        # 6
+  load_balancing: atoms
+  num_workers: 8
+  lr_initial:                   0.0004    # [0.0002, 0.0004], eSCN uses 0.0008 for batch size 96
+
+  optimizer: AdamW
+  optimizer_params:
+    weight_decay: 0.001
+  scheduler: LambdaLR
+  scheduler_params:
+    lambda_type: cosine
+    warmup_factor: 0.2
+    warmup_epochs: 0.01
+    lr_min_factor: 0.01         #
+
+  max_epochs: 3
+  clip_grad_norm: 100
+  ema_decay: 0.999
+
+  eval_every: 10000
