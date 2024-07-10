@@ -10,7 +10,7 @@ jobs:
     uses: ./.github/workflows/build_docs.yml
 
   deploy:
-    needs: build-docs
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
