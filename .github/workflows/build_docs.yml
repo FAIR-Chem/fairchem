@@ -9,7 +9,7 @@ on:
     types: [submitted, edited]
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -42,5 +42,5 @@ jobs:
     - name: Upload documentation artifact
       uses: actions/upload-artifact@v4
       with:
-        name: docs
-        path: docs/*
+        name: docs-html
+        path: docs/docs/_build/html/*
