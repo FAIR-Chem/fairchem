@@ -6,7 +6,7 @@ on:
   push:
 
 jobs:
-  build-docs:
+  build:
     uses: ./.github/workflows/build_docs.yml
 
   deploy:
