@@ -87,19 +87,20 @@ def create_normalizer(
         Normalizer
     """
     # path takes priority if given
-    extension = Path(file).suffix
-    if extension == ".pt":
-        # try to load a pt file
-        state_dict = torch.load(file)
-    elif extension == ".npz":
-        # try to load an NPZ file
-        values = np.load(file)
-        mean = values.get("mean")
-        std = values.get("std")
-    else:
-        raise RuntimeError(
-            f"Normalizer file with extension '{extension}' is not supported."
-        )
+    if file is not None:
+        extension = Path(file).suffix
+        if extension == ".pt":
+            # try to load a pt file
+            state_dict = torch.load(file)
+        elif extension == ".npz":
+            # try to load an NPZ file
+            values = np.load(file)
+            mean = values.get("mean")
+            std = values.get("std")
+        else:
+            raise RuntimeError(
+                f"Normalizer file with extension '{extension}' is not supported."
+            )
 
     if state_dict is not None:
         normalizer = Normalizer()
