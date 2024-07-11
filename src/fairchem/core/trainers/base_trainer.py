@@ -162,6 +162,7 @@ class BaseTrainer(ABC):
             self.config["dataset"] = dataset.get("train", None)
             self.config["val_dataset"] = dataset.get("val", None)
             self.config["test_dataset"] = dataset.get("test", None)
+            self.config["relax_dataset"] = dataset.get("relax", None)
         else:
             self.config["dataset"] = dataset
 
@@ -350,12 +351,16 @@ class BaseTrainer(ABC):
         else:
             self.config["test_dataset"] = {}
 
-        # load relaxation dataset
-        if self.config["task"].get("relax_dataset", None):
-            dataset_format = self.config["task"]["relax_dataset"].get("format", "lmdb")
-            self.relax_dataset = registry.get_dataset_class(dataset_format)(
-                self.config["task"]["relax_dataset"]
-            )
+        if self.config.get("relax_dataset", None):
+            if self.config["relax_dataset"].get("use_train_settings", True):
+                relax_config = self.config["dataset"].copy()
+                relax_config.update(self.config["relax_dataset"])
+            else:
+                relax_config = self.config["relax_dataset"]
+
+            self.relax_dataset = registry.get_dataset_class(
+                relax_config.get("format", "lmdb")
+            )(relax_config)
             self.relax_sampler = self.get_sampler(
                 self.relax_dataset,
                 self.config["optim"].get(
@@ -366,7 +371,7 @@ class BaseTrainer(ABC):
             self.relax_loader = self.get_dataloader(
                 self.relax_dataset,
                 self.relax_sampler,
-            )
+                )
 
     def load_task(self):
         # Normalizer for the dataset.
