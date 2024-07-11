@@ -151,12 +151,15 @@ class LBFGS:
         )
 
     def step(self, iteration: int) -> None:
-        forces = self.optimizable.get_forces(apply_constraint=True)
-        r = self.optimizable.get_positions().to(dtype=torch.float64)
+        # cast forces and positions to float64 otherwise the algorithm is prone to overflow
+        forces = self.optimizable.get_forces(apply_constraint=True).to(
+            dtype=torch.float64
+        )
+        pos = self.optimizable.get_positions().to(dtype=torch.float64)
 
         # Update s, y, rho
         if iteration > 0:
-            s0 = r - self.r0
+            s0 = pos - self.r0
             self.s.append(s0)
 
             y0 = -(forces - self.f0)
@@ -183,12 +186,16 @@ class LBFGS:
         # descent direction
         p = -z
         dr = self.determine_step(p)
+
+        # if dr[self.optimizable.update_mask[self.optimizable.batch_indices]].isnan().any():
+        #     breakpoint()
+
         if torch.abs(dr).max() < 1e-7:
             # Same configuration again (maybe a restart):
             return
 
-        self.optimizable.set_positions(r + dr)
-        self.r0 = r
+        self.optimizable.set_positions(pos + dr)
+        self.r0 = pos
         self.f0 = forces
 
     def write(self) -> None:

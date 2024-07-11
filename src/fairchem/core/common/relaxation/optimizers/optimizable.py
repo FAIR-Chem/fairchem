@@ -208,7 +208,7 @@ class OptimizableBatch(Optimizable):
         return pos
 
     def set_positions(self, positions: torch.Tensor | NDArray) -> None:
-        "Set the batch positions"
+        """Set the atom positions in the batch."""
         if isinstance(positions, np.ndarray):
             positions = torch.tensor(positions)
 
