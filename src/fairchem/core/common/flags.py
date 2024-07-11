@@ -92,19 +92,19 @@ class Flags:
         )
         self.parser.add_argument(
             "--slurm-partition",
-            default="learn",
+            default=None,
             type=str,
             help="Name of partition",
         )
         self.parser.add_argument(
             "--slurm-account",
-            default="ocp",
+            default=None,
             type=str,
             help="Name of account",
         )
         self.parser.add_argument(
             "--slurm-qos",
-            default="ocp_high",
+            default=None,
             type=str,
             help="Name of qos",
         )
