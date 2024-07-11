@@ -42,10 +42,10 @@ from fairchem.core.modules.element_references import (
     create_element_references,
     fit_linear_references,
 )
-from fairchem.core.modules.normalizer import create_normalizer, fit_normalizers
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
+from fairchem.core.modules.normalizer import create_normalizer, fit_normalizers
 from fairchem.core.modules.scaling.compat import load_scales_compat
 from fairchem.core.modules.scaling.util import ensure_fitted
 from fairchem.core.modules.scheduler import LRScheduler
