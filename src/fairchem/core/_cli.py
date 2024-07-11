@@ -81,6 +81,8 @@ def main():
             tasks_per_node=(args.num_gpus if args.distributed else 1),
             nodes=args.num_nodes,
             slurm_additional_parameters=slurm_add_params,
+            slurm_qos=args.slurm_qos,
+            slurm_account=args.slurm_account,
         )
         for config in configs:
             config["slurm"] = copy.deepcopy(executor.parameters)
