@@ -26,7 +26,23 @@ if TYPE_CHECKING:
 
 
 class LinearReference(nn.Module):
-    """Compute a linear reference for target scalar properties"""
+    """Represents an elemental linear references model for a target property.
+
+    In an elemental reference associates a value with each chemical element present in the dataset.
+    Elemental references define a chemical composition model, i.e. a rough approximation of a target
+    property (energy) using elemental references is done by summing the elemental references multiplied
+    by the number of times the corresponding element is present.
+
+    Elemental references energies can be taken as:
+     - the energy of a chemical species in its elemental state
+       (i.e. lowest energy polymorph of single element crystal structures for solids)
+     - fitting a linear model to a dataset, where the features are the counts of each element in each data point.
+       see the function fit_linear references below for details
+
+    Training GNNs to predict the difference between DFT and the predictions of a chemical composition
+    model represent a useful normalization scheme that can improve model accuracy. See for example the
+    "Alternative reference scheme" section of the OC22 manuscript: https://arxiv.org/pdf/2206.08917
+    """
 
     def __init__(
         self,
