@@ -77,7 +77,3 @@ optim:
   max_epochs: 80
   ema_decay: 0.999
   clip_grad_norm: 10
-  loss_energy: mae
-  loss_force: atomwisel2
-  force_coefficient: 1
-  energy_coefficient: 1

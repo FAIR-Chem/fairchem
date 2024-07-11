@@ -47,9 +47,5 @@ optim:
   factor: 0.8
   patience: 3
   max_epochs: 80
-  force_coefficient: 100
-  energy_coefficient: 1
   ema_decay: 0.999
   clip_grad_norm: 10
-  loss_energy: mae
-  loss_force: l2mae

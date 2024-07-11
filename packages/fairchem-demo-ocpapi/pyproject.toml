@@ -19,7 +19,7 @@ classifiers = [
 dependencies = [
     "dataclasses-json == 0.6.0",
     "inquirer == 3.1.3",
-    "requests == 2.31.0",
+    "requests == 2.32.0",
     "responses == 0.23.2",
     "tenacity == 8.2.3",
     "tqdm == 4.66.1",
@@ -32,7 +32,7 @@ documentation = "https://fair-chem.github.io/"
 
 [project.optional-dependencies]
 dev = [
-    "ase == 3.22.1",
+    "ase",
     "readchar == 4.0.5",
 ]
 

@@ -67,6 +67,32 @@ def invalid_dataset():
     return _Dataset(DATA)
 
 
+def test_lowercase(invalid_dataset) -> None:
+    sampler = BalancedBatchSampler(
+        dataset=invalid_dataset,
+        batch_size=1,
+        rank=0,
+        num_replicas=2,
+        device=None,
+        mode="ATOMS",
+        throw_on_error=False,
+        seed=0,
+    )
+    assert sampler.mode == "atoms"
+
+    sampler = BalancedBatchSampler(
+        dataset=invalid_dataset,
+        batch_size=1,
+        rank=0,
+        num_replicas=2,
+        device=None,
+        mode="NEIGHBORS",
+        throw_on_error=False,
+        seed=0,
+    )
+    assert sampler.mode == "neighbors"
+
+
 def test_invalid_mode(invalid_dataset) -> None:
     with pytest.raises(
         ValueError,
@@ -80,6 +106,7 @@ def test_invalid_mode(invalid_dataset) -> None:
             device=None,
             mode="natoms",
             on_error="raise",
+            seed=0,
         )
 
     with pytest.raises(
@@ -94,6 +121,7 @@ def test_invalid_mode(invalid_dataset) -> None:
             device=None,
             mode="neighbors",
             on_error="raise",
+            seed=0,
         )
 
 
@@ -107,11 +135,57 @@ def test_invalid_dataset(invalid_dataset) -> None:
             device=None,
             mode="atoms",
             on_error="raise",
+            seed=0,
+        )
+    with pytest.raises(
+        RuntimeError,
+        match="does not have a metadata_path attribute. Batches will not be balanced, which can incur significant overhead!",
+    ):
+        BalancedBatchSampler(
+            dataset=invalid_dataset,
+            batch_size=1,
+            rank=0,
+            num_replicas=2,
+            device=None,
+            mode="atoms",
+            on_error="raise",
+            seed=0,
         )
         _ = sampler._get_natoms(list(range(len(SIZE_ATOMS))))
 
 
-def test_valid_dataset(valid_dataset) -> None:
+def test_invalid_path_dataset(invalid_path_dataset) -> None:
+    with pytest.raises(
+        RuntimeError,
+        match="Metadata file .+ does not exist. BalancedBatchSampler has to load the data to  determine batch sizes, which incurs significant overhead!",
+    ):
+        BalancedBatchSampler(
+            dataset=invalid_path_dataset,
+            batch_size=1,
+            rank=0,
+            num_replicas=2,
+            device=None,
+            mode="atoms",
+            on_error="raise",
+            seed=0,
+        )
+    with pytest.raises(
+        RuntimeError,
+        match="Metadata file .+ does not exist. Batches will not be balanced, which can incur significant overhead!",
+    ):
+        BalancedBatchSampler(
+            dataset=invalid_path_dataset,
+            batch_size=1,
+            rank=0,
+            num_replicas=2,
+            device=None,
+            mode="atoms",
+            on_error="raise",
+            seed=0,
+        )
+
+
+def test_valid_dataset(valid_path_dataset) -> None:
     sampler = BalancedBatchSampler(
         dataset=valid_dataset,
         batch_size=1,
@@ -120,6 +194,7 @@ def test_valid_dataset(valid_dataset) -> None:
         device=None,
         mode="atoms",
         on_error="raise",
+        seed=0,
     )
     assert (
         sampler._get_natoms(list(range(len(SIZE_ATOMS)))) == np.array(SIZE_ATOMS)
@@ -135,6 +210,7 @@ def test_disabled(valid_dataset) -> None:
         device=None,
         mode=False,
         on_error="raise",
+        seed=0,
     )
     assert sampler.disabled or not sampler._dist_enabled()
 
@@ -148,6 +224,7 @@ def test_single_node(valid_dataset) -> None:
         device=None,
         mode="atoms",
         on_error="raise",
+        seed=0,
     )
     assert sampler.disabled or not sampler._dist_enabled()
 

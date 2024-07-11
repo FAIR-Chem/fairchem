@@ -1,6 +1,14 @@
 includes:
 - configs/s2ef/2M/base.yml
 
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 1
+  - forces:
+      fn: l2mae
+      coefficient: 100
+
 model:
   name: gemnet_t
   num_spherical: 7
@@ -47,9 +55,5 @@ optim:
   factor: 0.8
   patience: 3
   max_epochs: 80
-  force_coefficient: 100
-  energy_coefficient: 1
   ema_decay: 0.999
   clip_grad_norm: 10
-  loss_energy: mae
-  loss_force: l2mae
