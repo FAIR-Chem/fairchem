@@ -67,12 +67,8 @@ optim:
   optimizer: AdamW
   optimizer_params:
     weight_decay: 0.3
-  scheduler: LambdaLR
-  scheduler_params:
-    lambda_type: cosine
-    warmup_factor: 0.2
-    warmup_epochs: 0.01
-    lr_min_factor: 0.01
+  scheduler: CosineAnnealingLR
+  T_max: 1600000
 
   max_epochs: 3
   clip_grad_norm: 100
