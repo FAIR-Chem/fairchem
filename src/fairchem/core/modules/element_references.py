@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from functools import partial
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -20,8 +21,6 @@ from tqdm import tqdm
 from fairchem.core.datasets import data_list_collater
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from torch_geometric.data import Batch
 
 
@@ -110,19 +109,24 @@ def create_element_references(
 
     # path takes priority if given
     if file is not None:
-        try:
+        extension = Path(file).suffix
+        if extension == ".pt":
             # try to load a pt file
             state_dict = torch.load(file)
-        except RuntimeError:  # try to read an npz file
+        elif extension == ".npz":
             state_dict = {}
             with np.load(file) as values:
-                # legacy linref files:
+                # legacy linref files
                 if "coeff" in values:
                     state_dict["element_references"] = torch.tensor(values["coeff"])
                 else:
                     state_dict["element_references"] = torch.tensor(
                         values["element_references"]
                     )
+        else:
+            raise RuntimeError(
+                f"Element references file with extension '{extension}' is not supported."
+            )
 
     if "element_references" not in state_dict:
         raise RuntimeError("Unable to load linear element references!")

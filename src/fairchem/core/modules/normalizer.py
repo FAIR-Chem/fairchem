@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
+from pathlib import Path
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
@@ -22,7 +23,6 @@ from fairchem.core.datasets import data_list_collater
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
-    from pathlib import Path
 
 
 class Normalizer(nn.Module):
@@ -87,15 +87,19 @@ def create_normalizer(
         Normalizer
     """
     # path takes priority if given
-    if file is not None:
-        try:
-            # try to load a Normalizer pt file
-            state_dict = torch.load(file)
-        except RuntimeError:  # try to read an npz file
-            # try to load an NPZ file
-            values = np.load(file)
-            mean = values.get("mean")
-            std = values.get("std")
+    extension = Path(file).suffix
+    if extension == ".pt":
+        # try to load a pt file
+        state_dict = torch.load(file)
+    elif extension == ".npz":
+        # try to load an NPZ file
+        values = np.load(file)
+        mean = values.get("mean")
+        std = values.get("std")
+    else:
+        raise RuntimeError(
+            f"Normalizer file with extension '{extension}' is not supported."
+        )
 
     if state_dict is not None:
         normalizer = Normalizer()
