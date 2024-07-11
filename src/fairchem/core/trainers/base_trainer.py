@@ -367,6 +367,16 @@ class BaseTrainer(ABC):
         elementrefs = (
             self.config["dataset"].get("transforms", {}).get("element_references", {})
         )
+
+        # make sure that element-refs are not specified both as fit and file
+        fit_targets = elementrefs["fit"]["targets"] if "fit" in elementrefs else []
+        duplicates = list(filter(lambda x: x in fit_targets, elementrefs))
+        if len(duplicates) > 0:
+            raise ValueError(
+                f"Element references for the following targets: {duplicates} have been specified to be fit and read"
+                f"from file. Only one can be specified."
+            )
+
         self.elementrefs = {}
         for target in elementrefs:
             if target == "fit" and not elementrefs["fit"].get("fitted", False):
@@ -404,7 +414,6 @@ class BaseTrainer(ABC):
                             )
 
                 distutils.broadcast_object_list(otf_elementrefs, src=0)
-                # make sure all of the element reference modules are on the same device
                 self.elementrefs.update(otf_elementrefs[0])
                 # set config so that references are not refit
                 self.config["dataset"]["transforms"]["element_references"]["fit"][
@@ -418,6 +427,34 @@ class BaseTrainer(ABC):
         # load or fit normalizers for the dataset.
         normalizers = self.config["dataset"].get("transforms", {}).get("normalizer", {})
         self.normalizers = {}
+
+        # make sure that normalizers are not specified both as fit and files
+        fit_targets = normalizers["fit"]["targets"] if "fit" in normalizers else []
+        if "file" in normalizers:
+            norms = torch.load(normalizers["file"])
+            self.normalizers.update(norms)
+            logging.info(
+                f"Loaded normalizers for the following targets: {list(norms.keys())}"
+            )
+
+        duplicates = list(
+            filter(
+                lambda x: x in fit_targets,
+                list(normalizers) + list(self.normalizers.keys()),
+            )
+        )
+        if len(duplicates) > 0:
+            raise ValueError(
+                f"Normalization values for the following targets {duplicates} have been specified to be fit read from"
+                f" file. Only one can be specified."
+            )
+        duplicates = list(filter(lambda x: x in self.normalizers.keys(), normalizers))
+        if len(duplicates) > 0:
+            raise ValueError(
+                f"Duplicate normalization values for the following targets {duplicates} where specified in the file "
+                f"{normalizers['file']} and explicitly set. Only one can be specified."
+            )
+
         for target in normalizers:
             if target == "fit" and not normalizers["fit"].get("fitted", False):
                 otf_normalizers = [
@@ -455,13 +492,7 @@ class BaseTrainer(ABC):
                 self.config["dataset"]["transforms"]["normalizer"]["fit"]["fitted"] = (
                     True
                 )
-            elif target == "file":
-                norms = torch.load(normalizers["file"])
-                self.normalizers.update(norms)
-                logging.info(
-                    f"Loaded normalizers for the following targets: {list(norms.keys())}"
-                )
-            else:
+            elif target != "file":
                 self.normalizers[target] = create_normalizer(
                     file=normalizers[target].get("file"),
                     mean=normalizers[target].get("mean"),
