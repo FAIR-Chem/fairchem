@@ -93,7 +93,7 @@ class LBFGS:
 
         iteration = 0
         max_forces = self.optimizable.get_max_forces(apply_constraint=True)
-        while iteration < steps and not self.optimizable.converged(
+        while iteration < steps - 1 and not self.optimizable.converged(
             forces=None, fmax=self.fmax, max_forces=max_forces
         ):
             logging.info(
