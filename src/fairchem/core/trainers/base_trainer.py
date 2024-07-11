@@ -407,7 +407,7 @@ class BaseTrainer(ABC):
                             path = save_checkpoint(
                                 references.state_dict(),
                                 self.config["cmd"]["checkpoint_dir"],
-                                f"{target}_linref.pt",
+                                f"{lr_target}_linref.pt",
                             )
                             logging.info(
                                 f"{lr_target} linear references have been saved to: {path}"

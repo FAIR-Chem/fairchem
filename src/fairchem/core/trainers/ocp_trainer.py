@@ -237,8 +237,8 @@ class OCPTrainer(BaseTrainer):
         if self.config.get("test_dataset", False):
             self.test_dataset.close_db()
 
-    def _raw_output(self, target_key: str, prediction: torch.Tensor, batch: Batch):
-        """Convert model output from a batch in to raw prediction by denormalizing and adding references"""
+    def _denorm_preds(self, target_key: str, prediction: torch.Tensor, batch: Batch):
+        """Convert model output from a batch into raw prediction by denormalizing and adding references"""
         # denorm the outputs
         if target_key in self.normalizers:
             prediction = self.normalizers[target_key](prediction)
@@ -275,7 +275,7 @@ class OCPTrainer(BaseTrainer):
 
                 for subtarget_key in self.output_targets[target_key]["decomposition"]:
                     irreps = self.output_targets[subtarget_key]["irrep_dim"]
-                    _pred = self._raw_output(subtarget_key, out[subtarget_key], batch)
+                    _pred = self._denorm_preds(subtarget_key, out[subtarget_key], batch)
 
                     ## Fill in the corresponding irreps prediction
                     ## Reshape irrep prediction to (batch_size, irrep_dim)
@@ -396,7 +396,7 @@ class OCPTrainer(BaseTrainer):
             else:
                 target = target.view(batch_size, -1)
 
-            out[target_name] = self._raw_output(target_name, out[target_name], batch)
+            out[target_name] = self._denorm_preds(target_name, out[target_name], batch)
             targets[target_name] = target
 
         targets["natoms"] = natoms
@@ -450,7 +450,7 @@ class OCPTrainer(BaseTrainer):
                 out = self._forward(batch)
 
             for target_key in self.config["outputs"]:
-                pred = self._raw_output(target_key, out[target_key], batch)
+                pred = self._denorm_preds(target_key, out[target_key], batch)
 
                 if per_image:
                     ### Save outputs in desired precision, default float16
