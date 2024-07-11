@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
+from typing import Any
 
 import torch
 import wandb
@@ -26,7 +27,7 @@ class Logger(ABC):
         self.config = config
 
     @abstractmethod
-    def watch(self, model):
+    def watch(self, model, log_freq: int = 1000):
         """
         Monitor parameters and gradients.
         """
@@ -49,6 +50,10 @@ class Logger(ABC):
 
     @abstractmethod
     def mark_preempting(self) -> None:
+        pass
+
+    @abstractmethod
+    def log_summary(self, summary_dict: dict[str, Any]) -> None:
         pass
 
 
@@ -77,8 +82,8 @@ class WandBLogger(Logger):
             resume="allow",
         )
 
-    def watch(self, model) -> None:
-        wandb.watch(model)
+    def watch(self, model, log_freq: int = 1000) -> None:
+        wandb.watch(model, log_freq = log_freq)
 
     def log(self, update_dict, step: int, split: str = "") -> None:
         update_dict = super().log(update_dict, step, split)
@@ -88,6 +93,10 @@ class WandBLogger(Logger):
         assert isinstance(plots, list)
         plots = [wandb.Image(x, caption=caption) for x in plots]
         wandb.log({"data": plots})
+
+    def log_summary(self, summary_dict: dict[str, Any]):
+        for k, v in summary_dict.items():
+            wandb.run.summary[k] = v
 
     def mark_preempting(self) -> None:
         wandb.mark_preempting()
@@ -100,7 +109,7 @@ class TensorboardLogger(Logger):
         self.writer = SummaryWriter(self.config["cmd"]["logs_dir"])
 
     # TODO: add a model hook for watching gradients.
-    def watch(self, model) -> bool:
+    def watch(self, model, log_freq: int = 1000) -> bool:
         logging.warning("Model gradient logging to tensorboard not yet supported.")
         return False
 
@@ -114,7 +123,10 @@ class TensorboardLogger(Logger):
                 self.writer.add_scalar(key, update_dict[key], step)
 
     def mark_preempting(self) -> None:
-        pass
+        logging.warning("mark_preempting for Tensorboard not supported")
 
     def log_plots(self, plots) -> None:
-        pass
+        logging.warning("log_plots for Tensorboard not supported")
+
+    def log_summary(self, summary_dict: dict[str, Any]) -> None:
+        logging.warning("log_summary for Tensorboard not supported")
