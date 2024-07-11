@@ -190,7 +190,15 @@ def fit_linear_references(
         max_num_elements,
     )
 
-    # This only works with scalar properties
+    # This only works with scalar properties (a float, a 0-D tensor, or tensor with a single element
+    dp = dataset[0]
+    assert all(
+        isinstance(dp[target], float)
+        or len(dp[target].shape) == 0
+        or len(dp[target].squeeze) == 1
+        for target in targets
+    ), "element references can only be used for scalar targets"
+
     target_vectors = {
         target: torch.zeros(num_batches * batch_size) for target in targets
     }
