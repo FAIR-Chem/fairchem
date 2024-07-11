@@ -74,6 +74,7 @@ class BaseTrainer(ABC):
         name: str = "ocp",
         slurm=None,
         noddp: bool = False,
+        gp_gpus: int | None = None,
     ) -> None:
         if slurm is None:
             slurm = {}
@@ -131,6 +132,7 @@ class BaseTrainer(ABC):
             },
             "slurm": slurm,
             "noddp": noddp,
+            "gp_gpus": gp_gpus,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp and not self.cpu else None
@@ -293,49 +295,49 @@ class BaseTrainer(ABC):
                 self.train_sampler,
             )
 
-            if self.config.get("val_dataset", None):
-                if self.config["val_dataset"].get("use_train_settings", True):
-                    val_config = self.config["dataset"].copy()
-                    val_config.update(self.config["val_dataset"])
-                else:
-                    val_config = self.config["val_dataset"]
+        if self.config.get("val_dataset", None):
+            if self.config["val_dataset"].get("use_train_settings", True):
+                val_config = self.config["dataset"].copy()
+                val_config.update(self.config["val_dataset"])
+            else:
+                val_config = self.config["val_dataset"]
 
-                self.val_dataset = registry.get_dataset_class(
-                    val_config.get("format", "lmdb")
-                )(val_config)
-                self.val_sampler = self.get_sampler(
-                    self.val_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.val_loader = self.get_dataloader(
-                    self.val_dataset,
-                    self.val_sampler,
-                )
+            self.val_dataset = registry.get_dataset_class(
+                val_config.get("format", "lmdb")
+            )(val_config)
+            self.val_sampler = self.get_sampler(
+                self.val_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.val_loader = self.get_dataloader(
+                self.val_dataset,
+                self.val_sampler,
+            )
 
-            if self.config.get("test_dataset", None):
-                if self.config["test_dataset"].get("use_train_settings", True):
-                    test_config = self.config["dataset"].copy()
-                    test_config.update(self.config["test_dataset"])
-                else:
-                    test_config = self.config["test_dataset"]
+        if self.config.get("test_dataset", None):
+            if self.config["test_dataset"].get("use_train_settings", True):
+                test_config = self.config["dataset"].copy()
+                test_config.update(self.config["test_dataset"])
+            else:
+                test_config = self.config["test_dataset"]
 
-                self.test_dataset = registry.get_dataset_class(
-                    test_config.get("format", "lmdb")
-                )(test_config)
-                self.test_sampler = self.get_sampler(
-                    self.test_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.test_loader = self.get_dataloader(
-                    self.test_dataset,
-                    self.test_sampler,
-                )
+            self.test_dataset = registry.get_dataset_class(
+                test_config.get("format", "lmdb")
+            )(test_config)
+            self.test_sampler = self.get_sampler(
+                self.test_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.test_loader = self.get_dataloader(
+                self.test_dataset,
+                self.test_sampler,
+            )
 
         # load relaxation dataset
         if "relax_dataset" in self.config["task"]:
@@ -430,7 +432,11 @@ class BaseTrainer(ABC):
             )
 
         if self.logger is not None:
-            self.logger.watch(self.model)
+            # only "watch" model if user specify watch: True because logging gradients
+            # spews too much data into W&B and makes the UI slow to respond
+            if "watch" in self.config["logger"]:
+                self.logger.watch(self.model, log_freq = int(self.config["logger"]["watch"]))
+            self.logger.log_summary({"num_params": self.model.num_params})
 
         if distutils.initialized() and not self.config["noddp"]:
             self.model = DistributedDataParallel(self.model, device_ids=[self.device])
