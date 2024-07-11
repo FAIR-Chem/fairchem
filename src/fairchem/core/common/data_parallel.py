@@ -107,13 +107,15 @@ class BalancedBatchSampler(BatchSampler):
         if mode is False:
             logging.warning(f"Disabled BalancedBatchSampler because {mode=}.")
             self.disabled = True
-        elif mode != "atoms":
+        elif mode.lower() != "atoms":
             raise ValueError(
                 f"Only mode='atoms' or mode=True is supported, got {mode=}."
             )
         elif num_replicas == 1:
             logging.warning(f"Disabled BalancedBatchSampler because {num_replicas=}.")
             self.disabled = True
+
+        _ensure_supported(dataset)
 
         sampler = StatefulDistributedSampler(
             dataset,
