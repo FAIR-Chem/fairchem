@@ -204,9 +204,7 @@ def fit_linear_references(
         if i == num_batches:
             break
 
-        next_batch_size = (
-            batch.energy.shape[0] if i == len(data_loader) - 1 else batch_size
-        )
+        next_batch_size = len(batch) if i == len(data_loader) - 1 else batch_size
         for target in targets:
             target_vectors[target][
                 i * batch_size : i * batch_size + next_batch_size
