@@ -132,6 +132,7 @@ def fit_normalizers(
     num_batches: int | None = None,
     num_workers: int = 1,
     shuffle: bool = True,
+    seed: int = 0,
 ) -> dict[str, Normalizer]:
     """Estimate mean and std from data to create normalizers
 
@@ -143,6 +144,7 @@ def fit_normalizers(
         num_batches: number of batches to use in fit. If not given will use all batches
         num_workers: number of workers to use in data loader
         shuffle: whether to shuffle when loading the dataset
+        seed: random seed used to shuffle the sampler if shuffle=True
 
     Returns:
         dict of normalizer objects
@@ -154,6 +156,7 @@ def fit_normalizers(
         collate_fn=partial(data_list_collater, otf_graph=True),
         num_workers=num_workers,
         pin_memory=True,
+        seed=seed,
     )
 
     num_batches = num_batches if num_batches is not None else len(data_loader)

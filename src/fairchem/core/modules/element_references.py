@@ -143,6 +143,7 @@ def fit_linear_references(
     max_num_elements: int = 118,
     driver: str | None = None,
     shuffle: bool = True,
+    seed: int = 0,
 ) -> dict[str, LinearReference]:
     """Fit a set linear references for a list of targets using a given number of batches.
 
@@ -155,6 +156,7 @@ def fit_linear_references(
         max_num_elements: max number of elements in dataset. If not given will use an ambitious value of 118
         driver: backend used to solve linear system. See torch.linalg.lstsq docs.
         shuffle: whether to shuffle when loading the dataset
+        seed: random seed used to shuffle the sampler if shuffle=True
 
     Returns:
         dict of fitted LinearReference objects
@@ -166,6 +168,7 @@ def fit_linear_references(
         collate_fn=partial(data_list_collater, otf_graph=True),
         num_workers=num_workers,
         pin_memory=True,
+        seed=seed,
     )
 
     num_batches = num_batches if num_batches is not None else len(data_loader)

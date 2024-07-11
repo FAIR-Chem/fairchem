@@ -386,6 +386,7 @@ class BaseTrainer(ABC):
                                 "max_num_elements", 118
                             ),
                             driver=elementrefs["fit"].get("driver", None),
+                            seed=self.config["cmd"]["seed"],
                         )
                     ]
                     # save the linear references for possible subsequent use
@@ -432,6 +433,7 @@ class BaseTrainer(ABC):
                             ),
                             num_batches=normalizers["fit"].get("num_batches"),
                             num_workers=self.config["optim"]["num_workers"],
+                            seed=self.config["cmd"]["seed"],
                         )
                     ]
                     # save the normalization for possible subsequent use
@@ -545,7 +547,9 @@ class BaseTrainer(ABC):
             # only "watch" model if user specify watch: True because logging gradients
             # spews too much data into W&B and makes the UI slow to respond
             if "watch" in self.config["logger"]:
-                self.logger.watch(self.model, log_freq = int(self.config["logger"]["watch"]))
+                self.logger.watch(
+                    self.model, log_freq=int(self.config["logger"]["watch"])
+                )
             self.logger.log_summary({"num_params": self.model.num_params})
 
         if distutils.initialized() and not self.config["noddp"]:
