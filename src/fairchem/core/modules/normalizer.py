@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from pathlib import Path
 from functools import partial
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -157,7 +157,7 @@ def fit_normalizers(
         collate_fn=partial(data_list_collater, otf_graph=True),
         num_workers=num_workers,
         pin_memory=True,
-        seed=seed,
+        generator=torch.Generator.manual_seed(seed),
     )
 
     num_batches = num_batches if num_batches is not None else len(data_loader)

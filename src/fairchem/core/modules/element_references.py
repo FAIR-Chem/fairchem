@@ -168,7 +168,7 @@ def fit_linear_references(
         collate_fn=partial(data_list_collater, otf_graph=True),
         num_workers=num_workers,
         pin_memory=True,
-        seed=seed,
+        generator=torch.Generator.manual_seed(seed),
     )
 
     num_batches = num_batches if num_batches is not None else len(data_loader)
