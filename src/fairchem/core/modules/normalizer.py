@@ -74,6 +74,9 @@ def create_normalizer(
 ) -> Normalizer:
     """Build a target data normalizers with optional atom ref
 
+    Only one of file, state_dict, tensor, or (mean and std) will be used to create a normalizer.
+    If more than one set of inputs are given priority will be given following the order in which they are listed above.
+
     Args:
         file (str or Path): path to pt or npz file.
         state_dict (dict): a state dict for Normalizer module
@@ -88,6 +91,11 @@ def create_normalizer(
     """
     # path takes priority if given
     if file is not None:
+        if state_dict is not None or tensor is not None or mean is not None:
+            logging.warning(
+                "A file to a normalizer has been given. Normalization values will be read from it, and all other inputs"
+                " will be ignored."
+            )
         extension = Path(file).suffix
         if extension == ".pt":
             # try to load a pt file
@@ -101,14 +109,23 @@ def create_normalizer(
             raise RuntimeError(
                 f"Normalizer file with extension '{extension}' is not supported."
             )
+        return Normalizer(mean=mean, std=std)
 
     if state_dict is not None:
+        if tensor is not None or mean is not None:
+            logging.warning(
+                "The state_dict provided will be used to set normalization values. All other inputs will be ignored."
+            )
         normalizer = Normalizer()
         normalizer.load_state_dict(state_dict)
         return normalizer
 
     # if not then read target value tensor
-    if tensor is not None and mean is None and std is None:
+    if tensor is not None:
+        if mean is not None:
+            logging.warning(
+                "Normalization values will be computed from input tensor, all other inputs will be ignored."
+            )
         mean = torch.mean(tensor)
         std = torch.std(tensor)
     elif mean is not None and std is not None:
@@ -172,7 +189,8 @@ def fit_normalizers(
     target_vectors = defaultdict(list)
 
     logging.info(
-        f"Estimating mean and std for normalization using {num_batches * batch_size} samples in {num_batches} batches of size {batch_size}."
+        f"Estimating mean and std for normalization using {num_batches * batch_size} samples in {num_batches} batches "
+        f"of size {batch_size}."
     )
     for i, batch in tqdm(
         enumerate(data_loader), total=num_batches, desc="Estimating mean and std"

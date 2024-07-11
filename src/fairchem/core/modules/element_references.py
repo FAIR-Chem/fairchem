@@ -96,8 +96,6 @@ def create_element_references(
 ) -> LinearReference:
     """Create an element reference module.
 
-    Currently only linear references are supported.
-
     Args:
         type (str): type of reference (only linear implemented)
         file (str or Path): path to pt or npz file
@@ -106,6 +104,11 @@ def create_element_references(
     Returns:
         LinearReference
     """
+    if file is not None and state_dict is not None:
+        logging.warning(
+            "Both a file and a state_dict for element references was given."
+            "The references will be read from the file and the provided state_dict will be ignored."
+        )
 
     # path takes priority if given
     if file is not None:
