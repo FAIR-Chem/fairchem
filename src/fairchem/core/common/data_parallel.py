@@ -79,6 +79,7 @@ class BalancedBatchSampler(BatchSampler):
         num_replicas: int,
         rank: int,
         device: torch.device,
+        seed: int,
         mode: bool | Literal["atoms"] = "atoms",
         shuffle: bool = True,
         on_error: Literal["warn_and_balance", "warn_and_no_balance", "raise"] = "raise",
@@ -121,6 +122,7 @@ class BalancedBatchSampler(BatchSampler):
             shuffle=shuffle,
             drop_last=drop_last,
             batch_size=batch_size,
+            seed=seed,
         )
 
         super().__init__(sampler, batch_size=batch_size, drop_last=drop_last)

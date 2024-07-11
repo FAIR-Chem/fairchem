@@ -1,29 +1,45 @@
-trainer: forces
+trainer: ocp
 
 dataset:
   train:
+    format: oc22_lmdb
     src: data/oc22/s2ef/train
-    normalize_labels: False
+    key_mapping:
+      y: energy
+      force: forces
   val:
     src: data/oc22/s2ef/val_id
 
 logger: wandb
 
-task:
-  dataset: oc22_lmdb
-  description: "Regressing to energies and forces for DFT trajectories from OCP"
-  type: regression
-  metric: mae
-  primary_metric: forces_mae
-  labels:
-    - potential energy
-  grad_input: atomic forces
-  train_on_free_atoms: True
-  eval_on_free_atoms: True
-  prediction_dtype: float32
+outputs:
+  energy:
+    shape: 1
+    level: system
+    prediction_dtype: float32
+  forces:
+    irrep_dim: 1
+    level: atom
+    train_on_free_atoms: True
+    eval_on_free_atoms: True
+    prediction_dtype: float32
 
-optim:
-  loss_energy: mae
-  loss_force: atomwisel2
-  force_coefficient: 1
-  energy_coefficient: 1
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 1
+  - forces:
+      fn: l2mae
+      coefficient: 100
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+    forces:
+      - mae
+      - cosine_similarity
+      - magnitude_error
+    misc:
+      - energy_forces_within_threshold
+  primary_metric: forces_mae

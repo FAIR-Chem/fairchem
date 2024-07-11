@@ -1,7 +1,14 @@
 includes:
   - configs/odac/s2ef/base.yml
 
-trainer: forces
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 1
+  - forces:
+      fn: l2mae
+      coefficient: 30
+
 
 model:
   name: schnet
@@ -29,4 +36,3 @@ optim:
   warmup_steps: 209271
   warmup_factor: 0.2
   max_epochs: 15
-  force_coefficient: 30

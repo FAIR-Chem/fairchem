@@ -59,8 +59,8 @@ class BaseTrainer(ABC):
         outputs,
         dataset,
         optimizer,
-        loss_fns,
-        eval_metrics,
+        loss_functions,
+        evaluation_metrics,
         identifier: str,
         timestamp_id: str | None = None,
         run_dir: str | None = None,
@@ -74,6 +74,7 @@ class BaseTrainer(ABC):
         name: str = "ocp",
         slurm=None,
         noddp: bool = False,
+        gp_gpus: int | None = None,
     ) -> None:
         if slurm is None:
             slurm = {}
@@ -109,8 +110,8 @@ class BaseTrainer(ABC):
             "model_attributes": model,
             "outputs": outputs,
             "optim": optimizer,
-            "loss_fns": loss_fns,
-            "eval_metrics": eval_metrics,
+            "loss_functions": loss_functions,
+            "evaluation_metrics": evaluation_metrics,
             "logger": logger,
             "amp": amp,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
@@ -131,6 +132,7 @@ class BaseTrainer(ABC):
             },
             "slurm": slurm,
             "noddp": noddp,
+            "gp_gpus": gp_gpus,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp and not self.cpu else None
@@ -169,12 +171,7 @@ class BaseTrainer(ABC):
             os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
 
         ### backwards compatability with OCP v<2.0
-        ### TODO: better format check for older configs
-        if not self.config.get("loss_fns"):
-            logging.warning(
-                "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
-            )
-            self.config = update_config(self.config)
+        self.config = update_config(self.config)
 
         if distutils.is_master():
             logging.info(yaml.dump(self.config, default_flow_style=False))
@@ -263,6 +260,7 @@ class BaseTrainer(ABC):
             mode=balancing_mode,
             shuffle=shuffle,
             on_error=on_error,
+            seed=self.config["cmd"]["seed"],
         )
 
     def get_dataloader(self, dataset, sampler) -> DataLoader:
@@ -301,49 +299,49 @@ class BaseTrainer(ABC):
                 self.train_sampler,
             )
 
-            if self.config.get("val_dataset", None):
-                if self.config["val_dataset"].get("use_train_settings", True):
-                    val_config = self.config["dataset"].copy()
-                    val_config.update(self.config["val_dataset"])
-                else:
-                    val_config = self.config["val_dataset"]
+        if self.config.get("val_dataset", None):
+            if self.config["val_dataset"].get("use_train_settings", True):
+                val_config = self.config["dataset"].copy()
+                val_config.update(self.config["val_dataset"])
+            else:
+                val_config = self.config["val_dataset"]
 
-                self.val_dataset = registry.get_dataset_class(
-                    val_config.get("format", "lmdb")
-                )(val_config)
-                self.val_sampler = self.get_sampler(
-                    self.val_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.val_loader = self.get_dataloader(
-                    self.val_dataset,
-                    self.val_sampler,
-                )
+            self.val_dataset = registry.get_dataset_class(
+                val_config.get("format", "lmdb")
+            )(val_config)
+            self.val_sampler = self.get_sampler(
+                self.val_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.val_loader = self.get_dataloader(
+                self.val_dataset,
+                self.val_sampler,
+            )
 
-            if self.config.get("test_dataset", None):
-                if self.config["test_dataset"].get("use_train_settings", True):
-                    test_config = self.config["dataset"].copy()
-                    test_config.update(self.config["test_dataset"])
-                else:
-                    test_config = self.config["test_dataset"]
+        if self.config.get("test_dataset", None):
+            if self.config["test_dataset"].get("use_train_settings", True):
+                test_config = self.config["dataset"].copy()
+                test_config.update(self.config["test_dataset"])
+            else:
+                test_config = self.config["test_dataset"]
 
-                self.test_dataset = registry.get_dataset_class(
-                    test_config.get("format", "lmdb")
-                )(test_config)
-                self.test_sampler = self.get_sampler(
-                    self.test_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.test_loader = self.get_dataloader(
-                    self.test_dataset,
-                    self.test_sampler,
-                )
+            self.test_dataset = registry.get_dataset_class(
+                test_config.get("format", "lmdb")
+            )(test_config)
+            self.test_sampler = self.get_sampler(
+                self.test_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.test_loader = self.get_dataloader(
+                self.test_dataset,
+                self.test_sampler,
+            )
 
         # load relaxation dataset
         if "relax_dataset" in self.config["task"]:
@@ -389,19 +387,19 @@ class BaseTrainer(ABC):
                         ][target_name].get("level", "system")
                     if "train_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["train_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("train_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "train_on_free_atoms", True
+                            )
                         )
                     if "eval_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["eval_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("eval_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "eval_on_free_atoms", True
+                            )
                         )
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
-        self.evaluation_metrics = self.config.get("eval_metrics", {})
+        self.evaluation_metrics = self.config.get("evaluation_metrics", {})
         self.evaluator = Evaluator(
             task=self.name,
             eval_metrics=self.evaluation_metrics.get(
@@ -420,11 +418,13 @@ class BaseTrainer(ABC):
 
         loader = self.train_loader or self.val_loader or self.test_loader
         self.model = registry.get_model_class(self.config["model"])(
-            loader.dataset[0].x.shape[-1]
-            if loader
-            and hasattr(loader.dataset[0], "x")
-            and loader.dataset[0].x is not None
-            else None,
+            (
+                loader.dataset[0].x.shape[-1]
+                if loader
+                and hasattr(loader.dataset[0], "x")
+                and loader.dataset[0].x is not None
+                else None
+            ),
             bond_feat_dim,
             1,
             **self.config["model_attributes"],
@@ -437,7 +437,13 @@ class BaseTrainer(ABC):
             )
 
         if self.logger is not None:
-            self.logger.watch(self.model)
+            # only "watch" model if user specify watch: True because logging gradients
+            # spews too much data into W&B and makes the UI slow to respond
+            if "watch" in self.config["logger"]:
+                self.logger.watch(
+                    self.model, log_freq=int(self.config["logger"]["watch"])
+                )
+            self.logger.log_summary({"num_params": self.model.num_params})
 
         if distutils.initialized() and not self.config["noddp"]:
             self.model = DistributedDataParallel(self.model, device_ids=[self.device])
@@ -526,8 +532,8 @@ class BaseTrainer(ABC):
             self.scaler.load_state_dict(checkpoint["amp"])
 
     def load_loss(self) -> None:
-        self.loss_fns = []
-        for _idx, loss in enumerate(self.config["loss_fns"]):
+        self.loss_functions = []
+        for _idx, loss in enumerate(self.config["loss_functions"]):
             for target in loss:
                 loss_name = loss[target].get("fn", "mae")
                 coefficient = loss[target].get("coefficient", 1)
@@ -542,7 +548,7 @@ class BaseTrainer(ABC):
 
                 loss_fn = DDPLoss(loss_fn, loss_name, loss_reduction)
 
-                self.loss_fns.append(
+                self.loss_functions.append(
                     (target, {"fn": loss_fn, "coefficient": coefficient})
                 )
 
@@ -624,9 +630,11 @@ class BaseTrainer(ABC):
                         "step": self.step,
                         "state_dict": self.model.state_dict(),
                         "optimizer": self.optimizer.state_dict(),
-                        "scheduler": self.scheduler.scheduler.state_dict()
-                        if self.scheduler.scheduler_type != "Null"
-                        else None,
+                        "scheduler": (
+                            self.scheduler.scheduler.state_dict()
+                            if self.scheduler.scheduler_type != "Null"
+                            else None
+                        ),
                         "normalizers": {
                             key: value.state_dict()
                             for key, value in self.normalizers.items()
