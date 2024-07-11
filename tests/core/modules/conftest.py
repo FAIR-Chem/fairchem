@@ -22,7 +22,7 @@ def max_num_elements(dummy_element_refs):
 
 
 @pytest.fixture(scope="session")
-def dataset(tmpdir_factory, dummy_element_refs):
+def dummy_binary_dataset(tmpdir_factory, dummy_element_refs):
     # a dummy dataset with binaries with energy that depends on composition only plus noise
     all_binaries = list(product(list(Element), repeat=2))
     rng = np.random.default_rng(seed=0)

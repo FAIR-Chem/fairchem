@@ -12,21 +12,23 @@ from fairchem.core.modules.element_references import (
 
 
 @pytest.fixture(scope="session")
-def element_refs(dataset, max_num_elements):
+def element_refs(dummy_binary_dataset, max_num_elements):
     return fit_linear_references(
         ["energy"],
-        dataset,
+        dataset=dummy_binary_dataset,
         batch_size=16,
         shuffle=False,
         max_num_elements=max_num_elements,
     )
 
 
-def test_apply_linear_references(element_refs, dataset, dummy_element_refs):
+def test_apply_linear_references(
+    element_refs, dummy_binary_dataset, dummy_element_refs
+):
     max_noise = 0.05 * dummy_element_refs.mean()
 
     # check that removing element refs keeps only values within max noise
-    batch = data_list_collater([d for d in dataset], otf_graph=True)
+    batch = data_list_collater([d for d in dummy_binary_dataset], otf_graph=True)
     energy = batch.energy.clone().view(len(batch), -1)
     deref_energy = element_refs["energy"].dereference(energy, batch)
     assert all(deref_energy <= max_noise)
@@ -78,14 +80,14 @@ def test_create_element_references(element_refs, tmp_path):
 
 
 def test_fit_linear_references(
-    element_refs, dataset, max_num_elements, dummy_element_refs
+    element_refs, dummy_binary_dataset, max_num_elements, dummy_element_refs
 ):
     # create the composition matrix
-    energy = np.array([d.energy for d in dataset])
+    energy = np.array([d.energy for d in dummy_binary_dataset])
     cmatrix = np.vstack(
         [
             np.bincount(d.atomic_numbers.int().numpy(), minlength=max_num_elements + 1)
-            for d in dataset
+            for d in dummy_binary_dataset
         ]
     )
     mask = cmatrix.sum(axis=0) != 0.0

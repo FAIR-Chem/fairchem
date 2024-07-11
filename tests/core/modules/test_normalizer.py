@@ -11,17 +11,17 @@ from fairchem.core.modules.normalizer import (
 
 
 @pytest.fixture(scope="session")
-def normalizers(dataset):
+def normalizers(dummy_binary_dataset):
     return fit_normalizers(
         ["energy", "forces"],
-        dataset=dataset,
+        dataset=dummy_binary_dataset,
         batch_size=16,
         shuffle=False,
     )
 
 
-def test_norm_denorm(normalizers, dataset, dummy_element_refs):
-    batch = data_list_collater([d for d in dataset], otf_graph=True)
+def test_norm_denorm(normalizers, dummy_binary_dataset, dummy_element_refs):
+    batch = data_list_collater([d for d in dummy_binary_dataset], otf_graph=True)
     # test norm and denorm
     for target, normalizer in normalizers.items():
         normed = normalizer.norm(batch[target])
@@ -33,7 +33,7 @@ def test_norm_denorm(normalizers, dataset, dummy_element_refs):
         )
 
 
-def test_create_normalizers(normalizers, dataset, tmp_path):
+def test_create_normalizers(normalizers, dummy_binary_dataset, tmp_path):
     # test from state dict
     sdict = normalizers["energy"].state_dict()
 
@@ -58,7 +58,7 @@ def test_create_normalizers(normalizers, dataset, tmp_path):
     assert norm.state_dict() == sdict
 
     # from tensor directly
-    batch = data_list_collater([d for d in dataset], otf_graph=True)
+    batch = data_list_collater([d for d in dummy_binary_dataset], otf_graph=True)
     norm = create_normalizer(tensor=batch.energy)
     assert isinstance(norm, Normalizer)
     assert norm.state_dict() == sdict
