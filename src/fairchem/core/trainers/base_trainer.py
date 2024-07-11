@@ -45,7 +45,6 @@ from fairchem.core.modules.element_references import (
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
-from fairchem.core.modules.normalizer import create_normalizer, fit_normalizers
 from fairchem.core.modules.scaling.compat import load_scales_compat
 from fairchem.core.modules.scaling.util import ensure_fitted
 from fairchem.core.modules.scheduler import LRScheduler
@@ -203,6 +202,7 @@ class BaseTrainer(ABC):
         self.load_seed_from_config()
         self.load_logger()
         self.load_datasets()
+        self.load_references_and_normalizers()
         self.load_task()
         self.load_model()
         self.load_loss()
@@ -360,7 +360,8 @@ class BaseTrainer(ABC):
                 self.relax_sampler,
             )
 
-    def load_task(self):
+    def load_references_and_normalizers(self):
+        """Load or create element references and normalizers from config"""
         # load or fit element references for dataset
         elementrefs = (
             self.config["dataset"].get("transforms", {}).get("element_references", {})
@@ -413,59 +414,6 @@ class BaseTrainer(ABC):
                     file=elementrefs[target].get("file"),
                 )
 
-        # load or fit normalizers for the dataset.
-        normalizers = self.config["dataset"].get("transforms", {}).get("normalizer", {})
-        self.normalizers = {}
-        for target in normalizers:
-            if target == "fit" and not normalizers["fit"].get("fitted", False):
-                otf_normalizers = [
-                    {target: None for target in normalizers["fit"]["targets"]}
-                ]
-                # only carry out the fit on master and then broadcast
-                if distutils.is_master():
-                    otf_normalizers = [
-                        fit_normalizers(
-                            targets=normalizers["fit"]["targets"],
-                            element_references=self.elementrefs,
-                            dataset=self.train_dataset,
-                            batch_size=normalizers["fit"].get(
-                                "batch_size", self.config["optim"]["batch_size"]
-                            ),
-                            num_batches=normalizers["fit"].get("num_batches"),
-                            num_workers=self.config["optim"]["num_workers"],
-                            seed=self.config["cmd"]["seed"],
-                        )
-                    ]
-                    # save the normalization for possible subsequent use
-                    if not self.is_debug:
-                        save_checkpoint(
-                            otf_normalizers[0],
-                            self.config["cmd"]["checkpoint_dir"],
-                            "normalizers.pt",
-                        )
-                        logging.info(
-                            f"Normalizers for targets {normalizers['fit']['targets']} have been saved to: {path}"
-                        )
-
-                distutils.broadcast_object_list(otf_normalizers, src=0)
-                self.normalizers.update(otf_normalizers[0])
-                # set config so that normalizers are not refit
-                self.config["dataset"]["transforms"]["normalizer"]["fit"]["fitted"] = (
-                    True
-                )
-            elif target == "file":
-                norms = torch.load(normalizers["file"])
-                self.normalizers.update(norms)
-                logging.info(
-                    f"Loaded normalizers for the following targets: {list(norms.keys())}"
-                )
-            else:
-                self.normalizers[target] = create_normalizer(
-                    file=normalizers[target].get("file"),
-                    mean=normalizers[target].get("mean"),
-                    std=normalizers[target].get("stdev"),
-                )
-
         # make sure element refs and normalizers are on this device
         self.elementrefs.update(
             {
@@ -480,6 +428,7 @@ class BaseTrainer(ABC):
             }
         )
 
+    def load_task(self):
         self.output_targets = {}
         for target_name in self.config["outputs"]:
             self.output_targets[target_name] = self.config["outputs"][target_name]
