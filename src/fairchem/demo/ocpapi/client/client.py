@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import asyncio
 import json
 from datetime import timedelta
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import requests
 
@@ -66,7 +68,7 @@ class RateLimitExceededException(RequestException):
         self,
         method: str,
         url: str,
-        retry_after: Optional[timedelta] = None,
+        retry_after: timedelta | None = None,
     ) -> None:
         """
         Args:
@@ -76,7 +78,7 @@ class RateLimitExceededException(RequestException):
                 to call the API should be made.
         """
         super().__init__(method=method, url=url, cause="Exceeded rate limit")
-        self.retry_after: Optional[timedelta] = retry_after
+        self.retry_after: timedelta | None = retry_after
 
 
 class Client:
@@ -167,7 +169,7 @@ class Client:
         )
         return Adsorbates.from_json(response)
 
-    async def get_slabs(self, bulk: Union[str, Bulk]) -> Slabs:
+    async def get_slabs(self, bulk: str | Bulk) -> Slabs:
         """
         Get a unique list of slabs for the input bulk structure.
 
@@ -235,7 +237,7 @@ class Client:
     async def submit_adsorbate_slab_relaxations(
         self,
         adsorbate: str,
-        adsorbate_configs: List[Atoms],
+        adsorbate_configs: list[Atoms],
         bulk: Bulk,
         slab: Slab,
         model: str,
@@ -318,8 +320,8 @@ class Client:
     async def get_adsorbate_slab_relaxations_results(
         self,
         system_id: str,
-        config_ids: Optional[List[int]] = None,
-        fields: Optional[List[str]] = None,
+        config_ids: list[int] | None = None,
+        fields: list[str] | None = None,
     ) -> AdsorbateSlabRelaxationsResults:
         """
         Fetches relaxation results for the input system.
@@ -342,7 +344,7 @@ class Client:
         Returns:
             The relaxation results for each configuration in the system.
         """
-        params: Dict[str, Any] = {}
+        params: dict[str, Any] = {}
         if fields:
             params["field"] = fields
         if config_ids:
@@ -415,7 +417,7 @@ class Client:
         if response.status_code >= 300:
             # Exceeded server side rate limit
             if response.status_code == 429:
-                retry_after: Optional[str] = response.headers.get("Retry-After", None)
+                retry_after: str | None = response.headers.get("Retry-After", None)
                 raise RateLimitExceededException(
                     method=method,
                     url=url,
