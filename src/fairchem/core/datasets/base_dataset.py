@@ -6,7 +6,6 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-import logging
 from abc import ABCMeta
 from functools import cached_property
 from pathlib import Path
@@ -165,6 +164,15 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
         current_split_config.pop("splits")
         current_split_config.update(config["splits"][split])
 
+    seed = current_split_config.get("seed", 0)
+    if split != "train":
+        seed += (
+            1  # if we use same dataset for train / val , make sure its diff sampling
+        )
+
+    g = torch.Generator()
+    g.manual_seed(seed)
+
     dataset = dataset_cls(current_split_config)
     # Get indices of the dataset
     indices = dataset.indices
@@ -189,10 +197,12 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
         # shuffle all datasets by default to avoid biasing the sampling in concat dataset
         # TODO only shuffle if split is train
         max_index = sample_n
-        indices = indices[randperm(len(indices))]
+        indices = indices[randperm(len(indices), generator=g)]
     else:
-        max_index = len(dataset)
-        indices = indices if no_shuffle else indices[randperm(len(indices))]
+        max_index = len(indices)
+        indices = (
+            indices if no_shuffle else indices[randperm(len(indices), generator=g)]
+        )
 
     if max_index > len(indices):
         msg = (

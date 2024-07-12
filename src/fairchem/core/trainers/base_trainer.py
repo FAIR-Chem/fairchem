@@ -46,6 +46,8 @@ from fairchem.core.modules.scaling.compat import load_scales_compat
 from fairchem.core.modules.scaling.util import ensure_fitted
 from fairchem.core.modules.scheduler import LRScheduler
 
+from fairchem.core.datasets.base_dataset import create_dataset
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -287,9 +289,7 @@ class BaseTrainer(ABC):
                 f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
             )
 
-            self.train_dataset = registry.get_dataset_class(
-                self.config["dataset"].get("format", "lmdb")
-            )(self.config["dataset"])
+            self.train_dataset = create_dataset(self.config["dataset"], "train")
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
                 self.config["optim"]["batch_size"],
@@ -307,9 +307,7 @@ class BaseTrainer(ABC):
             else:
                 val_config = self.config["val_dataset"]
 
-            self.val_dataset = registry.get_dataset_class(
-                val_config.get("format", "lmdb")
-            )(val_config)
+            self.val_dataset = create_dataset(val_config, "val")
             self.val_sampler = self.get_sampler(
                 self.val_dataset,
                 self.config["optim"].get(
@@ -329,9 +327,7 @@ class BaseTrainer(ABC):
             else:
                 test_config = self.config["test_dataset"]
 
-            self.test_dataset = registry.get_dataset_class(
-                test_config.get("format", "lmdb")
-            )(test_config)
+            self.test_dataset = create_dataset(test_config, "test")
             self.test_sampler = self.get_sampler(
                 self.test_dataset,
                 self.config["optim"].get(
