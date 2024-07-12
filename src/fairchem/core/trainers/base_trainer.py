@@ -340,27 +340,27 @@ class BaseTrainer(ABC):
                 self.test_sampler,
             )
 
-            if self.config.get("relax_dataset", None):
-                if self.config["relax_dataset"].get("use_train_settings", True):
-                    relax_config = self.config["dataset"].copy()
-                    relax_config.update(self.config["relax_dataset"])
-                else:
-                    relax_config = self.config["relax_dataset"]
+        if self.config.get("relax_dataset", None):
+            if self.config["relax_dataset"].get("use_train_settings", True):
+                relax_config = self.config["dataset"].copy()
+                relax_config.update(self.config["relax_dataset"])
+            else:
+                relax_config = self.config["relax_dataset"]
 
-                self.relax_dataset = registry.get_dataset_class(
-                    relax_config.get("format", "lmdb")
-                )(relax_config)
-                self.relax_sampler = self.get_sampler(
-                    self.relax_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.relax_loader = self.get_dataloader(
-                    self.relax_dataset,
-                    self.relax_sampler,
-                )
+            self.relax_dataset = registry.get_dataset_class(
+                relax_config.get("format", "lmdb")
+            )(relax_config)
+            self.relax_sampler = self.get_sampler(
+                self.relax_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.relax_loader = self.get_dataloader(
+                self.relax_dataset,
+                self.relax_sampler,
+            )
 
     def load_task(self):
         # Normalizer for the dataset.
