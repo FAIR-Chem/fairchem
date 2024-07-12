@@ -8,4 +8,4 @@ pip install -e packages/fairchem-applications-cattsunami
 pip install jupytext
 
 # Convert all .md docs to ipynb for easy viewing in vscode later!
-jupytext --to ipynb docs/**/*.md
+find ./docs -name '*.md' -exec jupytext --to ipynb {} \;
