@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 from dataclasses import dataclass
 from typing import (
@@ -17,8 +19,8 @@ import numpy as np
 from ase.atoms import Atoms as ASEAtoms
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms
-
-from fairchem.demo.ocpapi.client import (
+from fairchem.demo.ocpapi.client import Status
+from fairchem.demo.ocpapi.client.models import (
     Adsorbates,
     AdsorbateSlabConfigs,
     AdsorbateSlabRelaxationResult,
@@ -33,9 +35,8 @@ from fairchem.demo.ocpapi.client import (
     Slab,
     SlabMetadata,
     Slabs,
-    Status,
+    _DataModel,
 )
-from fairchem.demo.ocpapi.client.models import _DataModel
 
 T = TypeVar("T", bound=_DataModel)
 

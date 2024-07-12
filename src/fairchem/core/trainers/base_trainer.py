@@ -162,6 +162,7 @@ class BaseTrainer(ABC):
             self.config["dataset"] = dataset.get("train", None)
             self.config["val_dataset"] = dataset.get("val", None)
             self.config["test_dataset"] = dataset.get("test", None)
+            self.config["relax_dataset"] = dataset.get("relax", None)
         else:
             self.config["dataset"] = dataset
 
@@ -339,23 +340,27 @@ class BaseTrainer(ABC):
                 self.test_sampler,
             )
 
-        # load relaxation dataset
-        if "relax_dataset" in self.config["task"]:
-            format = self.config["task"]["relax_dataset"].get("format", "lmdb")
-            self.relax_dataset = registry.get_dataset_class(format)(
-                self.config["task"]["relax_dataset"]
-            )
-            self.relax_sampler = self.get_sampler(
-                self.relax_dataset,
-                self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
-                ),
-                shuffle=False,
-            )
-            self.relax_loader = self.get_dataloader(
-                self.relax_dataset,
-                self.relax_sampler,
-            )
+            if self.config.get("relax_dataset", None):
+                if self.config["relax_dataset"].get("use_train_settings", True):
+                    relax_config = self.config["dataset"].copy()
+                    relax_config.update(self.config["relax_dataset"])
+                else:
+                    relax_config = self.config["relax_dataset"]
+
+                self.relax_dataset = registry.get_dataset_class(
+                    relax_config.get("format", "lmdb")
+                )(relax_config)
+                self.relax_sampler = self.get_sampler(
+                    self.relax_dataset,
+                    self.config["optim"].get(
+                        "eval_batch_size", self.config["optim"]["batch_size"]
+                    ),
+                    shuffle=False,
+                )
+                self.relax_loader = self.get_dataloader(
+                    self.relax_dataset,
+                    self.relax_sampler,
+                )
 
     def load_task(self):
         # Normalizer for the dataset.
@@ -435,7 +440,9 @@ class BaseTrainer(ABC):
             # only "watch" model if user specify watch: True because logging gradients
             # spews too much data into W&B and makes the UI slow to respond
             if "watch" in self.config["logger"]:
-                self.logger.watch(self.model, log_freq = int(self.config["logger"]["watch"]))
+                self.logger.watch(
+                    self.model, log_freq=int(self.config["logger"]["watch"])
+                )
             self.logger.log_summary({"num_params": self.model.num_params})
 
         if distutils.initialized() and not self.config["noddp"]:
@@ -692,7 +699,7 @@ class BaseTrainer(ABC):
                     disable_tqdm=disable_eval_tqdm,
                 )
 
-    @torch.no_grad
+    @torch.no_grad()
     def validate(self, split: str = "val", disable_tqdm: bool = False):
         ensure_fitted(self._unwrapped_model, warn=True)
 
