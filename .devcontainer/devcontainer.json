@@ -15,5 +15,8 @@
                 "ms-python.vscode-pylance"
             ]
         }
+    },
+    "hostRequirements": {
+        "memory": "16gb",
     }
 }
