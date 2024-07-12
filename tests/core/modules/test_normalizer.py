@@ -45,6 +45,8 @@ def test_create_normalizers(normalizers, dummy_binary_dataset, tmp_path):
     torch.save(sdict, tmp_path / "norm.pt")
     norm = create_normalizer(file=tmp_path / "norm.pt")
     assert isinstance(norm, Normalizer)
+    print(norm.state_dict())
+    print(sdict)
     assert norm.state_dict() == sdict
 
     # from a legacy numpy npz file

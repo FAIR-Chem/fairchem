@@ -105,12 +105,13 @@ def create_normalizer(
             values = np.load(file)
             mean = values.get("mean")
             std = values.get("std")
+            tensor = None  # set to None since values read from file are prioritized
         else:
             raise RuntimeError(
                 f"Normalizer file with extension '{extension}' is not supported."
             )
-        return Normalizer(mean=mean, std=std)
 
+    # state dict is second priority
     if state_dict is not None:
         if tensor is not None or mean is not None:
             logging.warning(
