@@ -53,6 +53,7 @@ class LmdbDataset(Dataset[T_co]):
         super().__init__()
         self.config = config
 
+        self.initialized_inside_torch_worker = False
         assert not self.config.get(
             "train_on_oc20_total_energies", False
         ), "For training on total energies set dataset=oc22_lmdb"
@@ -80,7 +81,7 @@ class LmdbDataset(Dataset[T_co]):
                     num_entries = cur_env.stat()["entries"]
 
                 # Append the keys (0->num_entries) as a list
-                self._keys.append(list(range(num_entries)))
+                self._keys.append(np.arange(num_entries))
 
             keylens = [len(k) for k in self._keys]
             self._keylen_cumulative = np.cumsum(keylens).tolist()
@@ -98,7 +99,7 @@ class LmdbDataset(Dataset[T_co]):
                 # in the LMDB
                 num_entries = assert_is_instance(self.env.stat()["entries"], int)
 
-            self._keys = list(range(num_entries))
+            self._keys = np.arange(num_entries)
             self.num_samples = num_entries
 
         # If specified, limit dataset to only a portion of the entire dataset
