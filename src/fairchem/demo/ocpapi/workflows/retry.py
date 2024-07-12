@@ -1,10 +1,15 @@
-import logging
-from dataclasses import dataclass
-from typing import Any, Literal, Optional, Union
+from __future__ import annotations
 
-from tenacity import RetryCallState
-from tenacity import retry as tenacity_retry
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Literal
+
+from fairchem.demo.ocpapi.client import (
+    NonRetryableRequestException,
+    RateLimitExceededException,
+    RequestException,
+)
 from tenacity import (
+    RetryCallState,
     retry_if_exception_type,
     retry_if_not_exception_type,
     stop_after_attempt,
@@ -12,13 +17,11 @@ from tenacity import (
     wait_fixed,
     wait_random,
 )
+from tenacity import retry as tenacity_retry
 from tenacity.wait import wait_base
 
-from fairchem.demo.ocpapi.client import (
-    NonRetryableRequestException,
-    RateLimitExceededException,
-    RequestException,
-)
+if TYPE_CHECKING:
+    import logging
 
 
 @dataclass
@@ -48,7 +51,7 @@ class _wait_check_retry_after(wait_base):
     def __init__(
         self,
         default_wait: wait_base,
-        rate_limit_logging: Optional[RateLimitLogging] = None,
+        rate_limit_logging: RateLimitLogging | None = None,
     ) -> None:
         """
         Args:
@@ -84,8 +87,8 @@ NO_LIMIT: NoLimitType = 0
 
 
 def retry_api_calls(
-    max_attempts: Union[int, NoLimitType] = 3,
-    rate_limit_logging: Optional[RateLimitLogging] = None,
+    max_attempts: int | NoLimitType = 3,
+    rate_limit_logging: RateLimitLogging | None = None,
     fixed_wait_sec: float = 2,
     max_jitter_sec: float = 1,
 ) -> Any:

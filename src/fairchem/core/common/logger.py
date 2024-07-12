@@ -56,6 +56,9 @@ class Logger(ABC):
     def log_summary(self, summary_dict: dict[str, Any]) -> None:
         pass
 
+    @abstractmethod
+    def log_artifact(self, name: str, type: str, file_location: str) -> None:
+        pass
 
 @registry.register_logger("wandb")
 class WandBLogger(Logger):
@@ -83,7 +86,7 @@ class WandBLogger(Logger):
         )
 
     def watch(self, model, log_freq: int = 1000) -> None:
-        wandb.watch(model, log_freq = log_freq)
+        wandb.watch(model, log_freq=log_freq)
 
     def log(self, update_dict, step: int, split: str = "") -> None:
         update_dict = super().log(update_dict, step, split)
@@ -101,6 +104,10 @@ class WandBLogger(Logger):
     def mark_preempting(self) -> None:
         wandb.mark_preempting()
 
+    def log_artifact(self, name: str, type: str, file_location: str) -> None:
+        art = wandb.Artifact(name=name, type=type)
+        art.add_file(file_location)
+        art.save()
 
 @registry.register_logger("tensorboard")
 class TensorboardLogger(Logger):
@@ -130,3 +137,6 @@ class TensorboardLogger(Logger):
 
     def log_summary(self, summary_dict: dict[str, Any]) -> None:
         logging.warning("log_summary for Tensorboard not supported")
+
+    def log_artifact(self, name: str, type: str, file_location: str) -> None:
+        logging.warning("log_artifact for Tensorboard not supported")
