@@ -307,7 +307,7 @@ class BaseTrainer(ABC):
                 self.train_sampler,
             )
 
-        if self.config.get["val_dataset"]:
+        if self.config["val_dataset"]:
             if self.config["val_dataset"].get("use_train_settings", True):
                 val_config = self.config["dataset"].copy()
                 val_config.update(self.config["val_dataset"])
