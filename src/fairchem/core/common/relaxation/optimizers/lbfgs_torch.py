@@ -153,9 +153,9 @@ class LBFGS:
     def step(self, iteration: int) -> None:
         # cast forces and positions to float64 otherwise the algorithm is prone to overflow
         forces = self.optimizable.get_forces(apply_constraint=True).to(
-            dtype=torch.float64
+            dtype=torch.float32
         )
-        pos = self.optimizable.get_positions().to(dtype=torch.float64)
+        pos = self.optimizable.get_positions().to(dtype=torch.float32)
 
         # Update s, y, rho
         if iteration > 0:
