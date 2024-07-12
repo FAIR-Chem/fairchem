@@ -94,20 +94,33 @@ def main():
 
     else:  # Run locally on a single node, n-processes
         if args.distributed:
-            logging.info(f"Running in distributed local mode with {args.num_gpus} ranks")
+            logging.info(
+                f"Running in distributed local mode with {args.num_gpus} ranks"
+            )
             # HACK to disable multiprocess dataloading in local mode
             # there is an open issue where LMDB's environment cannot be pickled and used
             # during torch multiprocessing https://github.com/pytorch/examples/issues/526
             if "optim" in config and "num_workers" in config["optim"]:
                 config["optim"]["num_workers"] = 0
-                logging.info("WARNING: running in local mode, setting dataloading num_workers to 0, see https://github.com/pytorch/examples/issues/526")
+                logging.info(
+                    "WARNING: running in local mode, setting dataloading num_workers to 0, see https://github.com/pytorch/examples/issues/526"
+                )
 
-            launch_config = LaunchConfig(min_nodes=1, max_nodes=1, nproc_per_node=args.num_gpus, rdzv_backend="c10d", max_restarts=0)
+            launch_config = LaunchConfig(
+                min_nodes=1,
+                max_nodes=1,
+                nproc_per_node=args.num_gpus,
+                rdzv_backend="c10d",
+                max_restarts=0,
+            )
             elastic_launch(launch_config, runner_wrapper)(args.distributed, config)
         else:
             logging.info("Running in non-distributed local mode")
-            assert args.num_gpus == 1, "Can only run with a single gpu in non distributed local mode, use --distributed flag instead if using >1 gpu"
+            assert (
+                args.num_gpus == 1
+            ), "Can only run with a single gpu in non distributed local mode, use --distributed flag instead if using >1 gpu"
             runner_wrapper(args.distributed, config)
+
 
 if __name__ == "__main__":
     main()
