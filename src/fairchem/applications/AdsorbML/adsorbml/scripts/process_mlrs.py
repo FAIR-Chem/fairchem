@@ -15,6 +15,8 @@ The following files are saved out:
 - errors_by_sid.pkl: any errors that occurred
 """
 
+from __future__ import annotations
+
 import argparse
 import multiprocessing as mp
 import os
@@ -52,8 +54,7 @@ def parse_args():
     )
     parser.add_argument("--surface-dir", type=str, help="Path to surface DFT outputs")
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def min_diff(atoms_init, atoms_final):
@@ -159,7 +160,7 @@ if __name__ == "__main__":
             continue
         anomalies[sid] = anomaly
         if not anomaly:
-            grouped_configs[system].append(tuple([adslab_idx, predE, mlrs]))
+            grouped_configs[system].append((adslab_idx, predE, mlrs))
 
     # group configs by system and sort
     sorted_grouped_configs = {}

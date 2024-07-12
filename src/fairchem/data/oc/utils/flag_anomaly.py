@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 from ase import neighborlist
 from ase.neighborlist import natural_cutoffs
@@ -116,8 +118,7 @@ class DetectTrajAnomaly:
             cutoff, self_interaction=False, bothways=True
         )
         ase_neighbor_list.update(atoms)
-        matrix = neighborlist.get_connectivity_matrix(ase_neighbor_list.nl).toarray()
-        return matrix
+        return neighborlist.get_connectivity_matrix(ase_neighbor_list.nl).toarray()
 
     def is_adsorbate_intercalated(self):
         """
