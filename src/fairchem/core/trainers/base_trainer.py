@@ -279,13 +279,13 @@ class BaseTrainer(ABC):
 
         # Default all of the dataset portions to {} if
         # they don't exist, or are null
-        if self.config.get("dataset", None):
+        if not self.config.get("dataset", None):
             self.config["dataset"] = {}
-        if self.config.get("val_dataset", None):
+        if not self.config.get("val_dataset", None):
             self.config["val_dataset"] = {}
-        if self.config.get("test_dataset", None):
+        if not self.config.get("test_dataset", None):
             self.config["test_dataset"] = {}
-        if self.config.get("relax_dataset", None):
+        if not self.config.get("relax_dataset", None):
             self.config["relax_dataset"] = {}
 
         # load train, val, test datasets
