@@ -3,8 +3,6 @@ from __future__ import annotations
 import os
 
 import psutil
-from quacc.recipes.orca.core import run_and_summarize, run_and_summarize_opt
-
 from omdata.orca.calc import (
     OPT_PARAMETERS,
     ORCA_BASIS,
@@ -12,6 +10,7 @@ from omdata.orca.calc import (
     ORCA_FUNCTIONAL,
     ORCA_SIMPLE_INPUT,
 )
+from quacc.recipes.orca.core import run_and_summarize, run_and_summarize_opt
 
 
 def single_point_calculation(
@@ -68,7 +67,7 @@ def single_point_calculation(
     default_inputs = [xc, basis, "engrad", "normalprint"]
     default_blocks = [f"%pal nprocs {nprocs} end"]
 
-    doc = run_and_summarize(
+    return run_and_summarize(
         atoms,
         charge=charge,
         spin_multiplicity=spin_multiplicity,
@@ -78,8 +77,6 @@ def single_point_calculation(
         block_swaps=orcablocks,
         **calc_kwargs,
     )
-
-    return doc
 
 
 def ase_relaxation(
@@ -141,7 +138,7 @@ def ase_relaxation(
     default_inputs = [xc, basis, "engrad", "normalprint"]
     default_blocks = [f"%pal nprocs {nprocs} end"]
 
-    doc = run_and_summarize_opt(
+    return run_and_summarize_opt(
         atoms,
         charge=charge,
         spin_multiplicity=spin_multiplicity,
@@ -152,5 +149,3 @@ def ase_relaxation(
         opt_params=opt_params,
         **calc_kwargs,
     )
-
-    return doc
