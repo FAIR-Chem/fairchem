@@ -1489,7 +1489,7 @@ optimizer = {
 }
 # Dataset
 dataset = {
-  'dataset': {'src': train_src, 'normalize_labels': False}, # train set
+  'train': {'src': train_src, 'normalize_labels': False}, # train set
   'val_dataset': {'src': val_src}, # val set (optional)
   'relax_dataset': {"src": relax_dataset},
 }
