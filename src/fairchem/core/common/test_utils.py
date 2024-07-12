@@ -24,6 +24,7 @@ class ForkedPdb(pdb.Pdb):
         from fairchem.core.common.test_utils import ForkedPdb
         ForkedPdb().set_trace()
     """
+
     def interaction(self, *args, **kwargs):
         _stdin = sys.stdin
         try:
@@ -33,6 +34,7 @@ class ForkedPdb(pdb.Pdb):
         finally:
             sys.stdin = _stdin
 
+
 @dataclass
 class PGConfig:
     backend: str
@@ -40,6 +42,7 @@ class PGConfig:
     gp_group_size: int = 1
     port: str = "12345"
     use_gp: bool = True
+
 
 def spawn_multi_process(
     config: PGConfig,
@@ -104,6 +107,9 @@ def _init_pg_and_rank_and_launch_test(
     )
     # setup gp
     if pg_setup_params.use_gp:
-        config = {"gp_gpus": pg_setup_params.gp_group_size, "distributed_backend": pg_setup_params.backend}
+        config = {
+            "gp_gpus": pg_setup_params.gp_group_size,
+            "distributed_backend": pg_setup_params.backend,
+        }
         setup_gp(config)
     mp_output_dict[rank] = test_method(*args, **kwargs)  # pyre-fixme
