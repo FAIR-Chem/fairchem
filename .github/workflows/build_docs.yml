@@ -1,12 +1,15 @@
-name: documentation
+# build the documentation and upload the built artifact
+name: build documentation
 
 on:
   workflow_call:
   workflow_dispatch:
+  # this will run a build when a review is submitted to make sure the PR does not break docs before merging
+  pull_request_review:
+    types: [submitted, edited]
 
-# This job installs dependencies, build the book, and pushes it to `gh-pages`
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -36,17 +39,8 @@ jobs:
       run: |
         jupyter-book build docs
 
-    # Deploy the book's HTML to gh-pages branch # TODO remove once ODAC link updated
-    - name: Deploy to ghpages branch
-      uses: peaceiris/actions-gh-pages@v3
+    - name: Upload documentation artifact
+      uses: actions/upload-artifact@v4
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: docs/_build/html
-
-    - name: Deploy to fair-chem.github.io
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-        external_repository: FAIR-Chem/fair-chem.github.io
-        publish_branch: gh-pages
-        publish_dir: docs/_build/html
+        name: docs-html
+        path: docs/_build/html/*
