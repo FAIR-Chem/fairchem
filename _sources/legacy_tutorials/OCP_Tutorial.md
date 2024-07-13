@@ -1427,7 +1427,6 @@ task = {
       'grad_input': 'atomic forces',
       'train_on_free_atoms': True,
       'eval_on_free_atoms': True,
-      'relax_dataset': {"src": relax_dataset},
       'write_pos': True,
       'relaxation_steps': 200,
       'num_relaxation_batches': 1,
@@ -1489,10 +1488,11 @@ optimizer = {
     'force_coefficient': 100,
 }
 # Dataset
-dataset = [
-  {'src': train_src, 'normalize_labels': False}, # train set
-  {'src': val_src}, # val set (optional)
-]
+dataset = {
+  'train': {'src': train_src, 'normalize_labels': False}, # train set
+  'val': {'src': val_src}, # val set (optional)
+  'relax': {"src": relax_dataset},
+}
 ```
 
 

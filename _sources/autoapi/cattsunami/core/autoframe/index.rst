@@ -116,7 +116,7 @@ Module Contents
 
 
 
-.. py:class:: AutoFrameDissociation(reaction: fairchem.applications.cattsunami.core.Reaction, reactant_system: ase.Atoms, product1_systems: list, product1_energies: list, product2_systems: list, product2_energies: list, r_product1_max: float = None, r_product2_max: float = None, r_product2_min: float = None)
+.. py:class:: AutoFrameDissociation(reaction: fairchem.applications.cattsunami.core.Reaction, reactant_system: ase.Atoms, product1_systems: list, product1_energies: list, product2_systems: list, product2_energies: list, r_product1_max: float | None = None, r_product2_max: float | None = None, r_product2_min: float | None = None)
 
    Bases: :py:obj:`AutoFrame`
 

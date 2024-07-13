@@ -24,9 +24,9 @@ Module Contents
 ---------------
 
 .. py:data:: _API_TO_UI_HOSTS
-   :type:  Dict[str, str]
+   :type:  dict[str, str]
 
-.. py:function:: get_results_ui_url(api_host: str, system_id: str) -> Optional[str]
+.. py:function:: get_results_ui_url(api_host: str, system_id: str) -> str | None
 
    Generates the URL at which results for the input system can be
    visualized.

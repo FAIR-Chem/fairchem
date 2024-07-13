@@ -15,7 +15,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: Bulk(bulk_atoms: ase.Atoms = None, bulk_id_from_db: int = None, bulk_src_id_from_db: str = None, bulk_db_path: str = BULK_PKL_PATH, bulk_db: List[Dict[str, Any]] = None)
+.. py:class:: Bulk(bulk_atoms: ase.Atoms = None, bulk_id_from_db: int | None = None, bulk_src_id_from_db: str | None = None, bulk_db_path: str = BULK_PKL_PATH, bulk_db: list[dict[str, Any]] | None = None)
 
    Initializes a bulk object in one of 4 ways:
    - Directly pass in an ase.Atoms object.

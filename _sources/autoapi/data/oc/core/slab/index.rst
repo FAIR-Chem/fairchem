@@ -34,7 +34,7 @@ Functions
 Module Contents
 ---------------
 
-.. py:class:: Slab(bulk=None, slab_atoms: ase.Atoms = None, millers: tuple = None, shift: float = None, top: bool = None, oriented_bulk: pymatgen.core.structure.Structure = None, min_ab: float = 0.8)
+.. py:class:: Slab(bulk=None, slab_atoms: ase.Atoms = None, millers: tuple | None = None, shift: float | None = None, top: bool | None = None, oriented_bulk: pymatgen.core.structure.Structure = None, min_ab: float = 0.8)
 
    Initializes a slab object, i.e. a particular slab tiled along xyz, in
    one of 2 ways:
@@ -240,7 +240,7 @@ Module Contents
    :rtype: dict
 
 
-.. py:function:: compute_slabs(bulk_atoms: ase.Atoms = None, max_miller: int = 2, specific_millers: list = None)
+.. py:function:: compute_slabs(bulk_atoms: ase.Atoms = None, max_miller: int = 2, specific_millers: list | None = None)
 
    Enumerates all the symmetrically distinct slabs of a bulk structure.
    It will not enumerate slabs with Miller indices above the

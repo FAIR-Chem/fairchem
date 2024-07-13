@@ -20,23 +20,12 @@ Classes
 
 .. autoapisummary::
 
-   cattsunami.core.Reaction
    cattsunami.core.OCPNEB
+   cattsunami.core.Reaction
 
 
 Package Contents
 ----------------
-
-.. py:class:: Reaction(reaction_db_path: str, adsorbate_db_path: str, reaction_id_from_db: int = None, reaction_str_from_db: str = None, reaction_type: str = None)
-
-   Initialize Reaction object
-
-
-   .. py:method:: get_desorption_mapping(reactant)
-
-      Get mapping for desorption reaction
-
-
 
 .. py:class:: OCPNEB(images, checkpoint_path, k=0.1, fmax=0.05, climb=False, parallel=False, remove_rotation_and_translation=False, world=None, dynamic_relaxation=True, scale_fmax=0.0, method='aseneb', allow_shared_calculator=False, precon=None, cpu=False, batch_size=4)
 
@@ -62,5 +51,16 @@ Package Contents
 
 
    .. py:method:: get_precon_forces(forces, energies, images)
+
+
+.. py:class:: Reaction(reaction_db_path: str, adsorbate_db_path: str, reaction_id_from_db: int | None = None, reaction_str_from_db: str | None = None, reaction_type: str | None = None)
+
+   Initialize Reaction object
+
+
+   .. py:method:: get_desorption_mapping(reactant)
+
+      Get mapping for desorption reaction
+
 
 

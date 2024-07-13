@@ -23,9 +23,9 @@ Functions
 Module Contents
 ---------------
 
-.. py:class:: MultipleAdsorbateSlabConfig(slab: fairchem.data.oc.core.Slab, adsorbates: List[fairchem.data.oc.core.Adsorbate], num_sites: int = 100, num_configurations: int = 1, interstitial_gap: float = 0.1, mode: str = 'random_site_heuristic_placement')
+.. py:class:: MultipleAdsorbateSlabConfig(slab: fairchem.data.oc.core.slab.Slab, adsorbates: list[fairchem.data.oc.core.adsorbate.Adsorbate], num_sites: int = 100, num_configurations: int = 1, interstitial_gap: float = 0.1, mode: str = 'random_site_heuristic_placement')
 
-   Bases: :py:obj:`fairchem.data.oc.core.AdsorbateSlabConfig`
+   Bases: :py:obj:`fairchem.data.oc.core.adsorbate_slab_config.AdsorbateSlabConfig`
 
 
    Class to represent a slab with multiple adsorbates on it. This class only

@@ -22,18 +22,18 @@ Module Contents
    Adslab filter than returns all slabs.
 
 
-   .. py:method:: __call__(adslabs: List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
+   .. py:method:: __call__(adslabs: list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
       :async:
 
 
 
-.. py:class:: keep_slabs_with_miller_indices(miller_indices: Iterable[Tuple[int, int, int]])
+.. py:class:: keep_slabs_with_miller_indices(miller_indices: Iterable[tuple[int, int, int]])
 
    Adslab filter that keeps any slabs with the configured miller indices.
    Slabs with other miller indices will be ignored.
 
 
-   .. py:method:: __call__(adslabs: List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
+   .. py:method:: __call__(adslabs: list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
       :async:
 
 
@@ -44,7 +44,7 @@ Module Contents
    which of the input slabs to keep.
 
 
-   .. py:method:: _sort_key(adslab: fairchem.demo.ocpapi.client.AdsorbateSlabConfigs) -> Tuple[Tuple[int, int, int], float, str]
+   .. py:method:: _sort_key(adslab: fairchem.demo.ocpapi.client.AdsorbateSlabConfigs) -> tuple[tuple[int, int, int], float, str]
       :staticmethod:
 
 
@@ -54,7 +54,7 @@ Module Contents
 
 
 
-   .. py:method:: __call__(adslabs: List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
+   .. py:method:: __call__(adslabs: list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
       :async:
 
 

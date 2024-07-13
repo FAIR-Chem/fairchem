@@ -26,7 +26,7 @@ Functions
 Module Contents
 ---------------
 
-.. py:class:: AdsorbateSlabConfig(slab: fairchem.data.oc.core.Slab, adsorbate: fairchem.data.oc.core.Adsorbate, num_sites: int = 100, num_augmentations_per_site: int = 1, interstitial_gap: float = 0.1, mode: str = 'random')
+.. py:class:: AdsorbateSlabConfig(slab: fairchem.data.oc.core.slab.Slab, adsorbate: fairchem.data.oc.core.slab.Adsorbate, num_sites: int = 100, num_augmentations_per_site: int = 1, interstitial_gap: float = 0.1, mode: str = 'random')
 
    Initializes a list of adsorbate-catalyst systems for a given Adsorbate and Slab.
 
@@ -72,7 +72,7 @@ Module Contents
 
 
 
-   .. py:method:: place_adsorbate_on_site(adsorbate: fairchem.data.oc.core.Adsorbate, site: numpy.ndarray, interstitial_gap: float = 0.1)
+   .. py:method:: place_adsorbate_on_site(adsorbate: fairchem.data.oc.core.slab.Adsorbate, site: numpy.ndarray, interstitial_gap: float = 0.1)
 
       Place the adsorbate at the given binding site.
 

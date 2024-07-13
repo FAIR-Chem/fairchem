@@ -22,147 +22,17 @@ Classes
 
 .. autoapisummary::
 
-   data.oc.core.Bulk
-   data.oc.core.Slab
    data.oc.core.Adsorbate
    data.oc.core.AdsorbateSlabConfig
+   data.oc.core.Bulk
    data.oc.core.MultipleAdsorbateSlabConfig
+   data.oc.core.Slab
 
 
 Package Contents
 ----------------
 
-.. py:class:: Bulk(bulk_atoms: ase.Atoms = None, bulk_id_from_db: int = None, bulk_src_id_from_db: str = None, bulk_db_path: str = BULK_PKL_PATH, bulk_db: List[Dict[str, Any]] = None)
-
-   Initializes a bulk object in one of 4 ways:
-   - Directly pass in an ase.Atoms object.
-   - Pass in index of bulk to select from bulk database.
-   - Pass in the src_id of the bulk to select from the bulk database.
-   - Randomly sample a bulk from bulk database if no other option is passed.
-
-   :param bulk_atoms: Bulk structure.
-   :type bulk_atoms: ase.Atoms
-   :param bulk_id_from_db: Index of bulk in database pkl to select.
-   :type bulk_id_from_db: int
-   :param bulk_src_id_from_db: Src id of bulk to select (e.g. "mp-30").
-   :type bulk_src_id_from_db: int
-   :param bulk_db_path: Path to bulk database.
-   :type bulk_db_path: str
-   :param bulk_db: Already-loaded database.
-   :type bulk_db: List[Dict[str, Any]]
-
-
-   .. py:method:: _get_bulk_from_random(bulk_db)
-
-
-   .. py:method:: set_source_dataset_id(src_id: str)
-
-
-   .. py:method:: set_bulk_id_from_db(bulk_id_from_db: int)
-
-
-   .. py:method:: get_slabs(max_miller=2, precomputed_slabs_dir=None)
-
-      Returns a list of possible slabs for this bulk instance.
-
-
-
-   .. py:method:: __len__()
-
-
-   .. py:method:: __str__()
-
-      Return str(self).
-
-
-
-   .. py:method:: __repr__()
-
-      Return repr(self).
-
-
-
-   .. py:method:: __eq__(other) -> bool
-
-      Return self==value.
-
-
-
-.. py:class:: Slab(bulk=None, slab_atoms: ase.Atoms = None, millers: tuple = None, shift: float = None, top: bool = None, oriented_bulk: pymatgen.core.structure.Structure = None, min_ab: float = 0.8)
-
-   Initializes a slab object, i.e. a particular slab tiled along xyz, in
-   one of 2 ways:
-   - Pass in a Bulk object and a slab 5-tuple containing
-   (atoms, miller, shift, top, oriented bulk).
-   - Pass in a Bulk object and randomly sample a slab.
-
-   :param bulk: Corresponding Bulk object.
-   :type bulk: Bulk
-   :param slab_atoms: Slab atoms, tiled and tagged
-   :type slab_atoms: ase.Atoms
-   :param millers: Miller indices of slab.
-   :type millers: tuple
-   :param shift: Shift of slab.
-   :type shift: float
-   :param top: Whether slab is top or bottom.
-   :type top: bool
-   :param min_ab: To confirm that the tiled structure spans this distance
-   :type min_ab: float
-
-
-   .. py:method:: from_bulk_get_random_slab(bulk=None, max_miller=2, min_ab=8.0, save_path=None)
-      :classmethod:
-
-
-
-   .. py:method:: from_bulk_get_specific_millers(specific_millers, bulk=None, min_ab=8.0, save_path=None)
-      :classmethod:
-
-
-
-   .. py:method:: from_bulk_get_all_slabs(bulk=None, max_miller=2, min_ab=8.0, save_path=None)
-      :classmethod:
-
-
-
-   .. py:method:: from_precomputed_slabs_pkl(bulk=None, precomputed_slabs_pkl=None, max_miller=2, min_ab=8.0)
-      :classmethod:
-
-
-
-   .. py:method:: from_atoms(atoms: ase.Atoms = None, bulk=None, **kwargs)
-      :classmethod:
-
-
-
-   .. py:method:: has_surface_tagged()
-
-
-   .. py:method:: get_metadata_dict()
-
-
-   .. py:method:: __len__()
-
-
-   .. py:method:: __str__()
-
-      Return str(self).
-
-
-
-   .. py:method:: __repr__()
-
-      Return repr(self).
-
-
-
-   .. py:method:: __eq__(other)
-
-      Return self==value.
-
-
-
-.. py:class:: Adsorbate(adsorbate_atoms: ase.Atoms = None, adsorbate_id_from_db: int = None, adsorbate_smiles_from_db: str = None, adsorbate_db_path: str = ADSORBATE_PKL_PATH, adsorbate_db: Dict[int, Tuple[Any, Ellipsis]] = None, adsorbate_binding_indices: list = None)
+.. py:class:: Adsorbate(adsorbate_atoms: ase.Atoms = None, adsorbate_id_from_db: int | None = None, adsorbate_smiles_from_db: str | None = None, adsorbate_db_path: str = ADSORBATE_PKL_PATH, adsorbate_db: dict[int, tuple[Any, Ellipsis]] | None = None, adsorbate_binding_indices: list | None = None)
 
    Initializes an adsorbate object in one of 4 ways:
    - Directly pass in an ase.Atoms object.
@@ -201,7 +71,7 @@ Package Contents
    .. py:method:: _get_adsorbate_from_random(adsorbate_db)
 
 
-   .. py:method:: _load_adsorbate(adsorbate: Tuple[Any, Ellipsis]) -> None
+   .. py:method:: _load_adsorbate(adsorbate: tuple[Any, Ellipsis]) -> None
 
       Saves the fields from an adsorbate stored in a database. Fields added
       after the first revision are conditionally added for backwards
@@ -209,7 +79,7 @@ Package Contents
 
 
 
-.. py:class:: AdsorbateSlabConfig(slab: fairchem.data.oc.core.Slab, adsorbate: fairchem.data.oc.core.Adsorbate, num_sites: int = 100, num_augmentations_per_site: int = 1, interstitial_gap: float = 0.1, mode: str = 'random')
+.. py:class:: AdsorbateSlabConfig(slab: fairchem.data.oc.core.slab.Slab, adsorbate: fairchem.data.oc.core.slab.Adsorbate, num_sites: int = 100, num_augmentations_per_site: int = 1, interstitial_gap: float = 0.1, mode: str = 'random')
 
    Initializes a list of adsorbate-catalyst systems for a given Adsorbate and Slab.
 
@@ -255,7 +125,7 @@ Package Contents
 
 
 
-   .. py:method:: place_adsorbate_on_site(adsorbate: fairchem.data.oc.core.Adsorbate, site: numpy.ndarray, interstitial_gap: float = 0.1)
+   .. py:method:: place_adsorbate_on_site(adsorbate: fairchem.data.oc.core.slab.Adsorbate, site: numpy.ndarray, interstitial_gap: float = 0.1)
 
       Place the adsorbate at the given binding site.
 
@@ -351,9 +221,65 @@ Package Contents
 
 
 
-.. py:class:: MultipleAdsorbateSlabConfig(slab: fairchem.data.oc.core.Slab, adsorbates: List[fairchem.data.oc.core.Adsorbate], num_sites: int = 100, num_configurations: int = 1, interstitial_gap: float = 0.1, mode: str = 'random_site_heuristic_placement')
+.. py:class:: Bulk(bulk_atoms: ase.Atoms = None, bulk_id_from_db: int | None = None, bulk_src_id_from_db: str | None = None, bulk_db_path: str = BULK_PKL_PATH, bulk_db: list[dict[str, Any]] | None = None)
 
-   Bases: :py:obj:`fairchem.data.oc.core.AdsorbateSlabConfig`
+   Initializes a bulk object in one of 4 ways:
+   - Directly pass in an ase.Atoms object.
+   - Pass in index of bulk to select from bulk database.
+   - Pass in the src_id of the bulk to select from the bulk database.
+   - Randomly sample a bulk from bulk database if no other option is passed.
+
+   :param bulk_atoms: Bulk structure.
+   :type bulk_atoms: ase.Atoms
+   :param bulk_id_from_db: Index of bulk in database pkl to select.
+   :type bulk_id_from_db: int
+   :param bulk_src_id_from_db: Src id of bulk to select (e.g. "mp-30").
+   :type bulk_src_id_from_db: int
+   :param bulk_db_path: Path to bulk database.
+   :type bulk_db_path: str
+   :param bulk_db: Already-loaded database.
+   :type bulk_db: List[Dict[str, Any]]
+
+
+   .. py:method:: _get_bulk_from_random(bulk_db)
+
+
+   .. py:method:: set_source_dataset_id(src_id: str)
+
+
+   .. py:method:: set_bulk_id_from_db(bulk_id_from_db: int)
+
+
+   .. py:method:: get_slabs(max_miller=2, precomputed_slabs_dir=None)
+
+      Returns a list of possible slabs for this bulk instance.
+
+
+
+   .. py:method:: __len__()
+
+
+   .. py:method:: __str__()
+
+      Return str(self).
+
+
+
+   .. py:method:: __repr__()
+
+      Return repr(self).
+
+
+
+   .. py:method:: __eq__(other) -> bool
+
+      Return self==value.
+
+
+
+.. py:class:: MultipleAdsorbateSlabConfig(slab: fairchem.data.oc.core.slab.Slab, adsorbates: list[fairchem.data.oc.core.adsorbate.Adsorbate], num_sites: int = 100, num_configurations: int = 1, interstitial_gap: float = 0.1, mode: str = 'random_site_heuristic_placement')
+
+   Bases: :py:obj:`fairchem.data.oc.core.adsorbate_slab_config.AdsorbateSlabConfig`
 
 
    Class to represent a slab with multiple adsorbates on it. This class only
@@ -416,6 +342,80 @@ Package Contents
 
       Returns a dict containing the atoms object and metadata for
       one specified config, used for writing to files.
+
+
+
+.. py:class:: Slab(bulk=None, slab_atoms: ase.Atoms = None, millers: tuple | None = None, shift: float | None = None, top: bool | None = None, oriented_bulk: pymatgen.core.structure.Structure = None, min_ab: float = 0.8)
+
+   Initializes a slab object, i.e. a particular slab tiled along xyz, in
+   one of 2 ways:
+   - Pass in a Bulk object and a slab 5-tuple containing
+   (atoms, miller, shift, top, oriented bulk).
+   - Pass in a Bulk object and randomly sample a slab.
+
+   :param bulk: Corresponding Bulk object.
+   :type bulk: Bulk
+   :param slab_atoms: Slab atoms, tiled and tagged
+   :type slab_atoms: ase.Atoms
+   :param millers: Miller indices of slab.
+   :type millers: tuple
+   :param shift: Shift of slab.
+   :type shift: float
+   :param top: Whether slab is top or bottom.
+   :type top: bool
+   :param min_ab: To confirm that the tiled structure spans this distance
+   :type min_ab: float
+
+
+   .. py:method:: from_bulk_get_random_slab(bulk=None, max_miller=2, min_ab=8.0, save_path=None)
+      :classmethod:
+
+
+
+   .. py:method:: from_bulk_get_specific_millers(specific_millers, bulk=None, min_ab=8.0, save_path=None)
+      :classmethod:
+
+
+
+   .. py:method:: from_bulk_get_all_slabs(bulk=None, max_miller=2, min_ab=8.0, save_path=None)
+      :classmethod:
+
+
+
+   .. py:method:: from_precomputed_slabs_pkl(bulk=None, precomputed_slabs_pkl=None, max_miller=2, min_ab=8.0)
+      :classmethod:
+
+
+
+   .. py:method:: from_atoms(atoms: ase.Atoms = None, bulk=None, **kwargs)
+      :classmethod:
+
+
+
+   .. py:method:: has_surface_tagged()
+
+
+   .. py:method:: get_metadata_dict()
+
+
+   .. py:method:: __len__()
+
+
+   .. py:method:: __str__()
+
+      Return str(self).
+
+
+
+   .. py:method:: __repr__()
+
+      Return repr(self).
+
+
+
+   .. py:method:: __eq__(other)
+
+      Return self==value.
 
 
 

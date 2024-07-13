@@ -121,7 +121,7 @@ Package Contents
 
 
 
-   .. py:method:: get_slabs(bulk: Union[str, ocpapi.client.models.Bulk]) -> ocpapi.client.models.Slabs
+   .. py:method:: get_slabs(bulk: str | ocpapi.client.models.Bulk) -> ocpapi.client.models.Slabs
       :async:
 
 
@@ -163,7 +163,7 @@ Package Contents
 
 
 
-   .. py:method:: submit_adsorbate_slab_relaxations(adsorbate: str, adsorbate_configs: List[ocpapi.client.models.Atoms], bulk: ocpapi.client.models.Bulk, slab: ocpapi.client.models.Slab, model: str, ephemeral: bool = False) -> ocpapi.client.models.AdsorbateSlabRelaxationsSystem
+   .. py:method:: submit_adsorbate_slab_relaxations(adsorbate: str, adsorbate_configs: list[ocpapi.client.models.Atoms], bulk: ocpapi.client.models.Bulk, slab: ocpapi.client.models.Slab, model: str, ephemeral: bool = False) -> ocpapi.client.models.AdsorbateSlabRelaxationsSystem
       :async:
 
 
@@ -215,7 +215,7 @@ Package Contents
 
 
 
-   .. py:method:: get_adsorbate_slab_relaxations_results(system_id: str, config_ids: Optional[List[int]] = None, fields: Optional[List[str]] = None) -> ocpapi.client.models.AdsorbateSlabRelaxationsResults
+   .. py:method:: get_adsorbate_slab_relaxations_results(system_id: str, config_ids: list[int] | None = None, fields: list[str] | None = None) -> ocpapi.client.models.AdsorbateSlabRelaxationsResults
       :async:
 
 
@@ -286,7 +286,7 @@ Package Contents
    or action that is not allowed.
 
 
-.. py:exception:: RateLimitExceededException(method: str, url: str, retry_after: Optional[datetime.timedelta] = None)
+.. py:exception:: RateLimitExceededException(method: str, url: str, retry_after: datetime.timedelta | None = None)
 
    Bases: :py:obj:`RequestException`
 
@@ -771,7 +771,7 @@ Package Contents
 
 
 
-.. py:function:: get_results_ui_url(api_host: str, system_id: str) -> Optional[str]
+.. py:function:: get_results_ui_url(api_host: str, system_id: str) -> str | None
 
    Generates the URL at which results for the input system can be
    visualized.

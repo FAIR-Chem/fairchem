@@ -65,7 +65,7 @@ Module Contents
 ---------------
 
 .. py:data:: _CTX_AD_BULK
-   :type:  contextvars.ContextVar[Tuple[str, str]]
+   :type:  contextvars.ContextVar[tuple[str, str]]
 
 .. py:data:: _CTX_SLAB
    :type:  contextvars.ContextVar[fairchem.demo.ocpapi.client.Slab]
@@ -87,7 +87,7 @@ Module Contents
    Base exception for all others in this module.
 
 
-.. py:exception:: UnsupportedModelException(model: str, allowed_models: List[str])
+.. py:exception:: UnsupportedModelException(model: str, allowed_models: list[str])
 
    Bases: :py:obj:`AdsorbatesException`
 
@@ -149,7 +149,7 @@ Module Contents
 
 
    .. py:attribute:: configs
-      :type:  List[fairchem.demo.ocpapi.client.AdsorbateSlabRelaxationResult]
+      :type:  list[fairchem.demo.ocpapi.client.AdsorbateSlabRelaxationResult]
 
       Details of the relaxation of each adsorbate placement, including the
       final position.
@@ -168,7 +168,7 @@ Module Contents
 
 
    .. py:attribute:: ui_url
-      :type:  Optional[str]
+      :type:  str | None
 
       The URL at which results can be visualized.
 
@@ -198,7 +198,7 @@ Module Contents
 
 
    .. py:attribute:: slabs
-      :type:  List[AdsorbateSlabRelaxations]
+      :type:  list[AdsorbateSlabRelaxations]
 
       The list of slabs that were generated from the bulk structure. Each
       contains its own list of adsorbate placements.
@@ -242,7 +242,7 @@ Module Contents
    :raises UnsupportedAdsorbateException: If the adsorbate is not supported.
 
 
-.. py:function:: _get_slabs(client: fairchem.demo.ocpapi.client.Client, bulk: fairchem.demo.ocpapi.client.Bulk) -> List[fairchem.demo.ocpapi.client.Slab]
+.. py:function:: _get_slabs(client: fairchem.demo.ocpapi.client.Client, bulk: fairchem.demo.ocpapi.client.Bulk) -> list[fairchem.demo.ocpapi.client.Slab]
    :async:
 
 
@@ -276,7 +276,7 @@ Module Contents
    Wrapper around _get_absorbate_configs_on_slab that adds logging.
 
 
-.. py:function:: _get_adsorbate_configs_on_slabs(client: fairchem.demo.ocpapi.client.Client, adsorbate: str, slabs: List[fairchem.demo.ocpapi.client.Slab]) -> List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
+.. py:function:: _get_adsorbate_configs_on_slabs(client: fairchem.demo.ocpapi.client.Client, adsorbate: str, slabs: list[fairchem.demo.ocpapi.client.Slab]) -> list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
    :async:
 
 
@@ -290,7 +290,7 @@ Module Contents
              atoms in the potential binding site.
 
 
-.. py:function:: _submit_relaxations(client: fairchem.demo.ocpapi.client.Client, adsorbate: str, adsorbate_configs: List[fairchem.demo.ocpapi.client.Atoms], bulk: fairchem.demo.ocpapi.client.Bulk, slab: fairchem.demo.ocpapi.client.Slab, model: str, ephemeral: bool) -> str
+.. py:function:: _submit_relaxations(client: fairchem.demo.ocpapi.client.Client, adsorbate: str, adsorbate_configs: list[fairchem.demo.ocpapi.client.Atoms], bulk: fairchem.demo.ocpapi.client.Bulk, slab: fairchem.demo.ocpapi.client.Slab, model: str, ephemeral: bool) -> str
    :async:
 
 
@@ -310,7 +310,7 @@ Module Contents
              as they become available.
 
 
-.. py:function:: _submit_relaxations_with_progress_logging(client: fairchem.demo.ocpapi.client.Client, adsorbate: str, adsorbate_configs: List[fairchem.demo.ocpapi.client.Atoms], bulk: fairchem.demo.ocpapi.client.Bulk, slab: fairchem.demo.ocpapi.client.Slab, model: str, ephemeral: bool) -> str
+.. py:function:: _submit_relaxations_with_progress_logging(client: fairchem.demo.ocpapi.client.Client, adsorbate: str, adsorbate_configs: list[fairchem.demo.ocpapi.client.Atoms], bulk: fairchem.demo.ocpapi.client.Bulk, slab: fairchem.demo.ocpapi.client.Slab, model: str, ephemeral: bool) -> str
    :async:
 
 
@@ -318,7 +318,7 @@ Module Contents
    calls to submit relaxations are being rate limited.
 
 
-.. py:function:: get_adsorbate_slab_relaxation_results(system_id: str, config_ids: Optional[List[int]] = None, fields: Optional[List[str]] = None, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT) -> List[fairchem.demo.ocpapi.client.AdsorbateSlabRelaxationResult]
+.. py:function:: get_adsorbate_slab_relaxation_results(system_id: str, config_ids: list[int] | None = None, fields: list[str] | None = None, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT) -> list[fairchem.demo.ocpapi.client.AdsorbateSlabRelaxationResult]
    :async:
 
 
@@ -337,7 +337,7 @@ Module Contents
              the system.
 
 
-.. py:function:: wait_for_adsorbate_slab_relaxations(system_id: str, check_immediately: bool = False, slow_interval_sec: float = 30, fast_interval_sec: float = 10, pbar: Optional[tqdm.tqdm] = None, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT) -> Dict[int, fairchem.demo.ocpapi.client.Status]
+.. py:function:: wait_for_adsorbate_slab_relaxations(system_id: str, check_immediately: bool = False, slow_interval_sec: float = 30, fast_interval_sec: float = 10, pbar: tqdm.tqdm | None = None, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT) -> dict[int, fairchem.demo.ocpapi.client.Status]
    :async:
 
 
@@ -387,7 +387,7 @@ Module Contents
    :param system_id: The ID of the system to delete.
 
 
-.. py:function:: _run_relaxations_on_slab(client: fairchem.demo.ocpapi.client.Client, adsorbate: str, adsorbate_configs: List[fairchem.demo.ocpapi.client.Atoms], bulk: fairchem.demo.ocpapi.client.Bulk, slab: fairchem.demo.ocpapi.client.Slab, model: str, lifetime: Lifetime, pbar: tqdm.tqdm) -> AdsorbateSlabRelaxations
+.. py:function:: _run_relaxations_on_slab(client: fairchem.demo.ocpapi.client.Client, adsorbate: str, adsorbate_configs: list[fairchem.demo.ocpapi.client.Atoms], bulk: fairchem.demo.ocpapi.client.Bulk, slab: fairchem.demo.ocpapi.client.Slab, model: str, lifetime: Lifetime, pbar: tqdm.tqdm) -> AdsorbateSlabRelaxations
    :async:
 
 
@@ -420,7 +420,7 @@ Module Contents
    :param interval_sec: The number of seconds to wait between each refresh.
 
 
-.. py:function:: _relax_binding_sites_on_slabs(client: fairchem.demo.ocpapi.client.Client, adsorbate: str, bulk: fairchem.demo.ocpapi.client.Bulk, adslabs: List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs], model: str, lifetime: Lifetime) -> AdsorbateBindingSites
+.. py:function:: _relax_binding_sites_on_slabs(client: fairchem.demo.ocpapi.client.Client, adsorbate: str, bulk: fairchem.demo.ocpapi.client.Bulk, adslabs: list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs], model: str, lifetime: Lifetime) -> AdsorbateBindingSites
    :async:
 
 
@@ -440,9 +440,9 @@ Module Contents
 
 
 .. py:data:: _DEFAULT_ADSLAB_FILTER
-   :type:  Callable[[List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]], Awaitable[List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]]]
+   :type:  Callable[[list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]], Awaitable[list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]]]
 
-.. py:function:: find_adsorbate_binding_sites(adsorbate: str, bulk: str, model: str = 'equiformer_v2_31M_s2ef_all_md', adslab_filter: Callable[[List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]], Awaitable[List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]]] = _DEFAULT_ADSLAB_FILTER, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT, lifetime: Lifetime = Lifetime.SAVE) -> AdsorbateBindingSites
+.. py:function:: find_adsorbate_binding_sites(adsorbate: str, bulk: str, model: str = 'equiformer_v2_31M_s2ef_all_md', adslab_filter: Callable[[list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]], Awaitable[list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]]] = _DEFAULT_ADSLAB_FILTER, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT, lifetime: Lifetime = Lifetime.SAVE) -> AdsorbateBindingSites
    :async:
 
 

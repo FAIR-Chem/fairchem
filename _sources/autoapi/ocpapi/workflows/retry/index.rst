@@ -50,7 +50,7 @@ Module Contents
       A short description of the action being attempted.
 
 
-.. py:class:: _wait_check_retry_after(default_wait: tenacity.wait.wait_base, rate_limit_logging: Optional[RateLimitLogging] = None)
+.. py:class:: _wait_check_retry_after(default_wait: tenacity.wait.wait_base, rate_limit_logging: RateLimitLogging | None = None)
 
    Bases: :py:obj:`tenacity.wait.wait_base`
 
@@ -74,7 +74,7 @@ Module Contents
    :value: 0
 
 
-.. py:function:: retry_api_calls(max_attempts: Union[int, NoLimitType] = 3, rate_limit_logging: Optional[RateLimitLogging] = None, fixed_wait_sec: float = 2, max_jitter_sec: float = 1) -> Any
+.. py:function:: retry_api_calls(max_attempts: int | NoLimitType = 3, rate_limit_logging: RateLimitLogging | None = None, fixed_wait_sec: float = 2, max_jitter_sec: float = 1) -> Any
 
    Decorator with sensible defaults for retrying calls to the OCP API.
 

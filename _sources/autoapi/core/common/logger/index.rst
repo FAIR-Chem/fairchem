@@ -63,6 +63,11 @@ Module Contents
 
 
 
+   .. py:method:: log_artifact(name: str, type: str, file_location: str) -> None
+      :abstractmethod:
+
+
+
 .. py:class:: WandBLogger(config)
 
    Bases: :py:obj:`Logger`
@@ -93,6 +98,9 @@ Module Contents
    .. py:method:: mark_preempting() -> None
 
 
+   .. py:method:: log_artifact(name: str, type: str, file_location: str) -> None
+
+
 .. py:class:: TensorboardLogger(config)
 
    Bases: :py:obj:`Logger`
@@ -121,5 +129,8 @@ Module Contents
 
 
    .. py:method:: log_summary(summary_dict: dict[str, Any]) -> None
+
+
+   .. py:method:: log_artifact(name: str, type: str, file_location: str) -> None
 
 

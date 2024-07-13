@@ -23,7 +23,7 @@ Functions
 Module Contents
 ---------------
 
-.. py:class:: Adsorbate(adsorbate_atoms: ase.Atoms = None, adsorbate_id_from_db: int = None, adsorbate_smiles_from_db: str = None, adsorbate_db_path: str = ADSORBATE_PKL_PATH, adsorbate_db: Dict[int, Tuple[Any, Ellipsis]] = None, adsorbate_binding_indices: list = None)
+.. py:class:: Adsorbate(adsorbate_atoms: ase.Atoms = None, adsorbate_id_from_db: int | None = None, adsorbate_smiles_from_db: str | None = None, adsorbate_db_path: str = ADSORBATE_PKL_PATH, adsorbate_db: dict[int, tuple[Any, Ellipsis]] | None = None, adsorbate_binding_indices: list | None = None)
 
    Initializes an adsorbate object in one of 4 ways:
    - Directly pass in an ase.Atoms object.
@@ -62,7 +62,7 @@ Module Contents
    .. py:method:: _get_adsorbate_from_random(adsorbate_db)
 
 
-   .. py:method:: _load_adsorbate(adsorbate: Tuple[Any, Ellipsis]) -> None
+   .. py:method:: _load_adsorbate(adsorbate: tuple[Any, Ellipsis]) -> None
 
       Saves the fields from an adsorbate stored in a database. Fields added
       after the first revision are conditionally added for backwards
@@ -70,5 +70,5 @@ Module Contents
 
 
 
-.. py:function:: randomly_rotate_adsorbate(adsorbate_atoms: ase.Atoms, mode: str = 'random', binding_idx: int = None)
+.. py:function:: randomly_rotate_adsorbate(adsorbate_atoms: ase.Atoms, mode: str = 'random', binding_idx: int | None = None)
 

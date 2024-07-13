@@ -163,7 +163,7 @@ Package Contents
 
 
 
-   .. py:method:: get_slabs(bulk: Union[str, ocpapi.client.models.Bulk]) -> ocpapi.client.models.Slabs
+   .. py:method:: get_slabs(bulk: str | ocpapi.client.models.Bulk) -> ocpapi.client.models.Slabs
       :async:
 
 
@@ -205,7 +205,7 @@ Package Contents
 
 
 
-   .. py:method:: submit_adsorbate_slab_relaxations(adsorbate: str, adsorbate_configs: List[ocpapi.client.models.Atoms], bulk: ocpapi.client.models.Bulk, slab: ocpapi.client.models.Slab, model: str, ephemeral: bool = False) -> ocpapi.client.models.AdsorbateSlabRelaxationsSystem
+   .. py:method:: submit_adsorbate_slab_relaxations(adsorbate: str, adsorbate_configs: list[ocpapi.client.models.Atoms], bulk: ocpapi.client.models.Bulk, slab: ocpapi.client.models.Slab, model: str, ephemeral: bool = False) -> ocpapi.client.models.AdsorbateSlabRelaxationsSystem
       :async:
 
 
@@ -257,7 +257,7 @@ Package Contents
 
 
 
-   .. py:method:: get_adsorbate_slab_relaxations_results(system_id: str, config_ids: Optional[List[int]] = None, fields: Optional[List[str]] = None) -> ocpapi.client.models.AdsorbateSlabRelaxationsResults
+   .. py:method:: get_adsorbate_slab_relaxations_results(system_id: str, config_ids: list[int] | None = None, fields: list[str] | None = None) -> ocpapi.client.models.AdsorbateSlabRelaxationsResults
       :async:
 
 
@@ -328,7 +328,7 @@ Package Contents
    or action that is not allowed.
 
 
-.. py:exception:: RateLimitExceededException(method: str, url: str, retry_after: Optional[datetime.timedelta] = None)
+.. py:exception:: RateLimitExceededException(method: str, url: str, retry_after: datetime.timedelta | None = None)
 
    Bases: :py:obj:`RequestException`
 
@@ -813,7 +813,7 @@ Package Contents
 
 
 
-.. py:function:: get_results_ui_url(api_host: str, system_id: str) -> Optional[str]
+.. py:function:: get_results_ui_url(api_host: str, system_id: str) -> str | None
 
    Generates the URL at which results for the input system can be
    visualized.
@@ -850,7 +850,7 @@ Package Contents
 
 
    .. py:attribute:: slabs
-      :type:  List[AdsorbateSlabRelaxations]
+      :type:  list[AdsorbateSlabRelaxations]
 
       The list of slabs that were generated from the bulk structure. Each
       contains its own list of adsorbate placements.
@@ -868,7 +868,7 @@ Package Contents
 
 
    .. py:attribute:: configs
-      :type:  List[fairchem.demo.ocpapi.client.AdsorbateSlabRelaxationResult]
+      :type:  list[fairchem.demo.ocpapi.client.AdsorbateSlabRelaxationResult]
 
       Details of the relaxation of each adsorbate placement, including the
       final position.
@@ -887,7 +887,7 @@ Package Contents
 
 
    .. py:attribute:: ui_url
-      :type:  Optional[str]
+      :type:  str | None
 
       The URL at which results can be visualized.
 
@@ -934,7 +934,7 @@ Package Contents
    Exception raised when a bulk material is not supported in the API.
 
 
-.. py:exception:: UnsupportedModelException(model: str, allowed_models: List[str])
+.. py:exception:: UnsupportedModelException(model: str, allowed_models: list[str])
 
    Bases: :py:obj:`AdsorbatesException`
 
@@ -942,7 +942,7 @@ Package Contents
    Exception raised when a model is not supported in the API.
 
 
-.. py:function:: find_adsorbate_binding_sites(adsorbate: str, bulk: str, model: str = 'equiformer_v2_31M_s2ef_all_md', adslab_filter: Callable[[List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]], Awaitable[List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]]] = _DEFAULT_ADSLAB_FILTER, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT, lifetime: Lifetime = Lifetime.SAVE) -> AdsorbateBindingSites
+.. py:function:: find_adsorbate_binding_sites(adsorbate: str, bulk: str, model: str = 'equiformer_v2_31M_s2ef_all_md', adslab_filter: Callable[[list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]], Awaitable[list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]]] = _DEFAULT_ADSLAB_FILTER, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT, lifetime: Lifetime = Lifetime.SAVE) -> AdsorbateBindingSites
    :async:
 
 
@@ -981,7 +981,7 @@ Package Contents
        supported.
 
 
-.. py:function:: get_adsorbate_slab_relaxation_results(system_id: str, config_ids: Optional[List[int]] = None, fields: Optional[List[str]] = None, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT) -> List[fairchem.demo.ocpapi.client.AdsorbateSlabRelaxationResult]
+.. py:function:: get_adsorbate_slab_relaxation_results(system_id: str, config_ids: list[int] | None = None, fields: list[str] | None = None, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT) -> list[fairchem.demo.ocpapi.client.AdsorbateSlabRelaxationResult]
    :async:
 
 
@@ -1000,7 +1000,7 @@ Package Contents
              the system.
 
 
-.. py:function:: wait_for_adsorbate_slab_relaxations(system_id: str, check_immediately: bool = False, slow_interval_sec: float = 30, fast_interval_sec: float = 10, pbar: Optional[tqdm.tqdm] = None, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT) -> Dict[int, fairchem.demo.ocpapi.client.Status]
+.. py:function:: wait_for_adsorbate_slab_relaxations(system_id: str, check_immediately: bool = False, slow_interval_sec: float = 30, fast_interval_sec: float = 10, pbar: tqdm.tqdm | None = None, client: fairchem.demo.ocpapi.client.Client = DEFAULT_CLIENT) -> dict[int, fairchem.demo.ocpapi.client.Status]
    :async:
 
 
@@ -1034,18 +1034,18 @@ Package Contents
    Adslab filter than returns all slabs.
 
 
-   .. py:method:: __call__(adslabs: List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
+   .. py:method:: __call__(adslabs: list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
       :async:
 
 
 
-.. py:class:: keep_slabs_with_miller_indices(miller_indices: Iterable[Tuple[int, int, int]])
+.. py:class:: keep_slabs_with_miller_indices(miller_indices: Iterable[tuple[int, int, int]])
 
    Adslab filter that keeps any slabs with the configured miller indices.
    Slabs with other miller indices will be ignored.
 
 
-   .. py:method:: __call__(adslabs: List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
+   .. py:method:: __call__(adslabs: list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
       :async:
 
 
@@ -1056,7 +1056,7 @@ Package Contents
    which of the input slabs to keep.
 
 
-   .. py:method:: _sort_key(adslab: fairchem.demo.ocpapi.client.AdsorbateSlabConfigs) -> Tuple[Tuple[int, int, int], float, str]
+   .. py:method:: _sort_key(adslab: fairchem.demo.ocpapi.client.AdsorbateSlabConfigs) -> tuple[tuple[int, int, int], float, str]
       :staticmethod:
 
 
@@ -1066,7 +1066,7 @@ Package Contents
 
 
 
-   .. py:method:: __call__(adslabs: List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> List[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
+   .. py:method:: __call__(adslabs: list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
       :async:
 
 
@@ -1095,7 +1095,7 @@ Package Contents
       A short description of the action being attempted.
 
 
-.. py:function:: retry_api_calls(max_attempts: Union[int, NoLimitType] = 3, rate_limit_logging: Optional[RateLimitLogging] = None, fixed_wait_sec: float = 2, max_jitter_sec: float = 1) -> Any
+.. py:function:: retry_api_calls(max_attempts: int | NoLimitType = 3, rate_limit_logging: RateLimitLogging | None = None, fixed_wait_sec: float = 2, max_jitter_sec: float = 1) -> Any
 
    Decorator with sensible defaults for retrying calls to the OCP API.
 
