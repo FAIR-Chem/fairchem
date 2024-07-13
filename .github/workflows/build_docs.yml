@@ -4,7 +4,6 @@ name: build documentation
 on:
   workflow_call:
   workflow_dispatch:
-  # this will run a build when a review is submitted to make sure the PR does not break docs before merging
   pull_request_review:
     types: [submitted, edited]
 
