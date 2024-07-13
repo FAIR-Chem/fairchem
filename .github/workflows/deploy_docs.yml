@@ -1,0 +1,34 @@
+name: build and deploy docs
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build_docs.yml
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download docs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-html
+          path: docs-html/
+
+      - name: Deploy to ghpages branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs-html
+
+      - name: Deploy to fair-chem.github.io
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          external_repository: FAIR-Chem/fair-chem.github.io
+          publish_branch: gh-pages
+          publish_dir: docs-html
