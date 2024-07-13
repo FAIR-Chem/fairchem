@@ -38,7 +38,7 @@ def batch_to_atoms(batch):
     n_systems = batch.natoms.shape[0]
     natoms = batch.natoms.tolist()
     numbers = torch.split(batch.atomic_numbers, natoms)
-    fixed = torch.split(batch.fixed, natoms)
+    fixed = torch.split(batch.fixed.to(torch.bool), natoms)
     forces = torch.split(batch.force, natoms)
     positions = torch.split(batch.pos, natoms)
     tags = torch.split(batch.tags, natoms)
