@@ -152,7 +152,7 @@ class AseAtomsDataset(Dataset, ABC):
         data_object = self.transforms(data_object)
 
         if self.config.get("include_relaxed_energy", False):
-            data_object.y_relaxed = self.get_relaxed_energy(self.ids[idx])
+            data_object.energy_relaxed = self.get_relaxed_energy(self.ids[idx])
 
         return data_object
 
@@ -170,9 +170,12 @@ class AseAtomsDataset(Dataset, ABC):
             "Every ASE dataset needs to declare a function to load the dataset and return a list of ids."
         )
 
-    @abstractmethod
     def get_relaxed_energy(self, identifier):
-        raise NotImplementedError("IS2RE-Direct is not implemented with this dataset.")
+        raise NotImplementedError(
+            "Reading relaxed energy from trajectory or file is not implemented with this dataset. "
+            "If relaxed energies are saved with the atoms info dictionary, they can be used by passing the keys in "
+            "the r_data_keys argument under a2g_args."
+        )
 
     def close_db(self) -> None:
         # This method is sometimes called by a trainer
@@ -569,8 +572,3 @@ class AseDBDataset(AseAtomsDataset):
             return super().get_metadata(num_samples)
 
         return copy.deepcopy(self.dbs[0].metadata)
-
-    def get_relaxed_energy(self, identifier):
-        raise NotImplementedError(
-            "IS2RE-Direct training with an ASE DB is not currently supported."
-        )
