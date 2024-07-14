@@ -42,7 +42,7 @@ def ml_relax(
         model: a trainer object with model.q
         steps: Max number of steps in the structure relaxation.
         fmax: Structure relaxation terminates when the max force of the system is no bigger than fmax.
-        relax_opt: Optimizer and corresponding parameters to be used for structure relaxations.
+        relax_opt: Optimizer parameters to be used for structure relaxations.
         relax_cell: if true will use stress predictions to relax crystallographic cell.
             The model given must predict stress
         relax_volume: if true will relax the cell isotropically. the given model must predict stress.
