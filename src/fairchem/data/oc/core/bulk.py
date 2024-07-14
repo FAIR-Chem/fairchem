@@ -6,6 +6,7 @@ import warnings
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from fairchem.core.scripts import download_large_files
 from fairchem.data.oc.core.slab import Slab
 from fairchem.data.oc.databases.pkls import BULK_PKL_PATH
 
@@ -51,6 +52,8 @@ class Bulk:
             self.src_id = None
         else:
             if bulk_db is None:
+                if bulk_db_path == BULK_PKL_PATH and not os.path.exists(BULK_PKL_PATH):
+                    download_large_files.main("oc")
                 with open(bulk_db_path, "rb") as fp:
                     bulk_db = pickle.load(fp)
 
