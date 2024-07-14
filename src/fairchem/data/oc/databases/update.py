@@ -11,8 +11,9 @@ from pathlib import Path
 import ase.io
 from ase.atoms import Atoms
 from ase.calculators.singlepoint import SinglePointCalculator as SPC
-from fairchem.core.scripts import download_large_files
 from tqdm import tqdm
+
+from fairchem.core.scripts import download_large_files
 
 
 # Monkey patch fix

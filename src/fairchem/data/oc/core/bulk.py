@@ -6,9 +6,10 @@ import warnings
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from fairchem.core.scripts import download_large_files
 from fairchem.data.oc.core.slab import Slab
 from fairchem.data.oc.databases.pkls import BULK_PKL_PATH
+
+from fairchem.core.scripts import download_large_files
 
 if TYPE_CHECKING:
     import ase

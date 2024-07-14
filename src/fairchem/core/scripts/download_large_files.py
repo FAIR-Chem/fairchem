@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 from pathlib import Path
 from urllib.request import urlretrieve
@@ -43,7 +45,7 @@ def parse_args():
         type=str,
         help="Group of files to download",
         default="ALL",
-        choices=["ALL"] + list(FILE_GROUPS),
+        choices=["ALL", *list(FILE_GROUPS)],
     )
     return parser.parse_args()
 
@@ -55,7 +57,7 @@ def main(file_group):
         files_to_download = [item for group in FILE_GROUPS.values() for item in group]
     else:
         raise ValueError(
-            f'Requested file group {file_group} not recognized. Please select one of {["ALL"] + list(FILE_GROUPS)}'
+            f'Requested file group {file_group} not recognized. Please select one of {["ALL", *list(FILE_GROUPS)]}'
         )
 
     for file in files_to_download:
