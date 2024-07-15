@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from abc import ABCMeta
 from functools import cached_property
+import logging
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -43,15 +44,7 @@ class UnsupportedDatasetError(ValueError):
     pass
 
 
-@runtime_checkable
-class DatasetWithSizes(Protocol):
-    # metadata: DatasetMetadata
-
-    def get_metadata(self, attr, idxs):
-        """get metadata attr for the given idx or idxs"""
-
-
-class Subset(Subset_, DatasetWithSizes):
+class Subset(Subset_):
     """A pytorch subset that also takes metadata if given."""
 
     def __init__(
@@ -65,12 +58,16 @@ class Subset(Subset_, DatasetWithSizes):
         self.indices = indices
 
     def get_metadata(self, attr, idx):
-        if isinstance(idx, list):
-            return getattr(self.dataset.metadata, attr)[[self.indices[i] for i in idx]]
-        return getattr(self.dataset.metadata, attr)[self.indices[idx]]
+        if self.dataset.metadata is not None:
+            if isinstance(idx, list):
+                return getattr(self.dataset.metadata, attr)[
+                    [self.indices[i] for i in idx]
+                ]
+            return getattr(self.dataset.metadata, attr)[self.indices[idx]]
+        return None
 
 
-class BaseDataset(Dataset[T_co], DatasetWithSizes, metaclass=ABCMeta):
+class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
     """Base Dataset class for all OCP datasets."""
 
     def __init__(self, config: dict):
@@ -80,11 +77,13 @@ class BaseDataset(Dataset[T_co], DatasetWithSizes, metaclass=ABCMeta):
             config (dict): dataset configuration
         """
         self.config = config
+        self.paths = []
 
-        if isinstance(config["src"], str):
-            self.paths = [Path(self.config["src"])]
-        else:
-            self.paths = tuple(Path(path) for path in config["src"])
+        if "src" in self.config:
+            if isinstance(config["src"], str):
+                self.paths = [Path(self.config["src"])]
+            else:
+                self.paths = tuple(Path(path) for path in config["src"])
 
         self.lin_ref = None
         if self.config.get("lin_ref", False):
@@ -119,9 +118,10 @@ class BaseDataset(Dataset[T_co], DatasetWithSizes, metaclass=ABCMeta):
                     metadata_npzs.append(np.load(metadata_file, allow_pickle=True))
 
         if len(metadata_npzs) == 0:
-            raise ValueError(
+            logging.warning(
                 f"Could not find dataset metadata.npz files in '{self.paths}'"
             )
+            return None
 
         metadata = DatasetMetadata(
             **{
@@ -137,10 +137,12 @@ class BaseDataset(Dataset[T_co], DatasetWithSizes, metaclass=ABCMeta):
         return metadata
 
     def get_metadata(self, attr, idx):
-        metadata_attr = getattr(self.metadata, attr)
-        if isinstance(idx, list):
-            return [metadata_attr[_idx] for _idx in idx]
-        return metadata_attr[idx]
+        if self.metadata is not None:
+            metadata_attr = getattr(self.metadata, attr)
+            if isinstance(idx, list):
+                return [metadata_attr[_idx] for _idx in idx]
+            return metadata_attr[idx]
+        return None
 
 
 def create_dataset(config: dict[str, Any], split: str) -> Subset:
