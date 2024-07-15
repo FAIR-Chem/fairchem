@@ -1,8 +1,11 @@
-import os
+from __future__ import annotations
+
+import argparse
 import json
+import os
 import pickle
 import random
-import argparse
+
 import tqdm
 
 
@@ -27,7 +30,6 @@ def parse_args():
 
 
 def main():
-
     args = parse_args()
 
     # rdkit folder downloaded 2024-03-01
@@ -35,7 +37,7 @@ def main():
     out_path = args.out_path
     drugs_file = os.path.join(base_path, "summary_drugs.json")
 
-    with open(drugs_file, "r") as f:
+    with open(drugs_file) as f:
         drugs_summ = json.load(f)
 
     # set random seed

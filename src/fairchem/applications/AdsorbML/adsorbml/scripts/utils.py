@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import glob
 import os
 
-from pymatgen.io.vasp.outputs import *
+from pymatgen.io.vasp.outputs import Oszicar
 
 """
 This script provides utility functions that can be useful for trying to

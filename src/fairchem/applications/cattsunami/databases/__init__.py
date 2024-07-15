@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 DISSOCIATION_REACTION_DB_PATH = os.path.join(

@@ -161,10 +161,10 @@ class BaseTrainer(ABC):
             if len(dataset) > 2:
                 self.config["test_dataset"] = dataset[2]
         elif isinstance(dataset, dict):
-            self.config["dataset"] = dataset.get("train", None)
-            self.config["val_dataset"] = dataset.get("val", None)
-            self.config["test_dataset"] = dataset.get("test", None)
-            self.config["relax_dataset"] = dataset.get("relax", None)
+            self.config["dataset"] = dataset.get("train", {})
+            self.config["val_dataset"] = dataset.get("val", {})
+            self.config["test_dataset"] = dataset.get("test", {})
+            self.config["relax_dataset"] = dataset.get("relax", {})
         else:
             self.config["dataset"] = dataset
 
@@ -283,8 +283,19 @@ class BaseTrainer(ABC):
         self.val_loader = None
         self.test_loader = None
 
+        # Default all of the dataset portions to {} if
+        # they don't exist, or are null
+        if not self.config.get("dataset", None):
+            self.config["dataset"] = {}
+        if not self.config.get("val_dataset", None):
+            self.config["val_dataset"] = {}
+        if not self.config.get("test_dataset", None):
+            self.config["test_dataset"] = {}
+        if not self.config.get("relax_dataset", None):
+            self.config["relax_dataset"] = {}
+
         # load train, val, test datasets
-        if self.config["dataset"].get("src", None):
+        if self.config["dataset"] and self.config["dataset"].get("src", None):
             logging.info(
                 f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
             )
@@ -300,7 +311,7 @@ class BaseTrainer(ABC):
                 self.train_sampler,
             )
 
-        if self.config.get("val_dataset", None):
+        if self.config["val_dataset"]:
             if self.config["val_dataset"].get("use_train_settings", True):
                 val_config = self.config["dataset"].copy()
                 val_config.update(self.config["val_dataset"])
@@ -320,8 +331,13 @@ class BaseTrainer(ABC):
                 self.val_sampler,
             )
 
-        if self.config.get("test_dataset", None):
-            if self.config["test_dataset"].get("use_train_settings", True):
+        if self.config["test_dataset"]:
+            if (
+                self.config["test_dataset"].get("use_train_settings", True)
+                and self.config[
+                    "dataset"
+                ]  # if there's no training dataset, we have nothing to copy
+            ):
                 test_config = self.config["dataset"].copy()
                 test_config.update(self.config["test_dataset"])
             else:
@@ -340,30 +356,33 @@ class BaseTrainer(ABC):
                 self.test_sampler,
             )
 
-            if self.config.get("relax_dataset", None):
-                if self.config["relax_dataset"].get("use_train_settings", True):
-                    relax_config = self.config["dataset"].copy()
-                    relax_config.update(self.config["relax_dataset"])
-                else:
-                    relax_config = self.config["relax_dataset"]
+        if self.config["relax_dataset"]:
+            if self.config["relax_dataset"].get("use_train_settings", True):
+                relax_config = self.config["dataset"].copy()
+                relax_config.update(self.config["relax_dataset"])
+            else:
+                relax_config = self.config["relax_dataset"]
 
-                self.relax_dataset = registry.get_dataset_class(
-                    relax_config.get("format", "lmdb")
-                )(relax_config)
-                self.relax_sampler = self.get_sampler(
-                    self.relax_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.relax_loader = self.get_dataloader(
-                    self.relax_dataset,
-                    self.relax_sampler,
-                )
+            self.relax_dataset = registry.get_dataset_class(
+                relax_config.get("format", "lmdb")
+            )(relax_config)
+            self.relax_sampler = self.get_sampler(
+                self.relax_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.relax_loader = self.get_dataloader(
+                self.relax_dataset,
+                self.relax_sampler,
+            )
 
     def load_task(self):
         # Normalizer for the dataset.
+
+        # Is it troublesome that we assume any normalizer info is in train? What if there is no
+        # training dataset? What happens if we just specify a test
         normalizer = self.config["dataset"].get("transforms", {}).get("normalizer", {})
         self.normalizers = {}
         if normalizer:

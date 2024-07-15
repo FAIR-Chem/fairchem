@@ -5,6 +5,8 @@ Note that some of these scripts were taken and modified from
 [GASpy](https://github.com/ulissigroup/GASpy) with permission of authors.
 """
 
+from __future__ import annotations
+
 __author__ = "Kevin Tran"
 __email__ = "ktran@andrew.cmu.edu"
 
@@ -70,7 +72,7 @@ def _clean_up_inputs(atoms, vasp_flags):
         atoms.set_cell(atoms.cell[[1, 0, 2], :])
 
     # Calculate and set the k points
-    if "kpts" not in vasp_flags.keys():
+    if "kpts" not in vasp_flags:
         k_pts = calculate_surface_k_points(atoms)
         vasp_flags["kpts"] = k_pts
 
@@ -92,12 +94,11 @@ def calculate_surface_k_points(atoms):
     a0 = np.linalg.norm(cell[0], ord=order)
     b0 = np.linalg.norm(cell[1], ord=order)
     multiplier = 40
-    k_pts = (
+    return (
         max(1, int(round(multiplier / a0))),
         max(1, int(round(multiplier / b0))),
         1,
     )
-    return k_pts
 
 
 def write_vasp_input_files(atoms, outdir=".", vasp_flags=None):

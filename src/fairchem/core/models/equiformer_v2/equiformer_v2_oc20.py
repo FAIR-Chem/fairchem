@@ -402,7 +402,7 @@ class EquiformerV2_OC20(BaseModel):
         edge_distance,
         edge_distance_vec,
     ):
-        """ Graph Parallel
+        """Graph Parallel
         This creates the required partial tensors for each rank given the full tensors.
         The tensors are split on the dimension along the node index using node_partition.
         """

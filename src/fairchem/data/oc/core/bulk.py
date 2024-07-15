@@ -1,13 +1,16 @@
+from __future__ import annotations
+
 import os
 import pickle
 import warnings
-from typing import Any, Dict, List
+from typing import TYPE_CHECKING, Any
 
-import ase
 import numpy as np
-
 from fairchem.data.oc.core.slab import Slab
 from fairchem.data.oc.databases.pkls import BULK_PKL_PATH
+
+if TYPE_CHECKING:
+    import ase
 
 
 class Bulk:
@@ -35,10 +38,10 @@ class Bulk:
     def __init__(
         self,
         bulk_atoms: ase.Atoms = None,
-        bulk_id_from_db: int = None,
-        bulk_src_id_from_db: str = None,
+        bulk_id_from_db: int | None = None,
+        bulk_src_id_from_db: str | None = None,
         bulk_db_path: str = BULK_PKL_PATH,
-        bulk_db: List[Dict[str, Any]] = None,
+        bulk_db: list[dict[str, Any]] | None = None,
     ):
         self.bulk_id_from_db = bulk_id_from_db
         self.bulk_db_path = bulk_db_path
@@ -46,29 +49,31 @@ class Bulk:
         if bulk_atoms is not None:
             self.atoms = bulk_atoms.copy()
             self.src_id = None
-        elif bulk_id_from_db is not None:
-            bulk_db = bulk_db or pickle.load(open(bulk_db_path, "rb"))
-            bulk_obj = bulk_db[bulk_id_from_db]
-            self.atoms, self.src_id = bulk_obj["atoms"], bulk_obj["src_id"]
-        elif bulk_src_id_from_db is not None:
-            bulk_db = bulk_db or pickle.load(open(bulk_db_path, "rb"))
-            bulk_obj_tuple = [
-                (idx, bulk)
-                for idx, bulk in enumerate(bulk_db)
-                if bulk["src_id"] == bulk_src_id_from_db
-            ]
-            if len(bulk_obj_tuple) < 1:
-                warnings.warn(
-                    "A bulk with that src id was not found. Choosing one at random instead"
-                )
-                self._get_bulk_from_random(bulk_db)
-            else:
-                bulk_obj = bulk_obj_tuple[0][1]
-                self.bulk_id_from_db = bulk_obj_tuple[0][0]
-                self.atoms, self.src_id = bulk_obj["atoms"], bulk_obj["src_id"]
         else:
-            bulk_db = bulk_db or pickle.load(open(bulk_db_path, "rb"))
-            self._get_bulk_from_random(bulk_db)
+            if bulk_db is None:
+                with open(bulk_db_path, "rb") as fp:
+                    bulk_db = pickle.load(fp)
+
+            if bulk_id_from_db is not None:
+                bulk_obj = bulk_db[bulk_id_from_db]
+                self.atoms, self.src_id = bulk_obj["atoms"], bulk_obj["src_id"]
+            elif bulk_src_id_from_db is not None:
+                bulk_obj_tuple = [
+                    (idx, bulk)
+                    for idx, bulk in enumerate(bulk_db)
+                    if bulk["src_id"] == bulk_src_id_from_db
+                ]
+                if len(bulk_obj_tuple) < 1:
+                    warnings.warn(
+                        "A bulk with that src id was not found. Choosing one at random instead"
+                    )
+                    self._get_bulk_from_random(bulk_db)
+                else:
+                    bulk_obj = bulk_obj_tuple[0][1]
+                    self.bulk_id_from_db = bulk_obj_tuple[0][0]
+                    self.atoms, self.src_id = bulk_obj["atoms"], bulk_obj["src_id"]
+            else:
+                self._get_bulk_from_random(bulk_db)
 
     def _get_bulk_from_random(self, bulk_db):
         self.bulk_id_from_db = np.random.randint(len(bulk_db))
