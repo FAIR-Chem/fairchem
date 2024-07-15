@@ -14,6 +14,9 @@ kernelspec:
 # CatTSunami Tutorial
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 from fairchem.applications.cattsunami.core import Reaction
 from fairchem.data.oc.core import Slab, Adsorbate, Bulk, AdsorbateSlabConfig
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
@@ -41,6 +44,9 @@ np.random.seed(22)
 ## Do enumerations in an AdsorbML style
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Instantiate the reaction class for the reaction of interest
 reaction = Reaction(reaction_str_from_db="*CH -> *C + *H",
                     reaction_db_path=DISSOCIATION_REACTION_DB_PATH,
@@ -48,6 +54,9 @@ reaction = Reaction(reaction_str_from_db="*CH -> *C + *H",
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Instantiate our adsorbate class for the reactant and product
 reactant = Adsorbate(adsorbate_id_from_db=reaction.reactant1_idx, adsorbate_db_path=ADSORBATE_PKL_PATH)
 product1 = Adsorbate(adsorbate_id_from_db=reaction.product1_idx, adsorbate_db_path=ADSORBATE_PKL_PATH)
@@ -55,12 +64,18 @@ product2 = Adsorbate(adsorbate_id_from_db=reaction.product2_idx, adsorbate_db_pa
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Grab the bulk and cut the slab we are interested in
 bulk = Bulk(bulk_src_id_from_db="mp-33", bulk_db_path=BULK_PKL_PATH)
 slab = Slab.from_bulk_get_specific_millers(bulk = bulk, specific_millers=(0,0,1))
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Perform site enumeration
 # For AdsorbML num_sites = 100, but we use 5 here for brevity. This should be increased for practical use.
 reactant_configs = AdsorbateSlabConfig(slab = slab[0], adsorbate = reactant,
@@ -75,6 +90,9 @@ product2_configs = AdsorbateSlabConfig(slab = slab[0], adsorbate = product2,
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Instantiate the calculator
 # NOTE: If you have a GPU, use cpu = False
 # NOTE: Change the checkpoint path to locally downloaded files as needed
@@ -84,6 +102,9 @@ calc = OCPCalculator(checkpoint_path = checkpoint_path, cpu = cpu)
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Relax the reactant systems
 reactant_energies = []
 for config in reactant_configs:
@@ -94,6 +115,9 @@ for config in reactant_configs:
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Relax the product systems
 product1_energies = []
 for config in product1_configs:
@@ -104,6 +128,9 @@ for config in product1_configs:
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 product2_energies = []
 for config in product2_configs:
     config.calc = calc
@@ -115,10 +142,16 @@ for config in product2_configs:
 ## Enumerate NEBs
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 Image(filename="dissociation_scheme.png")
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 af = AutoFrameDissociation(
             reaction = reaction,
             reactant_system = reactant_configs[reactant_energies.index(min(reactant_energies))],
@@ -133,6 +166,9 @@ af = AutoFrameDissociation(
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 nframes = 10
 frame_sets, mapping_idxs = af.get_neb_frames(calc,
                                n_frames = nframes,
@@ -144,6 +180,9 @@ frame_sets, mapping_idxs = af.get_neb_frames(calc,
 ## Run NEBs
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 ## This will run all NEBs enumerated - to just run one, run the code cell below.
 # On GPU, each NEB takes an average of ~1 minute so this could take around a half hour on GPU
 # But much longer on CPU
@@ -176,6 +215,9 @@ frame_sets, mapping_idxs = af.get_neb_frames(calc,
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # If you run the above cell -- dont run this one
 fmax = 0.05 # [eV / ang**2]
 delta_fmax_climb = 0.4
@@ -199,10 +241,16 @@ if conv:
 ## Visualize the results
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 optimized_neb = read(f"ch_dissoc_on_Ru_{converged_idxs[0]}.traj", ":")[-1*nframes:]
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 es  = []
 for frame in optimized_neb:
     frame.set_calculator(calc)
@@ -210,6 +258,9 @@ for frame in optimized_neb:
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Plot the reaction coordinate
 
 es = [e - es[0] for e in es]
@@ -221,11 +272,10 @@ plt.savefig("CH_dissoc_on_Ru_0001.png")
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Make an interative html file of the optimized neb trajectory
 x3d = X3D(optimized_neb)
 x3d.write("optimized_neb_ch_disoc_on_Ru0001.html")
-```
-
-```{code-cell} ipython3
-
 ```

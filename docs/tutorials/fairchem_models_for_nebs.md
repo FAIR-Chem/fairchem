@@ -19,10 +19,13 @@ from ase.io import read
 
 from fairchem.applications.cattsunami.core.autoframe import interpolate
 from fairchem.applications.cattsunami.core import OCPNEB
+from fairchem.core.models.model_registry import model_name_to_local_file
 
 #Optional
 from x3dase.x3d import X3D
 import matplotlib.pyplot as plt
+from pathlib import Path
+import os
 ```
 
 ## Set up inputs
@@ -33,6 +36,11 @@ Shown here are the values used consistently throughout the paper.
 fmax = 0.05 # [eV / ang]
 delta_fmax_climb = 0.4 # this means that when the fmax is below 0.45 eV/Ang climbing image will be turned on
 k = 1 # you may adjust this value as you see fit
+cpu = True # set to False if you have a GPU
+
+
+# NOTE: Change the checkpoint path to locally downloaded files as needed
+checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
 ```
 
 ## If you have your own set of NEB frames
@@ -43,8 +51,9 @@ Load your frames (change to the appropriate loading method)
 The approach uses ase, so you must provide a list of ase.Atoms objects
 with the appropriate constraints.
 """
-
-frame_set = read("path-to-your-frames.traj")
+path_ = Path(__file__).parents[2]
+path_ = os.path.join(path_, "src", "fairchem", "applications", "cattsunami", "tutorial", "sample_traj.traj")
+frame_set = read(path_, ":")[0:10] # Change to the path to your atoms of the frame set
 ```
 
 ```{code-cell} ipython3
@@ -74,6 +83,9 @@ IMPORTANT NOTES:
 2. Ensure you have the proper constraints on subsurface atoms
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 """
 Load your initial and frames (change to the appropriate loading method)
 The approach uses ase, so you must provide ase.Atoms objects
@@ -85,6 +97,9 @@ num_frames = 10 # you may change this to whatever you like
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 frame_set = interpolate(initial_frame, final_frame, num_frames)
 
 neb = OCPNEB(
@@ -107,10 +122,16 @@ if conv:
 ## Visualize the results
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 optimized_neb = read(f"your-neb.traj", ":")[-1*nframes:]
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 es  = []
 for frame in optimized_neb:
     frame.set_calculator(calc)
@@ -118,6 +139,9 @@ for frame in optimized_neb:
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Plot the reaction coordinate
 
 es = [e - es[0] for e in es]
@@ -129,6 +153,9 @@ plt.savefig("reaction_coordinate.png")
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 # Make an interative html file of the optimized neb trajectory
 x3d = X3D(optimized_neb)
 x3d.write("your-neb.html")
