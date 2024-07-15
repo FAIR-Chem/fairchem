@@ -6,17 +6,15 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import logging
 from abc import ABCMeta
 from functools import cached_property
-import logging
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
     NamedTuple,
-    Protocol,
     TypeVar,
-    runtime_checkable,
 )
 
 import numpy as np
