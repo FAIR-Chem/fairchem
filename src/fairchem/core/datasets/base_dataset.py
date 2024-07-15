@@ -178,6 +178,8 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
     indices = dataset.indices
     max_atoms = current_split_config.get("max_atoms", None)
     if max_atoms is not None:
+        if not hasattr(dataset.metadata, "natoms"):
+            raise ValueError("Cannot use max_atoms without dataset metadata")
         indices = indices[dataset.metadata.natoms[indices] <= max_atoms]
 
     # Apply dataset level transforms
