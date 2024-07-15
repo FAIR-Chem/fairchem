@@ -34,7 +34,10 @@ FILE_GROUPS = {
         Path("tests/applications/cattsunami/tests/autoframe_inputs_dissociation.pkl"),
         Path("tests/applications/cattsunami/tests/autoframe_inputs_transfer.pkl"),
     ],
-    "nrr": [Path("docs/tutorials/NRR/NRR_example_bulks.pkl")],
+    "docs": [
+        Path("docs/tutorials/NRR/NRR_example_bulks.pkl"),
+        Path("docs/core/fine-tuning/supporting-information.json"),
+    ],
 }
 
 
@@ -63,6 +66,7 @@ def main(file_group):
     for file in files_to_download:
         print(f"Downloading {file}...")
         urlretrieve(S3_ROOT + file.name, FAIRCHEM_ROOT / file)
+
 
 if __name__ == "__main__":
     args = parse_args()
