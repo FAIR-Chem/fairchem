@@ -86,7 +86,7 @@ class WandBLogger(Logger):
         )
 
     def watch(self, model, log_freq: int = 1000) -> None:
-        wandb.watch(model, log_freq = log_freq)
+        wandb.watch(model, log_freq=log_freq)
 
     def log(self, update_dict, step: int, split: str = "") -> None:
         update_dict = super().log(update_dict, step, split)

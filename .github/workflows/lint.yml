@@ -1,8 +1,11 @@
 name: lint
 
 on:
-  push:
+  workflow_call:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
 
 jobs:
   lint:
@@ -25,7 +28,4 @@ jobs:
       - name: ruff
         run: |
           ruff --version
-          ruff check --statistics --config packages/fairchem-core/pyproject.toml src/fairchem/core/
-          ruff check --statistics --config packages/fairchem-data-oc/pyproject.toml src/fairchem/data/oc/
-          #ruff check --statistics --config packages/fairchem-data-om/pyproject.toml src/fairchem/data/om/
-          #ruff check --statistics --config packages/fairchem-demo-ocpapi/pyproject.toml src/fairchem/demo/ocpapi/
+          ruff check src

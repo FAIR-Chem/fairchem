@@ -67,6 +67,8 @@ e.g.
     }
 """
 
+from __future__ import annotations
+
 import argparse
 import pickle
 from collections import defaultdict
