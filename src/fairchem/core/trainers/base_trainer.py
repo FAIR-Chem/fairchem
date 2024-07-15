@@ -38,6 +38,7 @@ from fairchem.core.common.utils import (
     save_checkpoint,
     update_config,
 )
+from fairchem.core.datasets.base_dataset import create_dataset
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
@@ -45,8 +46,6 @@ from fairchem.core.modules.normalizer import Normalizer
 from fairchem.core.modules.scaling.compat import load_scales_compat
 from fairchem.core.modules.scaling.util import ensure_fitted
 from fairchem.core.modules.scheduler import LRScheduler
-
-from fairchem.core.datasets.base_dataset import create_dataset
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
