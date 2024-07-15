@@ -23,7 +23,7 @@ from fairchem.core.common.data_parallel import (
     UnsupportedDatasetError,
     _balanced_partition,
 )
-from fairchem.core.datasets.base_dataset import DatasetMetadata, DatasetWithSizes
+from fairchem.core.datasets.base_dataset import BaseDataset, DatasetMetadata
 
 DATA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 SIZE_ATOMS = [2, 20, 3, 51, 10, 11, 41, 31, 13, 14]
@@ -39,10 +39,13 @@ def _temp_file(name: str):
 
 @pytest.fixture()
 def valid_dataset():
-    class _Dataset(Dataset[T_co], DatasetWithSizes):
-        metadata = DatasetMetadata(natoms=np.array(SIZE_ATOMS))
+    class _Dataset(BaseDataset):
+        @functools.cached_property
+        def metadata(self) -> DatasetMetadata:
+            return DatasetMetadata(natoms=np.array(SIZE_ATOMS))
 
         def __init__(self, data) -> None:
+            super().__init__(config={})
             self.data = data
 
         def __len__(self):
@@ -63,8 +66,13 @@ def valid_dataset():
 
 @pytest.fixture()
 def valid_path_dataset():
-    class _Dataset(Dataset[T_co], DatasetWithSizes):
+    class _Dataset(BaseDataset):
+        @functools.cached_property
+        def metadata(self) -> DatasetMetadata:
+            return self.metadata
+
         def __init__(self, data, fpath: Path) -> None:
+            super().__init__(config={})
             self.data = data
             self.metadata = DatasetMetadata(natoms=np.load(fpath)["natoms"])
 
@@ -87,8 +95,10 @@ def valid_path_dataset():
 
 @pytest.fixture()
 def invalid_path_dataset():
-    class _Dataset(Dataset):
+    class _Dataset(BaseDataset):
+
         def __init__(self, data) -> None:
+            super().__init__(config={})
             self.data = data
             self.metadata_path = Path("/tmp/does/not/exist.np")
 
@@ -103,8 +113,10 @@ def invalid_path_dataset():
 
 @pytest.fixture()
 def invalid_dataset():
-    class _Dataset(Dataset):
+    class _Dataset(BaseDataset):
+
         def __init__(self, data) -> None:
+            super().__init__(config={})
             self.data = data
 
         def __len__(self):

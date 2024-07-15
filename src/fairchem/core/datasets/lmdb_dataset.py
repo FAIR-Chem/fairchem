@@ -163,7 +163,7 @@ class LmdbDataset(BaseDataset):
             max_readers=1,
         )
 
-    def close_db(self) -> None:
+    def __del__(self):
         if not self.path.is_file():
             for env in self.envs:
                 env.close()

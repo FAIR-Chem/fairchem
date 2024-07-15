@@ -21,7 +21,6 @@ from typing_extensions import override
 from fairchem.core.common import distutils, gp_utils
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.datasets.base_dataset import (
-    DatasetWithSizes,
     UnsupportedDatasetError,
 )
 
@@ -61,7 +60,7 @@ def _ensure_supported(dataset: Any):
     if not isinstance(dataset, Dataset):
         raise UnsupportedDatasetError("BalancedBatchSampler requires a dataset.")
 
-    if not isinstance(dataset, DatasetWithSizes):
+    if dataset.metadata is None:
         raise UnsupportedDatasetError(
             "BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms."
         )
@@ -103,6 +102,8 @@ class BalancedBatchSampler(BatchSampler):
             drop_last (bool, optional): Whether to drop the last incomplete batch. Defaults to False.
         """
         self.disabled = False
+        self.metadata_has_sizes = False
+        self.on_error = on_error
 
         if mode is False:
             logging.warning(f"Disabled BalancedBatchSampler because {mode=}.")
@@ -115,7 +116,22 @@ class BalancedBatchSampler(BatchSampler):
             logging.warning(f"Disabled BalancedBatchSampler because {num_replicas=}.")
             self.disabled = True
 
-        _ensure_supported(dataset)
+        try:
+            dataset = _ensure_supported(dataset)
+            self.metadata_has_sizes = True
+        except UnsupportedDatasetError as error:
+            if self.on_error == "raise":
+                raise error
+            if self.on_error == "warn_and_balance":
+                logging.warning(
+                    f"Failed to get data sizes from metadata, loading data to get sizes (THIS IS SLOW). {error}"
+                )
+            elif self.on_error == "warn_and_no_balance":
+                logging.warning(
+                    f"Failed to get data sizes, falling back to uniform partitioning. {error}"
+                )
+            else:
+                raise ValueError(f"Unknown on_error={self.on_error}") from error
 
         sampler = StatefulDistributedSampler(
             dataset,
@@ -129,32 +145,17 @@ class BalancedBatchSampler(BatchSampler):
 
         super().__init__(sampler, batch_size=batch_size, drop_last=drop_last)
         self.device = device
-        self.on_error = on_error
 
         logging.info(
             f"Created BalancedBatchSampler with {sampler=}, {batch_size=}, {drop_last=}"
         )
 
     def _get_natoms(self, batch_idx: list[int]):
-        dataset = self.sampler.dataset
-        try:
-            dataset = _ensure_supported(dataset)
-            return dataset.get_metadata("natoms", batch_idx)
-        except UnsupportedDatasetError as error:
-            if self.on_error == "raise":
-                raise error
-            if self.on_error == "warn_and_balance":
-                logging.warning(
-                    f"Failed to get data sizes from metadata, loading data to get sizes (THIS IS SLOW). {error}"
-                )
-                return np.array([dataset[idx].num_nodes for idx in batch_idx])
-            elif self.on_error == "warn_and_no_balance":
-                logging.warning(
-                    f"Failed to get data sizes, falling back to uniform partitioning. {error}"
-                )
-                return None
-            else:
-                raise ValueError(f"Unknown on_error={self.on_error}") from error
+        if self.metadata_has_sizes:
+            return self.sampler.dataset.get_metadata("natoms", batch_idx)
+        if self.on_error == "warn_and_balance":
+            return np.array([self.sampler.dataset[idx].num_nodes for idx in batch_idx])
+        return None
 
     def set_epoch_and_start_iteration(self, epoch: int, start_iteration: int) -> None:
         if not isinstance(self.sampler, StatefulDistributedSampler):

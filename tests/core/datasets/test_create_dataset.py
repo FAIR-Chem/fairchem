@@ -1,7 +1,10 @@
+import os
 import numpy as np
 import pytest
 
 from fairchem.core.datasets import LMDBDatabase, create_dataset
+from fairchem.core.datasets.base_dataset import BaseDataset
+import tempfile
 
 
 @pytest.mark.parametrize("max_atoms", [3, None])
@@ -52,3 +55,20 @@ def test_create_dataset(key, value, max_atoms, structures, tmp_path):
             np.allclose(a1.numbers, a2.atomic_numbers)
             for a1, a2 in zip(structures, dataset)
         )
+
+
+def test_del_dataset():
+    class _Dataset(BaseDataset):
+        def __init__(self, fn) -> None:
+            super().__init__(config={})
+            self.fn = fn
+            open(self.fn, "a").close()
+
+        def __del__(self):
+            os.remove(self.fn)
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        fn = tmpdirname + "/test"
+        d = _Dataset(fn)
+        del d
+        assert not os.path.exists(fn)

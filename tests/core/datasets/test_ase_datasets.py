@@ -117,7 +117,6 @@ def test_ase_read_dataset(tmp_path, structures):
     assert len(dataset) == len(structures)
     data = dataset[0]
     del data
-    dataset.close_db()
 
 
 def test_ase_metadata_guesser(ase_dataset):
@@ -172,7 +171,6 @@ def test_db_add_delete(tmp_path, structures):
 
     dataset = AseDBDataset(config={"src": str(tmp_path / "asedb.db")})
     assert len(dataset) == orig_len + len(new_structures) - 1
-    dataset.close_db()
 
 
 def test_ase_multiread_dataset(tmp_path):

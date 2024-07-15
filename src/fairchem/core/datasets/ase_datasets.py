@@ -164,10 +164,6 @@ class AseAtomsDataset(BaseDataset, ABC):
     def get_relaxed_energy(self, identifier):
         raise NotImplementedError("IS2RE-Direct is not implemented with this dataset.")
 
-    def close_db(self) -> None:
-        # This method is sometimes called by a trainer
-        pass
-
     def get_metadata(self, num_samples: int = 100) -> dict:
         metadata = {}
 
@@ -546,7 +542,7 @@ class AseDBDataset(AseAtomsDataset):
 
         return ase.db.connect(address, **connect_args)
 
-    def close_db(self) -> None:
+    def __del__(self):
         for db in self.dbs:
             if hasattr(db, "close"):
                 db.close()
