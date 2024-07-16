@@ -449,12 +449,10 @@ class SO3_Rotation(torch.nn.Module):
         self.lmax = lmax
         self.mapping = CoefficientMappingModule([self.lmax], [self.lmax])
 
-    def set_wigner(self, rot_mat3x3):
+    def set_wigner(self, rot_mat3x3, z_aligned):
         self.device, self.dtype = rot_mat3x3.device, rot_mat3x3.dtype
-        self.wigner = self.RotationToWignerDMatrix(rot_mat3x3, 0, self.lmax)
+        self.wigner = self.RotationToWignerDMatrix(rot_mat3x3, z_aligned, 0, self.lmax)
         self.wigner_inv = torch.transpose(self.wigner, 1, 2).contiguous()
-        self.wigner = self.wigner.detach()
-        self.wigner_inv = self.wigner_inv.detach()
 
     # Rotate the embedding
     def rotate(self, embedding, out_lmax: int, out_mmax: int):
@@ -472,7 +470,7 @@ class SO3_Rotation(torch.nn.Module):
 
     # Compute Wigner matrices from rotation matrix
     def RotationToWignerDMatrix(
-        self, edge_rot_mat, start_lmax: int, end_lmax: int
+        self, edge_rot_mat, z_aligned, start_lmax: int, end_lmax: int
     ) -> torch.Tensor:
         x = edge_rot_mat @ edge_rot_mat.new_tensor([0.0, 1.0, 0.0])
         alpha, beta = o3.xyz_to_angles(x)
@@ -486,12 +484,14 @@ class SO3_Rotation(torch.nn.Module):
         wigner = torch.zeros(len(alpha), size, size, device=self.device)
         start = 0
         for lmax in range(start_lmax, end_lmax + 1):
-            block = wigner_D(lmax, alpha, beta, gamma)
+            block = wigner_D(lmax, alpha, beta, gamma)[~z_aligned].to(wigner.dtype)
             end = start + block.size()[1]
-            wigner[:, start:end, start:end] = block
+            wigner[~z_aligned, start:end, start:end] = block
+            # use identity wignerD matrices for edges that are already aligned with the z-axis
+            wigner[z_aligned, start:end, start:end] = torch.eye(2*lmax+1).to(wigner.device).to(wigner.dtype)
             start = end
 
-        return wigner.detach()
+        return wigner
 
 
 class SO3_Grid(torch.nn.Module):

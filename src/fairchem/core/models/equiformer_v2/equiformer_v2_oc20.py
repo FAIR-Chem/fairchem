@@ -485,11 +485,11 @@ class EquiformerV2_OC20(BaseModel):
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(data, edge_index, edge_distance_vec)
+        edge_rot_mat, z_aligned = self._init_edge_rot_mat(data, edge_index, edge_distance_vec)
 
         # Initialize the WignerD matrices and other values for spherical harmonic calculations
         for i in range(self.num_resolutions):
-            self.SO3_rotation[i].set_wigner(edge_rot_mat)
+            self.SO3_rotation[i].set_wigner(edge_rot_mat, z_aligned)
 
         ###############################################################
         # Initialize node embeddings
