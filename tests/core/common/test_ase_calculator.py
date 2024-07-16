@@ -16,7 +16,10 @@ from ase.build import add_adsorbate, fcc111
 from ase.optimize import BFGS
 
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
-from fairchem.core.models.model_registry import model_name_to_local_file
+from fairchem.core.models.model_registry import (
+    available_pretrained_models,
+    model_name_to_local_file,
+)
 
 if TYPE_CHECKING:
     from ase import Atoms
@@ -102,3 +105,16 @@ def test_random_seed_final_energy(atoms, tmp_path):
     for seed_a in set(seeds):
         for seed_b in set(seeds) - {seed_a}:
             assert results_by_seed[seed_a] != results_by_seed[seed_b]
+
+
+@pytest.fixture(params=available_pretrained_models)
+def all_checkpoint_path(request, tmp_path):
+    return model_name_to_local_file(request.param, tmp_path)
+
+
+# Slow tests
+@pytest.mark.slow()
+def test_all_calculator_setup(atoms, all_checkpoint_path):
+    calc = OCPCalculator(checkpoint_path=all_checkpoint_path, cpu=True)
+    atoms.calc = calc
+    atoms.get_potential_energy()
