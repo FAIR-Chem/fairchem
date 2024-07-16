@@ -38,6 +38,9 @@ def atoms() -> Atoms:
         "PaiNN-S2EF-OC20-All",
         "GemNet-OC-Large-S2EF-OC20-All+MD",
         "SCN-S2EF-OC20-All+MD",
+        "EquiformerV2-Large-S2EF-ODAC",
+        "eSCN-S2EF-ODAC",
+        "EquiformerV2-IS2RE-ODAC",
         # Equiformer v2  # already tested in test_relaxation_final_energy
         # "EquiformerV2-153M-S2EF-OC20-All+MD"
         # eSCNm # already tested in test_random_seed_final_energy
@@ -50,8 +53,10 @@ def checkpoint_path(request, tmp_path):
 
 # First let's just make sure all checkpoints are being loaded without any
 # errors as part of the ASE calculator setup.
-def test_calculator_setup(checkpoint_path):
-    _ = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
+def test_calculator_setup(atoms, checkpoint_path):
+    calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
+    atoms.calc = calc
+    atoms.get_potential_energy()
 
 
 # test relaxation with EqV2
