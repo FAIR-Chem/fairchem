@@ -1,12 +1,8 @@
-name: tests
+name: slow tests
 
 on:
   workflow_call:
   workflow_dispatch:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
 
 jobs:
   test:
@@ -14,7 +10,7 @@ jobs:
     strategy:
       max-parallel: 10
       matrix:
-        python_version: ['3.9', '3.11']
+        python_version: ['3.11']
 
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +40,7 @@ jobs:
 
       - name: Test core with pytest
         run: |
-          pytest tests -x -m "not slow" -vv --ignore=tests/demo/ocpapi/tests/integration/  --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml
+          pytest tests -m "slow" -vv --ignore=tests/demo/ocpapi/tests/integration/  --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml
 
       - if: ${{ matrix.python_version == '3.11' }}
         name: codecov-report
