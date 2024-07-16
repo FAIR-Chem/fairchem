@@ -4,16 +4,20 @@ import os
 import subprocess
 import tempfile
 from shutil import which
+from typing import TYPE_CHECKING
 
 import ase.io
 import numpy as np
-from fairchem.data.oc.core import (
-    Adsorbate,
-    Ion,
+from fairchem.data.oc.core.multi_adsorbate_slab_config import (
     MultipleAdsorbateSlabConfig,
-    Slab,
-    Solvent,
 )
+
+if TYPE_CHECKING:
+    from fairchem.data.oc.core.adsorbate import Adsorbate
+    from fairchem.data.oc.core.ion import Ion
+    from fairchem.data.oc.core.slab import Slab
+    from fairchem.data.oc.core.solvent import Solvent
+
 from fairchem.data.oc.utils.geometry import BoxGeometry, PlaneBoundTriclinicGeometry
 
 # Code adapted from https://github.com/henriasv/molecular-builder/tree/master
