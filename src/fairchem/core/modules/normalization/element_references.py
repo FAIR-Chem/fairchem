@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
@@ -19,6 +19,8 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 from fairchem.core.datasets import data_list_collater
+
+from ._load_utils import _load_from_config
 
 if TYPE_CHECKING:
     from torch_geometric.data import Batch
@@ -142,7 +144,7 @@ def fit_linear_references(
     dataset: Dataset,
     batch_size: int,
     num_batches: int | None = None,
-    num_workers: int = 1,
+    num_workers: int | None = None,
     max_num_elements: int = 118,
     driver: str | None = None,
     shuffle: bool = True,
@@ -169,7 +171,7 @@ def fit_linear_references(
         batch_size=batch_size,
         shuffle=shuffle,
         collate_fn=partial(data_list_collater, otf_graph=True),
-        num_workers=num_workers,
+        num_workers=num_workers if num_workers is not None else batch_size,
         pin_memory=True,
         generator=torch.Generator().manual_seed(seed),
     )
@@ -237,3 +239,21 @@ def fit_linear_references(
         elementrefs[target] = LinearReference(coeffs)
 
     return elementrefs
+
+
+def load_references_from_config(
+    config: dict[str, Any],
+    dataset: Dataset,
+    seed: int = 0,
+    checkpoint_dir: str | Path | None = None,
+) -> dict[str, LinearReference]:
+    """Create a dictionary with element references from a config."""
+    return _load_from_config(
+        config,
+        "element_references",
+        fit_linear_references,
+        create_element_references,
+        dataset,
+        checkpoint_dir,
+        seed=seed,
+    )

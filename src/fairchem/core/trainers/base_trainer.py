@@ -38,14 +38,12 @@ from fairchem.core.common.utils import (
     save_checkpoint,
     update_config,
 )
-from fairchem.core.modules.element_references import (
-    create_element_references,
-    fit_linear_references,
-)
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
-from fairchem.core.modules.normalizer import create_normalizer, fit_normalizers
+from fairchem.core.modules.normalization.element_references import (
+    load_references_from_config,
+)
 from fairchem.core.modules.scaling.compat import load_scales_compat
 from fairchem.core.modules.scaling.util import ensure_fitted
 from fairchem.core.modules.scheduler import LRScheduler
@@ -388,153 +386,27 @@ class BaseTrainer(ABC):
         # Is it troublesome that we assume any normalizer info is in train? What if there is no
         # training dataset? What happens if we just specify a test
 
-        def _load_check_duplicates(
-            config: dict, name: str
-        ) -> dict[str, torch.nn.Module]:
-            modules = {}
-            if "file" in config:
-                modules = torch.load(config["file"])
-                logging.info(
-                    f"Loaded {name} for the following targets: {list(modules.keys())}"
-                )
-            # make sure that element-refs are not specified both as fit and file
-            fit_targets = config["fit"]["targets"] if "fit" in config else []
-            duplicates = list(
-                filter(
-                    lambda x: x in fit_targets,
-                    list(config) + list(modules.keys()),
-                )
-            )
-            if len(duplicates) > 0:
-                logging.warning(
-                    f"{name} values for the following targets {duplicates} have been specified to be fit and also read"
-                    f" from a file. The files read from file will be used instead of fitting."
-                )
-            duplicates = list(filter(lambda x: x in modules, config))
-            if len(duplicates) > 0:
-                logging.warning(
-                    f"Duplicate {name} values for the following targets {duplicates} where specified in the file "
-                    f"{config['file']} and an explicitly set file. The normalization values read from "
-                    f"{config['file']} will be used."
-                )
-            return modules
-
-        # load or fit element references for dataset
         elementref_config = (
             self.config["dataset"].get("transforms", {}).get("element_references", {})
         )
-        self.elementrefs = _load_check_duplicates(
-            elementref_config, "element references"
-        )
+        elementrefs = []
+        if distutils.is_master():
+            # put them in a list to allow broadcasting python objects
+            elementrefs = [load_references_from_config(elementref_config)]
 
-        for target in elementref_config:
-            if target == "fit" and not elementref_config["fit"].get("fitted", False):
-                # remove values for output targets that have already be read from files
-                targets = [
-                    target
-                    for target in elementref_config["fit"]["targets"]
-                    if target not in self.elementrefs
-                ]
-                # put them in a list to allow broadcasting python objects
-                otf_elementrefs = [{target: None for target in targets}]
-                # only carry out the fit on master and then broadcast
-                if distutils.is_master():
-                    otf_elementrefs = [
-                        fit_linear_references(
-                            targets=targets,
-                            dataset=self.train_dataset,
-                            batch_size=elementref_config["fit"].get(
-                                "batch_size", self.config["optim"]["batch_size"]
-                            ),
-                            num_batches=elementref_config["fit"].get("num_batches"),
-                            num_workers=self.config["optim"]["num_workers"],
-                            max_num_elements=elementref_config["fit"].get(
-                                "max_num_elements", 118
-                            ),
-                            driver=elementref_config["fit"].get("driver", None),
-                            seed=self.config["cmd"]["seed"],
-                        )
-                    ]
-                    # save the linear references for possible subsequent use
-                    if not self.is_debug:
-                        path = save_checkpoint(
-                            otf_elementrefs[0],
-                            self.config["cmd"]["checkpoint_dir"],
-                            "element_references.pt",
-                        )
-                        logging.info(
-                            f"Element references for targets {elementref_config['fit']['targets']} have been saved to: {path}"
-                        )
-
-                distutils.broadcast_object_list(otf_elementrefs, src=0)
-                self.elementrefs.update(otf_elementrefs[0])
-                # set config so that references are not refit
-                self.config["dataset"]["transforms"]["element_references"]["fit"][
-                    "fitted"
-                ] = True
-            # if a single file for all outputs is not provided,
-            # then check if a single file is provided for a specific output
-            elif target != "file":
-                self.elementrefs[target] = create_element_references(
-                    file=elementref_config[target].get("file"),
-                )
+        distutils.broadcast_object_list(elementrefs, src=0)
+        self.elementrefs.update(elementrefs[0])
 
         # load or fit normalizers for the dataset.
         norms_config = (
             self.config["dataset"].get("transforms", {}).get("normalizer", {})
         )
-        self.normalizers = _load_check_duplicates(norms_config, "normalization")
+        normalizers = []
+        if distutils.is_master():
+            # put them in a list to allow broadcasting python objects
+            normalizers = [load_references_from_config(norms_config)]
 
-        for target in norms_config:
-            if target == "fit" and not norms_config["fit"].get("fitted", False):
-                # remove values for output targets that have already be read from files
-                targets = [
-                    target
-                    for target in elementref_config["fit"]["targets"]
-                    if target not in self.normalizers
-                ]
-                # put them in a list to allow broadcasting python objects
-                otf_normalizers = [{target: None for target in targets}]
-                # only carry out the fit on master and then broadcast
-                if distutils.is_master():
-                    otf_normalizers = [
-                        fit_normalizers(
-                            targets=targets,
-                            element_references=self.elementrefs,
-                            dataset=self.train_dataset,
-                            batch_size=norms_config["fit"].get(
-                                "batch_size", self.config["optim"]["batch_size"]
-                            ),
-                            num_batches=norms_config["fit"].get("num_batches"),
-                            num_workers=self.config["optim"]["num_workers"],
-                            seed=self.config["cmd"]["seed"],
-                        )
-                    ]
-                    # save the normalization for possible subsequent use
-                    if not self.is_debug:
-                        path = save_checkpoint(
-                            otf_normalizers[0],
-                            self.config["cmd"]["checkpoint_dir"],
-                            "normalizers.pt",
-                        )
-                        logging.info(
-                            f"Normalizers for targets {norms_config['fit']['targets']} have been saved to: {path}"
-                        )
-
-                distutils.broadcast_object_list(otf_normalizers, src=0)
-                self.normalizers.update(otf_normalizers[0])
-                # set config so that normalizers are not refit
-                self.config["dataset"]["transforms"]["normalizer"]["fit"]["fitted"] = (
-                    True
-                )
-            # if a single file for all outputs is not provided,
-            # then check if a single file is provided for a specific output
-            elif target != "file":
-                self.normalizers[target] = create_normalizer(
-                    file=norms_config[target].get("file"),
-                    mean=norms_config[target].get("mean"),
-                    std=norms_config[target].get("stdev"),
-                )
+        distutils.broadcast_object_list(normalizers, src=0)
 
         # make sure element refs and normalizers are on this device
         self.elementrefs.update(

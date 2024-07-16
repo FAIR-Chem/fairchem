@@ -21,8 +21,12 @@ from tqdm import tqdm
 
 from fairchem.core.datasets import data_list_collater
 
+from ._load_utils import _load_from_config
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
+
+    from fairchem.core.modules.normalization.element_references import LinearReference
 
 
 class Normalizer(nn.Module):
@@ -149,7 +153,7 @@ def fit_normalizers(
     batch_size: int,
     element_references: dict | None = None,
     num_batches: int | None = None,
-    num_workers: int = 1,
+    num_workers: int | None = None,
     shuffle: bool = True,
     seed: int = 0,
 ) -> dict[str, Normalizer]:
@@ -173,7 +177,7 @@ def fit_normalizers(
         batch_size=batch_size,
         shuffle=shuffle,
         collate_fn=partial(data_list_collater, otf_graph=True),
-        num_workers=num_workers,
+        num_workers=num_workers if num_workers is not None else batch_size,
         pin_memory=True,
         generator=torch.Generator().manual_seed(seed),
     )
@@ -213,3 +217,23 @@ def fit_normalizers(
         normalizers[target] = create_normalizer(tensor=target_vector)
 
     return normalizers
+
+
+def load_normalizers_from_config(
+    config: dict[str, Any],
+    dataset: Dataset,
+    seed: int = 0,
+    checkpoint_dir: str | Path | None = None,
+    element_references: dict[str, LinearReference] | None = None,
+) -> dict[str, Normalizer]:
+    """Create a dictionary with element references from a config."""
+    return _load_from_config(
+        config,
+        "element_references",
+        fit_normalizers,
+        create_normalizer,
+        dataset,
+        checkpoint_dir,
+        seed=seed,
+        element_references=element_references,
+    )

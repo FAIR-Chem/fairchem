@@ -5,7 +5,7 @@ import pytest
 import torch
 
 from fairchem.core.datasets import data_list_collater
-from fairchem.core.modules.normalizer import (
+from fairchem.core.modules.normalization.normalizer import (
     Normalizer,
     create_normalizer,
     fit_normalizers,

@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from fairchem.core.datasets import data_list_collater
-from fairchem.core.modules.element_references import (
+from fairchem.core.modules.normalization.element_references import (
     LinearReference,
     create_element_references,
     fit_linear_references,
