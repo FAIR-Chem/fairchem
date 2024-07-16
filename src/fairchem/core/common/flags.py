@@ -92,15 +92,21 @@ class Flags:
         )
         self.parser.add_argument(
             "--slurm-partition",
-            default="ocp",
+            default=None,
             type=str,
             help="Name of partition",
+        )
+        self.parser.add_argument(
+            "--slurm-account",
+            default=None,
+            type=str,
+            help="Name of account",
         )
         self.parser.add_argument(
             "--slurm-qos",
             default=None,
             type=str,
-            help="Name of qos (ocp_high)",
+            help="Name of qos",
         )
         self.parser.add_argument(
             "--slurm-mem", default=80, type=int, help="Memory (in gigabytes)"

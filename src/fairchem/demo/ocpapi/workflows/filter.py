@@ -1,6 +1,9 @@
-from typing import Iterable, List, Set, Tuple
+from __future__ import annotations
 
-from fairchem.demo.ocpapi.client import AdsorbateSlabConfigs, SlabMetadata
+from typing import TYPE_CHECKING, Iterable
+
+if TYPE_CHECKING:
+    from fairchem.demo.ocpapi.client import AdsorbateSlabConfigs, SlabMetadata
 
 
 class keep_all_slabs:
@@ -10,8 +13,8 @@ class keep_all_slabs:
 
     async def __call__(
         self,
-        adslabs: List[AdsorbateSlabConfigs],
-    ) -> List[AdsorbateSlabConfigs]:
+        adslabs: list[AdsorbateSlabConfigs],
+    ) -> list[AdsorbateSlabConfigs]:
         return adslabs
 
 
@@ -21,19 +24,19 @@ class keep_slabs_with_miller_indices:
     Slabs with other miller indices will be ignored.
     """
 
-    def __init__(self, miller_indices: Iterable[Tuple[int, int, int]]) -> None:
+    def __init__(self, miller_indices: Iterable[tuple[int, int, int]]) -> None:
         """
         Args:
             miller_indices: The list of miller indices that will be allowed.
                 Slabs with any other miller indices will be dropped by this
                 filter.
         """
-        self._unique_millers: Set[Tuple[int, int, int]] = set(miller_indices)
+        self._unique_millers: set[tuple[int, int, int]] = set(miller_indices)
 
     async def __call__(
         self,
-        adslabs: List[AdsorbateSlabConfigs],
-    ) -> List[AdsorbateSlabConfigs]:
+        adslabs: list[AdsorbateSlabConfigs],
+    ) -> list[AdsorbateSlabConfigs]:
         return [
             adslab
             for adslab in adslabs
@@ -50,7 +53,7 @@ class prompt_for_slabs_to_keep:
     @staticmethod
     def _sort_key(
         adslab: AdsorbateSlabConfigs,
-    ) -> Tuple[Tuple[int, int, int], float, str]:
+    ) -> tuple[tuple[int, int, int], float, str]:
         """
         Generates a sort key from the input adslab. Returns the miller indices,
         shift, and top/bottom label so that they will be sorted by those values
@@ -61,8 +64,8 @@ class prompt_for_slabs_to_keep:
 
     async def __call__(
         self,
-        adslabs: List[AdsorbateSlabConfigs],
-    ) -> List[AdsorbateSlabConfigs]:
+        adslabs: list[AdsorbateSlabConfigs],
+    ) -> list[AdsorbateSlabConfigs]:
         from inquirer import Checkbox, prompt
 
         # Break early if no adslabs were provided
@@ -76,7 +79,7 @@ class prompt_for_slabs_to_keep:
         # will be presented to the user in the prompt. The second item in each
         # tuple (indices from the input list of adslabs) will be returned from
         # the prompt.
-        choices: List[Tuple[str, int]] = [
+        choices: list[tuple[str, int]] = [
             (
                 (
                     f"{adslab.slab.metadata.millers} "
@@ -98,7 +101,7 @@ class prompt_for_slabs_to_keep:
             ),
             choices=choices,
         )
-        selected_indices: List[int] = prompt([checkbox])["adslabs"]
+        selected_indices: list[int] = prompt([checkbox])["adslabs"]
 
         # Return the adslabs that were chosen
         return [adslabs[i] for i in selected_indices]
