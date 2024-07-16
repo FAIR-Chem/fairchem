@@ -370,7 +370,9 @@ class BaseTrainer(ABC):
     def load_references_and_normalizers(self):
         """Load or create element references and normalizers from config"""
 
-        def _check_duplicates(config: dict, name: str) -> dict[str, torch.nn.Module]:
+        def _load_check_duplicates(
+            config: dict, name: str
+        ) -> dict[str, torch.nn.Module]:
             modules = {}
             if "file" in config:
                 modules = torch.load(config["file"])
@@ -386,15 +388,16 @@ class BaseTrainer(ABC):
                 )
             )
             if len(duplicates) > 0:
-                raise ValueError(
+                logging.warning(
                     f"{name} values for the following targets {duplicates} have been specified to be fit and also read"
-                    f" from a file. Only one can be specified."
+                    f" from a file. The files read from file will be used instead of fitting."
                 )
             duplicates = list(filter(lambda x: x in modules, config))
             if len(duplicates) > 0:
-                raise ValueError(
+                logging.warning(
                     f"Duplicate {name} values for the following targets {duplicates} where specified in the file "
-                    f"{config['file']} and an explicitly set file. Only one can be specified."
+                    f"{config['file']} and an explicitly set file. The normalization values read from "
+                    f"{config['file']} will be used."
                 )
             return modules
 
@@ -402,18 +405,25 @@ class BaseTrainer(ABC):
         elementref_config = (
             self.config["dataset"].get("transforms", {}).get("element_references", {})
         )
-        self.elementrefs = _check_duplicates(elementref_config, "element references")
+        self.elementrefs = _load_check_duplicates(
+            elementref_config, "element references"
+        )
 
         for target in elementref_config:
             if target == "fit" and not elementref_config["fit"].get("fitted", False):
-                otf_elementrefs = [
-                    {target: None for target in elementref_config["fit"]["targets"]}
+                # remove values for output targets that have already be read from files
+                targets = [
+                    target
+                    for target in elementref_config["fit"]["targets"]
+                    if target not in self.elementrefs
                 ]
+                # put them in a list to allow broadcasting python objects
+                otf_elementrefs = [{target: None for target in targets}]
                 # only carry out the fit on master and then broadcast
                 if distutils.is_master():
                     otf_elementrefs = [
                         fit_linear_references(
-                            targets=elementref_config["fit"]["targets"],
+                            targets=targets,
                             dataset=self.train_dataset,
                             batch_size=elementref_config["fit"].get(
                                 "batch_size", self.config["optim"]["batch_size"]
@@ -444,7 +454,9 @@ class BaseTrainer(ABC):
                 self.config["dataset"]["transforms"]["element_references"]["fit"][
                     "fitted"
                 ] = True
-            elif target != "file":  # load pre-fitted linear references from file
+            # if a single file for all outputs is not provided,
+            # then check if a single file is provided for a specific output
+            elif target != "file":
                 self.elementrefs[target] = create_element_references(
                     file=elementref_config[target].get("file"),
                 )
@@ -453,18 +465,23 @@ class BaseTrainer(ABC):
         norms_config = (
             self.config["dataset"].get("transforms", {}).get("normalizer", {})
         )
-        self.normalizers = _check_duplicates(norms_config, "normalization")
+        self.normalizers = _load_check_duplicates(norms_config, "normalization")
 
         for target in norms_config:
             if target == "fit" and not norms_config["fit"].get("fitted", False):
-                otf_normalizers = [
-                    {target: None for target in norms_config["fit"]["targets"]}
+                # remove values for output targets that have already be read from files
+                targets = [
+                    target
+                    for target in elementref_config["fit"]["targets"]
+                    if target not in self.normalizers
                 ]
+                # put them in a list to allow broadcasting python objects
+                otf_normalizers = [{target: None for target in targets}]
                 # only carry out the fit on master and then broadcast
                 if distutils.is_master():
                     otf_normalizers = [
                         fit_normalizers(
-                            targets=norms_config["fit"]["targets"],
+                            targets=targets,
                             element_references=self.elementrefs,
                             dataset=self.train_dataset,
                             batch_size=norms_config["fit"].get(
@@ -492,6 +509,8 @@ class BaseTrainer(ABC):
                 self.config["dataset"]["transforms"]["normalizer"]["fit"]["fitted"] = (
                     True
                 )
+            # if a single file for all outputs is not provided,
+            # then check if a single file is provided for a specific output
             elif target != "file":
                 self.normalizers[target] = create_normalizer(
                     file=norms_config[target].get("file"),
