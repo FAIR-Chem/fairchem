@@ -8,7 +8,10 @@
 <h4 align="center">
 
 ![tests](https://github.com/FAIR-Chem/fairchem/actions/workflows/test.yml/badge.svg?branch=main)
-[![Static Badge](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
+![documentation](https://github.com/FAIR-Chem/fairchem/actions/workflows/deploy_docs.yml/badge.svg?branch=main)
+![Static Badge](https://img.shields.io/badge/python-3.9%2B-blue)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new/FAIR-Chem/fairchem?quickstart=1)
 
 </h4>
 

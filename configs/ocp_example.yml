@@ -71,6 +71,13 @@ dataset:
   test:
     # Directory containing test set LMDBs
     src: data/s2ef/all/test_id/
+  relax:
+    # Path to initial structures to run relaxations on. Same as the IS2RE set.
+    src: data/is2re/all/test_id/data.lmdb
+    # To shard a dataset into smaller subsets, define the total_shards desired
+    # and the shard a particular process to see.
+    total_shards: 1                                                             # int (optional)
+    shard: 0                                                                    # int (optional)
 
 task:
   # This is an argument used for checkpoint loading. By default it is True and loads
@@ -92,13 +99,6 @@ task:
   relaxation_fmax: 0.02
   # Whether to save out the positions.
   write_pos: True                                                               # True or False
-  # Path to initial structures to run relaxations on. Same as the IS2RE set.
-  relax_dataset:
-    src: data/is2re/all/test_id/data.lmdb
-    # To shard a dataset into smaller subsets, define the total_shards desired
-    # and the shard a particular process to see.
-    total_shards: 1                                                             # int (optional)
-    shard: 0                                                                    # int (optional)
   relax_opt:
     name: lbfgs
     maxstep: 0.2
