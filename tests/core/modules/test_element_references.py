@@ -1,13 +1,15 @@
-import pytest
-import numpy.testing as npt
+from __future__ import annotations
+
 import numpy as np
+import numpy.testing as npt
+import pytest
 import torch
 
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.modules.element_references import (
-    fit_linear_references,
-    create_element_references,
     LinearReference,
+    create_element_references,
+    fit_linear_references,
 )
 
 
@@ -19,6 +21,7 @@ def element_refs(dummy_binary_dataset, max_num_elements):
         batch_size=16,
         shuffle=False,
         max_num_elements=max_num_elements,
+        seed=0,
     )
 
 
@@ -28,7 +31,7 @@ def test_apply_linear_references(
     max_noise = 0.05 * dummy_element_refs.mean()
 
     # check that removing element refs keeps only values within max noise
-    batch = data_list_collater([d for d in dummy_binary_dataset], otf_graph=True)
+    batch = data_list_collater(list(dummy_binary_dataset), otf_graph=True)
     energy = batch.energy.clone().view(len(batch), -1)
     deref_energy = element_refs["energy"].dereference(energy, batch)
     assert all(deref_energy <= max_noise)
@@ -111,4 +114,45 @@ def test_fit_linear_references(
         dummy_element_refs[mask],
         element_refs["energy"].element_references.numpy()[mask],
         atol=5e-2,
+    )
+
+
+def test_fit_seed_no_seed(dummy_binary_dataset, max_num_elements):
+    refs_seed = fit_linear_references(
+        ["energy"],
+        dataset=dummy_binary_dataset,
+        batch_size=16,
+        num_batches=len(dummy_binary_dataset) // 16 - 2,
+        shuffle=True,
+        max_num_elements=max_num_elements,
+        seed=0,
+    )
+    refs_seed1 = fit_linear_references(
+        ["energy"],
+        dataset=dummy_binary_dataset,
+        batch_size=16,
+        num_batches=len(dummy_binary_dataset) // 16 - 2,
+        shuffle=True,
+        max_num_elements=max_num_elements,
+        seed=0,
+    )
+    refs_noseed = fit_linear_references(
+        ["energy"],
+        dataset=dummy_binary_dataset,
+        batch_size=16,
+        num_batches=len(dummy_binary_dataset) // 16 - 2,
+        shuffle=True,
+        max_num_elements=max_num_elements,
+        seed=1,
+    )
+
+    assert torch.allclose(
+        refs_seed["energy"].element_references,
+        refs_seed1["energy"].element_references,
+        atol=1e-6,
+    )
+    assert not torch.allclose(
+        refs_seed["energy"].element_references,
+        refs_noseed["energy"].element_references,
+        atol=1e-6,
     )

@@ -204,7 +204,8 @@ def fit_linear_references(
     }
 
     logging.info(
-        f"Fitting linear references using {num_batches * batch_size} samples in {num_batches} batches of size {batch_size}."
+        f"Fitting linear references using {num_batches * batch_size} samples in {num_batches} "
+        f"batches of size {batch_size}."
     )
     for i, batch in tqdm(
         enumerate(data_loader), total=num_batches, desc="Fitting linear references"
