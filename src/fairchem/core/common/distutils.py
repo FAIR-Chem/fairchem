@@ -19,7 +19,6 @@ import torch.distributed as dist
 from fairchem.core.common.typing import none_throws
 
 T = TypeVar("T")
-TIMEOUT = timedelta(minutes=30)
 
 
 def os_environ_get_or_throw(x: str) -> str:
@@ -29,6 +28,7 @@ def os_environ_get_or_throw(x: str) -> str:
 
 
 def setup(config) -> None:
+    timeout = timedelta(minutes=config.get("timeout", 30))
     if config["submit"]:
         node_list = os.environ.get("SLURM_STEP_NODELIST")
         if node_list is None:
@@ -74,7 +74,7 @@ def setup(config) -> None:
                     init_method=config["init_method"],
                     world_size=config["world_size"],
                     rank=config["rank"],
-                    timeout=TIMEOUT,
+                    timeout=timeout,
                 )
             except subprocess.CalledProcessError as e:  # scontrol failed
                 raise e
@@ -98,11 +98,11 @@ def setup(config) -> None:
             rank=world_rank,
             world_size=world_size,
             init_method="env://",
-            timeout=TIMEOUT,
+            timeout=timeout,
         )
     else:
         config["local_rank"] = int(os.environ.get("LOCAL_RANK", config["local_rank"]))
-        dist.init_process_group(backend="nccl", timeout=TIMEOUT)
+        dist.init_process_group(backend="nccl", timeout=timeout)
 
 
 def cleanup() -> None:
