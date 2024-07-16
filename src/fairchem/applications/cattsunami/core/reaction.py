@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pickle
 import random
 
@@ -11,9 +13,9 @@ class Reaction:
         self,
         reaction_db_path: str,
         adsorbate_db_path: str,
-        reaction_id_from_db: int = None,
-        reaction_str_from_db: str = None,
-        reaction_type: str = None,
+        reaction_id_from_db: int | None = None,
+        reaction_str_from_db: str | None = None,
+        reaction_type: str | None = None,
     ):
         self.reaction_db_path = reaction_db_path
         reaction_db = pickle.load(open(reaction_db_path, "rb"))
@@ -92,6 +94,6 @@ class Reaction:
         Get mapping for desorption reaction
         """
         mapping = {}
-        for idx, atom in enumerate(reactant):
+        for idx, _atom in enumerate(reactant):
             mapping[idx] = idx
         return [mapping]

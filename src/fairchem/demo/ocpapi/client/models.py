@@ -1,3 +1,4 @@
+# dataclasses_json breaks if using __future__.annotations, so keep 3.9 typing annotations for compatibility
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional, Tuple
