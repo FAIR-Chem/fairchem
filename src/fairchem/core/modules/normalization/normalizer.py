@@ -187,7 +187,7 @@ def fit_normalizers(
     if num_batches > len(data_loader):
         logging.warning(
             f"The give num_batches {num_batches} is larger than total batches of size {batch_size} in dataset. "
-            f"Will ignore num_batches and use the whole dataset."
+            f"num_batches will be ignored and the whole dataset will be used."
         )
         num_batches = len(data_loader)
 

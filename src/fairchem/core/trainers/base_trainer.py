@@ -428,19 +428,18 @@ class BaseTrainer(ABC):
         distutils.broadcast_object_list(
             object_list=normalizers, src=0, device=self.device
         )
-        self.elementrefs.update(elementrefs[0])
-        self.normalizers.update(normalizers[0])
-
         # make sure element refs and normalizers are on this device
-        assert all(
-            buff.device == self.device
-            for elementref in self.elementrefs.values()
-            for buff in elementref.buffers()
+        self.elementrefs.update(
+            {
+                target: elementref.to(self.device)
+                for target, elementref in elementrefs[0].items()
+            }
         )
-        assert all(
-            buff.device == self.device
-            for normalizer in self.normalizers.values()
-            for buff in normalizer.buffers()
+        self.normalizers.update(
+            {
+                target: normalizer.to(self.device)
+                for target, normalizer in normalizers[0].items()
+            }
         )
 
     def load_task(self):

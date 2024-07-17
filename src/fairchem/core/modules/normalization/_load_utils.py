@@ -86,13 +86,14 @@ def _load_from_config(
     modules = _load_check_duplicates(config, name)
     for target in config:
         if target == "fit" and not config["fit"].get("fitted", False):
-            # remove values for output targets that have already be read from files
+            # remove values for output targets that have already been read from files
             targets = [
                 target for target in config["fit"]["targets"] if target not in modules
             ]
-            modules.update(
-                fit_fun(targets=targets, dataset=dataset, **config["fit"], **fit_kwargs)
+            fit_kwargs.update(
+                {k: v for k, v in config["fit"].items() if k != "targets"}
             )
+            modules.update(fit_fun(targets=targets, dataset=dataset, **fit_kwargs))
             config["fit"]["fitted"] = True
         # if a single file for all outputs is not provided,
         # then check if a single file is provided for a specific output
