@@ -60,6 +60,7 @@ SOLVENT_BASE_FLAGS = {
     "dipol": [0.5, 0.5, 0.5],
 }
 
+
 RELAX_FLAGS = {"ibrion": 2, "nsw": 500}
 
 MD_FLAGS = {
@@ -74,5 +75,5 @@ ML_FLAGS = {
     "ML_LMLFF": True,
     "ML_MODE": "train",
     "ML_EPS_LOW": 1e-7,
-    "nsw": 1000,
+    "NSW": 1000,
 }
