@@ -397,3 +397,8 @@ def test_balancedbatchsampler_partition(valid_dataset) -> None:
         _balanced_partition(np.array(SIZE_ATOMS), 4)
         == [[1, 9, 5, 0], [7, 8, 2], [3], [6, 4]]
     )
+    # test case with local batch size = 1, GPU0(rank0) always gets smallest
+    assert np.array(
+        _balanced_partition(np.array(SIZE_ATOMS)[[3, 6, 7, 1]], 4)
+        == [[0], [1], [2], [3]]
+    )
