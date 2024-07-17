@@ -195,7 +195,7 @@ class BalancedBatchSampler(BatchSampler):
         )
 
     def _get_natoms(self, batch_idx: list[int]):
-        if self.dataset.metadata_hasattr("natoms"):
+        if self.sampler.dataset.metadata_hasattr("natoms"):
             return self.sampler.dataset.get_metadata("natoms", batch_idx)
         if self.on_error == "warn_and_balance":
             return np.array([self.sampler.dataset[idx].num_nodes for idx in batch_idx])
