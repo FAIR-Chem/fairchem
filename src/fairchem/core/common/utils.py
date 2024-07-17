@@ -530,6 +530,7 @@ def get_pbc_distances(
     neighbors,
     return_offsets: bool = False,
     return_distance_vec: bool = False,
+    loop: bool = False
 ):
     row, col = edge_index
 
@@ -545,9 +546,10 @@ def get_pbc_distances(
     distances = distance_vectors.norm(dim=-1)
 
     # redundancy: remove zero distances
-    nonzero_idx = torch.arange(len(distances), device=distances.device)[distances != 0]
-    edge_index = edge_index[:, nonzero_idx]
-    distances = distances[nonzero_idx]
+    if not loop:
+        nonzero_idx = torch.arange(len(distances), device=distances.device)[distances != 0]
+        edge_index = edge_index[:, nonzero_idx]
+        distances = distances[nonzero_idx]
 
     out = {
         "edge_index": edge_index,
@@ -555,10 +557,10 @@ def get_pbc_distances(
     }
 
     if return_distance_vec:
-        out["distance_vec"] = distance_vectors[nonzero_idx]
+        out["distance_vec"] =  distance_vectors if loop else distance_vectors[nonzero_idx]
 
     if return_offsets:
-        out["offsets"] = offsets[nonzero_idx]
+        out["offsets"] = offsets if loop else offsets[nonzero_idx]
 
     return out
 
@@ -569,6 +571,7 @@ def radius_graph_pbc(
     max_num_neighbors_threshold,
     enforce_max_neighbors_strictly: bool = False,
     pbc=None,
+    loop: bool = False,
 ):
     if pbc is None:
         pbc = [True, True, True]
@@ -695,8 +698,11 @@ def radius_graph_pbc(
     # Remove pairs that are too far apart
     mask_within_radius = torch.le(atom_distance_sqr, radius * radius)
     # Remove pairs with the same atoms (distance = 0.0)
-    mask_not_same = torch.gt(atom_distance_sqr, 0.0001)
-    mask = torch.logical_and(mask_within_radius, mask_not_same)
+    if not loop:
+        mask_not_same = torch.gt(atom_distance_sqr, 0.0001)
+        mask = torch.logical_and(mask_within_radius, mask_not_same)
+    else:
+        mask = mask_within_radius
     index1 = torch.masked_select(index1, mask)
     index2 = torch.masked_select(index2, mask)
     unit_cell = torch.masked_select(

@@ -38,6 +38,7 @@ class BaseModel(nn.Module):
         use_pbc=None,
         otf_graph=None,
         enforce_max_neighbors_strictly=None,
+        loop=False,
     ):
         cutoff = cutoff or self.cutoff
         max_neighbors = max_neighbors or self.max_neighbors
@@ -74,6 +75,7 @@ class BaseModel(nn.Module):
                     cutoff,
                     max_neighbors,
                     enforce_max_neighbors_strictly,
+                    loop=loop
                 )
 
             out = get_pbc_distances(
@@ -84,6 +86,7 @@ class BaseModel(nn.Module):
                 neighbors,
                 return_offsets=True,
                 return_distance_vec=True,
+                loop=loop
             )
 
             edge_index = out["edge_index"]
@@ -97,6 +100,7 @@ class BaseModel(nn.Module):
                     r=cutoff,
                     batch=data.batch,
                     max_num_neighbors=max_neighbors,
+                    loop=loop
                 )
 
             j, i = edge_index
