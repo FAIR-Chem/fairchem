@@ -97,9 +97,7 @@ def _load_from_config(
         # if a single file for all outputs is not provided,
         # then check if a single file is provided for a specific output
         elif target != "file":
-            modules[target] = create_fun(
-                file=config[target].get("file"),
-            )
+            modules[target] = create_fun(**config[target])
         # save the linear references for possible subsequent use
         if checkpoint_dir is not None:
             path = save_checkpoint(
@@ -108,7 +106,7 @@ def _load_from_config(
                 f"{name}.pt",
             )
             logging.info(
-                f"{name} for targets {config['fit']['targets']} have been saved to: {path}"
+                f"{name} for targets {list(modules.keys())} have been saved to: {path}"
             )
 
     return modules

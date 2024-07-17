@@ -50,6 +50,7 @@ def test_create_normalizers(normalizers, dummy_binary_dataset, tmp_path):
     assert norm.state_dict() == sdict
 
     # from a legacy numpy npz file
+    print(normalizers["energy"].mean.numpy())
     np.savez(
         tmp_path / "norm.npz",
         mean=normalizers["energy"].mean.numpy(),
@@ -67,7 +68,7 @@ def test_create_normalizers(normalizers, dummy_binary_dataset, tmp_path):
 
     # passing values directly
     norm = create_normalizer(
-        mean=batch.energy.mean().item(), std=batch.energy.std().item()
+        mean=batch.energy.mean().item(), stdev=batch.energy.std().item()
     )
     assert isinstance(norm, Normalizer)
     assert norm.state_dict() == sdict

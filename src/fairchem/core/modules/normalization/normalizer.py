@@ -74,7 +74,7 @@ def create_normalizer(
     state_dict: dict | None = None,
     tensor: torch.Tensor | None = None,
     mean: float | torch.Tensor | None = None,
-    std: float | torch.Tensor | None = None,
+    stdev: float | torch.Tensor | None = None,
 ) -> Normalizer:
     """Build a target data normalizers with optional atom ref
 
@@ -86,13 +86,14 @@ def create_normalizer(
         state_dict (dict): a state dict for Normalizer module
         tensor (Tensor): a tensor with target values used to compute mean and std
         mean (float | Tensor): mean of target data
-        std (float | Tensor): std of target data
+        stdev (float | Tensor): std of target data
         data_loader (DataLoader): a data loader used to estimate mean and std
         num_batches (int): the number of batches used. If not given all batches are used.
 
     Returns:
         Normalizer
     """
+    std = stdev  # old configs called it stdev, using this in the function signature reduces overhead code elsewhere
     # path takes priority if given
     if file is not None:
         if state_dict is not None or tensor is not None or mean is not None:

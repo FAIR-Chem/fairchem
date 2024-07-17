@@ -44,6 +44,7 @@ from fairchem.core.modules.loss import DDPLoss
 from fairchem.core.modules.normalization.element_references import (
     load_references_from_config,
 )
+from fairchem.core.modules.normalization.normalizer import load_normalizers_from_config
 from fairchem.core.modules.scaling.compat import load_scales_compat
 from fairchem.core.modules.scaling.util import ensure_fitted
 from fairchem.core.modules.scheduler import LRScheduler
@@ -179,6 +180,11 @@ class BaseTrainer(ABC):
         if distutils.is_master():
             logging.info(yaml.dump(self.config, default_flow_style=False))
 
+        self.elementrefs = {}
+        self.normalizers = {}
+        self.train_dataset = None
+        self.val_dataset = None
+        self.test_dataset = None
         self.load()
 
     @abstractmethod
@@ -387,39 +393,54 @@ class BaseTrainer(ABC):
         # training dataset? What happens if we just specify a test
 
         elementref_config = (
-            self.config["dataset"].get("transforms", {}).get("element_references", {})
+            self.config["dataset"].get("transforms", {}).get("element_references")
         )
-        elementrefs = []
+        norms_config = self.config["dataset"].get("transforms", {}).get("normalizer")
+        elementrefs, normalizers = {}, {}
         if distutils.is_master():
-            # put them in a list to allow broadcasting python objects
-            elementrefs = [load_references_from_config(elementref_config)]
+            if elementref_config is not None:
+                # put them in a list to allow broadcasting python objects
+                elementrefs = load_references_from_config(
+                    elementref_config,
+                    dataset=self.train_dataset,
+                    seed=self.config["cmd"]["seed"],
+                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"]
+                    if not self.is_debug
+                    else None,
+                )
 
-        distutils.broadcast_object_list(elementrefs, src=0)
+            if norms_config is not None:
+                normalizers = load_normalizers_from_config(
+                    norms_config,
+                    dataset=self.train_dataset,
+                    seed=self.config["cmd"]["seed"],
+                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"]
+                    if not self.is_debug
+                    else None,
+                    element_references=elementrefs,
+                )
+
+        # put them in a list to broadcast them
+        elementrefs, normalizers = [elementrefs], [normalizers]
+        distutils.broadcast_object_list(
+            object_list=elementrefs, src=0, device=self.device
+        )
+        distutils.broadcast_object_list(
+            object_list=normalizers, src=0, device=self.device
+        )
         self.elementrefs.update(elementrefs[0])
-
-        # load or fit normalizers for the dataset.
-        norms_config = (
-            self.config["dataset"].get("transforms", {}).get("normalizer", {})
-        )
-        normalizers = []
-        if distutils.is_master():
-            # put them in a list to allow broadcasting python objects
-            normalizers = [load_references_from_config(norms_config)]
-
-        distutils.broadcast_object_list(normalizers, src=0)
+        self.normalizers.update(normalizers[0])
 
         # make sure element refs and normalizers are on this device
-        self.elementrefs.update(
-            {
-                target: elementref.to(self.device)
-                for target, elementref in self.elementrefs.items()
-            }
+        assert all(
+            buff.device == self.device
+            for elementref in self.elementrefs.values()
+            for buff in elementref.buffers()
         )
-        self.normalizers.update(
-            {
-                target: normalizer.to(self.device)
-                for target, normalizer in self.normalizers.items()
-            }
+        assert all(
+            buff.device == self.device
+            for normalizer in self.normalizers.values()
+            for buff in normalizer.buffers()
         )
 
     def load_task(self):
