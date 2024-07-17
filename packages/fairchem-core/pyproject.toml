@@ -22,7 +22,9 @@ dependencies = [
     "urllib3",
     "orjson",
     "tqdm",
-    "submitit"
+    "submitit",
+    "einops",
+    "tensorboardX"
 ]
 
 [project.optional-dependencies]  # add optional dependencies to be installed as pip install fairchem.core[dev]
