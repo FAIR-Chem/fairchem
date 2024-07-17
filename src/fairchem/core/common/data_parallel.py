@@ -106,7 +106,7 @@ def _ensure_supported(dataset: Any):
     if not isinstance(dataset, Dataset):
         raise UnsupportedDatasetError("BalancedBatchSampler requires a dataset.")
 
-    if dataset.metadata is None:
+    if not dataset.metadata_hasattr("natoms"):
         raise UnsupportedDatasetError(
             "BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms."
         )
@@ -148,7 +148,6 @@ class BalancedBatchSampler(BatchSampler):
             drop_last (bool, optional): Whether to drop the last incomplete batch. Defaults to False.
         """
         self.disabled = False
-        self.metadata_has_sizes = False
         self.on_error = on_error
 
         if mode is False:
@@ -164,7 +163,6 @@ class BalancedBatchSampler(BatchSampler):
 
         try:
             dataset = _ensure_supported(dataset)
-            self.metadata_has_sizes = True
         except UnsupportedDatasetError as error:
             if self.on_error == "raise":
                 raise error
@@ -197,7 +195,7 @@ class BalancedBatchSampler(BatchSampler):
         )
 
     def _get_natoms(self, batch_idx: list[int]):
-        if self.metadata_has_sizes:
+        if self.dataset.metadata_hasattr("natoms"):
             return self.sampler.dataset.get_metadata("natoms", batch_idx)
         if self.on_error == "warn_and_balance":
             return np.array([self.sampler.dataset[idx].num_nodes for idx in batch_idx])
