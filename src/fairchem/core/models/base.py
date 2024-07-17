@@ -102,7 +102,6 @@ class BaseModel(nn.Module):
                     batch=data.batch,
                     loop=loop,
                     max_num_neighbors=max_neighbors,
-                    loop=loop
                 )
 
             j, i = edge_index

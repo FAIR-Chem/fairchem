@@ -222,11 +222,8 @@ class OCPCalculator(Calculator):
             checkpoint_path: string
                 Path to trained model
         """
-<<<<<<< HEAD
         # if checkpoint is None:
         #     checkpoint = {}
-=======
->>>>>>> 30d0a14454d0f24461595344c2bc722627bcb9f5
         try:
             self.trainer.load_checkpoint(checkpoint_path, checkpoint)
         except NotImplementedError:
