@@ -93,6 +93,11 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
     def __len__(self) -> int:
         return self.num_samples
 
+    def metadata_hasattr(self, attr) -> bool:
+        if self.metadata is None:
+            return False
+        return hasattr(self.metadata, attr)
+
     @cached_property
     def indices(self):
         return np.arange(self.num_samples, dtype=int)
