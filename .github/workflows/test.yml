@@ -49,8 +49,7 @@ jobs:
           cd packmol-20.15.0
           ./configure
           make
-          export PATH=$PATH:$(readlink -f .)
-          which packmol
+          echo "$(readlink -f .)" >> $GITHUB_PATH
 
       - name: Test core with pytest
         run: |
