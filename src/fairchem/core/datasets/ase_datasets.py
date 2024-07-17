@@ -164,7 +164,7 @@ class AseAtomsDataset(BaseDataset, ABC):
     def get_relaxed_energy(self, identifier):
         raise NotImplementedError("IS2RE-Direct is not implemented with this dataset.")
 
-    def get_metadata(self, num_samples: int = 100) -> dict:
+    def sample_property_metadata(self, num_samples: int = 100) -> dict:
         metadata = {}
 
         if num_samples < len(self):
@@ -385,7 +385,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
 
         return atoms
 
-    def get_metadata(self, num_samples: int = 100) -> dict:
+    def sample_property_metadata(self, num_samples: int = 100) -> dict:
         return {}
 
     def get_relaxed_energy(self, identifier) -> float:
@@ -547,12 +547,12 @@ class AseDBDataset(AseAtomsDataset):
             if hasattr(db, "close"):
                 db.close()
 
-    def get_metadata(self, num_samples: int = 100) -> dict:
+    def sample_property_metadata(self, num_samples: int = 100) -> dict:
         logging.warning(
             "You specific a folder of ASE dbs, so it's impossible to know which metadata to use. Using the first!"
         )
         if self.dbs[0].metadata == {}:
-            return super().get_metadata(num_samples)
+            return super().sample_property_metadata(num_samples)
 
         return copy.deepcopy(self.dbs[0].metadata)
 

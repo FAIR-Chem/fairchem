@@ -41,7 +41,7 @@ def _temp_file(name: str):
 def valid_dataset():
     class _Dataset(BaseDataset):
         @functools.cached_property
-        def metadata(self) -> DatasetMetadata:
+        def _metadata(self) -> DatasetMetadata:
             return DatasetMetadata(natoms=np.array(SIZE_ATOMS))
 
         def __init__(self, data) -> None:
@@ -56,7 +56,7 @@ def valid_dataset():
 
         def get_metadata(self, attr, idx):
             assert attr == "natoms"
-            metadata_attr = getattr(self.metadata, attr)
+            metadata_attr = getattr(self._metadata, attr)
             if isinstance(idx, list):
                 return [metadata_attr[_idx] for _idx in idx]
             return metadata_attr[idx]
@@ -68,7 +68,7 @@ def valid_dataset():
 def valid_path_dataset():
     class _Dataset(BaseDataset):
         @functools.cached_property
-        def metadata(self) -> DatasetMetadata:
+        def _metadata(self) -> DatasetMetadata:
             return self.metadata
 
         def __init__(self, data, fpath: Path) -> None:
@@ -80,7 +80,7 @@ def valid_path_dataset():
             return len(self.data)
 
         def __getitem__(self, idx):
-            metadata_attr = getattr(self.metadata, "natoms")
+            metadata_attr = getattr(self._metadata, "natoms")
             if isinstance(idx, list):
                 return [metadata_attr[_idx] for _idx in idx]
             return metadata_attr[idx]
