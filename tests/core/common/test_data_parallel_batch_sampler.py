@@ -13,10 +13,11 @@ from torch.utils.data import Dataset, DistributedSampler
 from fairchem.core.common.data_parallel import (
     BalancedBatchSampler,
     StatefulDistributedSampler,
+    balanced_partition,
 )
 
 DATA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-SIZE_ATOMS = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+SIZE_ATOMS = [2, 20, 3, 51, 10, 11, 41, 31, 13, 14]
 SIZE_NEIGHBORS = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
 
 T_co = TypeVar("T_co", covariant=True)
@@ -90,7 +91,7 @@ def test_lowercase(invalid_dataset) -> None:
         device=None,
         mode="ATOMS",
         throw_on_error=False,
-        seed=0
+        seed=0,
     )
     assert sampler.mode == "atoms"
 
@@ -102,7 +103,7 @@ def test_lowercase(invalid_dataset) -> None:
         device=None,
         mode="NEIGHBORS",
         throw_on_error=False,
-        seed=0
+        seed=0,
     )
     assert sampler.mode == "neighbors"
 
@@ -119,7 +120,7 @@ def test_invalid_mode(invalid_dataset) -> None:
             device=None,
             mode="natoms",
             throw_on_error=True,
-            seed=0
+            seed=0,
         )
 
     with pytest.raises(
@@ -133,7 +134,7 @@ def test_invalid_mode(invalid_dataset) -> None:
             device=None,
             mode="nneighbors",
             throw_on_error=True,
-            seed=0
+            seed=0,
         )
 
 
@@ -151,7 +152,7 @@ def test_invalid_dataset(invalid_dataset) -> None:
             mode="atoms",
             throw_on_error=True,
             force_balancing=True,
-            seed=0
+            seed=0,
         )
     with pytest.raises(
         RuntimeError,
@@ -166,7 +167,7 @@ def test_invalid_dataset(invalid_dataset) -> None:
             mode="atoms",
             throw_on_error=True,
             force_balancing=False,
-            seed=0
+            seed=0,
         )
 
 
@@ -184,7 +185,7 @@ def test_invalid_path_dataset(invalid_path_dataset) -> None:
             mode="atoms",
             throw_on_error=True,
             force_balancing=True,
-            seed=0
+            seed=0,
         )
     with pytest.raises(
         RuntimeError,
@@ -199,7 +200,7 @@ def test_invalid_path_dataset(invalid_path_dataset) -> None:
             mode="atoms",
             throw_on_error=True,
             force_balancing=False,
-            seed=0
+            seed=0,
         )
 
 
@@ -212,7 +213,7 @@ def test_valid_dataset(valid_path_dataset) -> None:
         device=None,
         mode="atoms",
         throw_on_error=True,
-        seed=0
+        seed=0,
     )
     assert (sampler.sizes == np.array(SIZE_ATOMS)).all()
 
@@ -224,7 +225,7 @@ def test_valid_dataset(valid_path_dataset) -> None:
         device=None,
         mode="neighbors",
         throw_on_error=True,
-        seed=0
+        seed=0,
     )
     assert (sampler.sizes == np.array(SIZE_NEIGHBORS)).all()
 
@@ -238,7 +239,7 @@ def test_disabled(valid_path_dataset) -> None:
         device=None,
         mode=False,
         throw_on_error=True,
-        seed=0
+        seed=0,
     )
     assert sampler.balance_batches is False
 
@@ -252,7 +253,7 @@ def test_single_node(valid_path_dataset) -> None:
         device=None,
         mode="atoms",
         throw_on_error=True,
-        seed=0
+        seed=0,
     )
     assert sampler.balance_batches is False
 
@@ -387,3 +388,15 @@ def test_stateful_distributed_sampler_numreplicas_drop_last(
             )
             assert len(concat_idxs) == len(np.unique(concat_idxs))
             assert len(concat_idxs) == (len(fullset) // num_replicas) * num_replicas
+
+
+def test_balancedbatchsampler_partition(valid_dataset) -> None:
+    assert np.array(
+        balanced_partition(np.array(SIZE_ATOMS), 4)
+        == [[1, 9, 5, 0], [7, 8, 2], [3], [6, 4]]
+    )
+
+    assert np.array(
+        balanced_partition(np.array(SIZE_ATOMS)[[3, 6, 7, 1]], 4)
+        == [[0], [1], [2], [3]]
+    )
