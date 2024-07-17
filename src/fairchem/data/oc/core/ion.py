@@ -42,8 +42,8 @@ class Ion:
             if ion_id_from_db is not None:
                 self._load_ion(ion_db[ion_id_from_db])
             else:
-                random_ion_idx = np.random.randint(len(ion_db))
-                self._load_ion(ion_db[random_ion_idx])
+                self.ion_id_from_db = np.random.randint(len(ion_db))
+                self._load_ion(ion_db[self.ion_id_from_db])
 
     def __len__(self):
         return len(self.atoms)
