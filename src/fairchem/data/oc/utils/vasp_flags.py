@@ -60,6 +60,24 @@ SOLVENT_BASE_FLAGS = {
     "dipol": [0.5, 0.5, 0.5],
 }
 
+SOLVENT_BULK_VASP_FLAGS = {
+    "ibrion": 2,
+    "nsw": 100,
+    "isif": 3,
+    "ispin": 2,
+    "ismear": 0,
+    "ediff": 1e-6,
+    "ediffg": -0.02,
+    "encut": 500.0,
+    "kpts": (10, 10, 10),
+    "sigma": 0.1,
+    "lreal": "Auto",
+    "prec": "Accurate",
+    "gga": "RP",
+    "pp": "PBE",
+    "lwave": False,
+    "lcharg": False,
+}
 
 RELAX_FLAGS = {"ibrion": 2, "nsw": 500}
 
@@ -73,7 +91,8 @@ MD_FLAGS = {
 
 ML_FLAGS = {
     "ML_LMLFF": True,
-    "ML_MODE": "train",
+    "ML_ISTART": 0,
     "ML_EPS_LOW": 1e-7,
     "NSW": 1000,
+    "ISIF": 2,
 }
