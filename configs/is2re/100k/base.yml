@@ -1,0 +1,34 @@
+trainer: ocp
+
+dataset:
+  train:
+    format: lmdb
+    src: data/is2re/100k/train/data.lmdb
+    key_mapping:
+      y_relaxed: energy
+    transforms:
+      normalizer:
+        energy:
+          mean: -1.525913953781128
+          stdev: 2.279365062713623
+  val:
+    src: data/is2re/all/val_id/data.lmdb
+
+logger: wandb
+
+outputs:
+  energy:
+    shape: 1
+    level: system
+
+loss_functions:
+  - energy:
+      fn: mae
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+      - mse
+      - energy_within_threshold
+  primary_metric: energy_mae

@@ -39,7 +39,7 @@ In principle other models could be adapted in a similar way. See [embedding-monk
 import embedding_monkeypatch
 ```
 
-The OCP project is still under active development, and it is not yet clear what the best way to access these embeddings are, so this code is not yet part of the main development branch. This code was adapted from a branch at https://github.com/Open-Catalyst-Project/ocp/blob/gnoc-embeddings.
+The OCP project is still under active development, and it is not yet clear what the best way to access these embeddings are, so this code is not yet part of the main development branch. This code was adapted from a branch at https://github.com/FAIR-Chem/fairchem/blob/gnoc-embeddings.
 
 
 # A diagnostic example
@@ -58,7 +58,7 @@ from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
 
 import os
-checkpoint_path = model_name_to_local_file('GemNet-OCOC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OC-S2EFS-OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
 
 calc = OCPCalculator(checkpoint_path=checkpoint_path)
 ```

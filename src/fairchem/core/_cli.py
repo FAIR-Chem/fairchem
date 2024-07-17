@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from submitit import AutoExecutor
 from submitit.helpers import Checkpointable, DelayedSubmission
+from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
 from fairchem.core.common.flags import flags
 from fairchem.core.common.utils import (
@@ -50,8 +51,12 @@ class Runner(Checkpointable):
         return DelayedSubmission(new_runner, self.config)
 
 
+def runner_wrapper(distributed: bool, config: dict):
+    Runner(distributed=distributed)(config)
+
+
 def main():
-    """Run the main ocp-models program."""
+    """Run the main fairchem program."""
     setup_logging()
 
     parser: argparse.ArgumentParser = flags.get_parser()
@@ -76,6 +81,8 @@ def main():
             tasks_per_node=(args.num_gpus if args.distributed else 1),
             nodes=args.num_nodes,
             slurm_additional_parameters=slurm_add_params,
+            slurm_qos=args.slurm_qos,
+            slurm_account=args.slurm_account,
         )
         for config in configs:
             config["slurm"] = copy.deepcopy(executor.parameters)
@@ -85,5 +92,35 @@ def main():
         log_file = save_experiment_log(args, jobs, configs)
         logging.info(f"Experiment log saved to: {log_file}")
 
-    else:  # Run locally
-        Runner()(config)
+    else:  # Run locally on a single node, n-processes
+        if args.distributed:
+            logging.info(
+                f"Running in distributed local mode with {args.num_gpus} ranks"
+            )
+            # HACK to disable multiprocess dataloading in local mode
+            # there is an open issue where LMDB's environment cannot be pickled and used
+            # during torch multiprocessing https://github.com/pytorch/examples/issues/526
+            if "optim" in config and "num_workers" in config["optim"]:
+                config["optim"]["num_workers"] = 0
+                logging.info(
+                    "WARNING: running in local mode, setting dataloading num_workers to 0, see https://github.com/pytorch/examples/issues/526"
+                )
+
+            launch_config = LaunchConfig(
+                min_nodes=1,
+                max_nodes=1,
+                nproc_per_node=args.num_gpus,
+                rdzv_backend="c10d",
+                max_restarts=0,
+            )
+            elastic_launch(launch_config, runner_wrapper)(args.distributed, config)
+        else:
+            logging.info("Running in non-distributed local mode")
+            assert (
+                args.num_gpus == 1
+            ), "Can only run with a single gpu in non distributed local mode, use --distributed flag instead if using >1 gpu"
+            runner_wrapper(args.distributed, config)
+
+
+if __name__ == "__main__":
+    main()

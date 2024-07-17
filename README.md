@@ -1,16 +1,69 @@
-Welcome to FAIRChem! (Under construction - 2024-05-06~2024-05-07)
+<h1 align="center"> <code>fairchem</code> by FAIR Chemistry </h1>
 
-(2024-05-06) Repository changes
+<p align="center">
+  <img width="559" height="200" src="https://github.com/FAIR-Chem/fairchem/assets/45150244/5872c21c-8f39-41af-b703-af9817f0affe"?
+</p>
 
-To better test integration between our packages and keep them up to date we have migrated all existing repositories under Open-Catalyst-Project to a single repository (this one), FAIRChem. 
 
-Our new structure supports the fairchem package namespace with several independently installable packages:
-* [fairchem.core](src/fairchem/core) (formerly [OpenCatalystProject - OCP](https://github.com/Open-Catalyst-Project/ocp/tree/main))
-* [fairchem.data.oc](src/fairchem/data/oc) (fomerly [Open-Catalyst-Dataset](https://github.com/Open-Catalyst-Project/Open-Catalyst-Dataset))
-* [fairchem.data.om](src/fairchem/data/om) (formerly [om-data](https://github.com/Open-Catalyst-Project/om-data))
-* [fairchem.data.odac](src/fairchem/data/odac) (formerly [odac-data](https://github.com/Open-Catalyst-Project/odac-data/tree/main))
-* [fairchem.demo.ocpapi](src/fairchem/demo/ocpapi) (formerly [ocpapi](https://github.com/Open-Catalyst-Project/ocpapi))
-* [fairchem.applications.adsorbml](src/fairchem/applications/AdsorbML) (formerly [AdsorbML](https://github.com/Open-Catalyst-Project/AdsorbML))
-* [fairchem.applications.cattsunami](src/fairchem/applications/CatTSunami)
+<h4 align="center">
 
-[go to the docs!](https://open-catalyst-project.github.io/ocp/)
+![tests](https://github.com/FAIR-Chem/fairchem/actions/workflows/test.yml/badge.svg?branch=main)
+![documentation](https://github.com/FAIR-Chem/fairchem/actions/workflows/deploy_docs.yml/badge.svg?branch=main)
+![Static Badge](https://img.shields.io/badge/python-3.9%2B-blue)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new/FAIR-Chem/fairchem?quickstart=1)
+
+`fairchem` is the [FAIR](https://ai.meta.com/research/) Chemistry's centralized repository of all its data, models, demos, and application efforts for materials science and quantum chemistry.
+
+### Documentation
+If you are looking for `Open-Catalyst-Project/ocp`, it can now be found at [`fairchem.core`](src/fairchem/core). Visit its corresponding documentation [here](https://fair-chem.github.io/).
+
+### Contents
+The repository is organized into several directories to help you find what you are looking for:
+
+- [`fairchem.core`](src/fairchem/core): State of the art machine learning models for materials science and chemistry
+- [`fairchem.data`](src/fairchem/data): Dataset downloads and input generation codes
+- [`fairchem.demo`](src/fairchem/demo): Python API for the [Open Catalyst Demo](https://open-catalyst.metademolab.com/)
+- [`fairchem.applications`](src/fairchem/applications): Follow up applications and works (AdsorbML, CatTSunami, etc.)
+
+### Installation
+Packages can be installed in your environment by the following:
+```
+pip install -e packages/fairchem-{fairchem-package-name}
+```
+
+`fairchem.core` requires you to first create your environment
+- [Installation Guide](https://fair-chem.github.io/core/install.html)
+
+### Quick Start
+Pretrained models can be used directly with ASE through our `OCPCalculator` interface:
+
+```python
+from ase.build import fcc100, add_adsorbate, molecule
+from ase.optimize import LBFGS
+from fairchem.core import OCPCalculator
+
+# Set up your system as an ASE atoms object
+slab = fcc100('Cu', (3, 3, 3), vacuum=8)
+adsorbate = molecule("CO")
+add_adsorbate(slab, adsorbate, 2.0, 'bridge')
+
+calc = OCPCalculator(
+    model_name="EquiformerV2-31M-S2EF-OC20-All+MD",
+    local_cache="pretrained_models",
+    cpu=False,
+)
+slab.calc = calc
+
+# Set up LBFGS dynamics object
+dyn = LBFGS(slab)
+dyn.run(0.05, 100)
+```
+
+If you are interested in training your own models or fine-tuning on your datasets, visit the [documentation](https://fair-chem.github.io/) for more details and examples.
+
+### Why a single repository?
+Since many of our repositories rely heavily on our other repositories, a single repository makes it really easy to test and ensure consistency across repositories. This should also help simplify the installation process for users who are interested in integrating many of the efforts into one place.
+
+### LICENSE
+`fairchem` is available under a [MIT License](LICENSE.md).

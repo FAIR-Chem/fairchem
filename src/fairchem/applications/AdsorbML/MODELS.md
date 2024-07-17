@@ -1,4 +1,4 @@
-All pre-trained model checkpoints were obtained directly from [ocp](https://github.com/Open-Catalyst-Project/ocp/blob/main/MODELS.md). For convenience, we provide a pointer to the checkpoints used in this work below:
+All pre-trained model checkpoints were obtained directly from [ocp](../core/model_checkpoints). For convenience, we provide a pointer to the checkpoints used in this work below:
 
 |Model |Download | ML+SP Success Rate @k=5 |
 | - | - | - |
@@ -10,4 +10,4 @@ All pre-trained model checkpoints were obtained directly from [ocp](https://gith
 |GemNet-OC-Large All+MD | [checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_07/s2ef/gemnet_oc_large_s2ef_all_md.pt) |86.02% |
 |SCN-Large All+MD | [checkpoint](https://dl.fbaipublicfiles.com/opencatalystproject/data/scn_all_md_s2ef.pt) |87.77% |
 
-For more details please visit https://github.com/Open-Catalyst-Project/ocp/blob/main/MODELS.md.
+For more details please visit ../core/model_checkpoints.

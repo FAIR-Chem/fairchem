@@ -1,20 +1,25 @@
+from __future__ import annotations
+
 import math
 import os
 import pickle
 from collections import defaultdict
+from typing import TYPE_CHECKING
 
-import ase
 import numpy as np
 from ase.constraints import FixAtoms
 from pymatgen.analysis.local_env import VoronoiNN
 from pymatgen.core.composition import Composition
-from pymatgen.core.structure import Structure
 from pymatgen.core.surface import (
     SlabGenerator,
     get_symmetrically_distinct_miller_indices,
 )
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+
+if TYPE_CHECKING:
+    import ase
+    from pymatgen.core.structure import Structure
 
 
 class Slab:
@@ -45,9 +50,9 @@ class Slab:
         self,
         bulk=None,
         slab_atoms: ase.Atoms = None,
-        millers: tuple = None,
-        shift: float = None,
-        top: bool = None,
+        millers: tuple | None = None,
+        shift: float | None = None,
+        top: bool | None = None,
         oriented_bulk: Structure = None,
         min_ab: float = 0.8,
     ):
@@ -64,10 +69,8 @@ class Slab:
             Composition(self.atoms.get_chemical_formula()).reduced_formula
             == Composition(bulk.atoms.get_chemical_formula()).reduced_formula
         ), "Mismatched bulk and surface"
-        assert (
-            np.linalg.norm(self.atoms.cell[0]) >= min_ab
-            and np.linalg.norm(self.atoms.cell[1]) >= min_ab
-        ), "Slab not tiled"
+        assert np.linalg.norm(self.atoms.cell[0]) >= min_ab, "Slab not tiled"
+        assert np.linalg.norm(self.atoms.cell[1]) >= min_ab, "Slab not tiled"
         assert self.has_surface_tagged(), "Slab not tagged"
         assert len(self.atoms.constraints) > 0, "Sub-surface atoms not constrained"
 
@@ -100,17 +103,14 @@ class Slab:
     def from_bulk_get_specific_millers(
         cls, specific_millers, bulk=None, min_ab=8.0, save_path=None
     ):
-        assert type(specific_millers) == tuple
+        assert isinstance(specific_millers, tuple)
         assert len(specific_millers) == 3
 
         if save_path is not None:
             all_slabs = Slab.from_bulk_get_all_slabs(
                 bulk, max(np.abs(specific_millers)), min_ab, save_path
             )
-            slabs_with_millers = [
-                slab for slab in all_slabs if slab.millers == specific_millers
-            ]
-            return slabs_with_millers
+            return [slab for slab in all_slabs if slab.millers == specific_millers]
         else:
             # If we're not saving all slabs, just tile and tag those with correct millers
             assert bulk is not None
@@ -119,18 +119,16 @@ class Slab:
                 max_miller=max(np.abs(specific_millers)),
                 specific_millers=[specific_millers],
             )
-            slabs = []
-            for s in untiled_slabs:
-                slabs.append(
-                    (
-                        tile_and_tag_atoms(s[0], bulk.atoms, min_ab=min_ab),
-                        s[1],
-                        s[2],
-                        s[3],
-                        s[4],
-                    )
+            slabs = [
+                (
+                    tile_and_tag_atoms(s[0], bulk.atoms, min_ab=min_ab),
+                    s[1],
+                    s[2],
+                    s[3],
+                    s[4],
                 )
-
+                for s in untiled_slabs
+            ]
             return [cls(bulk, s[0], s[1], s[2], s[3], s[4]) for s in slabs]
 
     @classmethod
@@ -143,17 +141,16 @@ class Slab:
             bulk.atoms,
             max_miller=max_miller,
         )
-        slabs = []
-        for s in untiled_slabs:
-            slabs.append(
-                (
-                    tile_and_tag_atoms(s[0], bulk.atoms, min_ab=min_ab),
-                    s[1],
-                    s[2],
-                    s[3],
-                    s[4],
-                )
+        slabs = [
+            (
+                tile_and_tag_atoms(s[0], bulk.atoms, min_ab=min_ab),
+                s[1],
+                s[2],
+                s[3],
+                s[4],
             )
+            for s in untiled_slabs
+        ]
 
         # if path is provided, save out the pkl
         if save_path is not None:
@@ -172,11 +169,11 @@ class Slab:
         min_ab=8.0,
     ):
         assert bulk is not None
-        assert precomputed_slabs_pkl is not None and os.path.exists(
-            precomputed_slabs_pkl
-        )
+        assert precomputed_slabs_pkl is not None
+        assert os.path.exists(precomputed_slabs_pkl)
 
-        slabs = pickle.load(open(precomputed_slabs_pkl, "rb"))
+        with open(precomputed_slabs_pkl, "rb") as fp:
+            slabs = pickle.load(fp)
 
         is_slab_obj = np.all([isinstance(s, Slab) for s in slabs])
         if is_slab_obj:
@@ -280,7 +277,7 @@ def set_fixed_atom_constraints(atoms):
     # list should contain a `True` if we want an atom to be constrained, and
     # `False` otherwise.
     atoms = atoms.copy()
-    mask = [True if atom.tag == 0 else False for atom in atoms]
+    mask = [atom.tag == 0 for atom in atoms]
     atoms.constraints += [FixAtoms(mask=mask)]
     return atoms
 
@@ -347,8 +344,7 @@ def tile_atoms(atoms: ase.Atoms, min_ab: float = 8):
     na = int(math.ceil(min_ab / a_length))
     nb = int(math.ceil(min_ab / b_length))
     n_abc = (na, nb, 1)
-    atoms_tiled = atoms.repeat(n_abc)
-    return atoms_tiled
+    return atoms.repeat(n_abc)
 
 
 def find_surface_atoms_by_height(surface_atoms):
@@ -377,11 +373,10 @@ def find_surface_atoms_by_height(surface_atoms):
     scaled_max_height = max(scaled_position[2] for scaled_position in scaled_positions)
     scaled_threshold = scaled_max_height - 2.0 / unit_cell_height
 
-    tags = [
+    return [
         0 if scaled_position[2] < scaled_threshold else 1
         for scaled_position in scaled_positions
     ]
-    return tags
 
 
 def find_surface_atoms_with_voronoi_given_height(bulk_atoms, slab_atoms, height_tags):
@@ -442,8 +437,7 @@ def calculate_center_of_mass(struct):
     Calculates the center of mass of the slab.
     """
     weights = [site.species.weight for site in struct]
-    center_of_mass = np.average(struct.frac_coords, weights=weights, axis=0)
-    return center_of_mass
+    return np.average(struct.frac_coords, weights=weights, axis=0)
 
 
 def calculate_coordination_of_bulk_atoms(bulk_atoms):
@@ -485,7 +479,7 @@ def calculate_coordination_of_bulk_atoms(bulk_atoms):
 def compute_slabs(
     bulk_atoms: ase.Atoms = None,
     max_miller: int = 2,
-    specific_millers: list = None,
+    specific_millers: list | None = None,
 ):
     """
     Enumerates all the symmetrically distinct slabs of a bulk structure.
@@ -641,5 +635,4 @@ def standardize_bulk(atoms: ase.Atoms):
     """
     struct = AseAtomsAdaptor.get_structure(atoms)
     sga = SpacegroupAnalyzer(struct, symprec=0.1)
-    standardized_struct = sga.get_conventional_standard_structure()
-    return standardized_struct
+    return sga.get_conventional_standard_structure()
