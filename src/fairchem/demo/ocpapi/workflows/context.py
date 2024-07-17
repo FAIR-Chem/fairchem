@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 from contextlib import contextmanager
-from contextvars import ContextVar
-from typing import Any, Generator
+from typing import TYPE_CHECKING, Any, Generator
+
+if TYPE_CHECKING:
+    from contextvars import ContextVar
 
 
 @contextmanager

@@ -1,0 +1,72 @@
+trainer: ocp
+
+dataset:
+  train:
+    format: lmdb
+    src: data/s2ef/all/train/
+    key_mapping:
+      y: energy
+    transforms:
+      normalizer:
+        energy:
+          mean: -0.7554450631141663
+          stdev: 2.887317180633545
+  val:
+    src: data/s2ef/all/val_id/
+
+logger: wandb
+
+outputs:
+  energy:
+    shape: 1
+    level: system
+
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 100
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+      - mse
+      - energy_within_threshold
+    misc:
+      - energy_forces_within_threshold
+  primary_metric: energy_mae
+
+
+model:
+  name: dimenetplusplus
+  hidden_channels: 192
+  out_emb_channels: 192
+  num_blocks: 3
+  cutoff: 6.0
+  num_radial: 6
+  num_spherical: 7
+  num_before_skip: 1
+  num_after_skip: 2
+  num_output_layers: 3
+  regress_forces: True
+  use_pbc: True
+
+# *** Important note ***
+#   The total number of gpus used for this run was 256.
+#   If the global batch size (num_gpus * batch_size) is modified
+#   the lr_milestones and warmup_steps need to be adjusted accordingly.
+
+optim:
+  batch_size: 8
+  eval_batch_size: 8
+  eval_every: 10000
+  num_workers: 8
+  lr_initial: 0.0001
+  lr_gamma: 0.1
+  lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+    - 130794
+    - 196192
+    - 261589
+  warmup_steps: 130794
+  warmup_factor: 0.2
+  max_epochs: 7

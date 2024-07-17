@@ -1,0 +1,45 @@
+trainer: ocp
+
+dataset:
+  train:
+    format: oc22_lmdb
+    src: data/oc22/s2ef/train
+    key_mapping:
+      y: energy
+      force: forces
+  val:
+    src: data/oc22/s2ef/val_id
+
+logger: wandb
+
+outputs:
+  energy:
+    shape: 1
+    level: system
+    prediction_dtype: float32
+  forces:
+    irrep_dim: 1
+    level: atom
+    train_on_free_atoms: True
+    eval_on_free_atoms: True
+    prediction_dtype: float32
+
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 1
+  - forces:
+      fn: l2mae
+      coefficient: 100
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+    forces:
+      - mae
+      - cosine_similarity
+      - magnitude_error
+    misc:
+      - energy_forces_within_threshold
+  primary_metric: forces_mae

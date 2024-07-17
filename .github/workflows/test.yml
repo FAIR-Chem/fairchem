@@ -1,13 +1,12 @@
 name: tests
 
 on:
-  push:
-
-  pull_request:
-    branches:
-      - main
-
   workflow_call:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
 
 jobs:
   test:
@@ -34,35 +33,18 @@ jobs:
             ${{ runner.os }}-
 
       - name: Install core dependencies and package
-        # this can be added along with a dependabot config to run tests with latest versions
-        # pip install -r requirements.txt
-        # pip install -r requirements-optional.txt
         run: |
           python -m pip install --upgrade pip
-          pushd packages/
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-optional.txt ]; then pip install -r requirements-optional.txt; fi
-          popd
-          pushd packages/fairchem-core/
-          pip install -e .[dev]
-          popd
-          pushd packages/fairchem-data-oc/
-          pip install -e .[dev]
-          popd
-          pushd packages/fairchem-demo-ocpapi/
-          pip install -e .[dev]
-          popd
+          if [ -f packages/requirements.txt ]; then pip install -r packages/requirements.txt; fi
+          if [ -f packages/requirements-optional.txt ]; then pip install -r packages/requirements-optional.txt; fi
+          pip install -e packages/fairchem-core[dev]
+          pip install -e packages/fairchem-data-oc[dev]
+          pip install -e packages/fairchem-demo-ocpapi[dev]
+          pip install -e packages/fairchem-applications-cattsunami
+
       - name: Test core with pytest
         run: |
-          pushd src/fairchem/core/
-          pytest tests -vv --cov-report=xml --cov=fairchem.core
-          popd
-          pushd src/fairchem/data/oc/
-          pytest tests -vv --cov-report=xml --cov=fairchem.data.oc
-          popd
-          pushd src/fairchem/demo/ocpapi/
-          pytest tests -vv --cov-report=xml --cov=fairchem.demo.ocpapi
-          popd
+          pytest tests -vv --ignore=tests/demo/ocpapi/tests/integration/  --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml
 
       - if: ${{ matrix.python_version == '3.11' }}
         name: codecov-report

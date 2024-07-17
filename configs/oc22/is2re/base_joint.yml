@@ -1,0 +1,30 @@
+dataset:
+  train:
+    format: oc22_lmdb
+    src: data/oc20+oc22/is2re/train
+    train_on_oc20_total_energies: True
+    # download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl
+    oc20_ref: path/to/oc20_ref.pkl
+    key_mapping:
+      y_relaxed: energy
+  val:
+    src: data/oc22/is2re/val_id
+
+logger: wandb
+
+outputs:
+  energy:
+    shape: 1
+    level: system
+
+loss_functions:
+  - energy:
+      fn: mae
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+      - mse
+      - energy_within_threshold
+  primary_metric: energy_mae

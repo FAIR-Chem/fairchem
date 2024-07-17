@@ -1,0 +1,45 @@
+name: integration-test
+
+on:
+  pull_request:
+    paths: # this will only trigger on changes to the demo directory, add more here if required
+        - 'src/fairchem/demo/**'
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest  # TODO add macos tests too
+    strategy:
+      max-parallel: 10
+      matrix:
+        python_version: ['3.9', '3.11']
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python_version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version:  ${{ matrix.python_version }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+
+      - name: Install core dependencies and package
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f packages/requirements.txt ]; then pip install -r packages/requirements.txt; fi
+          if [ -f packages/requirements-optional.txt ]; then pip install -r packages/requirements-optional.txt; fi
+          pip install -e packages/fairchem-core[dev]
+          pip install -e packages/fairchem-data-oc[dev]
+          pip install -e packages/fairchem-demo-ocpapi[dev]
+          pip install -e packages/fairchem-applications-cattsunami
+
+      - name: Integration tests
+        run: | # skip-ocpapi-integration skips expensive tests with the tag "@pytest.mark.ocpapi_integration_test"
+          pytest tests/demo/ocpapi/tests/integration/ --skip-ocpapi-integration -c ./packages/fairchem-core/pyproject.toml

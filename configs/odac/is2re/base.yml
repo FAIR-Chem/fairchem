@@ -1,0 +1,35 @@
+rainer: ocp
+
+dataset:
+  train:
+    format: lmdb
+    src: data_odac/is2r/train
+    key_mapping:
+      y_relaxed: energy
+    transforms:
+      normalizer:
+        energy:
+          mean: -0.5249277949333191
+          stdev: 0.943034291267395
+  val:
+    src: data_odac/is2r/train
+
+logger: wandb
+
+outputs:
+  energy:
+    shape: 1
+    level: system
+
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 4
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+      - mse
+      - energy_within_threshold
+  primary_metric: energy_mae

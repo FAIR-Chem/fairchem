@@ -47,6 +47,12 @@ with ase.db.connect('full_data.db') as full_db:
       if 'tag' in atoms.info['key_value_pairs']:
         atoms.info['key_value_pairs']['tag'] = int(atoms.info['key_value_pairs']['tag'])
 
+      for key in atoms.info["key_value_pairs"]:
+        if atoms.info["key_value_pairs"][key] == "True":
+            atoms.info["key_value_pairs"][key] = True
+        elif atoms.info["key_value_pairs"][key] == "False":
+            atoms.info["key_value_pairs"][key] = False
+
       subset_db.write(atoms, **atoms.info['key_value_pairs'])
 ```
 
@@ -64,12 +70,12 @@ print(available_pretrained_models)
 ```{code-cell} ipython3
 from fairchem.core.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-dTOC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-dT-S2EFS-OC22', local_cache='/tmp/ocp_checkpoints/')
 checkpoint_path
 
 ```
 
-We have to update our configuration yml file with the dataset. It is necessary to specify the train and test set for some reason.
+We have to update our configuration yml file with the test dataset.
 
 ```{code-cell} ipython3
 from fairchem.core.common.tutorial_utils import generate_yml_config
@@ -78,16 +84,11 @@ yml = generate_yml_config(checkpoint_path, 'config.yml',
                            'dataset', 'slurm'],
                    update={'amp': True,
                            'gpus': 1,
-                           'task.dataset': 'ase_db',
                            'task.prediction_dtype': 'float32',
                            'logger':'tensorboard', # don't use wandb!
-                           # Train data
-                           'dataset.train.src': 'data.db',
-                           'dataset.train.a2g_args.r_energy': False,
-                           'dataset.train.a2g_args.r_forces': False,
-                           'dataset.train.select_args.selection': 'natoms>5,xc=PBE',
                             # Test data - prediction only so no regression
                            'dataset.test.src': 'data.db',
+                           'dataset.test.format': 'ase_db',
                            'dataset.test.a2g_args.r_energy': False,
                            'dataset.test.a2g_args.r_forces': False,
                            'dataset.test.select_args.selection': 'natoms>5,xc=PBE',
@@ -101,10 +102,10 @@ It is a good idea to redirect the output to a file. If the output gets too large
 ```{code-cell} ipython3
 %%capture inference
 import time
-from fairchem.core.common.tutorial_utils import ocp_main
+from fairchem.core.common.tutorial_utils import fairchem_main
 
 t0 = time.time()
-! python {ocp_main()} --mode predict --config-yml {yml} --checkpoint {checkpoint_path} --amp
+! python {fairchem_main()} --mode predict --config-yml {yml} --checkpoint {checkpoint_path} --amp
 print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
 ```
 
@@ -197,7 +198,7 @@ The results should be the same.
 
 It is worth noting the default precision of predictions is float16 with main.py, but with the ASE calculator the default precision is float32. Supposedly you can specify `--task.prediction_dtype=float32` at the command line to or specify it in the config.yml like we do above, but as of the tutorial this does not resolve the issue.
 
-As noted above (see also [Issue 542](https://github.com/Open-Catalyst-Project/ocp/issues/542)), the ASE calculator and main.py use different precisions by default, which can lead to small differences.
+As noted above (see also [Issue 542](https://github.com/FAIR-Chem/fairchem/issues/542)), the ASE calculator and main.py use different precisions by default, which can lead to small differences.
 
 ```{code-cell} ipython3
 np.mean(np.abs(results['energy'][sind] - OCP * natoms))  # MAE

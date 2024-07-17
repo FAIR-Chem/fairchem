@@ -64,7 +64,7 @@ Load balancing is activated by default (in atoms mode). To change modes you can 
 optim:
   load_balancing: neighbors
 ```
-For more details, refer to https://github.com/Open-Catalyst-Project/ocp/pull/267.
+For more details, refer to https://github.com/FAIR-Chem/fairchem/pull/267.
 
 If you have access to a slurm cluster, we use the [submitit](https://github.com/facebookincubator/submitit) package to simplify multi-node distributed training:
 ```

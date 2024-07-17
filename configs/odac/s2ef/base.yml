@@ -1,0 +1,66 @@
+trainer: ocp
+
+dataset:
+  train:
+    format: lmdb
+    src: data_odac/s2ef/train
+    key_mapping:
+      y: energy
+      force: forces
+    transforms:
+      normalizer:
+        energy:
+          mean: -0.39596545696258545
+          stdev: 1.451111078262329
+        forces:
+          mean: 0.0
+          stdev: 0.04262716323137283
+  val:
+    src: data_odac/s2ef/val
+
+logger: wandb
+
+outputs:
+  energy:
+    shape: 1
+    level: system
+  forces:
+    irrep_dim: 1
+    level: atom
+    train_on_free_atoms: True
+    eval_on_free_atoms: True
+
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 4
+  - forces:
+      fn: l2mae
+      coefficient: 100
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+      - mse
+      - energy_within_threshold
+    forces:
+      - mae
+      - cosine_similarity
+      - magnitude_error
+    misc:
+      - energy_forces_within_threshold
+  primary_metric: forces_mae
+
+task:
+  relaxation_steps: 125
+  relaxation_fmax: 0.05
+  write_pos: True
+  relax_dataset:
+    src: data_odac/is2r/val
+  relax_opt:
+    name: lbfgs
+    maxstep: 0.04
+    memory: 50
+    damping: 1.0
+    alpha: 70.0

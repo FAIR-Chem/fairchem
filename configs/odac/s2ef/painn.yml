@@ -1,0 +1,45 @@
+includes:
+  - configs/odac/s2ef/base.yml
+
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 2
+  - forces:
+      fn: l2mae
+      coefficient: 100
+
+model:
+  name: painn
+  hidden_channels: 512
+  num_layers: 6
+  num_rbf: 128
+  cutoff: 8.0
+  max_neighbors: 50
+  regress_forces: True
+  direct_forces: True
+  use_pbc: True
+  otf_graph: True
+  num_elements: 100
+
+optim:
+  batch_size: 24
+  eval_batch_size: 24
+  load_balancing: atoms
+  eval_every: 5000
+  num_workers: 2
+  optimizer: AdamW
+  optimizer_params:
+    amsgrad: True
+    weight_decay: 0.3
+  lr_initial: 1.e-4
+  lr_gamma: 0.8
+  mode: min
+  factor: 0.8
+  patience: 3
+  max_epochs: 80
+  ema_decay: 0.999
+  clip_grad_norm: 10
+
+  scheduler: CosineAnnealingLR
+  T_max: 1000000

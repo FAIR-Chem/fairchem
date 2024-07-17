@@ -1,0 +1,39 @@
+includes:
+- configs/s2ef/all/base.yml
+
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 1
+  - forces:
+      fn: l2mae
+      coefficient: 30
+
+model:
+  name: schnet
+  hidden_channels: 1024
+  num_filters: 256
+  num_interactions: 5
+  num_gaussians: 200
+  cutoff: 6.0
+  use_pbc: True
+
+# *** Important note ***
+#   The total number of gpus used for this run was 64.
+#   If the global batch size (num_gpus * batch_size) is modified
+#   the lr_milestones and warmup_steps need to be adjusted accordingly.
+
+optim:
+  batch_size: 20
+  eval_batch_size: 20
+  eval_every: 10000
+  num_workers: 16
+  lr_initial: 0.0001
+  lr_gamma: 0.1
+  lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+    - 313907
+    - 523179
+    - 732451
+  warmup_steps: 209271
+  warmup_factor: 0.2
+  max_epochs: 15
