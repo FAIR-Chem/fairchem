@@ -43,6 +43,7 @@ SOLVENT_BASE_FLAGS = {
     "ivdw": 11,
     "encut": 400.0,
     "ediff": 1e-6,
+    "ediffg": -0.05,
     "nelm": 100,
     "ismear": 0,
     "sigma": 0.1,
@@ -55,18 +56,23 @@ SOLVENT_BASE_FLAGS = {
     "ldipol": True,
     "lasph": True,
     "lreal": "Auto",
-    "ncore": 4,
+    "ncore": 100,
     "dipol": [0.5, 0.5, 0.5],
 }
 
-RELAX_FLAGS = {"ibrion": 2, "nsw": 300}
+RELAX_FLAGS = {"ibrion": 2, "nsw": 500}
 
 MD_FLAGS = {
     "ibrion": 0,
-    "nsw": 500,
+    "nsw": 100,
     "smass": 0,
-    "tebeg": 300,
+    "tebeg": 600,
     "potim": 1,
 }
 
-ML_FLAGS = {"ML_LMLFF": True, "ML_MODE": "train", "ML_EPS_LOW": 1e-7}
+ML_FLAGS = {
+    "ML_LMLFF": True,
+    "ML_MODE": "train",
+    "ML_EPS_LOW": 1e-7,
+    "nsw": 1000,
+}
