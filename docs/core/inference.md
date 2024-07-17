@@ -47,6 +47,12 @@ with ase.db.connect('full_data.db') as full_db:
       if 'tag' in atoms.info['key_value_pairs']:
         atoms.info['key_value_pairs']['tag'] = int(atoms.info['key_value_pairs']['tag'])
 
+      for key in atoms.info["key_value_pairs"]:
+        if atoms.info["key_value_pairs"][key] == "True":
+            atoms.info["key_value_pairs"][key] = True
+        elif atoms.info["key_value_pairs"][key] == "False":
+            atoms.info["key_value_pairs"][key] = False
+
       subset_db.write(atoms, **atoms.info['key_value_pairs'])
 ```
 
@@ -69,7 +75,7 @@ checkpoint_path
 
 ```
 
-We have to update our configuration yml file with the dataset. It is necessary to specify the train and test set for some reason.
+We have to update our configuration yml file with the test dataset.
 
 ```{code-cell} ipython3
 from fairchem.core.common.tutorial_utils import generate_yml_config
@@ -78,16 +84,11 @@ yml = generate_yml_config(checkpoint_path, 'config.yml',
                            'dataset', 'slurm'],
                    update={'amp': True,
                            'gpus': 1,
-                           'task.dataset': 'ase_db',
                            'task.prediction_dtype': 'float32',
                            'logger':'tensorboard', # don't use wandb!
-                           # Train data
-                           'dataset.train.src': 'data.db',
-                           'dataset.train.a2g_args.r_energy': False,
-                           'dataset.train.a2g_args.r_forces': False,
-                           'dataset.train.select_args.selection': 'natoms>5,xc=PBE',
                             # Test data - prediction only so no regression
                            'dataset.test.src': 'data.db',
+                           'dataset.test.format': 'ase_db',
                            'dataset.test.a2g_args.r_energy': False,
                            'dataset.test.a2g_args.r_forces': False,
                            'dataset.test.select_args.selection': 'natoms>5,xc=PBE',

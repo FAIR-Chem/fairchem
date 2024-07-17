@@ -438,11 +438,6 @@ def build_config(args, args_override):
             f"included configs: {duplicates_error}"
         )
 
-    # Check for overridden parameters.
-    if args_override != []:
-        overrides = create_dict_from_args(args_override)
-        config, _ = merge_dicts(config, overrides)
-
     # Some other flags.
     config["mode"] = args.mode
     config["identifier"] = args.identifier
@@ -464,6 +459,11 @@ def build_config(args, args_override):
     config["distributed_backend"] = args.distributed_backend
     config["noddp"] = args.no_ddp
     config["gp_gpus"] = args.gp_gpus
+
+    # Check for overridden parameters.
+    if args_override != []:
+        overrides = create_dict_from_args(args_override)
+        config, _ = merge_dicts(config, overrides)
 
     return config
 
@@ -995,8 +995,8 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
             outputs=config.get("outputs", {}),
             dataset=config["dataset"],
             optimizer=config["optim"],
-            loss_fns=config.get("loss_functions", {}),
-            eval_metrics=config.get("evaluation_metrics", {}),
+            loss_functions=config.get("loss_functions", {}),
+            evaluation_metrics=config.get("evaluation_metrics", {}),
             identifier=config["identifier"],
             timestamp_id=config.get("timestamp_id", None),
             run_dir=config.get("run_dir", "./"),
@@ -1010,6 +1010,7 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
             slurm=config.get("slurm", {}),
             noddp=config.get("noddp", False),
             name=task_name,
+            gp_gpus=config.get("gp_gpus"),
         )
 
         task_cls = registry.get_task_class(config["mode"])
@@ -1176,10 +1177,28 @@ def irreps_sum(ang_mom: int) -> int:
 
 def update_config(base_config):
     """
-    Configs created prior to OCP 2.0 are organized a little different than they
+    Configs created prior to FAIRChem/OCP 2.0 are organized a little different than they
     are now. Update old configs to fit the new expected structure.
     """
+    ### TODO: better format check for older configs
+    # some configs have a loss_functions key with an empty dictionary, those need to be updated as well
+    if len(base_config.get("loss_functions", {})) > 0:
+        return base_config
+
+    logging.warning(
+        "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
+    )
+
+    # do we need a copy?
     config = copy.deepcopy(base_config)
+
+    # initial fairchem/ocp 2.0 configs renamed loss_functions -> loss_fns and evaluation_metrics -> eval_metrics
+    # so some checkpoints may have configs in new format with the exception of renamed loss_funs and eval_metrics
+    if "loss_fns" in config:
+        config["loss_functions"] = config.pop("loss_fns")
+        if "eval_metrics" in config:
+            config["evaluation_metrics"] = config.pop("eval_metrics")
+        return config
 
     # If config["dataset"]["format"] is missing, get it from the task (legacy location).
     # If it is not there either, default to LMDB.
@@ -1289,8 +1308,8 @@ def update_config(base_config):
         config["dataset"]["transforms"] = transforms
 
     ### Update config
-    config.update({"loss_fns": _loss_fns})
-    config.update({"eval_metrics": _eval_metrics})
+    config.update({"loss_functions": _loss_fns})
+    config.update({"evaluation_metrics": _eval_metrics})
     config.update({"outputs": _outputs})
 
     return config

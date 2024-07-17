@@ -142,7 +142,7 @@ class LBFGS:
                 traj_fl = Path(self.traj_dir / f"{name}.traj_tmp", mode="w")
                 traj_fl.rename(traj_fl.with_suffix(".traj"))
 
-        self.batch.y, self.batch.force = self.get_energy_and_forces(
+        self.batch.energy, self.batch.force = self.get_energy_and_forces(
             apply_constraint=False
         )
         return self.batch
@@ -211,7 +211,7 @@ class LBFGS:
         self.f0 = forces
 
     def write(self, energy, forces, update_mask) -> None:
-        self.batch.y, self.batch.force = energy, forces
+        self.batch.energy, self.batch.force = energy, forces
         atoms_objects = batch_to_atoms(self.batch)
         update_mask_ = torch.split(update_mask, self.batch.natoms.tolist())
         for atm, traj, mask in zip(atoms_objects, self.trajectories, update_mask_):

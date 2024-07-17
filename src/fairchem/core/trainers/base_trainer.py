@@ -59,8 +59,8 @@ class BaseTrainer(ABC):
         outputs,
         dataset,
         optimizer,
-        loss_fns,
-        eval_metrics,
+        loss_functions,
+        evaluation_metrics,
         identifier: str,
         timestamp_id: str | None = None,
         run_dir: str | None = None,
@@ -74,6 +74,7 @@ class BaseTrainer(ABC):
         name: str = "ocp",
         slurm=None,
         noddp: bool = False,
+        gp_gpus: int | None = None,
     ) -> None:
         if slurm is None:
             slurm = {}
@@ -109,8 +110,8 @@ class BaseTrainer(ABC):
             "model_attributes": model,
             "outputs": outputs,
             "optim": optimizer,
-            "loss_fns": loss_fns,
-            "eval_metrics": eval_metrics,
+            "loss_functions": loss_functions,
+            "evaluation_metrics": evaluation_metrics,
             "logger": logger,
             "amp": amp,
             "gpus": distutils.get_world_size() if not self.cpu else 0,
@@ -131,6 +132,7 @@ class BaseTrainer(ABC):
             },
             "slurm": slurm,
             "noddp": noddp,
+            "gp_gpus": gp_gpus,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp and not self.cpu else None
@@ -157,9 +159,10 @@ class BaseTrainer(ABC):
             if len(dataset) > 2:
                 self.config["test_dataset"] = dataset[2]
         elif isinstance(dataset, dict):
-            self.config["dataset"] = dataset.get("train", None)
-            self.config["val_dataset"] = dataset.get("val", None)
-            self.config["test_dataset"] = dataset.get("test", None)
+            self.config["dataset"] = dataset.get("train", {})
+            self.config["val_dataset"] = dataset.get("val", {})
+            self.config["test_dataset"] = dataset.get("test", {})
+            self.config["relax_dataset"] = dataset.get("relax", {})
         else:
             self.config["dataset"] = dataset
 
@@ -169,12 +172,7 @@ class BaseTrainer(ABC):
             os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
 
         ### backwards compatability with OCP v<2.0
-        ### TODO: better format check for older configs
-        if not self.config.get("loss_fns"):
-            logging.warning(
-                "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
-            )
-            self.config = update_config(self.config)
+        self.config = update_config(self.config)
 
         if distutils.is_master():
             logging.info(yaml.dump(self.config, default_flow_style=False))
@@ -279,8 +277,19 @@ class BaseTrainer(ABC):
         self.val_loader = None
         self.test_loader = None
 
+        # Default all of the dataset portions to {} if
+        # they don't exist, or are null
+        if not self.config.get("dataset", None):
+            self.config["dataset"] = {}
+        if not self.config.get("val_dataset", None):
+            self.config["val_dataset"] = {}
+        if not self.config.get("test_dataset", None):
+            self.config["test_dataset"] = {}
+        if not self.config.get("relax_dataset", None):
+            self.config["relax_dataset"] = {}
+
         # load train, val, test datasets
-        if self.config["dataset"].get("src", None):
+        if self.config["dataset"] and self.config["dataset"].get("src", None):
             logging.info(
                 f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
             )
@@ -298,55 +307,65 @@ class BaseTrainer(ABC):
                 self.train_sampler,
             )
 
-            if self.config.get("val_dataset", None):
-                if self.config["val_dataset"].get("use_train_settings", True):
-                    val_config = self.config["dataset"].copy()
-                    val_config.update(self.config["val_dataset"])
-                else:
-                    val_config = self.config["val_dataset"]
+        if self.config["val_dataset"]:
+            if self.config["val_dataset"].get("use_train_settings", True):
+                val_config = self.config["dataset"].copy()
+                val_config.update(self.config["val_dataset"])
+            else:
+                val_config = self.config["val_dataset"]
 
-                self.val_dataset = registry.get_dataset_class(
-                    val_config.get("format", "lmdb")
-                )(val_config)
-                self.val_sampler = self.get_sampler(
-                    self.val_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.val_loader = self.get_dataloader(
-                    self.val_dataset,
-                    self.val_sampler,
-                )
-
-            if self.config.get("test_dataset", None):
-                if self.config["test_dataset"].get("use_train_settings", True):
-                    test_config = self.config["dataset"].copy()
-                    test_config.update(self.config["test_dataset"])
-                else:
-                    test_config = self.config["test_dataset"]
-
-                self.test_dataset = registry.get_dataset_class(
-                    test_config.get("format", "lmdb")
-                )(test_config)
-                self.test_sampler = self.get_sampler(
-                    self.test_dataset,
-                    self.config["optim"].get(
-                        "eval_batch_size", self.config["optim"]["batch_size"]
-                    ),
-                    shuffle=False,
-                )
-                self.test_loader = self.get_dataloader(
-                    self.test_dataset,
-                    self.test_sampler,
-                )
-
-        # load relaxation dataset
-        if "relax_dataset" in self.config["task"]:
-            self.relax_dataset = registry.get_dataset_class("lmdb")(
-                self.config["task"]["relax_dataset"]
+            self.val_dataset = registry.get_dataset_class(
+                val_config.get("format", "lmdb")
+            )(val_config)
+            self.val_sampler = self.get_sampler(
+                self.val_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
             )
+            self.val_loader = self.get_dataloader(
+                self.val_dataset,
+                self.val_sampler,
+            )
+
+        if self.config["test_dataset"]:
+            if (
+                self.config["test_dataset"].get("use_train_settings", True)
+                and self.config[
+                    "dataset"
+                ]  # if there's no training dataset, we have nothing to copy
+            ):
+                test_config = self.config["dataset"].copy()
+                test_config.update(self.config["test_dataset"])
+            else:
+                test_config = self.config["test_dataset"]
+
+            self.test_dataset = registry.get_dataset_class(
+                test_config.get("format", "lmdb")
+            )(test_config)
+            self.test_sampler = self.get_sampler(
+                self.test_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.test_loader = self.get_dataloader(
+                self.test_dataset,
+                self.test_sampler,
+            )
+
+        if self.config["relax_dataset"]:
+            if self.config["relax_dataset"].get("use_train_settings", True):
+                relax_config = self.config["dataset"].copy()
+                relax_config.update(self.config["relax_dataset"])
+            else:
+                relax_config = self.config["relax_dataset"]
+
+            self.relax_dataset = registry.get_dataset_class(
+                relax_config.get("format", "lmdb")
+            )(relax_config)
             self.relax_sampler = self.get_sampler(
                 self.relax_dataset,
                 self.config["optim"].get(
@@ -361,6 +380,9 @@ class BaseTrainer(ABC):
 
     def load_task(self):
         # Normalizer for the dataset.
+
+        # Is it troublesome that we assume any normalizer info is in train? What if there is no
+        # training dataset? What happens if we just specify a test
         normalizer = self.config["dataset"].get("transforms", {}).get("normalizer", {})
         self.normalizers = {}
         if normalizer:
@@ -386,16 +408,16 @@ class BaseTrainer(ABC):
                             "outputs"
                         ][target_name].get("level", "system")
                     if "train_on_free_atoms" not in self.output_targets[subtarget]:
-                        self.output_targets[subtarget]["train_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("train_on_free_atoms", True)
+                        self.output_targets[subtarget][
+                            "train_on_free_atoms"
+                        ] = self.config["outputs"][target_name].get(
+                            "train_on_free_atoms", True
                         )
                     if "eval_on_free_atoms" not in self.output_targets[subtarget]:
-                        self.output_targets[subtarget]["eval_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("eval_on_free_atoms", True)
+                        self.output_targets[subtarget][
+                            "eval_on_free_atoms"
+                        ] = self.config["outputs"][target_name].get(
+                            "eval_on_free_atoms", True
                         )
                     # default head is marked in parent. propagate it to decompositions
                     if "default_head" in self.config["outputs"][target_name]:
@@ -404,7 +426,7 @@ class BaseTrainer(ABC):
                         ][target_name]["default_head"]
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
-        self.evaluation_metrics = self.config.get("eval_metrics", {})
+        self.evaluation_metrics = self.config.get("evaluation_metrics", {})
         self.evaluator = Evaluator(
             task=self.name,
             eval_metrics=self.evaluation_metrics.get(
@@ -429,7 +451,13 @@ class BaseTrainer(ABC):
             )
 
         if self.logger is not None:
-            self.logger.watch(self.model)
+            # only "watch" model if user specify watch: True because logging gradients
+            # spews too much data into W&B and makes the UI slow to respond
+            if "watch" in self.config["logger"]:
+                self.logger.watch(
+                    self.model, log_freq=int(self.config["logger"]["watch"])
+                )
+            self.logger.log_summary({"num_params": self.model.num_params})
 
         if distutils.initialized() and not self.config["noddp"]:
             self.model = DistributedDataParallel(self.model, device_ids=[self.device])
@@ -518,8 +546,8 @@ class BaseTrainer(ABC):
             self.scaler.load_state_dict(checkpoint["amp"])
 
     def load_loss(self) -> None:
-        self.loss_fns = []
-        for _idx, loss in enumerate(self.config["loss_fns"]):
+        self.loss_functions = []
+        for _idx, loss in enumerate(self.config["loss_functions"]):
             for target in loss:
                 loss_name = loss[target].get("fn", "mae")
                 coefficient = loss[target].get("coefficient", 1)
@@ -534,7 +562,7 @@ class BaseTrainer(ABC):
 
                 loss_fn = DDPLoss(loss_fn, loss_name, loss_reduction)
 
-                self.loss_fns.append(
+                self.loss_functions.append(
                     (target, {"fn": loss_fn, "coefficient": coefficient})
                 )
 

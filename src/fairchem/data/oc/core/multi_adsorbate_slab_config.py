@@ -1,10 +1,15 @@
-from typing import List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 from ase import Atoms
 from ase.data import covalent_radii
+from fairchem.data.oc.core.adsorbate_slab_config import AdsorbateSlabConfig
 
-from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig, Slab
+if TYPE_CHECKING:
+    from fairchem.data.oc.core.adsorbate import Adsorbate
+    from fairchem.data.oc.core.slab import Slab
 
 
 class MultipleAdsorbateSlabConfig(AdsorbateSlabConfig):
@@ -57,14 +62,15 @@ class MultipleAdsorbateSlabConfig(AdsorbateSlabConfig):
     def __init__(
         self,
         slab: Slab,
-        adsorbates: List[Adsorbate],
+        adsorbates: list[Adsorbate],
         num_sites: int = 100,
         num_configurations: int = 1,
         interstitial_gap: float = 0.1,
         mode: str = "random_site_heuristic_placement",
     ):
         assert mode in ["random", "heuristic", "random_site_heuristic_placement"]
-        assert interstitial_gap < 5 and interstitial_gap >= 0
+        assert interstitial_gap < 5
+        assert interstitial_gap >= 0
 
         self.slab = slab
         self.adsorbates = adsorbates
@@ -142,7 +148,7 @@ class MultipleAdsorbateSlabConfig(AdsorbateSlabConfig):
                 pseudo_atoms,
             )
 
-            for idx, adsorbate in enumerate(self.adsorbates[1:]):
+            for _idx, adsorbate in enumerate(self.adsorbates[1:]):
                 binding_idx = adsorbate.binding_indices[0]
                 binding_atom = adsorbate.atoms.get_atomic_numbers()[binding_idx]
                 covalent_radius = covalent_radii[binding_atom]
@@ -226,6 +232,4 @@ def update_distance_map(prev_distance_map, site_idx, adsorbate, pseudo_atoms):
 
     # update previous distance mapping by taking the minimum per-element distance between
     # the new distance mapping for the placed site and the previous mapping.
-    updated_distance_map = np.minimum(prev_distance_map, new_site_distances)
-
-    return updated_distance_map
+    return np.minimum(prev_distance_map, new_site_distances)

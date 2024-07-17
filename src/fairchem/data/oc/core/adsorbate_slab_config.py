@@ -1,18 +1,22 @@
+from __future__ import annotations
+
 import copy
 import logging
 from itertools import product
+from typing import TYPE_CHECKING
 
-import ase
 import numpy as np
 import scipy
 from ase.data import atomic_numbers, covalent_radii
 from ase.geometry import wrap_positions
+from fairchem.data.oc.core.adsorbate import randomly_rotate_adsorbate
 from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 from pymatgen.io.ase import AseAtomsAdaptor
 from scipy.optimize import fsolve
 
-from fairchem.data.oc.core import Adsorbate, Slab
-from fairchem.data.oc.core.adsorbate import randomly_rotate_adsorbate
+if TYPE_CHECKING:
+    import ase
+    from fairchem.data.oc.core.slab import Adsorbate, Slab
 
 # warnings.filterwarnings("ignore", "The iteration is not making good progress")
 
@@ -69,7 +73,8 @@ class AdsorbateSlabConfig:
         mode: str = "random",
     ):
         assert mode in ["random", "heuristic", "random_site_heuristic_placement"]
-        assert interstitial_gap < 5 and interstitial_gap >= 0
+        assert interstitial_gap < 5
+        assert interstitial_gap >= 0
 
         self.slab = slab
         self.adsorbate = adsorbate
@@ -119,15 +124,16 @@ class AdsorbateSlabConfig:
             simplices = dt.simplices
 
             # Only keep triangles with at least one vertex in central cell.
-            pruned_simplices = []
-            for tri in simplices:
+            pruned_simplices = [
+                tri
+                for tri in simplices
                 if np.any(
                     [
                         tiled_surface_atoms_idx[ver] in unit_surface_atoms_idx
                         for ver in tri
                     ]
-                ):
-                    pruned_simplices.append(tri)
+                )
+            ]
             simplices = np.array(pruned_simplices)
 
             # Uniformly sample sites on each triangle.
@@ -452,7 +458,7 @@ def get_random_sites_on_triangle(
         + r1_sqrt * (1 - r2) * vertices[1]
         + r1_sqrt * r2 * vertices[2]
     )
-    return [i for i in sites]
+    return list(sites)
 
 
 def custom_tile_atoms(atoms: ase.Atoms):

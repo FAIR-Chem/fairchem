@@ -1,14 +1,16 @@
+from __future__ import annotations
+
 import logging
 
 import numpy as np
 import torch
-
 from ase.optimize.precon import Precon, PreconImages
+from torch.utils.data import DataLoader
+
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import setup_imports, setup_logging
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.preprocessing import AtomsToGraphs
-from torch.utils.data import DataLoader
 
 try:
     from ase.neb import DyNEB, NEBState
@@ -96,11 +98,11 @@ class OCPNEB(DyNEB):
             del config["task"]["relax_dataset"]
 
         self.trainer = registry.get_trainer_class(config.get("trainer", "ocp"))(
-            task=config["task"],
+            task=config.get("task", {}),
             model=config["model"],
             outputs={},
-            loss_fns={},
-            eval_metrics={},
+            loss_functions={},
+            evaluation_metrics={},
             dataset=[config["dataset"]],
             optimizer=config["optim"],
             identifier="",
@@ -178,7 +180,7 @@ class OCPNEB(DyNEB):
             fixed_atoms = np.array(
                 [idx for idx, tag in enumerate(self.images[0].get_tags()) if tag == 0]
             )
-            for i in range(0, self.nimages - 2):
+            for i in range(self.nimages - 2):
                 for fixed_atom in fixed_atoms:
                     forces[fixed_atom + len(images[0]) * i] = [0, 0, 0]
 
@@ -244,14 +246,10 @@ class OCPNEB(DyNEB):
                     image.set_positions(positions[n1:n2])
                     n1 = n2
         self.cached = False
+        return None
 
     def get_precon_forces(self, forces, energies, images):
-        if (
-            self.precon is None
-            or isinstance(self.precon, str)
-            or isinstance(self.precon, Precon)
-            or isinstance(self.precon, list)
-        ):
+        if self.precon is None or isinstance(self.precon, (str, Precon, list)):
             self.precon = PreconImages(self.precon, images)
 
         # apply preconditioners to transform forces
