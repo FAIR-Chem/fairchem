@@ -154,7 +154,7 @@ def fit_normalizers(
     batch_size: int,
     element_references: dict | None = None,
     num_batches: int | None = None,
-    num_workers: int | None = None,
+    num_workers: int = 0,
     shuffle: bool = True,
     seed: int = 0,
 ) -> dict[str, Normalizer]:
@@ -167,6 +167,9 @@ def fit_normalizers(
         element_references:
         num_batches: number of batches to use in fit. If not given will use all batches
         num_workers: number of workers to use in data loader
+            Note setting num_workers > 1 leads to finicky multiprocessing issues when using this function
+            in distributed mode. The issue has to do with pickling the functions in load_normalizers_from_config
+            see function below...
         shuffle: whether to shuffle when loading the dataset
         seed: random seed used to shuffle the sampler if shuffle=True
 
@@ -178,8 +181,8 @@ def fit_normalizers(
         batch_size=batch_size,
         shuffle=shuffle,
         collate_fn=partial(data_list_collater, otf_graph=True),
-        num_workers=num_workers if num_workers is not None else batch_size,
-        pin_memory=True,
+        num_workers=num_workers,
+        persistent_workers=num_workers > 0,
         generator=torch.Generator().manual_seed(seed),
     )
 

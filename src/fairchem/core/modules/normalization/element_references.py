@@ -144,7 +144,7 @@ def fit_linear_references(
     dataset: Dataset,
     batch_size: int,
     num_batches: int | None = None,
-    num_workers: int | None = None,
+    num_workers: int = 0,
     max_num_elements: int = 118,
     driver: str | None = None,
     shuffle: bool = True,
@@ -157,7 +157,10 @@ def fit_linear_references(
         dataset: data set to fit linear references with
         batch_size: size of batch
         num_batches: number of batches to use in fit. If not given will use all batches
-        num_workers: number of workers to use in data loader
+        num_workers: number of workers to use in data loader.
+            Note setting num_workers > 1 leads to finicky multiprocessing issues when using this function
+            in distributed mode. The issue has to do with pickling the functions in load_references_from_config
+            see function below...
         max_num_elements: max number of elements in dataset. If not given will use an ambitious value of 118
         driver: backend used to solve linear system. See torch.linalg.lstsq docs.
         shuffle: whether to shuffle when loading the dataset
@@ -171,8 +174,8 @@ def fit_linear_references(
         batch_size=batch_size,
         shuffle=shuffle,
         collate_fn=partial(data_list_collater, otf_graph=True),
-        num_workers=num_workers if num_workers is not None else batch_size,
-        pin_memory=True,
+        num_workers=num_workers,
+        persistent_workers=num_workers > 0,
         generator=torch.Generator().manual_seed(seed),
     )
 
@@ -192,15 +195,6 @@ def fit_linear_references(
         max_num_elements,
     )
 
-    # This only works with scalar properties (a float, a 0-D tensor, or tensor with a single element
-    dp = dataset[0]
-    assert all(
-        isinstance(dp[target], float)
-        or len(dp[target].shape) == 0
-        or len(dp[target].squeeze) == 1
-        for target in targets
-    ), "element references can only be used for scalar targets"
-
     target_vectors = {
         target: torch.zeros(num_batches * batch_size) for target in targets
     }
@@ -212,7 +206,11 @@ def fit_linear_references(
     for i, batch in tqdm(
         enumerate(data_loader), total=num_batches, desc="Fitting linear references"
     ):
-        if i == num_batches:
+        if i == 0:
+            assert all(
+                len(batch[target].squeeze().shape) == 1 for target in targets
+            ), "element references can only be used for scalar targets"
+        elif i == num_batches:
             break
 
         next_batch_size = len(batch) if i == len(data_loader) - 1 else batch_size
