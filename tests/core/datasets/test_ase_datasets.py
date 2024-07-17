@@ -122,7 +122,7 @@ def test_ase_read_dataset(tmp_path, structures):
 def test_ase_metadata_guesser(ase_dataset):
     dataset, _ = ase_dataset
 
-    metadata = dataset.get_metadata()
+    metadata = dataset.sample_property_metadata()
 
     # Confirm energy metadata guessed properly
     assert metadata["targets"]["energy"]["extensive"] is False

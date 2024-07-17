@@ -42,29 +42,6 @@ class UnsupportedDatasetError(ValueError):
     pass
 
 
-class Subset(Subset_):
-    """A pytorch subset that also takes metadata if given."""
-
-    def __init__(
-        self,
-        dataset: Dataset[T_co],
-        indices: Sequence[int],
-        metadata: DatasetMetadata | None = None,
-    ) -> None:
-        super().__init__(dataset, indices)
-        self.metadata = metadata
-        self.indices = indices
-
-    def get_metadata(self, attr, idx):
-        if self.dataset.metadata is not None:
-            if isinstance(idx, list):
-                return getattr(self.dataset.metadata, attr)[
-                    [self.indices[i] for i in idx]
-                ]
-            return getattr(self.dataset.metadata, attr)[self.indices[idx]]
-        return None
-
-
 class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
     """Base Dataset class for all OCP datasets."""
 
@@ -94,16 +71,16 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
         return self.num_samples
 
     def metadata_hasattr(self, attr) -> bool:
-        if self.metadata is None:
+        if self._metadata is None:
             return False
-        return hasattr(self.metadata, attr)
+        return hasattr(self._metadata, attr)
 
     @cached_property
     def indices(self):
         return np.arange(self.num_samples, dtype=int)
 
     @cached_property
-    def metadata(self) -> DatasetMetadata:
+    def _metadata(self) -> DatasetMetadata:
         # logic to read metadata file here
         metadata_npzs = []
         if self.config.get("metadata_path", None) is not None:
@@ -140,12 +117,37 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
         return metadata
 
     def get_metadata(self, attr, idx):
-        if self.metadata is not None:
-            metadata_attr = getattr(self.metadata, attr)
+        if self._metadata is not None:
+            metadata_attr = getattr(self._metadata, attr)
             if isinstance(idx, list):
                 return [metadata_attr[_idx] for _idx in idx]
             return metadata_attr[idx]
         return None
+
+
+class Subset(Subset_, BaseDataset):
+    """A pytorch subset that also takes metadata if given."""
+
+    def __init__(
+        self,
+        dataset: BaseDataset,
+        indices: Sequence[int],
+        metadata: DatasetMetadata | None = None,
+    ) -> None:
+        super().__init__(dataset, indices)
+        self.metadata = metadata
+        self.indices = indices
+        self.num_samples = len(indices)
+        self.config = dataset.config
+
+    @cached_property
+    def _metadata(self) -> DatasetMetadata:
+        return self.dataset._metadata
+
+    def get_metadata(self, attr, idx):
+        if isinstance(idx, list):
+            return self.dataset.get_metadata(attr, [[self.indices[i] for i in idx]])
+        return self.dataset.get_metadata(attr, self.indices[idx])
 
 
 def create_dataset(config: dict[str, Any], split: str) -> Subset:
@@ -183,9 +185,9 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
     indices = dataset.indices
     max_atoms = current_split_config.get("max_atoms", None)
     if max_atoms is not None:
-        if not hasattr(dataset.metadata, "natoms"):
+        if not dataset.metadata_hasattr("natoms"):
             raise ValueError("Cannot use max_atoms without dataset metadata")
-        indices = indices[dataset.metadata.natoms[indices] <= max_atoms]
+        indices = indices[dataset.get_metadata("natoms", indices) <= max_atoms]
 
     # Apply dataset level transforms
     # TODO is no_shuffle mutually exclusive though? or what is the purpose of no_shuffle?
@@ -222,4 +224,4 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
 
     indices = indices[:max_index]
 
-    return Subset(dataset, indices, metadata=dataset.metadata)
+    return Subset(dataset, indices, metadata=dataset._metadata)
