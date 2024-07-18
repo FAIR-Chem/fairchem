@@ -7,6 +7,7 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
+import numpy.testing as npt
 import pytest
 import yaml
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
@@ -37,21 +38,56 @@ def tutorial_val_src(tutorial_dataset_path):
     return tutorial_dataset_path / "s2ef/val_20"
 
 
-def oc20_lmdb_train_and_val_from_paths(train_src, val_src, test_src=None):
+def oc20_lmdb_train_and_val_from_paths(
+    train_src, val_src, test_src=None, otf_norms=False
+):
     datasets = {}
     if train_src is not None:
         datasets["train"] = {
             "src": train_src,
-            "normalize_labels": True,
-            "target_mean": -0.7554450631141663,
-            "target_std": 2.887317180633545,
-            "grad_target_mean": 0.0,
-            "grad_target_std": 2.887317180633545,
+            "format": "lmdb",
+            "key_mapping": {"y": "energy", "force": "forces"},
         }
+        if otf_norms is True:
+            datasets["train"].update(
+                {
+                    "transforms": {
+                        "element_references": {
+                            "fit": {
+                                "targets": ["energy"],
+                                "batch_size": 4,
+                                "num_batches": 10,
+                                "driver": "gelsd",
+                            }
+                        },
+                        "normalizer": {
+                            "fit": {
+                                "targets": ["energy", "forces"],
+                                "batch_size": 4,
+                                "num_batches": 10,
+                            }
+                        },
+                    }
+                }
+            )
+        else:
+            datasets["train"].update(
+                {
+                    "transforms": {
+                        "normalizer": {
+                            "energy": {
+                                "mean": -0.7554450631141663,
+                                "stdev": 2.887317180633545,
+                            },
+                            "forces": {"mean": 0.0, "stdev": 2.887317180633545},
+                        }
+                    }
+                }
+            )
     if val_src is not None:
-        datasets["val"] = {"src": val_src}
+        datasets["val"] = {"src": val_src, "format": "lmdb"}
     if test_src is not None:
-        datasets["test"] = {"src": test_src}
+        datasets["test"] = {"src": test_src, "format": "lmdb"}
     return datasets
 
 
@@ -93,7 +129,6 @@ def _run_main(
         yaml_config = merge_dictionary(yaml_config, update_dict_with)
     with open(str(config_yaml), "w") as yaml_file:
         yaml.dump(yaml_config, yaml_file)
-
     run_args = {
         "run_dir": rundir,
         "logdir": f"{rundir}/logs",
@@ -137,12 +172,7 @@ These should catch errors such as shape mismatches or otherways to code wise bre
 
 
 class TestSmoke:
-    def smoke_test_train(
-        self,
-        model_name,
-        input_yaml,
-        tutorial_val_src,
-    ):
+    def smoke_test_train(self, input_yaml, tutorial_val_src, otf_norms=False):
         with tempfile.TemporaryDirectory() as tempdirname:
             # first train a very simple model, checkpoint
             train_rundir = Path(tempdirname) / "train"
@@ -158,6 +188,7 @@ class TestSmoke:
                         train_src=str(tutorial_val_src),
                         val_src=str(tutorial_val_src),
                         test_src=str(tutorial_val_src),
+                        otf_norms=otf_norms,
                     ),
                 },
                 save_checkpoint_to=checkpoint_path,
@@ -179,6 +210,7 @@ class TestSmoke:
                         train_src=str(tutorial_val_src),
                         val_src=str(tutorial_val_src),
                         test_src=str(tutorial_val_src),
+                        otf_norms=otf_norms,
                     ),
                 },
                 update_run_args_with={
@@ -188,29 +220,44 @@ class TestSmoke:
                 save_predictions_to=predictions_filename,
             )
 
+            if otf_norms is True:
+                norm_path = glob.glob(
+                    str(train_rundir / "checkpoints" / "*" / "normalizers.pt")
+                )
+                assert len(norm_path) == 1
+                assert os.path.isfile(norm_path[0])
+                ref_path = glob.glob(
+                    str(train_rundir / "checkpoints" / "*" / "element_references.pt")
+                )
+                assert len(ref_path) == 1
+                assert os.path.isfile(ref_path[0])
+
             # verify predictions from train and predict are identical
             energy_from_train = np.load(training_predictions_filename)["energy"]
             energy_from_checkpoint = np.load(predictions_filename)["energy"]
-            assert np.isclose(energy_from_train, energy_from_checkpoint).all()
+            npt.assert_allclose(energy_from_train, energy_from_checkpoint)
 
     @pytest.mark.parametrize(
-        "model_name",
+        ("model_name", "otf_norms"),
         [
-            pytest.param("gemnet", id="gemnet"),
-            pytest.param("escn", id="escn"),
-            pytest.param("equiformer_v2", id="equiformer_v2"),
+            ("gemnet", False),
+            ("escn", False),
+            ("escn", True),
+            ("equiformer_v2", False),
+            ("equiformer_v2", True),
         ],
     )
     def test_train_and_predict(
         self,
         model_name,
+        otf_norms,
         configs,
         tutorial_val_src,
     ):
         self.smoke_test_train(
-            model_name=model_name,
             input_yaml=configs[model_name],
             tutorial_val_src=tutorial_val_src,
+            otf_norms=otf_norms,
         )
 
     # train for a few steps and confirm same seeds get same results

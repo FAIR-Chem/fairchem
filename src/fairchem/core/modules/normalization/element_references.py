@@ -182,7 +182,7 @@ def fit_linear_references(
     num_batches = num_batches if num_batches is not None else len(data_loader)
     if num_batches > len(data_loader):
         logging.warning(
-            f"The give num_batches {num_batches} is larger than total batches of size {batch_size} in dataset. "
+            f"The given num_batches {num_batches} is larger than total batches of size {batch_size} in dataset. "
             f"num_batches will be ignored and the whole dataset will be used."
         )
         num_batches = len(data_loader)
