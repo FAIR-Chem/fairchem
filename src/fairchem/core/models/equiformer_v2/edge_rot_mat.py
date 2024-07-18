@@ -44,8 +44,8 @@ def init_edge_rot_mat(edge_distance_vec):
     norm_y = torch.cross(norm_x, norm_z, dim=1)
     norm_y = norm_y / (torch.sqrt(torch.sum(norm_y**2, dim=1, keepdim=True)))
 
-    zprod = (norm_x @ norm_x.new_tensor([0,1,0])).abs()
-    z_aligned = (zprod > 0.9999)
+    y_prod = (norm_x @ norm_x.new_tensor([0,1,0])).abs()
+    y_aligned = (y_prod > 0.99999)
 
     # Construct the 3D rotation matrix
     norm_x = norm_x.view(-1, 3, 1)
@@ -55,10 +55,4 @@ def init_edge_rot_mat(edge_distance_vec):
     edge_rot_mat_inv = torch.cat([norm_z, norm_x, norm_y], dim=2)
     edge_rot_mat = torch.transpose(edge_rot_mat_inv, 1, 2)
 
-    # use identity rotation matrices for edges that are already aligned with the z-axis
-    output = torch.zeros_like(edge_rot_mat)
-    output[~z_aligned] = edge_rot_mat[~z_aligned]
-    output[z_aligned] = torch.eye(3).repeat(z_aligned.sum(), 1, 1).to(
-        edge_rot_mat.device).to(edge_rot_mat.dtype).detach()
-
-    return output, z_aligned
+    return edge_rot_mat, y_aligned

@@ -449,9 +449,9 @@ class SO3_Rotation(torch.nn.Module):
         self.lmax = lmax
         self.mapping = CoefficientMappingModule([self.lmax], [self.lmax])
 
-    def set_wigner(self, rot_mat3x3, z_aligned):
+    def set_wigner(self, rot_mat3x3, y_aligned):
         self.device, self.dtype = rot_mat3x3.device, rot_mat3x3.dtype
-        self.wigner = self.RotationToWignerDMatrix(rot_mat3x3, z_aligned, 0, self.lmax)
+        self.wigner = self.RotationToWignerDMatrix(rot_mat3x3, y_aligned, 0, self.lmax)
         self.wigner_inv = torch.transpose(self.wigner, 1, 2).contiguous()
 
     # Rotate the embedding
@@ -470,7 +470,7 @@ class SO3_Rotation(torch.nn.Module):
 
     # Compute Wigner matrices from rotation matrix
     def RotationToWignerDMatrix(
-        self, edge_rot_mat, z_aligned, start_lmax: int, end_lmax: int
+        self, edge_rot_mat, y_aligned, start_lmax: int, end_lmax: int
     ) -> torch.Tensor:
         x = edge_rot_mat @ edge_rot_mat.new_tensor([0.0, 1.0, 0.0])
         alpha, beta = o3.xyz_to_angles(x)
@@ -480,15 +480,22 @@ class SO3_Rotation(torch.nn.Module):
         )
         gamma = torch.atan2(R[..., 0, 2], R[..., 0, 0])
 
+        # only apply random z-rotation for y-aligned vectors.
+        alpha_ya = torch.zeros_like(alpha)
+        beta_ya = torch.zeros_like(beta)
+        gamma_ya = torch.rand_like(gamma) * 2 * math.pi
+
         size = (end_lmax + 1) ** 2 - (start_lmax) ** 2
         wigner = torch.zeros(len(alpha), size, size, device=self.device)
         start = 0
         for lmax in range(start_lmax, end_lmax + 1):
-            block = wigner_D(lmax, alpha, beta, gamma)[~z_aligned].to(wigner.dtype)
+            block = wigner_D(
+                lmax, alpha, beta, gamma)[~y_aligned].to(wigner.dtype)
+            block_ya = wigner_D(
+                lmax, alpha_ya, beta_ya, gamma_ya)[y_aligned].to(wigner.dtype)
             end = start + block.size()[1]
-            wigner[~z_aligned, start:end, start:end] = block
-            # use identity wignerD matrices for edges that are already aligned with the z-axis
-            wigner[z_aligned, start:end, start:end] = torch.eye(2*lmax+1).to(wigner.device).to(wigner.dtype)
+            wigner[~y_aligned, start:end, start:end] = block
+            wigner[y_aligned, start:end, start:end] = block_ya
             start = end
 
         return wigner
