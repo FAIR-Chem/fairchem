@@ -166,6 +166,7 @@ class BaseTrainer(ABC):
             self.config["relax_dataset"] = dataset.get("relax", {}) or {}
         else:
             self.config["dataset"] = dataset or {}
+            self.config["val_dataset"], self.config["test_dataset"] = {}, {}
 
         if not is_debug and distutils.is_master():
             os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
