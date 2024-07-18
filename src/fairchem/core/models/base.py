@@ -11,7 +11,7 @@ import logging
 
 import torch
 import torch.nn as nn
-from torch_geometric.nn import radius_graph
+from torch_cluster import radius_graph
 from torch_geometric.utils import to_dense_adj
 
 from fairchem.core.common.utils import (
@@ -96,13 +96,15 @@ class BaseModel(nn.Module):
             distance_vec = out["distance_vec"]
         else:
             if otf_graph:
+                device = data.pos.device
                 edge_index = radius_graph(
-                    data.pos,
+                    data.pos.cpu(),
                     r=cutoff,
-                    batch=data.batch,
+                    batch=data.batch.cpu(),
                     loop=loop,
                     max_num_neighbors=max_neighbors,
                 )
+                edge_index = edge_index.to(device)
 
             j, i = edge_index
             distance_vec = data.pos[j] - data.pos[i]
