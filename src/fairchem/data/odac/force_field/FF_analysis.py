@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 
 import numpy as np
@@ -58,21 +60,15 @@ def binned_average(DFT_ads, pred_err, bins):
     bin0 = -1000
     avgs = []
     for i, bin in enumerate(bins):
-        if i == 0:
-            left = bin0
-        else:
-            left = bins[i - 1]
+        left = bin0 if i == 0 else bins[i - 1]
 
         bin_errs = []
         for DFT, pred in zip(
             DFT_ads, pred_err
         ):  # this is a horribly inefficient way to do this...
-            if DFT > left and DFT < bin:
+            if left < DFT and bin > DFT:
                 bin_errs.append(pred)
-        if bin_errs:
-            bin_avg = np.mean(bin_errs)
-        else:
-            bin_avg = 0
+        bin_avg = np.mean(bin_errs) if bin_errs else 0
         avgs.append(bin_avg)
     return avgs
 
@@ -290,20 +286,16 @@ if __name__ == "__main__":
     get_Fig4c(DFT_CO2, err_CO2)
     get_Fig4d(DFT_H2O, err_H2O)
 
-    print("Overall MAE: {} eV".format(np.mean(err_CO2 + err_H2O)))
-    print("CO2 error: {} eV".format(np.mean(err_CO2)))
-    print("H2O error: {} eV".format(np.mean(err_H2O)))
+    print(f"Overall MAE: {np.mean(err_CO2 + err_H2O)} eV")
+    print(f"CO2 error: {np.mean(err_CO2)} eV")
+    print(f"H2O error: {np.mean(err_H2O)} eV")
     print(
-        "Overall physisorption error: {} eV".format(
-            phys_err(DFT_CO2 + DFT_H2O, FF_CO2 + FF_H2O)
-        )
+        f"Overall physisorption error: {phys_err(DFT_CO2 + DFT_H2O, FF_CO2 + FF_H2O)} eV"
     )
-    print("CO2 physisorption error: {} eV".format(phys_err(DFT_CO2, FF_CO2)))
-    print("H2O physisorption error: {} eV".format(phys_err(DFT_H2O, FF_H2O)))
+    print(f"CO2 physisorption error: {phys_err(DFT_CO2, FF_CO2)} eV")
+    print(f"H2O physisorption error: {phys_err(DFT_H2O, FF_H2O)} eV")
     print(
-        "Overall chemisorption error: {} eV".format(
-            chem_err(DFT_CO2 + DFT_H2O, FF_CO2 + FF_H2O)
-        )
+        f"Overall chemisorption error: {chem_err(DFT_CO2 + DFT_H2O, FF_CO2 + FF_H2O)} eV"
     )
-    print("CO2 chemisorption error: {} eV".format(chem_err(DFT_CO2, FF_CO2)))
-    print("H2O chemisorption error: {} eV".format(chem_err(DFT_H2O, FF_H2O)))
+    print(f"CO2 chemisorption error: {chem_err(DFT_CO2, FF_CO2)} eV")
+    print(f"H2O chemisorption error: {chem_err(DFT_H2O, FF_H2O)} eV")

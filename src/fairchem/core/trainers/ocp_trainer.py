@@ -602,7 +602,7 @@ class OCPTrainer(BaseTrainer):
                     s_idx += natoms
 
                 target = {
-                    "energy": relaxed_batch.y_relaxed,
+                    "energy": relaxed_batch.energy,
                     "positions": relaxed_batch.pos_relaxed[mask],
                     "cell": relaxed_batch.cell,
                     "pbc": torch.tensor([True, True, True]),
@@ -610,7 +610,7 @@ class OCPTrainer(BaseTrainer):
                 }
 
                 prediction = {
-                    "energy": relaxed_batch.y,
+                    "energy": relaxed_batch.energy,
                     "positions": relaxed_batch.pos[mask],
                     "cell": relaxed_batch.cell,
                     "pbc": torch.tensor([True, True, True]),

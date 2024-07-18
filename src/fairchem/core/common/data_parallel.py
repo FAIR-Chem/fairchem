@@ -160,7 +160,7 @@ class BalancedBatchSampler(Sampler):
             shuffle=shuffle,
             drop_last=drop_last,
             batch_size=batch_size,
-            seed=seed
+            seed=seed,
         )
         self.batch_sampler = BatchSampler(
             self.single_sampler,
