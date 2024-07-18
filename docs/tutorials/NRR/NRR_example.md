@@ -34,6 +34,10 @@ import os
 from glob import glob
 import pandas as pd
 from fairchem.data.oc.utils import DetectTrajAnomaly
+
+#Set random seed
+import numpy as np
+np.random.seed(22)
 ```
 
 ```{code-cell} ipython3
