@@ -24,7 +24,6 @@ from fairchem.core.models.model_registry import model_name_to_local_file
 #Optional
 from x3dase.x3d import X3D
 import matplotlib.pyplot as plt
-from pathlib import Path
 import os
 ```
 
@@ -51,7 +50,8 @@ Load your frames (change to the appropriate loading method)
 The approach uses ase, so you must provide a list of ase.Atoms objects
 with the appropriate constraints.
 """
-path_ = Path(__file__).parents[2]
+cwd = os.getcwd()
+path_ = os.path.abspath(os.path.join(cwd, os.pardir, os.pardir))
 path_ = os.path.join(path_, "src", "fairchem", "applications", "cattsunami", "tutorial", "sample_traj.traj")
 frame_set = read(path_, ":")[0:10] # Change to the path to your atoms of the frame set
 ```
