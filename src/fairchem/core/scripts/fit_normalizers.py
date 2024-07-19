@@ -53,8 +53,16 @@ def fit_norms(
             "The provided config does not specify a 'fit' block for 'normalizer'!"
         ) from err
 
+    targets = list(norm_config["targets"].keys())
+    override_values = {
+        target: vals
+        for target, vals in norm_config["targets"]
+        if isinstance(vals, dict)
+    }
+
     normalizers = fit_normalizers(
-        targets=norm_config["targets"],
+        targets=targets,
+        override_values=override_values,
         element_references=elementrefs,
         dataset=train_dataset,
         batch_size=norm_config.get("batch_size", 32),

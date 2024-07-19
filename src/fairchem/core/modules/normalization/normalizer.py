@@ -152,6 +152,7 @@ def fit_normalizers(
     targets: list[str],
     dataset: Dataset,
     batch_size: int,
+    override_values: dict[str, dict[str, float]] | None = None,
     element_references: dict | None = None,
     num_batches: int | None = None,
     num_workers: int = 0,
@@ -164,6 +165,8 @@ def fit_normalizers(
         targets: list of target names
         dataset: data set to fit linear references with
         batch_size: size of batch
+        override_values: dictionary with target names and values to override. i.e. {"forces": {"mean": 0.0}} will set
+            the forces mean to zero.
         element_references:
         num_batches: number of batches to use in fit. If not given will use all batches
         num_workers: number of workers to use in data loader
@@ -219,6 +222,9 @@ def fit_normalizers(
     for target in targets:
         target_vector = torch.cat(target_vectors[target], dim=0)
         normalizers[target] = create_normalizer(tensor=target_vector)
+        if target in override_values:
+            for name, val in override_values.items():
+                setattr(normalizers[target], name, torch.tensor(val))
 
     return normalizers
 
@@ -231,6 +237,13 @@ def load_normalizers_from_config(
     element_references: dict[str, LinearReference] | None = None,
 ) -> dict[str, Normalizer]:
     """Create a dictionary with element references from a config."""
+    # edit the config slightly to extract override args
+    override_values = {
+        target: vals for target, vals in config["targets"] if isinstance(vals, dict)
+    }
+    config["override_values"] = override_values
+    config["targets"] = list(config["targets"].keys())
+
     return _load_from_config(
         config,
         "normalizers",
