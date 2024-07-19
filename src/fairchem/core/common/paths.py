@@ -37,15 +37,3 @@ def get_log_dir(unique_job_id: str, run_dir: str) -> str:
                         unique_job_id,
                         LOG_DIR_NAME)
 
-
-def get_timestamp_id(device: torch.device, suffix: str | None) -> str:
-    now = datetime.datetime.now().timestamp()
-    timestamp_tensor = torch.tensor(now).to(device)
-    # create directories from master rank only
-    distutils.broadcast(timestamp_tensor, 0)
-    timestamp_str = datetime.datetime.fromtimestamp(
-        timestamp_tensor.float().item()
-    ).strftime("%Y-%m-%d-%H-%M-%S")
-    if suffix:
-        timestamp_str += "-" + suffix
-    return timestamp_str

@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import datetime
 import errno
 import logging
 import os
@@ -31,7 +32,6 @@ from fairchem.core.common.paths import (
     get_checkpoint_dir,
     get_log_dir,
     get_result_dir,
-    get_timestamp_id,
     unique_job_id,
 )
 from fairchem.core.common.registry import registry
@@ -99,7 +99,7 @@ class BaseTrainer(ABC):
 
         self.timestamp_id: str
         if timestamp_id is None:
-            timestamp_id = get_timestamp_id(self.device, identifier)
+            timestamp_id = self._get_timestamp(self.device, identifier)
 
         self.timestamp_id = none_throws(timestamp_id)
 
@@ -175,6 +175,19 @@ class BaseTrainer(ABC):
     @abstractmethod
     def train(self, disable_eval_tqdm: bool = False) -> None:
         """Run model training iterations."""
+
+    @staticmethod
+    def _get_timestamp(device: torch.device, suffix: str | None) -> str:
+        now = datetime.datetime.now().timestamp()
+        timestamp_tensor = torch.tensor(now).to(device)
+        # create directories from master rank only
+        distutils.broadcast(timestamp_tensor, 0)
+        timestamp_str = datetime.datetime.fromtimestamp(
+            timestamp_tensor.float().item()
+        ).strftime("%Y-%m-%d-%H-%M-%S")
+        if suffix:
+            timestamp_str += "-" + suffix
+        return timestamp_str
 
     def load(self) -> None:
         self.load_seed_from_config()
