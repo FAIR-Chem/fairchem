@@ -56,7 +56,7 @@ def fit_norms(
     targets = list(norm_config["fit"]["targets"].keys())
     override_values = {
         target: vals
-        for target, vals in norm_config["fit"]["targets"]
+        for target, vals in norm_config["fit"]["targets"].items()
         if isinstance(vals, dict)
     }
 

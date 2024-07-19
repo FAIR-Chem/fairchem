@@ -261,7 +261,7 @@ def load_normalizers_from_config(
     if "fit" in config:
         override_values = {
             target: vals
-            for target, vals in config["fit"]["targets"]
+            for target, vals in config["fit"]["targets"].items()
             if isinstance(vals, dict)
         }
         config["fit"]["override_values"] = override_values

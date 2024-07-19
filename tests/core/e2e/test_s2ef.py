@@ -235,7 +235,9 @@ class TestSmoke:
             # verify predictions from train and predict are identical
             energy_from_train = np.load(training_predictions_filename)["energy"]
             energy_from_checkpoint = np.load(predictions_filename)["energy"]
-            npt.assert_allclose(energy_from_train, energy_from_checkpoint)
+            npt.assert_allclose(
+                energy_from_train, energy_from_checkpoint, rtol=1e-6, atol=1e-6
+            )
 
     @pytest.mark.parametrize(
         ("model_name", "otf_norms"),

@@ -139,6 +139,7 @@ def create_element_references(
     return LinearReference(element_references=state_dict["element_references"])
 
 
+@torch.no_grad()
 def fit_linear_references(
     targets: list[str],
     dataset: Dataset,
