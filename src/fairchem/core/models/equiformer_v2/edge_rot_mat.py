@@ -44,8 +44,8 @@ def init_edge_rot_mat(edge_distance_vec):
     norm_y = torch.cross(norm_x, norm_z, dim=1)
     norm_y = norm_y / (torch.sqrt(torch.sum(norm_y**2, dim=1, keepdim=True)))
 
-    y_prod = (norm_x @ norm_x.new_tensor([0,1,0])).abs()
-    y_aligned = (y_prod > 0.99999)
+    y_aligned = (norm_x @ norm_x.new_tensor([0,1,0]))
+    # y_aligned = (y_prod > 0.9999)
 
     # Construct the 3D rotation matrix
     norm_x = norm_x.view(-1, 3, 1)
@@ -54,5 +54,8 @@ def init_edge_rot_mat(edge_distance_vec):
 
     edge_rot_mat_inv = torch.cat([norm_z, norm_x, norm_y], dim=2)
     edge_rot_mat = torch.transpose(edge_rot_mat_inv, 1, 2)
-
-    return edge_rot_mat, y_aligned
+    
+    # for y-aligned we can apply a random rotation around the z-axis
+    edge_rot_mat[y_aligned > 0.9999, 1, :] = edge_rot_mat.new_tensor([[0., 1., 0.]])
+    edge_rot_mat[y_aligned < -0.9999, 1, :] = edge_rot_mat.new_tensor([[0., -1., 0.]])
+    return edge_rot_mat

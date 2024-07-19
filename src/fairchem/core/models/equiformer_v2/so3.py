@@ -449,9 +449,9 @@ class SO3_Rotation(torch.nn.Module):
         self.lmax = lmax
         self.mapping = CoefficientMappingModule([self.lmax], [self.lmax])
 
-    def set_wigner(self, rot_mat3x3, y_aligned):
+    def set_wigner(self, rot_mat3x3):
         self.device, self.dtype = rot_mat3x3.device, rot_mat3x3.dtype
-        self.wigner = self.RotationToWignerDMatrix(rot_mat3x3, y_aligned, 0, self.lmax)
+        self.wigner = self.RotationToWignerDMatrix(rot_mat3x3, 0, self.lmax)
         self.wigner_inv = torch.transpose(self.wigner, 1, 2).contiguous()
 
     # Rotate the embedding
@@ -470,7 +470,7 @@ class SO3_Rotation(torch.nn.Module):
 
     # Compute Wigner matrices from rotation matrix
     def RotationToWignerDMatrix(
-        self, edge_rot_mat, y_aligned, start_lmax: int, end_lmax: int
+        self, edge_rot_mat, start_lmax: int, end_lmax: int
     ) -> torch.Tensor:
         x = edge_rot_mat @ edge_rot_mat.new_tensor([0.0, 1.0, 0.0])
         alpha, beta = o3.xyz_to_angles(x)
@@ -481,21 +481,42 @@ class SO3_Rotation(torch.nn.Module):
         gamma = torch.atan2(R[..., 0, 2], R[..., 0, 0])
 
         # only apply random z-rotation for y-aligned vectors.
-        alpha_ya = torch.zeros_like(alpha)
-        beta_ya = torch.zeros_like(beta)
-        gamma_ya = torch.rand_like(gamma) * 2 * math.pi
+        # alpha_ya = torch.zeros_like(alpha)
+        # beta_ya = torch.zeros_like(beta)
+        # beta_ya[y_aligned > 0.9999] = 0.0
+        # beta_ya[y_aligned < -0.9999] = math.pi
+        # y_aligned = torch.abs(y_aligned) > 0.9999
+        # gamma_ya = torch.zeros_like(gamma)
+        # gamma_ya = torch.rand_like(gamma) * 2 * math.pi - math.pi
+        # print(gamma[y_aligned])
+        # print(gamma_ya[y_aligned])
+        # alpha_ya = torch.clone(alpha).detach()
+        # beta_ya = torch.clone(beta).detach()
+        # print(beta_ya[y_aligned])
+        # mask = torch.abs(beta_ya) < 1.
+        # print(mask[y_aligned])
+        # beta_ya[mask] = 0.
+        # gamma_ya = torch.clone(gamma)
+        # gamma_ya = torch.clone(gamma)
+        # print(beta_ya[y_aligned])
+        
 
         size = (end_lmax + 1) ** 2 - (start_lmax) ** 2
         wigner = torch.zeros(len(alpha), size, size, device=self.device)
         start = 0
         for lmax in range(start_lmax, end_lmax + 1):
             block = wigner_D(
-                lmax, alpha, beta, gamma)[~y_aligned].to(wigner.dtype)
-            block_ya = wigner_D(
-                lmax, alpha_ya, beta_ya, gamma_ya)[y_aligned].to(wigner.dtype)
+                lmax, alpha, beta, gamma).to(wigner.dtype)
+                # lmax, alpha, beta, gamma)[~y_aligned].to(wigner.dtype)
+            # block_ya = wigner_D(
+                # lmax, alpha_ya, beta_ya, gamma_ya)[y_aligned].to(wigner.dtype)
+            # block_ya = wigner_D(
+                # lmax, alpha, beta, gamma)[y_aligned].to(wigner.dtype)
+            
             end = start + block.size()[1]
-            wigner[~y_aligned, start:end, start:end] = block
-            wigner[y_aligned, start:end, start:end] = block_ya
+            # wigner[~y_aligned, start:end, start:end] = block
+            # wigner[y_aligned, start:end, start:end] = block_ya
+            wigner[:, start:end, start:end] = block
             start = end
 
         return wigner
