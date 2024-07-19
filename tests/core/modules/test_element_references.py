@@ -7,7 +7,7 @@ import torch
 
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.modules.normalization.element_references import (
-    LinearReference,
+    LinearReferences,
     create_element_references,
     fit_linear_references,
 )
@@ -46,7 +46,7 @@ def test_create_element_references(element_refs, tmp_path):
     sdict = element_refs["energy"].state_dict()
 
     refs = create_element_references(state_dict=sdict)
-    assert isinstance(refs, LinearReference)
+    assert isinstance(refs, LinearReferences)
     assert torch.allclose(
         element_refs["energy"].element_references, refs.element_references
     )
@@ -54,7 +54,7 @@ def test_create_element_references(element_refs, tmp_path):
     # test from saved stated dict
     torch.save(sdict, tmp_path / "linref.pt")
     refs = create_element_references(file=tmp_path / "linref.pt")
-    assert isinstance(refs, LinearReference)
+    assert isinstance(refs, LinearReferences)
     assert torch.allclose(
         element_refs["energy"].element_references, refs.element_references
     )
@@ -64,7 +64,7 @@ def test_create_element_references(element_refs, tmp_path):
         tmp_path / "linref.npz", coeff=element_refs["energy"].element_references.numpy()
     )
     refs = create_element_references(file=tmp_path / "linref.npz")
-    assert isinstance(refs, LinearReference)
+    assert isinstance(refs, LinearReferences)
     assert torch.allclose(
         element_refs["energy"].element_references, refs.element_references
     )
@@ -76,7 +76,7 @@ def test_create_element_references(element_refs, tmp_path):
     )
 
     refs = create_element_references(file=tmp_path / "linref.npz")
-    assert isinstance(refs, LinearReference)
+    assert isinstance(refs, LinearReferences)
     assert torch.allclose(
         element_refs["energy"].element_references, refs.element_references
     )

@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from torch_geometric.data import Batch
 
 
-class LinearReference(nn.Module):
+class LinearReferences(nn.Module):
     """Represents an elemental linear references model for a target property.
 
     In an elemental reference associates a value with each chemical element present in the dataset.
@@ -49,7 +49,6 @@ class LinearReference(nn.Module):
         self,
         element_references: torch.Tensor | None = None,
         max_num_elements: int = 118,
-        metrics: dict[str, float] | None = None,
     ):
         """
         Args:
@@ -64,7 +63,6 @@ class LinearReference(nn.Module):
             if element_references is not None
             else torch.zeros(max_num_elements + 1),
         )
-        self.metrics = metrics
 
     def _apply_refs(
         self, target: torch.Tensor, batch: Batch, sign: int, reshaped: bool = True
@@ -98,7 +96,7 @@ class LinearReference(nn.Module):
 def create_element_references(
     file: str | Path | None = None,
     state_dict: dict | None = None,
-) -> LinearReference:
+) -> LinearReferences:
     """Create an element reference module.
 
     Args:
@@ -139,7 +137,7 @@ def create_element_references(
     if "element_references" not in state_dict:
         raise RuntimeError("Unable to load linear element references!")
 
-    return LinearReference(element_references=state_dict["element_references"])
+    return LinearReferences(element_references=state_dict["element_references"])
 
 
 @torch.no_grad()
@@ -154,7 +152,7 @@ def fit_linear_references(
     driver: str | None = None,
     shuffle: bool = True,
     seed: int = 0,
-) -> dict[str, LinearReference]:
+) -> dict[str, LinearReferences]:
     """Fit a set linear references for a list of targets using a given number of batches.
 
     Args:
@@ -173,7 +171,7 @@ def fit_linear_references(
         seed: random seed used to shuffle the sampler if shuffle=True
 
     Returns:
-        dict of fitted LinearReference objects
+        dict of fitted LinearReferences objects
     """
     data_loader = DataLoader(
         dataset,
@@ -240,7 +238,7 @@ def fit_linear_references(
             reduced_composition_matrix, target_vectors[target], driver=driver
         )
         coeffs[mask] = lstsq.solution
-        elementrefs[target] = LinearReference(coeffs)
+        elementrefs[target] = LinearReferences(coeffs)
 
         if log_metrics is True:
             y = target_vectors[target]
@@ -264,7 +262,7 @@ def load_references_from_config(
     dataset: Dataset,
     seed: int = 0,
     checkpoint_dir: str | Path | None = None,
-) -> dict[str, LinearReference]:
+) -> dict[str, LinearReferences]:
     """Create a dictionary with element references from a config."""
     return _load_from_config(
         config,

@@ -42,6 +42,7 @@ from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
 from fairchem.core.modules.normalization.element_references import (
+    LinearReferences,
     load_references_from_config,
 )
 from fairchem.core.modules.normalization.normalizer import load_normalizers_from_config
@@ -600,9 +601,20 @@ class BaseTrainer(ABC):
                 target_key = key
 
             if target_key in self.normalizers:
-                self.normalizers[target_key].load_state_dict(
+                mkeys = self.normalizers[target_key].load_state_dict(
                     checkpoint["normalizers"][key]
                 )
+                assert len(mkeys.missing_keys) == 0
+                assert len(mkeys.unexpected_keys) == 0
+
+        for key, state_dict in checkpoint.get("elementrefs", {}).items():
+            elementrefs = LinearReferences(
+                max_num_elements=len(state_dict["element_references"])
+            )
+            mkeys = elementrefs.load_state_dict(state_dict)
+            self.elementrefs[key] = elementrefs
+            assert len(mkeys.missing_keys) == 0
+            assert len(mkeys.unexpected_keys) == 0
 
         if self.scaler and checkpoint["amp"]:
             self.scaler.load_state_dict(checkpoint["amp"])

@@ -27,7 +27,7 @@ from ._load_utils import _load_from_config
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from fairchem.core.modules.normalization.element_references import LinearReference
+    from fairchem.core.modules.normalization.element_references import LinearReferences
 
 
 class Normalizer(nn.Module):
@@ -70,7 +70,7 @@ class Normalizer(nn.Module):
                 "rmsd": state_dict["std"],
             }
 
-        super().load_state_dict(state_dict, strict=strict, assign=assign)
+        return super().load_state_dict(state_dict, strict=strict, assign=assign)
 
 
 def create_normalizer(
@@ -265,7 +265,7 @@ def load_normalizers_from_config(
     dataset: Dataset,
     seed: int = 0,
     checkpoint_dir: str | Path | None = None,
-    element_references: dict[str, LinearReference] | None = None,
+    element_references: dict[str, LinearReferences] | None = None,
 ) -> dict[str, Normalizer]:
     """Create a dictionary with element references from a config."""
     # edit the config slightly to extract override args
