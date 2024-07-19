@@ -47,6 +47,8 @@ if TYPE_CHECKING:
 
 
 DEFAULT_ENV_VARS = {
+    # Expandable segments is a new cuda feature that helps with memory fragmentation during frequent allocations (ie: in the case of variable batch sizes).
+    # see https://pytorch.org/docs/stable/notes/cuda.html.
     "PYTORCH_CUDA_ALLOC_CONF" : "expandable_segments:True",
 }
 
