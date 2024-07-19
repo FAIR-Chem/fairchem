@@ -238,11 +238,14 @@ def load_normalizers_from_config(
 ) -> dict[str, Normalizer]:
     """Create a dictionary with element references from a config."""
     # edit the config slightly to extract override args
-    override_values = {
-        target: vals for target, vals in config["targets"] if isinstance(vals, dict)
-    }
-    config["override_values"] = override_values
-    config["targets"] = list(config["targets"].keys())
+    if "fit" in config:
+        override_values = {
+            target: vals
+            for target, vals in config["fit"]["targets"]
+            if isinstance(vals, dict)
+        }
+        config["fit"]["override_values"] = override_values
+        config["fit"]["targets"] = list(config["targets"].keys())
 
     return _load_from_config(
         config,
