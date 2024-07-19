@@ -476,6 +476,9 @@ class SO3_Rotation(torch.nn.Module):
     ) -> torch.Tensor:
         x = edge_rot_mat @ edge_rot_mat.new_tensor([0.0, 1.0, 0.0])
         alpha, beta = o3.xyz_to_angles(x)
+        yprod = (x @ x.new_tensor([0, 1, 0]))
+        beta[yprod > 0.9999] = 0.
+        beta[yprod < -0.9999] = math.pi
         R = (
             o3.angles_to_matrix(alpha, beta, torch.zeros_like(alpha)).transpose(-1, -2)
             @ edge_rot_mat
