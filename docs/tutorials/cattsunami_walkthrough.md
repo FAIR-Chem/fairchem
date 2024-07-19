@@ -4,14 +4,14 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.3
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
 
-# CatTSunami Tutorial
+# CatTSunami tutorial
 
 ```{code-cell} ipython3
 ---
@@ -31,17 +31,20 @@ import matplotlib.pyplot as plt
 from fairchem.applications.cattsunami.core.autoframe import AutoFrameDissociation
 from fairchem.applications.cattsunami.core import OCPNEB
 from ase.io import read
-
-#Optional
 from IPython.display import Image
-from x3dase.x3d import X3D
 
-#Set random seed
+# Optional
+# from x3dase.x3d import X3D
+
+# Set random seed
 import numpy as np
 np.random.seed(22)
 ```
 
-## Do enumerations in an AdsorbML style
+## Do enumerations in an AdsorbML style for CH dissociation on Ru (001)
+
+To start, we generate placements for the reactant and product species on the surface. We utilize the random placement approach which was developed for AdsorbML, and use an OCP model to relax our placements on the surface. These placements and their ML-determined energies are used as input to the CatTSunami automatic NEB frame generation approach.
+
 
 ```{code-cell} ipython3
 ---
@@ -51,31 +54,16 @@ tags: ["skip-execution"]
 reaction = Reaction(reaction_str_from_db="*CH -> *C + *H",
                     reaction_db_path=DISSOCIATION_REACTION_DB_PATH,
                     adsorbate_db_path = ADSORBATE_PKL_PATH)
-```
 
-```{code-cell} ipython3
----
-tags: ["skip-execution"]
----
 # Instantiate our adsorbate class for the reactant and product
 reactant = Adsorbate(adsorbate_id_from_db=reaction.reactant1_idx, adsorbate_db_path=ADSORBATE_PKL_PATH)
 product1 = Adsorbate(adsorbate_id_from_db=reaction.product1_idx, adsorbate_db_path=ADSORBATE_PKL_PATH)
 product2 = Adsorbate(adsorbate_id_from_db=reaction.product2_idx, adsorbate_db_path=ADSORBATE_PKL_PATH)
-```
 
-```{code-cell} ipython3
----
-tags: ["skip-execution"]
----
 # Grab the bulk and cut the slab we are interested in
 bulk = Bulk(bulk_src_id_from_db="mp-33", bulk_db_path=BULK_PKL_PATH)
 slab = Slab.from_bulk_get_specific_millers(bulk = bulk, specific_millers=(0,0,1))
-```
 
-```{code-cell} ipython3
----
-tags: ["skip-execution"]
----
 # Perform site enumeration
 # For AdsorbML num_sites = 100, but we use 5 here for brevity. This should be increased for practical use.
 reactant_configs = AdsorbateSlabConfig(slab = slab[0], adsorbate = reactant,
@@ -101,6 +89,16 @@ cpu = True
 calc = OCPCalculator(checkpoint_path = checkpoint_path, cpu = cpu)
 ```
 
+### Run ML local relaxations:
+
+There are 2 options for how to do this.
+ 1. Using `OCPCalculator` as the calculator within the ASE framework
+ 2. By writing objects to lmdb and relaxing them using `main.py` in the ocp repo
+
+(1) is really only adequate for small stuff and it is what I will show here, but if you plan to run many relaxations, you should definitely use (2). More details about writing lmdbs has been provided [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/tutorials/lmdb_dataset_creation.ipynb) - follow the IS2RS/IS2RE instructions. And more information about running relaxations once the lmdb has been written is [here](https://github.com/Open-Catalyst-Project/ocp/blob/main/TRAIN.md#initial-structure-to-relaxed-structure-is2rs).
+
+You need to provide the calculator with a path to a model checkpoint file. That can be downloaded [here](../core/model_checkpoints)
+
 ```{code-cell} ipython3
 ---
 tags: ["skip-execution"]
@@ -112,12 +110,7 @@ for config in reactant_configs:
     opt = BFGS(config)
     opt.run(fmax = 0.05, steps=200)
     reactant_energies.append(config.get_potential_energy())
-```
 
-```{code-cell} ipython3
----
-tags: ["skip-execution"]
----
 # Relax the product systems
 product1_energies = []
 for config in product1_configs:
@@ -125,12 +118,7 @@ for config in product1_configs:
     opt = BFGS(config)
     opt.run(fmax = 0.05, steps=200)
     product1_energies.append(config.get_potential_energy())
-```
 
-```{code-cell} ipython3
----
-tags: ["skip-execution"]
----
 product2_energies = []
 for config in product2_configs:
     config.calc = calc
@@ -140,13 +128,8 @@ for config in product2_configs:
 ```
 
 ## Enumerate NEBs
-
-```{code-cell} ipython3
----
-tags: ["skip-execution"]
----
-Image(filename="dissociation_scheme.png")
-```
+Here we use the class we created to handle automatic generation of NEB frames to create frames using the structures we just relaxed as input.
+![dissociation_scheme](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/applications/cattsunami/tutorial/dissociation_scheme.png)
 
 ```{code-cell} ipython3
 ---
@@ -163,12 +146,7 @@ af = AutoFrameDissociation(
             r_product2_max=3, #r3 in the above fig
             r_product2_min=1, #r2 in the above fig
 )
-```
 
-```{code-cell} ipython3
----
-tags: ["skip-execution"]
----
 nframes = 10
 frame_sets, mapping_idxs = af.get_neb_frames(calc,
                                n_frames = nframes,
@@ -178,6 +156,7 @@ frame_sets, mapping_idxs = af.get_neb_frames(calc,
 ```
 
 ## Run NEBs
+Here we use the custom child class we created to run NEB relaxations using ML. The class we created allows the frame relaxations to be batched, improving efficiency.
 
 ```{code-cell} ipython3
 ---
@@ -210,7 +189,7 @@ tags: ["skip-execution"]
 #         conv = optimizer.run(fmax=fmax, steps=300)
 #         if conv:
 #             converged_idxs.append(idx)
-            
+
 # print(converged_idxs)
 ```
 
@@ -238,13 +217,14 @@ if conv:
     conv = optimizer.run(fmax=fmax, steps=300)
 ```
 
-## Visualize the results
+## (Optional) Visualize the results
 
 ```{code-cell} ipython3
 ---
 tags: ["skip-execution"]
 ---
-optimized_neb = read(f"ch_dissoc_on_Ru_{converged_idxs[0]}.traj", ":")[-1*nframes:]
+idx_of_interest = 0
+optimized_neb = read(f"n2_dissoc_on_Ru_{idx_of_interest}.traj", ":")[-1*nframes:]
 ```
 
 ```{code-cell} ipython3
@@ -255,12 +235,7 @@ es  = []
 for frame in optimized_neb:
     frame.set_calculator(calc)
     es.append(frame.get_potential_energy())
-```
 
-```{code-cell} ipython3
----
-tags: ["skip-execution"]
----
 # Plot the reaction coordinate
 
 es = [e - es[0] for e in es]
