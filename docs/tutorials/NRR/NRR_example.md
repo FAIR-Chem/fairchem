@@ -34,6 +34,11 @@ import os
 from glob import glob
 import pandas as pd
 from fairchem.data.oc.utils import DetectTrajAnomaly
+
+# Set random seed to ensure adsorbate enumeration yields a valid candidate
+# If using a larger number of random samples this wouldn't be necessary
+import numpy as np
+np.random.seed(22)
 ```
 
 ```{code-cell} ipython3
