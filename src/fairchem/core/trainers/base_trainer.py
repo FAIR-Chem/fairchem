@@ -7,7 +7,6 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-import datetime
 import errno
 import logging
 import os
@@ -28,7 +27,15 @@ from tqdm import tqdm
 from fairchem.core import __version__
 from fairchem.core.common import distutils, gp_utils
 from fairchem.core.common.data_parallel import BalancedBatchSampler, OCPCollater
+from fairchem.core.common.paths import (
+    get_checkpoint_dir,
+    get_log_dir,
+    get_result_dir,
+    get_timestamp_id,
+    unique_job_id,
+)
 from fairchem.core.common.registry import registry
+from fairchem.core.common.slurm import update_slurm_config
 from fairchem.core.common.typing import assert_is_instance as aii
 from fairchem.core.common.typing import none_throws
 from fairchem.core.common.utils import (
@@ -72,12 +79,11 @@ class BaseTrainer(ABC):
         amp: bool = False,
         cpu: bool = False,
         name: str = "ocp",
-        slurm=None,
+        slurm: dict | None = None,
         noddp: bool = False,
         gp_gpus: int | None = None,
     ) -> None:
-        if slurm is None:
-            slurm = {}
+        slurm = slurm if slurm is not None else {}
         self.name = name
         self.is_debug = is_debug
         self.cpu = cpu
@@ -91,18 +97,21 @@ class BaseTrainer(ABC):
             self.cpu = True  # handle case when `--cpu` isn't specified
             # but there are no gpu devices available
 
-        if run_dir is None:
-            run_dir = os.getcwd()
-
         self.timestamp_id: str
         if timestamp_id is None:
-            timestamp_id = self._get_timestamp(self.device, identifier)
+            timestamp_id = get_timestamp_id(self.device, identifier)
 
         self.timestamp_id = none_throws(timestamp_id)
 
         commit_hash = get_commit_hash()
 
-        logger_name = logger if isinstance(logger, str) else logger["name"]
+        # Fill in SLURM information in config, if applicable
+        logging.info(f"slurm before {slurm}")
+        slurm_config = update_slurm_config(slurm)
+        logging.info(f"slurm afer {slurm}")
+        # the unique job id is either the timestampe_id or slurm_id (if it is a slurm job)
+        uuid = unique_job_id(timestamp_id, slurm_config.get("job_id", None))
+
         self.config = {
             "task": task,
             "trainer": name,
@@ -117,38 +126,22 @@ class BaseTrainer(ABC):
             "gpus": distutils.get_world_size() if not self.cpu else 0,
             "cmd": {
                 "identifier": identifier,
+                "unique_job_id": uuid,
                 "print_every": print_every,
                 "seed": seed,
                 "timestamp_id": self.timestamp_id,
                 "commit": commit_hash,
                 "version": __version__,
-                "checkpoint_dir": os.path.join(
-                    run_dir, "checkpoints", self.timestamp_id
-                ),
-                "results_dir": os.path.join(run_dir, "results", self.timestamp_id),
-                "logs_dir": os.path.join(
-                    run_dir, "logs", logger_name, self.timestamp_id
-                ),
+                "checkpoint_dir": get_checkpoint_dir(uuid, run_dir),
+                "results_dir": get_result_dir(uuid, run_dir),
+                "logs_dir": get_log_dir(uuid, run_dir),
             },
-            "slurm": slurm,
+            "slurm": slurm_config,
             "noddp": noddp,
             "gp_gpus": gp_gpus,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp and not self.cpu else None
-
-        # Fill in SLURM information in config, if applicable
-        if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
-            if "SLURM_ARRAY_JOB_ID" in os.environ:
-                self.config["slurm"]["job_id"] = "{}_{}".format(
-                    os.environ["SLURM_ARRAY_JOB_ID"],
-                    os.environ["SLURM_ARRAY_TASK_ID"],
-                )
-            else:
-                self.config["slurm"]["job_id"] = os.environ["SLURM_JOB_ID"]
-            self.config["slurm"]["folder"] = self.config["slurm"]["folder"].replace(
-                "%j", self.config["slurm"]["job_id"]
-            )
 
         # Define datasets
         if isinstance(dataset, list):
@@ -182,19 +175,6 @@ class BaseTrainer(ABC):
     @abstractmethod
     def train(self, disable_eval_tqdm: bool = False) -> None:
         """Run model training iterations."""
-
-    @staticmethod
-    def _get_timestamp(device: torch.device, suffix: str | None) -> str:
-        now = datetime.datetime.now().timestamp()
-        timestamp_tensor = torch.tensor(now).to(device)
-        # create directories from master rank only
-        distutils.broadcast(timestamp_tensor, 0)
-        timestamp_str = datetime.datetime.fromtimestamp(
-            timestamp_tensor.float().item()
-        ).strftime("%Y-%m-%d-%H-%M-%S")
-        if suffix:
-            timestamp_str += "-" + suffix
-        return timestamp_str
 
     def load(self) -> None:
         self.load_seed_from_config()

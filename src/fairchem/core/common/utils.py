@@ -504,10 +504,10 @@ def create_grid(base_config, sweep_file: str):
     return configs
 
 
-def save_experiment_log(args, jobs, configs):
-    log_file = args.logdir / "exp" / time.strftime("%Y-%m-%d-%I-%M-%S%p.log")
-    log_file.parent.mkdir(exist_ok=True, parents=True)
-    with open(log_file, "w") as f:
+def save_experiment_job_spec(logdir, jobs, configs):
+    os.makedirs(logdir, exist_ok=True)
+    job_spec_file = os.path.join(logdir, time.strftime("%Y-%m-%d-%I-%M-%S%p.log"))
+    with open(job_spec_file, "w") as f:
         for job, config in zip(jobs, configs):
             print(
                 json.dumps(
@@ -519,7 +519,7 @@ def save_experiment_log(args, jobs, configs):
                 ),
                 file=f,
             )
-    return log_file
+    return job_spec_file
 
 
 def get_pbc_distances(

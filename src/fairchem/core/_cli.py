@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import os
 from typing import TYPE_CHECKING
 
 from submitit import AutoExecutor
@@ -16,11 +17,12 @@ from submitit.helpers import Checkpointable, DelayedSubmission
 from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
 from fairchem.core.common.flags import flags
+from fairchem.core.common.paths import LOG_DIR_NAME, get_log_dir
 from fairchem.core.common.utils import (
     build_config,
     create_grid,
     new_trainer_context,
-    save_experiment_log,
+    save_experiment_job_spec,
     setup_logging,
 )
 
@@ -64,13 +66,14 @@ def main():
     override_args: list[str]
     args, override_args = parser.parse_known_args()
     config = build_config(args, override_args)
+    os.makedirs(args.run_dir, exist_ok=True)
 
     if args.submit:  # Run on cluster
         slurm_add_params = config.get("slurm", None)  # additional slurm arguments
         configs = create_grid(config, args.sweep_yml) if args.sweep_yml else [config]
 
         logging.info(f"Submitting {len(configs)} jobs")
-        executor = AutoExecutor(folder=args.logdir / "%j", slurm_max_num_timeout=3)
+        executor = AutoExecutor(folder=os.path.join(args.run_dir, "%j", LOG_DIR_NAME), slurm_max_num_timeout=3)
         executor.update_parameters(
             name=args.identifier,
             mem_gb=args.slurm_mem,
@@ -89,8 +92,9 @@ def main():
             config["slurm"]["folder"] = str(executor.folder)
         jobs = executor.map_array(Runner(distributed=args.distributed), configs)
         logging.info(f"Submitted jobs: {', '.join([job.job_id for job in jobs])}")
-        log_file = save_experiment_log(args, jobs, configs)
-        logging.info(f"Experiment log saved to: {log_file}")
+        exp_spec = save_experiment_job_spec(args.run_dir, jobs, configs)
+        logging.info(f"Experiment spec: {exp_spec}")
+        logging.info(f"Experiment log directories: {', '.join([get_log_dir(job.job_id, args.run_dir) for job in jobs])}")
 
     else:  # Run locally on a single node, n-processes
         if args.distributed:
