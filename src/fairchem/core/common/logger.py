@@ -75,9 +75,19 @@ class WandBLogger(Logger):
             else None
         )
 
+        # the wandb id is a unique identifier used for resuming runs that are
+        # preempted or failed.
+        #
+        # if the slurm job_id exists, then we use this as the wandb unique job id,
+        # this assumes the slurm job_id is unique across all clusters.
+        if "slurm" in self.config and "job_id" in self.config["slurm"]:
+            wandb_id = self.config["slurm"]["job_id"]
+        else:
+            wandb_id = self.config["cmd"]["timestamp_id"]
+
         wandb.init(
             config=self.config,
-            id=self.config["cmd"]["timestamp_id"],
+            id=wandb_id,
             name=self.config["cmd"]["identifier"],
             dir=self.config["cmd"]["logs_dir"],
             project=project,
