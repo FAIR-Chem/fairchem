@@ -49,11 +49,13 @@ class LinearReference(nn.Module):
         self,
         element_references: torch.Tensor | None = None,
         max_num_elements: int = 118,
+        metrics: dict[str, float] | None = None,
     ):
         """
         Args:
             element_references (Tensor): tensor with linear reference values
             max_num_elements (int): max number of elements - 118 is a stretch
+            metrics (dict): dictionary with accuracy metrics in predicting values for structures used in fitting.
         """
         super().__init__()
         self.register_buffer(
@@ -62,6 +64,7 @@ class LinearReference(nn.Module):
             if element_references is not None
             else torch.zeros(max_num_elements + 1),
         )
+        self.metrics = metrics
 
     def _apply_refs(
         self, target: torch.Tensor, batch: Batch, sign: int, reshaped: bool = True
@@ -147,6 +150,7 @@ def fit_linear_references(
     num_batches: int | None = None,
     num_workers: int = 0,
     max_num_elements: int = 118,
+    log_metrics: bool = True,
     driver: str | None = None,
     shuffle: bool = True,
     seed: int = 0,
@@ -163,6 +167,7 @@ def fit_linear_references(
             in distributed mode. The issue has to do with pickling the functions in load_references_from_config
             see function below...
         max_num_elements: max number of elements in dataset. If not given will use an ambitious value of 118
+        log_metrics: if true will compute MAE, RMSE and R2 score of fit and log.
         driver: backend used to solve linear system. See torch.linalg.lstsq docs.
         shuffle: whether to shuffle when loading the dataset
         seed: random seed used to shuffle the sampler if shuffle=True
@@ -236,6 +241,20 @@ def fit_linear_references(
         )
         coeffs[mask] = lstsq.solution
         elementrefs[target] = LinearReference(coeffs)
+
+        if log_metrics is True:
+            y = target_vectors[target]
+            y_pred = torch.matmul(reduced_composition_matrix, lstsq.solution)
+            y_mean = target_vectors[target].mean()
+            N = len(target_vectors[target])
+            ss_res = ((y - y_pred) ** 2).sum()
+            ss_tot = ((y - y_mean) ** 2).sum()
+            mae = (abs(y - y_pred)).sum() / N
+            rmse = (((y - y_pred) ** 2).sum() / N).sqrt()
+            r2 = 1 - (ss_res / ss_tot)
+            logging.info(
+                f"Training accuracy metrics for fitted linear element references: mae={mae}, rmse={rmse}, r2 score={r2}"
+            )
 
     return elementrefs
 
