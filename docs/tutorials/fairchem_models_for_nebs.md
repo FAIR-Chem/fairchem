@@ -14,6 +14,9 @@ kernelspec:
 # Tutorial for using Fair Chemistry models to relax NEBs
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 from ase.optimize import BFGS
 from ase.io import read
 
@@ -24,7 +27,6 @@ from fairchem.core.models.model_registry import model_name_to_local_file
 #Optional
 from x3dase.x3d import X3D
 import matplotlib.pyplot as plt
-from pathlib import Path
 import os
 ```
 
@@ -33,6 +35,9 @@ import os
 Shown here are the values used consistently throughout the paper.
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 fmax = 0.05 # [eV / ang]
 delta_fmax_climb = 0.4 # this means that when the fmax is below 0.45 eV/Ang climbing image will be turned on
 k = 1 # you may adjust this value as you see fit
@@ -46,17 +51,24 @@ checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', 
 ## If you have your own set of NEB frames
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 """
 Load your frames (change to the appropriate loading method)
 The approach uses ase, so you must provide a list of ase.Atoms objects
 with the appropriate constraints.
 """
-path_ = Path(__file__).parents[2]
+cwd = os.getcwd()
+path_ = os.path.abspath(os.path.join(cwd, os.pardir, os.pardir))
 path_ = os.path.join(path_, "src", "fairchem", "applications", "cattsunami", "tutorial", "sample_traj.traj")
 frame_set = read(path_, ":")[0:10] # Change to the path to your atoms of the frame set
 ```
 
 ```{code-cell} ipython3
+---
+tags: ["skip-execution"]
+---
 neb = OCPNEB(
     frame_set,
     checkpoint_path=checkpoint_path,
@@ -78,7 +90,7 @@ if conv:
 
 You may use the `interpolate` function we implemented which is very similar to idpp but not sensative to periodic boundary crossings. Alternatively you can adopt whatever interpolation scheme you prefer. The `interpolate` function lacks some of the extra protections implemented in the `interpolate_and_correct_frames` which is used in the CatTSunami enumeration workflow. Care should be taken to ensure the results are reasonable.
 
-IMPORTANT NOTES: 
+IMPORTANT NOTES:
 1. Make sure the indices in the initial and final frame map to the same atoms
 2. Ensure you have the proper constraints on subsurface atoms
 

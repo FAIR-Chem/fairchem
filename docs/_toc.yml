@@ -43,7 +43,8 @@ parts:
   - file: tutorials/intro
   - file: tutorials/OCP-introduction
   - file: tutorials/adsorbml_walkthrough
-  - file: tutorials/cattsunami_walkthrough
+  - file: tutorials/cattsunami_tutorial
+  - file: tutorials/fairchem_models_for_nebs
   - file: tutorials/NRR/NRR_toc
     sections:
     - file: tutorials/NRR/NRR_example
