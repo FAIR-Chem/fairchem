@@ -10,6 +10,11 @@ from __future__ import annotations
 import logging
 import os
 
+from fairchem.core.common.paths import (
+    DEFAULT_CHECKPOINT_NAME,
+    get_checkpoint_dir,
+    unique_job_id,
+)
 from fairchem.core.common.registry import registry
 from fairchem.core.trainers import OCPTrainer
 
@@ -20,13 +25,20 @@ class BaseTask:
 
     def setup(self, trainer) -> None:
         self.trainer = trainer
+
+        # if the supplied checkpoint exists, then load that
         if self.config["checkpoint"] is not None:
             self.trainer.load_checkpoint(checkpoint_path=self.config["checkpoint"])
+        # otherwise check if slurm job already exists and try to resume from latest checkpoint
+        elif "slurm" in self.config and "slurm_job_id" in self.config["slurm"]:
+            uuid = unique_job_id(self.config["timestamp_id"], self.config["slurm"]["slurm_job_id"])
+            checkpoint_dir = get_checkpoint_dir(uuid, self.config["run_dir"])
+            self.chkpt_path = os.path.join(checkpoint_dir, DEFAULT_CHECKPOINT_NAME)
 
-        # save checkpoint path to runner state for slurm resubmissions
-        self.chkpt_path = os.path.join(
-            self.trainer.config["cmd"]["checkpoint_dir"], "checkpoint.pt"
-        )
+            # if the path already exists, then attempt to load it
+            if os.path.exists(self.chkpt_path):
+                self.trainer.load_checkpoint(checkpoint_path=self.chkpt_path)
+
 
     def run(self):
         raise NotImplementedError
