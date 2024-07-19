@@ -151,8 +151,10 @@ def create_normalizer(
         mean = torch.mean(tensor)
         rmsd = torch.std(tensor)
     elif mean is not None and rmsd is not None:
-        mean = torch.tensor(mean)
-        rmsd = torch.tensor(rmsd)
+        if not isinstance(mean, torch.Tensor):
+            mean = torch.tensor(mean)
+        if not isinstance(rmsd, torch.Tensor):
+            rmsd = torch.tensor(rmsd)
 
     # if mean and rmsd are still None than raise an error
     if mean is None or rmsd is None:

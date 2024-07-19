@@ -420,6 +420,12 @@ class BaseTrainer(ABC):
                     element_references=elementrefs,
                 )
 
+                # log out the values that will be used.
+                for output, normalizer in normalizers.items():
+                    logging.info(
+                        f"Normalization values for output {output}: mean={normalizer.mean.item()}, rmsd={normalizer.rmsd.item()}."
+                    )
+
         # put them in a list to broadcast them
         elementrefs, normalizers = [elementrefs], [normalizers]
         distutils.broadcast_object_list(
@@ -431,14 +437,14 @@ class BaseTrainer(ABC):
         # make sure element refs and normalizers are on this device
         self.elementrefs.update(
             {
-                target: elementref.to(self.device)
-                for target, elementref in elementrefs[0].items()
+                output: elementref.to(self.device)
+                for output, elementref in elementrefs[0].items()
             }
         )
         self.normalizers.update(
             {
-                target: normalizer.to(self.device)
-                for target, normalizer in normalizers[0].items()
+                output: normalizer.to(self.device)
+                for output, normalizer in normalizers[0].items()
             }
         )
 

@@ -106,9 +106,8 @@ def _load_from_config(
                 checkpoint_dir,
                 f"{name}.pt",
             )
-            print(path)
             logging.info(
-                f"{name} for targets {list(modules.keys())} have been saved to: {path}"
+                f"{name} checkpoint for targets {list(modules.keys())} have been saved to: {path}"
             )
 
     return modules
