@@ -62,7 +62,7 @@ def oc20_lmdb_train_and_val_from_paths(
                         },
                         "normalizer": {
                             "fit": {
-                                "targets": ["energy", "forces"],
+                                "targets": {"energy": None, "forces": {"mean": 0.0}},
                                 "batch_size": 4,
                                 "num_batches": 10,
                             }

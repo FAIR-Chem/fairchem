@@ -16,6 +16,7 @@ from fairchem.core.modules.normalization.normalizer import (
 def normalizers(dummy_binary_dataset):
     return fit_normalizers(
         ["energy", "forces"],
+        override_values={"forces": {"mean": 0.0}},
         dataset=dummy_binary_dataset,
         batch_size=16,
         shuffle=False,
@@ -36,6 +37,9 @@ def test_norm_denorm(normalizers, dummy_binary_dataset, dummy_element_refs):
 
 
 def test_create_normalizers(normalizers, dummy_binary_dataset, tmp_path):
+    # test that forces mean was overriden
+    assert normalizers["forces"].mean.item() == 0.0
+
     # test from state dict
     sdict = normalizers["energy"].state_dict()
 
@@ -50,7 +54,6 @@ def test_create_normalizers(normalizers, dummy_binary_dataset, tmp_path):
     assert norm.state_dict() == sdict
 
     # from a legacy numpy npz file
-    print(normalizers["energy"].mean.numpy())
     np.savez(
         tmp_path / "norm.npz",
         mean=normalizers["energy"].mean.numpy(),
