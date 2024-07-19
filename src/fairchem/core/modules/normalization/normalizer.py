@@ -64,10 +64,11 @@ class Normalizer(nn.Module):
         self, state_dict: Mapping[str, Any], strict: bool = True, assign: bool = False
     ):
         # check if state dict is legacy state dicts
-        if isinstance(state_dict["mean"], float):
-            state_dict.update(
-                {k: torch.tensor(state_dict[k]) for k in ("mean", "rmsd")}
-            )
+        if "std" in state_dict:
+            state_dict = {
+                "mean": torch.tensor(state_dict["mean"]),
+                "rmsd": state_dict["std"],
+            }
 
         super().load_state_dict(state_dict, strict=strict, assign=assign)
 
@@ -169,6 +170,7 @@ def fit_normalizers(
     dataset: Dataset,
     batch_size: int,
     override_values: dict[str, dict[str, float]] | None = None,
+    rmsd_correction: int | None = None,
     element_references: dict | None = None,
     num_batches: int | None = None,
     num_workers: int = 0,
@@ -183,6 +185,8 @@ def fit_normalizers(
         batch_size: size of batch
         override_values: dictionary with target names and values to override. i.e. {"forces": {"mean": 0.0}} will set
             the forces mean to zero.
+        rmsd_correction: correction to use when computing mean in std/rmsd. See docs for torch.std.
+            If not given, will always use 0 when mean == 0, and 1 otherwise.
         element_references:
         num_batches: number of batches to use in fit. If not given will use all batches
         num_workers: number of workers to use in data loader
@@ -239,11 +243,16 @@ def fit_normalizers(
         target_vector = torch.cat(target_vectors[target], dim=0)
         values = {"mean": target_vector.mean()}
         if target in override_values:
-            for name, val in override_values.items():
+            for name, val in override_values[target].items():
                 values[name] = torch.tensor(val)
         # calculate root mean square deviation
         if "rmsd" not in values:
-            values["rmsd"] = torch.sqrt((target_vector - values["mean"]) ** 2)
+            if rmsd_correction is None:
+                rmsd_correction = 0 if values["mean"] == 0.0 else 1
+            values["rmsd"] = (
+                ((target_vector - values["mean"]) ** 2).sum()
+                / max(len(target_vector) - rmsd_correction, 1)
+            ).sqrt()
         normalizers[target] = create_normalizer(**values)
 
     return normalizers
@@ -265,7 +274,7 @@ def load_normalizers_from_config(
             if isinstance(vals, dict)
         }
         config["fit"]["override_values"] = override_values
-        config["fit"]["targets"] = list(config["targets"].keys())
+        config["fit"]["targets"] = list(config["fit"]["targets"].keys())
 
     return _load_from_config(
         config,
