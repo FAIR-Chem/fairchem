@@ -456,9 +456,9 @@ class EquiformerV2_OC20(BaseModel):
         atomic_numbers = data.atomic_numbers.long()
 
         (
-            edge_index,
-            edge_distance,
-            edge_distance_vec,
+            edge_index_full,
+            edge_distance_full,
+            edge_distance_vec_full,
             cell_offsets,
             _,  # cell offset distances
             neighbors,
@@ -482,9 +482,9 @@ class EquiformerV2_OC20(BaseModel):
             ) = self._init_gp_partitions(
                 atomic_numbers_full,
                 data_batch_full,
-                edge_index,
-                edge_distance,
-                edge_distance_vec,
+                edge_index_full,
+                edge_distance_full,
+                edge_distance_vec_full,
             )
         ###############################################################
         # Entering Graph Parallel Region
@@ -583,11 +583,22 @@ class EquiformerV2_OC20(BaseModel):
         ###############################################################
         sphharm_weights_edge = o3.spherical_harmonics(
             torch.arange(0, x.lmax_list[-1] + 1).tolist(),
-            edge_distance_vec,
+            edge_distance_vec_full,
             False,
         ).detach()
+        print(
+            edge_index.shape,
+            edge_index_full.shape,
+            x.embedding.shape,
+            edge_distance_vec_full.shape,
+            sphharm_weights_edge.shape,
+        )
 
-        x_edge = x.expand_edge(edge_index[1]).embedding
+        #if gp_utils.initialized():
+        #    x_full_embedding = gp_utils.gather_from_model_parallel_region(x.embedding, dim=0)
+        #    #x_
+        #    x_source.set_embedding(x_full)
+        x_edge = x.expand_edge(edge_index_full[1]).embedding
         x_edge = torch.einsum("abc, ab->ac", x_edge, sphharm_weights_edge)
 
         outputs = {
