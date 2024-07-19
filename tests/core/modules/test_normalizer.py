@@ -71,7 +71,7 @@ def test_create_normalizers(normalizers, dummy_binary_dataset, tmp_path):
 
     # passing values directly
     norm = create_normalizer(
-        mean=batch.energy.mean().item(), stdev=batch.energy.std().item()
+        mean=batch.energy.mean().item(), rmsd=batch.energy.std().item()
     )
     assert isinstance(norm, Normalizer)
     assert norm.state_dict() == sdict

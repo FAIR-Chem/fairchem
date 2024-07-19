@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import logging
+import warnings
 from collections import defaultdict
 from functools import partial
 from pathlib import Path
@@ -35,26 +36,26 @@ class Normalizer(nn.Module):
     def __init__(
         self,
         mean: float | torch.Tensor = 0.0,
-        std: float | torch.Tensor = 1.0,
+        rmsd: float | torch.Tensor = 1.0,
     ):
-        """tensor is taken as a sample to calculate the mean and std"""
+        """tensor is taken as a sample to calculate the mean and rmsd"""
         super().__init__()
 
         if isinstance(mean, float):
             mean = torch.tensor(mean)
-        if isinstance(std, float):
-            std = torch.tensor(std)
+        if isinstance(rmsd, float):
+            rmsd = torch.tensor(rmsd)
 
         self.register_buffer(name="mean", tensor=mean)
-        self.register_buffer(name="std", tensor=std)
+        self.register_buffer(name="rmsd", tensor=rmsd)
 
     @torch.autocast(device_type="cuda", enabled=False)
     def norm(self, tensor: torch.Tensor) -> torch.Tensor:
-        return (tensor - self.mean) / self.std
+        return (tensor - self.mean) / self.rmsd
 
     @torch.autocast(device_type="cuda", enabled=False)
     def denorm(self, normed_tensor: torch.Tensor) -> torch.Tensor:
-        return normed_tensor * self.std + self.mean
+        return normed_tensor * self.rmsd + self.mean
 
     def forward(self, normed_tensor: torch.Tensor) -> torch.Tensor:
         return self.denorm(normed_tensor)
@@ -64,7 +65,9 @@ class Normalizer(nn.Module):
     ):
         # check if state dict is legacy state dicts
         if isinstance(state_dict["mean"], float):
-            state_dict.update({k: torch.tensor(state_dict[k]) for k in ("mean", "std")})
+            state_dict.update(
+                {k: torch.tensor(state_dict[k]) for k in ("mean", "rmsd")}
+            )
 
         super().load_state_dict(state_dict, strict=strict, assign=assign)
 
@@ -74,11 +77,12 @@ def create_normalizer(
     state_dict: dict | None = None,
     tensor: torch.Tensor | None = None,
     mean: float | torch.Tensor | None = None,
+    rmsd: float | torch.Tensor | None = None,
     stdev: float | torch.Tensor | None = None,
 ) -> Normalizer:
     """Build a target data normalizers with optional atom ref
 
-    Only one of file, state_dict, tensor, or (mean and std) will be used to create a normalizer.
+    Only one of file, state_dict, tensor, or (mean and rmsd) will be used to create a normalizer.
     If more than one set of inputs are given priority will be given following the order in which they are listed above.
 
     Args:
@@ -86,14 +90,25 @@ def create_normalizer(
         state_dict (dict): a state dict for Normalizer module
         tensor (Tensor): a tensor with target values used to compute mean and std
         mean (float | Tensor): mean of target data
-        stdev (float | Tensor): std of target data
-        data_loader (DataLoader): a data loader used to estimate mean and std
-        num_batches (int): the number of batches used. If not given all batches are used.
+        rmsd (float | Tensor): rmsd of target data, rmsd from mean = stdev, rmsd from 0 = rms
+        stdev: standard deviation (deprecated, use rmsd instead)
 
     Returns:
         Normalizer
     """
-    std = stdev  # old configs called it stdev, using this in the function signature reduces overhead code elsewhere
+    if stdev is not None:
+        warnings.warn(
+            "Use of 'stdev' is deprecated, use 'rmsd' instead", DeprecationWarning
+        )
+        if rmsd is not None:
+            logging.warning(
+                "Both 'stdev' and 'rmsd' values where given to create a normalizer, rmsd values will be used."
+            )
+
+    # old configs called it stdev, using this in the function signature reduces overhead code elsewhere
+    if stdev is not None and rmsd is None:
+        rmsd = stdev
+
     # path takes priority if given
     if file is not None:
         if state_dict is not None or tensor is not None or mean is not None:
@@ -109,7 +124,7 @@ def create_normalizer(
             # try to load an NPZ file
             values = np.load(file)
             mean = values.get("mean")
-            std = values.get("std")
+            rmsd = values.get("rmsd") or values.get("std")  # legacy files
             tensor = None  # set to None since values read from file are prioritized
         else:
             raise RuntimeError(
@@ -133,21 +148,22 @@ def create_normalizer(
                 "Normalization values will be computed from input tensor, all other inputs will be ignored."
             )
         mean = torch.mean(tensor)
-        std = torch.std(tensor)
-    elif mean is not None and std is not None:
+        rmsd = torch.std(tensor)
+    elif mean is not None and rmsd is not None:
         mean = torch.tensor(mean)
-        std = torch.tensor(std)
+        rmsd = torch.tensor(rmsd)
 
-    # if mean and std are still None than raise an error
-    if mean is None or std is None:
+    # if mean and rmsd are still None than raise an error
+    if mean is None or rmsd is None:
         raise ValueError(
             "Incorrect inputs. One of the following sets of inputs must be given: ",
-            "a file path to a .pt or .npz file, or mean and std values, or a tensor of target values",
+            "a file path to a .pt or .npz file, or mean and rmsd values, or a tensor of target values",
         )
 
-    return Normalizer(mean=mean, std=std)
+    return Normalizer(mean=mean, rmsd=rmsd)
 
 
+@torch.no_grad()
 def fit_normalizers(
     targets: list[str],
     dataset: Dataset,
@@ -159,7 +175,7 @@ def fit_normalizers(
     shuffle: bool = True,
     seed: int = 0,
 ) -> dict[str, Normalizer]:
-    """Estimate mean and std from data to create normalizers
+    """Estimate mean and rmsd from data to create normalizers
 
     Args:
         targets: list of target names
@@ -201,11 +217,11 @@ def fit_normalizers(
     target_vectors = defaultdict(list)
 
     logging.info(
-        f"Estimating mean and std for normalization using {num_batches * batch_size} samples in {num_batches} batches "
+        f"Estimating mean and rmsd for normalization using {num_batches * batch_size} samples in {num_batches} batches "
         f"of size {batch_size}."
     )
     for i, batch in tqdm(
-        enumerate(data_loader), total=num_batches, desc="Estimating mean and std"
+        enumerate(data_loader), total=num_batches, desc="Estimating mean and rmsd"
     ):
         if i == num_batches:
             break
@@ -221,10 +237,14 @@ def fit_normalizers(
     normalizers = {}
     for target in targets:
         target_vector = torch.cat(target_vectors[target], dim=0)
-        normalizers[target] = create_normalizer(tensor=target_vector)
+        values = {"mean": target_vector.mean()}
         if target in override_values:
             for name, val in override_values.items():
-                setattr(normalizers[target], name, torch.tensor(val))
+                values[name] = torch.tensor(val)
+        # calculate root mean square deviation
+        if "rmsd" not in values:
+            values["rmsd"] = torch.sqrt((target_vector - values["mean"]) ** 2)
+        normalizers[target] = create_normalizer(**values)
 
     return normalizers
 
