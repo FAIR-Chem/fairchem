@@ -45,7 +45,7 @@ def init_edge_rot_mat(edge_distance_vec):
     norm_y = norm_y / (torch.sqrt(torch.sum(norm_y**2, dim=1, keepdim=True)))
 
     yprod = (norm_x @ norm_x.new_tensor([0,1,0]))
-    
+
     # Construct the 3D rotation matrix
     norm_x = norm_x.view(-1, 3, 1)
     norm_y = -norm_y.view(-1, 3, 1)
@@ -61,5 +61,5 @@ def init_edge_rot_mat(edge_distance_vec):
     output[~mask, 2, :] = edge_rot_mat[~mask, 2, :]
     output[yprod > 0.9999, 1, :] = edge_rot_mat.new_tensor([[0., 1., 0.]])
     output[yprod < -0.9999, 1, :] = edge_rot_mat.new_tensor([[0., -1., 0.]])
-    
+
     return output
