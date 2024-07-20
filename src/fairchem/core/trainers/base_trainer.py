@@ -609,7 +609,7 @@ class BaseTrainer(ABC):
 
         for key, state_dict in checkpoint.get("elementrefs", {}).items():
             elementrefs = LinearReferences(
-                max_num_elements=len(state_dict["element_references"])
+                max_num_elements=len(state_dict["element_references"]) - 1
             )
             mkeys = elementrefs.load_state_dict(state_dict)
             self.elementrefs[key] = elementrefs

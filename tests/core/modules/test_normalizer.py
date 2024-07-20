@@ -29,10 +29,10 @@ def test_norm_denorm(normalizers, dummy_binary_dataset, dummy_element_refs):
     for target, normalizer in normalizers.items():
         normed = normalizer.norm(batch[target])
         assert torch.allclose(
-            (batch[target] - normalizer.mean) / normalizer.std, normed
+            (batch[target] - normalizer.mean) / normalizer.rmsd, normed
         )
         assert torch.allclose(
-            normalizer.std * normed + normalizer.mean, normalizer(normed)
+            normalizer.rmsd * normed + normalizer.mean, normalizer(normed)
         )
 
 
@@ -57,7 +57,17 @@ def test_create_normalizers(normalizers, dummy_binary_dataset, tmp_path):
     np.savez(
         tmp_path / "norm.npz",
         mean=normalizers["energy"].mean.numpy(),
-        std=normalizers["energy"].std.numpy(),
+        std=normalizers["energy"].rmsd.numpy(),
+    )
+    norm = create_normalizer(file=tmp_path / "norm.npz")
+    assert isinstance(norm, Normalizer)
+    assert norm.state_dict() == sdict
+
+    # from a new npz file
+    np.savez(
+        tmp_path / "norm.npz",
+        mean=normalizers["energy"].mean.numpy(),
+        rmsd=normalizers["energy"].rmsd.numpy(),
     )
     norm = create_normalizer(file=tmp_path / "norm.npz")
     assert isinstance(norm, Normalizer)
