@@ -34,12 +34,17 @@ import os
 from glob import glob
 import pandas as pd
 from fairchem.data.oc.utils import DetectTrajAnomaly
+
+# Set random seed to ensure adsorbate enumeration yields a valid candidate
+# If using a larger number of random samples this wouldn't be necessary
+import numpy as np
+np.random.seed(22)
 ```
 
 ```{code-cell} ipython3
 from fairchem.core.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/fairchem_checkpoints/')
 checkpoint_path
 ```
 
