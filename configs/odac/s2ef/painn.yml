@@ -1,7 +1,13 @@
 includes:
   - configs/odac/s2ef/base.yml
 
-trainer: forces
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 2
+  - forces:
+      fn: l2mae
+      coefficient: 100
 
 model:
   name: painn
@@ -32,12 +38,8 @@ optim:
   factor: 0.8
   patience: 3
   max_epochs: 80
-  force_coefficient: 100
-  energy_coefficient: 2
   ema_decay: 0.999
   clip_grad_norm: 10
-  loss_energy: mae
-  loss_force: l2mae
 
   scheduler: CosineAnnealingLR
   T_max: 1000000

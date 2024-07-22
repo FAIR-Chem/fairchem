@@ -1,0 +1,22 @@
+{
+    "image": "mcr.microsoft.com/devcontainers/anaconda:0.205.0-3",
+    "postCreateCommand": "bash ./.devcontainer/postCreateCommand.sh",
+    "forwardPorts": [
+        8888
+    ],
+    "postStartCommand": "nohup bash -c 'jupyter notebook --ip=0.0.0.0 --port=8888 --allow-root --NotebookApp.token='' &'",
+    // Configure tool-specific properties.
+    "customizations": {
+        // Configure properties specific to VS Code.
+        "vscode": {
+            // Add the IDs of extensions you want installed when the container is created.
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance"
+            ]
+        }
+    },
+    "hostRequirements": {
+        "memory": "16gb",
+    }
+}

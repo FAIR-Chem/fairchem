@@ -199,7 +199,7 @@ write("POSCAR", ase_atoms, "vasp")
 
 ## Citing `fairchem-demo-ocpapi`
 
-If you use `fairchem-demo-ocpapi` in your research, please consider citing the [AdsorbML paper](https://www.nature.com/articles/s41524-023-01121-5) (in addition to the relevant datasets / models used):
+If you use `fairchem-demo-ocpapi` in your research , please consider citing the [AdsorbML paper](https://www.nature.com/articles/s41524-023-01121-5) (in addition to the relevant datasets / models used):
 
 ```bibtex
 @article{lan2023adsorbml,

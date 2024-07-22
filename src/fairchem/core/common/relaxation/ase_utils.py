@@ -38,12 +38,12 @@ def batch_to_atoms(batch):
     n_systems = batch.natoms.shape[0]
     natoms = batch.natoms.tolist()
     numbers = torch.split(batch.atomic_numbers, natoms)
-    fixed = torch.split(batch.fixed, natoms)
+    fixed = torch.split(batch.fixed.to(torch.bool), natoms)
     forces = torch.split(batch.force, natoms)
     positions = torch.split(batch.pos, natoms)
     tags = torch.split(batch.tags, natoms)
     cells = batch.cell
-    energies = batch.y.view(-1).tolist()
+    energies = batch.energy.view(-1).tolist()
 
     atoms_objects = []
     for idx in range(n_systems):
@@ -161,20 +161,14 @@ class OCPCalculator(Calculator):
 
         # for checkpoints with relaxation datasets defined, remove to avoid
         # unnecesarily trying to load that dataset
-        if "relax_dataset" in config["task"]:
+        if "relax_dataset" in config.get("task", {}):
             del config["task"]["relax_dataset"]
 
         # Calculate the edge indices on the fly
         config["model"]["otf_graph"] = True
 
         ### backwards compatability with OCP v<2.0
-        ### TODO: better format check for older configs
-        ### Taken from base_trainer
-        if not config.get("loss_fns"):
-            logging.warning(
-                "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
-            )
-            config = update_config(config)
+        config = update_config(config)
 
         # Save config so obj can be transported over network (pkl)
         self.config = copy.deepcopy(config)
@@ -182,12 +176,12 @@ class OCPCalculator(Calculator):
         del config["dataset"]["src"]
 
         self.trainer = registry.get_trainer_class(config["trainer"])(
-            task=config["task"],
+            task=config.get("task", {}),
             model=config["model"],
             dataset=[config["dataset"]],
             outputs=config["outputs"],
-            loss_fns=config["loss_fns"],
-            eval_metrics=config["eval_metrics"],
+            loss_functions=config["loss_functions"],
+            evaluation_metrics=config["evaluation_metrics"],
             optimizer=config["optim"],
             identifier="",
             slurm=config.get("slurm", {}),
@@ -227,8 +221,6 @@ class OCPCalculator(Calculator):
             checkpoint_path: string
                 Path to trained model
         """
-        if checkpoint is None:
-            checkpoint = {}
         try:
             self.trainer.load_checkpoint(checkpoint_path, checkpoint)
         except NotImplementedError:

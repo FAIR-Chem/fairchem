@@ -1,27 +1,45 @@
-trainer: forces
+trainer: ocp
 
 dataset:
-  - src: data/s2ef/all/train/
-    normalize_labels: True
-    target_mean: -0.7554450631141663
-    target_std: 2.887317180633545
-    grad_target_mean: 0.0
-    grad_target_std: 2.887317180633545
-  - src: data/s2ef/all/val_id/
+  train:
+    format: lmdb
+    src: data/s2ef/all/train/
+    key_mapping:
+      y: energy
+      force: forces
+    transforms:
+      normalizer:
+        energy:
+          mean: -0.7554450631141663
+          stdev: 2.887317180633545
+        forces:
+          mean: 0
+          stdev: 2.887317180633545
+  val:
+    src: data/s2ef/all/val_id/
 
 logger: wandb
 
-task:
-  dataset: trajectory_lmdb
-  description: "Regressing to energies and forces for DFT trajectories from OCP"
-  type: regression
-  metric: mae
+outputs:
+  forces:
+    irrep_dim: 1
+    level: atom
+    train_on_free_atoms: True
+    eval_on_free_atoms: True
+
+loss_functions:
+  - forces:
+      fn: l2mae
+      coefficient: 100
+
+evaluation_metrics:
+  metrics:
+    forces:
+      - mae
+      - cosine_similarity
+      - magnitude_error
   primary_metric: forces_mae
-  labels:
-    - potential energy
-  grad_input: atomic forces
-  train_on_free_atoms: True
-  eval_on_free_atoms: True
+
 
 model:
   name: dimenetplusplus
@@ -56,5 +74,3 @@ optim:
   warmup_steps: 174393
   warmup_factor: 0.2
   max_epochs: 5
-  energy_coefficient: 0
-  force_coefficient: 100

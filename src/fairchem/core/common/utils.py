@@ -43,7 +43,6 @@ from fairchem.experimental.foundation_models.multi_task_dataloader.merge_stats i
     combine_means_and_variances,
 )
 
-
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
@@ -402,7 +401,11 @@ def create_dict_from_args(args: list, sep: str = "."):
     return return_dict
 
 
-def load_config(path: str, previous_includes: list | None = None):
+def load_config(
+    path: str, previous_includes: list | None = None, include_paths: list | None = None
+):
+    if include_paths is None:
+        include_paths = []
     if previous_includes is None:
         previous_includes = []
     path = Path(path)
@@ -420,15 +423,22 @@ def load_config(path: str, previous_includes: list | None = None):
     if not isinstance(includes, list):
         raise AttributeError(f"Includes must be a list, '{type(includes)}' provided")
 
+    def find_include(include, include_paths):
+        if os.path.exists(include):
+            return include
+        for path in include_paths:
+            include_filename = os.path.join(path, include)
+            if os.path.exists(include_filename):
+                return include_filename
+        raise ValueError(f"Cannot find include YML {include}")
+
     config = {}
     duplicates_warning = []
     duplicates_error = []
     for include in includes:
-        include_filename = include
-        if not os.path.exists(include_filename):
-            include_filename = os.path.join(os.path.dirname(path), include)
-            if not os.path.exists(include_filename):
-                raise ValueError(f"Cannot find include YML {include}")
+        include_filename = find_include(
+            include, [os.path.dirname(path), *include_paths]
+        )
         include_config, inc_dup_warning, inc_dup_error = load_config(
             include_filename, previous_includes
         )
@@ -445,8 +455,10 @@ def load_config(path: str, previous_includes: list | None = None):
     return config, duplicates_warning, duplicates_error
 
 
-def build_config(args, args_override):
-    config, duplicates_warning, duplicates_error = load_config(args.config_yml)
+def build_config(args, args_override, include_paths=None):
+    config, duplicates_warning, duplicates_error = load_config(
+        args.config_yml, include_paths=include_paths
+    )
     if len(duplicates_warning) > 0:
         logging.warning(
             f"Overwritten config parameters from included configs "
@@ -457,11 +469,6 @@ def build_config(args, args_override):
             f"Conflicting (duplicate) parameters in simultaneously "
             f"included configs: {duplicates_error}"
         )
-
-    # Check for overridden parameters.
-    if args_override != []:
-        overrides = create_dict_from_args(args_override)
-        config, _ = merge_dicts(config, overrides)
 
     # Some other flags.
     config["mode"] = args.mode
@@ -484,6 +491,11 @@ def build_config(args, args_override):
     config["distributed_backend"] = args.distributed_backend
     config["noddp"] = args.no_ddp
     config["gp_gpus"] = args.gp_gpus
+
+    # Check for overridden parameters.
+    if args_override != []:
+        overrides = create_dict_from_args(args_override)
+        config, _ = merge_dicts(config, overrides)
 
     return config
 
@@ -1035,13 +1047,14 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
                 is_debug=config.get("is_debug", False),
                 print_every=config.get("print_every", 10),
                 seed=config.get("seed", 0),
-                logger=config.get("logger", "tensorboard"),
+                logger=config.get("logger", "wandb"),
                 local_rank=config["local_rank"],
                 amp=config.get("amp", False),
                 cpu=config.get("cpu", False),
                 slurm=config.get("slurm", {}),
                 noddp=config.get("noddp", False),
                 name=task_name,
+                gp_gpus=config.get("gp_gpus"),
             )
         else:
             trainer = trainer_cls(
@@ -1058,13 +1071,14 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
                 is_debug=config.get("is_debug", False),
                 print_every=config.get("print_every", 10),
                 seed=config.get("seed", 0),
-                logger=config.get("logger", "tensorboard"),
+                logger=config.get("logger", "wandb"),
                 local_rank=config["local_rank"],
                 amp=config.get("amp", False),
                 cpu=config.get("cpu", False),
                 slurm=config.get("slurm", {}),
                 noddp=config.get("noddp", False),
                 name=task_name,
+                gp_gpus=config.get("gp_gpus"),
             )
 
         task_cls = registry.get_task_class(config["mode"])
@@ -1231,10 +1245,28 @@ def irreps_sum(ang_mom: int) -> int:
 
 def update_config(base_config):
     """
-    Configs created prior to OCP 2.0 are organized a little different than they
+    Configs created prior to FAIRChem/OCP 2.0 are organized a little different than they
     are now. Update old configs to fit the new expected structure.
     """
+    ### TODO: better format check for older configs
+    # some configs have a loss_functions key with an empty dictionary, those need to be updated as well
+    if len(base_config.get("loss_functions", {})) > 0:
+        return base_config
+
+    logging.warning(
+        "Detected old config, converting to new format. Consider updating to avoid potential incompatibilities."
+    )
+
+    # do we need a copy?
     config = copy.deepcopy(base_config)
+
+    # initial fairchem/ocp 2.0 configs renamed loss_functions -> loss_fns and evaluation_metrics -> eval_metrics
+    # so some checkpoints may have configs in new format with the exception of renamed loss_funs and eval_metrics
+    if "loss_fns" in config:
+        config["loss_functions"] = config.pop("loss_fns")
+        if "eval_metrics" in config:
+            config["evaluation_metrics"] = config.pop("eval_metrics")
+        return config
 
     # If config["dataset"]["format"] is missing, get it from the task (legacy location).
     # If it is not there either, default to LMDB.
@@ -1344,8 +1376,8 @@ def update_config(base_config):
         config["dataset"]["transforms"] = transforms
 
     ### Update config
-    config.update({"loss_fns": _loss_fns})
-    config.update({"eval_metrics": _eval_metrics})
+    config.update({"loss_functions": _loss_fns})
+    config.update({"evaluation_metrics": _eval_metrics})
     config.update({"outputs": _outputs})
 
     return config
@@ -1396,7 +1428,7 @@ def compute_mean_and_std_for_target(target_name, config, concat_dataset, level):
                 dataset_name_to_size_and_stats[dataset_name][
                     "average_atoms_per_system"
                 ] = _AVG_NUM_NODES
-        assert level in set(["atom", "system"])
+        assert level in {"atom", "system"}
         if level == "atom":
             dataset_name_to_size_and_stats[dataset_name][
                 "size"
@@ -1438,7 +1470,12 @@ def compute_mean_and_std_for_target(target_name, config, concat_dataset, level):
     )
     calculated_stdev = np.sqrt(calculated_variance)
 
-    logging.info(
-        f"Computed mean,stdev for {target_name} , mean={calculated_mean}, stdev={calculated_stdev}"
-    )
+    if len(dataset_means) == 1:
+        logging.info(
+            f"Using pass through mean,stdev for {target_name} , mean={calculated_mean}, stdev={calculated_stdev}, from {dataset_names}"
+        )
+    else:
+        logging.info(
+            f"Computed mean,stdev for {target_name} , mean={calculated_mean}, stdev={calculated_stdev}, across datasets {dataset_names}"
+        )
     return calculated_mean, calculated_stdev

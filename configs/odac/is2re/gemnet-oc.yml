@@ -1,6 +1,11 @@
 includes:
   - configs/odac/is2re/base.yml
 
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 4
+
 trainer: energy
 
 model:
@@ -80,4 +85,3 @@ optim:
   energy_coefficient: 1
   ema_decay: 0.999
   clip_grad_norm: 10
-  loss_energy: mae

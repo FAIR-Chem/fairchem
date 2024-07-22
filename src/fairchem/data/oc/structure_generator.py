@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import logging
 import multiprocessing as mp
@@ -7,10 +9,9 @@ import time
 import traceback
 
 import numpy as np
-from tqdm import tqdm
-
 from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig, Bulk
 from fairchem.data.oc.utils.vasp import write_vasp_input_files
+from tqdm import tqdm
 
 
 class StructureGenerator:
@@ -395,7 +396,7 @@ if __name__ == "__main__":
     args = parse_args()
 
     if args.indices_file:
-        with open(args.indices_file, "r") as f:
+        with open(args.indices_file) as f:
             all_indices = f.read().splitlines()
         chunks = np.array_split(all_indices, args.chunks)
         inds_to_run = chunks[args.chunk_index]
@@ -416,7 +417,7 @@ if __name__ == "__main__":
 
         print("Placements successfully generated!")
     elif args.bulk_indices_file:
-        with open(args.bulk_indices_file, "r") as f:
+        with open(args.bulk_indices_file) as f:
             all_indices = f.read().splitlines()
 
         chunks = np.array_split(all_indices, args.chunks)
