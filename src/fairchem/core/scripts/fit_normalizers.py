@@ -13,8 +13,10 @@ from pathlib import Path
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import load_config, save_checkpoint
-from fairchem.core.modules.element_references import create_element_references
-from fairchem.core.modules.normalizer import fit_normalizers
+from fairchem.core.modules.normalization.element_references import (
+    create_element_references,
+)
+from fairchem.core.modules.normalization.normalizer import fit_normalizers
 
 
 def fit_norms(

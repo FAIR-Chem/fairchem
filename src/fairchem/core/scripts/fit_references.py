@@ -13,7 +13,7 @@ from pathlib import Path
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import load_config, save_checkpoint
-from fairchem.core.modules.element_references import fit_linear_references
+from fairchem.core.modules.normalization.element_references import fit_linear_references
 
 
 def fit_linref(config: dict, output_path: str | Path) -> None:
