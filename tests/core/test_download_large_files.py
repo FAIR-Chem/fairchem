@@ -1,3 +1,4 @@
+import os
 from unittest.mock import patch
 
 from fairchem.core.scripts import download_large_files as dl_large
