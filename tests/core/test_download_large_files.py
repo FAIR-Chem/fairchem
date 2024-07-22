@@ -3,7 +3,7 @@ from unittest.mock import patch
 from fairchem.core.scripts import download_large_files as dl_large
 
 
-@patch.object(dl_large, "urlretreive")
+@patch.object(dl_large, "urlretrieve")
 def test_download_large_files(url_mock):
     def urlretrieve_mock(x, y):
         if not os.path.exists(os.path.dirname(y)):

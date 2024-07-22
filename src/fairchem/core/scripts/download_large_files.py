@@ -4,8 +4,6 @@ import argparse
 from pathlib import Path
 from urllib.request import urlretrieve
 
-# import fairchem.core
-
 FAIRCHEM_ROOT = Path(__file__).parents[4]
 S3_ROOT = "https://dl.fbaipublicfiles.com/opencatalystproject/data/large_files/"
 
