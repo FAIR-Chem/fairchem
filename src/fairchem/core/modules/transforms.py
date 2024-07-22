@@ -26,7 +26,10 @@ class DataTransforms:
             data_object = eval(transform_fn)(data_object, self.config[transform_fn])
 
         return data_object
-
+    
+def add_fixed_tensor(data_object, config) -> Data:
+    data_object.fixed = torch.zeros((data_object.pos.size(0)), dtype=torch.float32, device=data_object.pos.device)
+    return data_object
 
 def decompose_tensor(data_object, config) -> Data:
     tensor_key = config["tensor"]
