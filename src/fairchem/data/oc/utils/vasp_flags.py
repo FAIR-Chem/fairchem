@@ -79,6 +79,7 @@ SOLVENT_BULK_VASP_FLAGS = {
     "pp": "PBE",
     "lwave": False,
     "lcharg": False,
+    "ncore": 4,
 }
 
 RELAX_FLAGS = {"ibrion": 2, "nsw": 500}
