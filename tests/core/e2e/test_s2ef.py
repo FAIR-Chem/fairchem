@@ -90,7 +90,7 @@ def _run_main(
     update_run_args_with=None,
     save_checkpoint_to=None,
     save_predictions_to=None,
-    world_size=1,
+    world_size=0,
 ):
     config_yaml = Path(rundir) / "train_and_val_on_val.yml"
 
