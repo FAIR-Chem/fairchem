@@ -44,9 +44,58 @@ class PGConfig:
     use_gp: bool = True
 
 
+def _init_env_rank_and_launch_test(
+    rank: int,
+    pg_setup_params: PGConfig,
+    mp_output_dict: dict[int, object],
+    test_method: callable,
+    args: list[object],
+    kwargs: dict[str, object],
+    init_process_group: bool = False,
+) -> None:
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = pg_setup_params.port
+    os.environ["WORLD_SIZE"] = str(pg_setup_params.world_size)
+    os.environ["LOCAL_RANK"] = str(rank)
+    os.environ["RANK"] = str(rank)
+
+    mp_output_dict[rank] = test_method(*args, **kwargs)  # pyre-fixme
+
+
+def _init_pg_and_rank_and_launch_test(
+    rank: int,
+    pg_setup_params: PGConfig,
+    mp_output_dict: dict[int, object],
+    test_method: callable,
+    args: list[object],
+    kwargs: dict[str, object],
+    init_process_group: bool = False,
+) -> None:
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = pg_setup_params.port
+    os.environ["WORLD_SIZE"] = str(pg_setup_params.world_size)
+    os.environ["LOCAL_RANK"] = str(rank)
+    # setup default process group
+    dist.init_process_group(
+        rank=rank,
+        world_size=pg_setup_params.world_size,
+        backend=pg_setup_params.backend,
+        timeout=timedelta(seconds=10),  # setting up timeout for distributed collectives
+    )
+    # setup gp
+    if pg_setup_params.use_gp:
+        config = {
+            "gp_gpus": pg_setup_params.gp_group_size,
+            "distributed_backend": pg_setup_params.backend,
+        }
+        setup_gp(config)
+    mp_output_dict[rank] = test_method(*args, **kwargs)  # pyre-fixme
+
+
 def spawn_multi_process(
     config: PGConfig,
     test_method: callable,
+    init_and_launch: callable,
     *test_method_args: Any,
     **test_method_kwargs: Any,
 ) -> list[Any]:
@@ -72,7 +121,7 @@ def spawn_multi_process(
     torch.multiprocessing.spawn(
         # torch.multiprocessing.spawn sends rank as the first param
         # https://pytorch.org/docs/stable/multiprocessing.html#torch.multiprocessing.spawn
-        _init_pg_and_rank_and_launch_test,
+        init_and_launch,
         args=(
             config,
             mp_output_dict,
@@ -84,37 +133,3 @@ def spawn_multi_process(
     )
 
     return [mp_output_dict[i] for i in range(config.world_size)]
-
-
-def _init_pg_and_rank_and_launch_test(
-    rank: int,
-    pg_setup_params: PGConfig,
-    mp_output_dict: dict[int, object],
-    test_method: callable,
-    args: list[object],
-    kwargs: dict[str, object],
-    init_process_group: bool = False,
-) -> None:
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = pg_setup_params.port
-    os.environ["WORLD_SIZE"] = str(pg_setup_params.world_size)
-    os.environ["LOCAL_RANK"] = str(rank)
-    os.environ["RANK"] = str(rank)
-    # setup default process group
-    if init_process_group:
-        dist.init_process_group(
-            rank=rank,
-            world_size=pg_setup_params.world_size,
-            backend=pg_setup_params.backend,
-            timeout=timedelta(
-                seconds=10
-            ),  # setting up timeout for distributed collectives
-        )
-    # setup gp
-    if pg_setup_params.use_gp:
-        config = {
-            "gp_gpus": pg_setup_params.gp_group_size,
-            "distributed_backend": pg_setup_params.backend,
-        }
-        setup_gp(config)
-    mp_output_dict[rank] = test_method(*args, **kwargs)  # pyre-fixme

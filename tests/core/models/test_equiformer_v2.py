@@ -225,4 +225,3 @@ class TestMPrimaryLPrimary:
                 embedding._l_primary(c)
                 lp = embedding.embedding.clone()
                 (test_matrix_lp == lp).all()
-
