@@ -161,7 +161,7 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
         Subset: dataset subset class
     """
     # Initialize the dataset
-    dataset_cls = registry.get_dataset_class(config["format"])
+    dataset_cls = registry.get_dataset_class(config["format"], "lmdb")
     assert issubclass(dataset_cls, Dataset), f"{dataset_cls} is not a Dataset"
 
     # remove information about other splits, only keep specified split
