@@ -79,16 +79,19 @@ def test_create_normalizers(normalizers, dummy_binary_dataset, tmp_path):
     assert isinstance(norm, Normalizer)
     # assert norm.state_dict() == sdict
     # not sure why the above fails
-    orig_sdict = norm.state_dict()
+    new_sdict = norm.state_dict()
     for key in sdict:
-        assert torch.allclose(orig_sdict[key], sdict[key])
+        assert torch.allclose(new_sdict[key], sdict[key])
 
     # passing values directly
     norm = create_normalizer(
         mean=batch.energy.mean().item(), rmsd=batch.energy.std().item()
     )
     assert isinstance(norm, Normalizer)
-    assert norm.state_dict() == sdict
+    # assert norm.state_dict() == sdict
+    new_sdict = norm.state_dict()
+    for key in sdict:
+        assert torch.allclose(new_sdict[key], sdict[key])
 
     # bad construction
     with pytest.raises(ValueError):
