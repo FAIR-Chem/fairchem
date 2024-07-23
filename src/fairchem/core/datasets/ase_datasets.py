@@ -184,10 +184,15 @@ class AseAtomsDataset(BaseDataset, ABC):
         return metadata
 
     def get_metadata(self, attr, idx):
+        # try the parent method
+        metadata = super().get_metadata(attr, idx)
+        if metadata is not None:
+            return metadata
+        # try to resolve it here
         if attr != "natoms":
             return None
-        if isinstance(idx, list):
-            return [self.get_metadata(attr, i) for i in idx]
+        if isinstance(idx, (list, np.ndarray)):
+            return np.array([self.get_metadata(attr, i) for i in idx])
         return len(self.get_atoms(idx))
 
 

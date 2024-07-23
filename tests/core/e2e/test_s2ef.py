@@ -9,6 +9,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 import yaml
+from fairchem.core.common.test_utils import PGConfig, spawn_multi_process
+from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
 from fairchem.core._cli import Runner
@@ -84,6 +86,7 @@ def _run_main(
     update_run_args_with=None,
     save_checkpoint_to=None,
     save_predictions_to=None,
+    world_size=1,
 ):
     config_yaml = Path(rundir) / "train_and_val_on_val.yml"
 
@@ -91,6 +94,7 @@ def _run_main(
         yaml_config = yaml.safe_load(yaml_file)
     if update_dict_with is not None:
         yaml_config = merge_dictionary(yaml_config, update_dict_with)
+        yaml_config["backend"] = "gloo"
     with open(str(config_yaml), "w") as yaml_file:
         yaml.dump(yaml_config, yaml_file)
 
@@ -110,7 +114,14 @@ def _run_main(
     for arg_name, arg_value in run_args.items():
         setattr(args, arg_name, arg_value)
     config = build_config(args, override_args)
-    Runner()(config)
+
+    if world_size > 0:
+        pg_config = PGConfig(
+            backend="gloo", world_size=2, gp_group_size=1, use_gp=False
+        )
+        spawn_multi_process(pg_config, Runner(distributed=True), config)
+    else:
+        Runner()(config)
 
     if save_checkpoint_to is not None:
         checkpoints = glob.glob(f"{rundir}/checkpoints/*/checkpoint.pt")
@@ -212,6 +223,52 @@ class TestSmoke:
             input_yaml=configs[model_name],
             tutorial_val_src=tutorial_val_src,
         )
+
+    def test_ddp(self, configs, tutorial_val_src, torch_deterministic):
+        with tempfile.TemporaryDirectory() as tempdirname:
+            tempdir = Path(tempdirname)
+
+            _ = _run_main(
+                rundir=str(tempdir),
+                update_dict_with={
+                    "optim": {"max_epochs": 1},
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                    ),
+                },
+                update_run_args_with={"seed": 0},
+                input_yaml=configs["equiformer_v2"],
+                world_size=2,
+            )
+
+    def test_balanced_batch_sampler_ddp(
+        self, configs, tutorial_val_src, torch_deterministic
+    ):
+
+        # make dataset metadata
+        parser = get_lmdb_sizes_parser()
+        args, override_args = parser.parse_known_args(["--data-path", str(tutorial_val_src)])
+        make_lmdb_sizes(args)
+
+        with tempfile.TemporaryDirectory() as tempdirname:
+            tempdir = Path(tempdirname)
+
+            _ = _run_main(
+                rundir=str(tempdir),
+                update_dict_with={
+                    "optim": {"max_epochs": 1, "load_balancing": "atoms"},
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                    ),
+                },
+                update_run_args_with={"seed": 0},
+                input_yaml=configs["equiformer_v2"],
+                world_size=2,
+            )
 
     # train for a few steps and confirm same seeds get same results
     def test_different_seeds(
