@@ -79,17 +79,12 @@ class WandBLogger(Logger):
             resume="allow",
         )
 
-        self.commit_every = self.config["logger"].get("commit_every", 50)
-
     def watch(self, model) -> None:
         wandb.watch(model)
 
     def log(self, update_dict, step: int, split: str = "") -> None:
         update_dict = super().log(update_dict, step, split)
-        if self.commit_every is not None:
-            wandb.log(update_dict, commit=(int(step)%self.commit_every==0), step=int(step))
-        else:   
-            wandb.log(update_dict, step=int(step))
+        wandb.log(update_dict, step=int(step))
 
     def log_plots(self, plots, caption: str = "") -> None:
         assert isinstance(plots, list)

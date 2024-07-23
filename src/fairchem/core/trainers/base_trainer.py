@@ -459,8 +459,9 @@ class BaseTrainer(ABC):
                 f"{self.model.num_params} parameters."
             )
 
-        if self.logger is not None:
-            self.logger.watch(self.model)
+        # turn off watching as it might be the cause of rate limit issues
+        # if self.logger is not None:
+        #     self.logger.watch(self.model)
 
         if distutils.initialized() and not self.config["noddp"]:
             self.model = DistributedDataParallel(self.model, device_ids=[self.device])
