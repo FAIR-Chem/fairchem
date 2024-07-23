@@ -28,7 +28,7 @@ def get_data(index):
     return index, natoms, neighbors
 
 
-def main(args) -> None:
+def make_lmdb_sizes(args) -> None:
     path = assert_is_instance(args.data_path, str)
     global dataset
     if os.path.isdir(path):
@@ -63,7 +63,7 @@ def main(args) -> None:
         np.savez(outpath, natoms=sorted_natoms, neighbors=sorted_neighbors)
 
 
-if __name__ == "__main__":
+def get_lmdb_sizes_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--data-path",
@@ -77,5 +77,10 @@ if __name__ == "__main__":
         type=int,
         help="Num of workers to parallelize across",
     )
+    return parser
+
+
+if __name__ == "__main__":
+    parser = get_lmdb_sizes_parser()
     args: argparse.Namespace = parser.parse_args()
-    main(args)
+    make_lmdb_sizes(args)

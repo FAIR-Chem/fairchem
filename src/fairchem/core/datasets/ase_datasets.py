@@ -183,6 +183,13 @@ class AseAtomsDataset(BaseDataset, ABC):
 
         return metadata
 
+    def get_metadata(self, attr, idx):
+        if attr != "natoms":
+            return None
+        if isinstance(idx, list):
+            return [self.get_metadata(attr, i) for i in idx]
+        return len(self.get_atoms(idx))
+
 
 @registry.register_dataset("ase_read")
 class AseReadDataset(AseAtomsDataset):
