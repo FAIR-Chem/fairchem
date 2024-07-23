@@ -11,7 +11,7 @@ import pytest
 import yaml
 from fairchem.core.common.test_utils import (
     PGConfig,
-    _init_env_rank_and_launch_test,
+    init_env_rank_and_launch_test,
     spawn_multi_process,
 )
 from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
@@ -121,12 +121,12 @@ def _run_main(
 
     if world_size > 0:
         pg_config = PGConfig(
-            backend="gloo", world_size=2, gp_group_size=1, use_gp=False
+            backend="gloo", world_size=world_size, gp_group_size=1, use_gp=False
         )
         spawn_multi_process(
             pg_config,
             Runner(distributed=True),
-            _init_env_rank_and_launch_test,
+            init_env_rank_and_launch_test,
             config,
         )
     else:

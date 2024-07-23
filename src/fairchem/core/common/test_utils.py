@@ -44,32 +44,29 @@ class PGConfig:
     use_gp: bool = True
 
 
-def _init_env_rank_and_launch_test(
+def init_env_rank_and_launch_test(
     rank: int,
     pg_setup_params: PGConfig,
     mp_output_dict: dict[int, object],
     test_method: callable,
     args: list[object],
     kwargs: dict[str, object],
-    init_process_group: bool = False,
 ) -> None:
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = pg_setup_params.port
     os.environ["WORLD_SIZE"] = str(pg_setup_params.world_size)
     os.environ["LOCAL_RANK"] = str(rank)
     os.environ["RANK"] = str(rank)
-
     mp_output_dict[rank] = test_method(*args, **kwargs)  # pyre-fixme
 
 
-def _init_pg_and_rank_and_launch_test(
+def init_pg_and_rank_and_launch_test(
     rank: int,
     pg_setup_params: PGConfig,
     mp_output_dict: dict[int, object],
     test_method: callable,
     args: list[object],
     kwargs: dict[str, object],
-    init_process_group: bool = False,
 ) -> None:
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = pg_setup_params.port
