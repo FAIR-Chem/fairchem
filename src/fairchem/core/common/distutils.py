@@ -98,9 +98,7 @@ def setup(config) -> None:
         )
     else:
         config["local_rank"] = int(os.environ.get("LOCAL_RANK", config["local_rank"]))
-        dist.init_process_group(
-            backend="nccl" if "backend" not in config else config["backend"]
-        )
+        dist.init_process_group(backend=config.get("backend", "nccl"))
 
 
 def cleanup() -> None:
