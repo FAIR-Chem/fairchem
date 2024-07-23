@@ -93,18 +93,23 @@ def _init_pg_and_rank_and_launch_test(
     test_method: callable,
     args: list[object],
     kwargs: dict[str, object],
+    init_process_group: bool = False,
 ) -> None:
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = pg_setup_params.port
     os.environ["WORLD_SIZE"] = str(pg_setup_params.world_size)
     os.environ["LOCAL_RANK"] = str(rank)
+    os.environ["RANK"] = str(rank)
     # setup default process group
-    dist.init_process_group(
-        rank=rank,
-        world_size=pg_setup_params.world_size,
-        backend=pg_setup_params.backend,
-        timeout=timedelta(seconds=10),  # setting up timeout for distributed collectives
-    )
+    if init_process_group:
+        dist.init_process_group(
+            rank=rank,
+            world_size=pg_setup_params.world_size,
+            backend=pg_setup_params.backend,
+            timeout=timedelta(
+                seconds=10
+            ),  # setting up timeout for distributed collectives
+        )
     # setup gp
     if pg_setup_params.use_gp:
         config = {
