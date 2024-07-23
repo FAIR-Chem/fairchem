@@ -119,6 +119,10 @@ def test_ase_read_dataset(tmp_path, structures):
     del data
 
 
+def test_ase_get_metadata(ase_dataset):
+    assert ase_dataset[0].get_metadata("natoms", [0])[0] == 3
+
+
 def test_ase_metadata_guesser(ase_dataset):
     dataset, _ = ase_dataset
 
