@@ -64,6 +64,7 @@ SOLVENT_BULK_VASP_FLAGS = {
     "ibrion": 2,
     "nsw": 100,
     "isif": 3,
+    "ivdw": 11,
     "ispin": 2,
     "ismear": 0,
     "ediff": 1e-6,
