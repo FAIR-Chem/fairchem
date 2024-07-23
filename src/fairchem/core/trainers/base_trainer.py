@@ -456,7 +456,9 @@ class BaseTrainer(ABC):
             self.logger.log_summary({"num_params": self.model.num_params})
 
         if distutils.initialized() and not self.config["noddp"]:
-            self.model = DistributedDataParallel(self.model, device_ids=[self.device])
+            self.model = DistributedDataParallel(
+                self.model, device_ids=None if self.cpu else [self.device]
+            )
 
     @property
     def _unwrapped_model(self):
