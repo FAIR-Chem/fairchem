@@ -9,7 +9,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 import yaml
-from fairchem.core.common.test_utils import PGConfig, spawn_multi_process
+from fairchem.core.common.test_utils import (
+    PGConfig,
+    _init_env_rank_and_launch_test,
+    spawn_multi_process,
+)
 from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
@@ -119,7 +123,12 @@ def _run_main(
         pg_config = PGConfig(
             backend="gloo", world_size=2, gp_group_size=1, use_gp=False
         )
-        spawn_multi_process(pg_config, Runner(distributed=True), config)
+        spawn_multi_process(
+            pg_config,
+            Runner(distributed=True),
+            _init_env_rank_and_launch_test,
+            config,
+        )
     else:
         Runner()(config)
 
@@ -249,7 +258,9 @@ class TestSmoke:
 
         # make dataset metadata
         parser = get_lmdb_sizes_parser()
-        args, override_args = parser.parse_known_args(["--data-path", str(tutorial_val_src)])
+        args, override_args = parser.parse_known_args(
+            ["--data-path", str(tutorial_val_src)]
+        )
         make_lmdb_sizes(args)
 
         with tempfile.TemporaryDirectory() as tempdirname:
