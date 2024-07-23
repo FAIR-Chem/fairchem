@@ -473,7 +473,7 @@ def create_grid(base_config, sweep_file: str):
         flat_sweeps = []
         for key, value in sweeps.items():
             new_key = root_key + sep + key if root_key else key
-            if isinstance(value, collections.MutableMapping):
+            if isinstance(value, collections.abc.MutableMapping):
                 flat_sweeps.extend(_flatten_sweeps(value, new_key).items())
             else:
                 flat_sweeps.append((new_key, value))
