@@ -13,8 +13,8 @@ from fairchem.core.modules.normalization.element_references import (
 )
 
 
-@pytest.fixture(scope="session")
-def element_refs(dummy_binary_dataset, max_num_elements):
+@pytest.fixture(scope="session", params=(True, False))
+def element_refs(dummy_binary_dataset, max_num_elements, request):
     return fit_linear_references(
         ["energy"],
         dataset=dummy_binary_dataset,
@@ -22,6 +22,7 @@ def element_refs(dummy_binary_dataset, max_num_elements):
         shuffle=False,
         max_num_elements=max_num_elements,
         seed=0,
+        use_numpy=request.param,
     )
 
 
