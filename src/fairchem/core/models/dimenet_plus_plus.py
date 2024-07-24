@@ -241,7 +241,6 @@ class DimeNetPlusPlus(torch.nn.Module):
         act = activation_resolver(act)
 
         super().__init__()
-
         self.cutoff = cutoff
 
         if sym is None:
@@ -330,8 +329,38 @@ class DimeNetPlusPlus(torch.nn.Module):
         raise NotImplementedError
 
 
-@registry.register_model("dimenetplusplus")
-class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
+@registry.register_model("dimenetplusplus_energy_head")
+class DimeNetPlusPlusWrap_energy_head(nn.Module):
+    def __init__(self, backbone, config):
+        super().__init__()
+
+    def forward(self, x, emb):
+        return (
+            emb["P"].sum(dim=0)
+            if x.batch is None
+            else scatter(emb["P"], x.batch, dim=0)
+        )
+
+
+@registry.register_model("dimenetplusplus_energy_head")
+class DimeNetPlusPlusWrap_force_head(nn.Module):
+    def __init__(self, backbone, config):
+        super().__init__()
+        backbone.regress_forces = True
+
+    def forward(self, x, emb, out):
+        return -1 * (
+            torch.autograd.grad(
+                out["energy"],
+                x.pos,
+                grad_outputs=torch.ones_like(out["energy"]),
+                create_graph=True,
+            )[0]
+        )
+
+
+@registry.register_model("dimenetplusplus_backbone")
+class DimeNetPlusPlusWrapBB(DimeNetPlusPlus, BaseModel):
     def __init__(
         self,
         num_atoms: int,
@@ -377,9 +406,11 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
         )
 
     @conditional_grad(torch.enable_grad())
-    def _forward(self, data):
+    def forward(self, data):
+        if self.regress_forces:
+            data.pos.requires_grad_(True)
+
         pos = data.pos
-        batch = data.batch
         (
             edge_index,
             dist,
@@ -432,30 +463,25 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
             x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
             P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
-        return P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
-
-    def forward(self, data):
-        if self.regress_forces:
-            data.pos.requires_grad_(True)
-        energy = self._forward(data)
-        outputs = {"energy": energy}
-
-        if self.regress_forces:
-            forces = (
-                -1
-                * (
-                    torch.autograd.grad(
-                        energy,
-                        data.pos,
-                        grad_outputs=torch.ones_like(energy),
-                        create_graph=True,
-                    )[0]
-                )
-            )
-            outputs["forces"] = forces
-
-        return outputs
+        return {"P": P}
 
     @property
     def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
+
+
+@registry.register_model("dimenetplusplus")
+class DimeNetPlusPlusWrap(DimeNetPlusPlusWrapBB, BaseModel):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self.energy_head = DimeNetPlusPlusWrap_energy_head(self, {})
+        if self.regress_forces:
+            self.force_head = DimeNetPlusPlusWrap_force_head(self, {})
+
+    def forward(self, data):
+        bb_outputs = super().forward(data)
+        outputs = {"energy": self.energy_head(data, bb_outputs)}
+        if self.regress_forces:
+            outputs["forces"] = self.force_head(data, bb_outputs, outputs)
+        return outputs
