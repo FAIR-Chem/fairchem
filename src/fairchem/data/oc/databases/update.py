@@ -47,7 +47,7 @@ def update_pkls():
         pickle.dump(data, fp)
 
     if not Path("oc/databases/pkls/bulks.pkl").exists():
-        download_large_files.main("oc")
+        download_large_files.download_file_group("oc")
     with open(
         "oc/databases/pkls/bulks.pkl",
         "rb",

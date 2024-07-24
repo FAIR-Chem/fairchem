@@ -13,4 +13,4 @@ def test_download_large_files(url_mock):
             )
 
     url_mock.side_effect = urlretrieve_mock
-    dl_large.main("ALL")
+    dl_large.download_file_group("ALL")

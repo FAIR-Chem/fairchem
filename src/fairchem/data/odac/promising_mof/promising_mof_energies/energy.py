@@ -8,7 +8,7 @@ import pandas as pd
 from fairchem.core.scripts import download_large_files
 
 if not os.path.exists("adsorption_energy.txt"):
-    download_large_files.main("odac")
+    download_large_files.download_file_group("odac")
 raw_ads_energy_data = pd.read_csv("adsorption_energy.txt", header=None, sep=" ")
 complete_data = pd.DataFrame(
     index=range(raw_ads_energy_data.shape[0]),

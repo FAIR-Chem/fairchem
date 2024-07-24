@@ -4,7 +4,8 @@ import argparse
 from pathlib import Path
 from urllib.request import urlretrieve
 
-FAIRCHEM_ROOT = Path(__file__).parents[4]
+from fairchem.core.common.tutorial_utils import fairchem_root
+
 S3_ROOT = "https://dl.fbaipublicfiles.com/opencatalystproject/data/large_files/"
 
 FILE_GROUPS = {
@@ -51,7 +52,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def main(file_group):
+def download_file_group(file_group):
     if file_group in FILE_GROUPS:
         files_to_download = FILE_GROUPS[file_group]
     elif file_group == "ALL":
@@ -61,11 +62,15 @@ def main(file_group):
             f'Requested file group {file_group} not recognized. Please select one of {["ALL", *list(FILE_GROUPS)]}'
         )
 
+    fc_root = fairchem_root().parents[1]
     for file in files_to_download:
-        print(f"Downloading {file}...")
-        urlretrieve(S3_ROOT + file.name, FAIRCHEM_ROOT / file)
+        if not (fc_root / file).exists():
+            print(f"Downloading {file}...")
+            urlretrieve(S3_ROOT + file.name, fc_root / file)
+        else:
+            print(f"{file} already exists")
 
 
 if __name__ == "__main__":
     args = parse_args()
-    main(args.file_group)
+    download_file_group(args.file_group)

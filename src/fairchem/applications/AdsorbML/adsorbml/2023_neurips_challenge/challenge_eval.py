@@ -167,7 +167,7 @@ def main():
         not Path(__file__).with_name("oc20dense_val_targets.pkl").exists()
         or not Path(__file__).with_name("ml_relaxed_dft_targets.pkl").exists()
     ):
-        download_large_files.main("adsorbml")
+        download_large_files.download_file_group("adsorbml")
     targets = pickle.load(
         open(Path(__file__).with_name("oc20dense_val_targets.pkl"), "rb")
     )

@@ -22,7 +22,7 @@ def desorption_inputs(request):
 def dissociation_inputs(request):
     pkl_path = Path(__file__).parent / "autoframe_inputs_dissociation.pkl"
     if not pkl_path.exists():
-        download_large_files.main("cattsunami")
+        download_large_files.download_file_group("cattsunami")
     with open(pkl_path, "rb") as fp:
         request.cls.inputs = pickle.load(fp)
 
@@ -31,6 +31,6 @@ def dissociation_inputs(request):
 def transfer_inputs(request):
     pkl_path = Path(__file__).parent / "autoframe_inputs_transfer.pkl"
     if not pkl_path.exists():
-        download_large_files.main("cattsunami")
+        download_large_files.download_file_group("cattsunami")
     with open(pkl_path, "rb") as fp:
         request.cls.inputs = pickle.load(fp)

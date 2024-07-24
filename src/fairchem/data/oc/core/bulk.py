@@ -54,7 +54,7 @@ class Bulk:
         else:
             if bulk_db is None:
                 if bulk_db_path == BULK_PKL_PATH and not os.path.exists(BULK_PKL_PATH):
-                    download_large_files.main("oc")
+                    download_large_files.download_file_group("oc")
                 with open(bulk_db_path, "rb") as fp:
                     bulk_db = pickle.load(fp)
 
