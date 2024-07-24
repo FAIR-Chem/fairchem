@@ -9,7 +9,7 @@ from fairchem.core.common.gp_utils import (
 )
 from fairchem.core.common.test_utils import (
     PGConfig,
-    _init_pg_and_rank_and_launch_test,
+    init_pg_and_rank_and_launch_test,
     spawn_multi_process,
 )
 
@@ -26,7 +26,7 @@ def test_basic_setup(world_size: int, input: torch.Tensor, expected_output: list
         backend="gloo", world_size=world_size, gp_group_size=1, use_gp=True
     )
     output = spawn_multi_process(
-        config, _dummy_call, _init_pg_and_rank_and_launch_test, input
+        config, _dummy_call, init_pg_and_rank_and_launch_test, input
     )
     assert output == expected_output
 
@@ -64,7 +64,7 @@ def test_scatter_tensors(
     output = spawn_multi_process(
         config,
         scatter_to_model_parallel_region,
-        _init_pg_and_rank_and_launch_test,
+        init_pg_and_rank_and_launch_test,
         input,
     )
     for out, expected_out in zip(output, expected_output):
@@ -112,7 +112,7 @@ def test_gather_tensors(
         backend="gloo", world_size=world_size, gp_group_size=gp_size, use_gp=True
     )
     output = spawn_multi_process(
-        config, scatter_gather_fn, _init_pg_and_rank_and_launch_test, input
+        config, scatter_gather_fn, init_pg_and_rank_and_launch_test, input
     )
     for out, expected_out in zip(output, expected_output):
         assert torch.equal(out, expected_out)
