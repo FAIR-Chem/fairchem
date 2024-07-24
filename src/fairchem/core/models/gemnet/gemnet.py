@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import numpy as np
 import torch
+import torch.nn as nn
+
 from torch_scatter import scatter
 from torch_sparse import SparseTensor
 
@@ -27,8 +29,8 @@ from .layers.spherical_basis import CircularBasisLayer
 from .utils import inner_product_normalized, mask_neighbors, ragged_range, repeat_blocks
 
 
-@registry.register_model("gemnet_t")
-class GemNetT(BaseModel):
+@registry.register_model("gemnet_t_backbone")
+class GemNetTBB(BaseModel):
     """
     GemNet-T, triplets-only variant of GemNet
 
@@ -552,52 +554,88 @@ class GemNetT(BaseModel):
             # (nAtoms, num_targets), (nEdges, num_targets)
             F_st += F
             E_t += E
-
-        nMolecules = torch.max(batch) + 1
-        if self.extensive:
-            E_t = scatter(
-                E_t, batch, dim=0, dim_size=nMolecules, reduce="add"
-            )  # (nMolecules, num_targets)
-        else:
-            E_t = scatter(
-                E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
-            )  # (nMolecules, num_targets)
-
-        outputs = {"energy": E_t}
-
-        if self.regress_forces:
-            if self.direct_forces:
-                # map forces in edge directions
-                F_st_vec = F_st[:, :, None] * V_st[:, None, :]
-                # (nEdges, num_targets, 3)
-                F_t = scatter(
-                    F_st_vec,
-                    idx_t,
-                    dim=0,
-                    dim_size=data.atomic_numbers.size(0),
-                    reduce="add",
-                )  # (nAtoms, num_targets, 3)
-                F_t = F_t.squeeze(1)  # (nAtoms, 3)
-            else:
-                if self.num_targets > 1:
-                    forces = []
-                    for i in range(self.num_targets):
-                        # maybe this can be solved differently
-                        forces += [
-                            -torch.autograd.grad(
-                                E_t[:, i].sum(), pos, create_graph=True
-                            )[0]
-                        ]
-                    F_t = torch.stack(forces, dim=1)
-                    # (nAtoms, num_targets, 3)
-                else:
-                    F_t = -torch.autograd.grad(E_t.sum(), pos, create_graph=True)[0]
-                    # (nAtoms, 3)
-
-            outputs["forces"] = F_t
-
-        return outputs
+        return {"F_st": F_st, "E_t": E_t, "V_st": V_st, "idx_t": idx_t}
 
     @property
     def num_params(self):
         return sum(p.numel() for p in self.parameters())
+
+
+@registry.register_model("gemnet_t_energy_head")
+class GemNetT_energy_head(nn.Module):
+    def __init__(self, backbone, backbone_config, head_config):
+        super().__init__()
+        self.extensive = backbone.extensive
+
+    def forward(self, x, emb):
+
+        nMolecules = torch.max(x.batch) + 1
+        if self.extensive:
+            E_t = scatter(
+                emb["E_t"], x.batch, dim=0, dim_size=nMolecules, reduce="add"
+            )  # (nMolecules, num_targets)
+        else:
+            E_t = scatter(
+                emb["E_t"], x.batch, dim=0, dim_size=nMolecules, reduce="mean"
+            )  # (nMolecules, num_targets)
+
+        return E_t
+
+
+@registry.register_model("gemnet_t_force_head")
+class GemNetT_force_head(nn.Module):
+    def __init__(self, backbone, backbone_config, head_config):
+        super().__init__()
+        self.direct_forces = backbone.direct_forces
+
+    def forward(self, x, emb, out):
+
+        if self.direct_forces:
+            # map forces in edge directions
+            F_st_vec = emb["F_st"][:, :, None] * emb["V_st"][:, None, :]
+            # (nEdges, num_targets, 3)
+            F_t = scatter(
+                F_st_vec,
+                emb["idx_t"],
+                dim=0,
+                dim_size=x.atomic_numbers.size(0),
+                reduce="add",
+            )  # (nAtoms, num_targets, 3)
+            F_t = F_t.squeeze(1)  # (nAtoms, 3)
+        else:
+            if self.num_targets > 1:
+                forces = []
+                for i in range(self.num_targets):
+                    # maybe this can be solved differently
+                    forces += [
+                        -torch.autograd.grad(
+                            emb["E_t"][:, i].sum(), x.pos, create_graph=True
+                        )[0]
+                    ]
+                F_t = torch.stack(forces, dim=1)
+                # (nAtoms, num_targets, 3)
+            else:
+                F_t = -torch.autograd.grad(emb["E_t"].sum(), x.pos, create_graph=True)[
+                    0
+                ]
+                # (nAtoms, 3)
+
+        return F_t
+
+
+@registry.register_model("gemnet_t")
+class GemNetT(GemNetTBB):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self.energy_head = GemNetT_energy_head(self, kwargs, {})
+        self.force_head = GemNetT_force_head(self, kwargs, {})
+
+    def forward(self, x):
+        bb_outputs = super().forward(x)
+
+        output = {"energy": self.energy_head(x, bb_outputs)}
+        if self.regress_forces:
+            output["forces"] = self.force_head(x, bb_outputs, output)
+
+        return output
