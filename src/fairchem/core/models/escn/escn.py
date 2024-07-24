@@ -386,7 +386,7 @@ class eSCNBB(BaseModel):
 
 @registry.register_model("escn_energy_head")
 class eSCN_energy_head(nn.Module):
-    def __init__(self, backbone, config):
+    def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
 
         # Output blocks for energy and forces
@@ -404,7 +404,7 @@ class eSCN_energy_head(nn.Module):
 
 @registry.register_model("escn_force_head")
 class eSCN_force_head(nn.Module):
-    def __init__(self, backbone, config):
+    def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
 
         self.force_block = ForceBlock(
@@ -448,8 +448,8 @@ class eSCN(eSCNBB):
         # variables used for display purposes
         self.counter = 0
 
-        self.energy_head = eSCN_energy_head(self, {})
-        self.force_head = eSCN_force_head(self, {})
+        self.energy_head = eSCN_energy_head(self, {}, {})
+        self.force_head = eSCN_force_head(self, {}, {})
 
     @conditional_grad(torch.enable_grad())
     def forward(self, data):

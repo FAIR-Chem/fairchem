@@ -331,7 +331,7 @@ class DimeNetPlusPlus(torch.nn.Module):
 
 @registry.register_model("dimenetplusplus_energy_head")
 class DimeNetPlusPlusWrap_energy_head(nn.Module):
-    def __init__(self, backbone, config):
+    def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
 
     def forward(self, x, emb):
@@ -344,7 +344,7 @@ class DimeNetPlusPlusWrap_energy_head(nn.Module):
 
 @registry.register_model("dimenetplusplus_energy_head")
 class DimeNetPlusPlusWrap_force_head(nn.Module):
-    def __init__(self, backbone, config):
+    def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
         backbone.regress_forces = True
 
@@ -475,9 +475,9 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlusWrapBB, BaseModel):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self.energy_head = DimeNetPlusPlusWrap_energy_head(self, {})
+        self.energy_head = DimeNetPlusPlusWrap_energy_head(self, {}, {})
         if self.regress_forces:
-            self.force_head = DimeNetPlusPlusWrap_force_head(self, {})
+            self.force_head = DimeNetPlusPlusWrap_force_head(self, {}, {})
 
     def forward(self, data):
         bb_outputs = super().forward(data)
