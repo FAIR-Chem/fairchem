@@ -67,7 +67,7 @@ class TestInterface:
 
         for atoms, metadata in zip(adslabs.atoms_list, adslabs.metadata_list):
             volume = metadata["solvent_volume"]
-            n_solvent_mols = int(volume * self.solvent.get_molecules_per_volume)
+            n_solvent_mols = int(volume * self.solvent.molecules_per_volume)
             n_solvent_atoms = n_solvent_mols * len(self.solvent.atoms)
             n_ions = len(self.ions)
 

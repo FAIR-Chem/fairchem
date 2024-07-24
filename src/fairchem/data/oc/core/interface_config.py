@@ -18,7 +18,11 @@ if TYPE_CHECKING:
     from fairchem.data.oc.core.slab import Slab
     from fairchem.data.oc.core.solvent import Solvent
 
-from fairchem.data.oc.utils.geometry import BoxGeometry, PlaneBoundTriclinicGeometry
+from fairchem.data.oc.utils.geometry import (
+    BoxGeometry,
+    Geometry,
+    PlaneBoundTriclinicGeometry,
+)
 
 # Code adapted from https://github.com/henriasv/molecular-builder/tree/master
 
@@ -120,13 +124,20 @@ class InterfaceConfig(MultipleAdsorbateSlabConfig):
         self.pbc_shift = pbc_shift
         self.packmol_tolerance = packmol_tolerance
 
-        self.n_mol_per_volume = solvent.get_molecules_per_volume
+        self.n_mol_per_volume = solvent.molecules_per_volume
 
         self.atoms_list, self.metadata_list = self.create_interface_on_sites(
             self.atoms_list, self.metadata_list
         )
 
-    def create_interface_on_sites(self, atoms_list, metadata_list):
+    def create_interface_on_sites(
+        self, atoms_list: list[ase.Atoms], metadata_list: list[dict]
+    ):
+        """
+        Given adsorbate+slab configurations generated from
+        (Multi)AdsorbateSlabConfig and its corresponding metadata, create the
+        solvent/ion interface on top of the provided atoms objects.
+        """
         atoms_interface_list = []
         metadata_interface_list = []
 
@@ -177,7 +188,15 @@ class InterfaceConfig(MultipleAdsorbateSlabConfig):
 
         return atoms_interface_list, metadata_interface_list
 
-    def create_packmol_atoms(self, geometry, n_solvent_mols):
+    def create_packmol_atoms(self, geometry: Geometry, n_solvent_mols: int):
+        """
+        Pack solvent molecules in a provided unit cell volume. Packmol is used
+        to randomly pack solvent molecules in the desired volume.
+
+        Arguments:
+            geometry (Geometry): Geometry object corresponding to the desired cell.
+            n_solvent_mols (int): Number of solvent molecules to pack in the volume.
+        """
         cell = geometry.cell
         with tempfile.TemporaryDirectory() as tmp_dir:
             output_path = os.path.join(tmp_dir, "out.pdb")
@@ -222,7 +241,10 @@ class InterfaceConfig(MultipleAdsorbateSlabConfig):
 
         return solvent_ions_atoms
 
-    def run_packmol(self, packmol_input):
+    def run_packmol(self, packmol_input: str):
+        """
+        Run packmol.
+        """
         packmol_cmd = which("packmol")
         if not packmol_cmd:
             raise OSError("packmol not found.")
@@ -237,7 +259,10 @@ class InterfaceConfig(MultipleAdsorbateSlabConfig):
         if err:
             raise OSError(err.decode("utf-8"))
 
-    def randomize_coords(self, atoms):
+    def randomize_coords(self, atoms: ase.Atoms):
+        """
+        Randomly place the atoms in its unit cell.
+        """
         cell_weights = np.random.rand(3)
         cell_weights /= np.sum(cell_weights)
         xyz = np.dot(cell_weights, atoms.cell)

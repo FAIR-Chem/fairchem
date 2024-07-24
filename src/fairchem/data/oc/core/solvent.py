@@ -67,7 +67,7 @@ class Solvent:
         )
 
     @property
-    def get_molecules_per_volume(self):
+    def molecules_per_volume(self):
         """
         Convert the solvent density in g/cm3 to the number of molecules per
         angstrom cubed of volume.
