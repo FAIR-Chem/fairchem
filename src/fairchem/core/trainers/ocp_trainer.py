@@ -384,7 +384,7 @@ class OCPTrainer(BaseTrainer):
                 )
 
         targets["batch"] = batch.batch
-        targets["group"] = batch.group
+        targets["group"] = batch.get("group", "")
         targets["natoms"] = natoms
         out["natoms"] = natoms
 

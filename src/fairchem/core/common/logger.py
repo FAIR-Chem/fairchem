@@ -79,12 +79,15 @@ class WandBLogger(Logger):
             resume="allow",
         )
 
+        self.log_every = self.config["logger"].get("log_every", 1)
+
     def watch(self, model) -> None:
         wandb.watch(model)
 
     def log(self, update_dict, step: int, split: str = "") -> None:
         update_dict = super().log(update_dict, step, split)
-        wandb.log(update_dict, step=int(step))
+        if (split != "train") or (step % self.log_every == 0):
+            wandb.log(update_dict, step=int(step))
 
     def log_plots(self, plots, caption: str = "") -> None:
         assert isinstance(plots, list)
