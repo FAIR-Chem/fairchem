@@ -337,7 +337,7 @@ class OCPTrainer(BaseTrainer):
 
         return sum(loss)
 
-    def _compute_metrics(self, out, batch, evaluator, metrics=None):
+    def _compute_metrics(self, out, batch, evaluator, metrics=None, mode="train"):
         if metrics is None:
             metrics = {}
         # this function changes the values in the out dictionary,
@@ -383,10 +383,12 @@ class OCPTrainer(BaseTrainer):
                     out[target_name]
                 )
 
+        targets["batch"] = batch.batch
+        targets["group"] = batch.group
         targets["natoms"] = natoms
         out["natoms"] = natoms
 
-        return evaluator.eval(out, targets, prev_metrics=metrics)
+        return evaluator.eval(out, targets, prev_metrics=metrics, mode=mode)
 
     # Takes in a new data source and generates predictions on it.
     @torch.no_grad()

@@ -22,7 +22,7 @@ import torch
 import torch.nn as nn
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader, Subset, ConcatDataset
 from tqdm import tqdm
 
 from fairchem.core import __version__
@@ -356,6 +356,118 @@ class BaseTrainer(ABC):
                 self.test_dataset = registry.get_dataset_class(
                     test_config.get("format", "lmdb")
                 )(test_config)
+                self.test_sampler = self.get_sampler(
+                    self.test_dataset,
+                    self.config["optim"].get(
+                        "eval_batch_size", self.config["optim"]["batch_size"]
+                    ),
+                    shuffle=False,
+                )
+                self.test_loader = self.get_dataloader(
+                    self.test_dataset,
+                    self.test_sampler,
+                )
+        # load train, val, test if they are provided as sequence of datasets
+        elif self.config["dataset"].get("datasets", None):
+            assert isinstance(self.config["dataset"]["datasets"], list), "if datasets is provided, it must be a list"
+            logging.info(
+                f"Loading datasets"
+            )
+            self.train_dataset = ConcatDataset([
+                registry.get_dataset_class(
+                    dataset.get("format", "lmdb")
+                )(dataset) for dataset in self.config["dataset"]["datasets"]
+            ])
+
+            if "split" in self.config["dataset"]:
+                # to make sampling deterministic, seed rng
+                logging.info(f"original size {len(self.train_dataset)}, target size {self.config['dataset']['split']}")
+                if len(self.train_dataset) >= self.config["dataset"]["split"]:
+                    indx = np.random.default_rng(seed=0).choice(
+                        len(self.train_dataset), 
+                        self.config["dataset"]["split"], 
+                        replace=False
+                    )
+                    self.train_dataset = Subset(self.train_dataset, torch.tensor(indx))
+                    logging.info("Subsetted train set.")
+                else:
+                    logging.info("Original size must be greater than target size!")
+
+            self.train_sampler = self.get_sampler(
+                self.train_dataset,
+                self.config["optim"]["batch_size"],
+                shuffle=True,
+            )
+            self.train_loader = self.get_dataloader(
+                self.train_dataset,
+                self.train_sampler,
+            )
+
+            if self.config.get("val_dataset", None):
+                assert "datasets" in self.config["val_dataset"], "val dataset must also be a list"
+                if self.config["val_dataset"].get("use_train_settings", True):
+                    assert len(self.config["val_dataset"]["datasets"]) == len(self.config["dataset"]["datasets"]), "there must be the same number of datasets"
+                    val_configs = []
+                    for val, train_config in zip(self.config["val_dataset"]["datasets"], self.config["dataset"]["datasets"]):
+                        val_config = train_config.copy()
+                        val_config.pop("split", None)
+                        val_config.update(val)
+                        val_configs.append(val_config)
+                else:
+                    val_configs = self.config["val_dataset"]["datasets"]
+                logging.info("Loading validation set.")
+                self.val_dataset = ConcatDataset([
+                    registry.get_dataset_class(
+                        val_config.get("format", "lmdb")
+                    )(val_config)
+                    for val_config in val_configs
+                ])
+
+                if "split" in val_config:
+                    logging.info(f"original size {len(self.val_dataset)}, target size {val_config['split']}")
+                    # to make sampling deterministic, seed rng
+                    if len(self.val_dataset) >= val_config["split"]:
+                        indx = np.random.default_rng(seed=0).choice(
+                            len(self.val_dataset), 
+                            val_config["split"], 
+                            replace=False
+                        )
+                        self.val_dataset = Subset(self.val_dataset, torch.tensor(indx))
+                        logging.info("Subsetted validation set.")
+                    else:
+                        logging.info("Original size must be greater than target size!")
+
+                self.val_sampler = self.get_sampler(
+                    self.val_dataset,
+                    self.config["optim"].get(
+                        "eval_batch_size", self.config["optim"]["batch_size"]
+                    ),
+                    shuffle=False,
+                )
+                self.val_loader = self.get_dataloader(
+                    self.val_dataset,
+                    self.val_sampler,
+                )
+
+            if self.config.get("test_dataset", None):
+                assert "datasets" in self.config["test_dataset"], "test dataset must also be a list"
+                if self.config["test_dataset"].get("use_train_settings", True):
+                    assert len(self.config["test_dataset"]["datasets"]) == len(self.config["dataset"]["datasets"]), "there must be the same number of datasets"
+                    test_configs = []
+                    for test, train_config in zip(self.config["test_dataset"]["datasets"], self.config["dataset"]["datasets"]):
+                        test_config = train_config.copy()
+                        test_config.pop("split", None)
+                        test_config.update(test)
+                        test_configs.append(test_config)
+                else:
+                    test_configs = self.config["test_dataset"]
+                logging.info("Loading validation set.")
+                self.test_dataset = ConcatDataset([
+                    registry.get_dataset_class(
+                        val_config.get("format", "lmdb")
+                    )(test_config)
+                    for test_config in test_configs
+                ])
                 self.test_sampler = self.get_sampler(
                     self.test_dataset,
                     self.config["optim"].get(
@@ -730,6 +842,17 @@ class BaseTrainer(ABC):
             self.ema.copy_to()
 
         metrics = {}
+
+        # add all per molecule metrics since they could be not presented in specific ddp processes
+        for target_property in self.evaluation_metrics["metrics"]:
+            if "per_molecule_mae" in self.evaluation_metrics["metrics"][target_property]:
+                for molecule in self.evaluation_metrics["molecules"]:
+                    metrics[f"per_molecule_{target_property}_mae/{molecule}"] = {
+                        "metric": None,
+                        "total": 0,
+                        "numel": 0,
+                    }
+
         evaluator = Evaluator(
             task=self.name,
             eval_metrics=self.evaluation_metrics.get(
@@ -755,7 +878,7 @@ class BaseTrainer(ABC):
             loss = self._compute_loss(out, batch)
 
             # Compute metrics.
-            metrics = self._compute_metrics(out, batch, evaluator, metrics)
+            metrics = self._compute_metrics(out, batch, evaluator, metrics, mode="val")
             metrics = evaluator.update("loss", loss.item(), metrics)
 
         aggregated_metrics = {}

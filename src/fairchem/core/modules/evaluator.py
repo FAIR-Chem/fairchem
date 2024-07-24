@@ -89,6 +89,7 @@ class Evaluator:
         prediction: dict[str, torch.Tensor],
         target: dict[str, torch.Tensor],
         prev_metrics=None,
+        mode: str="train"
     ):
         if prev_metrics is None:
             prev_metrics = {}
@@ -96,14 +97,25 @@ class Evaluator:
 
         for target_property in self.target_metrics:
             for fn in self.target_metrics[target_property]:
-                metric_name = (
-                    f"{target_property}_{fn}"
-                    if target_property not in fn and target_property != "misc"
-                    else fn
-                )
-                res = eval(fn)(prediction, target, target_property)
-                metrics = self.update(metric_name, res, metrics)
+                if fn == "per_molecule_mae":
+                    if mode != "train":
+                        metrics = self.batch_update(
+                            per_molecule_mae(prediction, target,target_property), metrics
+                        )
+                else:
+                    metric_name = (
+                        f"{target_property}_{fn}"
+                        if target_property not in fn and target_property != "misc"
+                        else fn
+                    )
+                    res = eval(fn)(prediction, target, target_property)
+                    metrics = self.update(metric_name, res, metrics)
 
+        return metrics
+    
+    def batch_update(self, kv_pairs, metrics):
+        for key, value in kv_pairs.items():
+            metrics = self.update(key, value, metrics)
         return metrics
 
     def update(self, key, stat, metrics):
@@ -315,6 +327,39 @@ def mae(
         "total": torch.sum(error).item(),
         "numel": error.numel(),
     }
+
+def per_molecule_mae(
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
+    key: Hashable = NONE,
+) -> dict[str, float | int]:
+    error = torch.abs(target[key] - prediction[key])
+    output = {}
+    for i, group in enumerate(target["group"]):
+        if key == "forces":
+            if f"per_molecule_{key}_mae/{group}" in output:
+                output[f"per_molecule_{key}_mae/{group}"]["total"] += torch.sum(error[target["batch"] == i]).item()
+                output[f"per_molecule_{key}_mae/{group}"]["numel"] += error[target["batch"] == id].numel()
+            else:
+                output[f"per_molecule_{key}_mae/{group}"] = {
+                    "total": torch.sum(error[target["batch"] == i]).item(),
+                    "numel": error[target["batch"] == i].numel(),
+                }
+        elif key == "energy":
+            if f"per_molecule_{key}_mae/{group}" in output:
+                output[f"per_molecule_{key}_mae/{group}"]["total"] += torch.sum(error[i]).item()
+                output[f"per_molecule_{key}_mae/{group}"]["numel"] += 1
+            else:
+                output[f"per_molecule_{key}_mae/{group}"] = {
+                    "total": torch.sum(error[i]).item(),
+                    "numel": 1,
+                }
+        else:
+            raise NotImplementedError(f"key {key} not implemented for per_molecule_mae")
+    for key in output:
+        output[key]["metric"] = output[key]["total"] / output[key]["numel"]
+        
+    return output
 
 
 def mse(
