@@ -339,7 +339,7 @@ def per_molecule_mae(
         if key == "forces":
             if f"per_molecule_{key}_mae/{group}" in output:
                 output[f"per_molecule_{key}_mae/{group}"]["total"] += torch.sum(error[target["batch"] == i]).item()
-                output[f"per_molecule_{key}_mae/{group}"]["numel"] += error[target["batch"] == id].numel()
+                output[f"per_molecule_{key}_mae/{group}"]["numel"] += error[target["batch"] == i].numel()
             else:
                 output[f"per_molecule_{key}_mae/{group}"] = {
                     "total": torch.sum(error[target["batch"] == i]).item(),
