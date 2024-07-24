@@ -35,9 +35,9 @@ with contextlib.suppress(ImportError):
     from e3nn import o3
 
 
-@registry.register_model("escn")
-class eSCN(BaseModel):
-    """Equivariant Spherical Channel Network
+@registry.register_model("escn_backbone")
+class eSCNBB(BaseModel):
+    """Equivariant Spherical Channel Network BackBone
     Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
 
 
@@ -120,9 +120,6 @@ class eSCN(BaseModel):
         self.basis_width_scalar = basis_width_scalar
         self.distance_function = distance_function
 
-        # variables used for display purposes
-        self.counter = 0
-
         # non-linear activation function used throughout the network
         self.act = nn.SiLU()
 
@@ -193,15 +190,6 @@ class eSCN(BaseModel):
                 self.act,
             )
             self.layer_blocks.append(block)
-
-        # Output blocks for energy and forces
-        self.energy_block = EnergyBlock(
-            self.sphere_channels_all, self.num_sphere_samples, self.act
-        )
-        if self.regress_forces:
-            self.force_block = ForceBlock(
-                self.sphere_channels_all, self.num_sphere_samples, self.act
-            )
 
         # Create a roughly evenly distributed point sampling of the sphere for the output blocks
         self.sphere_points = nn.Parameter(
@@ -332,32 +320,7 @@ class eSCN(BaseModel):
 
         x_pt = x_pt.view(-1, self.sphere_channels_all)
 
-        ###############################################################
-        # Energy estimation
-        ###############################################################
-        node_energy = self.energy_block(x_pt)
-        energy = torch.zeros(len(data.natoms), device=device)
-        energy.index_add_(0, data.batch, node_energy.view(-1))
-        # Scale energy to help balance numerical precision w.r.t. forces
-        energy = energy * 0.001
-
-        outputs = {"energy": energy}
-        ###############################################################
-        # Force estimation
-        ###############################################################
-        if self.regress_forces:
-            forces = self.force_block(x_pt, self.sphere_points)
-            outputs["forces"] = forces
-
-        if self.show_timing_info is True:
-            torch.cuda.synchronize()
-            logging.info(
-                f"{self.counter} Time: {time.time() - start_time}\tMemory: {len(data.pos)}\t{torch.cuda.max_memory_allocated() / 1000000}"
-            )
-
-        self.counter = self.counter + 1
-
-        return outputs
+        return {"sphere_values": x_pt, "sphere_points": self.sphere_points}
 
     # Initialize the edge rotation matrics
     def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
@@ -419,6 +382,95 @@ class eSCN(BaseModel):
     @property
     def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
+
+
+@registry.register_model("escn_energy_head")
+class eSCN_energy_head(nn.Module):
+    def __init__(self, backbone, config):
+        super().__init__()
+
+        # Output blocks for energy and forces
+        self.energy_block = EnergyBlock(
+            backbone.sphere_channels_all, backbone.num_sphere_samples, backbone.act
+        )
+
+    def forward(self, x, emb):
+        node_energy = self.energy_block(emb["sphere_values"])
+        energy = torch.zeros(len(x.natoms), device=x.pos.device)
+        energy.index_add_(0, x.batch, node_energy.view(-1))
+        # Scale energy to help balance numerical precision w.r.t. forces
+        return energy * 0.001
+
+
+@registry.register_model("escn_force_head")
+class eSCN_force_head(nn.Module):
+    def __init__(self, backbone, config):
+        super().__init__()
+
+        self.force_block = ForceBlock(
+            backbone.sphere_channels_all, backbone.num_sphere_samples, backbone.act
+        )
+
+    def forward(self, x, emb):
+        return self.force_block(emb["sphere_values"], emb["sphere_points"])
+
+
+@registry.register_model("escn")
+class eSCN(eSCNBB):
+    """Equivariant Spherical Channel Network
+    Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
+
+
+    Args:
+        use_pbc (bool):         Use periodic boundary conditions
+        regress_forces (bool):  Compute forces
+        otf_graph (bool):       Compute graph On The Fly (OTF)
+        max_neighbors (int):    Maximum number of neighbors per atom
+        cutoff (float):         Maximum distance between nieghboring atoms in Angstroms
+        max_num_elements (int): Maximum atomic number
+
+        num_layers (int):             Number of layers in the GNN
+        lmax_list (int):              List of maximum degree of the spherical harmonics (1 to 10)
+        mmax_list (int):              List of maximum order of the spherical harmonics (0 to lmax)
+        sphere_channels (int):        Number of spherical channels (one set per resolution)
+        hidden_channels (int):        Number of hidden units in message passing
+        num_sphere_samples (int):     Number of samples used to approximate the integration of the sphere in the output blocks
+        edge_channels (int):          Number of channels for the edge invariant features
+        distance_function ("gaussian", "sigmoid", "linearsigmoid", "silu"):  Basis function used for distances
+        basis_width_scalar (float):   Width of distance basis function
+        distance_resolution (float):  Distance between distance basis functions in Angstroms
+        show_timing_info (bool):      Show timing and memory info
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        # variables used for display purposes
+        self.counter = 0
+
+        self.energy_head = eSCN_energy_head(self, {})
+        self.force_head = eSCN_force_head(self, {})
+
+    @conditional_grad(torch.enable_grad())
+    def forward(self, data):
+
+        start_time = time.time()
+
+        bb_outputs = super().forward(data)
+
+        outputs = {"energy": self.energy_head(data, bb_outputs)}
+        if self.regress_forces:
+            outputs["forces"] = self.force_head(data, bb_outputs)
+
+        if self.show_timing_info is True:
+            torch.cuda.synchronize()
+            logging.info(
+                f"{self.counter} Time: {time.time() - start_time}\tMemory: {len(data.pos)}\t{torch.cuda.max_memory_allocated() / 1000000}"
+            )
+
+        self.counter = self.counter + 1
+
+        return outputs
 
 
 class LayerBlock(torch.nn.Module):
