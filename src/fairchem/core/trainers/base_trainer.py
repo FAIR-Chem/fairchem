@@ -70,7 +70,7 @@ class BaseTrainer(ABC):
         evaluation_metrics,
         identifier: str,
         timestamp_id: str | None = None,
-        run_dir: str,
+        run_dir: str | None = None,
         is_debug: bool = False,
         print_every: int = 100,
         seed: int | None = None,
@@ -106,9 +106,7 @@ class BaseTrainer(ABC):
         commit_hash = get_commit_hash()
 
         # Fill in SLURM information in config, if applicable
-        logging.info(f"slurm before {slurm}")
         slurm_config = update_slurm_config(slurm)
-        logging.info(f"slurm afer {slurm}")
         # the unique job id is either the timestampe_id or slurm_id (if it is a slurm job)
         uuid = unique_job_id(timestamp_id, slurm_config.get("job_id", None))
 
