@@ -97,10 +97,10 @@ class Evaluator:
 
         for target_property in self.target_metrics:
             for fn in self.target_metrics[target_property]:
-                if fn == "per_molecule_mae":
+                if fn == "per_group_mae":
                     if mode != "train":
                         metrics = self.batch_update(
-                            per_molecule_mae(prediction, target,target_property), metrics
+                            per_group_mae(prediction, target,target_property), metrics
                         )
                 else:
                     metric_name = (
@@ -328,7 +328,7 @@ def mae(
         "numel": error.numel(),
     }
 
-def per_molecule_mae(
+def per_group_mae(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
     key: Hashable = NONE,
@@ -337,25 +337,25 @@ def per_molecule_mae(
     output = {}
     for i, group in enumerate(target["group"]):
         if key == "forces":
-            if f"per_molecule_{key}_mae/{group}" in output:
-                output[f"per_molecule_{key}_mae/{group}"]["total"] += torch.sum(error[target["batch"] == i]).item()
-                output[f"per_molecule_{key}_mae/{group}"]["numel"] += error[target["batch"] == i].numel()
+            if f"per_group_{key}_mae/{group}" in output:
+                output[f"per_group_{key}_mae/{group}"]["total"] += torch.sum(error[target["batch"] == i]).item()
+                output[f"per_group_{key}_mae/{group}"]["numel"] += error[target["batch"] == i].numel()
             else:
-                output[f"per_molecule_{key}_mae/{group}"] = {
+                output[f"per_group_{key}_mae/{group}"] = {
                     "total": torch.sum(error[target["batch"] == i]).item(),
                     "numel": error[target["batch"] == i].numel(),
                 }
         elif key == "energy":
-            if f"per_molecule_{key}_mae/{group}" in output:
-                output[f"per_molecule_{key}_mae/{group}"]["total"] += torch.sum(error[i]).item()
-                output[f"per_molecule_{key}_mae/{group}"]["numel"] += 1
+            if f"per_group_{key}_mae/{group}" in output:
+                output[f"per_group_{key}_mae/{group}"]["total"] += torch.sum(error[i]).item()
+                output[f"per_group_{key}_mae/{group}"]["numel"] += 1
             else:
-                output[f"per_molecule_{key}_mae/{group}"] = {
+                output[f"per_group_{key}_mae/{group}"] = {
                     "total": torch.sum(error[i]).item(),
                     "numel": 1,
                 }
         else:
-            raise NotImplementedError(f"key {key} not implemented for per_molecule_mae")
+            raise NotImplementedError(f"key {key} not implemented for per_group_mae")
     for key in output:
         output[key]["metric"] = output[key]["total"] / output[key]["numel"]
         
