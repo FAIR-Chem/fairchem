@@ -92,7 +92,7 @@ def main():
             config["slurm"]["folder"] = str(executor.folder)
         jobs = executor.map_array(Runner(distributed=args.distributed), configs)
         logging.info(f"Submitted jobs: {', '.join([job.job_id for job in jobs])}")
-        exp_spec = save_experiment_job_spec(args.run_dir, jobs, configs)
+        exp_spec = save_experiment_job_spec(os.path.join(args.run_dir, "job_specs"), jobs, configs)
         logging.info(f"Experiment spec: {exp_spec}")
         logging.info(f"Experiment log directories: {', '.join([get_log_dir(job.job_id, args.run_dir) for job in jobs])}")
 

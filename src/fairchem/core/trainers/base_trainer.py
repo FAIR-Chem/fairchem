@@ -70,7 +70,7 @@ class BaseTrainer(ABC):
         evaluation_metrics,
         identifier: str,
         timestamp_id: str | None = None,
-        run_dir: str | None = None,
+        run_dir: str,
         is_debug: bool = False,
         print_every: int = 100,
         seed: int | None = None,
