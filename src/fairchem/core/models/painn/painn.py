@@ -386,7 +386,7 @@ class PaiNNBB(BaseModel):
             vec = vec + dvec
             x = getattr(self, "upd_out_scalar_scale_%d" % i)(x)
 
-        return {"x": x, "vec": vec}
+        return {"node_embedding": x, "node_vec": vec}
 
     @property
     def num_params(self) -> int:
@@ -611,7 +611,7 @@ class PaiNN_energy_head(nn.Module):
         self.out_energy[2].bias.data.fill_(0)
 
     def forward(self, x, emb):
-        per_atom_energy = self.out_energy(emb["x"]).squeeze(1)
+        per_atom_energy = self.out_energy(emb["node_embedding"]).squeeze(1)
         return scatter(per_atom_energy, x.batch, dim=0)
 
 
@@ -626,14 +626,14 @@ class PaiNN_force_head(nn.Module):
 
     def forward(self, x, emb):
         if self.direct_forces:
-            forces = self.out_forces(emb["x"], emb["vec"])
+            forces = self.out_forces(emb["node_embedding"], emb["node_vec"])
         else:
             forces = (
                 -1
                 * torch.autograd.grad(
-                    emb["x"],
+                    emb["node_embedding"],
                     x.pos,
-                    grad_outputs=torch.ones_like(emb["x"]),
+                    grad_outputs=torch.ones_like(emb["node_embedding"]),
                     create_graph=True,
                 )[0]
             )

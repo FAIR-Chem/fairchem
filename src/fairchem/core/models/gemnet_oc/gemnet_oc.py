@@ -1233,7 +1233,13 @@ class GemNetOCBB(BaseModel):
             xs_E.append(x_E)
             xs_F.append(x_F)
 
-        return {"xs_E": xs_E, "xs_F": xs_F, "main_graph": main_graph, "idx_t": idx_t}
+        return {
+            "xs_E": xs_E,
+            "xs_F": xs_F,
+            "edge_vec": main_graph["vector"],
+            "edge_idx": idx_t,
+            "num_neighbors": main_graph["num_neighbors"],
+        }
 
     @property
     def num_params(self) -> int:
@@ -1331,9 +1337,9 @@ class GemNetOC_force_head(nn.Module):
 
         if self.direct_forces:
             if self.forces_coupled:  # enforce F_st = F_ts
-                nEdges = emb["idx_t"].shape[0]
+                nEdges = emb["edge_idx"].shape[0]
                 id_undir = repeat_blocks(
-                    emb["main_graph"]["num_neighbors"] // 2,
+                    emb["num_neighbors"] // 2,
                     repeats=2,
                     continuous_indexing=True,
                 )
@@ -1347,11 +1353,11 @@ class GemNetOC_force_head(nn.Module):
                 F_st = F_st[id_undir]  # (nEdges, num_targets)
 
             # map forces in edge directions
-            F_st_vec = F_st[:, :, None] * emb["main_graph"]["vector"][:, None, :]
+            F_st_vec = F_st[:, :, None] * emb["edge_vec"][:, None, :]
             # (nEdges, num_targets, 3)
             F_t = scatter_det(
                 F_st_vec,
-                emb["idx_t"],
+                emb["edge_idx"],
                 dim=0,
                 dim_size=x.atomic_numbers.long().shape[0],
                 reduce="add",
@@ -1363,18 +1369,20 @@ class GemNetOC_force_head(nn.Module):
 
 
 @registry.register_model("gemnet_oc")
-class GemNetOC(GemNetOCBB):
+class GemNetOC(BaseModel):
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
-        self.energy_head = GemNetOC_energy_head(self, kwargs, {})
-        self.force_head = GemNetOC_force_head(self, kwargs, {})
+        self.backbone = GemNetOCBB(*args, **kwargs)
+
+        self.energy_head = GemNetOC_energy_head(self.backbone, kwargs, {})
+        self.force_head = GemNetOC_force_head(self.backbone, kwargs, {})
 
     def forward(self, x):
-        bb_outputs = super().forward(x)
+        bb_outputs = self.backbone.forward(x)
 
         output = {"energy": self.energy_head(x, bb_outputs)}
-        if self.regress_forces:
+        if self.backbone.regress_forces:
             output["forces"] = self.force_head(x, bb_outputs, output)
 
         return output

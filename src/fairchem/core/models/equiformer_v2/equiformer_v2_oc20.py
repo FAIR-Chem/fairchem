@@ -47,8 +47,8 @@ _AVG_NUM_NODES = 77.81317
 _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
 
 
-@registry.register_model("equiformer_v2")
-class EquiformerV2_OC20(BaseModel):
+@registry.register_model("equiformer_v2_backbone")
+class EquiformerV2_OC20BB(BaseModel):
     """
     Equiformer with graph attention built upon SO(2) convolution and feedforward network built upon S2 activation
 
@@ -348,42 +348,6 @@ class EquiformerV2_OC20(BaseModel):
             lmax=max(self.lmax_list),
             num_channels=self.sphere_channels,
         )
-        self.energy_block = FeedForwardNetwork(
-            self.sphere_channels,
-            self.ffn_hidden_channels,
-            1,
-            self.lmax_list,
-            self.mmax_list,
-            self.SO3_grid,
-            self.ffn_activation,
-            self.use_gate_act,
-            self.use_grid_mlp,
-            self.use_sep_s2_act,
-        )
-        if self.regress_forces:
-            self.force_block = SO2EquivariantGraphAttention(
-                self.sphere_channels,
-                self.attn_hidden_channels,
-                self.num_heads,
-                self.attn_alpha_channels,
-                self.attn_value_channels,
-                1,
-                self.lmax_list,
-                self.mmax_list,
-                self.SO3_rotation,
-                self.mappingReduced,
-                self.SO3_grid,
-                self.max_num_elements,
-                self.edge_channels_list,
-                self.block_use_atom_edge_embedding,
-                self.use_m_share_rad,
-                self.attn_activation,
-                self.use_s2_act_attn,
-                self.use_attn_renorm,
-                self.use_gate_act,
-                self.use_sep_s2_act,
-                alpha_drop=0.0,
-            )
 
         if self.load_energy_lin_ref:
             self.energy_lin_ref = nn.Parameter(
@@ -560,62 +524,17 @@ class EquiformerV2_OC20(BaseModel):
         # Final layer norm
         x.embedding = self.norm(x.embedding)
 
-        ###############################################################
-        # Energy estimation
-        ###############################################################
-        node_energy = self.energy_block(x)
-        node_energy = node_energy.embedding.narrow(1, 0, 1)
-        if gp_utils.initialized():
-            node_energy = gp_utils.gather_from_model_parallel_region(node_energy, dim=0)
-        energy = torch.zeros(
-            len(data.natoms),
-            device=node_energy.device,
-            dtype=node_energy.dtype,
-        )
-        energy.index_add_(0, data_batch_full, node_energy.view(-1))
-        energy = energy / self.avg_num_nodes
-
-        # Add the per-atom linear references to the energy.
-        if self.use_energy_lin_ref and self.load_energy_lin_ref:
-            # During training, target E = (E_DFT - E_ref - E_mean) / E_std, and
-            # during inference, \hat{E_DFT} = \hat{E} * E_std + E_ref + E_mean
-            # where
-            #
-            # E_DFT = raw DFT energy,
-            # E_ref = reference energy,
-            # E_mean = normalizer mean,
-            # E_std = normalizer std,
-            # \hat{E} = predicted energy,
-            # \hat{E_DFT} = predicted DFT energy.
-            #
-            # We can also write this as
-            # \hat{E_DFT} = E_std * (\hat{E} + E_ref / E_std) + E_mean,
-            # which is why we save E_ref / E_std as the linear reference.
-            with torch.cuda.amp.autocast(False):
-                energy = energy.to(self.energy_lin_ref.dtype).index_add(
-                    0,
-                    data_batch_full,
-                    self.energy_lin_ref[atomic_numbers_full],
-                )
-
-        outputs = {"energy": energy}
-        ###############################################################
-        # Force estimation
-        ###############################################################
-        if self.regress_forces:
-            forces = self.force_block(
-                x,
-                atomic_numbers_full,
-                edge_distance,
-                edge_index,
-                node_offset=node_offset,
-            )
-            forces = forces.embedding.narrow(1, 1, 3)
-            forces = forces.view(-1, 3).contiguous()
-            if gp_utils.initialized():
-                forces = gp_utils.gather_from_model_parallel_region(forces, dim=0)
-            outputs["forces"] = forces
-
+        outputs = {
+            "node_embedding": x,
+            "edge_distance": edge_distance,
+            "edge_index": edge_index,
+            # returning this only because it's cast to long and
+            # we don't want to repeat this.
+            "atomic_numbers": atomic_numbers_full,
+            # TODO: this is only used by graph parallel to split up the partitions,
+            # should figure out cleaner way to pass this around to the heads
+            "node_offset": node_offset,
+        }
         return outputs
 
     # Initialize the edge rotation matrics
@@ -678,3 +597,99 @@ class EquiformerV2_OC20(BaseModel):
                     no_wd_list.append(global_parameter_name)
 
         return set(no_wd_list)
+
+
+@registry.register_model("equiformer_v2_energy_head")
+class EquiformerV2_OC20_energy_head(nn.Module):
+    def __init__(self, backbone, backbone_config, head_config):
+        super().__init__()
+        self.avg_num_nodes = backbone.avg_num_nodes
+        self.energy_block = FeedForwardNetwork(
+            backbone.sphere_channels,
+            backbone.ffn_hidden_channels,
+            1,
+            backbone.lmax_list,
+            backbone.mmax_list,
+            backbone.SO3_grid,
+            backbone.ffn_activation,
+            backbone.use_gate_act,
+            backbone.use_grid_mlp,
+            backbone.use_sep_s2_act,
+        )
+
+    def forward(self, x, emb):
+        node_energy = self.energy_block(emb["node_embedding"])
+        node_energy = node_energy.embedding.narrow(1, 0, 1)
+        if gp_utils.initialized():
+            node_energy = gp_utils.gather_from_model_parallel_region(node_energy, dim=0)
+        energy = torch.zeros(
+            len(x.natoms),
+            device=node_energy.device,
+            dtype=node_energy.dtype,
+        )
+        energy.index_add_(0, x.batch, node_energy.view(-1))
+        energy = energy / self.avg_num_nodes
+
+        return energy
+
+
+@registry.register_model("equiformer_v2_force_head")
+class EquiformerV2_OC20_force_head(nn.Module):
+    def __init__(self, backbone, backbone_config, head_config):
+        super().__init__()
+
+        self.force_block = SO2EquivariantGraphAttention(
+            backbone.sphere_channels,
+            backbone.attn_hidden_channels,
+            backbone.num_heads,
+            backbone.attn_alpha_channels,
+            backbone.attn_value_channels,
+            1,
+            backbone.lmax_list,
+            backbone.mmax_list,
+            backbone.SO3_rotation,
+            backbone.mappingReduced,
+            backbone.SO3_grid,
+            backbone.max_num_elements,
+            backbone.edge_channels_list,
+            backbone.block_use_atom_edge_embedding,
+            backbone.use_m_share_rad,
+            backbone.attn_activation,
+            backbone.use_s2_act_attn,
+            backbone.use_attn_renorm,
+            backbone.use_gate_act,
+            backbone.use_sep_s2_act,
+            alpha_drop=0.0,
+        )
+
+    def forward(self, x, emb):
+        forces = self.force_block(
+            emb["node_embedding"],
+            x.atomic_numbers.long(),
+            emb["edge_distance"],
+            emb["edge_index"],
+            node_offset=emb["node_offset"],
+        )
+        forces = forces.embedding.narrow(1, 1, 3)
+        forces = forces.view(-1, 3).contiguous()
+        if gp_utils.initialized():
+            forces = gp_utils.gather_from_model_parallel_region(forces, dim=0)
+        return forces
+
+
+@registry.register_model("equiformer_v2")
+class EquiformerV2_OC20(BaseModel):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__()
+        self.backbone = EquiformerV2_OC20BB(*args, **kwargs)
+        self.energy_head = EquiformerV2_OC20_energy_head(self.backbone, {}, {})
+        self.force_head = EquiformerV2_OC20_force_head(self.backbone, {}, {})
+
+    def forward(self, data):
+        bb_outputs = self.backbone.forward(data)
+
+        outputs = {"energy": self.energy_head(data, bb_outputs)}
+        if self.backbone.regress_forces:
+            outputs["forces"] = self.force_head(data, bb_outputs)
+
+        return outputs

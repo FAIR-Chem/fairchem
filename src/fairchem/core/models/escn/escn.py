@@ -416,59 +416,20 @@ class eSCN_force_head(nn.Module):
 
 
 @registry.register_model("escn")
-class eSCN(eSCNBB):
-    """Equivariant Spherical Channel Network
-    Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
-
-
-    Args:
-        use_pbc (bool):         Use periodic boundary conditions
-        regress_forces (bool):  Compute forces
-        otf_graph (bool):       Compute graph On The Fly (OTF)
-        max_neighbors (int):    Maximum number of neighbors per atom
-        cutoff (float):         Maximum distance between nieghboring atoms in Angstroms
-        max_num_elements (int): Maximum atomic number
-
-        num_layers (int):             Number of layers in the GNN
-        lmax_list (int):              List of maximum degree of the spherical harmonics (1 to 10)
-        mmax_list (int):              List of maximum order of the spherical harmonics (0 to lmax)
-        sphere_channels (int):        Number of spherical channels (one set per resolution)
-        hidden_channels (int):        Number of hidden units in message passing
-        num_sphere_samples (int):     Number of samples used to approximate the integration of the sphere in the output blocks
-        edge_channels (int):          Number of channels for the edge invariant features
-        distance_function ("gaussian", "sigmoid", "linearsigmoid", "silu"):  Basis function used for distances
-        basis_width_scalar (float):   Width of distance basis function
-        distance_resolution (float):  Distance between distance basis functions in Angstroms
-        show_timing_info (bool):      Show timing and memory info
-    """
-
+class eSCN(BaseModel):
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+        super().__init__()
+        self.backbone = eSCNBB(*args, **kwargs)
 
-        # variables used for display purposes
-        self.counter = 0
+        self.energy_head = eSCN_energy_head(self.backbone, {}, {})
+        self.force_head = eSCN_force_head(self.backbone, {}, {})
 
-        self.energy_head = eSCN_energy_head(self, {}, {})
-        self.force_head = eSCN_force_head(self, {}, {})
-
-    @conditional_grad(torch.enable_grad())
     def forward(self, data):
-
-        start_time = time.time()
-
-        bb_outputs = super().forward(data)
+        bb_outputs = self.backbone.forward(data)
 
         outputs = {"energy": self.energy_head(data, bb_outputs)}
-        if self.regress_forces:
+        if self.backbone.regress_forces:
             outputs["forces"] = self.force_head(data, bb_outputs)
-
-        if self.show_timing_info is True:
-            torch.cuda.synchronize()
-            logging.info(
-                f"{self.counter} Time: {time.time() - start_time}\tMemory: {len(data.pos)}\t{torch.cuda.max_memory_allocated() / 1000000}"
-            )
-
-        self.counter = self.counter + 1
 
         return outputs
 

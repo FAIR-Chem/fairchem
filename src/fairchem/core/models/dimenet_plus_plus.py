@@ -463,7 +463,7 @@ class DimeNetPlusPlusWrapBB(DimeNetPlusPlus, BaseModel):
             x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
             P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
-        return {"P": P}
+        return {"P": P, "edge_embedding": x, "edge_idx": i}
 
     @property
     def num_params(self) -> int:
@@ -471,17 +471,18 @@ class DimeNetPlusPlusWrapBB(DimeNetPlusPlus, BaseModel):
 
 
 @registry.register_model("dimenetplusplus")
-class DimeNetPlusPlusWrap(DimeNetPlusPlusWrapBB, BaseModel):
+class DimeNetPlusPlusWrap(BaseModel):
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+        super().__init__()
+        self.backbone = DimeNetPlusPlusWrapBB(*args, **kwargs)
 
-        self.energy_head = DimeNetPlusPlusWrap_energy_head(self, {}, {})
-        if self.regress_forces:
-            self.force_head = DimeNetPlusPlusWrap_force_head(self, {}, {})
+        self.energy_head = DimeNetPlusPlusWrap_energy_head(self.backbone, {}, {})
+        if self.backbone.regress_forces:
+            self.force_head = DimeNetPlusPlusWrap_force_head(self.backbone, {}, {})
 
     def forward(self, data):
-        bb_outputs = super().forward(data)
+        bb_outputs = self.backbone.forward(data)
         outputs = {"energy": self.energy_head(data, bb_outputs)}
-        if self.regress_forces:
+        if self.backbone.regress_forces:
             outputs["forces"] = self.force_head(data, bb_outputs, outputs)
         return outputs

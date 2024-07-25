@@ -554,7 +554,14 @@ class GemNetTBB(BaseModel):
             # (nAtoms, num_targets), (nEdges, num_targets)
             F_st += F
             E_t += E
-        return {"F_st": F_st, "E_t": E_t, "V_st": V_st, "idx_t": idx_t}
+        return {
+            "F_st": F_st,
+            "E_t": E_t,
+            "edge_vec": V_st,
+            "edge_idx": idx_t,
+            "node_embedding": h,
+            "edge_embedding": m,
+        }
 
     @property
     def num_params(self):
@@ -592,11 +599,11 @@ class GemNetT_force_head(nn.Module):
 
         if self.direct_forces:
             # map forces in edge directions
-            F_st_vec = emb["F_st"][:, :, None] * emb["V_st"][:, None, :]
+            F_st_vec = emb["F_st"][:, :, None] * emb["edge_vec"][:, None, :]
             # (nEdges, num_targets, 3)
             F_t = scatter(
                 F_st_vec,
-                emb["idx_t"],
+                emb["edge_idx"],
                 dim=0,
                 dim_size=x.atomic_numbers.size(0),
                 reduce="add",
@@ -624,18 +631,20 @@ class GemNetT_force_head(nn.Module):
 
 
 @registry.register_model("gemnet_t")
-class GemNetT(GemNetTBB):
+class GemNetT(BaseModel):
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
-        self.energy_head = GemNetT_energy_head(self, kwargs, {})
-        self.force_head = GemNetT_force_head(self, kwargs, {})
+        self.backbone = GemNetTBB(*args, **kwargs)
+
+        self.energy_head = GemNetT_energy_head(self.backbone, kwargs, {})
+        self.force_head = GemNetT_force_head(self.backbone, kwargs, {})
 
     def forward(self, x):
-        bb_outputs = super().forward(x)
+        bb_outputs = self.backbone.forward(x)
 
         output = {"energy": self.energy_head(x, bb_outputs)}
-        if self.regress_forces:
+        if self.backbone.regress_forces:
             output["forces"] = self.force_head(x, bb_outputs, output)
 
         return output
