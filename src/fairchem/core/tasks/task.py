@@ -10,11 +10,6 @@ from __future__ import annotations
 import logging
 import os
 
-from fairchem.core.common.paths import (
-    DEFAULT_CHECKPOINT_NAME,
-    get_checkpoint_dir,
-    unique_job_id,
-)
 from fairchem.core.common.registry import registry
 from fairchem.core.trainers import OCPTrainer
 
