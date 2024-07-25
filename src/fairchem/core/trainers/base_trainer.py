@@ -844,7 +844,7 @@ class BaseTrainer(ABC):
         metrics = {}
 
         # add all per molecule metrics since they could be not presented in specific ddp processes
-        for target_property in self.evaluation_metrics["metrics"]:
+        for target_property in self.evaluation_metrics.get("metrics", {}):
             if "per_molecule_mae" in self.evaluation_metrics["metrics"][target_property]:
                 for molecule in self.evaluation_metrics["molecules"]:
                     metrics[f"per_molecule_{target_property}_mae/{molecule}"] = {
