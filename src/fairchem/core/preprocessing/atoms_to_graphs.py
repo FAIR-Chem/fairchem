@@ -166,7 +166,7 @@ class AtomsToGraphs:
         # set the atomic numbers, positions, and cell
         positions = np.array(atoms.get_positions(), copy=True)
         pbc = np.array(atoms.pbc, copy=True)
-        cell = np.array(atoms.get_cell(complete=True), copy=True)        
+        cell = np.array(atoms.get_cell(complete=True), copy=True)
         positions = wrap_positions(positions, cell, pbc=pbc, eps=0)
 
         atomic_numbers = torch.Tensor(atoms.get_atomic_numbers())
