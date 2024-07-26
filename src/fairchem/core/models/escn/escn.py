@@ -35,9 +35,9 @@ with contextlib.suppress(ImportError):
     from e3nn import o3
 
 
-@registry.register_model("escn_backbone")
-class eSCNBB(BaseModel):
-    """Equivariant Spherical Channel Network BackBone
+@registry.register_model("escn")
+class eSCN(BaseModel):
+    """Equivariant Spherical Channel Network
     Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
 
 
@@ -120,6 +120,9 @@ class eSCNBB(BaseModel):
         self.basis_width_scalar = basis_width_scalar
         self.distance_function = distance_function
 
+        # variables used for display purposes
+        self.counter = 0
+
         # non-linear activation function used throughout the network
         self.act = nn.SiLU()
 
@@ -190,6 +193,15 @@ class eSCNBB(BaseModel):
                 self.act,
             )
             self.layer_blocks.append(block)
+
+        # Output blocks for energy and forces
+        self.energy_block = EnergyBlock(
+            self.sphere_channels_all, self.num_sphere_samples, self.act
+        )
+        if self.regress_forces:
+            self.force_block = ForceBlock(
+                self.sphere_channels_all, self.num_sphere_samples, self.act
+            )
 
         # Create a roughly evenly distributed point sampling of the sphere for the output blocks
         self.sphere_points = nn.Parameter(
@@ -320,7 +332,32 @@ class eSCNBB(BaseModel):
 
         x_pt = x_pt.view(-1, self.sphere_channels_all)
 
-        return {"sphere_values": x_pt, "sphere_points": self.sphere_points}
+        ###############################################################
+        # Energy estimation
+        ###############################################################
+        node_energy = self.energy_block(x_pt)
+        energy = torch.zeros(len(data.natoms), device=device)
+        energy.index_add_(0, data.batch, node_energy.view(-1))
+        # Scale energy to help balance numerical precision w.r.t. forces
+        energy = energy * 0.001
+
+        outputs = {"energy": energy}
+        ###############################################################
+        # Force estimation
+        ###############################################################
+        if self.regress_forces:
+            forces = self.force_block(x_pt, self.sphere_points)
+            outputs["forces"] = forces
+
+        if self.show_timing_info is True:
+            torch.cuda.synchronize()
+            logging.info(
+                f"{self.counter} Time: {time.time() - start_time}\tMemory: {len(data.pos)}\t{torch.cuda.max_memory_allocated() / 1000000}"
+            )
+
+        self.counter = self.counter + 1
+
+        return outputs
 
     # Initialize the edge rotation matrics
     def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
@@ -384,6 +421,119 @@ class eSCNBB(BaseModel):
         return sum(p.numel() for p in self.parameters())
 
 
+@registry.register_model("escn_backbone")
+class eSCNBB(eSCN):
+    @conditional_grad(torch.enable_grad())
+    def forward(self, data):
+        device = data.pos.device
+        self.batch_size = len(data.natoms)
+        self.dtype = data.pos.dtype
+
+        atomic_numbers = data.atomic_numbers.long()
+        num_atoms = len(atomic_numbers)
+
+        (
+            edge_index,
+            edge_distance,
+            edge_distance_vec,
+            cell_offsets,
+            _,  # cell offset distances
+            neighbors,
+        ) = self.generate_graph(data)
+
+        ###############################################################
+        # Initialize data structures
+        ###############################################################
+
+        # Compute 3x3 rotation matrix per edge
+        edge_rot_mat = self._init_edge_rot_mat(data, edge_index, edge_distance_vec)
+
+        # Initialize the WignerD matrices and other values for spherical harmonic calculations
+        self.SO3_edge_rot = nn.ModuleList()
+        for i in range(self.num_resolutions):
+            self.SO3_edge_rot.append(SO3_Rotation(edge_rot_mat, self.lmax_list[i]))
+
+        ###############################################################
+        # Initialize node embeddings
+        ###############################################################
+
+        # Init per node representations using an atomic number based embedding
+        offset = 0
+        x = SO3_Embedding(
+            num_atoms,
+            self.lmax_list,
+            self.sphere_channels,
+            device,
+            self.dtype,
+        )
+
+        offset_res = 0
+        offset = 0
+        # Initialize the l=0,m=0 coefficients for each resolution
+        for i in range(self.num_resolutions):
+            x.embedding[:, offset_res, :] = self.sphere_embedding(atomic_numbers)[
+                :, offset : offset + self.sphere_channels
+            ]
+            offset = offset + self.sphere_channels
+            offset_res = offset_res + int((self.lmax_list[i] + 1) ** 2)
+
+        # This can be expensive to compute (not implemented efficiently), so only do it once and pass it along to each layer
+        mappingReduced = CoefficientMapping(self.lmax_list, self.mmax_list, device)
+
+        ###############################################################
+        # Update spherical node embeddings
+        ###############################################################
+
+        for i in range(self.num_layers):
+            if i > 0:
+                x_message = self.layer_blocks[i](
+                    x,
+                    atomic_numbers,
+                    edge_distance,
+                    edge_index,
+                    self.SO3_edge_rot,
+                    mappingReduced,
+                )
+
+                # Residual layer for all layers past the first
+                x.embedding = x.embedding + x_message.embedding
+
+            else:
+                # No residual for the first layer
+                x = self.layer_blocks[i](
+                    x,
+                    atomic_numbers,
+                    edge_distance,
+                    edge_index,
+                    self.SO3_edge_rot,
+                    mappingReduced,
+                )
+
+        # Sample the spherical channels (node embeddings) at evenly distributed points on the sphere.
+        # These values are fed into the output blocks.
+        x_pt = torch.tensor([], device=device)
+        offset = 0
+        # Compute the embedding values at every sampled point on the sphere
+        for i in range(self.num_resolutions):
+            num_coefficients = int((x.lmax_list[i] + 1) ** 2)
+            x_pt = torch.cat(
+                [
+                    x_pt,
+                    torch.einsum(
+                        "abc, pb->apc",
+                        x.embedding[:, offset : offset + num_coefficients],
+                        self.sphharm_weights[i],
+                    ).contiguous(),
+                ],
+                dim=2,
+            )
+            offset = offset + num_coefficients
+
+        x_pt = x_pt.view(-1, self.sphere_channels_all)
+
+        return {"sphere_values": x_pt, "sphere_points": self.sphere_points}
+
+
 @registry.register_model("escn_energy_head")
 class eSCN_energy_head(nn.Module):
     def __init__(self, backbone, backbone_config, head_config):
@@ -415,8 +565,8 @@ class eSCN_force_head(nn.Module):
         return self.force_block(emb["sphere_values"], emb["sphere_points"])
 
 
-@registry.register_model("escn")
-class eSCN(BaseModel):
+@registry.register_model("escn_bbwheads")
+class eSCNBBwHeads(BaseModel):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__()
         self.backbone = eSCNBB(*args, **kwargs)

@@ -50,8 +50,8 @@ from fairchem.core.modules.scaling.compat import load_scales_compat
 from .utils import get_edge_id, repeat_blocks
 
 
-@registry.register_model("painn_backbone")
-class PaiNNBB(BaseModel):
+@registry.register_model("painn")
+class PaiNN(BaseModel):
     r"""PaiNN model based on the description in Schütt et al. (2021):
     Equivariant message passing for the prediction of tensorial properties
     and molecular spectra, https://arxiv.org/abs/2102.03150.
@@ -116,7 +116,18 @@ class PaiNNBB(BaseModel):
             self.update_layers.append(PaiNNUpdate(hidden_channels))
             setattr(self, "upd_out_scalar_scale_%d" % i, ScaleFactor())
 
+        self.out_energy = nn.Sequential(
+            nn.Linear(hidden_channels, hidden_channels // 2),
+            ScaledSiLU(),
+            nn.Linear(hidden_channels // 2, 1),
+        )
+
+        if self.regress_forces is True and self.direct_forces is True:
+            self.out_forces = PaiNNOutput(hidden_channels)
+
         self.inv_sqrt_2 = 1 / math.sqrt(2.0)
+
+        self.reset_parameters()
 
         load_scales_compat(self, scale_file)
 
@@ -350,6 +361,87 @@ class PaiNNBB(BaseModel):
     @conditional_grad(torch.enable_grad())
     def forward(self, data):
         pos = data.pos
+        batch = data.batch
+        z = data.atomic_numbers.long()
+
+        if self.regress_forces and not self.direct_forces:
+            pos = pos.requires_grad_(True)
+
+        (
+            edge_index,
+            neighbors,
+            edge_dist,
+            edge_vector,
+            id_swap,
+        ) = self.generate_graph_values(data)
+
+        assert z.dim() == 1
+        assert z.dtype == torch.long
+
+        edge_rbf = self.radial_basis(edge_dist)  # rbf * envelope
+
+        x = self.atom_emb(z)
+        vec = torch.zeros(x.size(0), 3, x.size(1), device=x.device)
+
+        #### Interaction blocks ###############################################
+
+        for i in range(self.num_layers):
+            dx, dvec = self.message_layers[i](x, vec, edge_index, edge_rbf, edge_vector)
+
+            x = x + dx
+            vec = vec + dvec
+            x = x * self.inv_sqrt_2
+
+            dx, dvec = self.update_layers[i](x, vec)
+
+            x = x + dx
+            vec = vec + dvec
+            x = getattr(self, "upd_out_scalar_scale_%d" % i)(x)
+
+        #### Output block #####################################################
+
+        per_atom_energy = self.out_energy(x).squeeze(1)
+        energy = scatter(per_atom_energy, batch, dim=0)
+        outputs = {"energy": energy}
+
+        if self.regress_forces:
+            if self.direct_forces:
+                forces = self.out_forces(x, vec)
+            else:
+                forces = (
+                    -1
+                    * torch.autograd.grad(
+                        x,
+                        pos,
+                        grad_outputs=torch.ones_like(x),
+                        create_graph=True,
+                    )[0]
+                )
+            outputs["forces"] = forces
+
+        return outputs
+
+    @property
+    def num_params(self) -> int:
+        return sum(p.numel() for p in self.parameters())
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"hidden_channels={self.hidden_channels}, "
+            f"num_layers={self.num_layers}, "
+            f"num_rbf={self.num_rbf}, "
+            f"max_neighbors={self.max_neighbors}, "
+            f"cutoff={self.cutoff})"
+        )
+
+
+@registry.register_model("painn_backbone")
+class PaiNNBB(PaiNN):
+
+    @conditional_grad(torch.enable_grad())
+    def forward(self, data):
+        pos = data.pos
         z = data.atomic_numbers.long()
 
         if self.regress_forces and not self.direct_forces:
@@ -387,20 +479,6 @@ class PaiNNBB(BaseModel):
             x = getattr(self, "upd_out_scalar_scale_%d" % i)(x)
 
         return {"node_embedding": x, "node_vec": vec}
-
-    @property
-    def num_params(self) -> int:
-        return sum(p.numel() for p in self.parameters())
-
-    def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}("
-            f"hidden_channels={self.hidden_channels}, "
-            f"num_layers={self.num_layers}, "
-            f"num_rbf={self.num_rbf}, "
-            f"max_neighbors={self.max_neighbors}, "
-            f"cutoff={self.cutoff})"
-        )
 
 
 class PaiNNMessage(MessagePassing):
@@ -640,21 +718,22 @@ class PaiNN_force_head(nn.Module):
         return forces
 
 
-@registry.register_model("painn")
-class PaiNN(PaiNNBB):
+@registry.register_model("painn_bbwheads")
+class PaiNNBBwHeads(BaseModel):
 
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
-        self.energy_head = PaiNN_energy_head(self, {}, {})
-        self.force_head = PaiNN_force_head(self, {}, {})
+        self.backbone = PaiNNBB(*args, **kwargs)
 
-    @conditional_grad(torch.enable_grad())
+        self.energy_head = PaiNN_energy_head(self.backbone, {}, {})
+        self.force_head = PaiNN_force_head(self.backbone, {}, {})
+
     def forward(self, data):
-        bb_outputs = super().forward(data)
+        bb_outputs = self.backbone.forward(data)
 
         outputs = {"energy": self.energy_head(data, bb_outputs)}
-        if self.regress_forces:
+        if self.backbone.regress_forces:
             outputs["forces"] = self.force_head(data, bb_outputs)
 
         return outputs

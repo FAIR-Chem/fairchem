@@ -47,8 +47,8 @@ _AVG_NUM_NODES = 77.81317
 _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
 
 
-@registry.register_model("equiformer_v2_backbone")
-class EquiformerV2_OC20BB(BaseModel):
+@registry.register_model("equiformer_v2")
+class EquiformerV2_OC20(BaseModel):
     """
     Equiformer with graph attention built upon SO(2) convolution and feedforward network built upon S2 activation
 
@@ -348,6 +348,42 @@ class EquiformerV2_OC20BB(BaseModel):
             lmax=max(self.lmax_list),
             num_channels=self.sphere_channels,
         )
+        self.energy_block = FeedForwardNetwork(
+            self.sphere_channels,
+            self.ffn_hidden_channels,
+            1,
+            self.lmax_list,
+            self.mmax_list,
+            self.SO3_grid,
+            self.ffn_activation,
+            self.use_gate_act,
+            self.use_grid_mlp,
+            self.use_sep_s2_act,
+        )
+        if self.regress_forces:
+            self.force_block = SO2EquivariantGraphAttention(
+                self.sphere_channels,
+                self.attn_hidden_channels,
+                self.num_heads,
+                self.attn_alpha_channels,
+                self.attn_value_channels,
+                1,
+                self.lmax_list,
+                self.mmax_list,
+                self.SO3_rotation,
+                self.mappingReduced,
+                self.SO3_grid,
+                self.max_num_elements,
+                self.edge_channels_list,
+                self.block_use_atom_edge_embedding,
+                self.use_m_share_rad,
+                self.attn_activation,
+                self.use_s2_act_attn,
+                self.use_attn_renorm,
+                self.use_gate_act,
+                self.use_sep_s2_act,
+                alpha_drop=0.0,
+            )
 
         if self.load_energy_lin_ref:
             self.energy_lin_ref = nn.Parameter(
@@ -524,17 +560,62 @@ class EquiformerV2_OC20BB(BaseModel):
         # Final layer norm
         x.embedding = self.norm(x.embedding)
 
-        outputs = {
-            "node_embedding": x,
-            "edge_distance": edge_distance,
-            "edge_index": edge_index,
-            # returning this only because it's cast to long and
-            # we don't want to repeat this.
-            "atomic_numbers": atomic_numbers_full,
-            # TODO: this is only used by graph parallel to split up the partitions,
-            # should figure out cleaner way to pass this around to the heads
-            "node_offset": node_offset,
-        }
+        ###############################################################
+        # Energy estimation
+        ###############################################################
+        node_energy = self.energy_block(x)
+        node_energy = node_energy.embedding.narrow(1, 0, 1)
+        if gp_utils.initialized():
+            node_energy = gp_utils.gather_from_model_parallel_region(node_energy, dim=0)
+        energy = torch.zeros(
+            len(data.natoms),
+            device=node_energy.device,
+            dtype=node_energy.dtype,
+        )
+        energy.index_add_(0, data_batch_full, node_energy.view(-1))
+        energy = energy / self.avg_num_nodes
+
+        # Add the per-atom linear references to the energy.
+        if self.use_energy_lin_ref and self.load_energy_lin_ref:
+            # During training, target E = (E_DFT - E_ref - E_mean) / E_std, and
+            # during inference, \hat{E_DFT} = \hat{E} * E_std + E_ref + E_mean
+            # where
+            #
+            # E_DFT = raw DFT energy,
+            # E_ref = reference energy,
+            # E_mean = normalizer mean,
+            # E_std = normalizer std,
+            # \hat{E} = predicted energy,
+            # \hat{E_DFT} = predicted DFT energy.
+            #
+            # We can also write this as
+            # \hat{E_DFT} = E_std * (\hat{E} + E_ref / E_std) + E_mean,
+            # which is why we save E_ref / E_std as the linear reference.
+            with torch.cuda.amp.autocast(False):
+                energy = energy.to(self.energy_lin_ref.dtype).index_add(
+                    0,
+                    data_batch_full,
+                    self.energy_lin_ref[atomic_numbers_full],
+                )
+
+        outputs = {"energy": energy}
+        ###############################################################
+        # Force estimation
+        ###############################################################
+        if self.regress_forces:
+            forces = self.force_block(
+                x,
+                atomic_numbers_full,
+                edge_distance,
+                edge_index,
+                node_offset=node_offset,
+            )
+            forces = forces.embedding.narrow(1, 1, 3)
+            forces = forces.view(-1, 3).contiguous()
+            if gp_utils.initialized():
+                forces = gp_utils.gather_from_model_parallel_region(forces, dim=0)
+            outputs["forces"] = forces
+
         return outputs
 
     # Initialize the edge rotation matrics
@@ -597,6 +678,153 @@ class EquiformerV2_OC20BB(BaseModel):
                     no_wd_list.append(global_parameter_name)
 
         return set(no_wd_list)
+
+
+@registry.register_model("equiformer_v2_backbone")
+class EquiformerV2_OC20BB(EquiformerV2_OC20):
+
+    @conditional_grad(torch.enable_grad())
+    def forward(self, data):
+        self.batch_size = len(data.natoms)
+        self.dtype = data.pos.dtype
+        self.device = data.pos.device
+        atomic_numbers = data.atomic_numbers.long()
+
+        (
+            edge_index,
+            edge_distance,
+            edge_distance_vec,
+            cell_offsets,
+            _,  # cell offset distances
+            neighbors,
+        ) = self.generate_graph(
+            data,
+            enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly,
+        )
+
+        data_batch_full = data.batch
+        data_batch = data.batch
+        atomic_numbers_full = atomic_numbers
+        node_offset = 0
+        if gp_utils.initialized():
+            (
+                atomic_numbers,
+                data_batch,
+                node_offset,
+                edge_index,
+                edge_distance,
+                edge_distance_vec,
+            ) = self._init_gp_partitions(
+                atomic_numbers_full,
+                data_batch_full,
+                edge_index,
+                edge_distance,
+                edge_distance_vec,
+            )
+        ###############################################################
+        # Entering Graph Parallel Region
+        # after this point, if using gp, then node, edge tensors are split
+        # across the graph parallel ranks, some full tensors such as
+        # atomic_numbers_full are required because we need to index into the
+        # full graph when computing edge embeddings or reducing nodes from neighbors
+        #
+        # all tensors that do not have the suffix "_full" refer to the partial tensors.
+        # if not using gp, the full values are equal to the partial values
+        # ie: atomic_numbers_full == atomic_numbers
+        ###############################################################
+
+        ###############################################################
+        # Initialize data structures
+        ###############################################################
+
+        # Compute 3x3 rotation matrix per edge
+        edge_rot_mat = self._init_edge_rot_mat(data, edge_index, edge_distance_vec)
+
+        # Initialize the WignerD matrices and other values for spherical harmonic calculations
+        for i in range(self.num_resolutions):
+            self.SO3_rotation[i].set_wigner(edge_rot_mat)
+
+        ###############################################################
+        # Initialize node embeddings
+        ###############################################################
+
+        # Init per node representations using an atomic number based embedding
+        offset = 0
+        x = SO3_Embedding(
+            len(atomic_numbers),
+            self.lmax_list,
+            self.sphere_channels,
+            self.device,
+            self.dtype,
+        )
+
+        offset_res = 0
+        offset = 0
+        # Initialize the l = 0, m = 0 coefficients for each resolution
+        for i in range(self.num_resolutions):
+            if self.num_resolutions == 1:
+                x.embedding[:, offset_res, :] = self.sphere_embedding(atomic_numbers)
+            else:
+                x.embedding[:, offset_res, :] = self.sphere_embedding(atomic_numbers)[
+                    :, offset : offset + self.sphere_channels
+                ]
+            offset = offset + self.sphere_channels
+            offset_res = offset_res + int((self.lmax_list[i] + 1) ** 2)
+
+        # Edge encoding (distance and atom edge)
+        edge_distance = self.distance_expansion(edge_distance)
+        if self.share_atom_edge_embedding and self.use_atom_edge_embedding:
+            source_element = atomic_numbers_full[
+                edge_index[0]
+            ]  # Source atom atomic number
+            target_element = atomic_numbers_full[
+                edge_index[1]
+            ]  # Target atom atomic number
+            source_embedding = self.source_embedding(source_element)
+            target_embedding = self.target_embedding(target_element)
+            edge_distance = torch.cat(
+                (edge_distance, source_embedding, target_embedding), dim=1
+            )
+
+        # Edge-degree embedding
+        edge_degree = self.edge_degree_embedding(
+            atomic_numbers_full,
+            edge_distance,
+            edge_index,
+            len(atomic_numbers),
+            node_offset,
+        )
+        x.embedding = x.embedding + edge_degree.embedding
+
+        ###############################################################
+        # Update spherical node embeddings
+        ###############################################################
+
+        for i in range(self.num_layers):
+            x = self.blocks[i](
+                x,  # SO3_Embedding
+                atomic_numbers_full,
+                edge_distance,
+                edge_index,
+                batch=data_batch,  # for GraphDropPath
+                node_offset=node_offset,
+            )
+
+        # Final layer norm
+        x.embedding = self.norm(x.embedding)
+
+        outputs = {
+            "node_embedding": x,
+            "edge_distance": edge_distance,
+            "edge_index": edge_index,
+            # returning this only because it's cast to long and
+            # we don't want to repeat this.
+            "atomic_numbers": atomic_numbers_full,
+            # TODO: this is only used by graph parallel to split up the partitions,
+            # should figure out cleaner way to pass this around to the heads
+            "node_offset": node_offset,
+        }
+        return outputs
 
 
 @registry.register_model("equiformer_v2_energy_head")
@@ -677,8 +905,8 @@ class EquiformerV2_OC20_force_head(nn.Module):
         return forces
 
 
-@registry.register_model("equiformer_v2")
-class EquiformerV2_OC20(BaseModel):
+@registry.register_model("equiformer_v2_bbwheads")
+class EquiformerV2_OC20BBwHeads(BaseModel):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__()
         self.backbone = EquiformerV2_OC20BB(*args, **kwargs)
