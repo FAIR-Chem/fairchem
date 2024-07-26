@@ -29,8 +29,8 @@ from .layers.spherical_basis import CircularBasisLayer
 from .utils import inner_product_normalized, mask_neighbors, ragged_range, repeat_blocks
 
 
-@registry.register_model("gemnet_t_backbone")
-class GemNetTBB(BaseModel):
+@registry.register_model("gemnet_t")
+class GemNetT(BaseModel):
     """
     GemNet-T, triplets-only variant of GemNet
 
@@ -554,6 +554,121 @@ class GemNetTBB(BaseModel):
             # (nAtoms, num_targets), (nEdges, num_targets)
             F_st += F
             E_t += E
+
+        nMolecules = torch.max(batch) + 1
+        if self.extensive:
+            E_t = scatter(
+                E_t, batch, dim=0, dim_size=nMolecules, reduce="add"
+            )  # (nMolecules, num_targets)
+        else:
+            E_t = scatter(
+                E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
+            )  # (nMolecules, num_targets)
+
+        outputs = {"energy": E_t}
+
+        if self.regress_forces:
+            if self.direct_forces:
+                # map forces in edge directions
+                F_st_vec = F_st[:, :, None] * V_st[:, None, :]
+                # (nEdges, num_targets, 3)
+                F_t = scatter(
+                    F_st_vec,
+                    idx_t,
+                    dim=0,
+                    dim_size=data.atomic_numbers.size(0),
+                    reduce="add",
+                )  # (nAtoms, num_targets, 3)
+                F_t = F_t.squeeze(1)  # (nAtoms, 3)
+            else:
+                if self.num_targets > 1:
+                    forces = []
+                    for i in range(self.num_targets):
+                        # maybe this can be solved differently
+                        forces += [
+                            -torch.autograd.grad(
+                                E_t[:, i].sum(), pos, create_graph=True
+                            )[0]
+                        ]
+                    F_t = torch.stack(forces, dim=1)
+                    # (nAtoms, num_targets, 3)
+                else:
+                    F_t = -torch.autograd.grad(E_t.sum(), pos, create_graph=True)[0]
+                    # (nAtoms, 3)
+
+            outputs["forces"] = F_t
+
+        return outputs
+
+    @property
+    def num_params(self):
+        return sum(p.numel() for p in self.parameters())
+
+
+@registry.register_model("gemnet_t_backbone")
+class GemNetTBB(GemNetT):
+
+    @conditional_grad(torch.enable_grad())
+    def forward(self, data):
+        pos = data.pos
+        batch = data.batch
+        atomic_numbers = data.atomic_numbers.long()
+
+        if self.regress_forces and not self.direct_forces:
+            pos.requires_grad_(True)
+
+        (
+            edge_index,
+            neighbors,
+            D_st,
+            V_st,
+            id_swap,
+            id3_ba,
+            id3_ca,
+            id3_ragged_idx,
+        ) = self.generate_interaction_graph(data)
+        idx_s, idx_t = edge_index
+
+        # Calculate triplet angles
+        cosφ_cab = inner_product_normalized(V_st[id3_ca], V_st[id3_ba])
+        rad_cbf3, cbf3 = self.cbf_basis3(D_st, cosφ_cab, id3_ca)
+
+        rbf = self.radial_basis(D_st)
+
+        # Embedding block
+        h = self.atom_emb(atomic_numbers)
+        # (nAtoms, emb_size_atom)
+        m = self.edge_emb(h, rbf, idx_s, idx_t)  # (nEdges, emb_size_edge)
+
+        rbf3 = self.mlp_rbf3(rbf)
+        cbf3 = self.mlp_cbf3(rad_cbf3, cbf3, id3_ca, id3_ragged_idx)
+
+        rbf_h = self.mlp_rbf_h(rbf)
+        rbf_out = self.mlp_rbf_out(rbf)
+
+        E_t, F_st = self.out_blocks[0](h, m, rbf_out, idx_t)
+        # (nAtoms, num_targets), (nEdges, num_targets)
+
+        for i in range(self.num_blocks):
+            # Interaction block
+            h, m = self.int_blocks[i](
+                h=h,
+                m=m,
+                rbf3=rbf3,
+                cbf3=cbf3,
+                id3_ragged_idx=id3_ragged_idx,
+                id_swap=id_swap,
+                id3_ba=id3_ba,
+                id3_ca=id3_ca,
+                rbf_h=rbf_h,
+                idx_s=idx_s,
+                idx_t=idx_t,
+            )  # (nAtoms, emb_size_atom), (nEdges, emb_size_edge)
+
+            E, F = self.out_blocks[i + 1](h, m, rbf_out, idx_t)
+            # (nAtoms, num_targets), (nEdges, num_targets)
+            F_st += F
+            E_t += E
         return {
             "F_st": F_st,
             "E_t": E_t,
@@ -562,10 +677,6 @@ class GemNetTBB(BaseModel):
             "node_embedding": h,
             "edge_embedding": m,
         }
-
-    @property
-    def num_params(self):
-        return sum(p.numel() for p in self.parameters())
 
 
 @registry.register_model("gemnet_t_energy_head")
@@ -630,8 +741,8 @@ class GemNetT_force_head(nn.Module):
         return F_t
 
 
-@registry.register_model("gemnet_t")
-class GemNetT(BaseModel):
+@registry.register_model("gemnet_t_bbwheads")
+class GemNetTBBwHeads(BaseModel):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__()
 

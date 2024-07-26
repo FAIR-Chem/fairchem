@@ -359,8 +359,8 @@ class DimeNetPlusPlusWrap_force_head(nn.Module):
         )
 
 
-@registry.register_model("dimenetplusplus_backbone")
-class DimeNetPlusPlusWrapBB(DimeNetPlusPlus, BaseModel):
+@registry.register_model("dimenetplusplus")
+class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
     def __init__(
         self,
         num_atoms: int,
@@ -405,6 +405,90 @@ class DimeNetPlusPlusWrapBB(DimeNetPlusPlus, BaseModel):
             num_output_layers=num_output_layers,
         )
 
+    @conditional_grad(torch.enable_grad())
+    def _forward(self, data):
+        pos = data.pos
+        batch = data.batch
+        (
+            edge_index,
+            dist,
+            _,
+            cell_offsets,
+            offsets,
+            neighbors,
+        ) = self.generate_graph(data)
+
+        data.edge_index = edge_index
+        data.cell_offsets = cell_offsets
+        data.neighbors = neighbors
+        j, i = edge_index
+
+        _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
+            edge_index,
+            data.cell_offsets,
+            num_nodes=data.atomic_numbers.size(0),
+        )
+
+        # Calculate angles.
+        pos_i = pos[idx_i].detach()
+        pos_j = pos[idx_j].detach()
+        if self.use_pbc:
+            pos_ji, pos_kj = (
+                pos[idx_j].detach() - pos_i + offsets[idx_ji],
+                pos[idx_k].detach() - pos_j + offsets[idx_kj],
+            )
+        else:
+            pos_ji, pos_kj = (
+                pos[idx_j].detach() - pos_i,
+                pos[idx_k].detach() - pos_j,
+            )
+
+        a = (pos_ji * pos_kj).sum(dim=-1)
+        b = torch.cross(pos_ji, pos_kj).norm(dim=-1)
+        angle = torch.atan2(b, a)
+
+        rbf = self.rbf(dist)
+        sbf = self.sbf(dist, angle, idx_kj)
+
+        # Embedding block.
+        x = self.emb(data.atomic_numbers.long(), rbf, i, j)
+        P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
+
+        # Interaction blocks.
+        for interaction_block, output_block in zip(
+            self.interaction_blocks, self.output_blocks[1:]
+        ):
+            x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
+            P += output_block(x, rbf, i, num_nodes=pos.size(0))
+
+        return P.sum(dim=0) if batch is None else scatter(P, batch, dim=0)
+
+    def forward(self, data):
+        if self.regress_forces:
+            data.pos.requires_grad_(True)
+        energy = self._forward(data)
+        outputs = {"energy": energy}
+
+        if self.regress_forces:
+            forces = -1 * (
+                torch.autograd.grad(
+                    energy,
+                    data.pos,
+                    grad_outputs=torch.ones_like(energy),
+                    create_graph=True,
+                )[0]
+            )
+            outputs["forces"] = forces
+
+        return outputs
+
+    @property
+    def num_params(self) -> int:
+        return sum(p.numel() for p in self.parameters())
+
+
+@registry.register_model("dimenetplusplus_backbone")
+class DimeNetPlusPlusWrapBB(DimeNetPlusPlusWrap):
     @conditional_grad(torch.enable_grad())
     def forward(self, data):
         if self.regress_forces:
@@ -465,13 +549,9 @@ class DimeNetPlusPlusWrapBB(DimeNetPlusPlus, BaseModel):
 
         return {"P": P, "edge_embedding": x, "edge_idx": i}
 
-    @property
-    def num_params(self) -> int:
-        return sum(p.numel() for p in self.parameters())
 
-
-@registry.register_model("dimenetplusplus")
-class DimeNetPlusPlusWrap(BaseModel):
+@registry.register_model("dimenetplusplus_bbwheads")
+class DimeNetPlusPlusWrapBBwHeads(BaseModel):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__()
         self.backbone = DimeNetPlusPlusWrapBB(*args, **kwargs)
