@@ -10,7 +10,6 @@ from __future__ import annotations
 import numpy as np
 import torch
 import torch.nn as nn
-
 from torch_scatter import scatter
 from torch_sparse import SparseTensor
 
@@ -611,7 +610,6 @@ class GemNetTBB(GemNetT):
     @conditional_grad(torch.enable_grad())
     def forward(self, data):
         pos = data.pos
-        batch = data.batch
         atomic_numbers = data.atomic_numbers.long()
 
         if self.regress_forces and not self.direct_forces:

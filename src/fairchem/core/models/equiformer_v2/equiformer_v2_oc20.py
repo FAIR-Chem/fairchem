@@ -813,7 +813,7 @@ class EquiformerV2_OC20BB(EquiformerV2_OC20):
         # Final layer norm
         x.embedding = self.norm(x.embedding)
 
-        outputs = {
+        return {
             "node_embedding": x,
             "edge_distance": edge_distance,
             "edge_index": edge_index,
@@ -824,7 +824,6 @@ class EquiformerV2_OC20BB(EquiformerV2_OC20):
             # should figure out cleaner way to pass this around to the heads
             "node_offset": node_offset,
         }
-        return outputs
 
 
 @registry.register_model("equiformer_v2_energy_head")
@@ -856,9 +855,7 @@ class EquiformerV2_OC20_energy_head(nn.Module):
             dtype=node_energy.dtype,
         )
         energy.index_add_(0, x.batch, node_energy.view(-1))
-        energy = energy / self.avg_num_nodes
-
-        return energy
+        return energy / self.avg_num_nodes
 
 
 @registry.register_model("equiformer_v2_force_head")
