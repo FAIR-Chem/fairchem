@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import time
 import logging
 import os
 from collections import defaultdict
@@ -117,6 +118,7 @@ class OCPTrainer(BaseTrainer):
             name=name,
             gp_gpus=gp_gpus,
         )
+        self.dp_world_size = distutils.get_world_size()
 
     def train(self, disable_eval_tqdm: bool = False) -> None:
         ensure_fitted(self._unwrapped_model, warn=True)
@@ -135,6 +137,7 @@ class OCPTrainer(BaseTrainer):
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // len(self.train_loader)
+        previous_wall_time = time.time()
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
             skip_steps = self.step % len(self.train_loader)
@@ -167,12 +170,16 @@ class OCPTrainer(BaseTrainer):
                 self._backward(loss)
 
                 # Log metrics.
+                time_delta = time.time() - previous_wall_time
+                previous_wall_time = time.time()
+                num_atoms = batch.natoms.sum().item()
                 log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
                 log_dict.update(
                     {
                         "lr": self.scheduler.get_lr(),
                         "epoch": self.epoch,
                         "step": self.step,
+                        "samples_per_second(approx)": batch.natoms.numel() * self.dp_world_size / float(time_delta),
                     }
                 )
                 if (

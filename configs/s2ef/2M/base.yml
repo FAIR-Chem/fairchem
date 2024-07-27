@@ -3,7 +3,7 @@ trainer: ocp
 dataset:
   train:
     format: lmdb
-    src: data/s2ef/2M/train/
+    src: /home/rgao/s2ef/s2ef/200k/train/
     key_mapping:
       y: energy
       force: forces
@@ -15,8 +15,8 @@ dataset:
         forces:
           mean: 0
           stdev: 2.887317180633545
-  val:
-    src: data/s2ef/all/val_id/
+  # val:
+  #   src: data/s2ef/all/val_id/
 
 logger: wandb
 

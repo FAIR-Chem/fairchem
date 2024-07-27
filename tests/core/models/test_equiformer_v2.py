@@ -89,14 +89,14 @@ def _load_model():
         ffn_activation="silu",
         use_gate_act=False,
         use_grid_mlp=True,
-        alpha_drop=0.1,
-        drop_path_rate=0.1,
+        alpha_drop=0.0,
+        drop_path_rate=0.0,
         proj_drop=0.0,
         weight_init="uniform",
     )
 
     new_dict = {k[len("module.") * 2 :]: v for k, v in checkpoint["state_dict"].items()}
-    load_state_dict(model, new_dict)
+    # load_state_dict(model, new_dict)
 
     # Precision errors between mac vs. linux compound with multiple layers,
     # so we explicitly set the number of layers to 1 (instead of all 8).
@@ -158,6 +158,21 @@ class TestEquiformerV2:
         assert snapshot == pytest.approx(energy.detach())
         assert snapshot == forces.shape
         assert snapshot == pytest.approx(forces.detach().mean(0))
+
+    def test_torch_compile(self):
+        data = self.data.clone().detach()
+        os.environ['MASTER_ADDR'] = 'localhost'
+        os.environ['MASTER_PORT'] = '12355'
+        torch.distributed.init_process_group(backend='gloo',rank=0,world_size=1)
+        ddp_model = DistributedDataParallel(copy.deepcopy(self.model))
+        output_no_compile = ddp_model(data_list_collater([data]))
+        compiled_model = torch.compile(DistributedDataParallel(copy.deepcopy(self.model)), dynamic=True)
+        torch._dynamo.config.optimize_ddp = False
+        output_compile = compiled_model(data_list_collater([data]))
+        assert torch.allclose(output_no_compile["energy"], output_compile["energy"], rtol=1e-3)
+        assert torch.allclose(output_no_compile["forces"], output_compile["forces"], rtol=1e-3)
+        print(outputs)
+        
 
 
 class TestMPrimaryLPrimary:
@@ -225,4 +240,3 @@ class TestMPrimaryLPrimary:
                 embedding._l_primary(c)
                 lp = embedding.embedding.clone()
                 (test_matrix_lp == lp).all()
-
