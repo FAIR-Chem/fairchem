@@ -233,10 +233,19 @@ class TestSmoke:
             tutorial_val_src=tutorial_val_src,
         )
 
-    def test_ddp(self, configs, tutorial_val_src, torch_deterministic):
+    @pytest.mark.parametrize(
+        ("world_size", "ddp"),
+        [
+            pytest.param(2, True),
+            pytest.param(0, False),
+        ],
+    )
+    def test_ddp(self, world_size, ddp, configs, tutorial_val_src, torch_deterministic):
         with tempfile.TemporaryDirectory() as tempdirname:
             tempdir = Path(tempdirname)
-
+            extra_args = {"seed": 0}
+            if not ddp:
+                extra_args["no_ddp"] = True
             _ = _run_main(
                 rundir=str(tempdir),
                 update_dict_with={
@@ -247,13 +256,20 @@ class TestSmoke:
                         test_src=str(tutorial_val_src),
                     ),
                 },
-                update_run_args_with={"seed": 0},
+                update_run_args_with=extra_args,
                 input_yaml=configs["equiformer_v2"],
-                world_size=2,
+                world_size=world_size,
             )
 
+    @pytest.mark.parametrize(
+        ("world_size", "ddp"),
+        [
+            pytest.param(2, True),
+            pytest.param(0, False),
+        ],
+    )
     def test_balanced_batch_sampler_ddp(
-        self, configs, tutorial_val_src, torch_deterministic
+        self, world_size, ddp, configs, tutorial_val_src, torch_deterministic
     ):
 
         # make dataset metadata
@@ -265,7 +281,9 @@ class TestSmoke:
 
         with tempfile.TemporaryDirectory() as tempdirname:
             tempdir = Path(tempdirname)
-
+            extra_args = {"seed": 0}
+            if not ddp:
+                extra_args["no_ddp"] = True
             _ = _run_main(
                 rundir=str(tempdir),
                 update_dict_with={
@@ -276,9 +294,9 @@ class TestSmoke:
                         test_src=str(tutorial_val_src),
                     ),
                 },
-                update_run_args_with={"seed": 0},
+                update_run_args_with=extra_args,
                 input_yaml=configs["equiformer_v2"],
-                world_size=2,
+                world_size=world_size,
             )
 
     # train for a few steps and confirm same seeds get same results

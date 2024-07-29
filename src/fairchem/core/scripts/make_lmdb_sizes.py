@@ -15,7 +15,7 @@ import numpy as np
 from tqdm import tqdm
 
 from fairchem.core.common.typing import assert_is_instance
-from fairchem.core.datasets import SinglePointLmdbDataset, TrajectoryLmdbDataset
+from fairchem.core.datasets.lmdb_dataset import LmdbDataset
 
 
 def get_data(index):
@@ -31,11 +31,10 @@ def get_data(index):
 def make_lmdb_sizes(args) -> None:
     path = assert_is_instance(args.data_path, str)
     global dataset
+    dataset = LmdbDataset({"src": path})
     if os.path.isdir(path):
-        dataset = TrajectoryLmdbDataset({"src": path})
         outpath = os.path.join(path, "metadata.npz")
     elif os.path.isfile(path):
-        dataset = SinglePointLmdbDataset({"src": path})
         outpath = os.path.join(os.path.dirname(path), "metadata.npz")
 
     output_indices = range(len(dataset))
