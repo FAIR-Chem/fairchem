@@ -330,33 +330,29 @@ class DimeNetPlusPlus(torch.nn.Module):
 
 
 @registry.register_model("dimenetplusplus_energy_head")
-class DimeNetPlusPlusWrap_energy_head(nn.Module):
+class DimeNetPlusPlusWrap_energy_and_force_head(nn.Module):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
+        self.regress_forces = backbone.regress_forces
 
     def forward(self, x, emb):
-        return (
-            emb["P"].sum(dim=0)
-            if x.batch is None
-            else scatter(emb["P"], x.batch, dim=0)
-        )
-
-
-@registry.register_model("dimenetplusplus_energy_head")
-class DimeNetPlusPlusWrap_force_head(nn.Module):
-    def __init__(self, backbone, backbone_config, head_config):
-        super().__init__()
-        backbone.regress_forces = True
-
-    def forward(self, x, emb, out):
-        return -1 * (
-            torch.autograd.grad(
-                out["energy"],
-                x.pos,
-                grad_outputs=torch.ones_like(out["energy"]),
-                create_graph=True,
-            )[0]
-        )
+        outputs = {
+            "energy": (
+                emb["P"].sum(dim=0)
+                if x.batch is None
+                else scatter(emb["P"], x.batch, dim=0)
+            )
+        }
+        if self.regress_forces:
+            outputs["forces"] = -1 * (
+                torch.autograd.grad(
+                    outputs["energy"],
+                    x.pos,
+                    grad_outputs=torch.ones_like(outputs["energy"]),
+                    create_graph=True,
+                )[0]
+            )
+        return outputs
 
 
 @registry.register_model("dimenetplusplus")
@@ -556,13 +552,10 @@ class DimeNetPlusPlusWrapBBwHeads(BaseModel):
         super().__init__()
         self.backbone = DimeNetPlusPlusWrapBB(*args, **kwargs)
 
-        self.energy_head = DimeNetPlusPlusWrap_energy_head(self.backbone, {}, {})
-        if self.backbone.regress_forces:
-            self.force_head = DimeNetPlusPlusWrap_force_head(self.backbone, {}, {})
+        self.energy_and_force_head = DimeNetPlusPlusWrap_energy_and_force_head(
+            self.backbone, {}, {}
+        )
 
     def forward(self, data):
         bb_outputs = self.backbone.forward(data)
-        outputs = {"energy": self.energy_head(data, bb_outputs)}
-        if self.backbone.regress_forces:
-            outputs["forces"] = self.force_head(data, bb_outputs, outputs)
-        return outputs
+        return self.energy_and_force_head(data, bb_outputs)
