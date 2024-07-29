@@ -23,6 +23,7 @@ def configs():
     return {
         "escn": Path("tests/core/models/test_configs/test_escn.yml"),
         "gemnet": Path("tests/core/models/test_configs/test_gemnet.yml"),
+        "dimenet++": Path("tests/core/models/test_configs/test_dpp.yml"),
         "equiformer_v2": Path("tests/core/models/test_configs/test_equiformerv2.yml"),
     }
 
@@ -197,6 +198,7 @@ class TestSmoke:
         "model_name",
         [
             pytest.param("gemnet", id="gemnet"),
+            pytest.param("dimenet++", id="dimenet++"),
             pytest.param("escn", id="escn"),
             pytest.param("equiformer_v2", id="equiformer_v2"),
         ],
