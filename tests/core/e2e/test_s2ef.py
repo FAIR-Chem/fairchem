@@ -24,6 +24,7 @@ def configs():
         "escn": Path("tests/core/models/test_configs/test_escn.yml"),
         "gemnet": Path("tests/core/models/test_configs/test_gemnet.yml"),
         "dimenet++": Path("tests/core/models/test_configs/test_dpp.yml"),
+        "painn": Path("tests/core/models/test_configs/test_painn.yml"),
         "equiformer_v2": Path("tests/core/models/test_configs/test_equiformerv2.yml"),
     }
 
@@ -154,7 +155,7 @@ class TestSmoke:
                 rundir=str(train_rundir),
                 input_yaml=input_yaml,
                 update_dict_with={
-                    "optim": {"max_epochs": 2, "eval_every": 8},
+                    "optim": {"max_epochs": 2, "eval_every": 8, "batch_size": 5},
                     "dataset": oc20_lmdb_train_and_val_from_paths(
                         train_src=str(tutorial_val_src),
                         val_src=str(tutorial_val_src),
@@ -175,7 +176,7 @@ class TestSmoke:
                 rundir=str(predictions_rundir),
                 input_yaml=input_yaml,
                 update_dict_with={
-                    "optim": {"max_epochs": 2, "eval_every": 8},
+                    "optim": {"max_epochs": 2, "eval_every": 8, "batch_size": 5},
                     "dataset": oc20_lmdb_train_and_val_from_paths(
                         train_src=str(tutorial_val_src),
                         val_src=str(tutorial_val_src),
@@ -199,6 +200,7 @@ class TestSmoke:
         [
             pytest.param("gemnet", id="gemnet"),
             pytest.param("dimenet++", id="dimenet++"),
+            pytest.param("painn", id="painn"),
             pytest.param("escn", id="escn"),
             pytest.param("equiformer_v2", id="equiformer_v2"),
         ],
