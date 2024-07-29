@@ -333,10 +333,10 @@ def per_group_mae(
     target: dict[str, torch.Tensor],
     key: Hashable = NONE,
 ) -> dict[str, float | int]:
-    error = torch.abs(target[key] - prediction[key])
     output = {}
     for i, group in enumerate(target["group"]):
         if key == "forces":
+            error = torch.abs(target["forces"] - prediction["forces"])
             if f"per_group_{key}_mae/{group}" in output:
                 output[f"per_group_{key}_mae/{group}"]["total"] += torch.sum(error[target["batch"] == i]).item()
                 output[f"per_group_{key}_mae/{group}"]["numel"] += error[target["batch"] == i].numel()
@@ -346,12 +346,23 @@ def per_group_mae(
                     "numel": error[target["batch"] == i].numel(),
                 }
         elif key == "energy":
+            error = torch.abs(target["energy"] - prediction["energy"])
             if f"per_group_{key}_mae/{group}" in output:
-                output[f"per_group_{key}_mae/{group}"]["total"] += torch.sum(error[i]).item()
+                output[f"per_group_{key}_mae/{group}"]["total"] += error[i].item()
                 output[f"per_group_{key}_mae/{group}"]["numel"] += 1
             else:
                 output[f"per_group_{key}_mae/{group}"] = {
-                    "total": torch.sum(error[i]).item(),
+                    "total": error[i].item(),
+                    "numel": 1,
+                }
+        elif key == "per_atom_energy":
+            error = torch.abs(target["energy"] - prediction["energy"])
+            if f"per_group_{key}_mae/{group}" in output:
+                output[f"per_group_{key}_mae/{group}"]["total"] += error[i].item() / target["natoms"][i].item()
+                output[f"per_group_{key}_mae/{group}"]["numel"] += 1
+            else:
+                output[f"per_group_{key}_mae/{group}"] = {
+                    "total": error[i].item() / target["natoms"][i].item(),
                     "numel": 1,
                 }
         else:

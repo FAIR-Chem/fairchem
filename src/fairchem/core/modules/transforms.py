@@ -34,6 +34,10 @@ def shift_energy(data_object, config) -> Data:
 def add_group(data_object, config) -> Data:
     data_object.group = config
     return data_object
+
+def add_group_from(data_object, config) -> Data:
+    data_object.group = data_object[config]
+    return data_object
     
 def add_fixed_tensor(data_object, config) -> Data:
     data_object.fixed = torch.zeros((data_object.pos.size(0)), dtype=torch.float32, device=data_object.pos.device)
