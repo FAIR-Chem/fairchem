@@ -423,7 +423,7 @@ class BaseTrainer(ABC):
                     for val_config in val_configs
                 ])
 
-                if "split" in val_config:
+                if "split" in self.config["val_dataset"]:
                     logging.info(f"original size {len(self.val_dataset)}, target size {val_config['split']}")
                     # to make sampling deterministic, seed rng
                     if len(self.val_dataset) >= val_config["split"]:

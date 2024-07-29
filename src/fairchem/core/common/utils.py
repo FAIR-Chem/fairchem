@@ -491,9 +491,15 @@ def create_grid(base_config, sweep_file: str):
     with open(sweep_file) as fp:
         sweeps = yaml.load(fp, Loader=UniqueKeyLoader)
 
+    mode = sweeps.pop("mode", "product")
     flat_sweeps = _flatten_sweeps(sweeps)
     keys = list(flat_sweeps.keys())
-    values = list(itertools.product(*flat_sweeps.values()))
+    if mode == "product":
+        values = list(itertools.product(*flat_sweeps.values()))
+    elif mode == "pair":
+        values = list(zip(*flat_sweeps.values()))
+    else:
+        raise ValueError(f"Unknown mode) {mode}")
 
     configs = []
     for i, override_vals in enumerate(values):
