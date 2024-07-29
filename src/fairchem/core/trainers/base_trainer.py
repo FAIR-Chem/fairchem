@@ -404,7 +404,6 @@ class BaseTrainer(ABC):
             )
 
             if self.config.get("val_dataset", None):
-                assert "datasets" in self.config["val_dataset"], "val dataset must also be a list"
                 if self.config["val_dataset"].get("use_train_settings", True):
                     assert len(self.config["val_dataset"]["datasets"]) == len(self.config["dataset"]["datasets"]), "there must be the same number of datasets"
                     val_configs = []
@@ -413,8 +412,10 @@ class BaseTrainer(ABC):
                         val_config.pop("split", None)
                         val_config.update(val)
                         val_configs.append(val_config)
-                else:
+                elif "datasets" in self.config["val_dataset"]:
                     val_configs = self.config["val_dataset"]["datasets"]
+                else:
+                    val_configs = [self.config["val_dataset"]]
                 logging.info("Loading validation set.")
                 self.val_dataset = ConcatDataset([
                     registry.get_dataset_class(
@@ -450,7 +451,6 @@ class BaseTrainer(ABC):
                 )
 
             if self.config.get("test_dataset", None):
-                assert "datasets" in self.config["test_dataset"], "test dataset must also be a list"
                 if self.config["test_dataset"].get("use_train_settings", True):
                     assert len(self.config["test_dataset"]["datasets"]) == len(self.config["dataset"]["datasets"]), "there must be the same number of datasets"
                     test_configs = []
@@ -459,8 +459,10 @@ class BaseTrainer(ABC):
                         test_config.pop("split", None)
                         test_config.update(test)
                         test_configs.append(test_config)
-                else:
+                elif "datasets" in self.config["test_dataset"]:
                     test_configs = self.config["test_dataset"]
+                else:
+                    test_configs = [self.config["test_dataset"]]
                 logging.info("Loading validation set.")
                 self.test_dataset = ConcatDataset([
                     registry.get_dataset_class(
@@ -843,11 +845,11 @@ class BaseTrainer(ABC):
 
         metrics = {}
 
-        # add all per molecule metrics since they could be not presented in specific ddp processes
-        for target_property in self.evaluation_metrics["metrics"]:
-            if "per_molecule_mae" in self.evaluation_metrics["metrics"][target_property]:
-                for molecule in self.evaluation_metrics["molecules"]:
-                    metrics[f"per_molecule_{target_property}_mae/{molecule}"] = {
+        # add all per group metrics since they could be not presented in specific ddp processes
+        for target_property in self.evaluation_metrics.get("metrics", {}):
+            if "per_group_mae" in self.evaluation_metrics["metrics"][target_property]:
+                for group in self.evaluation_metrics["groups"]:
+                    metrics[f"per_group_{target_property}_mae/{group}"] = {
                         "metric": None,
                         "total": 0,
                         "numel": 0,
