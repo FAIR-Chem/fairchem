@@ -690,7 +690,7 @@ class PaiNN_energy_head(nn.Module):
 
     def forward(self, x, emb):
         per_atom_energy = self.out_energy(emb["node_embedding"]).squeeze(1)
-        return scatter(per_atom_energy, x.batch, dim=0)
+        return {"energy": scatter(per_atom_energy, x.batch, dim=0)}
 
 
 @registry.register_model("painn_force_head")
@@ -715,7 +715,7 @@ class PaiNN_force_head(nn.Module):
                     create_graph=True,
                 )[0]
             )
-        return forces
+        return {"forces": forces}
 
 
 @registry.register_model("painn_bbwheads")
@@ -732,8 +732,8 @@ class PaiNNBBwHeads(BaseModel):
     def forward(self, data):
         bb_outputs = self.backbone.forward(data)
 
-        outputs = {"energy": self.energy_head(data, bb_outputs)}
+        outputs = self.energy_head(data, bb_outputs)
         if self.backbone.regress_forces:
-            outputs["forces"] = self.force_head(data, bb_outputs)
+            outputs.update(self.force_head(data, bb_outputs))
 
         return outputs

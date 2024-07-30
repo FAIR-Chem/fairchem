@@ -1426,11 +1426,16 @@ class GemNetOCBB(GemNetOC):
         }
 
 
-@registry.register_model("gemnet_oc_energy_head")
+@registry.register_model("gemnet_oc_energy_and_grad_force_head")
 class GemNetOC_energy_head(nn.Module):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
         self.extensive = backbone.extensive
+
+        self.regress_forces = backbone.regress_forces
+        self.direct_forces = backbone.direct_forces
+        self.force_scaler = backbone.force_scaler
+
         out_mlp_E = [
             Dense(
                 backbone_config["emb_size_atom"] * (backbone_config["num_blocks"] + 1),
@@ -1456,6 +1461,7 @@ class GemNetOC_energy_head(nn.Module):
         out_initializer = get_initializer(backbone_config["output_init"])
         self.out_energy.reset_parameters(out_initializer)
 
+    @conditional_grad(torch.enable_grad())
     def forward(self, x, emb):
         # Global output block for final predictions
         x_E = self.out_mlp_E(torch.cat(emb["xs_E"], dim=-1))
@@ -1472,7 +1478,12 @@ class GemNetOC_energy_head(nn.Module):
                 E_t, x.batch, dim=0, dim_size=nMolecules, reduce="mean"
             )  # (nMolecules, num_targets)
 
-        return E_t.squeeze(1)  # (num_molecules)
+        outputs = {"energy": E_t.squeeze(1)}  # (num_molecules)
+
+        if self.regress_forces and not self.direct_forces:
+            F_t = self.force_scaler.calc_forces_and_update(outputs["energy"], x.pos)
+            outputs["forces"] = F_t.squeeze(1)
+        return outputs
 
 
 @registry.register_model("gemnet_oc_force_head")
@@ -1508,14 +1519,12 @@ class GemNetOC_force_head(nn.Module):
             out_initializer = get_initializer(backbone_config["output_init"])
             self.out_forces.reset_parameters(out_initializer)
 
-    def forward(self, x, emb, out):
+    def forward(self, x, emb):
         if self.direct_forces:
             x_F = self.out_mlp_F(torch.cat(emb["xs_F"], dim=-1))
-        with torch.cuda.amp.autocast(False):
-            if self.direct_forces:
+            with torch.cuda.amp.autocast(False):
                 F_st = self.out_forces(x_F.float())
 
-        if self.direct_forces:
             if self.forces_coupled:  # enforce F_st = F_ts
                 nEdges = emb["edge_idx"].shape[0]
                 id_undir = repeat_blocks(
@@ -1542,10 +1551,8 @@ class GemNetOC_force_head(nn.Module):
                 dim_size=x.atomic_numbers.long().shape[0],
                 reduce="add",
             )  # (nAtoms, num_targets, 3)
-        else:
-            F_t = self.force_scaler.calc_forces_and_update(out["energy"], x.pos)
-
-        return F_t.squeeze(1)  # (num_atoms, 3)
+            return {"forces": F_t.squeeze(1)}  # (num_atoms, 3)
+        return {}
 
 
 @registry.register_model("gemnet_oc_bbwheads")
@@ -1561,8 +1568,8 @@ class GemNetOCBBwHeads(BaseModel):
     def forward(self, x):
         bb_outputs = self.backbone.forward(x)
 
-        output = {"energy": self.energy_head(x, bb_outputs)}
+        output = self.energy_head(x, bb_outputs)
         if self.backbone.regress_forces:
-            output["forces"] = self.force_head(x, bb_outputs, output)
+            output.udpate(self.force_head(x, bb_outputs, output))
 
         return output

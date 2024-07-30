@@ -329,12 +329,13 @@ class DimeNetPlusPlus(torch.nn.Module):
         raise NotImplementedError
 
 
-@registry.register_model("dimenetplusplus_energy_head")
+@registry.register_model("dimenetplusplus_energy_and_force_head")
 class DimeNetPlusPlusWrap_energy_and_force_head(nn.Module):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
         self.regress_forces = backbone.regress_forces
 
+    @conditional_grad(torch.enable_grad())
     def forward(self, x, emb):
         outputs = {
             "energy": (
@@ -485,11 +486,11 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
 
 @registry.register_model("dimenetplusplus_backbone")
 class DimeNetPlusPlusWrapBB(DimeNetPlusPlusWrap):
+
     @conditional_grad(torch.enable_grad())
     def forward(self, data):
         if self.regress_forces:
             data.pos.requires_grad_(True)
-
         pos = data.pos
         (
             edge_index,

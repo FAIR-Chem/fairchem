@@ -22,9 +22,17 @@ setup_logging()
 def configs():
     return {
         "escn": Path("tests/core/models/test_configs/test_escn.yml"),
-        "gemnet": Path("tests/core/models/test_configs/test_gemnet.yml"),
+        "gemnet_oc": Path("tests/core/models/test_configs/test_gemnet_oc.yml"),
+        "gemnet_oc_hydra": Path(
+            "tests/core/models/test_configs/test_gemnet_oc_hydra.yml"
+        ),
+        "gemnet_oc_hydra_grad": Path(
+            "tests/core/models/test_configs/test_gemnet_oc_hydra_grad.yml"
+        ),
         "dimenet++": Path("tests/core/models/test_configs/test_dpp.yml"),
+        "dimenet++_hydra": Path("tests/core/models/test_configs/test_dpp_hydra.yml"),
         "painn": Path("tests/core/models/test_configs/test_painn.yml"),
+        "painn_hydra": Path("tests/core/models/test_configs/test_painn_hydra.yml"),
         "equiformer_v2": Path("tests/core/models/test_configs/test_equiformerv2.yml"),
     }
 
@@ -198,9 +206,13 @@ class TestSmoke:
     @pytest.mark.parametrize(
         "model_name",
         [
-            pytest.param("gemnet", id="gemnet"),
+            pytest.param("gemnet_oc", id="gemnet_oc"),
+            pytest.param("gemnet_oc_hydra", id="gemnet_oc_hydra"),
+            pytest.param("gemnet_oc_hydra_grad", id="gemnet_oc_hydra_grad"),
             pytest.param("dimenet++", id="dimenet++"),
+            pytest.param("dimenet++_hydra", id="dimenet++_hydra"),
             pytest.param("painn", id="painn"),
+            pytest.param("painn_hydra", id="painn_hydra"),
             pytest.param("escn", id="escn"),
             pytest.param("equiformer_v2", id="equiformer_v2"),
         ],
