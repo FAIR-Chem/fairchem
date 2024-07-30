@@ -1427,7 +1427,7 @@ class GemNetOCBB(GemNetOC):
 
 
 @registry.register_model("gemnet_oc_energy_and_grad_force_head")
-class GemNetOC_energy_head(nn.Module):
+class GemNetOC_energy_and_grad_force_head(nn.Module):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
         self.extensive = backbone.extensive
