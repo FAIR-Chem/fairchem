@@ -21,8 +21,14 @@ setup_logging()
 @pytest.fixture()
 def configs():
     return {
+        "scn": Path("tests/core/models/test_configs/test_scn.yml"),
         "escn": Path("tests/core/models/test_configs/test_escn.yml"),
         "escn_hydra": Path("tests/core/models/test_configs/test_escn_hydra.yml"),
+        "schnet": Path("tests/core/models/test_configs/test_schnet.yml"),
+        "gemnet_dt": Path("tests/core/models/test_configs/test_gemnet_dt.yml"),
+        "gemnet_dt_hydra": Path(
+            "tests/core/models/test_configs/test_gemnet_dt_hydra.yml"
+        ),
         "gemnet_oc": Path("tests/core/models/test_configs/test_gemnet_oc.yml"),
         "gemnet_oc_hydra": Path(
             "tests/core/models/test_configs/test_gemnet_oc_hydra.yml"
@@ -210,6 +216,10 @@ class TestSmoke:
     @pytest.mark.parametrize(
         "model_name",
         [
+            pytest.param("schnet", id="schnet"),
+            pytest.param("scn", id="scn"),
+            pytest.param("gemnet_dt", id="gemnet_dt"),
+            pytest.param("gemnet_dt_hydra", id="gemnet_dt_hydra"),
             pytest.param("gemnet_oc", id="gemnet_oc"),
             pytest.param("gemnet_oc_hydra", id="gemnet_oc_hydra"),
             pytest.param("gemnet_oc_hydra_grad", id="gemnet_oc_hydra_grad"),
