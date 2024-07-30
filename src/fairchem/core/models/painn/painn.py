@@ -716,24 +716,3 @@ class PaiNN_force_head(nn.Module):
                 )[0]
             )
         return {"forces": forces}
-
-
-@registry.register_model("painn_bbwheads")
-class PaiNNBBwHeads(BaseModel):
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__()
-
-        self.backbone = PaiNNBB(*args, **kwargs)
-
-        self.energy_head = PaiNN_energy_head(self.backbone, {}, {})
-        self.force_head = PaiNN_force_head(self.backbone, {}, {})
-
-    def forward(self, data):
-        bb_outputs = self.backbone.forward(data)
-
-        outputs = self.energy_head(data, bb_outputs)
-        if self.backbone.regress_forces:
-            outputs.update(self.force_head(data, bb_outputs))
-
-        return outputs

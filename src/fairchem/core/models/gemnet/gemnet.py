@@ -712,7 +712,7 @@ class GemNetT_energy_and_grad_force_head(nn.Module):
                 outputs["forces"] = torch.stack(forces, dim=1)
                 # (nAtoms, num_targets, 3)
             else:
-                outputs["forces"] = F_t = -torch.autograd.grad(
+                outputs["forces"] = -torch.autograd.grad(
                     E_t.sum(), x.pos, create_graph=True
                 )[0]
                 # (nAtoms, 3)
@@ -738,23 +738,3 @@ class GemNetT_force_head(nn.Module):
             reduce="add",
         )  # (nAtoms, num_targets, 3)
         return {"forces": F_t.squeeze(1)}  # (nAtoms, 3)
-
-
-@registry.register_model("gemnet_t_bbwheads")
-class GemNetTBBwHeads(BaseModel):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__()
-
-        self.backbone = GemNetTBB(*args, **kwargs)
-
-        self.energy_head = GemNetT_energy_head(self.backbone, kwargs, {})
-        self.force_head = GemNetT_force_head(self.backbone, kwargs, {})
-
-    def forward(self, x):
-        bb_outputs = self.backbone.forward(x)
-
-        output = self.energy_head(x, bb_outputs)
-        if self.backbone.regress_forces:
-            output.update(self.force_head(x, bb_outputs))
-
-        return output

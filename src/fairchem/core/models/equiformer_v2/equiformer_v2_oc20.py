@@ -900,21 +900,3 @@ class EquiformerV2_OC20_force_head(nn.Module):
         if gp_utils.initialized():
             forces = gp_utils.gather_from_model_parallel_region(forces, dim=0)
         return {"forces": forces}
-
-
-@registry.register_model("equiformer_v2_bbwheads")
-class EquiformerV2_OC20BBwHeads(BaseModel):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__()
-        self.backbone = EquiformerV2_OC20BB(*args, **kwargs)
-        self.energy_head = EquiformerV2_OC20_energy_head(self.backbone, {}, {})
-        self.force_head = EquiformerV2_OC20_force_head(self.backbone, {}, {})
-
-    def forward(self, data):
-        bb_outputs = self.backbone.forward(data)
-
-        outputs = self.energy_head(data, bb_outputs)
-        if self.backbone.regress_forces:
-            outputs.update(self.force_head(data, bb_outputs))
-
-        return outputs

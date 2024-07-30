@@ -545,18 +545,3 @@ class DimeNetPlusPlusWrapBB(DimeNetPlusPlusWrap):
             P += output_block(x, rbf, i, num_nodes=pos.size(0))
 
         return {"P": P, "edge_embedding": x, "edge_idx": i}
-
-
-@registry.register_model("dimenetplusplus_bbwheads")
-class DimeNetPlusPlusWrapBBwHeads(BaseModel):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__()
-        self.backbone = DimeNetPlusPlusWrapBB(*args, **kwargs)
-
-        self.energy_and_force_head = DimeNetPlusPlusWrap_energy_and_force_head(
-            self.backbone, {}, {}
-        )
-
-    def forward(self, data):
-        bb_outputs = self.backbone.forward(data)
-        return self.energy_and_force_head(data, bb_outputs)

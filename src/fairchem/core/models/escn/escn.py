@@ -565,25 +565,6 @@ class eSCN_force_head(nn.Module):
         return {"forces": self.force_block(emb["sphere_values"], emb["sphere_points"])}
 
 
-@registry.register_model("escn_bbwheads")
-class eSCNBBwHeads(BaseModel):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__()
-        self.backbone = eSCNBB(*args, **kwargs)
-
-        self.energy_head = eSCN_energy_head(self.backbone, {}, {})
-        self.force_head = eSCN_force_head(self.backbone, {}, {})
-
-    def forward(self, data):
-        bb_outputs = self.backbone.forward(data)
-
-        outputs = self.energy_head(data, bb_outputs)
-        if self.backbone.regress_forces:
-            outputs.update(self.force_head(data, bb_outputs))
-
-        return outputs
-
-
 class LayerBlock(torch.nn.Module):
     """
     Layer block: Perform one layer (message passing and aggregation) of the GNN

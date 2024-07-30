@@ -1553,23 +1553,3 @@ class GemNetOC_force_head(nn.Module):
             )  # (nAtoms, num_targets, 3)
             return {"forces": F_t.squeeze(1)}  # (num_atoms, 3)
         return {}
-
-
-@registry.register_model("gemnet_oc_bbwheads")
-class GemNetOCBBwHeads(BaseModel):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__()
-
-        self.backbone = GemNetOCBB(*args, **kwargs)
-
-        self.energy_head = GemNetOC_energy_head(self.backbone, kwargs, {})
-        self.force_head = GemNetOC_force_head(self.backbone, kwargs, {})
-
-    def forward(self, x):
-        bb_outputs = self.backbone.forward(x)
-
-        output = self.energy_head(x, bb_outputs)
-        if self.backbone.regress_forces:
-            output.udpate(self.force_head(x, bb_outputs, output))
-
-        return output
