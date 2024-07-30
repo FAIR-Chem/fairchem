@@ -686,6 +686,7 @@ class GemNetT_energy_and_grad_force_head(nn.Module):
         self.direct_forces = backbone.direct_forces
         self.num_targets = backbone.num_targets
 
+    @conditional_grad(torch.enable_grad())
     def forward(self, x, emb):
         nMolecules = torch.max(x.batch) + 1
         if self.extensive:
