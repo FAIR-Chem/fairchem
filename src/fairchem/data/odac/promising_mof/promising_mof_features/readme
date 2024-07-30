@@ -7,10 +7,10 @@ Three criterias have to be satisfied: 1. 2 rings are parallel; 2. the distance o
 2. metal-oxygen-metal bridges: [$(select {metal})]~[$(select oxygen)]~[$(select {metal})]
 3. uncoordinated nitrogen atoms: [$([#7X2r5])]
 
-We recommend using the jmolData.jar for high-throughput calculations. jmol.jar, which takes more time to run, is good for visualization and debug.
+We recommend using the JmolData.jar for high-throughput calculations. jmol.jar, which takes more time to run, is good for visualization and debug.
 Steps:
 1. Change the content of 'list_MOF.txt' to the paths of the MOFs 
-2. Use 'java  -jar JmolData.jar -on  -s features.txt' to run the script
+2. Use 'java  -jar JmolData.jar -on  -s features.txt' to run the script. If JmolData.jar is missing, run the command `python src/fairchem/core/scripts/download_large_files.py odac` from the root of the fairchem repo to download it.
 3. The output will be saved in the 'output.txt' in the same directory by default, and it can be modified at the last line of the code.
 	'output.txt' has 10 columns:
 		1. ID is the index in 'list_MOF.txt'.
