@@ -855,7 +855,7 @@ class EquiformerV2_OC20_energy_head(nn.Module):
             dtype=node_energy.dtype,
         )
         energy.index_add_(0, x.batch, node_energy.view(-1))
-        return energy / self.avg_num_nodes
+        return {"energy": energy / self.avg_num_nodes}
 
 
 @registry.register_model("equiformer_v2_force_head")
@@ -899,7 +899,7 @@ class EquiformerV2_OC20_force_head(nn.Module):
         forces = forces.view(-1, 3).contiguous()
         if gp_utils.initialized():
             forces = gp_utils.gather_from_model_parallel_region(forces, dim=0)
-        return forces
+        return {"forces": forces}
 
 
 @registry.register_model("equiformer_v2_bbwheads")
@@ -913,8 +913,8 @@ class EquiformerV2_OC20BBwHeads(BaseModel):
     def forward(self, data):
         bb_outputs = self.backbone.forward(data)
 
-        outputs = {"energy": self.energy_head(data, bb_outputs)}
+        outputs = self.energy_head(data, bb_outputs)
         if self.backbone.regress_forces:
-            outputs["forces"] = self.force_head(data, bb_outputs)
+            outputs.update(self.force_head(data, bb_outputs))
 
         return outputs

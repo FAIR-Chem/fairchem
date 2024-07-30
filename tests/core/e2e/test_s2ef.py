@@ -22,6 +22,7 @@ setup_logging()
 def configs():
     return {
         "escn": Path("tests/core/models/test_configs/test_escn.yml"),
+        "escn_hydra": Path("tests/core/models/test_configs/test_escn_hydra.yml"),
         "gemnet_oc": Path("tests/core/models/test_configs/test_gemnet_oc.yml"),
         "gemnet_oc_hydra": Path(
             "tests/core/models/test_configs/test_gemnet_oc_hydra.yml"
@@ -34,6 +35,9 @@ def configs():
         "painn": Path("tests/core/models/test_configs/test_painn.yml"),
         "painn_hydra": Path("tests/core/models/test_configs/test_painn_hydra.yml"),
         "equiformer_v2": Path("tests/core/models/test_configs/test_equiformerv2.yml"),
+        "equiformer_v2_hydra": Path(
+            "tests/core/models/test_configs/test_equiformerv2_hydra.yml"
+        ),
     }
 
 
@@ -214,7 +218,9 @@ class TestSmoke:
             pytest.param("painn", id="painn"),
             pytest.param("painn_hydra", id="painn_hydra"),
             pytest.param("escn", id="escn"),
+            pytest.param("escn_hydra", id="escn_hydra"),
             pytest.param("equiformer_v2", id="equiformer_v2"),
+            pytest.param("equiformer_v2_hydra", id="equiformer_v2_hydra"),
         ],
     )
     def test_train_and_predict(

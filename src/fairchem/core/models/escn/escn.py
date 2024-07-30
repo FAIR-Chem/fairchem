@@ -549,7 +549,7 @@ class eSCN_energy_head(nn.Module):
         energy = torch.zeros(len(x.natoms), device=x.pos.device)
         energy.index_add_(0, x.batch, node_energy.view(-1))
         # Scale energy to help balance numerical precision w.r.t. forces
-        return energy * 0.001
+        return {"energy": energy * 0.001}
 
 
 @registry.register_model("escn_force_head")
@@ -562,7 +562,7 @@ class eSCN_force_head(nn.Module):
         )
 
     def forward(self, x, emb):
-        return self.force_block(emb["sphere_values"], emb["sphere_points"])
+        return {"forces": self.force_block(emb["sphere_values"], emb["sphere_points"])}
 
 
 @registry.register_model("escn_bbwheads")
@@ -577,9 +577,9 @@ class eSCNBBwHeads(BaseModel):
     def forward(self, data):
         bb_outputs = self.backbone.forward(data)
 
-        outputs = {"energy": self.energy_head(data, bb_outputs)}
+        outputs = self.energy_head(data, bb_outputs)
         if self.backbone.regress_forces:
-            outputs["forces"] = self.force_head(data, bb_outputs)
+            outputs.update(self.force_head(data, bb_outputs))
 
         return outputs
 
