@@ -59,9 +59,6 @@ def _load_model():
     checkpoint = torch.load(io.BytesIO(r.content), map_location=torch.device("cpu"))
 
     model = registry.get_model_class("equiformer_v2")(
-        None,
-        -1,
-        1,
         use_pbc=True,
         regress_forces=True,
         otf_graph=True,
@@ -225,4 +222,3 @@ class TestMPrimaryLPrimary:
                 embedding._l_primary(c)
                 lp = embedding.embedding.clone()
                 (test_matrix_lp == lp).all()
-
