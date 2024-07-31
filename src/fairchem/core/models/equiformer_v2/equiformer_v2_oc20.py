@@ -53,7 +53,7 @@ _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors =
 
 
 @registry.register_model("equiformer_v2")
-class EquiformerV2_OC20(BaseModel):
+class EquiformerV2(BaseModel):
     """
     Equiformer with graph attention built upon SO(2) convolution and feedforward network built upon S2 activation
 
@@ -683,7 +683,7 @@ class EquiformerV2_OC20(BaseModel):
 
 
 @registry.register_model("equiformer_v2_backbone")
-class EquiformerV2_OC20Backbone(EquiformerV2_OC20, BackboneInterface):
+class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
 
     @conditional_grad(torch.enable_grad())
     def forward(self, data: Batch) -> dict[str, torch.Tensor]:
@@ -829,7 +829,7 @@ class EquiformerV2_OC20Backbone(EquiformerV2_OC20, BackboneInterface):
 
 
 @registry.register_model("equiformer_v2_energy_head")
-class EquiformerV2_OC20EnergyHead(nn.Module, HeadInterface):
+class EquiformerV2EnergyHead(nn.Module, HeadInterface):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
         self.avg_num_nodes = backbone.avg_num_nodes
@@ -861,7 +861,7 @@ class EquiformerV2_OC20EnergyHead(nn.Module, HeadInterface):
 
 
 @registry.register_model("equiformer_v2_force_head")
-class EquiformerV2_OC20ForceHead(nn.Module, HeadInterface):
+class EquiformerV2ForceHead(nn.Module, HeadInterface):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
 
