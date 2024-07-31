@@ -5,7 +5,8 @@ on:
   workflow_call:
   workflow_dispatch:
   pull_request_review:
-    types: [submitted, edited]
+    types: [submitted]
+  merge_group:
 
 jobs:
   build:

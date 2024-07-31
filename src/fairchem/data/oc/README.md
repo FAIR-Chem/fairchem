@@ -9,6 +9,7 @@ This repository hosts the adsorbate-catalyst input generation workflow used in t
 
 To install just run in your favorite environment with python >= 3.9
 * `pip install fairchem-data-oc`
+* `python src/fairchem/core/scripts/download_large_files.py oc`
 
 ## Workflow
 
@@ -155,7 +156,7 @@ python structure_generator.py \
 
 ### Bulks
 
-A database of bulk materials taken from existing databases (i.e. Materials Project) and relaxed with consistent RPBE settings may be found in `ocdata/databases/pkls/bulks.pkl`. To preview what bulks are available, view the corresponding mapping between indices and bulks (bulk id and composition): https://dl.fbaipublicfiles.com/opencatalystproject/data/input_generation/mapping_bulks_2021sep20.txt
+A database of bulk materials taken from existing databases (i.e. Materials Project) and relaxed with consistent RPBE settings may be found in `databases/pkls/bulks.pkl` (if not, run the command `python src/fairchem/core/scripts/download_large_files.py oc` from the root of the fairchem repo).  To preview what bulks are available, view the corresponding mapping between indices and bulks (bulk id and composition): https://dl.fbaipublicfiles.com/opencatalystproject/data/input_generation/mapping_bulks_2021sep20.txt
 
 ### Adsorbates
 
