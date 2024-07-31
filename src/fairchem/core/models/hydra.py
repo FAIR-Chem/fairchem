@@ -86,7 +86,7 @@ class BaseHydra(BaseModel):
                 self.backbone,
                 backbone,
                 head_config,
-            )  # .to(self.backbone.device)
+            )
 
         self.output_heads = torch.nn.ModuleDict(self.output_heads)
 
