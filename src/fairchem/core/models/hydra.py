@@ -72,7 +72,6 @@ class BaseHydra(BaseModel):
 
         # Iterate through outputs_cfg and create heads
         self.output_heads: dict[str, HeadInterface] = {}
-        self.second_order_output_heads = {}
 
         head_names_sorted = sorted(heads.keys())
         for head_name in head_names_sorted:
