@@ -11,11 +11,14 @@ from fairchem.core.common import gp_utils
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
 from fairchem.core.models.base import BaseModel
+from fairchem.core.models.hydra import BackboneInterface, HeadInterface
 from fairchem.core.models.scn.smearing import GaussianSmearing
 
 with contextlib.suppress(ImportError):
     pass
 
+
+import typing
 
 from .edge_rot_mat import init_edge_rot_mat
 from .gaussian_rbf import GaussianRadialBasisLayer
@@ -42,6 +45,8 @@ from .transformer_block import (
     TransBlockV2,
 )
 
+if typing.TYPE_CHECKING:
+    from torch_geometric.data.batch import Batch
 # Statistics of IS2RE 100K
 _AVG_NUM_NODES = 77.81317
 _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
@@ -108,9 +113,6 @@ class EquiformerV2_OC20(BaseModel):
 
     def __init__(
         self,
-        num_atoms: int,  # not used
-        bond_feat_dim: int,  # not used
-        num_targets: int,  # not used
         use_pbc: bool = True,
         regress_forces: bool = True,
         otf_graph: bool = True,
@@ -681,10 +683,10 @@ class EquiformerV2_OC20(BaseModel):
 
 
 @registry.register_model("equiformer_v2_backbone")
-class EquiformerV2_OC20BB(EquiformerV2_OC20):
+class EquiformerV2_OC20Backbone(EquiformerV2_OC20, BackboneInterface):
 
     @conditional_grad(torch.enable_grad())
-    def forward(self, data):
+    def forward(self, data: Batch) -> dict[str, torch.Tensor]:
         self.batch_size = len(data.natoms)
         self.dtype = data.pos.dtype
         self.device = data.pos.device
@@ -827,7 +829,7 @@ class EquiformerV2_OC20BB(EquiformerV2_OC20):
 
 
 @registry.register_model("equiformer_v2_energy_head")
-class EquiformerV2_OC20_energy_head(nn.Module):
+class EquiformerV2_OC20EnergyHead(nn.Module, HeadInterface):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
         self.avg_num_nodes = backbone.avg_num_nodes
@@ -844,22 +846,22 @@ class EquiformerV2_OC20_energy_head(nn.Module):
             backbone.use_sep_s2_act,
         )
 
-    def forward(self, x, emb):
+    def forward(self, data: Batch, emb: dict[str, torch.Tensor]):
         node_energy = self.energy_block(emb["node_embedding"])
         node_energy = node_energy.embedding.narrow(1, 0, 1)
         if gp_utils.initialized():
             node_energy = gp_utils.gather_from_model_parallel_region(node_energy, dim=0)
         energy = torch.zeros(
-            len(x.natoms),
+            len(data.natoms),
             device=node_energy.device,
             dtype=node_energy.dtype,
         )
-        energy.index_add_(0, x.batch, node_energy.view(-1))
+        energy.index_add_(0, data.batch, node_energy.view(-1))
         return {"energy": energy / self.avg_num_nodes}
 
 
 @registry.register_model("equiformer_v2_force_head")
-class EquiformerV2_OC20_force_head(nn.Module):
+class EquiformerV2_OC20ForceHead(nn.Module, HeadInterface):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
 
@@ -887,10 +889,10 @@ class EquiformerV2_OC20_force_head(nn.Module):
             alpha_drop=0.0,
         )
 
-    def forward(self, x, emb):
+    def forward(self, data: Batch, emb: dict[str, torch.Tensor]):
         forces = self.force_block(
             emb["node_embedding"],
-            x.atomic_numbers.long(),
+            data.atomic_numbers.long(),
             emb["edge_distance"],
             emb["edge_index"],
             node_offset=emb["node_offset"],

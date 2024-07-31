@@ -32,9 +32,13 @@ SOFTWARE.
 from __future__ import annotations
 
 import math
+import typing
 
 import torch
 from torch import nn
+
+if typing.TYPE_CHECKING:
+    from torch_geometric.data.batch import Batch
 from torch_geometric.nn import MessagePassing
 from torch_scatter import scatter, segment_coo
 
@@ -44,6 +48,7 @@ from fairchem.core.models.base import BaseModel
 from fairchem.core.models.gemnet.layers.base_layers import ScaledSiLU
 from fairchem.core.models.gemnet.layers.embedding_block import AtomEmbedding
 from fairchem.core.models.gemnet.layers.radial_basis import RadialBasis
+from fairchem.core.models.hydra import BackboneInterface, HeadInterface
 from fairchem.core.modules.scaling import ScaleFactor
 from fairchem.core.modules.scaling.compat import load_scales_compat
 
@@ -59,9 +64,6 @@ class PaiNN(BaseModel):
 
     def __init__(
         self,
-        num_atoms: int,
-        bond_feat_dim: int,
-        num_targets: int,
         hidden_channels: int = 512,
         num_layers: int = 6,
         num_rbf: int = 128,
@@ -437,10 +439,10 @@ class PaiNN(BaseModel):
 
 
 @registry.register_model("painn_backbone")
-class PaiNNBB(PaiNN):
+class PaiNNBackbone(PaiNN, BackboneInterface):
 
     @conditional_grad(torch.enable_grad())
-    def forward(self, data):
+    def forward(self, data) -> dict[str, torch.Tensor]:
         pos = data.pos
         z = data.atomic_numbers.long()
 
@@ -673,7 +675,7 @@ class GatedEquivariantBlock(nn.Module):
 
 
 @registry.register_model("painn_energy_head")
-class PaiNN_energy_head(nn.Module):
+class PaiNNEnergyHead(nn.Module, HeadInterface):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
 
@@ -688,13 +690,15 @@ class PaiNN_energy_head(nn.Module):
         nn.init.xavier_uniform_(self.out_energy[2].weight)
         self.out_energy[2].bias.data.fill_(0)
 
-    def forward(self, x, emb):
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
         per_atom_energy = self.out_energy(emb["node_embedding"]).squeeze(1)
-        return {"energy": scatter(per_atom_energy, x.batch, dim=0)}
+        return {"energy": scatter(per_atom_energy, data.batch, dim=0)}
 
 
 @registry.register_model("painn_force_head")
-class PaiNN_force_head(nn.Module):
+class PaiNNForceHead(nn.Module, HeadInterface):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
         self.direct_forces = backbone.direct_forces
@@ -702,7 +706,9 @@ class PaiNN_force_head(nn.Module):
         if self.direct_forces:
             self.out_forces = PaiNNOutput(backbone.hidden_channels)
 
-    def forward(self, x, emb):
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
         if self.direct_forces:
             forces = self.out_forces(emb["node_embedding"], emb["node_vec"])
         else:
@@ -710,7 +716,7 @@ class PaiNN_force_head(nn.Module):
                 -1
                 * torch.autograd.grad(
                     emb["node_embedding"],
-                    x.pos,
+                    data.pos,
                     grad_outputs=torch.ones_like(emb["node_embedding"]),
                     create_graph=True,
                 )[0]

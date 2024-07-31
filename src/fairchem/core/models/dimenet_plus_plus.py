@@ -34,8 +34,13 @@ THE SOFTWARE.
 
 from __future__ import annotations
 
+import typing
+
 import torch
 from torch import nn
+
+if typing.TYPE_CHECKING:
+    from torch_geometric.data.batch import Batch
 from torch_geometric.nn.inits import glorot_orthogonal
 from torch_geometric.nn.models.dimenet import (
     BesselBasisLayer,
@@ -50,6 +55,7 @@ from torch_sparse import SparseTensor
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
 from fairchem.core.models.base import BaseModel
+from fairchem.core.models.hydra import BackboneInterface, HeadInterface
 
 try:
     import sympy as sym
@@ -330,25 +336,27 @@ class DimeNetPlusPlus(torch.nn.Module):
 
 
 @registry.register_model("dimenetplusplus_energy_and_force_head")
-class DimeNetPlusPlusWrap_energy_and_force_head(nn.Module):
+class DimeNetPlusPlusWrapEnergyAndForceHead(nn.Module, HeadInterface):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
         self.regress_forces = backbone.regress_forces
 
     @conditional_grad(torch.enable_grad())
-    def forward(self, x, emb):
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
         outputs = {
             "energy": (
                 emb["P"].sum(dim=0)
-                if x.batch is None
-                else scatter(emb["P"], x.batch, dim=0)
+                if data.batch is None
+                else scatter(emb["P"], data.batch, dim=0)
             )
         }
         if self.regress_forces:
             outputs["forces"] = -1 * (
                 torch.autograd.grad(
                     outputs["energy"],
-                    x.pos,
+                    data.pos,
                     grad_outputs=torch.ones_like(outputs["energy"]),
                     create_graph=True,
                 )[0]
@@ -360,9 +368,6 @@ class DimeNetPlusPlusWrap_energy_and_force_head(nn.Module):
 class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
     def __init__(
         self,
-        num_atoms: int,
-        bond_feat_dim: int,  # not used
-        num_targets: int,
         use_pbc: bool = True,
         regress_forces: bool = True,
         hidden_channels: int = 128,
@@ -379,7 +384,6 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
         num_after_skip: int = 2,
         num_output_layers: int = 3,
     ) -> None:
-        self.num_targets = num_targets
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff
@@ -388,7 +392,7 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
 
         super().__init__(
             hidden_channels=hidden_channels,
-            out_channels=num_targets,
+            out_channels=1,
             num_blocks=num_blocks,
             int_emb_size=int_emb_size,
             basis_emb_size=basis_emb_size,
@@ -485,10 +489,10 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
 
 
 @registry.register_model("dimenetplusplus_backbone")
-class DimeNetPlusPlusWrapBB(DimeNetPlusPlusWrap):
+class DimeNetPlusPlusWrapBackbone(DimeNetPlusPlusWrap, BackboneInterface):
 
     @conditional_grad(torch.enable_grad())
-    def forward(self, data):
+    def forward(self, data: Batch) -> dict[str, torch.Tensor]:
         if self.regress_forces:
             data.pos.requires_grad_(True)
         pos = data.pos

@@ -35,11 +35,6 @@ class GraphParallelGemNetT(BaseModel):
 
     Parameters
     ----------
-        num_atoms (int): Unused argument
-        bond_feat_dim (int): Unused argument
-        num_targets: int
-            Number of prediction targets.
-
         num_spherical: int
             Controls maximum frequency.
         num_radial: int
@@ -95,9 +90,6 @@ class GraphParallelGemNetT(BaseModel):
 
     def __init__(
         self,
-        num_atoms: int | None,
-        bond_feat_dim: int,
-        num_targets: int,
         num_spherical: int,
         num_radial: int,
         num_blocks: int,
@@ -134,7 +126,6 @@ class GraphParallelGemNetT(BaseModel):
         if rbf is None:
             rbf = {"name": "gaussian"}
         super().__init__()
-        self.num_targets = num_targets
         assert num_blocks > 0
         self.num_blocks = num_blocks
         self.extensive = extensive
@@ -239,7 +230,7 @@ class GraphParallelGemNetT(BaseModel):
                     emb_size_edge=emb_size_edge,
                     emb_size_rbf=emb_size_rbf,
                     nHidden=num_atom,
-                    num_targets=num_targets,
+                    num_targets=1,
                     activation=activation,
                     output_init=output_init,
                     direct_forces=direct_forces,
@@ -563,7 +554,7 @@ class GraphParallelGemNetT(BaseModel):
         rbf_out = self.mlp_rbf_out(rbf)
 
         E_t, F_st = self.out_blocks[0](nAtoms, m, rbf_out, idx_t)
-        # (nAtoms, num_targets), (nEdges, num_targets)
+        # (nAtoms, 1), (nEdges, 1)
 
         for i in range(self.num_blocks):
             # Interaction block
@@ -585,7 +576,7 @@ class GraphParallelGemNetT(BaseModel):
             )  # (nAtoms, emb_size_atom), (nEdges, emb_size_edge)
 
             E, F = self.out_blocks[i + 1](nAtoms, m, rbf_out, idx_t)
-            # (nAtoms, num_targets), (nEdges, num_targets)
+            # (nAtoms, 1), (nEdges, 1)
             F_st += F
             E_t += E
 
@@ -601,41 +592,29 @@ class GraphParallelGemNetT(BaseModel):
             E_t = gp_utils.gather_from_model_parallel_region(E_t, dim=0)
             E_t = scatter(
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="add"
-            )  # (nMolecules, num_targets)
+            )  # (nMolecules, 1)
         else:
             E_t = scatter(
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
-            )  # (nMolecules, num_targets)
+            )  # (nMolecules, 1)
 
         outputs = {"energy": E_t}
         if self.regress_forces:
             if self.direct_forces:
                 # map forces in edge directions
                 F_st_vec = F_st[:, :, None] * V_st[:, None, :]
-                # (nEdges, num_targets, 3)
+                # (nEdges, 1, 3)
                 F_t = scatter(
                     F_st_vec,
                     idx_t_full,
                     dim=0,
                     dim_size=data.atomic_numbers.size(0),
                     reduce="add",
-                )  # (nAtoms, num_targets, 3)
+                )  # (nAtoms, 1, 3)
                 F_t = F_t.squeeze(1)  # (nAtoms, 3)
             else:
-                if self.num_targets > 1:
-                    forces = []
-                    for i in range(self.num_targets):
-                        # maybe this can be solved differently
-                        forces += [
-                            -torch.autograd.grad(
-                                E_t[:, i].sum(), pos, create_graph=True
-                            )[0]
-                        ]
-                    F_t = torch.stack(forces, dim=1)
-                    # (nAtoms, num_targets, 3)
-                else:
-                    F_t = -torch.autograd.grad(E_t.sum(), pos, create_graph=True)[0]
-                    # (nAtoms, 3)
+                F_t = -torch.autograd.grad(E_t.sum(), pos, create_graph=True)[0]
+                # (nAtoms, 3)
 
             outputs["forces"] = F_t
 

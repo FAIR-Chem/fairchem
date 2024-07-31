@@ -75,9 +75,6 @@ class SphericalChannelNetwork(BaseModel):
 
     def __init__(
         self,
-        num_atoms: int,  # not used
-        bond_feat_dim: int,  # not used
-        num_targets: int,  # not used
         use_pbc: bool = True,
         regress_forces: bool = True,
         otf_graph: bool = False,

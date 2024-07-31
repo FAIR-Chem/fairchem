@@ -29,6 +29,9 @@ def configs():
         "gemnet_dt_hydra": Path(
             "tests/core/models/test_configs/test_gemnet_dt_hydra.yml"
         ),
+        "gemnet_dt_hydra_grad": Path(
+            "tests/core/models/test_configs/test_gemnet_dt_hydra_grad.yml"
+        ),
         "gemnet_oc": Path("tests/core/models/test_configs/test_gemnet_oc.yml"),
         "gemnet_oc_hydra": Path(
             "tests/core/models/test_configs/test_gemnet_oc_hydra.yml"
@@ -220,6 +223,7 @@ class TestSmoke:
             pytest.param("scn", id="scn"),
             pytest.param("gemnet_dt", id="gemnet_dt"),
             pytest.param("gemnet_dt_hydra", id="gemnet_dt_hydra"),
+            pytest.param("gemnet_dt_hydra_grad", id="gemnet_dt_hydra_grad"),
             pytest.param("gemnet_oc", id="gemnet_oc"),
             pytest.param("gemnet_oc_hydra", id="gemnet_oc_hydra"),
             pytest.param("gemnet_oc_hydra_grad", id="gemnet_oc_hydra_grad"),

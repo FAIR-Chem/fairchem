@@ -10,9 +10,13 @@ from __future__ import annotations
 import contextlib
 import logging
 import time
+import typing
 
 import torch
 import torch.nn as nn
+
+if typing.TYPE_CHECKING:
+    from torch_geometric.data.batch import Batch
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
@@ -23,6 +27,7 @@ from fairchem.core.models.escn.so3 import (
     SO3_Grid,
     SO3_Rotation,
 )
+from fairchem.core.models.hydra import BackboneInterface, HeadInterface
 from fairchem.core.models.scn.sampling import CalcSpherePoints
 from fairchem.core.models.scn.smearing import (
     GaussianSmearing,
@@ -64,9 +69,6 @@ class eSCN(BaseModel):
 
     def __init__(
         self,
-        num_atoms: int,  # not used
-        bond_feat_dim: int,  # not used
-        num_targets: int,  # not used
         use_pbc: bool = True,
         regress_forces: bool = True,
         otf_graph: bool = False,
@@ -422,9 +424,9 @@ class eSCN(BaseModel):
 
 
 @registry.register_model("escn_backbone")
-class eSCNBB(eSCN):
+class eSCNBackbone(eSCN, BackboneInterface):
     @conditional_grad(torch.enable_grad())
-    def forward(self, data):
+    def forward(self, data: Batch) -> dict[str, torch.Tensor]:
         device = data.pos.device
         self.batch_size = len(data.natoms)
         self.dtype = data.pos.dtype
@@ -535,7 +537,7 @@ class eSCNBB(eSCN):
 
 
 @registry.register_model("escn_energy_head")
-class eSCN_energy_head(nn.Module):
+class eSCNEnergyHead(nn.Module, HeadInterface):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
 
@@ -544,16 +546,18 @@ class eSCN_energy_head(nn.Module):
             backbone.sphere_channels_all, backbone.num_sphere_samples, backbone.act
         )
 
-    def forward(self, x, emb):
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
         node_energy = self.energy_block(emb["sphere_values"])
-        energy = torch.zeros(len(x.natoms), device=x.pos.device)
-        energy.index_add_(0, x.batch, node_energy.view(-1))
+        energy = torch.zeros(len(data.natoms), device=data.pos.device)
+        energy.index_add_(0, data.batch, node_energy.view(-1))
         # Scale energy to help balance numerical precision w.r.t. forces
         return {"energy": energy * 0.001}
 
 
 @registry.register_model("escn_force_head")
-class eSCN_force_head(nn.Module):
+class eSCNForceHead(nn.Module, HeadInterface):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
 
@@ -561,7 +565,9 @@ class eSCN_force_head(nn.Module):
             backbone.sphere_channels_all, backbone.num_sphere_samples, backbone.act
         )
 
-    def forward(self, x, emb):
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
         return {"forces": self.force_block(emb["sphere_values"], emb["sphere_points"])}
 
 

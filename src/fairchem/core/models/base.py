@@ -21,11 +21,8 @@ from fairchem.core.common.utils import (
 
 
 class BaseModel(nn.Module):
-    def __init__(self, num_atoms=None, bond_feat_dim=None, num_targets=None) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.num_atoms = num_atoms
-        self.bond_feat_dim = bond_feat_dim
-        self.num_targets = num_targets
 
     def forward(self, data):
         raise NotImplementedError

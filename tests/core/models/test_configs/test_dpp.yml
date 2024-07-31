@@ -17,8 +17,8 @@ logger:
 
 model:
   name: dimenetplusplus #_bbwheads
-  hidden_channels: 32
-  out_emb_channels: 32
+  hidden_channels: 4
+  out_emb_channels: 4
   num_blocks: 3
   cutoff: 6.0
   num_radial: 6

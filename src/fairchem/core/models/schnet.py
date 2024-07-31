@@ -28,9 +28,6 @@ class SchNetWrap(SchNet, BaseModel):
         h_{\mathbf{\Theta}} ( \exp(-\gamma(\mathbf{e}_{j,i} - \mathbf{\mu}))),
 
     Args:
-        num_atoms (int): Unused argument
-        bond_feat_dim (int): Unused argument
-        num_targets (int): Number of targets to predict.
         use_pbc (bool, optional): If set to :obj:`True`, account for periodic boundary conditions.
             (default: :obj:`True`)
         regress_forces (bool, optional): If set to :obj:`True`, predict forces by differentiating
@@ -54,9 +51,6 @@ class SchNetWrap(SchNet, BaseModel):
 
     def __init__(
         self,
-        num_atoms: int,  # not used
-        bond_feat_dim: int,  # not used
-        num_targets: int,
         use_pbc: bool = True,
         regress_forces: bool = True,
         otf_graph: bool = False,
@@ -67,7 +61,7 @@ class SchNetWrap(SchNet, BaseModel):
         cutoff: float = 10.0,
         readout: str = "add",
     ) -> None:
-        self.num_targets = num_targets
+        self.num_targets = 1
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff

@@ -7,10 +7,14 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import logging
+import typing
 
 import numpy as np
 import torch
 import torch.nn as nn
+
+if typing.TYPE_CHECKING:
+    from torch_geometric.data.batch import Batch
 from torch_scatter import segment_coo
 
 from fairchem.core.common.registry import registry
@@ -20,6 +24,7 @@ from fairchem.core.common.utils import (
     scatter_det,
 )
 from fairchem.core.models.base import BaseModel
+from fairchem.core.models.hydra import BackboneInterface, HeadInterface
 from fairchem.core.modules.scaling.compat import load_scales_compat
 
 from .initializers import get_initializer
@@ -47,11 +52,6 @@ class GemNetOC(BaseModel):
     """
     Arguments
     ---------
-    num_atoms (int): Unused argument
-    bond_feat_dim (int): Unused argument
-    num_targets: int
-        Number of prediction targets.
-
     num_spherical: int
         Controls maximum frequency.
     num_radial: int
@@ -180,9 +180,6 @@ class GemNetOC(BaseModel):
 
     def __init__(
         self,
-        num_atoms: int | None,
-        bond_feat_dim: int,
-        num_targets: int,
         num_spherical: int,
         num_radial: int,
         num_blocks: int,
@@ -250,7 +247,6 @@ class GemNetOC(BaseModel):
         super().__init__()
         if len(kwargs) > 0:
             logging.warning(f"Unrecognized arguments: {list(kwargs.keys())}")
-        self.num_targets = num_targets
         assert num_blocks > 0
         self.num_blocks = num_blocks
         self.extensive = extensive
@@ -358,7 +354,7 @@ class GemNetOC(BaseModel):
             for _ in range(num_global_out_layers)
         ]
         self.out_mlp_E = torch.nn.Sequential(*out_mlp_E)
-        self.out_energy = Dense(emb_size_atom, num_targets, bias=False, activation=None)
+        self.out_energy = Dense(emb_size_atom, 1, bias=False, activation=None)
         if direct_forces:
             out_mlp_F = [
                 Dense(
@@ -374,9 +370,7 @@ class GemNetOC(BaseModel):
                 for _ in range(num_global_out_layers)
             ]
             self.out_mlp_F = torch.nn.Sequential(*out_mlp_F)
-            self.out_forces = Dense(
-                emb_size_edge, num_targets, bias=False, activation=None
-            )
+            self.out_forces = Dense(emb_size_edge, 1, bias=False, activation=None)
 
         out_initializer = get_initializer(output_init)
         self.out_energy.reset_parameters(out_initializer)
@@ -1286,11 +1280,11 @@ class GemNetOC(BaseModel):
         if self.extensive:
             E_t = scatter_det(
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="add"
-            )  # (nMolecules, num_targets)
+            )  # (nMolecules, 1)
         else:
             E_t = scatter_det(
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
-            )  # (nMolecules, num_targets)
+            )  # (nMolecules, 1)
 
         E_t = E_t.squeeze(1)  # (num_molecules)
         outputs = {"energy": E_t}
@@ -1309,19 +1303,19 @@ class GemNetOC(BaseModel):
                         dim=0,
                         dim_size=int(nEdges / 2),
                         reduce="mean",
-                    )  # (nEdges/2, num_targets)
-                    F_st = F_st[id_undir]  # (nEdges, num_targets)
+                    )  # (nEdges/2, 1)
+                    F_st = F_st[id_undir]  # (nEdges, 1)
 
                 # map forces in edge directions
                 F_st_vec = F_st[:, :, None] * main_graph["vector"][:, None, :]
-                # (nEdges, num_targets, 3)
+                # (nEdges, 1, 3)
                 F_t = scatter_det(
                     F_st_vec,
                     idx_t,
                     dim=0,
                     dim_size=num_atoms,
                     reduce="add",
-                )  # (nAtoms, num_targets, 3)
+                )  # (nAtoms, 1, 3)
             else:
                 F_t = self.force_scaler.calc_forces_and_update(E_t, pos)
 
@@ -1337,9 +1331,9 @@ class GemNetOC(BaseModel):
 
 
 @registry.register_model("gemnet_oc_backbone")
-class GemNetOCBB(GemNetOC):
+class GemNetOCBackbone(GemNetOC, BackboneInterface):
     @conditional_grad(torch.enable_grad())
-    def forward(self, data):
+    def forward(self, data: Batch) -> dict[str, torch.Tensor]:
         pos = data.pos
         atomic_numbers = data.atomic_numbers.long()
         num_atoms = atomic_numbers.shape[0]
@@ -1427,7 +1421,7 @@ class GemNetOCBB(GemNetOC):
 
 
 @registry.register_model("gemnet_oc_energy_and_grad_force_head")
-class GemNetOC_energy_and_grad_force_head(nn.Module):
+class GemNetOCEnergyAndGradForceHead(nn.Module, HeadInterface):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
         self.extensive = backbone.extensive
@@ -1453,7 +1447,7 @@ class GemNetOC_energy_and_grad_force_head(nn.Module):
 
         self.out_energy = Dense(
             backbone_config["emb_size_atom"],
-            backbone.num_targets,
+            1,
             bias=False,
             activation=None,
         )
@@ -1462,32 +1456,34 @@ class GemNetOC_energy_and_grad_force_head(nn.Module):
         self.out_energy.reset_parameters(out_initializer)
 
     @conditional_grad(torch.enable_grad())
-    def forward(self, x, emb):
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
         # Global output block for final predictions
         x_E = self.out_mlp_E(torch.cat(emb["xs_E"], dim=-1))
         with torch.cuda.amp.autocast(False):
             E_t = self.out_energy(x_E.float())
 
-        nMolecules = torch.max(x.batch) + 1
+        nMolecules = torch.max(data.batch) + 1
         if self.extensive:
             E_t = scatter_det(
-                E_t, x.batch, dim=0, dim_size=nMolecules, reduce="add"
-            )  # (nMolecules, num_targets)
+                E_t, data.batch, dim=0, dim_size=nMolecules, reduce="add"
+            )  # (nMolecules, 1)
         else:
             E_t = scatter_det(
-                E_t, x.batch, dim=0, dim_size=nMolecules, reduce="mean"
-            )  # (nMolecules, num_targets)
+                E_t, data.batch, dim=0, dim_size=nMolecules, reduce="mean"
+            )  # (nMolecules, 1)
 
         outputs = {"energy": E_t.squeeze(1)}  # (num_molecules)
 
         if self.regress_forces and not self.direct_forces:
-            F_t = self.force_scaler.calc_forces_and_update(outputs["energy"], x.pos)
+            F_t = self.force_scaler.calc_forces_and_update(outputs["energy"], data.pos)
             outputs["forces"] = F_t.squeeze(1)
         return outputs
 
 
 @registry.register_model("gemnet_oc_force_head")
-class GemNetOC_force_head(nn.Module):
+class GemNetOCForceHead(nn.Module, HeadInterface):
     def __init__(self, backbone, backbone_config, head_config):
         super().__init__()
 
@@ -1512,14 +1508,16 @@ class GemNetOC_force_head(nn.Module):
             self.out_mlp_F = torch.nn.Sequential(*out_mlp_F)
             self.out_forces = Dense(
                 backbone_config["emb_size_edge"],
-                backbone.num_targets,
+                1,
                 bias=False,
                 activation=None,
             )
             out_initializer = get_initializer(backbone_config["output_init"])
             self.out_forces.reset_parameters(out_initializer)
 
-    def forward(self, x, emb):
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
         if self.direct_forces:
             x_F = self.out_mlp_F(torch.cat(emb["xs_F"], dim=-1))
             with torch.cuda.amp.autocast(False):
@@ -1538,18 +1536,18 @@ class GemNetOC_force_head(nn.Module):
                     dim=0,
                     dim_size=int(nEdges / 2),
                     reduce="mean",
-                )  # (nEdges/2, num_targets)
-                F_st = F_st[id_undir]  # (nEdges, num_targets)
+                )  # (nEdges/2, 1)
+                F_st = F_st[id_undir]  # (nEdges, 1)
 
             # map forces in edge directions
             F_st_vec = F_st[:, :, None] * emb["edge_vec"][:, None, :]
-            # (nEdges, num_targets, 3)
+            # (nEdges, 1, 3)
             F_t = scatter_det(
                 F_st_vec,
                 emb["edge_idx"],
                 dim=0,
-                dim_size=x.atomic_numbers.long().shape[0],
+                dim_size=data.atomic_numbers.long().shape[0],
                 reduce="add",
-            )  # (nAtoms, num_targets, 3)
+            )  # (nAtoms, 1, 3)
             return {"forces": F_t.squeeze(1)}  # (num_atoms, 3)
         return {}
