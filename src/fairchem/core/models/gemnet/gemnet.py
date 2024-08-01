@@ -419,18 +419,10 @@ class GemNetT(BaseModel):
 
     def generate_interaction_graph(self, data):
         num_atoms = data.atomic_numbers.size(0)
-
-        (
-            edge_index,
-            D_st,
-            distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(data)
+        graph = self.generate_graph(data)
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
-        V_st = -distance_vec / D_st[:, None]
+        V_st = -graph.distance_vec / graph.edge_distance[:, None]
 
         # Mask interaction edges if required
         if self.otf_graph or np.isclose(self.cutoff, 6):
@@ -445,10 +437,10 @@ class GemNetT(BaseModel):
             V_st,
         ) = self.select_edges(
             data=data,
-            edge_index=edge_index,
-            cell_offsets=cell_offsets,
-            neighbors=neighbors,
-            edge_dist=D_st,
+            edge_index=graph.edge_index,
+            cell_offsets=graph.cell_offsets,
+            neighbors=graph.neighbors,
+            edge_dist=graph.edge_distance,
             edge_vector=V_st,
             cutoff=select_cutoff,
         )
@@ -591,7 +583,6 @@ class GemNetT(BaseModel):
 
 @registry.register_model("gemnet_t_backbone")
 class GemNetTBackbone(GemNetT, BackboneInterface):
-
     @conditional_grad(torch.enable_grad())
     def forward(self, data: Batch) -> dict[str, torch.Tensor]:
         pos = data.pos
@@ -703,7 +694,6 @@ class GemNetTForceHead(nn.Module, HeadInterface):
     def forward(
         self, data: Batch, emb: dict[str, torch.Tensor]
     ) -> dict[str, torch.Tensor]:
-
         # map forces in edge directions
         F_st_vec = emb["F_st"][:, :, None] * emb["edge_vec"][:, None, :]
         # (nEdges, 1, 3)

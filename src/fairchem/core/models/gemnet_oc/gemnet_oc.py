@@ -12,9 +12,6 @@ import typing
 import numpy as np
 import torch
 import torch.nn as nn
-
-if typing.TYPE_CHECKING:
-    from torch_geometric.data.batch import Batch
 from torch_scatter import segment_coo
 
 from fairchem.core.common.registry import registry
@@ -23,7 +20,7 @@ from fairchem.core.common.utils import (
     get_max_neighbors_mask,
     scatter_det,
 )
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import GraphModelMixin
 from fairchem.core.models.hydra import BackboneInterface, HeadInterface
 from fairchem.core.modules.scaling.compat import load_scales_compat
 
@@ -46,9 +43,12 @@ from .utils import (
     repeat_blocks,
 )
 
+if typing.TYPE_CHECKING:
+    from torch_geometric.data.batch import Batch
+
 
 @registry.register_model("gemnet_oc")
-class GemNetOC(BaseModel):
+class GemNetOC(nn.Module, GraphModelMixin):
     """
     Arguments
     ---------
@@ -865,15 +865,7 @@ class GemNetOC(BaseModel):
     def generate_graph_dict(self, data, cutoff, max_neighbors):
         """Generate a radius/nearest neighbor graph."""
         otf_graph = cutoff > 6 or max_neighbors > 50 or self.otf_graph
-
-        (
-            edge_index,
-            edge_dist,
-            distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            num_neighbors,
-        ) = self.generate_graph(
+        graph = self.generate_graph(
             data,
             cutoff=cutoff,
             max_neighbors=max_neighbors,
@@ -881,15 +873,15 @@ class GemNetOC(BaseModel):
         )
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
-        edge_vector = -distance_vec / edge_dist[:, None]
-        cell_offsets = -cell_offsets  # a - c + offset
+        edge_vector = -graph.edge_distance_vec / graph.edge_dist[:, None]
+        cell_offsets = -graph.cell_offsets  # a - c + offset
 
         graph = {
-            "edge_index": edge_index,
-            "distance": edge_dist,
+            "edge_index": graph.edge_index,
+            "distance": graph.edge_dist,
             "vector": edge_vector,
             "cell_offset": cell_offsets,
-            "num_neighbors": num_neighbors,
+            "num_neighbors": graph.neighbors,
         }
 
         # Mask interaction edges if required

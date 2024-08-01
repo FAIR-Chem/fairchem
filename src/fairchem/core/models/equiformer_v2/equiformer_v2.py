@@ -438,15 +438,7 @@ class EquiformerV2(BaseModel):
         self.dtype = data.pos.dtype
         self.device = data.pos.device
         atomic_numbers = data.atomic_numbers.long()
-
-        (
-            edge_index,
-            edge_distance,
-            edge_distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(
+        graph = self.generate_graph(
             data,
             enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly,
         )
@@ -466,9 +458,9 @@ class EquiformerV2(BaseModel):
             ) = self._init_gp_partitions(
                 atomic_numbers_full,
                 data_batch_full,
-                edge_index,
-                edge_distance,
-                edge_distance_vec,
+                graph.edge_index,
+                graph.edge_distance,
+                graph.edge_distance_vec,
             )
         ###############################################################
         # Entering Graph Parallel Region
@@ -684,7 +676,6 @@ class EquiformerV2(BaseModel):
 
 @registry.register_model("equiformer_v2_backbone")
 class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
-
     @conditional_grad(torch.enable_grad())
     def forward(self, data: Batch) -> dict[str, torch.Tensor]:
         self.batch_size = len(data.natoms)
@@ -692,22 +683,12 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
         self.device = data.pos.device
         atomic_numbers = data.atomic_numbers.long()
 
-        (
-            edge_index,
-            edge_distance,
-            edge_distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(
+        graph = self.generate_graph(
             data,
             enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly,
         )
 
-        data_batch_full = data.batch
         data_batch = data.batch
-        atomic_numbers_full = atomic_numbers
-        node_offset = 0
         if gp_utils.initialized():
             (
                 atomic_numbers,
@@ -717,12 +698,17 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
                 edge_distance,
                 edge_distance_vec,
             ) = self._init_gp_partitions(
-                atomic_numbers_full,
-                data_batch_full,
-                edge_index,
-                edge_distance,
-                edge_distance_vec,
+                graph.atomic_numbers_full,
+                graph.batch_full,
+                graph.edge_index,
+                graph.edge_distance,
+                graph.edge_distance_vec,
             )
+            graph.node_offset = node_offset
+            graph.edge_index = edge_index
+            graph.edge_distance = edge_distance
+            graph.edge_distance_vec = edge_distance_vec
+
         ###############################################################
         # Entering Graph Parallel Region
         # after this point, if using gp, then node, edge tensors are split
@@ -776,10 +762,10 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
         # Edge encoding (distance and atom edge)
         edge_distance = self.distance_expansion(edge_distance)
         if self.share_atom_edge_embedding and self.use_atom_edge_embedding:
-            source_element = atomic_numbers_full[
+            source_element = graph.atomic_numbers_full[
                 edge_index[0]
             ]  # Source atom atomic number
-            target_element = atomic_numbers_full[
+            target_element = graph.atomic_numbers_full[
                 edge_index[1]
             ]  # Target atom atomic number
             source_embedding = self.source_embedding(source_element)
@@ -790,7 +776,7 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
 
         # Edge-degree embedding
         edge_degree = self.edge_degree_embedding(
-            atomic_numbers_full,
+            graph.atomic_numbers_full,
             edge_distance,
             edge_index,
             len(atomic_numbers),
@@ -805,7 +791,7 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
         for i in range(self.num_layers):
             x = self.blocks[i](
                 x,  # SO3_Embedding
-                atomic_numbers_full,
+                graph.atomic_numbers_full,
                 edge_distance,
                 edge_index,
                 batch=data_batch,  # for GraphDropPath
@@ -821,7 +807,7 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
             "edge_index": edge_index,
             # returning this only because it's cast to long and
             # we don't want to repeat this.
-            "atomic_numbers": atomic_numbers_full,
+            "atomic_numbers": graph.atomic_numbers_full,
             # TODO: this is only used by graph parallel to split up the partitions,
             # should figure out cleaner way to pass this around to the heads
             "node_offset": node_offset,
