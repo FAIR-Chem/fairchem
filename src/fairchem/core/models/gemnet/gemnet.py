@@ -20,7 +20,7 @@ from torch_sparse import SparseTensor
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import GraphModelMixin
 from fairchem.core.models.hydra import BackboneInterface, HeadInterface
 from fairchem.core.modules.scaling.compat import load_scales_compat
 
@@ -35,7 +35,7 @@ from .utils import inner_product_normalized, mask_neighbors, ragged_range, repea
 
 
 @registry.register_model("gemnet_t")
-class GemNetT(BaseModel):
+class GemNetT(nn.Module, GraphModelMixin):
     """
     GemNet-T, triplets-only variant of GemNet
 

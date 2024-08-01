@@ -44,7 +44,7 @@ from torch_scatter import scatter, segment_coo
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import GraphModelMixin
 from fairchem.core.models.gemnet.layers.base_layers import ScaledSiLU
 from fairchem.core.models.gemnet.layers.embedding_block import AtomEmbedding
 from fairchem.core.models.gemnet.layers.radial_basis import RadialBasis
@@ -56,7 +56,7 @@ from .utils import get_edge_id, repeat_blocks
 
 
 @registry.register_model("painn")
-class PaiNN(BaseModel):
+class PaiNN(nn.Module, GraphModelMixin):
     r"""PaiNN model based on the description in Schütt et al. (2021):
     Equivariant message passing for the prediction of tensorial properties
     and molecular spectra, https://arxiv.org/abs/2102.03150.

@@ -20,7 +20,7 @@ if typing.TYPE_CHECKING:
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import GraphModelMixin
 from fairchem.core.models.escn.so3 import (
     CoefficientMapping,
     SO3_Embedding,
@@ -41,7 +41,7 @@ with contextlib.suppress(ImportError):
 
 
 @registry.register_model("escn")
-class eSCN(BaseModel):
+class eSCN(nn.Module, GraphModelMixin):
     """Equivariant Spherical Channel Network
     Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
 

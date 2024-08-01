@@ -1,15 +1,23 @@
+"""
+Copyright (c) Meta, Inc. and its affiliates.
+
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.
+"""
+
 from __future__ import annotations
 
 import typing
 from abc import ABCMeta, abstractmethod
 
 import torch
+from torch import nn
 
 if typing.TYPE_CHECKING:
     from torch_geometric.data.batch import Batch
 
 from fairchem.core.common.registry import registry
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import GraphModelMixin
 
 
 class HeadInterface(metaclass=ABCMeta):
@@ -53,7 +61,7 @@ class BackboneInterface(metaclass=ABCMeta):
 
 
 @registry.register_model("base_hydra")
-class BaseHydra(BaseModel):
+class BaseHydra(nn.Module, GraphModelMixin):
     def __init__(
         self,
         backbone: dict,

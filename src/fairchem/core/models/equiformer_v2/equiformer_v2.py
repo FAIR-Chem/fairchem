@@ -10,7 +10,7 @@ import torch.nn as nn
 from fairchem.core.common import gp_utils
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import GraphModelMixin
 from fairchem.core.models.hydra import BackboneInterface, HeadInterface
 from fairchem.core.models.scn.smearing import GaussianSmearing
 
@@ -53,7 +53,7 @@ _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors =
 
 
 @registry.register_model("equiformer_v2")
-class EquiformerV2(BaseModel):
+class EquiformerV2(nn.Module, GraphModelMixin):
     """
     Equiformer with graph attention built upon SO(2) convolution and feedforward network built upon S2 activation
 

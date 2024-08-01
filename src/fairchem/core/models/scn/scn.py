@@ -18,7 +18,7 @@ import torch.nn as nn
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import GraphModelMixin
 from fairchem.core.models.scn.sampling import CalcSpherePoints
 from fairchem.core.models.scn.smearing import (
     GaussianSmearing,
@@ -33,7 +33,7 @@ with contextlib.suppress(ImportError):
 
 
 @registry.register_model("scn")
-class SphericalChannelNetwork(BaseModel):
+class SphericalChannelNetwork(nn.Module, GraphModelMixin):
     """Spherical Channel Network
     Paper: Spherical Channels for Modeling Atomic Interactions
 
