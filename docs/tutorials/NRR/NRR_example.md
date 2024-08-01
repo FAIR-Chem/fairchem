@@ -34,12 +34,17 @@ import os
 from glob import glob
 import pandas as pd
 from fairchem.data.oc.utils import DetectTrajAnomaly
+
+# Set random seed to ensure adsorbate enumeration yields a valid candidate
+# If using a larger number of random samples this wouldn't be necessary
+import numpy as np
+np.random.seed(22)
 ```
 
 ```{code-cell} ipython3
 from fairchem.core.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/fairchem_checkpoints/')
 checkpoint_path
 ```
 
@@ -57,7 +62,7 @@ To do this, we will enumerate adsorbate-slab configurations and run ML relaxatio
 
 +++
 
-Be sure to set the path in `fairchem/data/oc/configs/paths.py` to point to the correct place or pass the paths as an argument. The database pickles can be found in `fairchem/data/oc/databases/pkls`. We will show one explicitly here as an example and then run all of them in an automated fashion for brevity.
+Be sure to set the path in `fairchem/data/oc/configs/paths.py` to point to the correct place or pass the paths as an argument. The database pickles can be found in `fairchem/data/oc/databases/pkls` (some pkl files are only downloaded by running the command `python src/fairchem/core/scripts/download_large_files.py oc` from the root of the fairchem repo). We will show one explicitly here as an example and then run all of them in an automated fashion for brevity.
 
 ```{code-cell} ipython3
 import fairchem.data.oc

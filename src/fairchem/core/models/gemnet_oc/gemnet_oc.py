@@ -864,9 +864,7 @@ class GemNetOC(BaseModel):
 
         empty_image = subgraph["num_neighbors"] == 0
         if torch.any(empty_image):
-            raise ValueError(
-                f"An image has no neighbors: sid={data.sid[empty_image]}"
-            )
+            raise ValueError(f"An image has no neighbors: sid={data.sid[empty_image]}")
         return subgraph
 
     def generate_graph_dict(self, data, cutoff, max_neighbors):

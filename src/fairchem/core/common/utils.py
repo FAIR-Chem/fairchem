@@ -46,6 +46,12 @@ if TYPE_CHECKING:
     from torch.nn.modules.module import _IncompatibleKeys
 
 
+DEFAULT_ENV_VARS = {
+    # Expandable segments is a new cuda feature that helps with memory fragmentation during frequent allocations (ie: in the case of variable batch sizes).
+    # see https://pytorch.org/docs/stable/notes/cuda.html.
+    "PYTORCH_CUDA_ALLOC_CONF" : "expandable_segments:True",
+}
+
 # copied from https://stackoverflow.com/questions/33490870/parsing-yaml-in-python-detect-duplicated-keys
 # prevents loading YAMLS where keys have been overwritten
 class UniqueKeyLoader(yaml.SafeLoader):
@@ -438,11 +444,6 @@ def build_config(args, args_override):
             f"included configs: {duplicates_error}"
         )
 
-    # Check for overridden parameters.
-    if args_override != []:
-        overrides = create_dict_from_args(args_override)
-        config, _ = merge_dicts(config, overrides)
-
     # Some other flags.
     config["mode"] = args.mode
     config["identifier"] = args.identifier
@@ -464,6 +465,11 @@ def build_config(args, args_override):
     config["distributed_backend"] = args.distributed_backend
     config["noddp"] = args.no_ddp
     config["gp_gpus"] = args.gp_gpus
+
+    # Check for overridden parameters.
+    if args_override != []:
+        overrides = create_dict_from_args(args_override)
+        config, _ = merge_dicts(config, overrides)
 
     return config
 
@@ -965,6 +971,12 @@ def check_traj_files(batch, traj_dir) -> bool:
     return all(fl.exists() for fl in traj_files)
 
 
+def setup_env_vars() -> None:
+    for k, v in DEFAULT_ENV_VARS.items():
+        os.environ[k] = v
+        logging.info(f"Setting env {k}={v}")
+
+
 @contextmanager
 def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
     from fairchem.core.common import distutils, gp_utils
@@ -981,6 +993,7 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
         trainer: BaseTrainer
 
     setup_logging()
+    setup_env_vars()
     original_config = config
     config = copy.deepcopy(original_config)
 
@@ -1022,6 +1035,7 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
             slurm=config.get("slurm", {}),
             noddp=config.get("noddp", False),
             name=task_name,
+            gp_gpus=config.get("gp_gpus"),
         )
 
         task_cls = registry.get_task_class(config["mode"])

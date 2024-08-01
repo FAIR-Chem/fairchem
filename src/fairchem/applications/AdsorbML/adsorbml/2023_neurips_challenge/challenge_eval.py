@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import argparse
 import pickle
 from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
+
+from fairchem.core.scripts import download_large_files
 
 
 def is_successful(best_pred_energy, best_dft_energy, SUCCESS_THRESHOLD=0.1):
@@ -19,9 +23,7 @@ def is_successful(best_pred_energy, best_dft_energy, SUCCESS_THRESHOLD=0.1):
     # Given best ML and DFT energy, compute various success metrics:
     # success_parity: base success metric (ML - DFT <= SUCCESS_THRESHOLD)
     diff = best_pred_energy - best_dft_energy
-    success_parity = diff <= SUCCESS_THRESHOLD
-
-    return success_parity
+    return diff <= SUCCESS_THRESHOLD
 
 
 def compute_valid_ml_success(ml_data, dft_data):
@@ -161,6 +163,11 @@ def main():
 
     # targets and metadata are expected to be in
     # the same directory as this script
+    if (
+        not Path(__file__).with_name("oc20dense_val_targets.pkl").exists()
+        or not Path(__file__).with_name("ml_relaxed_dft_targets.pkl").exists()
+    ):
+        download_large_files.download_file_group("adsorbml")
     targets = pickle.load(
         open(Path(__file__).with_name("oc20dense_val_targets.pkl"), "rb")
     )

@@ -2,12 +2,18 @@
 Script for updating ase pkl and db files from v3.19 to v3.21.
 Run it with ase v3.19.
 """
+
+from __future__ import annotations
+
 import pickle
+from pathlib import Path
 
 import ase.io
 from ase.atoms import Atoms
 from ase.calculators.singlepoint import SinglePointCalculator as SPC
 from tqdm import tqdm
+
+from fairchem.core.scripts import download_large_files
 
 
 # Monkey patch fix
@@ -25,27 +31,28 @@ Atoms.set_pbc = set_pbc_patch
 
 
 def update_pkls():
-    data = pickle.load(
-        open(
-            "ocdata/databases/pkls/adsorbates.pkl",
-            "rb",
-        )
-    )
+    with open(
+        "oc/databases/pkls/adsorbates.pkl",
+        "rb",
+    ) as fp:
+        data = pickle.load(fp)
+
     for idx in data:
         pbc = data[idx][0].cell._pbc
         data[idx][0]._pbc = pbc
     with open(
-        "ocdata/databases/pkls/adsorbates_new.pkl",
+        "oc/databases/pkls/adsorbates_new.pkl",
         "wb",
-    ) as f:
-        pickle.dump(data, f)
+    ) as fp:
+        pickle.dump(data, fp)
 
-    data = pickle.load(
-        open(
-            "ocdata/databases/pkls/bulks.pkl",
-            "rb",
-        )
-    )
+    if not Path("oc/databases/pkls/bulks.pkl").exists():
+        download_large_files.download_file_group("oc")
+    with open(
+        "oc/databases/pkls/bulks.pkl",
+        "rb",
+    ) as fp:
+        data = pickle.load(fp)
 
     bulks = []
     for info in tqdm(data):
@@ -62,7 +69,7 @@ def update_pkls():
 
         bulks.append((atoms, bulk_id))
     with open(
-        "ocdata/databases/pkls/bulks_new.pkl",
+        "oc/databases/pkls/bulks_new.pkl",
         "wb",
     ) as f:
         pickle.dump(bulks, f)
@@ -71,7 +78,7 @@ def update_pkls():
 def update_dbs():
     for db_name in ["adsorbates", "bulks"]:
         db = ase.io.read(
-            f"ocdata/databases/ase/{db_name}.db",
+            f"oc/databases/ase/{db_name}.db",
             ":",
         )
         new_data = []
@@ -88,7 +95,7 @@ def update_dbs():
             new_data.append(atoms)
 
         ase.io.write(
-            f"ocdata/databases/ase/{db_name}_new.db",
+            f"oc/databases/ase/{db_name}_new.db",
             new_data,
         )
 

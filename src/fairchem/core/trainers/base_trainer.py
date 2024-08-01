@@ -74,6 +74,7 @@ class BaseTrainer(ABC):
         name: str = "ocp",
         slurm=None,
         noddp: bool = False,
+        gp_gpus: int | None = None,
     ) -> None:
         if slurm is None:
             slurm = {}
@@ -131,6 +132,7 @@ class BaseTrainer(ABC):
             },
             "slurm": slurm,
             "noddp": noddp,
+            "gp_gpus": gp_gpus,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp and not self.cpu else None
@@ -157,11 +159,18 @@ class BaseTrainer(ABC):
             if len(dataset) > 2:
                 self.config["test_dataset"] = dataset[2]
         elif isinstance(dataset, dict):
-            self.config["dataset"] = dataset.get("train", None)
-            self.config["val_dataset"] = dataset.get("val", None)
-            self.config["test_dataset"] = dataset.get("test", None)
+            # or {} in cases where "dataset": None is explicitly defined
+            self.config["dataset"] = dataset.get("train", {}) or {}
+            self.config["val_dataset"] = dataset.get("val", {}) or {}
+            self.config["test_dataset"] = dataset.get("test", {}) or {}
+            self.config["relax_dataset"] = dataset.get("relax", {}) or {}
         else:
-            self.config["dataset"] = dataset
+            self.config["dataset"] = dataset or {}
+
+        # add empty dicts for missing datasets
+        for dataset_name in ("val_dataset", "test_dataset", "relax_dataset"):
+            if dataset_name not in self.config:
+                self.config[dataset_name] = {}
 
         if not is_debug and distutils.is_master():
             os.makedirs(self.config["cmd"]["checkpoint_dir"], exist_ok=True)
@@ -275,7 +284,7 @@ class BaseTrainer(ABC):
         self.test_loader = None
 
         # load train, val, test datasets
-        if self.config["dataset"].get("src", None):
+        if "src" in self.config["dataset"]:
             logging.info(
                 f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
             )
@@ -487,6 +496,43 @@ class BaseTrainer(ABC):
             self.relax_dataset = registry.get_dataset_class("lmdb")(
                 self.config["task"]["relax_dataset"]
             )
+            self.val_loader = self.get_dataloader(
+                self.val_dataset,
+                self.val_sampler,
+            )
+
+        if "src" in self.config["test_dataset"]:
+            if self.config["test_dataset"].get("use_train_settings", True):
+                test_config = self.config["dataset"].copy()
+                test_config.update(self.config["test_dataset"])
+            else:
+                test_config = self.config["test_dataset"]
+
+            self.test_dataset = registry.get_dataset_class(
+                test_config.get("format", "lmdb")
+            )(test_config)
+            self.test_sampler = self.get_sampler(
+                self.test_dataset,
+                self.config["optim"].get(
+                    "eval_batch_size", self.config["optim"]["batch_size"]
+                ),
+                shuffle=False,
+            )
+            self.test_loader = self.get_dataloader(
+                self.test_dataset,
+                self.test_sampler,
+            )
+
+        if self.config["relax_dataset"]:
+            if self.config["relax_dataset"].get("use_train_settings", True):
+                relax_config = self.config["dataset"].copy()
+                relax_config.update(self.config["relax_dataset"])
+            else:
+                relax_config = self.config["relax_dataset"]
+
+            self.relax_dataset = registry.get_dataset_class(
+                relax_config.get("format", "lmdb")
+            )(relax_config)
             self.relax_sampler = self.get_sampler(
                 self.relax_dataset,
                 self.config["optim"].get(
@@ -501,6 +547,9 @@ class BaseTrainer(ABC):
 
     def load_task(self):
         # Normalizer for the dataset.
+
+        # Is it troublesome that we assume any normalizer info is in train? What if there is no
+        # training dataset? What happens if we just specify a test
         normalizer = self.config["dataset"].get("transforms", {}).get("normalizer", {})
         self.normalizers = {}
         if normalizer:
@@ -573,9 +622,20 @@ class BaseTrainer(ABC):
                 f"{self.model.num_params} parameters."
             )
 
+<<<<<<< HEAD
         # turn off watching as it might be the cause of rate limit issues
         # if self.logger is not None:
         #     self.logger.watch(self.model)
+=======
+        if self.logger is not None:
+            # only "watch" model if user specify watch: True because logging gradients
+            # spews too much data into W&B and makes the UI slow to respond
+            if "watch" in self.config["logger"]:
+                self.logger.watch(
+                    self.model, log_freq=int(self.config["logger"]["watch"])
+                )
+            self.logger.log_summary({"num_params": self.model.num_params})
+>>>>>>> 434b956d12cba04ba132d63b5d583e511dfedda0
 
         if distutils.initialized() and not self.config["noddp"]:
             self.model = DistributedDataParallel(self.model, device_ids=[self.device])
