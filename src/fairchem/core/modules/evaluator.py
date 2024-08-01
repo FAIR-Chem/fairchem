@@ -334,34 +334,40 @@ def per_group_mae(
     key: Hashable = NONE,
 ) -> dict[str, float | int]:
     output = {}
+    if key == "forces":
+        error = torch.abs(target["forces"] - prediction["forces"])
+    elif key == "energy":
+        error = torch.abs(target["energy"] - prediction["energy"])
+    elif key == "per_atom_energy":
+        error = torch.abs(target["energy"] - prediction["energy"])
+    else:
+        raise NotImplementedError(f"key {key} not implemented for per_group_mae")
     for i, group in enumerate(target["group"]):
+        label = f"per_group_{key}_mae/{group}"
         if key == "forces":
-            error = torch.abs(target["forces"] - prediction["forces"])
-            if f"per_group_{key}_mae/{group}" in output:
-                output[f"per_group_{key}_mae/{group}"]["total"] += torch.sum(error[target["batch"] == i]).item()
-                output[f"per_group_{key}_mae/{group}"]["numel"] += error[target["batch"] == i].numel()
+            if label in output:
+                output[label]["total"] += torch.sum(error[target["batch"] == i]).item()
+                output[label]["numel"] += error[target["batch"] == i].numel()
             else:
-                output[f"per_group_{key}_mae/{group}"] = {
+                output[label] = {
                     "total": torch.sum(error[target["batch"] == i]).item(),
                     "numel": error[target["batch"] == i].numel(),
                 }
         elif key == "energy":
-            error = torch.abs(target["energy"] - prediction["energy"])
-            if f"per_group_{key}_mae/{group}" in output:
-                output[f"per_group_{key}_mae/{group}"]["total"] += error[i].item()
-                output[f"per_group_{key}_mae/{group}"]["numel"] += 1
+            if label in output:
+                output[label]["total"] += error[i].item()
+                output[label]["numel"] += 1
             else:
-                output[f"per_group_{key}_mae/{group}"] = {
+                output[label] = {
                     "total": error[i].item(),
                     "numel": 1,
                 }
         elif key == "per_atom_energy":
-            error = torch.abs(target["energy"] - prediction["energy"])
-            if f"per_group_{key}_mae/{group}" in output:
-                output[f"per_group_{key}_mae/{group}"]["total"] += error[i].item() / target["natoms"][i].item()
-                output[f"per_group_{key}_mae/{group}"]["numel"] += 1
+            if label in output:
+                output[label]["total"] += error[i].item() / target["natoms"][i].item()
+                output[label]["numel"] += 1
             else:
-                output[f"per_group_{key}_mae/{group}"] = {
+                output[label] = {
                     "total": error[i].item() / target["natoms"][i].item(),
                     "numel": 1,
                 }
