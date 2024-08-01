@@ -5,6 +5,7 @@ import pytest
 from fairchem.core.datasets import LMDBDatabase, create_dataset
 from fairchem.core.datasets.base_dataset import BaseDataset
 import tempfile
+from fairchem.core.trainers.base_trainer import BaseTrainer
 
 
 @pytest.fixture()
@@ -18,6 +19,61 @@ def lmdb_database(structures):
                 num_atoms.append(len(atoms))
         np.savez(f"{tmpdirname}/metadata.npz", natoms=num_atoms)
         yield asedb_fn
+
+
+def test_real_dataset_config(lmdb_database):
+    class TestTrainer(BaseTrainer):
+        def __init__(self, config):
+            self.config = config
+
+        def train(self, x):
+            return None
+
+        def get_sampler(self, *args, **kwargs):
+            return None
+
+        def get_dataloader(self, *args, **kwargs):
+            return None
+
+    config = {
+        "model_attributes": {},
+        "optim": {"batch_size": 0},
+        "dataset": {
+            "format": "ase_db",
+            "src": str(lmdb_database),
+            "first_n": 2,
+            "key_mapping": {
+                "y": "energy",
+                "force": "forces",
+            },
+            "transforms": {
+                "normalizer": {
+                    "energy": {
+                        "mean": -0.7554450631141663,
+                        "stdev": 2.887317180633545,
+                    },
+                    "forces": {"mean": 0, "stdev": 2.887317180633545},
+                }
+            },
+        },
+        "val_dataset": {"src": str(lmdb_database)},
+        "test_dataset": {},
+        "relax_dataset": None,
+    }
+
+    t = TestTrainer(config)
+    t.load_datasets()
+    assert len(t.train_dataset) == 2
+    assert len(t.val_dataset) == 2
+
+    # modify the config for split and see if it works as expected
+    config["dataset"].pop("first_n")
+    config["dataset"]["train_split_settings"] = {"first_n": 2}
+
+    t = TestTrainer(config)
+    t.load_datasets()
+    assert len(t.train_dataset) == 2
+    assert len(t.val_dataset) == 3
 
 
 @pytest.mark.parametrize("max_atoms", [3, None])

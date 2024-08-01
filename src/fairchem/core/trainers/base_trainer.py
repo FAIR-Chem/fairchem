@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import copy
 import datetime
 import errno
 import logging
@@ -288,13 +289,26 @@ class BaseTrainer(ABC):
         self.val_loader = None
         self.test_loader = None
 
+        # This is hacky and scheduled to be removed next BE week
+        # move ['X_split_settings'] to ['splits'][X]
+        def convert_settings_to_split_settings(config, split_name):
+            config = copy.deepcopy(config)  # make sure we dont modify the original
+            if f"{split_name}_split_settings" in config:
+                config["splits"] = {
+                    split_name: config.pop(f"{split_name}_split_settings")
+                }
+            return config
+
         # load train, val, test datasets
         if "src" in self.config["dataset"]:
             logging.info(
                 f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
             )
 
-            self.train_dataset = create_dataset(self.config["dataset"], "train")
+            self.train_dataset = create_dataset(
+                convert_settings_to_split_settings(self.config["dataset"], "train"),
+                "train",
+            )
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
                 self.config["optim"]["batch_size"],
@@ -305,6 +319,16 @@ class BaseTrainer(ABC):
                 self.train_sampler,
             )
 
+        if (
+            "first_n" in self.config["dataset"]
+            or "sample_n" in self.config["dataset"]
+            or "max_atom" in self.config["dataset"]
+        ):
+            logging.warn(
+                "Dataset attributes (first_n/sample_n/max_atom) passed to all datasets! Please don't do this, its dangerous!\n"
+                + "Add them under each dataset 'train_split_settings'/'val_split_settings'/'test_split_settings'"
+            )
+
         if "src" in self.config["val_dataset"]:
             if self.config["val_dataset"].get("use_train_settings", True):
                 val_config = self.config["dataset"].copy()
@@ -312,7 +336,9 @@ class BaseTrainer(ABC):
             else:
                 val_config = self.config["val_dataset"]
 
-            self.val_dataset = create_dataset(val_config, "val")
+            self.val_dataset = create_dataset(
+                convert_settings_to_split_settings(val_config, "val"), "val"
+            )
             self.val_sampler = self.get_sampler(
                 self.val_dataset,
                 self.config["optim"].get(
@@ -332,7 +358,9 @@ class BaseTrainer(ABC):
             else:
                 test_config = self.config["test_dataset"]
 
-            self.test_dataset = create_dataset(test_config, "test")
+            self.test_dataset = create_dataset(
+                convert_settings_to_split_settings(test_config, "test"), "test"
+            )
             self.test_sampler = self.get_sampler(
                 self.test_dataset,
                 self.config["optim"].get(
