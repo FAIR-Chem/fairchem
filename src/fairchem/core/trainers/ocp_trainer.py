@@ -152,7 +152,6 @@ class OCPTrainer(BaseTrainer):
 
                 # Get a batch.
                 batch = next(train_loader_iter)
-
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     out = self._forward(batch)
@@ -467,7 +466,8 @@ class OCPTrainer(BaseTrainer):
                     else:
                         dtype = torch.float16
 
-                    pred = pred.cpu().detach().to(dtype)
+                    pred = pred.detach().cpu().to(dtype)
+
                     ### Split predictions into per-image predictions
                     if self.config["outputs"][target_key]["level"] == "atom":
                         batch_natoms = batch.natoms
