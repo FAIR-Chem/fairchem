@@ -339,7 +339,7 @@ class BaseTrainer(ABC):
                     self.config["optim"].get(
                         "eval_batch_size", self.config["optim"]["batch_size"]
                     ),
-                    shuffle=True,
+                    shuffle=False,
                 )
                 self.val_loader = self.get_dataloader(
                     self.val_dataset,
