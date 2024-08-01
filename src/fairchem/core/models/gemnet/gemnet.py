@@ -422,7 +422,7 @@ class GemNetT(nn.Module, GraphModelMixin):
         graph = self.generate_graph(data)
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
-        V_st = -graph.distance_vec / graph.edge_distance[:, None]
+        V_st = -graph.edge_distance_vec / graph.edge_distance[:, None]
 
         # Mask interaction edges if required
         if self.otf_graph or np.isclose(self.cutoff, 6):

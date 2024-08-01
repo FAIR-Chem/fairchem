@@ -443,10 +443,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
             enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly,
         )
 
-        data_batch_full = data.batch
         data_batch = data.batch
-        atomic_numbers_full = atomic_numbers
-        node_offset = 0
         if gp_utils.initialized():
             (
                 atomic_numbers,
@@ -456,12 +453,17 @@ class EquiformerV2(nn.Module, GraphModelMixin):
                 edge_distance,
                 edge_distance_vec,
             ) = self._init_gp_partitions(
-                atomic_numbers_full,
-                data_batch_full,
+                graph.atomic_numbers_full,
+                graph.batch_full,
                 graph.edge_index,
                 graph.edge_distance,
                 graph.edge_distance_vec,
             )
+            graph.node_offset = node_offset
+            graph.edge_index = edge_index
+            graph.edge_distance = edge_distance
+            graph.edge_distance_vec = edge_distance_vec
+
         ###############################################################
         # Entering Graph Parallel Region
         # after this point, if using gp, then node, edge tensors are split
@@ -479,7 +481,9 @@ class EquiformerV2(nn.Module, GraphModelMixin):
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(data, edge_index, edge_distance_vec)
+        edge_rot_mat = self._init_edge_rot_mat(
+            data, graph.edge_index, graph.edge_distance_vec
+        )
 
         # Initialize the WignerD matrices and other values for spherical harmonic calculations
         for i in range(self.num_resolutions):
@@ -490,7 +494,6 @@ class EquiformerV2(nn.Module, GraphModelMixin):
         ###############################################################
 
         # Init per node representations using an atomic number based embedding
-        offset = 0
         x = SO3_Embedding(
             len(atomic_numbers),
             self.lmax_list,
@@ -513,27 +516,27 @@ class EquiformerV2(nn.Module, GraphModelMixin):
             offset_res = offset_res + int((self.lmax_list[i] + 1) ** 2)
 
         # Edge encoding (distance and atom edge)
-        edge_distance = self.distance_expansion(edge_distance)
+        graph.edge_distance = self.distance_expansion(graph.edge_distance)
         if self.share_atom_edge_embedding and self.use_atom_edge_embedding:
-            source_element = atomic_numbers_full[
-                edge_index[0]
+            source_element = graph.atomic_numbers_full[
+                graph.edge_index[0]
             ]  # Source atom atomic number
-            target_element = atomic_numbers_full[
-                edge_index[1]
+            target_element = graph.atomic_numbers_full[
+                graph.edge_index[1]
             ]  # Target atom atomic number
             source_embedding = self.source_embedding(source_element)
             target_embedding = self.target_embedding(target_element)
-            edge_distance = torch.cat(
-                (edge_distance, source_embedding, target_embedding), dim=1
+            graph.edge_distance = torch.cat(
+                (graph.edge_distance, source_embedding, target_embedding), dim=1
             )
 
         # Edge-degree embedding
         edge_degree = self.edge_degree_embedding(
-            atomic_numbers_full,
-            edge_distance,
-            edge_index,
+            graph.atomic_numbers_full,
+            graph.edge_distance,
+            graph.edge_index,
             len(atomic_numbers),
-            node_offset,
+            graph.node_offset,
         )
         x.embedding = x.embedding + edge_degree.embedding
 
@@ -544,11 +547,11 @@ class EquiformerV2(nn.Module, GraphModelMixin):
         for i in range(self.num_layers):
             x = self.blocks[i](
                 x,  # SO3_Embedding
-                atomic_numbers_full,
-                edge_distance,
-                edge_index,
+                graph.atomic_numbers_full,
+                graph.edge_distance,
+                graph.edge_index,
                 batch=data_batch,  # for GraphDropPath
-                node_offset=node_offset,
+                node_offset=graph.node_offset,
             )
 
         # Final layer norm
@@ -566,7 +569,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
             device=node_energy.device,
             dtype=node_energy.dtype,
         )
-        energy.index_add_(0, data_batch_full, node_energy.view(-1))
+        energy.index_add_(0, graph.batch_full, node_energy.view(-1))
         energy = energy / self.avg_num_nodes
 
         # Add the per-atom linear references to the energy.
@@ -588,8 +591,8 @@ class EquiformerV2(nn.Module, GraphModelMixin):
             with torch.cuda.amp.autocast(False):
                 energy = energy.to(self.energy_lin_ref.dtype).index_add(
                     0,
-                    data_batch_full,
-                    self.energy_lin_ref[atomic_numbers_full],
+                    graph.batch_full,
+                    self.energy_lin_ref[graph.atomic_numbers_full],
                 )
 
         outputs = {"energy": energy}
@@ -599,10 +602,10 @@ class EquiformerV2(nn.Module, GraphModelMixin):
         if self.regress_forces:
             forces = self.force_block(
                 x,
-                atomic_numbers_full,
-                edge_distance,
-                edge_index,
-                node_offset=node_offset,
+                graph.atomic_numbers_full,
+                graph.edge_distance,
+                graph.edge_index,
+                node_offset=graph.node_offset,
             )
             forces = forces.embedding.narrow(1, 1, 3)
             forces = forces.view(-1, 3).contiguous()

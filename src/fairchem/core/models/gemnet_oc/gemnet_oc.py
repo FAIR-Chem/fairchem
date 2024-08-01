@@ -873,12 +873,12 @@ class GemNetOC(nn.Module, GraphModelMixin):
         )
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
-        edge_vector = -graph.edge_distance_vec / graph.edge_dist[:, None]
+        edge_vector = -graph.edge_distance_vec / graph.edge_distance[:, None]
         cell_offsets = -graph.cell_offsets  # a - c + offset
 
         graph = {
             "edge_index": graph.edge_index,
-            "distance": graph.edge_dist,
+            "distance": graph.edge_distance,
             "vector": edge_vector,
             "cell_offset": cell_offsets,
             "num_neighbors": graph.neighbors,
