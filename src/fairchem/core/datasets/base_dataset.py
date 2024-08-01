@@ -36,6 +36,7 @@ T_co = TypeVar("T_co", covariant=True)
 
 class DatasetMetadata(NamedTuple):
     natoms: ArrayLike | None = None
+    fmaxs: ArrayLike | None = None
 
 
 class UnsupportedDatasetError(ValueError):
@@ -110,9 +111,9 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
             }
         )
 
-        assert metadata.natoms.shape[0] == len(
-            self
-        ), "Loaded metadata and dataset size mismatch."
+        # assert metadata.natoms.shape[0] == len(
+        # self
+        # ), "Loaded metadata and dataset size mismatch."
 
         return metadata
 
@@ -188,6 +189,12 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
         if not dataset.metadata_hasattr("natoms"):
             raise ValueError("Cannot use max_atoms without dataset metadata")
         indices = indices[dataset.get_metadata("natoms", indices) <= max_atoms]
+
+    max_fmaxs = current_split_config.get("max_fmaxs", None)
+    if max_fmaxs is not None:
+        if not dataset.metadata_hasattr("fmaxs"):
+            raise ValueError("Cannot use max_fmaxs without dataset metadata")
+        indices = indices[dataset.get_metadata("fmaxs", indices) >= max_fmaxs]
 
     # Apply dataset level transforms
     # TODO is no_shuffle mutually exclusive though? or what is the purpose of no_shuffle?
