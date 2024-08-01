@@ -47,6 +47,9 @@ from .transformer_block import (
 
 if typing.TYPE_CHECKING:
     from torch_geometric.data.batch import Batch
+
+    from fairchem.core.models.base import GraphData
+
 # Statistics of IS2RE 100K
 _AVG_NUM_NODES = 77.81317
 _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
@@ -804,17 +807,7 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
         # Final layer norm
         x.embedding = self.norm(x.embedding)
 
-        return {
-            "node_embedding": x,
-            "edge_distance": edge_distance,
-            "edge_index": edge_index,
-            # returning this only because it's cast to long and
-            # we don't want to repeat this.
-            "atomic_numbers": graph.atomic_numbers_full,
-            # TODO: this is only used by graph parallel to split up the partitions,
-            # should figure out cleaner way to pass this around to the heads
-            "node_offset": node_offset,
-        }
+        return {"node_embedding": x, "graph": graph}
 
 
 @registry.register_model("equiformer_v2_energy_head")
@@ -835,7 +828,7 @@ class EquiformerV2EnergyHead(nn.Module, HeadInterface):
             backbone.use_sep_s2_act,
         )
 
-    def forward(self, data: Batch, emb: dict[str, torch.Tensor]):
+    def forward(self, data: Batch, emb: dict[str, torch.Tensor | GraphData]):
         node_energy = self.energy_block(emb["node_embedding"])
         node_energy = node_energy.embedding.narrow(1, 0, 1)
         if gp_utils.initialized():
@@ -881,10 +874,10 @@ class EquiformerV2ForceHead(nn.Module, HeadInterface):
     def forward(self, data: Batch, emb: dict[str, torch.Tensor]):
         forces = self.force_block(
             emb["node_embedding"],
-            data.atomic_numbers.long(),
-            emb["edge_distance"],
-            emb["edge_index"],
-            node_offset=emb["node_offset"],
+            emb["graph"].atomic_numbers_full,
+            emb["graph"].edge_distance,
+            emb["graph"].edge_index,
+            node_offset=emb["graph"].node_offset,
         )
         forces = forces.embedding.narrow(1, 1, 3)
         forces = forces.view(-1, 3).contiguous()

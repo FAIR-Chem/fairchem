@@ -21,7 +21,7 @@ from fairchem.core.common.utils import (
 
 
 @dataclass
-class Graph:
+class GraphData:
     """Class to keep graph attributes nicely packaged."""
 
     edge_index: torch.Tensor
@@ -117,7 +117,7 @@ class GraphModelMixin:
             )
             neighbors = compute_neighbors(data, edge_index)
 
-        return Graph(
+        return GraphData(
             edge_index=edge_index,
             edge_distance=edge_dist,
             edge_distance_vec=distance_vec,
