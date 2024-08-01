@@ -90,6 +90,7 @@ class OCPTrainer(BaseTrainer):
         slurm=None,
         noddp=False,
         name="ocp",
+        gp_gpus=None,
     ):
         if slurm is None:
             slurm = {}
@@ -114,6 +115,7 @@ class OCPTrainer(BaseTrainer):
             slurm=slurm,
             noddp=noddp,
             name=name,
+            gp_gpus=gp_gpus,
         )
 
     def train(self, disable_eval_tqdm: bool = False) -> None:
@@ -602,7 +604,7 @@ class OCPTrainer(BaseTrainer):
                     s_idx += natoms
 
                 target = {
-                    "energy": relaxed_batch.y_relaxed,
+                    "energy": relaxed_batch.energy,
                     "positions": relaxed_batch.pos_relaxed[mask],
                     "cell": relaxed_batch.cell,
                     "pbc": torch.tensor([True, True, True]),
@@ -610,7 +612,7 @@ class OCPTrainer(BaseTrainer):
                 }
 
                 prediction = {
-                    "energy": relaxed_batch.y,
+                    "energy": relaxed_batch.energy,
                     "positions": relaxed_batch.pos[mask],
                     "cell": relaxed_batch.cell,
                     "pbc": torch.tensor([True, True, True]),

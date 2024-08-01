@@ -5,17 +5,18 @@ This script has not been written to run in parallel, but should be modified to d
 
 from __future__ import annotations
 
+import argparse
+import os
 from typing import TYPE_CHECKING
 
+import numpy as np
+import pandas as pd
+import torch
 from ase.io import read
 from ase.optimize import BFGS
-import torch
-import argparse
-from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.applications.cattsunami.core.ocpneb import OCPNEB
-import os
-import pandas as pd
-import numpy as np
+
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 
 if TYPE_CHECKING:
     import ase
@@ -141,9 +142,14 @@ def all_converged(row, ml=True):
     Returns:
         bool: whether the system is converged
     """
-    if row.converged_ml and row.converged and ml:
-        return True
-    elif row.converged_ml and row.converged and (not np.isnan(row.E_TS_SP)):
+    if (
+        row.converged_ml
+        and row.converged
+        and ml
+        or row.converged_ml
+        and row.converged
+        and (not np.isnan(row.E_TS_SP))
+    ):
         return True
     return False
 
@@ -340,8 +346,8 @@ if __name__ == "__main__":
 
             # If single points are to be performed, perform them
             if args.get_ts_sp:
-                from vasp_interactive import VaspInteractive
                 from fairchem.data.oc.utils.vasp import calculate_surface_k_points
+                from vasp_interactive import VaspInteractive
 
                 os.makedirs(
                     f"{args.output_file_path}/{model_id}/vasp_files/{neb_id}",
