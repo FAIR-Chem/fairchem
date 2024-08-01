@@ -622,11 +622,6 @@ class BaseTrainer(ABC):
                 f"{self.model.num_params} parameters."
             )
 
-<<<<<<< HEAD
-        # turn off watching as it might be the cause of rate limit issues
-        # if self.logger is not None:
-        #     self.logger.watch(self.model)
-=======
         if self.logger is not None:
             # only "watch" model if user specify watch: True because logging gradients
             # spews too much data into W&B and makes the UI slow to respond
@@ -635,7 +630,6 @@ class BaseTrainer(ABC):
                     self.model, log_freq=int(self.config["logger"]["watch"])
                 )
             self.logger.log_summary({"num_params": self.model.num_params})
->>>>>>> 434b956d12cba04ba132d63b5d583e511dfedda0
 
         if distutils.initialized() and not self.config["noddp"]:
             self.model = DistributedDataParallel(self.model, device_ids=[self.device])
