@@ -8,9 +8,9 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 
 import torch
-import torch.nn as nn
 from torch_geometric.nn import radius_graph
 
 from fairchem.core.common.utils import (
@@ -20,12 +20,23 @@ from fairchem.core.common.utils import (
 )
 
 
-class BaseModel(nn.Module):
-    def __init__(self) -> None:
-        super().__init__()
+@dataclass
+class Graph:
+    """Class to keep graph attributes nicely packaged."""
 
-    def forward(self, data):
-        raise NotImplementedError
+    edge_index: torch.Tensor
+    edge_distance: torch.Tensor
+    edge_distance_vec: torch.Tensor
+    cell_offsets: torch.Tensor
+    offset_distances: torch.Tensor
+    neighbors: torch.Tensor
+    batch_full: torch.Tensor  # used for GP functionality
+    atomic_numbers_full: torch.Tensor  # used for GP functionality
+    node_offset: int = 0  # used for GP functionality
+
+
+class GraphModelMixin:
+    """Mixin Model class implementing some general convenience properties and methods."""
 
     def generate_graph(
         self,
@@ -106,13 +117,16 @@ class BaseModel(nn.Module):
             )
             neighbors = compute_neighbors(data, edge_index)
 
-        return (
-            edge_index,
-            edge_dist,
-            distance_vec,
-            cell_offsets,
-            cell_offset_distances,
-            neighbors,
+        return Graph(
+            edge_index=edge_index,
+            edge_distance=edge_dist,
+            edge_distance_vec=distance_vec,
+            cell_offsets=cell_offsets,
+            offset_distances=cell_offset_distances,
+            neighbors=neighbors,
+            node_offset=0,
+            batch_full=data.batch,
+            atomic_numbers_full=data.atomic_numbers.long(),
         )
 
     @property

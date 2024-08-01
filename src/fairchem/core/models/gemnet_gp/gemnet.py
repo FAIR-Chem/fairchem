@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import numpy as np
 import torch
+from torch import nn
 from torch_scatter import scatter
 from torch_sparse import SparseTensor
 
 from fairchem.core.common import gp_utils
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import GraphModelMixin
 from fairchem.core.modules.scaling.compat import load_scales_compat
 
 from .layers.atom_update_block import OutputBlock
@@ -29,7 +30,7 @@ from .utils import inner_product_normalized, mask_neighbors, ragged_range, repea
 
 
 @registry.register_model("gp_gemnet_t")
-class GraphParallelGemNetT(BaseModel):
+class GraphParallelGemNetT(nn.Module, GraphModelMixin):
     """
     GemNet-T, triplets-only variant of GemNet
 
@@ -406,18 +407,10 @@ class GraphParallelGemNetT(BaseModel):
 
     def generate_interaction_graph(self, data):
         num_atoms = data.atomic_numbers.size(0)
-
-        (
-            edge_index,
-            D_st,
-            distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(data)
+        graph = self.generate_graph(data)
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
-        V_st = -distance_vec / D_st[:, None]
+        V_st = -graph.distance_vec / graph.edge_distance[:, None]
 
         # Mask interaction edges if required
         if self.otf_graph or np.isclose(self.cutoff, 6):
@@ -432,10 +425,10 @@ class GraphParallelGemNetT(BaseModel):
             V_st,
         ) = self.select_edges(
             data=data,
-            edge_index=edge_index,
-            cell_offsets=cell_offsets,
-            neighbors=neighbors,
-            edge_dist=D_st,
+            edge_index=graph.edge_index,
+            cell_offsets=graph.cell_offsets,
+            neighbors=graph.neighbors,
+            edge_dist=graph.edge_distance,
             edge_vector=V_st,
             cutoff=select_cutoff,
         )

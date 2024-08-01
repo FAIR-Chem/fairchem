@@ -312,23 +312,23 @@ class PaiNN(BaseModel):
         )
 
     def generate_graph_values(self, data):
-        (
-            edge_index,
-            edge_dist,
-            distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(data)
+        # (
+        #     edge_index,
+        #     edge_dist,
+        #     distance_vec,
+        #     cell_offsets,
+        #     _,  # cell offset distances
+        #     neighbors,
+        graph = self.generate_graph(data)
 
         # Unit vectors pointing from edge_index[1] to edge_index[0],
         # i.e., edge_index[0] - edge_index[1] divided by the norm.
         # make sure that the distances are not close to zero before dividing
-        mask_zero = torch.isclose(edge_dist, torch.tensor(0.0), atol=1e-6)
-        edge_dist[mask_zero] = 1.0e-6
-        edge_vector = distance_vec / edge_dist[:, None]
+        mask_zero = torch.isclose(graph.edge_distance, torch.tensor(0.0), atol=1e-6)
+        graph.edge_distance[mask_zero] = 1.0e-6
+        edge_vector = graph.edge_distance_vec / graph.edge_distance[:, None]
 
-        empty_image = neighbors == 0
+        empty_image = graph.neighbors == 0
         if torch.any(empty_image):
             raise ValueError(
                 f"An image has no neighbors: id={data.id[empty_image]}, "
@@ -344,11 +344,11 @@ class PaiNN(BaseModel):
             [edge_vector],
             id_swap,
         ) = self.symmetrize_edges(
-            edge_index,
-            cell_offsets,
-            neighbors,
+            graph.edge_index,
+            graph.cell_offsets,
+            graph.neighbors,
             data.batch,
-            [edge_dist],
+            [graph.edge_distance],
             [edge_vector],
         )
 
@@ -440,7 +440,6 @@ class PaiNN(BaseModel):
 
 @registry.register_model("painn_backbone")
 class PaiNNBackbone(PaiNN, BackboneInterface):
-
     @conditional_grad(torch.enable_grad())
     def forward(self, data) -> dict[str, torch.Tensor]:
         pos = data.pos
