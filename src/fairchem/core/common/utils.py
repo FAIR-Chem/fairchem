@@ -56,8 +56,9 @@ _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors =
 DEFAULT_ENV_VARS = {
     # Expandable segments is a new cuda feature that helps with memory fragmentation during frequent allocations (ie: in the case of variable batch sizes).
     # see https://pytorch.org/docs/stable/notes/cuda.html.
-    "PYTORCH_CUDA_ALLOC_CONF" : "expandable_segments:True",
+    "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
 }
+
 
 # copied from https://stackoverflow.com/questions/33490870/parsing-yaml-in-python-detect-duplicated-keys
 # prevents loading YAMLS where keys have been overwritten
@@ -1076,8 +1077,8 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
                 outputs=config.get("outputs", {}),
                 dataset=config["dataset"],
                 optimizer=config["optim"],
-                loss_fns=config.get("loss_functions", {}),
-                eval_metrics=config.get("evaluation_metrics", {}),
+                loss_functions=config.get("loss_functions", {}),
+                evaluation_metrics=config.get("evaluation_metrics", {}),
                 identifier=config["identifier"],
                 timestamp_id=config.get("timestamp_id", None),
                 run_dir=config.get("run_dir", "./"),

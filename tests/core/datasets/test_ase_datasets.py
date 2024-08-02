@@ -117,13 +117,16 @@ def test_ase_read_dataset(tmp_path, structures):
     assert len(dataset) == len(structures)
     data = dataset[0]
     del data
-    dataset.close_db()
+
+
+def test_ase_get_metadata(ase_dataset):
+    assert ase_dataset[0].get_metadata("natoms", [0])[0] == 3
 
 
 def test_ase_metadata_guesser(ase_dataset):
     dataset, _ = ase_dataset
 
-    metadata = dataset.get_metadata()
+    metadata = dataset.sample_property_metadata()
 
     # Confirm energy metadata guessed properly
     assert metadata["targets"]["energy"]["extensive"] is False
@@ -172,7 +175,6 @@ def test_db_add_delete(tmp_path, structures):
 
     dataset = AseDBDataset(config={"src": str(tmp_path / "asedb.db")})
     assert len(dataset) == orig_len + len(new_structures) - 1
-    dataset.close_db()
 
 
 def test_ase_multiread_dataset(tmp_path):

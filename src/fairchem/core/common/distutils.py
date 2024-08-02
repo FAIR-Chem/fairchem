@@ -98,7 +98,7 @@ def setup(config) -> None:
         )
     else:
         config["local_rank"] = int(os.environ.get("LOCAL_RANK", config["local_rank"]))
-        dist.init_process_group(backend="nccl")
+        dist.init_process_group(backend=config.get("backend", "nccl"))
 
 
 def cleanup() -> None:
@@ -144,7 +144,7 @@ def all_reduce(
     if not isinstance(data, torch.Tensor):
         tensor = torch.tensor(data)
     if device is not None:
-        tensor = tensor.cuda(device)
+        tensor = tensor.to(device)
     dist.all_reduce(tensor, group=group)
     if average:
         tensor /= get_world_size()
@@ -162,7 +162,7 @@ def all_gather(data, group=dist.group.WORLD, device=None) -> list[torch.Tensor]:
     if not isinstance(data, torch.Tensor):
         tensor = torch.tensor(data)
     if device is not None:
-        tensor = tensor.cuda(device)
+        tensor = tensor.to(device)
     tensor_list = [tensor.new_zeros(tensor.shape) for _ in range(get_world_size())]
     dist.all_gather(tensor_list, tensor, group=group)
     if not isinstance(data, torch.Tensor):
