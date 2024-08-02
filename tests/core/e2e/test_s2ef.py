@@ -27,9 +27,32 @@ setup_logging()
 @pytest.fixture()
 def configs():
     return {
+        "scn": Path("tests/core/models/test_configs/test_scn.yml"),
         "escn": Path("tests/core/models/test_configs/test_escn.yml"),
-        "gemnet": Path("tests/core/models/test_configs/test_gemnet.yml"),
+        "escn_hydra": Path("tests/core/models/test_configs/test_escn_hydra.yml"),
+        "schnet": Path("tests/core/models/test_configs/test_schnet.yml"),
+        "gemnet_dt": Path("tests/core/models/test_configs/test_gemnet_dt.yml"),
+        "gemnet_dt_hydra": Path(
+            "tests/core/models/test_configs/test_gemnet_dt_hydra.yml"
+        ),
+        "gemnet_dt_hydra_grad": Path(
+            "tests/core/models/test_configs/test_gemnet_dt_hydra_grad.yml"
+        ),
+        "gemnet_oc": Path("tests/core/models/test_configs/test_gemnet_oc.yml"),
+        "gemnet_oc_hydra": Path(
+            "tests/core/models/test_configs/test_gemnet_oc_hydra.yml"
+        ),
+        "gemnet_oc_hydra_grad": Path(
+            "tests/core/models/test_configs/test_gemnet_oc_hydra_grad.yml"
+        ),
+        "dimenet++": Path("tests/core/models/test_configs/test_dpp.yml"),
+        "dimenet++_hydra": Path("tests/core/models/test_configs/test_dpp_hydra.yml"),
+        "painn": Path("tests/core/models/test_configs/test_painn.yml"),
+        "painn_hydra": Path("tests/core/models/test_configs/test_painn_hydra.yml"),
         "equiformer_v2": Path("tests/core/models/test_configs/test_equiformerv2.yml"),
+        "equiformer_v2_hydra": Path(
+            "tests/core/models/test_configs/test_equiformerv2_hydra.yml"
+        ),
     }
 
 
@@ -173,7 +196,7 @@ class TestSmoke:
                 rundir=str(train_rundir),
                 input_yaml=input_yaml,
                 update_dict_with={
-                    "optim": {"max_epochs": 2, "eval_every": 8},
+                    "optim": {"max_epochs": 2, "eval_every": 8, "batch_size": 5},
                     "dataset": oc20_lmdb_train_and_val_from_paths(
                         train_src=str(tutorial_val_src),
                         val_src=str(tutorial_val_src),
@@ -194,7 +217,7 @@ class TestSmoke:
                 rundir=str(predictions_rundir),
                 input_yaml=input_yaml,
                 update_dict_with={
-                    "optim": {"max_epochs": 2, "eval_every": 8},
+                    "optim": {"max_epochs": 2, "eval_every": 8, "batch_size": 5},
                     "dataset": oc20_lmdb_train_and_val_from_paths(
                         train_src=str(tutorial_val_src),
                         val_src=str(tutorial_val_src),
@@ -216,9 +239,22 @@ class TestSmoke:
     @pytest.mark.parametrize(
         "model_name",
         [
-            pytest.param("gemnet", id="gemnet"),
+            pytest.param("schnet", id="schnet"),
+            pytest.param("scn", id="scn"),
+            pytest.param("gemnet_dt", id="gemnet_dt"),
+            pytest.param("gemnet_dt_hydra", id="gemnet_dt_hydra"),
+            pytest.param("gemnet_dt_hydra_grad", id="gemnet_dt_hydra_grad"),
+            pytest.param("gemnet_oc", id="gemnet_oc"),
+            pytest.param("gemnet_oc_hydra", id="gemnet_oc_hydra"),
+            pytest.param("gemnet_oc_hydra_grad", id="gemnet_oc_hydra_grad"),
+            pytest.param("dimenet++", id="dimenet++"),
+            pytest.param("dimenet++_hydra", id="dimenet++_hydra"),
+            pytest.param("painn", id="painn"),
+            pytest.param("painn_hydra", id="painn_hydra"),
             pytest.param("escn", id="escn"),
+            pytest.param("escn_hydra", id="escn_hydra"),
             pytest.param("equiformer_v2", id="equiformer_v2"),
+            pytest.param("equiformer_v2_hydra", id="equiformer_v2_hydra"),
         ],
     )
     def test_train_and_predict(
@@ -376,7 +412,7 @@ class TestSmallDatasetOptim:
     @pytest.mark.parametrize(
         ("model_name", "expected_energy_mae", "expected_force_mae"),
         [
-            pytest.param("gemnet", 0.41, 0.06, id="gemnet"),
+            pytest.param("gemnet_oc", 0.41, 0.06, id="gemnet_oc"),
             pytest.param("escn", 0.41, 0.06, id="escn"),
             pytest.param("equiformer_v2", 0.41, 0.06, id="equiformer_v2"),
         ],

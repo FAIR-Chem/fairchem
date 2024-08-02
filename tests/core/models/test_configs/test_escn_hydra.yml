@@ -1,0 +1,67 @@
+trainer: forces
+
+dataset:
+  train:
+    src: tutorial_dset/s2ef/train_100/
+    normalize_labels: True
+    target_mean: -0.7554450631141663
+    target_std: 2.887317180633545
+    grad_target_mean: 0.0
+    grad_target_std: 2.887317180633545
+  val:
+    format: lmdb
+    src: tutorial_dset/s2ef/val_20/
+
+logger:
+  name: tensorboard
+
+task:
+  dataset: lmdb
+  type: regression
+  metric: mae
+  primary_metric: forces_mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
+  prediction_dtype: float32
+
+model:
+  name: hydra
+  backbone:
+    model: escn_backbone
+    num_layers: 2
+    max_neighbors: 10
+    cutoff: 12.0
+    sphere_channels: 8
+    hidden_channels: 8
+    lmax_list: [2]
+    mmax_list: [2]
+    num_sphere_samples: 64
+    distance_function: "gaussian"
+    regress_forces: True
+    use_pbc: True
+    basis_width_scalar: 2.0
+    otf_graph: True
+  heads:
+    energy:
+      module: escn_energy_head
+    forces:
+      module: escn_force_head
+
+optim:
+  batch_size: 5
+  eval_batch_size: 2
+  num_workers: 0
+  lr_initial: 0.0025
+  optimizer: AdamW
+  optimizer_params: {"amsgrad": True,weight_decay: 0.0}
+  eval_every: 190
+  max_epochs: 50
+  force_coefficient: 20
+  scheduler: "Null"
+  energy_coefficient: 1
+  clip_grad_norm: 20
+  loss_energy: mae
+  loss_force: l2mae
