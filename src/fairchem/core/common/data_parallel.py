@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 class OCPCollater:
-    def __init__(self, otf_graph: bool = False) -> None:
+    def __init__(self, otf_graph: bool = True) -> None:
         self.otf_graph = otf_graph
 
     def __call__(self, data_list: list[Data]) -> Batch:
