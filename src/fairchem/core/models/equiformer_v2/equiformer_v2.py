@@ -687,7 +687,6 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
         self.dtype = data.pos.dtype
         self.device = data.pos.device
         atomic_numbers = data.atomic_numbers.long()
-
         graph = self.generate_graph(
             data,
             enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly,
@@ -731,7 +730,9 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(data, edge_index, edge_distance_vec)
+        edge_rot_mat = self._init_edge_rot_mat(
+            data, graph.edge_index, graph.edge_distance_vec
+        )
 
         # Initialize the WignerD matrices and other values for spherical harmonic calculations
         for i in range(self.num_resolutions):
@@ -742,7 +743,6 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
         ###############################################################
 
         # Init per node representations using an atomic number based embedding
-        offset = 0
         x = SO3_Embedding(
             len(atomic_numbers),
             self.lmax_list,
@@ -765,27 +765,27 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
             offset_res = offset_res + int((self.lmax_list[i] + 1) ** 2)
 
         # Edge encoding (distance and atom edge)
-        edge_distance = self.distance_expansion(edge_distance)
+        graph.edge_distance = self.distance_expansion(graph.edge_distance)
         if self.share_atom_edge_embedding and self.use_atom_edge_embedding:
             source_element = graph.atomic_numbers_full[
-                edge_index[0]
+                graph.edge_index[0]
             ]  # Source atom atomic number
             target_element = graph.atomic_numbers_full[
-                edge_index[1]
+                graph.edge_index[1]
             ]  # Target atom atomic number
             source_embedding = self.source_embedding(source_element)
             target_embedding = self.target_embedding(target_element)
-            edge_distance = torch.cat(
-                (edge_distance, source_embedding, target_embedding), dim=1
+            graph.edge_distance = torch.cat(
+                (graph.edge_distance, source_embedding, target_embedding), dim=1
             )
 
         # Edge-degree embedding
         edge_degree = self.edge_degree_embedding(
             graph.atomic_numbers_full,
-            edge_distance,
-            edge_index,
+            graph.edge_distance,
+            graph.edge_index,
             len(atomic_numbers),
-            node_offset,
+            graph.node_offset,
         )
         x.embedding = x.embedding + edge_degree.embedding
 
@@ -797,10 +797,10 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
             x = self.blocks[i](
                 x,  # SO3_Embedding
                 graph.atomic_numbers_full,
-                edge_distance,
-                edge_index,
+                graph.edge_distance,
+                graph.edge_index,
                 batch=data_batch,  # for GraphDropPath
-                node_offset=node_offset,
+                node_offset=graph.node_offset,
             )
 
         # Final layer norm
