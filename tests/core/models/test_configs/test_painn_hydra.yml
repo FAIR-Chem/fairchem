@@ -16,7 +16,7 @@ logger:
     name: tensorboard
 
 model:
-  name: base_hydra
+  name: hydra
   backbone:
     model: painn_backbone #_bbwheads
     hidden_channels: 32
@@ -29,11 +29,11 @@ model:
     direct_forces: True
     use_pbc: True
   heads:
-    energy: 
+    energy:
       module: painn_energy_head
-    forces: 
+    forces:
       module: painn_force_head
-    
+
 
 optim:
   batch_size: 32

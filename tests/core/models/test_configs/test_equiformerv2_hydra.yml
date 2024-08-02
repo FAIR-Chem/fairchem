@@ -3,7 +3,7 @@
 trainer: forces
 
 model:
-  name: base_hydra
+  name: hydra
   backbone:
     model: equiformer_v2_backbone
     use_pbc:                  True
@@ -48,7 +48,7 @@ model:
 
     weight_init:              'normal'    # ['uniform', 'normal']
   heads:
-    energy: 
+    energy:
       module: equiformer_v2_energy_head
     forces:
       module: equiformer_v2_force_head

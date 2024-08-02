@@ -16,7 +16,7 @@ logger:
     name: tensorboard
 
 model:
-  name: base_hydra
+  name: hydra
   backbone:
     model: dimenetplusplus_backbone
     hidden_channels: 4
@@ -31,7 +31,7 @@ model:
     regress_forces: True
     use_pbc: True
   heads:
-    energy: 
+    energy:
       module: dimenetplusplus_energy_and_force_head
 
 # *** Important note ***
