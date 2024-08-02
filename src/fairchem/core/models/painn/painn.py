@@ -44,11 +44,10 @@ from torch_scatter import scatter, segment_coo
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import GraphModelMixin
+from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
 from fairchem.core.models.gemnet.layers.base_layers import ScaledSiLU
 from fairchem.core.models.gemnet.layers.embedding_block import AtomEmbedding
 from fairchem.core.models.gemnet.layers.radial_basis import RadialBasis
-from fairchem.core.models.hydra import BackboneInterface, HeadInterface
 from fairchem.core.modules.scaling import ScaleFactor
 from fairchem.core.modules.scaling.compat import load_scales_compat
 

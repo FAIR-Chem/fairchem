@@ -51,8 +51,7 @@ from torch_sparse import SparseTensor
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import GraphModelMixin
-from fairchem.core.models.hydra import BackboneInterface, HeadInterface
+from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
 
 if typing.TYPE_CHECKING:
     from torch_geometric.data.batch import Batch

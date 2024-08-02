@@ -20,8 +20,7 @@ from fairchem.core.common.utils import (
     get_max_neighbors_mask,
     scatter_det,
 )
-from fairchem.core.models.base import GraphModelMixin
-from fairchem.core.models.hydra import BackboneInterface, HeadInterface
+from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
 from fairchem.core.modules.scaling.compat import load_scales_compat
 
 from .initializers import get_initializer

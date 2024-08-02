@@ -20,14 +20,13 @@ if typing.TYPE_CHECKING:
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import GraphModelMixin
+from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
 from fairchem.core.models.escn.so3 import (
     CoefficientMapping,
     SO3_Embedding,
     SO3_Grid,
     SO3_Rotation,
 )
-from fairchem.core.models.hydra import BackboneInterface, HeadInterface
 from fairchem.core.models.scn.sampling import CalcSpherePoints
 from fairchem.core.models.scn.smearing import (
     GaussianSmearing,

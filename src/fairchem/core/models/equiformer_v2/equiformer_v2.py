@@ -10,8 +10,7 @@ import torch.nn as nn
 from fairchem.core.common import gp_utils
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import GraphModelMixin
-from fairchem.core.models.hydra import BackboneInterface, HeadInterface
+from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
 from fairchem.core.models.scn.smearing import GaussianSmearing
 
 with contextlib.suppress(ImportError):
