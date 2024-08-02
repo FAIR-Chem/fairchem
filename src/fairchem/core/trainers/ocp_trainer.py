@@ -227,12 +227,6 @@ class OCPTrainer(BaseTrainer):
             if checkpoint_every == -1:
                 self.save(checkpoint_file="checkpoint.pt", training_state=True)
 
-        self.train_dataset.close_db()
-        if self.config.get("val_dataset", False):
-            self.val_dataset.close_db()
-        if self.config.get("test_dataset", False):
-            self.test_dataset.close_db()
-
     def _forward(self, batch):
         out = self.model(batch.to(self.device))
 

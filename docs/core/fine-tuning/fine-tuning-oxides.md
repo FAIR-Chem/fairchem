@@ -205,6 +205,7 @@ from fairchem.core.common.tutorial_utils import generate_yml_config
 yml = generate_yml_config(checkpoint_path, 'config.yml',
                    delete=['slurm', 'cmd', 'logger', 'task', 'model_attributes',
                            'optim.loss_force', # the checkpoint setting causes an error
+			   'optim.load_balancing',
                            'dataset', 'test_dataset', 'val_dataset'],
                    update={'gpus': 1,
                            'optim.eval_every': 10,

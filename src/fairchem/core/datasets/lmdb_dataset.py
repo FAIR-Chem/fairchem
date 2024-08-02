@@ -9,7 +9,6 @@ from __future__ import annotations
 import bisect
 import logging
 import pickle
-import warnings
 from typing import TYPE_CHECKING, TypeVar
 
 import lmdb
@@ -163,14 +162,14 @@ class LmdbDataset(BaseDataset):
             max_readers=1,
         )
 
-    def close_db(self) -> None:
+    def __del__(self):
         if not self.path.is_file():
             for env in self.envs:
                 env.close()
         else:
             self.env.close()
 
-    def get_metadata(self, num_samples: int = 100):
+    def sample_property_metadata(self, num_samples: int = 100):
         # This will interogate the classic OCP LMDB format to determine
         # which properties are present and attempt to guess their shapes
         # and whether they are intensive or extensive.
@@ -210,26 +209,6 @@ class LmdbDataset(BaseDataset):
                 for prop in props
             }
         }
-
-
-class SinglePointLmdbDataset(LmdbDataset):
-    def __init__(self, config, transform=None) -> None:
-        super().__init__(config)
-        warnings.warn(
-            "SinglePointLmdbDataset is deprecated and will be removed in the future."
-            "Please use 'LmdbDataset' instead.",
-            stacklevel=3,
-        )
-
-
-class TrajectoryLmdbDataset(LmdbDataset):
-    def __init__(self, config, transform=None) -> None:
-        super().__init__(config)
-        warnings.warn(
-            "TrajectoryLmdbDataset is deprecated and will be removed in the future."
-            "Please use 'LmdbDataset' instead.",
-            stacklevel=3,
-        )
 
 
 def data_list_collater(data_list: list[BaseData], otf_graph: bool = False) -> BaseData:
