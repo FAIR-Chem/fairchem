@@ -654,7 +654,7 @@ class GemNetTBackbone(GemNetT, BackboneInterface):
 
 @registry.register_model("gemnet_t_energy_and_grad_force_head")
 class GemNetTEnergyAndGradForceHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, backbone_config, head_config):
+    def __init__(self, backbone, head_config):
         super().__init__()
         self.extensive = backbone.extensive
         self.regress_forces = backbone.regress_forces
@@ -686,7 +686,7 @@ class GemNetTEnergyAndGradForceHead(nn.Module, HeadInterface):
 
 @registry.register_model("gemnet_t_force_head")
 class GemNetTForceHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, backbone_config, head_config):
+    def __init__(self, backbone, head_config):
         super().__init__()
         self.direct_forces = backbone.direct_forces
 

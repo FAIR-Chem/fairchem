@@ -336,7 +336,7 @@ class DimeNetPlusPlus(nn.Module):
 
 @registry.register_model("dimenetplusplus_energy_and_force_head")
 class DimeNetPlusPlusWrapEnergyAndForceHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, backbone_config, head_config):
+    def __init__(self, backbone, head_config):
         super().__init__()
         self.regress_forces = backbone.regress_forces
 
