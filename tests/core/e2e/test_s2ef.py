@@ -14,7 +14,13 @@ from tensorboard.backend.event_processing.event_accumulator import EventAccumula
 
 from fairchem.core._cli import Runner
 from fairchem.core.common.flags import flags
+from fairchem.core.common.test_utils import (
+    PGConfig,
+    init_env_rank_and_launch_test,
+    spawn_multi_process,
+)
 from fairchem.core.common.utils import build_config, setup_logging
+from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
 
 setup_logging()
 
@@ -22,9 +28,32 @@ setup_logging()
 @pytest.fixture()
 def configs():
     return {
+        "scn": Path("tests/core/models/test_configs/test_scn.yml"),
         "escn": Path("tests/core/models/test_configs/test_escn.yml"),
-        "gemnet": Path("tests/core/models/test_configs/test_gemnet.yml"),
+        "escn_hydra": Path("tests/core/models/test_configs/test_escn_hydra.yml"),
+        "schnet": Path("tests/core/models/test_configs/test_schnet.yml"),
+        "gemnet_dt": Path("tests/core/models/test_configs/test_gemnet_dt.yml"),
+        "gemnet_dt_hydra": Path(
+            "tests/core/models/test_configs/test_gemnet_dt_hydra.yml"
+        ),
+        "gemnet_dt_hydra_grad": Path(
+            "tests/core/models/test_configs/test_gemnet_dt_hydra_grad.yml"
+        ),
+        "gemnet_oc": Path("tests/core/models/test_configs/test_gemnet_oc.yml"),
+        "gemnet_oc_hydra": Path(
+            "tests/core/models/test_configs/test_gemnet_oc_hydra.yml"
+        ),
+        "gemnet_oc_hydra_grad": Path(
+            "tests/core/models/test_configs/test_gemnet_oc_hydra_grad.yml"
+        ),
+        "dimenet++": Path("tests/core/models/test_configs/test_dpp.yml"),
+        "dimenet++_hydra": Path("tests/core/models/test_configs/test_dpp_hydra.yml"),
+        "painn": Path("tests/core/models/test_configs/test_painn.yml"),
+        "painn_hydra": Path("tests/core/models/test_configs/test_painn_hydra.yml"),
         "equiformer_v2": Path("tests/core/models/test_configs/test_equiformerv2.yml"),
+        "equiformer_v2_hydra": Path(
+            "tests/core/models/test_configs/test_equiformerv2_hydra.yml"
+        ),
     }
 
 
@@ -120,6 +149,7 @@ def _run_main(
     update_run_args_with=None,
     save_checkpoint_to=None,
     save_predictions_to=None,
+    world_size=0,
 ):
     config_yaml = Path(rundir) / "train_and_val_on_val.yml"
 
@@ -127,6 +157,7 @@ def _run_main(
         yaml_config = yaml.safe_load(yaml_file)
     if update_dict_with is not None:
         yaml_config = merge_dictionary(yaml_config, update_dict_with)
+        yaml_config["backend"] = "gloo"
     with open(str(config_yaml), "w") as yaml_file:
         yaml.dump(yaml_config, yaml_file)
     run_args = {
@@ -145,7 +176,19 @@ def _run_main(
     for arg_name, arg_value in run_args.items():
         setattr(args, arg_name, arg_value)
     config = build_config(args, override_args)
-    Runner()(config)
+
+    if world_size > 0:
+        pg_config = PGConfig(
+            backend="gloo", world_size=world_size, gp_group_size=1, use_gp=False
+        )
+        spawn_multi_process(
+            pg_config,
+            Runner(distributed=True),
+            init_env_rank_and_launch_test,
+            config,
+        )
+    else:
+        Runner()(config)
 
     if save_checkpoint_to is not None:
         checkpoints = glob.glob(f"{rundir}/checkpoints/*/checkpoint.pt")
@@ -183,7 +226,7 @@ class TestSmoke:
                 rundir=str(train_rundir),
                 input_yaml=input_yaml,
                 update_dict_with={
-                    "optim": {"max_epochs": 2, "eval_every": 8},
+                    "optim": {"max_epochs": 2, "eval_every": 8, "batch_size": 5},
                     "dataset": oc20_lmdb_train_and_val_from_paths(
                         train_src=str(tutorial_val_src),
                         val_src=str(tutorial_val_src),
@@ -205,7 +248,7 @@ class TestSmoke:
                 rundir=str(predictions_rundir),
                 input_yaml=input_yaml,
                 update_dict_with={
-                    "optim": {"max_epochs": 2, "eval_every": 8},
+                    "optim": {"max_epochs": 2, "eval_every": 8, "batch_size": 5},
                     "dataset": oc20_lmdb_train_and_val_from_paths(
                         train_src=str(tutorial_val_src),
                         val_src=str(tutorial_val_src),
@@ -239,14 +282,33 @@ class TestSmoke:
                 energy_from_train, energy_from_checkpoint, rtol=1e-6, atol=1e-6
             )
 
+    # not all models are tested with otf normalization estimation
+    # only gemnet_oc, escn, equiformer, and their hydra versions
     @pytest.mark.parametrize(
         ("model_name", "otf_norms"),
         [
-            ("gemnet", False),
+            ("schnet", False),
+            ("scn", False),
+            ("gemnet_dt", False),
+            ("gemnet_dt_hydra", False),
+            ("gemnet_dt_hydra_grad", False),
+            ("gemnet_oc", False),
+            ("gemnet_oc", True),
+            ("gemnet_oc_hydra", False),
+            ("gemnet_oc_hydra", True),
+            ("gemnet_oc_hydra_grad", False),
+            ("dimenet++", False),
+            ("dimenet++_hydra", False),
+            ("painn", False),
+            ("painn_hydra", False),
             ("escn", False),
             ("escn", True),
+            ("escn_hydra", False),
+            ("escn_hydra", True),
             ("equiformer_v2", False),
             ("equiformer_v2", True),
+            ("equiformer_v2_hydra", False),
+            ("equiformer_v2_hydra", True),
         ],
     )
     def test_train_and_predict(
@@ -261,6 +323,71 @@ class TestSmoke:
             tutorial_val_src=tutorial_val_src,
             otf_norms=otf_norms,
         )
+
+    @pytest.mark.parametrize(
+        ("world_size", "ddp"),
+        [
+            pytest.param(2, True),
+            pytest.param(0, False),
+        ],
+    )
+    def test_ddp(self, world_size, ddp, configs, tutorial_val_src, torch_deterministic):
+        with tempfile.TemporaryDirectory() as tempdirname:
+            tempdir = Path(tempdirname)
+            extra_args = {"seed": 0}
+            if not ddp:
+                extra_args["no_ddp"] = True
+            _ = _run_main(
+                rundir=str(tempdir),
+                update_dict_with={
+                    "optim": {"max_epochs": 1},
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                    ),
+                },
+                update_run_args_with=extra_args,
+                input_yaml=configs["equiformer_v2"],
+                world_size=world_size,
+            )
+
+    @pytest.mark.parametrize(
+        ("world_size", "ddp"),
+        [
+            pytest.param(2, True),
+            pytest.param(0, False),
+        ],
+    )
+    def test_balanced_batch_sampler_ddp(
+        self, world_size, ddp, configs, tutorial_val_src, torch_deterministic
+    ):
+        # make dataset metadata
+        parser = get_lmdb_sizes_parser()
+        args, override_args = parser.parse_known_args(
+            ["--data-path", str(tutorial_val_src)]
+        )
+        make_lmdb_sizes(args)
+
+        with tempfile.TemporaryDirectory() as tempdirname:
+            tempdir = Path(tempdirname)
+            extra_args = {"seed": 0}
+            if not ddp:
+                extra_args["no_ddp"] = True
+            _ = _run_main(
+                rundir=str(tempdir),
+                update_dict_with={
+                    "optim": {"max_epochs": 1, "load_balancing": "atoms"},
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                    ),
+                },
+                update_run_args_with=extra_args,
+                input_yaml=configs["equiformer_v2"],
+                world_size=world_size,
+            )
 
     # train for a few steps and confirm same seeds get same results
     def test_different_seeds(
@@ -339,9 +466,9 @@ class TestSmallDatasetOptim:
     @pytest.mark.parametrize(
         ("model_name", "expected_energy_mae", "expected_force_mae"),
         [
-            pytest.param("gemnet", 0.4, 0.06, id="gemnet"),
-            pytest.param("escn", 0.4, 0.06, id="escn"),
-            pytest.param("equiformer_v2", 0.4, 0.06, id="equiformer_v2"),
+            pytest.param("gemnet_oc", 0.41, 0.06, id="gemnet_oc"),
+            pytest.param("escn", 0.41, 0.06, id="escn"),
+            pytest.param("equiformer_v2", 0.41, 0.06, id="equiformer_v2"),
         ],
     )
     def test_train_optimization(

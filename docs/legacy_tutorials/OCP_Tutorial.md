@@ -1807,7 +1807,7 @@ Similarly, to predict forces, we pass edge features through a fully-connected la
 
 @registry.register_model("simple")
 class SimpleAtomEdgeModel(torch.nn.Module):
-    def __init__(self, num_atoms, bond_feat_dim, num_targets, emb_size=64, num_radial=64, cutoff=6.0, env_exponent=5):
+    def __init__(self, emb_size=64, num_radial=64, cutoff=6.0, env_exponent=5):
         super().__init__()
 
         self.radial_basis = RadialBasis(

@@ -230,12 +230,6 @@ class OCPTrainer(BaseTrainer):
             if checkpoint_every == -1:
                 self.save(checkpoint_file="checkpoint.pt", training_state=True)
 
-        self.train_dataset.close_db()
-        if self.config.get("val_dataset", False):
-            self.val_dataset.close_db()
-        if self.config.get("test_dataset", False):
-            self.test_dataset.close_db()
-
     def _denorm_preds(self, target_key: str, prediction: torch.Tensor, batch: Batch):
         """Convert model output from a batch into raw prediction by denormalizing and adding references"""
         # denorm the outputs
