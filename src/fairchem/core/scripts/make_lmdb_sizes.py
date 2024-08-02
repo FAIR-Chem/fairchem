@@ -15,7 +15,7 @@ import numpy as np
 from tqdm import tqdm
 
 from fairchem.core.common.typing import assert_is_instance
-from fairchem.core.datasets import SinglePointLmdbDataset, TrajectoryLmdbDataset
+from fairchem.core.datasets.lmdb_dataset import LmdbDataset
 
 
 def get_data(index):
@@ -28,14 +28,13 @@ def get_data(index):
     return index, natoms, neighbors
 
 
-def main(args) -> None:
+def make_lmdb_sizes(args) -> None:
     path = assert_is_instance(args.data_path, str)
     global dataset
+    dataset = LmdbDataset({"src": path})
     if os.path.isdir(path):
-        dataset = TrajectoryLmdbDataset({"src": path})
         outpath = os.path.join(path, "metadata.npz")
     elif os.path.isfile(path):
-        dataset = SinglePointLmdbDataset({"src": path})
         outpath = os.path.join(os.path.dirname(path), "metadata.npz")
 
     output_indices = range(len(dataset))
@@ -63,7 +62,7 @@ def main(args) -> None:
         np.savez(outpath, natoms=sorted_natoms, neighbors=sorted_neighbors)
 
 
-if __name__ == "__main__":
+def get_lmdb_sizes_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--data-path",
@@ -77,5 +76,10 @@ if __name__ == "__main__":
         type=int,
         help="Num of workers to parallelize across",
     )
+    return parser
+
+
+if __name__ == "__main__":
+    parser = get_lmdb_sizes_parser()
     args: argparse.Namespace = parser.parse_args()
-    main(args)
+    make_lmdb_sizes(args)
