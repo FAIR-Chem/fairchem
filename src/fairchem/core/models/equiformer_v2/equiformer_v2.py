@@ -811,7 +811,7 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
 
 @registry.register_model("equiformer_v2_energy_head")
 class EquiformerV2EnergyHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, head_config):
+    def __init__(self, backbone):
         super().__init__()
         self.avg_num_nodes = backbone.avg_num_nodes
         self.energy_block = FeedForwardNetwork(
@@ -843,7 +843,7 @@ class EquiformerV2EnergyHead(nn.Module, HeadInterface):
 
 @registry.register_model("equiformer_v2_force_head")
 class EquiformerV2ForceHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, head_config):
+    def __init__(self, backbone):
         super().__init__()
 
         self.force_block = SO2EquivariantGraphAttention(

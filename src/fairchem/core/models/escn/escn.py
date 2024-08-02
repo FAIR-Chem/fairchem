@@ -530,7 +530,7 @@ class eSCNBackbone(eSCN, BackboneInterface):
 
 @registry.register_model("escn_energy_head")
 class eSCNEnergyHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, head_config):
+    def __init__(self, backbone):
         super().__init__()
 
         # Output blocks for energy and forces
@@ -550,7 +550,7 @@ class eSCNEnergyHead(nn.Module, HeadInterface):
 
 @registry.register_model("escn_force_head")
 class eSCNForceHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, head_config):
+    def __init__(self, backbone):
         super().__init__()
 
         self.force_block = ForceBlock(

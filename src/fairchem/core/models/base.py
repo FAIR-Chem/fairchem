@@ -222,8 +222,7 @@ class BaseHydra(nn.Module, GraphModelMixin):
             module_name = head_config.pop("module")
             self.output_heads[head_name] = registry.get_model_class(module_name)(
                 self.backbone,
-                backbone,
-                head_config,
+                **head_config,
             )
 
         self.output_heads = torch.nn.ModuleDict(self.output_heads)

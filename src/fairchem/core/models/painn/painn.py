@@ -674,7 +674,7 @@ class GatedEquivariantBlock(nn.Module):
 
 @registry.register_model("painn_energy_head")
 class PaiNNEnergyHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, head_config):
+    def __init__(self, backbone):
         super().__init__()
 
         self.out_energy = nn.Sequential(
@@ -697,7 +697,7 @@ class PaiNNEnergyHead(nn.Module, HeadInterface):
 
 @registry.register_model("painn_force_head")
 class PaiNNForceHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, head_config):
+    def __init__(self, backbone):
         super().__init__()
         self.direct_forces = backbone.direct_forces
 
