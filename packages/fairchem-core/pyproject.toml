@@ -19,7 +19,7 @@ dependencies = [
     "wandb",
     "numba",
     "e3nn>=0.5",
-    "urllib3",
+    "requests",
     "orjson",
     "tqdm",
     "submitit"
