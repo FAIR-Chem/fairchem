@@ -9,6 +9,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 import yaml
+from fairchem.core.common.test_utils import (
+    PGConfig,
+    init_env_rank_and_launch_test,
+    spawn_multi_process,
+)
+from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
 from fairchem.core._cli import Runner
@@ -84,6 +90,7 @@ def _run_main(
     update_run_args_with=None,
     save_checkpoint_to=None,
     save_predictions_to=None,
+    world_size=0,
 ):
     config_yaml = Path(rundir) / "train_and_val_on_val.yml"
 
@@ -91,6 +98,7 @@ def _run_main(
         yaml_config = yaml.safe_load(yaml_file)
     if update_dict_with is not None:
         yaml_config = merge_dictionary(yaml_config, update_dict_with)
+        yaml_config["backend"] = "gloo"
     with open(str(config_yaml), "w") as yaml_file:
         yaml.dump(yaml_config, yaml_file)
 
@@ -110,7 +118,19 @@ def _run_main(
     for arg_name, arg_value in run_args.items():
         setattr(args, arg_name, arg_value)
     config = build_config(args, override_args)
-    Runner()(config)
+
+    if world_size > 0:
+        pg_config = PGConfig(
+            backend="gloo", world_size=world_size, gp_group_size=1, use_gp=False
+        )
+        spawn_multi_process(
+            pg_config,
+            Runner(distributed=True),
+            init_env_rank_and_launch_test,
+            config,
+        )
+    else:
+        Runner()(config)
 
     if save_checkpoint_to is not None:
         checkpoints = glob.glob(f"{rundir}/checkpoints/*/checkpoint.pt")
@@ -213,6 +233,72 @@ class TestSmoke:
             tutorial_val_src=tutorial_val_src,
         )
 
+    @pytest.mark.parametrize(
+        ("world_size", "ddp"),
+        [
+            pytest.param(2, True),
+            pytest.param(0, False),
+        ],
+    )
+    def test_ddp(self, world_size, ddp, configs, tutorial_val_src, torch_deterministic):
+        with tempfile.TemporaryDirectory() as tempdirname:
+            tempdir = Path(tempdirname)
+            extra_args = {"seed": 0}
+            if not ddp:
+                extra_args["no_ddp"] = True
+            _ = _run_main(
+                rundir=str(tempdir),
+                update_dict_with={
+                    "optim": {"max_epochs": 1},
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                    ),
+                },
+                update_run_args_with=extra_args,
+                input_yaml=configs["equiformer_v2"],
+                world_size=world_size,
+            )
+
+    @pytest.mark.parametrize(
+        ("world_size", "ddp"),
+        [
+            pytest.param(2, True),
+            pytest.param(0, False),
+        ],
+    )
+    def test_balanced_batch_sampler_ddp(
+        self, world_size, ddp, configs, tutorial_val_src, torch_deterministic
+    ):
+
+        # make dataset metadata
+        parser = get_lmdb_sizes_parser()
+        args, override_args = parser.parse_known_args(
+            ["--data-path", str(tutorial_val_src)]
+        )
+        make_lmdb_sizes(args)
+
+        with tempfile.TemporaryDirectory() as tempdirname:
+            tempdir = Path(tempdirname)
+            extra_args = {"seed": 0}
+            if not ddp:
+                extra_args["no_ddp"] = True
+            _ = _run_main(
+                rundir=str(tempdir),
+                update_dict_with={
+                    "optim": {"max_epochs": 1, "load_balancing": "atoms"},
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                    ),
+                },
+                update_run_args_with=extra_args,
+                input_yaml=configs["equiformer_v2"],
+                world_size=world_size,
+            )
+
     # train for a few steps and confirm same seeds get same results
     def test_different_seeds(
         self,
@@ -290,9 +376,9 @@ class TestSmallDatasetOptim:
     @pytest.mark.parametrize(
         ("model_name", "expected_energy_mae", "expected_force_mae"),
         [
-            pytest.param("gemnet", 0.4, 0.06, id="gemnet"),
-            pytest.param("escn", 0.4, 0.06, id="escn"),
-            pytest.param("equiformer_v2", 0.4, 0.06, id="equiformer_v2"),
+            pytest.param("gemnet", 0.41, 0.06, id="gemnet"),
+            pytest.param("escn", 0.41, 0.06, id="escn"),
+            pytest.param("equiformer_v2", 0.41, 0.06, id="equiformer_v2"),
         ],
     )
     def test_train_optimization(

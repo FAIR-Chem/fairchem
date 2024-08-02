@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import copy
 import datetime
 import errno
 import logging
@@ -38,6 +39,7 @@ from fairchem.core.common.utils import (
     save_checkpoint,
     update_config,
 )
+from fairchem.core.datasets.base_dataset import create_dataset
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
@@ -241,12 +243,16 @@ class BaseTrainer(ABC):
     def get_sampler(
         self, dataset, batch_size: int, shuffle: bool
     ) -> BalancedBatchSampler:
-        if "load_balancing" in self.config["optim"]:
-            balancing_mode = self.config["optim"]["load_balancing"]
-            force_balancing = True
+        balancing_mode = self.config["optim"].get("load_balancing", None)
+        on_error = self.config["optim"].get("load_balancing_on_error", None)
+        if balancing_mode is not None:
+            if on_error is None:
+                on_error = "raise"
         else:
             balancing_mode = "atoms"
-            force_balancing = False
+
+        if on_error is None:
+            on_error = "warn_and_no_balance"
 
         if gp_utils.initialized():
             num_replicas = gp_utils.get_dp_world_size()
@@ -262,7 +268,7 @@ class BaseTrainer(ABC):
             device=self.device,
             mode=balancing_mode,
             shuffle=shuffle,
-            force_balancing=force_balancing,
+            on_error=on_error,
             seed=self.config["cmd"]["seed"],
         )
 
@@ -283,15 +289,26 @@ class BaseTrainer(ABC):
         self.val_loader = None
         self.test_loader = None
 
+        # This is hacky and scheduled to be removed next BE week
+        # move ['X_split_settings'] to ['splits'][X]
+        def convert_settings_to_split_settings(config, split_name):
+            config = copy.deepcopy(config)  # make sure we dont modify the original
+            if f"{split_name}_split_settings" in config:
+                config["splits"] = {
+                    split_name: config.pop(f"{split_name}_split_settings")
+                }
+            return config
+
         # load train, val, test datasets
         if "src" in self.config["dataset"]:
             logging.info(
                 f"Loading dataset: {self.config['dataset'].get('format', 'lmdb')}"
             )
 
-            self.train_dataset = registry.get_dataset_class(
-                self.config["dataset"].get("format", "lmdb")
-            )(self.config["dataset"])
+            self.train_dataset = create_dataset(
+                convert_settings_to_split_settings(self.config["dataset"], "train"),
+                "train",
+            )
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
                 self.config["optim"]["batch_size"],
@@ -302,6 +319,16 @@ class BaseTrainer(ABC):
                 self.train_sampler,
             )
 
+        if (
+            "first_n" in self.config["dataset"]
+            or "sample_n" in self.config["dataset"]
+            or "max_atom" in self.config["dataset"]
+        ):
+            logging.warn(
+                "Dataset attributes (first_n/sample_n/max_atom) passed to all datasets! Please don't do this, its dangerous!\n"
+                + "Add them under each dataset 'train_split_settings'/'val_split_settings'/'test_split_settings'"
+            )
+
         if "src" in self.config["val_dataset"]:
             if self.config["val_dataset"].get("use_train_settings", True):
                 val_config = self.config["dataset"].copy()
@@ -309,9 +336,9 @@ class BaseTrainer(ABC):
             else:
                 val_config = self.config["val_dataset"]
 
-            self.val_dataset = registry.get_dataset_class(
-                val_config.get("format", "lmdb")
-            )(val_config)
+            self.val_dataset = create_dataset(
+                convert_settings_to_split_settings(val_config, "val"), "val"
+            )
             self.val_sampler = self.get_sampler(
                 self.val_dataset,
                 self.config["optim"].get(
@@ -331,9 +358,9 @@ class BaseTrainer(ABC):
             else:
                 test_config = self.config["test_dataset"]
 
-            self.test_dataset = registry.get_dataset_class(
-                test_config.get("format", "lmdb")
-            )(test_config)
+            self.test_dataset = create_dataset(
+                convert_settings_to_split_settings(test_config, "test"), "test"
+            )
             self.test_sampler = self.get_sampler(
                 self.test_dataset,
                 self.config["optim"].get(
@@ -398,15 +425,15 @@ class BaseTrainer(ABC):
                         ][target_name].get("level", "system")
                     if "train_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["train_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("train_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "train_on_free_atoms", True
+                            )
                         )
                     if "eval_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["eval_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("eval_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "eval_on_free_atoms", True
+                            )
                         )
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
@@ -429,11 +456,13 @@ class BaseTrainer(ABC):
 
         loader = self.train_loader or self.val_loader or self.test_loader
         self.model = registry.get_model_class(self.config["model"])(
-            loader.dataset[0].x.shape[-1]
-            if loader
-            and hasattr(loader.dataset[0], "x")
-            and loader.dataset[0].x is not None
-            else None,
+            (
+                loader.dataset[0].x.shape[-1]
+                if loader
+                and hasattr(loader.dataset[0], "x")
+                and loader.dataset[0].x is not None
+                else None
+            ),
             bond_feat_dim,
             1,
             **self.config["model_attributes"],
@@ -455,7 +484,9 @@ class BaseTrainer(ABC):
             self.logger.log_summary({"num_params": self.model.num_params})
 
         if distutils.initialized() and not self.config["noddp"]:
-            self.model = DistributedDataParallel(self.model, device_ids=[self.device])
+            self.model = DistributedDataParallel(
+                self.model, device_ids=None if self.cpu else [self.device]
+            )
 
     @property
     def _unwrapped_model(self):
@@ -639,9 +670,11 @@ class BaseTrainer(ABC):
                         "step": self.step,
                         "state_dict": self.model.state_dict(),
                         "optimizer": self.optimizer.state_dict(),
-                        "scheduler": self.scheduler.scheduler.state_dict()
-                        if self.scheduler.scheduler_type != "Null"
-                        else None,
+                        "scheduler": (
+                            self.scheduler.scheduler.state_dict()
+                            if self.scheduler.scheduler_type != "Null"
+                            else None
+                        ),
                         "normalizers": {
                             key: value.state_dict()
                             for key, value in self.normalizers.items()

@@ -18,7 +18,11 @@ from ase.io import read
 from torch.nn.parallel.distributed import DistributedDataParallel
 
 from fairchem.core.common.registry import registry
-from fairchem.core.common.test_utils import PGConfig, spawn_multi_process
+from fairchem.core.common.test_utils import (
+    PGConfig,
+    init_pg_and_rank_and_launch_test,
+    spawn_multi_process,
+)
 from fairchem.core.common.utils import load_state_dict, setup_imports
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.models.equiformer_v2.so3 import (
@@ -140,7 +144,9 @@ class TestEquiformerV2:
     def test_ddp(self, snapshot):
         data_dist = self.data.clone().detach()
         config = PGConfig(backend="gloo", world_size=1, gp_group_size=1, use_gp=False)
-        output = spawn_multi_process(config, _runner, data_dist)
+        output = spawn_multi_process(
+            config, _runner, init_pg_and_rank_and_launch_test, data_dist
+        )
         assert len(output) == 1
         energy, forces = output[0]["energy"], output[0]["forces"]
         assert snapshot == energy.shape
@@ -151,7 +157,9 @@ class TestEquiformerV2:
     def test_gp(self, snapshot):
         data_dist = self.data.clone().detach()
         config = PGConfig(backend="gloo", world_size=2, gp_group_size=2, use_gp=True)
-        output = spawn_multi_process(config, _runner, data_dist)
+        output = spawn_multi_process(
+            config, _runner, init_pg_and_rank_and_launch_test, data_dist
+        )
         assert len(output) == 2
         energy, forces = output[0]["energy"], output[0]["forces"]
         assert snapshot == energy.shape
@@ -225,4 +233,3 @@ class TestMPrimaryLPrimary:
                 embedding._l_primary(c)
                 lp = embedding.embedding.clone()
                 (test_matrix_lp == lp).all()
-

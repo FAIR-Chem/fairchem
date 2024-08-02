@@ -75,7 +75,7 @@ We start by making the config.yml. We build this from the calculator checkpoint.
 from fairchem.core.common.tutorial_utils import generate_yml_config
 
 yml = generate_yml_config(checkpoint_path, 'config.yml',
-                   delete=['slurm', 'cmd', 'logger', 'task', 'model_attributes',
+                   delete=['slurm', 'cmd', 'logger', 'task', 'model_attributes','optim.load_balancing',
                            'optim.loss_force', # the checkpoint setting causes an error
                            'dataset', 'test_dataset', 'val_dataset'],
                    update={'gpus': 1,
