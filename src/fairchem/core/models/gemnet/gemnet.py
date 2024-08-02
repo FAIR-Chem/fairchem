@@ -20,8 +20,7 @@ from torch_sparse import SparseTensor
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
-from fairchem.core.models.hydra import BackboneInterface, HeadInterface
+from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
 from fairchem.core.modules.scaling.compat import load_scales_compat
 
 from .layers.atom_update_block import OutputBlock
@@ -35,7 +34,7 @@ from .utils import inner_product_normalized, mask_neighbors, ragged_range, repea
 
 
 @registry.register_model("gemnet_t")
-class GemNetT(BaseModel):
+class GemNetT(nn.Module, GraphModelMixin):
     """
     GemNet-T, triplets-only variant of GemNet
 
@@ -419,18 +418,10 @@ class GemNetT(BaseModel):
 
     def generate_interaction_graph(self, data):
         num_atoms = data.atomic_numbers.size(0)
-
-        (
-            edge_index,
-            D_st,
-            distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(data)
+        graph = self.generate_graph(data)
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
-        V_st = -distance_vec / D_st[:, None]
+        V_st = -graph.edge_distance_vec / graph.edge_distance[:, None]
 
         # Mask interaction edges if required
         if self.otf_graph or np.isclose(self.cutoff, 6):
@@ -445,10 +436,10 @@ class GemNetT(BaseModel):
             V_st,
         ) = self.select_edges(
             data=data,
-            edge_index=edge_index,
-            cell_offsets=cell_offsets,
-            neighbors=neighbors,
-            edge_dist=D_st,
+            edge_index=graph.edge_index,
+            cell_offsets=graph.cell_offsets,
+            neighbors=graph.neighbors,
+            edge_dist=graph.edge_distance,
             edge_vector=V_st,
             cutoff=select_cutoff,
         )
@@ -591,7 +582,6 @@ class GemNetT(BaseModel):
 
 @registry.register_model("gemnet_t_backbone")
 class GemNetTBackbone(GemNetT, BackboneInterface):
-
     @conditional_grad(torch.enable_grad())
     def forward(self, data: Batch) -> dict[str, torch.Tensor]:
         pos = data.pos
@@ -664,7 +654,7 @@ class GemNetTBackbone(GemNetT, BackboneInterface):
 
 @registry.register_model("gemnet_t_energy_and_grad_force_head")
 class GemNetTEnergyAndGradForceHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, backbone_config, head_config):
+    def __init__(self, backbone):
         super().__init__()
         self.extensive = backbone.extensive
         self.regress_forces = backbone.regress_forces
@@ -696,14 +686,13 @@ class GemNetTEnergyAndGradForceHead(nn.Module, HeadInterface):
 
 @registry.register_model("gemnet_t_force_head")
 class GemNetTForceHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, backbone_config, head_config):
+    def __init__(self, backbone):
         super().__init__()
         self.direct_forces = backbone.direct_forces
 
     def forward(
         self, data: Batch, emb: dict[str, torch.Tensor]
     ) -> dict[str, torch.Tensor]:
-
         # map forces in edge directions
         F_st_vec = emb["F_st"][:, :, None] * emb["edge_vec"][:, None, :]
         # (nEdges, 1, 3)

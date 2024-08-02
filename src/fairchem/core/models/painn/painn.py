@@ -44,11 +44,10 @@ from torch_scatter import scatter, segment_coo
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
 from fairchem.core.models.gemnet.layers.base_layers import ScaledSiLU
 from fairchem.core.models.gemnet.layers.embedding_block import AtomEmbedding
 from fairchem.core.models.gemnet.layers.radial_basis import RadialBasis
-from fairchem.core.models.hydra import BackboneInterface, HeadInterface
 from fairchem.core.modules.scaling import ScaleFactor
 from fairchem.core.modules.scaling.compat import load_scales_compat
 
@@ -56,7 +55,7 @@ from .utils import get_edge_id, repeat_blocks
 
 
 @registry.register_model("painn")
-class PaiNN(BaseModel):
+class PaiNN(nn.Module, GraphModelMixin):
     r"""PaiNN model based on the description in Schütt et al. (2021):
     Equivariant message passing for the prediction of tensorial properties
     and molecular spectra, https://arxiv.org/abs/2102.03150.
@@ -312,23 +311,16 @@ class PaiNN(BaseModel):
         )
 
     def generate_graph_values(self, data):
-        (
-            edge_index,
-            edge_dist,
-            distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(data)
+        graph = self.generate_graph(data)
 
         # Unit vectors pointing from edge_index[1] to edge_index[0],
         # i.e., edge_index[0] - edge_index[1] divided by the norm.
         # make sure that the distances are not close to zero before dividing
-        mask_zero = torch.isclose(edge_dist, torch.tensor(0.0), atol=1e-6)
-        edge_dist[mask_zero] = 1.0e-6
-        edge_vector = distance_vec / edge_dist[:, None]
+        mask_zero = torch.isclose(graph.edge_distance, torch.tensor(0.0), atol=1e-6)
+        graph.edge_distance[mask_zero] = 1.0e-6
+        edge_vector = graph.edge_distance_vec / graph.edge_distance[:, None]
 
-        empty_image = neighbors == 0
+        empty_image = graph.neighbors == 0
         if torch.any(empty_image):
             raise ValueError(
                 f"An image has no neighbors: id={data.id[empty_image]}, "
@@ -344,11 +336,11 @@ class PaiNN(BaseModel):
             [edge_vector],
             id_swap,
         ) = self.symmetrize_edges(
-            edge_index,
-            cell_offsets,
-            neighbors,
+            graph.edge_index,
+            graph.cell_offsets,
+            graph.neighbors,
             data.batch,
-            [edge_dist],
+            [graph.edge_distance],
             [edge_vector],
         )
 
@@ -440,7 +432,6 @@ class PaiNN(BaseModel):
 
 @registry.register_model("painn_backbone")
 class PaiNNBackbone(PaiNN, BackboneInterface):
-
     @conditional_grad(torch.enable_grad())
     def forward(self, data) -> dict[str, torch.Tensor]:
         pos = data.pos
@@ -676,7 +667,7 @@ class GatedEquivariantBlock(nn.Module):
 
 @registry.register_model("painn_energy_head")
 class PaiNNEnergyHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, backbone_config, head_config):
+    def __init__(self, backbone):
         super().__init__()
 
         self.out_energy = nn.Sequential(
@@ -699,7 +690,7 @@ class PaiNNEnergyHead(nn.Module, HeadInterface):
 
 @registry.register_model("painn_force_head")
 class PaiNNForceHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, backbone_config, head_config):
+    def __init__(self, backbone):
         super().__init__()
         self.direct_forces = backbone.direct_forces
 

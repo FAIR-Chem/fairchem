@@ -28,7 +28,7 @@ task:
   prediction_dtype: float32
 
 model:
-  name: base_hydra
+  name: hydra
   backbone:
     model: escn_backbone
     num_layers: 2

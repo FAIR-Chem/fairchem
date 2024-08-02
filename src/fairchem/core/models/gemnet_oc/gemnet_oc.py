@@ -12,9 +12,6 @@ import typing
 import numpy as np
 import torch
 import torch.nn as nn
-
-if typing.TYPE_CHECKING:
-    from torch_geometric.data.batch import Batch
 from torch_scatter import segment_coo
 
 from fairchem.core.common.registry import registry
@@ -23,8 +20,7 @@ from fairchem.core.common.utils import (
     get_max_neighbors_mask,
     scatter_det,
 )
-from fairchem.core.models.base import BaseModel
-from fairchem.core.models.hydra import BackboneInterface, HeadInterface
+from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
 from fairchem.core.modules.scaling.compat import load_scales_compat
 
 from .initializers import get_initializer
@@ -46,9 +42,12 @@ from .utils import (
     repeat_blocks,
 )
 
+if typing.TYPE_CHECKING:
+    from torch_geometric.data.batch import Batch
+
 
 @registry.register_model("gemnet_oc")
-class GemNetOC(BaseModel):
+class GemNetOC(nn.Module, GraphModelMixin):
     """
     Arguments
     ---------
@@ -251,6 +250,7 @@ class GemNetOC(BaseModel):
         self.num_blocks = num_blocks
         self.extensive = extensive
 
+        self.activation = activation
         self.atom_edge_interaction = atom_edge_interaction
         self.edge_atom_interaction = edge_atom_interaction
         self.atom_interaction = atom_interaction
@@ -865,15 +865,7 @@ class GemNetOC(BaseModel):
     def generate_graph_dict(self, data, cutoff, max_neighbors):
         """Generate a radius/nearest neighbor graph."""
         otf_graph = cutoff > 6 or max_neighbors > 50 or self.otf_graph
-
-        (
-            edge_index,
-            edge_dist,
-            distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            num_neighbors,
-        ) = self.generate_graph(
+        graph = self.generate_graph(
             data,
             cutoff=cutoff,
             max_neighbors=max_neighbors,
@@ -881,15 +873,15 @@ class GemNetOC(BaseModel):
         )
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
-        edge_vector = -distance_vec / edge_dist[:, None]
-        cell_offsets = -cell_offsets  # a - c + offset
+        edge_vector = -graph.edge_distance_vec / graph.edge_distance[:, None]
+        cell_offsets = -graph.cell_offsets  # a - c + offset
 
         graph = {
-            "edge_index": edge_index,
-            "distance": edge_dist,
+            "edge_index": graph.edge_index,
+            "distance": graph.edge_distance,
             "vector": edge_vector,
             "cell_offset": cell_offsets,
-            "num_neighbors": num_neighbors,
+            "num_neighbors": graph.neighbors,
         }
 
         # Mask interaction edges if required
@@ -1422,7 +1414,12 @@ class GemNetOCBackbone(GemNetOC, BackboneInterface):
 
 @registry.register_model("gemnet_oc_energy_and_grad_force_head")
 class GemNetOCEnergyAndGradForceHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, backbone_config, head_config):
+    def __init__(
+        self,
+        backbone: BackboneInterface,
+        num_global_out_layers: int,
+        output_init: str = "HeOrthogonal",
+    ):
         super().__init__()
         self.extensive = backbone.extensive
 
@@ -1432,27 +1429,27 @@ class GemNetOCEnergyAndGradForceHead(nn.Module, HeadInterface):
 
         out_mlp_E = [
             Dense(
-                backbone_config["emb_size_atom"] * (backbone_config["num_blocks"] + 1),
-                backbone_config["emb_size_atom"],
-                activation=backbone_config["activation"],
+                backbone.atom_emb.emb_size * (len(backbone.int_blocks) + 1),
+                backbone.atom_emb.emb_size,
+                activation=backbone.activation,
             )
         ] + [
             ResidualLayer(
-                backbone_config["emb_size_atom"],
-                activation=backbone_config["activation"],
+                backbone.atom_emb.emb_size,
+                activation=backbone.activation,
             )
-            for _ in range(backbone_config["num_global_out_layers"])
+            for _ in range(num_global_out_layers)
         ]
         self.out_mlp_E = torch.nn.Sequential(*out_mlp_E)
 
         self.out_energy = Dense(
-            backbone_config["emb_size_atom"],
+            backbone.atom_emb.emb_size,
             1,
             bias=False,
             activation=None,
         )
 
-        out_initializer = get_initializer(backbone_config["output_init"])
+        out_initializer = get_initializer(output_init)
         self.out_energy.reset_parameters(out_initializer)
 
     @conditional_grad(torch.enable_grad())
@@ -1484,35 +1481,37 @@ class GemNetOCEnergyAndGradForceHead(nn.Module, HeadInterface):
 
 @registry.register_model("gemnet_oc_force_head")
 class GemNetOCForceHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, backbone_config, head_config):
+    def __init__(
+        self, backbone, num_global_out_layers: int, output_init: str = "HeOrthogonal"
+    ):
         super().__init__()
 
         self.direct_forces = backbone.direct_forces
         self.forces_coupled = backbone.forces_coupled
 
+        emb_size_edge = backbone.edge_emb.dense.linear.out_features
         if self.direct_forces:
             out_mlp_F = [
                 Dense(
-                    backbone_config["emb_size_edge"]
-                    * (backbone_config["num_blocks"] + 1),
-                    backbone_config["emb_size_edge"],
-                    activation=backbone_config["activation"],
+                    emb_size_edge * (len(backbone.int_blocks) + 1),
+                    emb_size_edge,
+                    activation=backbone.activation,
                 )
             ] + [
                 ResidualLayer(
-                    backbone_config["emb_size_edge"],
-                    activation=backbone_config["activation"],
+                    emb_size_edge,
+                    activation=backbone.activation,
                 )
-                for _ in range(backbone_config["num_global_out_layers"])
+                for _ in range(num_global_out_layers)
             ]
             self.out_mlp_F = torch.nn.Sequential(*out_mlp_F)
             self.out_forces = Dense(
-                backbone_config["emb_size_edge"],
+                emb_size_edge,
                 1,
                 bias=False,
                 activation=None,
             )
-            out_initializer = get_initializer(backbone_config["output_init"])
+            out_initializer = get_initializer(output_init)
             self.out_forces.reset_parameters(out_initializer)
 
     def forward(

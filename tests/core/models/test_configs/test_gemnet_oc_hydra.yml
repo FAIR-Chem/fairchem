@@ -31,7 +31,7 @@ task:
   prediction_dtype: float32
 
 model:
-  name: base_hydra
+  name: hydra
   backbone:
     model: gemnet_oc_backbone
     num_spherical: 3
@@ -88,10 +88,12 @@ model:
     num_global_out_layers: 2
     qint_tags: [1, 2]
   heads:
-    energy: 
+    energy:
       module: gemnet_oc_energy_and_grad_force_head
+      num_global_out_layers: 2
     forces:
       module: gemnet_oc_force_head
+      num_global_out_layers: 2
 
 optim:
   batch_size: 5

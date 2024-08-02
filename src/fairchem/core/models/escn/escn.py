@@ -20,14 +20,13 @@ if typing.TYPE_CHECKING:
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
 from fairchem.core.models.escn.so3 import (
     CoefficientMapping,
     SO3_Embedding,
     SO3_Grid,
     SO3_Rotation,
 )
-from fairchem.core.models.hydra import BackboneInterface, HeadInterface
 from fairchem.core.models.scn.sampling import CalcSpherePoints
 from fairchem.core.models.scn.smearing import (
     GaussianSmearing,
@@ -41,7 +40,7 @@ with contextlib.suppress(ImportError):
 
 
 @registry.register_model("escn")
-class eSCN(BaseModel):
+class eSCN(nn.Module, GraphModelMixin):
     """Equivariant Spherical Channel Network
     Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
 
@@ -81,7 +80,6 @@ class eSCN(BaseModel):
         sphere_channels: int = 128,
         hidden_channels: int = 256,
         edge_channels: int = 128,
-        use_grid: bool = True,
         num_sphere_samples: int = 128,
         distance_function: str = "gaussian",
         basis_width_scalar: float = 1.0,
@@ -234,22 +232,16 @@ class eSCN(BaseModel):
         start_time = time.time()
         atomic_numbers = data.atomic_numbers.long()
         num_atoms = len(atomic_numbers)
-
-        (
-            edge_index,
-            edge_distance,
-            edge_distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(data)
+        graph = self.generate_graph(data)
 
         ###############################################################
         # Initialize data structures
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(data, edge_index, edge_distance_vec)
+        edge_rot_mat = self._init_edge_rot_mat(
+            data, graph.edge_index, graph.edge_distance_vec
+        )
 
         # Initialize the WignerD matrices and other values for spherical harmonic calculations
         self.SO3_edge_rot = nn.ModuleList()
@@ -292,8 +284,8 @@ class eSCN(BaseModel):
                 x_message = self.layer_blocks[i](
                     x,
                     atomic_numbers,
-                    edge_distance,
-                    edge_index,
+                    graph.edge_distance,
+                    graph.edge_index,
                     self.SO3_edge_rot,
                     mappingReduced,
                 )
@@ -306,8 +298,8 @@ class eSCN(BaseModel):
                 x = self.layer_blocks[i](
                     x,
                     atomic_numbers,
-                    edge_distance,
-                    edge_index,
+                    graph.edge_distance,
+                    graph.edge_index,
                     self.SO3_edge_rot,
                     mappingReduced,
                 )
@@ -434,21 +426,16 @@ class eSCNBackbone(eSCN, BackboneInterface):
         atomic_numbers = data.atomic_numbers.long()
         num_atoms = len(atomic_numbers)
 
-        (
-            edge_index,
-            edge_distance,
-            edge_distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(data)
+        graph = self.generate_graph(data)
 
         ###############################################################
         # Initialize data structures
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(data, edge_index, edge_distance_vec)
+        edge_rot_mat = self._init_edge_rot_mat(
+            data, graph.edge_index, graph.edge_distance_vec
+        )
 
         # Initialize the WignerD matrices and other values for spherical harmonic calculations
         self.SO3_edge_rot = nn.ModuleList()
@@ -491,8 +478,8 @@ class eSCNBackbone(eSCN, BackboneInterface):
                 x_message = self.layer_blocks[i](
                     x,
                     atomic_numbers,
-                    edge_distance,
-                    edge_index,
+                    graph.edge_distance,
+                    graph.edge_index,
                     self.SO3_edge_rot,
                     mappingReduced,
                 )
@@ -505,8 +492,8 @@ class eSCNBackbone(eSCN, BackboneInterface):
                 x = self.layer_blocks[i](
                     x,
                     atomic_numbers,
-                    edge_distance,
-                    edge_index,
+                    graph.edge_distance,
+                    graph.edge_index,
                     self.SO3_edge_rot,
                     mappingReduced,
                 )
@@ -538,7 +525,7 @@ class eSCNBackbone(eSCN, BackboneInterface):
 
 @registry.register_model("escn_energy_head")
 class eSCNEnergyHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, backbone_config, head_config):
+    def __init__(self, backbone):
         super().__init__()
 
         # Output blocks for energy and forces
@@ -558,7 +545,7 @@ class eSCNEnergyHead(nn.Module, HeadInterface):
 
 @registry.register_model("escn_force_head")
 class eSCNForceHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, backbone_config, head_config):
+    def __init__(self, backbone):
         super().__init__()
 
         self.force_block = ForceBlock(

@@ -13,11 +13,11 @@ from torch_scatter import scatter
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import GraphModelMixin
 
 
 @registry.register_model("schnet")
-class SchNetWrap(SchNet, BaseModel):
+class SchNetWrap(SchNet, GraphModelMixin):
     r"""Wrapper around the continuous-filter convolutional neural network SchNet from the
     `"SchNet: A Continuous-filter Convolutional Neural Network for Modeling
     Quantum Interactions" <https://arxiv.org/abs/1706.08566>`_. Each layer uses interaction
@@ -82,25 +82,17 @@ class SchNetWrap(SchNet, BaseModel):
         z = data.atomic_numbers.long()
         pos = data.pos
         batch = data.batch
-
-        (
-            edge_index,
-            edge_weight,
-            distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(data)
+        graph = self.generate_graph(data)
 
         if self.use_pbc:
             assert z.dim() == 1
             assert z.dtype == torch.long
 
-            edge_attr = self.distance_expansion(edge_weight)
+            edge_attr = self.distance_expansion(graph.edge_distance)
 
             h = self.embedding(z)
             for interaction in self.interactions:
-                h = h + interaction(h, edge_index, edge_weight, edge_attr)
+                h = h + interaction(h, graph.edge_index, graph.edge_distance, edge_attr)
 
             h = self.lin1(h)
             h = self.act(h)
@@ -119,13 +111,16 @@ class SchNetWrap(SchNet, BaseModel):
         outputs = {"energy": energy}
 
         if self.regress_forces:
-            forces = -1 * (
-                torch.autograd.grad(
-                    energy,
-                    data.pos,
-                    grad_outputs=torch.ones_like(energy),
-                    create_graph=True,
-                )[0]
+            forces = (
+                -1
+                * (
+                    torch.autograd.grad(
+                        energy,
+                        data.pos,
+                        grad_outputs=torch.ones_like(energy),
+                        create_graph=True,
+                    )[0]
+                )
             )
             outputs["forces"] = forces
 
