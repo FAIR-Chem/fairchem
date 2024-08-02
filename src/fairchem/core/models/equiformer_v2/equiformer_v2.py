@@ -395,7 +395,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
                 requires_grad=False,
             )
 
-        self.apply(self._init_weights)
+        self.apply(self.init_weights)
         self.apply(self._uniform_init_rad_func_linear_weights)
 
     def _init_gp_partitions(
@@ -625,7 +625,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
     def num_params(self):
         return sum(p.numel() for p in self.parameters())
 
-    def _init_weights(self, m):
+    def init_weights(self, m):
         if isinstance(m, (torch.nn.Linear, SO3_LinearV2)):
             if m.bias is not None:
                 torch.nn.init.constant_(m.bias, 0)
