@@ -311,13 +311,6 @@ class PaiNN(nn.Module, GraphModelMixin):
         )
 
     def generate_graph_values(self, data):
-        # (
-        #     edge_index,
-        #     edge_dist,
-        #     distance_vec,
-        #     cell_offsets,
-        #     _,  # cell offset distances
-        #     neighbors,
         graph = self.generate_graph(data)
 
         # Unit vectors pointing from edge_index[1] to edge_index[0],
