@@ -21,7 +21,7 @@ NOTE - ASE trajectories exclude systems that were not converged or had invalid c
 |ASE Trajectories    |29G    |112G   | [ee937e5290f8f720c914dc9a56e0281f](https://dl.fbaipublicfiles.com/opencatalystproject/data/adsorbml/oc20_dense_trajectories.tar.gz)   |
 
 The following files are also provided to be used for evaluation and general information:
-* `oc20dense_mapping.pkl` : Mapping of the LMDB `sid` to general metadata information -
+* `oc20dense_mapping.pkl` : Mapping of the LMDB `sid` to general metadata information. If this file is not present, run the command `python src/fairchem/core/scripts/download_large_files.py adsorbml` from the root of the fairchem repo to download it. -
   * `system_id`: Unique system identifier for an adsorbate, bulk, surface combination.
   * `config_id`: Unique configuration identifier, where `rand` and `heur` correspond to random and heuristic initial configurations, respectively.
   * `mpid`: Materials Project bulk identifier.
