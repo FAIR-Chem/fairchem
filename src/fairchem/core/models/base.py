@@ -190,8 +190,8 @@ class BackboneInterface(metaclass=ABCMeta):
         return
 
 
-@registry.register_model("base_hydra")
-class BaseHydra(nn.Module, GraphModelMixin):
+@registry.register_model("hydra")
+class HydraModel(nn.Module, GraphModelMixin):
     def __init__(
         self,
         backbone: dict,
