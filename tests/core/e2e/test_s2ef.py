@@ -203,11 +203,6 @@ def _run_main(
     )
 
 
-@pytest.fixture(scope="class")
-def torch_tempdir(tmpdir_factory):
-    return tmpdir_factory.mktemp("torch_tempdir")
-
-
 """
 These tests are intended to be as quick as possible and test only that the network is runnable and outputs training+validation to tensorboard output
 These should catch errors such as shape mismatches or otherways to code wise break a network
