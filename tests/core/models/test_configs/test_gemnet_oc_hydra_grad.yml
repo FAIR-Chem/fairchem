@@ -90,6 +90,7 @@ model:
   heads:
     energy:
       module: gemnet_oc_energy_and_grad_force_head
+      num_global_out_layers: 2
 
 optim:
   batch_size: 5

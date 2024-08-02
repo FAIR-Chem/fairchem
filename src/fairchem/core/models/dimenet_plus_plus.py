@@ -493,22 +493,14 @@ class DimeNetPlusPlusWrapBackbone(DimeNetPlusPlusWrap, BackboneInterface):
         if self.regress_forces:
             data.pos.requires_grad_(True)
         pos = data.pos
-        (
-            edge_index,
-            dist,
-            _,
-            cell_offsets,
-            offsets,
-            neighbors,
-        ) = self.generate_graph(data)
-
-        data.edge_index = edge_index
-        data.cell_offsets = cell_offsets
-        data.neighbors = neighbors
-        j, i = edge_index
+        graph = self.generate_graph(data)
+        data.edge_index = graph.edge_index
+        data.cell_offsets = graph.cell_offsets
+        data.neighbors = graph.neighbors
+        j, i = graph.edge_index
 
         _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
-            edge_index,
+            graph.edge_index,
             data.cell_offsets,
             num_nodes=data.atomic_numbers.size(0),
         )
@@ -518,8 +510,8 @@ class DimeNetPlusPlusWrapBackbone(DimeNetPlusPlusWrap, BackboneInterface):
         pos_j = pos[idx_j].detach()
         if self.use_pbc:
             pos_ji, pos_kj = (
-                pos[idx_j].detach() - pos_i + offsets[idx_ji],
-                pos[idx_k].detach() - pos_j + offsets[idx_kj],
+                pos[idx_j].detach() - pos_i + graph.offset_distances[idx_ji],
+                pos[idx_k].detach() - pos_j + graph.offset_distances[idx_kj],
             )
         else:
             pos_ji, pos_kj = (
@@ -531,8 +523,8 @@ class DimeNetPlusPlusWrapBackbone(DimeNetPlusPlusWrap, BackboneInterface):
         b = torch.cross(pos_ji, pos_kj).norm(dim=-1)
         angle = torch.atan2(b, a)
 
-        rbf = self.rbf(dist)
-        sbf = self.sbf(dist, angle, idx_kj)
+        rbf = self.rbf(graph.edge_distance)
+        sbf = self.sbf(graph.edge_distance, angle, idx_kj)
 
         # Embedding block.
         x = self.emb(data.atomic_numbers.long(), rbf, i, j)
