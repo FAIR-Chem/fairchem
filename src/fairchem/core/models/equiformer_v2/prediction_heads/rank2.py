@@ -85,10 +85,10 @@ class Rank2Block(nn.Module):
 
         # node_outer: nAtoms, 9 => average across all atoms at the structure level
         if self.extensive:
-            stress = scatter(node_outer, data.batch, dim=0, reduce="sum")
+            r2_tensor = scatter(node_outer, data.batch, dim=0, reduce="sum")
         else:
-            stress = scatter(node_outer, data.batch, dim=0, reduce="mean")
-        return stress
+            r2_tensor = scatter(node_outer, data.batch, dim=0, reduce="mean")
+        return r2_tensor
 
 
 class Rank2DecompositionEdgeBlock(nn.Module):
@@ -237,44 +237,47 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
         backbone: BackboneInterface,
         output_name: str,
         decompose: bool = False,
-        use_source_target_embedding_stress: bool = False,
+        edge_level_mlp: bool = False,
+        use_source_target_embedding: bool = False,
         extensive: bool = False,
     ):
         """
         Args:
             backbone: Backbone model that the head is attached to
             decompose: Wether to decompose the rank2 tensor into isotropic and anisotropic components
-            use_source_target_embedding_stress: Whether to use both source and target atom embeddings
+            use_source_target_embedding: Whether to use both source and target atom embeddings
             extensive: Whether to do sum-pooling (extensive) vs mean pooling (intensive).
         """
         super().__init__()
         self.output_name = output_name
         self.decompose = decompose
+        self.use_source_target_embedding = use_source_target_embedding
+
         self.sphharm_norm = get_normalization_layer(
             backbone.norm_type,
             lmax=max(backbone.lmax_list),
             num_channels=1,
         )
 
-        if use_source_target_embedding_stress:
-            stress_sphere_channels = self.sphere_channels * 2
+        if use_source_target_embedding:
+            r2_tensor_sphere_channels = backbone.sphere_channels * 2
         else:
-            stress_sphere_channels = self.sphere_channels
+            r2_tensor_sphere_channels = backbone.sphere_channels
 
-        self.xedge_layer_norm = nn.LayerNorm(stress_sphere_channels)
+        self.xedge_layer_norm = nn.LayerNorm(r2_tensor_sphere_channels)
 
         if decompose:
             self.block = Rank2DecompositionEdgeBlock(
-                emb_size=stress_sphere_channels,
+                emb_size=r2_tensor_sphere_channels,
                 num_layers=2,
-                edge_level=self.edge_level_mlp_stress,
+                edge_level=edge_level_mlp,
                 extensive=extensive,
             )
         else:
             self.block = Rank2Block(
-                emb_size=stress_sphere_channels,
+                emb_size=r2_tensor_sphere_channels,
                 num_layers=2,
-                edge_level=self.edge_level_mlp_stress,
+                edge_level=edge_level_mlp,
                 extensive=extensive,
             )
 
@@ -300,11 +303,11 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
         ).detach()
 
         # layer norm because sphharm_weights_edge values become large and causes infs with amp
-        sphharm_weights_edge = self.stress_sph_norm(
+        sphharm_weights_edge = self.sphharm_norm(
             sphharm_weights_edge[:, :, None]
         ).squeeze()
 
-        if self.use_source_target_embedding_stress:
+        if self.use_source_target_embedding:
             x_source = node_emb.expand_edge(graph.edge_index[0]).embedding
             x_target = node_emb.expand_edge(graph.edge_index[1]).embedding
             x_edge = torch.cat((x_source, x_target), dim=2)
@@ -314,10 +317,10 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
         x_edge = torch.einsum("abc, ab->ac", x_edge, sphharm_weights_edge)
 
         # layer norm because x_edge values become large and causes infs with amp
-        x_edge = self.stress_xedge_layer_norm(x_edge)
+        x_edge = self.xedge_layer_norm(x_edge)
 
-        if self.decompose_stress:
-            tensor_0, tensor_2 = self.stress_block(
+        if self.decompose:
+            tensor_0, tensor_2 = self.block(
                 graph.edge_distance_vec, x_edge, graph.edge_index[1], data
             )
 
@@ -330,9 +333,9 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
                 f"{self.output_name}_anisotropic": tensor_2,
             }
         else:
-            stress = self.stress_block(
+            out_tensor = self.block(
                 graph.edge_distance_vec, x_edge, graph.edge_index[1], data
             )
-            output = {self.output_name: stress.reshape((-1, 3))}
+            output = {self.output_name: out_tensor.reshape((-1, 3))}
 
         return output

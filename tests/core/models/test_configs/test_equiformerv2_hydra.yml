@@ -52,6 +52,9 @@ model:
       module: equiformer_v2_energy_head
     forces:
       module: equiformer_v2_force_head
+    stress:
+      module: rank2_symmetric_head
+      output_name: "stress"
 
 dataset:
   train:
