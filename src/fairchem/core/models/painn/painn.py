@@ -32,15 +32,19 @@ SOFTWARE.
 from __future__ import annotations
 
 import math
+import typing
 
 import torch
 from torch import nn
+
+if typing.TYPE_CHECKING:
+    from torch_geometric.data.batch import Batch
 from torch_geometric.nn import MessagePassing
 from torch_scatter import scatter, segment_coo
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
 from fairchem.core.models.gemnet.layers.base_layers import ScaledSiLU
 from fairchem.core.models.gemnet.layers.embedding_block import AtomEmbedding
 from fairchem.core.models.gemnet.layers.radial_basis import RadialBasis
@@ -51,7 +55,7 @@ from .utils import get_edge_id, repeat_blocks
 
 
 @registry.register_model("painn")
-class PaiNN(BaseModel):
+class PaiNN(nn.Module, GraphModelMixin):
     r"""PaiNN model based on the description in Schütt et al. (2021):
     Equivariant message passing for the prediction of tensorial properties
     and molecular spectra, https://arxiv.org/abs/2102.03150.
@@ -59,9 +63,6 @@ class PaiNN(BaseModel):
 
     def __init__(
         self,
-        num_atoms: int,
-        bond_feat_dim: int,
-        num_targets: int,
         hidden_channels: int = 512,
         num_layers: int = 6,
         num_rbf: int = 128,
@@ -310,23 +311,16 @@ class PaiNN(BaseModel):
         )
 
     def generate_graph_values(self, data):
-        (
-            edge_index,
-            edge_dist,
-            distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(data)
+        graph = self.generate_graph(data)
 
         # Unit vectors pointing from edge_index[1] to edge_index[0],
         # i.e., edge_index[0] - edge_index[1] divided by the norm.
         # make sure that the distances are not close to zero before dividing
-        mask_zero = torch.isclose(edge_dist, torch.tensor(0.0), atol=1e-6)
-        edge_dist[mask_zero] = 1.0e-6
-        edge_vector = distance_vec / edge_dist[:, None]
+        mask_zero = torch.isclose(graph.edge_distance, torch.tensor(0.0), atol=1e-6)
+        graph.edge_distance[mask_zero] = 1.0e-6
+        edge_vector = graph.edge_distance_vec / graph.edge_distance[:, None]
 
-        empty_image = neighbors == 0
+        empty_image = graph.neighbors == 0
         if torch.any(empty_image):
             raise ValueError(
                 f"An image has no neighbors: id={data.id[empty_image]}, "
@@ -342,11 +336,11 @@ class PaiNN(BaseModel):
             [edge_vector],
             id_swap,
         ) = self.symmetrize_edges(
-            edge_index,
-            cell_offsets,
-            neighbors,
+            graph.edge_index,
+            graph.cell_offsets,
+            graph.neighbors,
             data.batch,
-            [edge_dist],
+            [graph.edge_distance],
             [edge_vector],
         )
 
@@ -434,6 +428,50 @@ class PaiNN(BaseModel):
             f"max_neighbors={self.max_neighbors}, "
             f"cutoff={self.cutoff})"
         )
+
+
+@registry.register_model("painn_backbone")
+class PaiNNBackbone(PaiNN, BackboneInterface):
+    @conditional_grad(torch.enable_grad())
+    def forward(self, data) -> dict[str, torch.Tensor]:
+        pos = data.pos
+        z = data.atomic_numbers.long()
+
+        if self.regress_forces and not self.direct_forces:
+            pos = pos.requires_grad_(True)
+
+        (
+            edge_index,
+            neighbors,
+            edge_dist,
+            edge_vector,
+            id_swap,
+        ) = self.generate_graph_values(data)
+
+        assert z.dim() == 1
+        assert z.dtype == torch.long
+
+        edge_rbf = self.radial_basis(edge_dist)  # rbf * envelope
+
+        x = self.atom_emb(z)
+        vec = torch.zeros(x.size(0), 3, x.size(1), device=x.device)
+
+        #### Interaction blocks ###############################################
+
+        for i in range(self.num_layers):
+            dx, dvec = self.message_layers[i](x, vec, edge_index, edge_rbf, edge_vector)
+
+            x = x + dx
+            vec = vec + dvec
+            x = x * self.inv_sqrt_2
+
+            dx, dvec = self.update_layers[i](x, vec)
+
+            x = x + dx
+            vec = vec + dvec
+            x = getattr(self, "upd_out_scalar_scale_%d" % i)(x)
+
+        return {"node_embedding": x, "node_vec": vec}
 
 
 class PaiNNMessage(MessagePassing):
@@ -625,3 +663,53 @@ class GatedEquivariantBlock(nn.Module):
 
         x = self.act(x)
         return x, v
+
+
+@registry.register_model("painn_energy_head")
+class PaiNNEnergyHead(nn.Module, HeadInterface):
+    def __init__(self, backbone):
+        super().__init__()
+
+        self.out_energy = nn.Sequential(
+            nn.Linear(backbone.hidden_channels, backbone.hidden_channels // 2),
+            ScaledSiLU(),
+            nn.Linear(backbone.hidden_channels // 2, 1),
+        )
+
+        nn.init.xavier_uniform_(self.out_energy[0].weight)
+        self.out_energy[0].bias.data.fill_(0)
+        nn.init.xavier_uniform_(self.out_energy[2].weight)
+        self.out_energy[2].bias.data.fill_(0)
+
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
+        per_atom_energy = self.out_energy(emb["node_embedding"]).squeeze(1)
+        return {"energy": scatter(per_atom_energy, data.batch, dim=0)}
+
+
+@registry.register_model("painn_force_head")
+class PaiNNForceHead(nn.Module, HeadInterface):
+    def __init__(self, backbone):
+        super().__init__()
+        self.direct_forces = backbone.direct_forces
+
+        if self.direct_forces:
+            self.out_forces = PaiNNOutput(backbone.hidden_channels)
+
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
+        if self.direct_forces:
+            forces = self.out_forces(emb["node_embedding"], emb["node_vec"])
+        else:
+            forces = (
+                -1
+                * torch.autograd.grad(
+                    emb["node_embedding"],
+                    data.pos,
+                    grad_outputs=torch.ones_like(emb["node_embedding"]),
+                    create_graph=True,
+                )[0]
+            )
+        return {"forces": forces}

@@ -34,6 +34,8 @@ THE SOFTWARE.
 
 from __future__ import annotations
 
+import typing
+
 import torch
 from torch import nn
 from torch_geometric.nn.inits import glorot_orthogonal
@@ -49,7 +51,10 @@ from torch_sparse import SparseTensor
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
+
+if typing.TYPE_CHECKING:
+    from torch_geometric.data.batch import Batch
 
 try:
     import sympy as sym
@@ -57,7 +62,7 @@ except ImportError:
     sym = None
 
 
-class InteractionPPBlock(torch.nn.Module):
+class InteractionPPBlock(nn.Module):
     def __init__(
         self,
         hidden_channels: int,
@@ -90,11 +95,11 @@ class InteractionPPBlock(torch.nn.Module):
         self.lin_up = nn.Linear(int_emb_size, hidden_channels, bias=False)
 
         # Residual layers before and after skip connection.
-        self.layers_before_skip = torch.nn.ModuleList(
+        self.layers_before_skip = nn.ModuleList(
             [ResidualLayer(hidden_channels, act) for _ in range(num_before_skip)]
         )
         self.lin = nn.Linear(hidden_channels, hidden_channels)
-        self.layers_after_skip = torch.nn.ModuleList(
+        self.layers_after_skip = nn.ModuleList(
             [ResidualLayer(hidden_channels, act) for _ in range(num_after_skip)]
         )
 
@@ -153,7 +158,7 @@ class InteractionPPBlock(torch.nn.Module):
         return h
 
 
-class OutputPPBlock(torch.nn.Module):
+class OutputPPBlock(nn.Module):
     def __init__(
         self,
         num_radial: int,
@@ -169,7 +174,7 @@ class OutputPPBlock(torch.nn.Module):
 
         self.lin_rbf = nn.Linear(num_radial, hidden_channels, bias=False)
         self.lin_up = nn.Linear(hidden_channels, out_emb_channels, bias=True)
-        self.lins = torch.nn.ModuleList()
+        self.lins = nn.ModuleList()
         for _ in range(num_layers):
             self.lins.append(nn.Linear(out_emb_channels, out_emb_channels))
         self.lin = nn.Linear(out_emb_channels, out_channels, bias=False)
@@ -193,7 +198,7 @@ class OutputPPBlock(torch.nn.Module):
         return self.lin(x)
 
 
-class DimeNetPlusPlus(torch.nn.Module):
+class DimeNetPlusPlus(nn.Module):
     r"""DimeNet++ implementation based on https://github.com/klicperajo/dimenet.
 
     Args:
@@ -241,7 +246,6 @@ class DimeNetPlusPlus(torch.nn.Module):
         act = activation_resolver(act)
 
         super().__init__()
-
         self.cutoff = cutoff
 
         if sym is None:
@@ -256,7 +260,7 @@ class DimeNetPlusPlus(torch.nn.Module):
 
         self.emb = EmbeddingBlock(num_radial, hidden_channels, act)
 
-        self.output_blocks = torch.nn.ModuleList(
+        self.output_blocks = nn.ModuleList(
             [
                 OutputPPBlock(
                     num_radial,
@@ -270,7 +274,7 @@ class DimeNetPlusPlus(torch.nn.Module):
             ]
         )
 
-        self.interaction_blocks = torch.nn.ModuleList(
+        self.interaction_blocks = nn.ModuleList(
             [
                 InteractionPPBlock(
                     hidden_channels,
@@ -330,13 +334,42 @@ class DimeNetPlusPlus(torch.nn.Module):
         raise NotImplementedError
 
 
+@registry.register_model("dimenetplusplus_energy_and_force_head")
+class DimeNetPlusPlusWrapEnergyAndForceHead(nn.Module, HeadInterface):
+    def __init__(self, backbone):
+        super().__init__()
+        self.regress_forces = backbone.regress_forces
+
+    @conditional_grad(torch.enable_grad())
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
+        outputs = {
+            "energy": (
+                emb["P"].sum(dim=0)
+                if data.batch is None
+                else scatter(emb["P"], data.batch, dim=0)
+            )
+        }
+        if self.regress_forces:
+            outputs["forces"] = (
+                -1
+                * (
+                    torch.autograd.grad(
+                        outputs["energy"],
+                        data.pos,
+                        grad_outputs=torch.ones_like(outputs["energy"]),
+                        create_graph=True,
+                    )[0]
+                )
+            )
+        return outputs
+
+
 @registry.register_model("dimenetplusplus")
-class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
+class DimeNetPlusPlusWrap(DimeNetPlusPlus, GraphModelMixin):
     def __init__(
         self,
-        num_atoms: int,
-        bond_feat_dim: int,  # not used
-        num_targets: int,
         use_pbc: bool = True,
         regress_forces: bool = True,
         hidden_channels: int = 128,
@@ -353,7 +386,6 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
         num_after_skip: int = 2,
         num_output_layers: int = 3,
     ) -> None:
-        self.num_targets = num_targets
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff
@@ -362,7 +394,7 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
 
         super().__init__(
             hidden_channels=hidden_channels,
-            out_channels=num_targets,
+            out_channels=1,
             num_blocks=num_blocks,
             int_emb_size=int_emb_size,
             basis_emb_size=basis_emb_size,
@@ -380,22 +412,15 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
     def _forward(self, data):
         pos = data.pos
         batch = data.batch
-        (
-            edge_index,
-            dist,
-            _,
-            cell_offsets,
-            offsets,
-            neighbors,
-        ) = self.generate_graph(data)
+        graph = self.generate_graph(data)
 
-        data.edge_index = edge_index
-        data.cell_offsets = cell_offsets
-        data.neighbors = neighbors
-        j, i = edge_index
+        data.edge_index = graph.edge_index
+        data.cell_offsets = graph.cell_offsets
+        data.neighbors = graph.neighbors
+        j, i = graph.edge_index
 
         _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
-            edge_index,
+            graph.edge_index,
             data.cell_offsets,
             num_nodes=data.atomic_numbers.size(0),
         )
@@ -405,8 +430,8 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
         pos_j = pos[idx_j].detach()
         if self.use_pbc:
             pos_ji, pos_kj = (
-                pos[idx_j].detach() - pos_i + offsets[idx_ji],
-                pos[idx_k].detach() - pos_j + offsets[idx_kj],
+                pos[idx_j].detach() - pos_i + graph.offset_distances[idx_ji],
+                pos[idx_k].detach() - pos_j + graph.offset_distances[idx_kj],
             )
         else:
             pos_ji, pos_kj = (
@@ -418,8 +443,8 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
         b = torch.cross(pos_ji, pos_kj).norm(dim=-1)
         angle = torch.atan2(b, a)
 
-        rbf = self.rbf(dist)
-        sbf = self.sbf(dist, angle, idx_kj)
+        rbf = self.rbf(graph.edge_distance)
+        sbf = self.sbf(graph.edge_distance, angle, idx_kj)
 
         # Embedding block.
         x = self.emb(data.atomic_numbers.long(), rbf, i, j)
@@ -459,3 +484,57 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, BaseModel):
     @property
     def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
+
+
+@registry.register_model("dimenetplusplus_backbone")
+class DimeNetPlusPlusWrapBackbone(DimeNetPlusPlusWrap, BackboneInterface):
+    @conditional_grad(torch.enable_grad())
+    def forward(self, data: Batch) -> dict[str, torch.Tensor]:
+        if self.regress_forces:
+            data.pos.requires_grad_(True)
+        pos = data.pos
+        graph = self.generate_graph(data)
+        data.edge_index = graph.edge_index
+        data.cell_offsets = graph.cell_offsets
+        data.neighbors = graph.neighbors
+        j, i = graph.edge_index
+
+        _, _, idx_i, idx_j, idx_k, idx_kj, idx_ji = self.triplets(
+            graph.edge_index,
+            data.cell_offsets,
+            num_nodes=data.atomic_numbers.size(0),
+        )
+
+        # Calculate angles.
+        pos_i = pos[idx_i].detach()
+        pos_j = pos[idx_j].detach()
+        if self.use_pbc:
+            pos_ji, pos_kj = (
+                pos[idx_j].detach() - pos_i + graph.offset_distances[idx_ji],
+                pos[idx_k].detach() - pos_j + graph.offset_distances[idx_kj],
+            )
+        else:
+            pos_ji, pos_kj = (
+                pos[idx_j].detach() - pos_i,
+                pos[idx_k].detach() - pos_j,
+            )
+
+        a = (pos_ji * pos_kj).sum(dim=-1)
+        b = torch.cross(pos_ji, pos_kj).norm(dim=-1)
+        angle = torch.atan2(b, a)
+
+        rbf = self.rbf(graph.edge_distance)
+        sbf = self.sbf(graph.edge_distance, angle, idx_kj)
+
+        # Embedding block.
+        x = self.emb(data.atomic_numbers.long(), rbf, i, j)
+        P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0))
+
+        # Interaction blocks.
+        for interaction_block, output_block in zip(
+            self.interaction_blocks, self.output_blocks[1:]
+        ):
+            x = interaction_block(x, rbf, sbf, idx_kj, idx_ji)
+            P += output_block(x, rbf, i, num_nodes=pos.size(0))
+
+        return {"P": P, "edge_embedding": x, "edge_idx": i}

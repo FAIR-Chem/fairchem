@@ -1,0 +1,79 @@
+trainer: forces
+
+dataset:
+  train:
+    src: tutorial_dset/s2ef/train_100/
+    normalize_labels: True
+    target_mean: -0.7554450631141663
+    target_std: 2.887317180633545
+    grad_target_mean: 0.0
+    grad_target_std: 2.887317180633545
+  val:
+    format: lmdb
+    src: tutorial_dset/s2ef/val_20/
+
+logger:
+  name: tensorboard
+
+task:
+  dataset: lmdb
+  type: regression
+  metric: mae
+  primary_metric: forces_mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
+  prediction_dtype: float32
+
+model:
+  name: gemnet_t
+  num_spherical: 3
+  num_radial: 8
+  num_blocks: 2
+  emb_size_atom: 8
+  emb_size_edge: 16
+  emb_size_trip: 4
+  emb_size_rbf: 4
+  emb_size_cbf: 4
+  emb_size_bil_trip: 4
+  num_before_skip: 1
+  num_after_skip: 2
+  num_concat: 1
+  num_atom: 3
+  cutoff: 6.0
+  max_neighbors: 50
+  rbf:
+    name: gaussian
+  envelope:
+    name: polynomial
+    exponent: 5
+  cbf:
+    name: spherical_harmonics
+  extensive: True
+  otf_graph: False
+  output_init: HeOrthogonal
+  activation: silu
+  scale_file: configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json
+
+  regress_forces: True
+  direct_forces: True
+
+optim:
+  batch_size: 8
+  eval_batch_size: 8
+  eval_every: 5000
+  num_workers: 2
+  lr_initial: 5.e-4
+  optimizer: AdamW
+  optimizer_params: {"amsgrad": True}
+  scheduler: ReduceLROnPlateau
+  mode: min
+  factor: 0.8
+  patience: 3
+  max_epochs: 80
+  force_coefficient: 100
+  energy_coefficient: 1
+  ema_decay: 0.999
+  clip_grad_norm: 10
