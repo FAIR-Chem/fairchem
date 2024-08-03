@@ -67,6 +67,85 @@ Module Contents
    :type alpha_drop: float
 
 
+   .. py:attribute:: sphere_channels
+
+
+   .. py:attribute:: hidden_channels
+
+
+   .. py:attribute:: num_heads
+
+
+   .. py:attribute:: attn_alpha_channels
+
+
+   .. py:attribute:: attn_value_channels
+
+
+   .. py:attribute:: output_channels
+
+
+   .. py:attribute:: lmax_list
+
+
+   .. py:attribute:: mmax_list
+
+
+   .. py:attribute:: num_resolutions
+
+
+   .. py:attribute:: SO3_rotation
+
+
+   .. py:attribute:: mappingReduced
+
+
+   .. py:attribute:: SO3_grid
+
+
+   .. py:attribute:: max_num_elements
+
+
+   .. py:attribute:: edge_channels_list
+
+
+   .. py:attribute:: use_atom_edge_embedding
+
+
+   .. py:attribute:: use_m_share_rad
+
+
+   .. py:attribute:: use_s2_act_attn
+
+
+   .. py:attribute:: use_attn_renorm
+
+
+   .. py:attribute:: use_gate_act
+
+
+   .. py:attribute:: use_sep_s2_act
+
+
+   .. py:attribute:: extra_m0_output_channels
+      :value: None
+
+
+
+   .. py:attribute:: so2_conv_1
+
+
+   .. py:attribute:: alpha_dropout
+      :value: None
+
+
+
+   .. py:attribute:: so2_conv_2
+
+
+   .. py:attribute:: proj
+
+
    .. py:method:: forward(x: torch.Tensor, atomic_numbers, edge_distance: torch.Tensor, edge_index, node_offset: int = 0)
 
 
@@ -95,6 +174,48 @@ Module Contents
    :type use_grid_mlp: bool
    :param use_sep_s2_act: If `True`, use separable grid MLP when `use_grid_mlp` is True.
    :type use_sep_s2_act: bool
+
+
+   .. py:attribute:: sphere_channels
+
+
+   .. py:attribute:: hidden_channels
+
+
+   .. py:attribute:: output_channels
+
+
+   .. py:attribute:: lmax_list
+
+
+   .. py:attribute:: mmax_list
+
+
+   .. py:attribute:: num_resolutions
+
+
+   .. py:attribute:: sphere_channels_all
+
+
+   .. py:attribute:: SO3_grid
+
+
+   .. py:attribute:: use_gate_act
+
+
+   .. py:attribute:: use_grid_mlp
+
+
+   .. py:attribute:: use_sep_s2_act
+
+
+   .. py:attribute:: max_lmax
+
+
+   .. py:attribute:: so3_linear_1
+
+
+   .. py:attribute:: so3_linear_2
 
 
    .. py:method:: forward(input_embedding)
@@ -156,6 +277,27 @@ Module Contents
    :type drop_path_rate: float
    :param proj_drop: Dropout rate for outputs of attention and FFN
    :type proj_drop: float
+
+
+   .. py:attribute:: max_lmax
+
+
+   .. py:attribute:: norm_1
+
+
+   .. py:attribute:: ga
+
+
+   .. py:attribute:: drop_path
+
+
+   .. py:attribute:: proj_drop
+
+
+   .. py:attribute:: norm_2
+
+
+   .. py:attribute:: ffn
 
 
    .. py:method:: forward(x, atomic_numbers, edge_distance, edge_index, batch, node_offset: int = 0)

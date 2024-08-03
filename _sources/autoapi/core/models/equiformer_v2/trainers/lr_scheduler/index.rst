@@ -33,12 +33,36 @@ Module Contents
 
 .. py:class:: CosineLRLambda(scheduler_params)
 
+   .. py:attribute:: warmup_epochs
+
+
+   .. py:attribute:: lr_warmup_factor
+
+
+   .. py:attribute:: max_epochs
+
+
+   .. py:attribute:: lr_min_factor
+
+
    .. py:method:: __call__(current_step: int)
 
 
 .. py:function:: multistep_lr_lambda(current_step: int, scheduler_params) -> float
 
 .. py:class:: MultistepLRLambda(scheduler_params)
+
+   .. py:attribute:: warmup_epochs
+
+
+   .. py:attribute:: lr_warmup_factor
+
+
+   .. py:attribute:: lr_decay_epochs
+
+
+   .. py:attribute:: lr_gamma
+
 
    .. py:method:: __call__(current_step: int) -> float
 
@@ -74,6 +98,18 @@ Module Contents
    :type optimizer: obj
    :param config: Optim dict from the input config
    :type config: dict
+
+
+   .. py:attribute:: optimizer
+
+
+   .. py:attribute:: config
+
+
+   .. py:attribute:: scheduler_type
+
+
+   .. py:attribute:: scheduler_params
 
 
    .. py:method:: step(metrics=None, epoch=None)

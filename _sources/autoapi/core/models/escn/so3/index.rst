@@ -45,6 +45,44 @@ Module Contents
    :param device: Device of the output
 
 
+   .. py:attribute:: lmax_list
+
+
+   .. py:attribute:: mmax_list
+
+
+   .. py:attribute:: num_resolutions
+
+
+   .. py:attribute:: device
+
+
+   .. py:attribute:: l_harmonic
+
+
+   .. py:attribute:: m_harmonic
+
+
+   .. py:attribute:: m_complex
+
+
+   .. py:attribute:: res_size
+
+
+   .. py:attribute:: offset
+      :value: 0
+
+
+
+   .. py:attribute:: num_coefficients
+
+
+   .. py:attribute:: to_m
+
+
+   .. py:attribute:: m_size
+
+
    .. py:method:: complex_idx(m, lmax: int = -1)
 
 
@@ -65,6 +103,26 @@ Module Contents
    :type num_channels: int
    :param device: Device of the output
    :param dtype: type of the output tensors
+
+
+   .. py:attribute:: num_channels
+
+
+   .. py:attribute:: device
+
+
+   .. py:attribute:: dtype
+
+
+   .. py:attribute:: num_resolutions
+
+
+   .. py:attribute:: num_coefficients
+      :value: 0
+
+
+
+   .. py:attribute:: embedding
 
 
    .. py:method:: clone() -> SO3_Embedding
@@ -118,6 +176,18 @@ Module Contents
    :param lmax_list (list: int):   List of maximum degree of the spherical harmonics
 
 
+   .. py:attribute:: device
+
+
+   .. py:attribute:: dtype
+
+
+   .. py:attribute:: wigner
+
+
+   .. py:attribute:: wigner_inv
+
+
    .. py:method:: set_lmax(lmax) -> None
 
 
@@ -147,6 +217,20 @@ Module Contents
    :type lmax: int
    :param mmax: Maximum order of the spherical harmonics
    :type mmax: int
+
+
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: mmax
+
+
+   .. py:attribute:: lat_resolution
+
+
+   .. py:attribute:: initialized
+      :value: False
+
 
 
    .. py:method:: _initialize(device: torch.device) -> None

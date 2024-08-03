@@ -51,6 +51,9 @@ Module Contents
    Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
 
 
+   .. py:attribute:: drop_prob
+
+
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
 
@@ -70,6 +73,9 @@ Module Contents
 
 
    Consider batch for graph data when dropping paths.
+
+
+   .. py:attribute:: drop_prob
 
 
    .. py:method:: forward(x: torch.Tensor, batch) -> torch.Tensor
@@ -122,6 +128,21 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: irreps
+
+
+   .. py:attribute:: num_irreps
+
+
+   .. py:attribute:: drop_prob
+
+
+   .. py:attribute:: drop
+
+
+   .. py:attribute:: mul
+
+
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
 
@@ -160,6 +181,12 @@ Module Contents
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
+
+   .. py:attribute:: irreps
+
+
+   .. py:attribute:: drop_prob
 
 
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
@@ -210,6 +237,15 @@ Module Contents
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
+
+   .. py:attribute:: drop_prob
+
+
+   .. py:attribute:: drop
+
+
+   .. py:attribute:: drop_graph
 
 
    .. py:method:: forward(x: torch.Tensor, batch=None) -> torch.Tensor

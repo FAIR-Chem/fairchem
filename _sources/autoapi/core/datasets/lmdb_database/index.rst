@@ -46,6 +46,19 @@ Module Contents
    Base class for all databases.
 
 
+   .. py:attribute:: readonly
+
+
+   .. py:attribute:: ids
+      :value: []
+
+
+
+   .. py:attribute:: deleted_ids
+      :value: []
+
+
+
    .. py:method:: __enter__() -> typing_extensions.Self
 
 

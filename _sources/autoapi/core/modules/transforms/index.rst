@@ -25,6 +25,9 @@ Module Contents
 
 .. py:class:: DataTransforms(config)
 
+   .. py:attribute:: config
+
+
    .. py:method:: __call__(data_object)
 
 

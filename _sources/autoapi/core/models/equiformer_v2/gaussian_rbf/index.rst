@@ -62,6 +62,42 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: num_basis
+
+
+   .. py:attribute:: cutoff
+
+
+   .. py:attribute:: mean
+
+
+   .. py:attribute:: std
+
+
+   .. py:attribute:: weight
+
+
+   .. py:attribute:: bias
+
+
+   .. py:attribute:: std_init_max
+      :value: 1.0
+
+
+
+   .. py:attribute:: std_init_min
+
+
+   .. py:attribute:: mean_init_max
+      :value: 1.0
+
+
+
+   .. py:attribute:: mean_init_min
+      :value: 0
+
+
+
    .. py:method:: forward(dist: torch.Tensor, node_atom=None, edge_src=None, edge_dst=None)
 
 

@@ -32,6 +32,12 @@ Module Contents
    :type config: dict
 
 
+   .. py:attribute:: optimizer
+
+
+   .. py:attribute:: config
+
+
    .. py:method:: step(metrics=None, epoch=None) -> None
 
 

@@ -21,6 +21,7 @@ Submodules
 
    /autoapi/core/datasets/_utils/index
    /autoapi/core/datasets/ase_datasets/index
+   /autoapi/core/datasets/base_dataset/index
    /autoapi/core/datasets/lmdb_database/index
    /autoapi/core/datasets/lmdb_dataset/index
    /autoapi/core/datasets/oc22_lmdb_dataset/index
@@ -37,9 +38,6 @@ Classes
    core.datasets.AseReadMultiStructureDataset
    core.datasets.LMDBDatabase
    core.datasets.LmdbDataset
-   core.datasets.SinglePointLmdbDataset
-   core.datasets.TrajectoryLmdbDataset
-   core.datasets.OC22LmdbDataset
 
 
 Functions
@@ -47,6 +45,7 @@ Functions
 
 .. autoapisummary::
 
+   core.datasets.create_dataset
    core.datasets.data_list_collater
 
 
@@ -132,10 +131,10 @@ Package Contents
 
 
 
-   .. py:method:: close_db() -> None
+   .. py:method:: __del__()
 
 
-   .. py:method:: get_metadata(num_samples: int = 100) -> dict
+   .. py:method:: sample_property_metadata(num_samples: int = 100) -> dict
 
 
    .. py:method:: get_relaxed_energy(identifier)
@@ -271,10 +270,23 @@ Package Contents
    .. py:method:: get_atoms(idx: str) -> ase.Atoms
 
 
-   .. py:method:: get_metadata(num_samples: int = 100) -> dict
+   .. py:method:: sample_property_metadata(num_samples: int = 100) -> dict
 
 
    .. py:method:: get_relaxed_energy(identifier) -> float
+
+
+.. py:function:: create_dataset(config: dict[str, Any], split: str) -> Subset
+
+   Create a dataset from a config dictionary
+
+   :param config: dataset config dictionary
+   :type config: dict
+   :param split: name of split
+   :type split: str
+
+   :returns: dataset subset class
+   :rtype: Subset
 
 
 .. py:class:: LMDBDatabase(filename: str | pathlib.Path | None = None, create_indices: bool = True, use_lock_file: bool = False, serial: bool = False, readonly: bool = False, *args, **kwargs)
@@ -283,6 +295,19 @@ Package Contents
 
 
    Base class for all databases.
+
+
+   .. py:attribute:: readonly
+
+
+   .. py:attribute:: ids
+      :value: []
+
+
+
+   .. py:attribute:: deleted_ids
+      :value: []
+
 
 
    .. py:method:: __enter__() -> typing_extensions.Self
@@ -351,29 +376,10 @@ Package Contents
 
 .. py:class:: LmdbDataset(config)
 
-   Bases: :py:obj:`torch.utils.data.Dataset`\ [\ :py:obj:`T_co`\ ]
+   Bases: :py:obj:`fairchem.core.datasets.base_dataset.BaseDataset`
 
 
-   An abstract class representing a :class:`Dataset`.
-
-   All datasets that represent a map from keys to data samples should subclass
-   it. All subclasses should overwrite :meth:`__getitem__`, supporting fetching a
-   data sample for a given key. Subclasses could also optionally overwrite
-   :meth:`__len__`, which is expected to return the size of the dataset by many
-   :class:`~torch.utils.data.Sampler` implementations and the default options
-   of :class:`~torch.utils.data.DataLoader`. Subclasses could also
-   optionally implement :meth:`__getitems__`, for speedup batched samples
-   loading. This method accepts list of indices of samples of batch and returns
-   list of samples.
-
-   .. note::
-     :class:`~torch.utils.data.DataLoader` by default constructs an index
-     sampler that yields integral indices.  To make it work with a map-style
-     dataset with non-integral indices/keys, a custom sampler must be provided.
-
-
-   .. py:attribute:: metadata_path
-      :type:  pathlib.Path
+   Base Dataset class for all OCP datasets.
 
 
    .. py:attribute:: sharded
@@ -391,7 +397,13 @@ Package Contents
       :type config: dict
 
 
-   .. py:method:: __len__() -> int
+   .. py:attribute:: path
+
+
+   .. py:attribute:: key_mapping
+
+
+   .. py:attribute:: transforms
 
 
    .. py:method:: __getitem__(idx: int) -> T_co
@@ -400,92 +412,11 @@ Package Contents
    .. py:method:: connect_db(lmdb_path: pathlib.Path | None = None) -> lmdb.Environment
 
 
-   .. py:method:: close_db() -> None
+   .. py:method:: __del__()
 
 
-   .. py:method:: get_metadata(num_samples: int = 100)
-
-
-.. py:class:: SinglePointLmdbDataset(config, transform=None)
-
-   Bases: :py:obj:`LmdbDataset`\ [\ :py:obj:`torch_geometric.data.data.BaseData`\ ]
-
-
-   An abstract class representing a :class:`Dataset`.
-
-   All datasets that represent a map from keys to data samples should subclass
-   it. All subclasses should overwrite :meth:`__getitem__`, supporting fetching a
-   data sample for a given key. Subclasses could also optionally overwrite
-   :meth:`__len__`, which is expected to return the size of the dataset by many
-   :class:`~torch.utils.data.Sampler` implementations and the default options
-   of :class:`~torch.utils.data.DataLoader`. Subclasses could also
-   optionally implement :meth:`__getitems__`, for speedup batched samples
-   loading. This method accepts list of indices of samples of batch and returns
-   list of samples.
-
-   .. note::
-     :class:`~torch.utils.data.DataLoader` by default constructs an index
-     sampler that yields integral indices.  To make it work with a map-style
-     dataset with non-integral indices/keys, a custom sampler must be provided.
-
-
-.. py:class:: TrajectoryLmdbDataset(config, transform=None)
-
-   Bases: :py:obj:`LmdbDataset`\ [\ :py:obj:`torch_geometric.data.data.BaseData`\ ]
-
-
-   An abstract class representing a :class:`Dataset`.
-
-   All datasets that represent a map from keys to data samples should subclass
-   it. All subclasses should overwrite :meth:`__getitem__`, supporting fetching a
-   data sample for a given key. Subclasses could also optionally overwrite
-   :meth:`__len__`, which is expected to return the size of the dataset by many
-   :class:`~torch.utils.data.Sampler` implementations and the default options
-   of :class:`~torch.utils.data.DataLoader`. Subclasses could also
-   optionally implement :meth:`__getitems__`, for speedup batched samples
-   loading. This method accepts list of indices of samples of batch and returns
-   list of samples.
-
-   .. note::
-     :class:`~torch.utils.data.DataLoader` by default constructs an index
-     sampler that yields integral indices.  To make it work with a map-style
-     dataset with non-integral indices/keys, a custom sampler must be provided.
+   .. py:method:: sample_property_metadata(num_samples: int = 100)
 
 
 .. py:function:: data_list_collater(data_list: list[torch_geometric.data.data.BaseData], otf_graph: bool = False) -> torch_geometric.data.data.BaseData
-
-.. py:class:: OC22LmdbDataset(config, transform=None)
-
-   Bases: :py:obj:`torch.utils.data.Dataset`
-
-
-   Dataset class to load from LMDB files containing relaxation
-   trajectories or single point computations.
-
-   Useful for Structure to Energy & Force (S2EF), Initial State to
-   Relaxed State (IS2RS), and Initial State to Relaxed Energy (IS2RE) tasks.
-
-   The keys in the LMDB must be integers (stored as ascii objects) starting
-   from 0 through the length of the LMDB. For historical reasons any key named
-   "length" is ignored since that was used to infer length of many lmdbs in the same
-   folder, but lmdb lengths are now calculated directly from the number of keys.
-
-   :param config: Dataset configuration
-   :type config: dict
-   :param transform: Data transform function.
-                     (default: :obj:`None`)
-   :type transform: callable, optional
-
-
-   .. py:method:: __len__() -> int
-
-
-   .. py:method:: __getitem__(idx)
-
-
-   .. py:method:: connect_db(lmdb_path=None)
-
-
-   .. py:method:: close_db() -> None
-
 

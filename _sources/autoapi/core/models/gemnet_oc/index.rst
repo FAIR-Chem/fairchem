@@ -36,17 +36,11 @@ Classes
 Package Contents
 ----------------
 
-.. py:class:: GemNetOC(num_atoms: int | None, bond_feat_dim: int, num_targets: int, num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip_in: int, emb_size_trip_out: int, emb_size_quad_in: int, emb_size_quad_out: int, emb_size_aint_in: int, emb_size_aint_out: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_sbf: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, num_output_afteratom: int, num_atom_emb_layers: int = 0, num_global_out_layers: int = 2, regress_forces: bool = True, direct_forces: bool = False, use_pbc: bool = True, scale_backprop_forces: bool = False, cutoff: float = 6.0, cutoff_qint: float | None = None, cutoff_aeaint: float | None = None, cutoff_aint: float | None = None, max_neighbors: int = 50, max_neighbors_qint: int | None = None, max_neighbors_aeaint: int | None = None, max_neighbors_aint: int | None = None, enforce_max_neighbors_strictly: bool = True, rbf: dict[str, str] | None = None, rbf_spherical: dict | None = None, envelope: dict[str, str | int] | None = None, cbf: dict[str, str] | None = None, sbf: dict[str, str] | None = None, extensive: bool = True, forces_coupled: bool = False, output_init: str = 'HeOrthogonal', activation: str = 'silu', quad_interaction: bool = False, atom_edge_interaction: bool = False, edge_atom_interaction: bool = False, atom_interaction: bool = False, scale_basis: bool = False, qint_tags: list | None = None, num_elements: int = 83, otf_graph: bool = False, scale_file: str | None = None, **kwargs)
+.. py:class:: GemNetOC(num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip_in: int, emb_size_trip_out: int, emb_size_quad_in: int, emb_size_quad_out: int, emb_size_aint_in: int, emb_size_aint_out: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_sbf: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, num_output_afteratom: int, num_atom_emb_layers: int = 0, num_global_out_layers: int = 2, regress_forces: bool = True, direct_forces: bool = False, use_pbc: bool = True, scale_backprop_forces: bool = False, cutoff: float = 6.0, cutoff_qint: float | None = None, cutoff_aeaint: float | None = None, cutoff_aint: float | None = None, max_neighbors: int = 50, max_neighbors_qint: int | None = None, max_neighbors_aeaint: int | None = None, max_neighbors_aint: int | None = None, enforce_max_neighbors_strictly: bool = True, rbf: dict[str, str] | None = None, rbf_spherical: dict | None = None, envelope: dict[str, str | int] | None = None, cbf: dict[str, str] | None = None, sbf: dict[str, str] | None = None, extensive: bool = True, forces_coupled: bool = False, output_init: str = 'HeOrthogonal', activation: str = 'silu', quad_interaction: bool = False, atom_edge_interaction: bool = False, edge_atom_interaction: bool = False, atom_interaction: bool = False, scale_basis: bool = False, qint_tags: list | None = None, num_elements: int = 83, otf_graph: bool = False, scale_file: str | None = None, **kwargs)
 
-   Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+   Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
 
-   :param num_atoms (int):
-   :type num_atoms (int): Unused argument
-   :param bond_feat_dim (int):
-   :type bond_feat_dim (int): Unused argument
-   :param num_targets: Number of prediction targets.
-   :type num_targets: int
    :param num_spherical: Controls maximum frequency.
    :type num_spherical: int
    :param num_radial: Controls maximum frequency.
@@ -165,6 +159,76 @@ Package Contents
    :param qint_tags: Which atom tags to use quadruplet interactions for.
                      0=sub-surface bulk, 1=surface, 2=adsorbate atoms.
    :type qint_tags: list
+
+
+   .. py:attribute:: num_blocks
+
+
+   .. py:attribute:: extensive
+
+
+   .. py:attribute:: activation
+
+
+   .. py:attribute:: atom_edge_interaction
+
+
+   .. py:attribute:: edge_atom_interaction
+
+
+   .. py:attribute:: atom_interaction
+
+
+   .. py:attribute:: quad_interaction
+
+
+   .. py:attribute:: qint_tags
+
+
+   .. py:attribute:: otf_graph
+
+
+   .. py:attribute:: enforce_max_neighbors_strictly
+
+
+   .. py:attribute:: use_pbc
+
+
+   .. py:attribute:: direct_forces
+
+
+   .. py:attribute:: forces_coupled
+
+
+   .. py:attribute:: regress_forces
+
+
+   .. py:attribute:: force_scaler
+
+
+   .. py:attribute:: atom_emb
+
+
+   .. py:attribute:: edge_emb
+
+
+   .. py:attribute:: int_blocks
+      :value: []
+
+
+
+   .. py:attribute:: out_blocks
+      :value: []
+
+
+
+   .. py:attribute:: out_mlp_E
+
+
+   .. py:attribute:: out_energy
+
+
+   .. py:attribute:: out_initializer
 
 
    .. py:method:: set_cutoffs(cutoff, cutoff_qint, cutoff_aeaint, cutoff_aint)

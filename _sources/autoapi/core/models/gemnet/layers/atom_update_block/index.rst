@@ -41,6 +41,18 @@ Module Contents
    :type activation: callable/str
 
 
+   .. py:attribute:: name
+
+
+   .. py:attribute:: dense_rbf
+
+
+   .. py:attribute:: scale_sum
+
+
+   .. py:attribute:: layers
+
+
    .. py:method:: get_mlp(units_in, units, nHidden, activation)
 
 
@@ -72,6 +84,18 @@ Module Contents
    :type direct_forces: bool
    :param output_init: Kernel initializer of the final dense layer.
    :type output_init: int
+
+
+   .. py:attribute:: output_init
+
+
+   .. py:attribute:: direct_forces
+
+
+   .. py:attribute:: seq_energy
+
+
+   .. py:attribute:: out_energy
 
 
    .. py:method:: reset_parameters() -> None

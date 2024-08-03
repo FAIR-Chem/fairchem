@@ -124,6 +124,12 @@ Module Contents
    Base class to hold functions that are shared across the reaction types.
 
 
+   .. py:attribute:: reaction
+
+
+   .. py:attribute:: reactant1_systems
+
+
    .. py:method:: get_neb_frames(calculator, n_frames: int = 5, n_pdt1_sites: int = 5, n_pdt2_sites: int = 5, fmax: float = 0.05, steps: int = 200)
 
       Propose final frames for NEB calculations. Perform a relaxation on the final
@@ -226,6 +232,18 @@ Module Contents
    Base class to hold functions that are shared across the reaction types.
 
 
+   .. py:attribute:: reaction
+
+
+   .. py:attribute:: r_traverse_max
+
+
+   .. py:attribute:: r_react_max
+
+
+   .. py:attribute:: r_react_min
+
+
    .. py:method:: get_neb_frames(calculator, n_frames: int = 10, n_initial_frames: int = 5, n_final_frames_per_initial: int = 5, fmax: float = 0.05, steps: int = 200)
 
       Propose final frames for NEB calculations. Perform a relaxation on the final
@@ -284,6 +302,12 @@ Module Contents
 
 
    Base class to hold functions that are shared across the reaction types.
+
+
+   .. py:attribute:: z_desorption
+
+
+   .. py:attribute:: reaction
 
 
    .. py:method:: get_neb_frames(calculator, n_frames: int = 5, n_systems: int = 5, fmax: float = 0.05, steps: int = 200)

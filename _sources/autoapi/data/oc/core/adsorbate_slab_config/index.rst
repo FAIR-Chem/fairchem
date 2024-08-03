@@ -66,6 +66,27 @@ Module Contents
    :type mode: str
 
 
+   .. py:attribute:: slab
+
+
+   .. py:attribute:: adsorbate
+
+
+   .. py:attribute:: num_sites
+
+
+   .. py:attribute:: num_augmentations_per_site
+
+
+   .. py:attribute:: interstitial_gap
+
+
+   .. py:attribute:: mode
+
+
+   .. py:attribute:: sites
+
+
    .. py:method:: get_binding_sites(num_sites: int)
 
       Returns up to `num_sites` sites given the surface atoms' positions.

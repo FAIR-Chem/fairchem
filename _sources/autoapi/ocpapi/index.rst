@@ -106,6 +106,12 @@ Package Contents
    Exposes each route in the OCP API as a method.
 
 
+   .. py:attribute:: _host
+
+
+   .. py:attribute:: _base_url
+
+
    .. py:property:: host
       :type: str
 
@@ -340,6 +346,10 @@ Package Contents
 
       If known, the time to wait before the next attempt to
       call the API should be made.
+
+
+   .. py:attribute:: retry_after
+      :type:  datetime.timedelta | None
 
 
 .. py:exception:: RequestException(method: str, url: str, cause: str)
@@ -1043,6 +1053,10 @@ Package Contents
 
    Adslab filter that keeps any slabs with the configured miller indices.
    Slabs with other miller indices will be ignored.
+
+
+   .. py:attribute:: _unique_millers
+      :type:  set[tuple[int, int, int]]
 
 
    .. py:method:: __call__(adslabs: list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]

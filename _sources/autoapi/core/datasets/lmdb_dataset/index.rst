@@ -25,8 +25,6 @@ Classes
 .. autoapisummary::
 
    core.datasets.lmdb_dataset.LmdbDataset
-   core.datasets.lmdb_dataset.SinglePointLmdbDataset
-   core.datasets.lmdb_dataset.TrajectoryLmdbDataset
 
 
 Functions
@@ -44,29 +42,10 @@ Module Contents
 
 .. py:class:: LmdbDataset(config)
 
-   Bases: :py:obj:`torch.utils.data.Dataset`\ [\ :py:obj:`T_co`\ ]
+   Bases: :py:obj:`fairchem.core.datasets.base_dataset.BaseDataset`
 
 
-   An abstract class representing a :class:`Dataset`.
-
-   All datasets that represent a map from keys to data samples should subclass
-   it. All subclasses should overwrite :meth:`__getitem__`, supporting fetching a
-   data sample for a given key. Subclasses could also optionally overwrite
-   :meth:`__len__`, which is expected to return the size of the dataset by many
-   :class:`~torch.utils.data.Sampler` implementations and the default options
-   of :class:`~torch.utils.data.DataLoader`. Subclasses could also
-   optionally implement :meth:`__getitems__`, for speedup batched samples
-   loading. This method accepts list of indices of samples of batch and returns
-   list of samples.
-
-   .. note::
-     :class:`~torch.utils.data.DataLoader` by default constructs an index
-     sampler that yields integral indices.  To make it work with a map-style
-     dataset with non-integral indices/keys, a custom sampler must be provided.
-
-
-   .. py:attribute:: metadata_path
-      :type:  pathlib.Path
+   Base Dataset class for all OCP datasets.
 
 
    .. py:attribute:: sharded
@@ -84,7 +63,13 @@ Module Contents
       :type config: dict
 
 
-   .. py:method:: __len__() -> int
+   .. py:attribute:: path
+
+
+   .. py:attribute:: key_mapping
+
+
+   .. py:attribute:: transforms
 
 
    .. py:method:: __getitem__(idx: int) -> T_co
@@ -93,56 +78,10 @@ Module Contents
    .. py:method:: connect_db(lmdb_path: pathlib.Path | None = None) -> lmdb.Environment
 
 
-   .. py:method:: close_db() -> None
+   .. py:method:: __del__()
 
 
-   .. py:method:: get_metadata(num_samples: int = 100)
-
-
-.. py:class:: SinglePointLmdbDataset(config, transform=None)
-
-   Bases: :py:obj:`LmdbDataset`\ [\ :py:obj:`torch_geometric.data.data.BaseData`\ ]
-
-
-   An abstract class representing a :class:`Dataset`.
-
-   All datasets that represent a map from keys to data samples should subclass
-   it. All subclasses should overwrite :meth:`__getitem__`, supporting fetching a
-   data sample for a given key. Subclasses could also optionally overwrite
-   :meth:`__len__`, which is expected to return the size of the dataset by many
-   :class:`~torch.utils.data.Sampler` implementations and the default options
-   of :class:`~torch.utils.data.DataLoader`. Subclasses could also
-   optionally implement :meth:`__getitems__`, for speedup batched samples
-   loading. This method accepts list of indices of samples of batch and returns
-   list of samples.
-
-   .. note::
-     :class:`~torch.utils.data.DataLoader` by default constructs an index
-     sampler that yields integral indices.  To make it work with a map-style
-     dataset with non-integral indices/keys, a custom sampler must be provided.
-
-
-.. py:class:: TrajectoryLmdbDataset(config, transform=None)
-
-   Bases: :py:obj:`LmdbDataset`\ [\ :py:obj:`torch_geometric.data.data.BaseData`\ ]
-
-
-   An abstract class representing a :class:`Dataset`.
-
-   All datasets that represent a map from keys to data samples should subclass
-   it. All subclasses should overwrite :meth:`__getitem__`, supporting fetching a
-   data sample for a given key. Subclasses could also optionally overwrite
-   :meth:`__len__`, which is expected to return the size of the dataset by many
-   :class:`~torch.utils.data.Sampler` implementations and the default options
-   of :class:`~torch.utils.data.DataLoader`. Subclasses could also
-   optionally implement :meth:`__getitems__`, for speedup batched samples
-   loading. This method accepts list of indices of samples of batch and returns
-   list of samples.
-
-   .. note::
-     :class:`~torch.utils.data.DataLoader` by default constructs an index
-     sampler that yields integral indices.  To make it work with a map-style
-     dataset with non-integral indices/keys, a custom sampler must be provided.
+   .. py:method:: sample_property_metadata(num_samples: int = 100)
 
 
 .. py:function:: data_list_collater(data_list: list[torch_geometric.data.data.BaseData], otf_graph: bool = False) -> torch_geometric.data.data.BaseData

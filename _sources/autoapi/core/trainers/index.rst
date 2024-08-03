@@ -35,6 +35,41 @@ Package Contents
    inheritance.
 
 
+   .. py:attribute:: name
+
+
+   .. py:attribute:: is_debug
+
+
+   .. py:attribute:: cpu
+
+
+   .. py:attribute:: epoch
+      :value: 0
+
+
+
+   .. py:attribute:: step
+      :value: 0
+
+
+
+   .. py:attribute:: timestamp_id
+      :type:  str
+
+
+   .. py:attribute:: commit_hash
+
+
+   .. py:attribute:: logger_name
+
+
+   .. py:attribute:: config
+
+
+   .. py:attribute:: scaler
+
+
    .. py:method:: train(disable_eval_tqdm: bool = False) -> None
       :abstractmethod:
 

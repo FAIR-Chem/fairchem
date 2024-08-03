@@ -43,6 +43,9 @@ Module Contents
                return x
 
 
+   .. py:attribute:: info_str
+
+
    .. py:method:: __repr__() -> str
 
       Return a custom repr for ModuleList that compresses repeated module representations.

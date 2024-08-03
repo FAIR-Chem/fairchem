@@ -60,6 +60,12 @@ Module Contents
    amount of time. Otherwise, fall back to the provided default strategy.
 
 
+   .. py:attribute:: _default_wait
+
+
+   .. py:attribute:: _rate_limit_logging
+
+
    .. py:method:: __call__(retry_state: tenacity.RetryCallState) -> float
 
       If a RateLimitExceededException was raised and has a retry_after value,

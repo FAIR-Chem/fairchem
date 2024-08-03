@@ -23,9 +23,9 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: SchNetWrap(num_atoms: int, bond_feat_dim: int, num_targets: int, use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, hidden_channels: int = 128, num_filters: int = 128, num_interactions: int = 6, num_gaussians: int = 50, cutoff: float = 10.0, readout: str = 'add')
+.. py:class:: SchNetWrap(use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, hidden_channels: int = 128, num_filters: int = 128, num_interactions: int = 6, num_gaussians: int = 50, cutoff: float = 10.0, readout: str = 'add')
 
-   Bases: :py:obj:`torch_geometric.nn.SchNet`, :py:obj:`fairchem.core.models.base.BaseModel`
+   Bases: :py:obj:`torch_geometric.nn.SchNet`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
 
    Wrapper around the continuous-filter convolutional neural network SchNet from the
@@ -37,12 +37,6 @@ Module Contents
        \mathbf{x}^{\prime}_i = \sum_{j \in \mathcal{N}(i)} \mathbf{x}_j \odot
        h_{\mathbf{\Theta}} ( \exp(-\gamma(\mathbf{e}_{j,i} - \mathbf{\mu}))),
 
-   :param num_atoms: Unused argument
-   :type num_atoms: int
-   :param bond_feat_dim: Unused argument
-   :type bond_feat_dim: int
-   :param num_targets: Number of targets to predict.
-   :type num_targets: int
    :param use_pbc: If set to :obj:`True`, account for periodic boundary conditions.
                    (default: :obj:`True`)
    :type use_pbc: bool, optional
@@ -71,6 +65,31 @@ Module Contents
    :param readout: Whether to apply :obj:`"add"` or
                    :obj:`"mean"` global aggregation. (default: :obj:`"add"`)
    :type readout: string, optional
+
+
+   .. py:attribute:: num_targets
+      :value: 1
+
+
+
+   .. py:attribute:: regress_forces
+
+
+   .. py:attribute:: use_pbc
+
+
+   .. py:attribute:: cutoff
+
+
+   .. py:attribute:: otf_graph
+
+
+   .. py:attribute:: max_neighbors
+      :value: 50
+
+
+
+   .. py:attribute:: reduce
 
 
    .. py:method:: _forward(data)

@@ -18,7 +18,6 @@ Classes
 .. autoapisummary::
 
    core.common.data_parallel.OCPCollater
-   core.common.data_parallel._HasMetadata
    core.common.data_parallel.StatefulDistributedSampler
    core.common.data_parallel.BalancedBatchSampler
 
@@ -28,7 +27,8 @@ Functions
 
 .. autoapisummary::
 
-   core.common.data_parallel.balanced_partition
+   core.common.data_parallel._balanced_partition
+   core.common.data_parallel._ensure_supported
 
 
 Module Contents
@@ -36,55 +36,16 @@ Module Contents
 
 .. py:class:: OCPCollater(otf_graph: bool = False)
 
+   .. py:attribute:: otf_graph
+
+
    .. py:method:: __call__(data_list: list[torch_geometric.data.Data]) -> torch_geometric.data.Batch
 
 
-.. py:function:: balanced_partition(sizes: numpy.typing.NDArray[numpy.int_], num_parts: int)
+.. py:function:: _balanced_partition(sizes: numpy.typing.NDArray[numpy.int_], num_parts: int)
 
    Greedily partition the given set by always inserting
    the largest element into the smallest partition.
-
-
-.. py:class:: _HasMetadata
-
-   Bases: :py:obj:`Protocol`
-
-
-   Base class for protocol classes.
-
-   Protocol classes are defined as::
-
-       class Proto(Protocol):
-           def meth(self) -> int:
-               ...
-
-   Such classes are primarily used with static type checkers that recognize
-   structural subtyping (static duck-typing).
-
-   For example::
-
-       class C:
-           def meth(self) -> int:
-               return 0
-
-       def func(x: Proto) -> int:
-           return x.meth()
-
-       func(C())  # Passes static type check
-
-   See PEP 544 for details. Protocol classes decorated with
-   @typing.runtime_checkable act as simple-minded runtime protocols that check
-   only the presence of given attributes, ignoring their type signatures.
-   Protocol classes can be generic, they are defined as::
-
-       class GenProto(Protocol[T]):
-           def meth(self) -> T:
-               ...
-
-
-   .. py:property:: metadata_path
-      :type: pathlib.Path
-
 
 
 .. py:class:: StatefulDistributedSampler(dataset, batch_size, **kwargs)
@@ -99,66 +60,71 @@ Module Contents
    we want to resume the data sampler from the training iteration.
 
 
+   .. py:attribute:: start_iter
+      :value: 0
+
+
+
+   .. py:attribute:: batch_size
+
+
    .. py:method:: __iter__()
 
 
    .. py:method:: set_epoch_and_start_iteration(epoch, start_iter)
 
 
-.. py:class:: BalancedBatchSampler(dataset, batch_size: int, num_replicas: int, rank: int, device: torch.device, seed: int, mode: str | bool = 'atoms', shuffle: bool = True, drop_last: bool = False, force_balancing: bool = False, throw_on_error: bool = False)
+.. py:function:: _ensure_supported(dataset: Any)
 
-   Bases: :py:obj:`torch.utils.data.Sampler`
+.. py:class:: BalancedBatchSampler(dataset: torch.utils.data.Dataset, *, batch_size: int, num_replicas: int, rank: int, device: torch.device, seed: int, mode: bool | Literal['atoms'] = 'atoms', shuffle: bool = True, on_error: Literal['warn_and_balance', 'warn_and_no_balance', 'raise'] = 'raise', drop_last: bool = False)
+
+   Bases: :py:obj:`torch.utils.data.BatchSampler`
 
 
-   Base class for all Samplers.
+   Wraps another sampler to yield a mini-batch of indices.
 
-   Every Sampler subclass has to provide an :meth:`__iter__` method, providing a
-   way to iterate over indices or lists of indices (batches) of dataset elements, and a :meth:`__len__` method
-   that returns the length of the returned iterators.
-
-   :param data_source: This argument is not used and will be removed in 2.2.0.
-                       You may still have custom implementation that utilizes it.
-   :type data_source: Dataset
+   :param sampler: Base sampler. Can be any iterable object
+   :type sampler: Sampler or Iterable
+   :param batch_size: Size of mini-batch.
+   :type batch_size: int
+   :param drop_last: If ``True``, the sampler will drop the last batch if
+                     its size would be less than ``batch_size``
+   :type drop_last: bool
 
    .. rubric:: Example
 
-   >>> # xdoctest: +SKIP
-   >>> class AccedingSequenceLengthSampler(Sampler[int]):
-   >>>     def __init__(self, data: List[str]) -> None:
-   >>>         self.data = data
-   >>>
-   >>>     def __len__(self) -> int:
-   >>>         return len(self.data)
-   >>>
-   >>>     def __iter__(self) -> Iterator[int]:
-   >>>         sizes = torch.tensor([len(x) for x in self.data])
-   >>>         yield from torch.argsort(sizes).tolist()
-   >>>
-   >>> class AccedingSequenceLengthBatchSampler(Sampler[List[int]]):
-   >>>     def __init__(self, data: List[str], batch_size: int) -> None:
-   >>>         self.data = data
-   >>>         self.batch_size = batch_size
-   >>>
-   >>>     def __len__(self) -> int:
-   >>>         return (len(self.data) + self.batch_size - 1) // self.batch_size
-   >>>
-   >>>     def __iter__(self) -> Iterator[List[int]]:
-   >>>         sizes = torch.tensor([len(x) for x in self.data])
-   >>>         for batch in torch.chunk(torch.argsort(sizes), len(self)):
-   >>>             yield batch.tolist()
-
-   .. note:: The :meth:`__len__` method isn't strictly required by
-             :class:`~torch.utils.data.DataLoader`, but is expected in any
-             calculation involving the length of a :class:`~torch.utils.data.DataLoader`.
+   >>> list(BatchSampler(SequentialSampler(range(10)), batch_size=3, drop_last=False))
+   [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]
+   >>> list(BatchSampler(SequentialSampler(range(10)), batch_size=3, drop_last=True))
+   [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
 
 
-   .. py:method:: _load_dataset(dataset, mode: Literal['atoms', 'neighbors'])
+   .. py:attribute:: disabled
+      :value: False
 
 
-   .. py:method:: __len__() -> int
+
+   .. py:attribute:: on_error
+
+
+   .. py:attribute:: sampler
+
+
+   .. py:attribute:: device
+
+
+   .. py:method:: _get_natoms(batch_idx: list[int])
 
 
    .. py:method:: set_epoch_and_start_iteration(epoch: int, start_iteration: int) -> None
+
+
+   .. py:method:: set_epoch(epoch: int) -> None
+
+
+   .. py:method:: _dist_enabled()
+      :staticmethod:
+
 
 
    .. py:method:: __iter__()

@@ -60,6 +60,15 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: act
+
+
+   .. py:attribute:: slope
+
+
+   .. py:attribute:: shift
+
+
    .. py:method:: forward(input: torch.Tensor) -> torch.Tensor
 
 

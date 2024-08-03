@@ -25,14 +25,64 @@ Classes
 Package Contents
 ----------------
 
-.. py:class:: PaiNN(num_atoms: int, bond_feat_dim: int, num_targets: int, hidden_channels: int = 512, num_layers: int = 6, num_rbf: int = 128, cutoff: float = 12.0, max_neighbors: int = 50, rbf: dict[str, str] | None = None, envelope: dict[str, str | int] | None = None, regress_forces: bool = True, direct_forces: bool = True, use_pbc: bool = True, otf_graph: bool = True, num_elements: int = 83, scale_file: str | None = None)
+.. py:class:: PaiNN(hidden_channels: int = 512, num_layers: int = 6, num_rbf: int = 128, cutoff: float = 12.0, max_neighbors: int = 50, rbf: dict[str, str] | None = None, envelope: dict[str, str | int] | None = None, regress_forces: bool = True, direct_forces: bool = True, use_pbc: bool = True, otf_graph: bool = True, num_elements: int = 83, scale_file: str | None = None)
 
-   Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+   Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
 
    PaiNN model based on the description in Schütt et al. (2021):
    Equivariant message passing for the prediction of tensorial properties
    and molecular spectra, https://arxiv.org/abs/2102.03150.
+
+
+   .. py:attribute:: hidden_channels
+
+
+   .. py:attribute:: num_layers
+
+
+   .. py:attribute:: num_rbf
+
+
+   .. py:attribute:: cutoff
+
+
+   .. py:attribute:: max_neighbors
+
+
+   .. py:attribute:: regress_forces
+
+
+   .. py:attribute:: direct_forces
+
+
+   .. py:attribute:: otf_graph
+
+
+   .. py:attribute:: use_pbc
+
+
+   .. py:attribute:: symmetric_edge_symmetrization
+      :value: False
+
+
+
+   .. py:attribute:: atom_emb
+
+
+   .. py:attribute:: radial_basis
+
+
+   .. py:attribute:: message_layers
+
+
+   .. py:attribute:: update_layers
+
+
+   .. py:attribute:: out_energy
+
+
+   .. py:attribute:: inv_sqrt_2
 
 
    .. py:method:: reset_parameters() -> None

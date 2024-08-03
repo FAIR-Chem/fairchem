@@ -66,6 +66,9 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: w0
+
+
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
 
@@ -104,6 +107,12 @@ Module Contents
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
+
+   .. py:attribute:: layers
+
+
+   .. py:attribute:: network
 
 
    .. py:method:: forward(X: torch.Tensor) -> torch.Tensor
@@ -146,6 +155,22 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: num_freqs
+
+
+   .. py:attribute:: out_dim
+      :type:  int
+
+
+   .. py:attribute:: use_cosine
+
+
+   .. py:attribute:: freq
+
+
+   .. py:attribute:: freq_filter
+
+
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
 
@@ -186,6 +211,16 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: num_freqs
+
+
+   .. py:attribute:: offset
+
+
+   .. py:attribute:: coeff
+      :type:  float
+
+
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
 
@@ -224,6 +259,22 @@ Module Contents
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
+
+   .. py:attribute:: num_freqs
+
+
+   .. py:attribute:: out_dim
+      :type:  int
+
+
+   .. py:attribute:: use_cosine
+
+
+   .. py:attribute:: freq
+
+
+   .. py:attribute:: freq_filter
 
 
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
@@ -268,6 +319,12 @@ Module Contents
 
    .. py:attribute:: smearing
       :type:  SINESmearing | FourierSmearing | GaussianSmearing | torch.nn.Sequential
+
+
+   .. py:attribute:: num_freqs
+
+
+   .. py:attribute:: basis_type
 
 
    .. py:method:: forward(x: torch.Tensor, edge_attr_sph: torch.Tensor | None = None)
@@ -316,6 +373,24 @@ Module Contents
 
    .. py:attribute:: n
       :type:  numpy.typing.NDArray[numpy.int_]
+
+
+   .. py:attribute:: max_n
+
+
+   .. py:attribute:: m_list
+      :type:  list[int]
+      :value: []
+
+
+
+   .. py:attribute:: n_list
+      :type:  list[int]
+      :value: []
+
+
+
+   .. py:attribute:: out_dim
 
 
    .. py:method:: forward(xyz: torch.Tensor) -> torch.Tensor

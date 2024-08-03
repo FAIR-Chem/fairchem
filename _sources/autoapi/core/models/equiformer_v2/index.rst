@@ -22,7 +22,7 @@ Submodules
    /autoapi/core/models/equiformer_v2/activation/index
    /autoapi/core/models/equiformer_v2/drop/index
    /autoapi/core/models/equiformer_v2/edge_rot_mat/index
-   /autoapi/core/models/equiformer_v2/equiformer_v2_oc20/index
+   /autoapi/core/models/equiformer_v2/equiformer_v2/index
    /autoapi/core/models/equiformer_v2/gaussian_rbf/index
    /autoapi/core/models/equiformer_v2/input_block/index
    /autoapi/core/models/equiformer_v2/layer_norm/index
@@ -45,9 +45,9 @@ Classes
 Package Contents
 ----------------
 
-.. py:class:: EquiformerV2(num_atoms: int, bond_feat_dim: int, num_targets: int, use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = True, max_neighbors: int = 500, max_radius: float = 5.0, max_num_elements: int = 90, num_layers: int = 12, sphere_channels: int = 128, attn_hidden_channels: int = 128, num_heads: int = 8, attn_alpha_channels: int = 32, attn_value_channels: int = 16, ffn_hidden_channels: int = 512, norm_type: str = 'rms_norm_sh', lmax_list: list[int] | None = None, mmax_list: list[int] | None = None, grid_resolution: int | None = None, num_sphere_samples: int = 128, edge_channels: int = 128, use_atom_edge_embedding: bool = True, share_atom_edge_embedding: bool = False, use_m_share_rad: bool = False, distance_function: str = 'gaussian', num_distance_basis: int = 512, attn_activation: str = 'scaled_silu', use_s2_act_attn: bool = False, use_attn_renorm: bool = True, ffn_activation: str = 'scaled_silu', use_gate_act: bool = False, use_grid_mlp: bool = False, use_sep_s2_act: bool = True, alpha_drop: float = 0.1, drop_path_rate: float = 0.05, proj_drop: float = 0.0, weight_init: str = 'normal', enforce_max_neighbors_strictly: bool = True, avg_num_nodes: float | None = None, avg_degree: float | None = None, use_energy_lin_ref: bool | None = False, load_energy_lin_ref: bool | None = False)
+.. py:class:: EquiformerV2(use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = True, max_neighbors: int = 500, max_radius: float = 5.0, max_num_elements: int = 90, num_layers: int = 12, sphere_channels: int = 128, attn_hidden_channels: int = 128, num_heads: int = 8, attn_alpha_channels: int = 32, attn_value_channels: int = 16, ffn_hidden_channels: int = 512, norm_type: str = 'rms_norm_sh', lmax_list: list[int] | None = None, mmax_list: list[int] | None = None, grid_resolution: int | None = None, num_sphere_samples: int = 128, edge_channels: int = 128, use_atom_edge_embedding: bool = True, share_atom_edge_embedding: bool = False, use_m_share_rad: bool = False, distance_function: str = 'gaussian', num_distance_basis: int = 512, attn_activation: str = 'scaled_silu', use_s2_act_attn: bool = False, use_attn_renorm: bool = True, ffn_activation: str = 'scaled_silu', use_gate_act: bool = False, use_grid_mlp: bool = False, use_sep_s2_act: bool = True, alpha_drop: float = 0.1, drop_path_rate: float = 0.05, proj_drop: float = 0.0, weight_init: str = 'normal', enforce_max_neighbors_strictly: bool = True, avg_num_nodes: float | None = None, avg_degree: float | None = None, use_energy_lin_ref: bool | None = False, load_energy_lin_ref: bool | None = False)
 
-   Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+   Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
 
    Equiformer with graph attention built upon SO(2) convolution and feedforward network built upon S2 activation
@@ -134,6 +134,174 @@ Package Contents
                                This additional flag is there to ensure compatibility when strict-loading checkpoints, since the `use_energy_lin_ref` flag can be either True or False even if the model is trained with linear references.
                                You can't have use_energy_lin_ref = True and load_energy_lin_ref = False, since the model will not have the parameters for the linear references. All other combinations are fine.
    :type load_energy_lin_ref: bool
+
+
+   .. py:attribute:: use_pbc
+
+
+   .. py:attribute:: regress_forces
+
+
+   .. py:attribute:: otf_graph
+
+
+   .. py:attribute:: max_neighbors
+
+
+   .. py:attribute:: max_radius
+
+
+   .. py:attribute:: cutoff
+
+
+   .. py:attribute:: max_num_elements
+
+
+   .. py:attribute:: num_layers
+
+
+   .. py:attribute:: sphere_channels
+
+
+   .. py:attribute:: attn_hidden_channels
+
+
+   .. py:attribute:: num_heads
+
+
+   .. py:attribute:: attn_alpha_channels
+
+
+   .. py:attribute:: attn_value_channels
+
+
+   .. py:attribute:: ffn_hidden_channels
+
+
+   .. py:attribute:: norm_type
+
+
+   .. py:attribute:: lmax_list
+
+
+   .. py:attribute:: mmax_list
+
+
+   .. py:attribute:: grid_resolution
+
+
+   .. py:attribute:: num_sphere_samples
+
+
+   .. py:attribute:: edge_channels
+
+
+   .. py:attribute:: use_atom_edge_embedding
+
+
+   .. py:attribute:: share_atom_edge_embedding
+
+
+   .. py:attribute:: use_m_share_rad
+
+
+   .. py:attribute:: distance_function
+
+
+   .. py:attribute:: num_distance_basis
+
+
+   .. py:attribute:: attn_activation
+
+
+   .. py:attribute:: use_s2_act_attn
+
+
+   .. py:attribute:: use_attn_renorm
+
+
+   .. py:attribute:: ffn_activation
+
+
+   .. py:attribute:: use_gate_act
+
+
+   .. py:attribute:: use_grid_mlp
+
+
+   .. py:attribute:: use_sep_s2_act
+
+
+   .. py:attribute:: alpha_drop
+
+
+   .. py:attribute:: drop_path_rate
+
+
+   .. py:attribute:: proj_drop
+
+
+   .. py:attribute:: avg_num_nodes
+
+
+   .. py:attribute:: avg_degree
+
+
+   .. py:attribute:: use_energy_lin_ref
+
+
+   .. py:attribute:: load_energy_lin_ref
+
+
+   .. py:attribute:: weight_init
+
+
+   .. py:attribute:: enforce_max_neighbors_strictly
+
+
+   .. py:attribute:: device
+      :value: 'cpu'
+
+
+
+   .. py:attribute:: grad_forces
+      :value: False
+
+
+
+   .. py:attribute:: num_resolutions
+      :type:  int
+
+
+   .. py:attribute:: sphere_channels_all
+      :type:  int
+
+
+   .. py:attribute:: sphere_embedding
+
+
+   .. py:attribute:: edge_channels_list
+
+
+   .. py:attribute:: SO3_rotation
+
+
+   .. py:attribute:: mappingReduced
+
+
+   .. py:attribute:: SO3_grid
+
+
+   .. py:attribute:: edge_degree_embedding
+
+
+   .. py:attribute:: blocks
+
+
+   .. py:attribute:: norm
+
+
+   .. py:attribute:: energy_block
 
 
    .. py:method:: _init_gp_partitions(atomic_numbers_full, data_batch_full, edge_index, edge_distance, edge_distance_vec)

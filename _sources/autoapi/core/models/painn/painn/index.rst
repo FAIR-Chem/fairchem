@@ -42,23 +42,76 @@ Classes
 .. autoapisummary::
 
    core.models.painn.painn.PaiNN
+   core.models.painn.painn.PaiNNBackbone
    core.models.painn.painn.PaiNNMessage
    core.models.painn.painn.PaiNNUpdate
    core.models.painn.painn.PaiNNOutput
    core.models.painn.painn.GatedEquivariantBlock
+   core.models.painn.painn.PaiNNEnergyHead
+   core.models.painn.painn.PaiNNForceHead
 
 
 Module Contents
 ---------------
 
-.. py:class:: PaiNN(num_atoms: int, bond_feat_dim: int, num_targets: int, hidden_channels: int = 512, num_layers: int = 6, num_rbf: int = 128, cutoff: float = 12.0, max_neighbors: int = 50, rbf: dict[str, str] | None = None, envelope: dict[str, str | int] | None = None, regress_forces: bool = True, direct_forces: bool = True, use_pbc: bool = True, otf_graph: bool = True, num_elements: int = 83, scale_file: str | None = None)
+.. py:class:: PaiNN(hidden_channels: int = 512, num_layers: int = 6, num_rbf: int = 128, cutoff: float = 12.0, max_neighbors: int = 50, rbf: dict[str, str] | None = None, envelope: dict[str, str | int] | None = None, regress_forces: bool = True, direct_forces: bool = True, use_pbc: bool = True, otf_graph: bool = True, num_elements: int = 83, scale_file: str | None = None)
 
-   Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+   Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
 
    PaiNN model based on the description in Schütt et al. (2021):
    Equivariant message passing for the prediction of tensorial properties
    and molecular spectra, https://arxiv.org/abs/2102.03150.
+
+
+   .. py:attribute:: hidden_channels
+
+
+   .. py:attribute:: num_layers
+
+
+   .. py:attribute:: num_rbf
+
+
+   .. py:attribute:: cutoff
+
+
+   .. py:attribute:: max_neighbors
+
+
+   .. py:attribute:: regress_forces
+
+
+   .. py:attribute:: direct_forces
+
+
+   .. py:attribute:: otf_graph
+
+
+   .. py:attribute:: use_pbc
+
+
+   .. py:attribute:: symmetric_edge_symmetrization
+      :value: False
+
+
+
+   .. py:attribute:: atom_emb
+
+
+   .. py:attribute:: radial_basis
+
+
+   .. py:attribute:: message_layers
+
+
+   .. py:attribute:: update_layers
+
+
+   .. py:attribute:: out_energy
+
+
+   .. py:attribute:: inv_sqrt_2
 
 
    .. py:method:: reset_parameters() -> None
@@ -95,6 +148,28 @@ Module Contents
    .. py:method:: __repr__() -> str
 
       Return repr(self).
+
+
+
+.. py:class:: PaiNNBackbone(hidden_channels: int = 512, num_layers: int = 6, num_rbf: int = 128, cutoff: float = 12.0, max_neighbors: int = 50, rbf: dict[str, str] | None = None, envelope: dict[str, str | int] | None = None, regress_forces: bool = True, direct_forces: bool = True, use_pbc: bool = True, otf_graph: bool = True, num_elements: int = 83, scale_file: str | None = None)
+
+   Bases: :py:obj:`PaiNN`, :py:obj:`fairchem.core.models.base.BackboneInterface`
+
+
+   PaiNN model based on the description in Schütt et al. (2021):
+   Equivariant message passing for the prediction of tensorial properties
+   and molecular spectra, https://arxiv.org/abs/2102.03150.
+
+
+   .. py:method:: forward(data) -> dict[str, torch.Tensor]
+
+      Backbone forward.
+
+      :param data: Atomic systems as input
+      :type data: DataBatch
+
+      :returns: **embedding** -- Return backbone embeddings for the given input
+      :rtype: dict[str->torch.Tensor]
 
 
 
@@ -164,6 +239,24 @@ Module Contents
                              granularity of feature decomposition, the same is not necessarily
                              true for execution speedups. (default: :obj:`1`)
    :type decomposed_layers: int, optional
+
+
+   .. py:attribute:: hidden_channels
+
+
+   .. py:attribute:: x_proj
+
+
+   .. py:attribute:: rbf_proj
+
+
+   .. py:attribute:: inv_sqrt_3
+
+
+   .. py:attribute:: inv_sqrt_h
+
+
+   .. py:attribute:: x_layernorm
 
 
    .. py:method:: reset_parameters() -> None
@@ -252,6 +345,21 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: hidden_channels
+
+
+   .. py:attribute:: vec_proj
+
+
+   .. py:attribute:: xvec_proj
+
+
+   .. py:attribute:: inv_sqrt_2
+
+
+   .. py:attribute:: inv_sqrt_h
+
+
    .. py:method:: reset_parameters() -> None
 
 
@@ -295,6 +403,12 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: hidden_channels
+
+
+   .. py:attribute:: output_network
+
+
    .. py:method:: reset_parameters() -> None
 
 
@@ -310,9 +424,132 @@ Module Contents
    Equivariant message passing for the prediction of tensorial properties and molecular spectra
 
 
+   .. py:attribute:: out_channels
+
+
+   .. py:attribute:: vec1_proj
+
+
+   .. py:attribute:: vec2_proj
+
+
+   .. py:attribute:: update_net
+
+
+   .. py:attribute:: act
+
+
    .. py:method:: reset_parameters() -> None
 
 
    .. py:method:: forward(x, v)
+
+
+.. py:class:: PaiNNEnergyHead(backbone)
+
+   Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.HeadInterface`
+
+
+   Base class for all neural network modules.
+
+   Your models should also subclass this class.
+
+   Modules can also contain other Modules, allowing to nest them in
+   a tree structure. You can assign the submodules as regular attributes::
+
+       import torch.nn as nn
+       import torch.nn.functional as F
+
+       class Model(nn.Module):
+           def __init__(self):
+               super().__init__()
+               self.conv1 = nn.Conv2d(1, 20, 5)
+               self.conv2 = nn.Conv2d(20, 20, 5)
+
+           def forward(self, x):
+               x = F.relu(self.conv1(x))
+               return F.relu(self.conv2(x))
+
+   Submodules assigned in this way will be registered, and will have their
+   parameters converted too when you call :meth:`to`, etc.
+
+   .. note::
+       As per the example above, an ``__init__()`` call to the parent class
+       must be made before assignment on the child.
+
+   :ivar training: Boolean represents whether this module is in training or
+                   evaluation mode.
+   :vartype training: bool
+
+
+   .. py:attribute:: out_energy
+
+
+   .. py:method:: forward(data: torch_geometric.data.batch.Batch, emb: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]
+
+      Head forward.
+
+      :param data: Atomic systems as input
+      :type data: DataBatch
+      :param emb: Embeddings of the input as generated by the backbone
+      :type emb: dict[str->torch.Tensor]
+
+      :returns: **outputs** -- Return one or more targets generated by this head
+      :rtype: dict[str->torch.Tensor]
+
+
+
+.. py:class:: PaiNNForceHead(backbone)
+
+   Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.HeadInterface`
+
+
+   Base class for all neural network modules.
+
+   Your models should also subclass this class.
+
+   Modules can also contain other Modules, allowing to nest them in
+   a tree structure. You can assign the submodules as regular attributes::
+
+       import torch.nn as nn
+       import torch.nn.functional as F
+
+       class Model(nn.Module):
+           def __init__(self):
+               super().__init__()
+               self.conv1 = nn.Conv2d(1, 20, 5)
+               self.conv2 = nn.Conv2d(20, 20, 5)
+
+           def forward(self, x):
+               x = F.relu(self.conv1(x))
+               return F.relu(self.conv2(x))
+
+   Submodules assigned in this way will be registered, and will have their
+   parameters converted too when you call :meth:`to`, etc.
+
+   .. note::
+       As per the example above, an ``__init__()`` call to the parent class
+       must be made before assignment on the child.
+
+   :ivar training: Boolean represents whether this module is in training or
+                   evaluation mode.
+   :vartype training: bool
+
+
+   .. py:attribute:: direct_forces
+
+
+   .. py:method:: forward(data: torch_geometric.data.batch.Batch, emb: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]
+
+      Head forward.
+
+      :param data: Atomic systems as input
+      :type data: DataBatch
+      :param emb: Embeddings of the input as generated by the backbone
+      :type emb: dict[str->torch.Tensor]
+
+      :returns: **outputs** -- Return one or more targets generated by this head
+      :rtype: dict[str->torch.Tensor]
+
 
 

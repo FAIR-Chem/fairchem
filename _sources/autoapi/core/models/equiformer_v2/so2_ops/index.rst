@@ -34,6 +34,33 @@ Module Contents
    :param mmax_list (list: int):       List of orders (m) for each resolution
 
 
+   .. py:attribute:: m
+
+
+   .. py:attribute:: sphere_channels
+
+
+   .. py:attribute:: m_output_channels
+
+
+   .. py:attribute:: lmax_list
+
+
+   .. py:attribute:: mmax_list
+
+
+   .. py:attribute:: num_resolutions
+      :type:  int
+
+
+   .. py:attribute:: num_channels
+      :value: 0
+
+
+
+   .. py:attribute:: fc
+
+
    .. py:method:: forward(x_m)
 
 
@@ -59,6 +86,57 @@ Module Contents
    :type extra_m0_output_channels: int
 
 
+   .. py:attribute:: sphere_channels
+
+
+   .. py:attribute:: m_output_channels
+
+
+   .. py:attribute:: lmax_list
+
+
+   .. py:attribute:: mmax_list
+
+
+   .. py:attribute:: mappingReduced
+
+
+   .. py:attribute:: num_resolutions
+
+
+   .. py:attribute:: internal_weights
+
+
+   .. py:attribute:: edge_channels_list
+
+
+   .. py:attribute:: extra_m0_output_channels
+
+
+   .. py:attribute:: num_channels_rad
+      :value: 0
+
+
+
+   .. py:attribute:: num_channels_m0
+      :value: 0
+
+
+
+   .. py:attribute:: m0_output_channels
+
+
+   .. py:attribute:: fc_m0
+
+
+   .. py:attribute:: so2_m_conv
+
+
+   .. py:attribute:: rad_func
+      :value: None
+
+
+
    .. py:method:: forward(x, x_edge)
 
 
@@ -80,6 +158,51 @@ Module Contents
    :param internal_weights: If True, not using radial function to multiply inputs features
    :type internal_weights: bool
    :param edge_channels_list (list: int):  List of sizes of invariant edge embedding. For example, [input_channels, hidden_channels, hidden_channels].
+
+
+   .. py:attribute:: sphere_channels
+
+
+   .. py:attribute:: m_output_channels
+
+
+   .. py:attribute:: lmax_list
+
+
+   .. py:attribute:: mmax_list
+
+
+   .. py:attribute:: mappingReduced
+
+
+   .. py:attribute:: internal_weights
+
+
+   .. py:attribute:: edge_channels_list
+
+
+   .. py:attribute:: num_resolutions
+
+
+   .. py:attribute:: num_channels_rad
+      :value: 0
+
+
+
+   .. py:attribute:: num_channels_m0
+      :value: 0
+
+
+
+   .. py:attribute:: fc_m0
+
+
+   .. py:attribute:: so2_m_fc
+
+
+   .. py:attribute:: rad_func
+      :value: None
+
 
 
    .. py:method:: forward(x, x_edge)

@@ -54,6 +54,18 @@ Module Contents
    :type activation: callable/str
 
 
+   .. py:attribute:: name
+
+
+   .. py:attribute:: dense_rbf
+
+
+   .. py:attribute:: scale_sum
+
+
+   .. py:attribute:: layers
+
+
    .. py:method:: get_mlp(units_in: int, units: int, nHidden: int, activation: str | None)
 
 
@@ -97,6 +109,15 @@ Module Contents
 
    .. py:attribute:: out_energy
       :type:  core.models.gemnet_gp.layers.base_layers.Dense
+
+
+   .. py:attribute:: output_init
+
+
+   .. py:attribute:: direct_forces
+
+
+   .. py:attribute:: seq_energy
 
 
    .. py:method:: reset_parameters() -> None

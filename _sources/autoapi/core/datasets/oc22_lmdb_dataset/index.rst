@@ -25,7 +25,7 @@ Module Contents
 
 .. py:class:: OC22LmdbDataset(config, transform=None)
 
-   Bases: :py:obj:`torch.utils.data.Dataset`
+   Bases: :py:obj:`fairchem.core.datasets.base_dataset.BaseDataset`
 
 
    Dataset class to load from LMDB files containing relaxation
@@ -44,6 +44,21 @@ Module Contents
    :param transform: Data transform function.
                      (default: :obj:`None`)
    :type transform: callable, optional
+
+
+   .. py:attribute:: path
+
+
+   .. py:attribute:: data2train
+
+
+   .. py:attribute:: key_mapping
+
+
+   .. py:attribute:: transforms
+
+
+   .. py:attribute:: train_on_oc20_total_energies
 
 
    .. py:method:: __len__() -> int

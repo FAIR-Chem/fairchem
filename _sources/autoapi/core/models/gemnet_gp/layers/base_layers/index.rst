@@ -41,6 +41,9 @@ Module Contents
    :type bias: bool
 
 
+   .. py:attribute:: linear
+
+
    .. py:method:: reset_parameters(initializer=he_orthogonal_init) -> None
 
 
@@ -84,6 +87,12 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: scale_factor
+
+
+   .. py:attribute:: _activation
+
+
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
 
@@ -124,6 +133,9 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: _activation
+
+
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
 
@@ -140,6 +152,12 @@ Module Contents
    :type nLayers: int
    :param layer_kwargs: Keyword arguments for initializing the layers.
    :type layer_kwargs: str
+
+
+   .. py:attribute:: dense_mlp
+
+
+   .. py:attribute:: inv_sqrt_2
 
 
    .. py:method:: forward(input: torch.Tensor) -> torch.Tensor

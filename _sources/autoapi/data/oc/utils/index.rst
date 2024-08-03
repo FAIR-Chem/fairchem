@@ -27,6 +27,24 @@ Package Contents
 
 .. py:class:: DetectTrajAnomaly(init_atoms, final_atoms, atoms_tag, final_slab_atoms=None, surface_change_cutoff_multiplier=1.5, desorption_cutoff_multiplier=1.5)
 
+   .. py:attribute:: init_atoms
+
+
+   .. py:attribute:: final_atoms
+
+
+   .. py:attribute:: final_slab_atoms
+
+
+   .. py:attribute:: atoms_tag
+
+
+   .. py:attribute:: surface_change_cutoff_multiplier
+
+
+   .. py:attribute:: desorption_cutoff_multiplier
+
+
    .. py:method:: is_adsorbate_dissociated()
 
       Tests if the initial adsorbate connectivity is maintained.

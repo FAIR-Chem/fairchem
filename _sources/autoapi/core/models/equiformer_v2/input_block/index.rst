@@ -37,6 +37,47 @@ Module Contents
    :type rescale_factor: float
 
 
+   .. py:attribute:: sphere_channels
+
+
+   .. py:attribute:: lmax_list
+
+
+   .. py:attribute:: mmax_list
+
+
+   .. py:attribute:: num_resolutions
+
+
+   .. py:attribute:: SO3_rotation
+
+
+   .. py:attribute:: mappingReduced
+
+
+   .. py:attribute:: m_0_num_coefficients
+      :type:  int
+
+
+   .. py:attribute:: m_all_num_coefficents
+      :type:  int
+
+
+   .. py:attribute:: max_num_elements
+
+
+   .. py:attribute:: edge_channels_list
+
+
+   .. py:attribute:: use_atom_edge_embedding
+
+
+   .. py:attribute:: rad_func
+
+
+   .. py:attribute:: rescale_factor
+
+
    .. py:method:: forward(atomic_numbers, edge_distance, edge_index, num_nodes, node_offset=0)
 
 

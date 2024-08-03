@@ -32,6 +32,28 @@ Module Contents
                            averages.
 
 
+   .. py:attribute:: decay
+
+
+   .. py:attribute:: num_updates
+      :type:  int | None
+
+
+   .. py:attribute:: parameters
+
+
+   .. py:attribute:: shadow_params
+
+
+   .. py:attribute:: collected_params
+      :type:  list[torch.nn.Parameter]
+      :value: []
+
+
+
+   .. py:attribute:: _params_refs
+
+
    .. py:method:: _get_parameters(parameters: collections.abc.Iterable[torch.nn.Parameter] | None) -> collections.abc.Iterable[torch.nn.Parameter]
 
 

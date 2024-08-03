@@ -64,6 +64,12 @@ Module Contents
       :type:  ClassVar[dict[str, str | None]]
 
 
+   .. py:attribute:: task
+
+
+   .. py:attribute:: target_metrics
+
+
    .. py:method:: eval(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], prev_metrics=None)
 
 

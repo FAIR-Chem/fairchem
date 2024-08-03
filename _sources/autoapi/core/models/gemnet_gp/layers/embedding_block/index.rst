@@ -35,6 +35,12 @@ Module Contents
    :type emb_size: int
 
 
+   .. py:attribute:: emb_size
+
+
+   .. py:attribute:: embeddings
+
+
    .. py:method:: forward(Z) -> torch.Tensor
 
       :returns: **h** -- Atom embeddings.
@@ -53,6 +59,12 @@ Module Contents
    :type emb_size: int
    :param activation: Activation function used in the dense layer.
    :type activation: str
+
+
+   .. py:attribute:: in_features
+
+
+   .. py:attribute:: dense
 
 
    .. py:method:: forward(h, m_rbf, idx_s, idx_t) -> torch.Tensor

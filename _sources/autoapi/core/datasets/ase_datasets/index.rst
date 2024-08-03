@@ -53,7 +53,7 @@ Module Contents
 
 .. py:class:: AseAtomsDataset(config: dict, atoms_transform: Callable[[ase.Atoms, Any, Ellipsis], ase.Atoms] = apply_one_tags)
 
-   Bases: :py:obj:`torch.utils.data.Dataset`, :py:obj:`abc.ABC`
+   Bases: :py:obj:`fairchem.core.datasets.base_dataset.BaseDataset`, :py:obj:`abc.ABC`
 
 
    This is an abstract Dataset that includes helpful utilities for turning
@@ -70,7 +70,25 @@ Module Contents
    Identifiers need not be any particular type.
 
 
-   .. py:method:: __len__() -> int
+   .. py:attribute:: a2g_args
+
+
+   .. py:attribute:: a2g
+
+
+   .. py:attribute:: key_mapping
+
+
+   .. py:attribute:: transforms
+
+
+   .. py:attribute:: atoms_transform
+
+
+   .. py:attribute:: ids
+
+
+   .. py:attribute:: num_samples
 
 
    .. py:method:: __getitem__(idx)
@@ -91,10 +109,10 @@ Module Contents
 
 
 
-   .. py:method:: close_db() -> None
+   .. py:method:: sample_property_metadata(num_samples: int = 100) -> dict
 
 
-   .. py:method:: get_metadata(num_samples: int = 100) -> dict
+   .. py:method:: get_metadata(attr, idx)
 
 
 .. py:class:: AseReadDataset(config: dict, atoms_transform: Callable[[ase.Atoms, Any, Ellipsis], ase.Atoms] = apply_one_tags)
@@ -225,7 +243,7 @@ Module Contents
    .. py:method:: get_atoms(idx: str) -> ase.Atoms
 
 
-   .. py:method:: get_metadata(num_samples: int = 100) -> dict
+   .. py:method:: sample_property_metadata(num_samples: int = 100) -> dict
 
 
    .. py:method:: get_relaxed_energy(identifier) -> float
@@ -310,10 +328,10 @@ Module Contents
 
 
 
-   .. py:method:: close_db() -> None
+   .. py:method:: __del__()
 
 
-   .. py:method:: get_metadata(num_samples: int = 100) -> dict
+   .. py:method:: sample_property_metadata(num_samples: int = 100) -> dict
 
 
    .. py:method:: get_relaxed_energy(identifier)

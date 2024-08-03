@@ -12,6 +12,14 @@ core.common.utils
 
 
 
+Attributes
+----------
+
+.. autoapisummary::
+
+   core.common.utils.DEFAULT_ENV_VARS
+
+
 Classes
 -------
 
@@ -54,6 +62,7 @@ Functions
    core.common.utils.setup_logging
    core.common.utils.compute_neighbors
    core.common.utils.check_traj_files
+   core.common.utils.setup_env_vars
    core.common.utils.new_trainer_context
    core.common.utils._resolve_scale_factor_submodule
    core.common.utils._report_incompat_keys
@@ -68,6 +77,8 @@ Functions
 
 Module Contents
 ---------------
+
+.. py:data:: DEFAULT_ENV_VARS
 
 .. py:class:: UniqueKeyLoader(stream)
 
@@ -215,6 +226,12 @@ Module Contents
    initialized with the empty string, all events are passed.
 
 
+   .. py:attribute:: min_level
+
+
+   .. py:attribute:: max_level
+
+
    .. py:method:: filter(record) -> bool
 
       Determine if the specified record is to be logged.
@@ -229,6 +246,8 @@ Module Contents
 .. py:function:: compute_neighbors(data, edge_index)
 
 .. py:function:: check_traj_files(batch, traj_dir) -> bool
+
+.. py:function:: setup_env_vars() -> None
 
 .. py:function:: new_trainer_context(*, config: dict[str, Any], distributed: bool = False)
 

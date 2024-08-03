@@ -20,6 +20,18 @@ Module Contents
    Initialize Reaction object
 
 
+   .. py:attribute:: reaction_db_path
+
+
+   .. py:attribute:: reaction_db
+
+
+   .. py:attribute:: adsorbate_db
+
+
+   .. py:attribute:: entry
+
+
    .. py:method:: get_desorption_mapping(reactant)
 
       Get mapping for desorption reaction

@@ -46,6 +46,56 @@ Module Contents
    :param mmax_list (list: int):   List of maximum order of the spherical harmonics
 
 
+   .. py:attribute:: lmax_list
+
+
+   .. py:attribute:: mmax_list
+
+
+   .. py:attribute:: num_resolutions
+
+
+   .. py:attribute:: device
+      :value: 'cpu'
+
+
+
+   .. py:attribute:: l_harmonic
+
+
+   .. py:attribute:: m_harmonic
+
+
+   .. py:attribute:: m_complex
+
+
+   .. py:attribute:: res_size
+
+
+   .. py:attribute:: offset
+      :value: 0
+
+
+
+   .. py:attribute:: num_coefficients
+
+
+   .. py:attribute:: to_m
+
+
+   .. py:attribute:: m_size
+
+
+   .. py:attribute:: mask_indices_cache
+      :value: None
+
+
+
+   .. py:attribute:: rotate_inv_rescale_cache
+      :value: None
+
+
+
    .. py:method:: complex_idx(m: int, lmax: int, m_complex, l_harmonic)
 
       Add `m_complex` and `l_harmonic` to the input arguments
@@ -76,6 +126,26 @@ Module Contents
    :type num_channels: int
    :param device: Device of the output
    :param dtype: type of the output tensors
+
+
+   .. py:attribute:: num_channels
+
+
+   .. py:attribute:: device
+
+
+   .. py:attribute:: dtype
+
+
+   .. py:attribute:: num_resolutions
+
+
+   .. py:attribute:: num_coefficients
+      :value: 0
+
+
+
+   .. py:attribute:: embedding
 
 
    .. py:method:: clone() -> SO3_Embedding
@@ -127,6 +197,12 @@ Module Contents
    :param lmax_list (list: int):   List of maximum degree of the spherical harmonics
 
 
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: mapping
+
+
    .. py:method:: set_wigner(rot_mat3x3)
 
 
@@ -152,16 +228,39 @@ Module Contents
    :type mmax: int
 
 
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: mmax
+
+
+   .. py:attribute:: lat_resolution
+
+
+   .. py:attribute:: mapping
+
+
+   .. py:attribute:: device
+      :value: 'cpu'
+
+
+
+   .. py:attribute:: to_grid
+
+
+   .. py:attribute:: to_grid_mat
+
+
+   .. py:attribute:: from_grid
+
+
+   .. py:attribute:: from_grid_mat
+
+
    .. py:method:: get_to_grid_mat(device)
 
 
    .. py:method:: get_from_grid_mat(device)
-
-
-   .. py:method:: to_grid(embedding, lmax: int, mmax: int)
-
-
-   .. py:method:: from_grid(grid, lmax: int, mmax: int)
 
 
 .. py:class:: SO3_Linear(in_features: int, out_features: int, lmax: int, bias: bool = True)
@@ -199,6 +298,18 @@ Module Contents
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
+
+   .. py:attribute:: in_features
+
+
+   .. py:attribute:: out_features
+
+
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: linear_list
 
 
    .. py:method:: forward(input_embedding, output_scale=None)
@@ -245,6 +356,27 @@ Module Contents
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
+
+   .. py:attribute:: in_features
+
+
+   .. py:attribute:: out_features
+
+
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: weight
+
+
+   .. py:attribute:: bound
+
+
+   .. py:attribute:: bias
+
+
+   .. py:attribute:: expand_index
 
 
    .. py:method:: forward(input_embedding)

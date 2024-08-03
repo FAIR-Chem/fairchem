@@ -18,8 +18,9 @@ Functions
 
 .. autoapisummary::
 
+   core.common.test_utils.init_env_rank_and_launch_test
+   core.common.test_utils.init_pg_and_rank_and_launch_test
    core.common.test_utils.spawn_multi_process
-   core.common.test_utils._init_pg_and_rank_and_launch_test
 
 
 Module Contents
@@ -70,7 +71,11 @@ Module Contents
 
 
 
-.. py:function:: spawn_multi_process(config: PGConfig, test_method: callable, *test_method_args: Any, **test_method_kwargs: Any) -> list[Any]
+.. py:function:: init_env_rank_and_launch_test(rank: int, pg_setup_params: PGConfig, mp_output_dict: dict[int, object], test_method: callable, args: list[object], kwargs: dict[str, object]) -> None
+
+.. py:function:: init_pg_and_rank_and_launch_test(rank: int, pg_setup_params: PGConfig, mp_output_dict: dict[int, object], test_method: callable, args: list[object], kwargs: dict[str, object]) -> None
+
+.. py:function:: spawn_multi_process(config: PGConfig, test_method: callable, init_and_launch: callable, *test_method_args: Any, **test_method_kwargs: Any) -> list[Any]
 
    Spawn single node, multi-rank function.
    Uses localhost and free port to communicate.
@@ -83,6 +88,4 @@ Module Contents
 
    :returns: A list, l, where l[i] is the return value of test_method on rank i
 
-
-.. py:function:: _init_pg_and_rank_and_launch_test(rank: int, pg_setup_params: PGConfig, mp_output_dict: dict[int, object], test_method: callable, args: list[object], kwargs: dict[str, object]) -> None
 

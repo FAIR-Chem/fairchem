@@ -37,6 +37,12 @@ Module Contents
    :type axes: int, optional
 
 
+   .. py:attribute:: degrees
+
+
+   .. py:attribute:: axes
+
+
    .. py:method:: __call__(data)
 
 

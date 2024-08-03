@@ -23,6 +23,17 @@ Module Contents
    Contruct a radial function (linear layers + layer normalization + SiLU) given a list of channels
 
 
+   .. py:attribute:: modules
+      :value: []
+
+
+
+   .. py:attribute:: input_channels
+
+
+   .. py:attribute:: net
+
+
    .. py:method:: forward(inputs)
 
 

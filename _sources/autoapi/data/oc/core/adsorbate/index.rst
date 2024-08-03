@@ -44,6 +44,12 @@ Module Contents
    :type adsorbate_binding_indices: list
 
 
+   .. py:attribute:: adsorbate_id_from_db
+
+
+   .. py:attribute:: adsorbate_db_path
+
+
    .. py:method:: __len__()
 
 

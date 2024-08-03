@@ -61,6 +61,23 @@ Module Contents
 
 
 
+   .. py:attribute:: checkpoint
+      :value: None
+
+
+
+   .. py:attribute:: config
+
+
+   .. py:attribute:: trainer
+
+
+   .. py:attribute:: seed
+
+
+   .. py:attribute:: a2g
+
+
    .. py:method:: load_checkpoint(checkpoint_path: str, checkpoint: dict | None = None) -> None
 
       Load existing trained model

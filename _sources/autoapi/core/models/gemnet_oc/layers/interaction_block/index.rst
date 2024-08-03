@@ -80,6 +80,45 @@ Module Contents
    :type activation: str
 
 
+   .. py:attribute:: dense_ca
+
+
+   .. py:attribute:: trip_interaction
+
+
+   .. py:attribute:: layers_before_skip
+
+
+   .. py:attribute:: layers_after_skip
+
+
+   .. py:attribute:: atom_emb_layers
+
+
+   .. py:attribute:: atom_update
+
+
+   .. py:attribute:: concat_layer
+
+
+   .. py:attribute:: residual_m
+
+
+   .. py:attribute:: inv_sqrt_2
+
+
+   .. py:attribute:: num_eint
+
+
+   .. py:attribute:: inv_sqrt_num_eint
+
+
+   .. py:attribute:: num_aint
+
+
+   .. py:attribute:: inv_sqrt_num_aint
+
+
    .. py:method:: forward(h, m, bases_qint, bases_e2e, bases_a2e, bases_e2a, basis_a2a_rad, basis_atom_update, edge_index_main, a2ee2a_graph, a2a_graph, id_swap, trip_idx_e2e, trip_idx_a2e, trip_idx_e2a, quad_idx)
 
       :returns: * **h** (*torch.Tensor, shape=(nEdges, emb_size_atom)*) -- Atom embeddings.
@@ -113,6 +152,39 @@ Module Contents
    :type symmetric_mp: bool
    :param activation: Name of the activation function to use in the dense layers.
    :type activation: str
+
+
+   .. py:attribute:: symmetric_mp
+
+
+   .. py:attribute:: dense_db
+
+
+   .. py:attribute:: mlp_rbf
+
+
+   .. py:attribute:: scale_rbf
+
+
+   .. py:attribute:: mlp_cbf
+
+
+   .. py:attribute:: scale_cbf
+
+
+   .. py:attribute:: mlp_sbf
+
+
+   .. py:attribute:: scale_sbf_sum
+
+
+   .. py:attribute:: down_projection
+
+
+   .. py:attribute:: up_projection_ca
+
+
+   .. py:attribute:: inv_sqrt_2
 
 
    .. py:method:: forward(m, bases, idx, id_swap)
@@ -153,6 +225,36 @@ Module Contents
    :type activation: str
 
 
+   .. py:attribute:: symmetric_mp
+
+
+   .. py:attribute:: swap_output
+
+
+   .. py:attribute:: dense_ba
+
+
+   .. py:attribute:: mlp_rbf
+
+
+   .. py:attribute:: scale_rbf
+
+
+   .. py:attribute:: mlp_cbf
+
+
+   .. py:attribute:: scale_cbf_sum
+
+
+   .. py:attribute:: down_projection
+
+
+   .. py:attribute:: up_projection_ca
+
+
+   .. py:attribute:: inv_sqrt_2
+
+
    .. py:method:: forward(m, bases, idx, id_swap, expand_idx=None, idx_agg2=None, idx_agg2_inner=None, agg2_out_size=None)
 
       :returns: **m** -- Edge embeddings.
@@ -177,6 +279,21 @@ Module Contents
    :type emb_size_rbf: int
    :param activation: Name of the activation function to use in the dense layers.
    :type activation: str
+
+
+   .. py:attribute:: bilinear
+
+
+   .. py:attribute:: scale_rbf_sum
+
+
+   .. py:attribute:: down_projection
+
+
+   .. py:attribute:: up_projection
+
+
+   .. py:attribute:: inv_sqrt_2
 
 
    .. py:method:: forward(h, rad_basis, edge_index, target_neighbor_idx)

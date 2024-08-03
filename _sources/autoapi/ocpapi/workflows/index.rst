@@ -284,6 +284,10 @@ Package Contents
    Slabs with other miller indices will be ignored.
 
 
+   .. py:attribute:: _unique_millers
+      :type:  set[tuple[int, int, int]]
+
+
    .. py:method:: __call__(adslabs: list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]) -> list[fairchem.demo.ocpapi.client.AdsorbateSlabConfigs]
       :async:
 

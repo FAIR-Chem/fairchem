@@ -56,6 +56,24 @@ Module Contents
    :type min_ab: float
 
 
+   .. py:attribute:: bulk
+
+
+   .. py:attribute:: atoms
+
+
+   .. py:attribute:: millers
+
+
+   .. py:attribute:: shift
+
+
+   .. py:attribute:: top
+
+
+   .. py:attribute:: oriented_bulk
+
+
    .. py:method:: from_bulk_get_random_slab(bulk=None, max_miller=2, min_ab=8.0, save_path=None)
       :classmethod:
 

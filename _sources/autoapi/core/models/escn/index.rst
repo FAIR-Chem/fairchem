@@ -25,9 +25,9 @@ Classes
 Package Contents
 ----------------
 
-.. py:class:: eSCN(num_atoms: int, bond_feat_dim: int, num_targets: int, use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, max_neighbors: int = 40, cutoff: float = 8.0, max_num_elements: int = 90, num_layers: int = 8, lmax_list: list[int] | None = None, mmax_list: list[int] | None = None, sphere_channels: int = 128, hidden_channels: int = 256, edge_channels: int = 128, use_grid: bool = True, num_sphere_samples: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, show_timing_info: bool = False)
+.. py:class:: eSCN(use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, max_neighbors: int = 40, cutoff: float = 8.0, max_num_elements: int = 90, num_layers: int = 8, lmax_list: list[int] | None = None, mmax_list: list[int] | None = None, sphere_channels: int = 128, hidden_channels: int = 256, edge_channels: int = 128, num_sphere_samples: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, show_timing_info: bool = False)
 
-   Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+   Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
 
    Equivariant Spherical Channel Network
@@ -68,6 +68,107 @@ Package Contents
    :type distance_resolution: float
    :param show_timing_info: Show timing and memory info
    :type show_timing_info: bool
+
+
+   .. py:attribute:: regress_forces
+
+
+   .. py:attribute:: use_pbc
+
+
+   .. py:attribute:: cutoff
+
+
+   .. py:attribute:: otf_graph
+
+
+   .. py:attribute:: show_timing_info
+
+
+   .. py:attribute:: max_num_elements
+
+
+   .. py:attribute:: hidden_channels
+
+
+   .. py:attribute:: num_layers
+
+
+   .. py:attribute:: num_atoms
+      :value: 0
+
+
+
+   .. py:attribute:: num_sphere_samples
+
+
+   .. py:attribute:: sphere_channels
+
+
+   .. py:attribute:: max_neighbors
+
+
+   .. py:attribute:: edge_channels
+
+
+   .. py:attribute:: distance_resolution
+
+
+   .. py:attribute:: grad_forces
+      :value: False
+
+
+
+   .. py:attribute:: lmax_list
+
+
+   .. py:attribute:: mmax_list
+
+
+   .. py:attribute:: num_resolutions
+      :type:  int
+
+
+   .. py:attribute:: sphere_channels_all
+      :type:  int
+
+
+   .. py:attribute:: basis_width_scalar
+
+
+   .. py:attribute:: distance_function
+
+
+   .. py:attribute:: counter
+      :value: 0
+
+
+
+   .. py:attribute:: act
+
+
+   .. py:attribute:: sphere_embedding
+
+
+   .. py:attribute:: num_gaussians
+
+
+   .. py:attribute:: SO3_grid
+
+
+   .. py:attribute:: layer_blocks
+
+
+   .. py:attribute:: energy_block
+
+
+   .. py:attribute:: sphere_points
+
+
+   .. py:attribute:: sphharm_weights
+      :type:  list[torch.nn.Parameter]
+      :value: []
+
 
 
    .. py:method:: forward(data)

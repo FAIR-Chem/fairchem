@@ -71,6 +71,24 @@ Module Contents
    :type mode: str
 
 
+   .. py:attribute:: slab
+
+
+   .. py:attribute:: adsorbates
+
+
+   .. py:attribute:: num_sites
+
+
+   .. py:attribute:: interstitial_gap
+
+
+   .. py:attribute:: mode
+
+
+   .. py:attribute:: sites
+
+
    .. py:method:: place_adsorbates_on_sites(sites: list, num_configurations: int = 1, interstitial_gap: float = 0.1)
 
       Place the adsorbate at the given binding sites.

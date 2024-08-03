@@ -29,6 +29,9 @@ Module Contents
 
 .. py:class:: BaseTask(config)
 
+   .. py:attribute:: config
+
+
    .. py:method:: setup(trainer) -> None
 
 

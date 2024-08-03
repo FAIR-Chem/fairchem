@@ -43,6 +43,12 @@ Module Contents
       :type:  torch.nn.Parameter
 
 
+   .. py:attribute:: num_radial
+
+
+   .. py:attribute:: num_spherical
+
+
    .. py:method:: reset_parameters() -> None
 
 
@@ -86,6 +92,18 @@ Module Contents
    :type emb_size_interm: int
    :param emb_size_out: Embedding size of output triplets/quadruplets.
    :type emb_size_out: int
+
+
+   .. py:attribute:: emb_size_in
+
+
+   .. py:attribute:: emb_size_interm
+
+
+   .. py:attribute:: emb_size_out
+
+
+   .. py:attribute:: bilinear
 
 
    .. py:method:: forward(basis, m, idx_agg_outer, idx_agg_inner, idx_agg2_outer=None, idx_agg2_inner=None, agg2_out_size=None)

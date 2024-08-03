@@ -29,6 +29,29 @@ Module Contents
    Inspired by torch.cuda.amp.GradScaler.
 
 
+   .. py:attribute:: scale_factor
+
+
+   .. py:attribute:: growth_factor
+
+
+   .. py:attribute:: backoff_factor
+
+
+   .. py:attribute:: growth_interval
+
+
+   .. py:attribute:: max_force_iters
+
+
+   .. py:attribute:: enabled
+
+
+   .. py:attribute:: finite_force_results
+      :value: 0
+
+
+
    .. py:method:: scale(energy)
 
 

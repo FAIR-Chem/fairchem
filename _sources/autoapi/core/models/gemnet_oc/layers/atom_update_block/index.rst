@@ -42,6 +42,15 @@ Module Contents
    :type activation: callable/str
 
 
+   .. py:attribute:: dense_rbf
+
+
+   .. py:attribute:: scale_sum
+
+
+   .. py:attribute:: layers
+
+
    .. py:method:: get_mlp(units_in: int, units: int, nHidden: int, activation)
 
 
@@ -74,6 +83,12 @@ Module Contents
    :param direct_forces: If true directly predict forces, i.e. without taking the gradient
                          of the energy potential.
    :type direct_forces: bool
+
+
+   .. py:attribute:: direct_forces
+
+
+   .. py:attribute:: seq_energy_pre
 
 
    .. py:method:: forward(h: torch.Tensor, m: torch.Tensor, basis_rad, idx_atom)

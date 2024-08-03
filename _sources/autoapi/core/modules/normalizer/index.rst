@@ -28,6 +28,14 @@ Module Contents
    Normalize a Tensor and restore it later.
 
 
+   .. py:attribute:: mean
+      :type:  torch.Tensor
+
+
+   .. py:attribute:: std
+      :type:  torch.Tensor
+
+
    .. py:method:: to(device) -> None
 
 

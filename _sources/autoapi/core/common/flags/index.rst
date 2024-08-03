@@ -33,6 +33,9 @@ Module Contents
 
 .. py:class:: Flags
 
+   .. py:attribute:: parser
+
+
    .. py:method:: get_parser() -> argparse.ArgumentParser
 
 

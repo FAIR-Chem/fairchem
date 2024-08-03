@@ -37,6 +37,15 @@ Module Contents
    :type kernel_initializer: callable
 
 
+   .. py:attribute:: num_spherical
+
+
+   .. py:attribute:: num_radial
+
+
+   .. py:attribute:: emb_size_interm
+
+
    .. py:method:: reset_parameters() -> None
 
 
@@ -65,6 +74,15 @@ Module Contents
    :type units_out: int
    :param kernel_initializer: Initializer of the weight matrix.
    :type kernel_initializer: callable
+
+
+   .. py:attribute:: emb_size
+
+
+   .. py:attribute:: emb_size_interm
+
+
+   .. py:attribute:: units_out
 
 
    .. py:method:: reset_parameters() -> None

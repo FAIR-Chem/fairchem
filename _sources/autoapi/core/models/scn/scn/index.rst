@@ -26,9 +26,9 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: SphericalChannelNetwork(num_atoms: int, bond_feat_dim: int, num_targets: int, use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, max_num_neighbors: int = 20, cutoff: float = 8.0, max_num_elements: int = 90, num_interactions: int = 8, lmax: int = 6, mmax: int = 1, num_resolutions: int = 2, sphere_channels: int = 128, sphere_channels_reduce: int = 128, hidden_channels: int = 256, num_taps: int = -1, use_grid: bool = True, num_bands: int = 1, num_sphere_samples: int = 128, num_basis_functions: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, show_timing_info: bool = False, direct_forces: bool = True)
+.. py:class:: SphericalChannelNetwork(use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, max_num_neighbors: int = 20, cutoff: float = 8.0, max_num_elements: int = 90, num_interactions: int = 8, lmax: int = 6, mmax: int = 1, num_resolutions: int = 2, sphere_channels: int = 128, sphere_channels_reduce: int = 128, hidden_channels: int = 256, num_taps: int = -1, use_grid: bool = True, num_bands: int = 1, num_sphere_samples: int = 128, num_basis_functions: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, show_timing_info: bool = False, direct_forces: bool = True)
 
-   Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+   Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
 
    Spherical Channel Network
@@ -104,6 +104,95 @@ Module Contents
       :type:  torch.nn.Linear
 
 
+   .. py:attribute:: regress_forces
+
+
+   .. py:attribute:: use_pbc
+
+
+   .. py:attribute:: cutoff
+
+
+   .. py:attribute:: otf_graph
+
+
+   .. py:attribute:: show_timing_info
+
+
+   .. py:attribute:: max_num_elements
+
+
+   .. py:attribute:: hidden_channels
+
+
+   .. py:attribute:: num_interactions
+
+
+   .. py:attribute:: num_atoms
+      :value: 0
+
+
+
+   .. py:attribute:: num_sphere_samples
+
+
+   .. py:attribute:: sphere_channels
+
+
+   .. py:attribute:: sphere_channels_reduce
+
+
+   .. py:attribute:: num_basis_functions
+
+
+   .. py:attribute:: distance_resolution
+
+
+   .. py:attribute:: grad_forces
+      :value: False
+
+
+
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: mmax
+
+
+   .. py:attribute:: basis_width_scalar
+
+
+   .. py:attribute:: sphere_basis
+
+
+   .. py:attribute:: use_grid
+
+
+   .. py:attribute:: distance_function
+
+
+   .. py:attribute:: counter
+      :value: 0
+
+
+
+   .. py:attribute:: act
+
+
+   .. py:attribute:: sphere_embedding
+
+
+   .. py:attribute:: num_gaussians
+
+
+   .. py:attribute:: sphharm_list
+      :value: []
+
+
+
+   .. py:attribute:: edge_blocks
+
+
    .. py:method:: forward(data)
 
 
@@ -158,6 +247,48 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: num_resolutions
+
+
+   .. py:attribute:: act
+
+
+   .. py:attribute:: hidden_channels_list
+
+
+   .. py:attribute:: sphere_channels
+
+
+   .. py:attribute:: sphere_channels_reduce
+
+
+   .. py:attribute:: distance_expansion
+
+
+   .. py:attribute:: cutoff_list
+
+
+   .. py:attribute:: sphharm_list
+
+
+   .. py:attribute:: max_num_elements
+
+
+   .. py:attribute:: num_basis_functions
+
+
+   .. py:attribute:: use_grid
+
+
+   .. py:attribute:: num_gaussians
+
+
+   .. py:attribute:: dist_block
+
+
+   .. py:attribute:: message_blocks
+
+
    .. py:method:: forward(x, atomic_numbers, edge_distance, edge_index, cutoff_index)
 
 
@@ -198,6 +329,30 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: act
+
+
+   .. py:attribute:: hidden_channels
+
+
+   .. py:attribute:: sphere_channels_reduce
+
+
+   .. py:attribute:: sphharm
+
+
+   .. py:attribute:: fc1_dist
+
+
+   .. py:attribute:: fc1_edge_proj
+
+
+   .. py:attribute:: fc1_edge
+
+
+   .. py:attribute:: fc2_edge
+
+
    .. py:method:: forward(x, x_edge, edge_index)
 
 
@@ -236,6 +391,36 @@ Module Contents
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: distance_expansion
+
+
+   .. py:attribute:: act
+
+
+   .. py:attribute:: num_basis_functions
+
+
+   .. py:attribute:: max_num_elements
+
+
+   .. py:attribute:: num_edge_channels
+
+
+   .. py:attribute:: fc1_dist
+
+
+   .. py:attribute:: source_embedding
+
+
+   .. py:attribute:: target_embedding
+
+
+   .. py:attribute:: fc1_edge_attr
 
 
    .. py:method:: forward(edge_distance, source_element, target_element)

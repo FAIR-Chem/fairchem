@@ -71,6 +71,21 @@ Module Contents
    :type adsorbate_index: int
 
 
+   .. py:attribute:: args
+
+
+   .. py:attribute:: bulk_index
+
+
+   .. py:attribute:: surface_index
+
+
+   .. py:attribute:: adsorbate_index
+
+
+   .. py:attribute:: logger
+
+
    .. py:method:: run()
 
       Create adsorbate/bulk/surface objects, generate adslab placements,

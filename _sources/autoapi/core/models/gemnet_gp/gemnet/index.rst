@@ -23,19 +23,13 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: GraphParallelGemNetT(num_atoms: int | None, bond_feat_dim: int, num_targets: int, num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_bil_trip: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, regress_forces: bool = True, direct_forces: bool = False, cutoff: float = 6.0, max_neighbors: int = 50, rbf: dict | None = None, envelope: dict | None = None, cbf: dict | None = None, extensive: bool = True, otf_graph: bool = False, use_pbc: bool = True, output_init: str = 'HeOrthogonal', activation: str = 'swish', scale_num_blocks: bool = False, scatter_atoms: bool = True, scale_file: str | None = None)
+.. py:class:: GraphParallelGemNetT(num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_bil_trip: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, regress_forces: bool = True, direct_forces: bool = False, cutoff: float = 6.0, max_neighbors: int = 50, rbf: dict | None = None, envelope: dict | None = None, cbf: dict | None = None, extensive: bool = True, otf_graph: bool = False, use_pbc: bool = True, output_init: str = 'HeOrthogonal', activation: str = 'swish', scale_num_blocks: bool = False, scatter_atoms: bool = True, scale_file: str | None = None)
 
-   Bases: :py:obj:`fairchem.core.models.base.BaseModel`
+   Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
 
    GemNet-T, triplets-only variant of GemNet
 
-   :param num_atoms (int):
-   :type num_atoms (int): Unused argument
-   :param bond_feat_dim (int):
-   :type bond_feat_dim (int): Unused argument
-   :param num_targets: Number of prediction targets.
-   :type num_targets: int
    :param num_spherical: Controls maximum frequency.
    :type num_spherical: int
    :param num_radial: Controls maximum frequency.
@@ -83,6 +77,76 @@ Module Contents
    :type activation: str
    :param scale_file: Path to the json file containing the scaling factors.
    :type scale_file: str
+
+
+   .. py:attribute:: num_blocks
+
+
+   .. py:attribute:: extensive
+
+
+   .. py:attribute:: scale_num_blocks
+
+
+   .. py:attribute:: scatter_atoms
+
+
+   .. py:attribute:: cutoff
+
+
+   .. py:attribute:: max_neighbors
+
+
+   .. py:attribute:: regress_forces
+
+
+   .. py:attribute:: otf_graph
+
+
+   .. py:attribute:: use_pbc
+
+
+   .. py:attribute:: direct_forces
+
+
+   .. py:attribute:: radial_basis
+
+
+   .. py:attribute:: radial_basis_cbf3
+
+
+   .. py:attribute:: cbf_basis3
+
+
+   .. py:attribute:: mlp_rbf3
+
+
+   .. py:attribute:: mlp_cbf3
+
+
+   .. py:attribute:: mlp_rbf_h
+
+
+   .. py:attribute:: mlp_rbf_out
+
+
+   .. py:attribute:: atom_emb
+
+
+   .. py:attribute:: edge_emb
+
+
+   .. py:attribute:: out_blocks
+      :value: []
+
+
+
+   .. py:attribute:: int_blocks
+      :value: []
+
+
+
+   .. py:attribute:: interaction_block
 
 
    .. py:method:: get_triplets(edge_index, num_atoms)

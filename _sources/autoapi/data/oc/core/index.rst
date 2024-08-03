@@ -53,6 +53,12 @@ Package Contents
    :type adsorbate_binding_indices: list
 
 
+   .. py:attribute:: adsorbate_id_from_db
+
+
+   .. py:attribute:: adsorbate_db_path
+
+
    .. py:method:: __len__()
 
 
@@ -117,6 +123,27 @@ Package Contents
                 In all cases, the adsorbate is placed at the closest position of no
                 overlap with the slab plus `interstitial_gap` along the surface normal.
    :type mode: str
+
+
+   .. py:attribute:: slab
+
+
+   .. py:attribute:: adsorbate
+
+
+   .. py:attribute:: num_sites
+
+
+   .. py:attribute:: num_augmentations_per_site
+
+
+   .. py:attribute:: interstitial_gap
+
+
+   .. py:attribute:: mode
+
+
+   .. py:attribute:: sites
 
 
    .. py:method:: get_binding_sites(num_sites: int)
@@ -241,6 +268,12 @@ Package Contents
    :type bulk_db: List[Dict[str, Any]]
 
 
+   .. py:attribute:: bulk_id_from_db
+
+
+   .. py:attribute:: bulk_db_path
+
+
    .. py:method:: _get_bulk_from_random(bulk_db)
 
 
@@ -325,6 +358,24 @@ Package Contents
    :type mode: str
 
 
+   .. py:attribute:: slab
+
+
+   .. py:attribute:: adsorbates
+
+
+   .. py:attribute:: num_sites
+
+
+   .. py:attribute:: interstitial_gap
+
+
+   .. py:attribute:: mode
+
+
+   .. py:attribute:: sites
+
+
    .. py:method:: place_adsorbates_on_sites(sites: list, num_configurations: int = 1, interstitial_gap: float = 0.1)
 
       Place the adsorbate at the given binding sites.
@@ -365,6 +416,24 @@ Package Contents
    :type top: bool
    :param min_ab: To confirm that the tiled structure spans this distance
    :type min_ab: float
+
+
+   .. py:attribute:: bulk
+
+
+   .. py:attribute:: atoms
+
+
+   .. py:attribute:: millers
+
+
+   .. py:attribute:: shift
+
+
+   .. py:attribute:: top
+
+
+   .. py:attribute:: oriented_bulk
 
 
    .. py:method:: from_bulk_get_random_slab(bulk=None, max_miller=2, min_ab=8.0, save_path=None)

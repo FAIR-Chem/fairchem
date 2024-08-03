@@ -78,6 +78,21 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: num_channels
+
+
+   .. py:attribute:: eps
+
+
+   .. py:attribute:: affine
+
+
+   .. py:attribute:: normalization
+
+
    .. py:method:: __repr__() -> str
 
       Return repr(self).
@@ -100,6 +115,27 @@ Module Contents
    3. Do not normalize separately for different L (L > 0).
 
 
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: num_channels
+
+
+   .. py:attribute:: eps
+
+
+   .. py:attribute:: affine
+
+
+   .. py:attribute:: std_balance_degrees
+
+
+   .. py:attribute:: norm_l0
+
+
+   .. py:attribute:: normalization
+
+
    .. py:method:: __repr__() -> str
 
       Return repr(self).
@@ -118,6 +154,21 @@ Module Contents
 
 
    1. Normalize across all m components from degrees L >= 0.
+
+
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: num_channels
+
+
+   .. py:attribute:: eps
+
+
+   .. py:attribute:: affine
+
+
+   .. py:attribute:: normalization
 
 
    .. py:method:: __repr__() -> str
@@ -141,6 +192,30 @@ Module Contents
    2. Expand weights and multiply with normalized feature to prevent slicing and concatenation.
 
 
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: num_channels
+
+
+   .. py:attribute:: eps
+
+
+   .. py:attribute:: affine
+
+
+   .. py:attribute:: centering
+
+
+   .. py:attribute:: std_balance_degrees
+
+
+   .. py:attribute:: normalization
+
+
+   .. py:attribute:: expand_index
+
+
    .. py:method:: __repr__() -> str
 
       Return repr(self).
@@ -160,6 +235,21 @@ Module Contents
 
    1. Similar to Layer Scale used in CaiT (Going Deeper With Image Transformers (ICCV'21)), we scale the output of both attention and FFN.
    2. For degree L > 0, we scale down the square root of 2 * L, which is to emulate halving the number of channels when using higher L.
+
+
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: num_channels
+
+
+   .. py:attribute:: scale_factor
+
+
+   .. py:attribute:: affine_weight
+
+
+   .. py:attribute:: expand_index
 
 
    .. py:method:: __repr__() -> str

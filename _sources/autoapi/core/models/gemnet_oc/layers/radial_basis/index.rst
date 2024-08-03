@@ -38,6 +38,21 @@ Module Contents
    :type exponent: int
 
 
+   .. py:attribute:: p
+
+
+   .. py:attribute:: a
+      :type:  float
+
+
+   .. py:attribute:: b
+      :type:  float
+
+
+   .. py:attribute:: c
+      :type:  float
+
+
    .. py:method:: forward(d_scaled: torch.Tensor) -> torch.Tensor
 
 
@@ -92,6 +107,12 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: offset
+
+
+   .. py:attribute:: coeff
+
+
    .. py:method:: forward(dist: torch.Tensor) -> torch.Tensor
 
 
@@ -106,6 +127,12 @@ Module Contents
    :type num_radial: int
    :param cutoff: Cutoff distance in Angstrom.
    :type cutoff: float
+
+
+   .. py:attribute:: norm_const
+
+
+   .. py:attribute:: frequencies
 
 
    .. py:method:: forward(d_scaled: torch.Tensor) -> torch.Tensor
@@ -129,6 +156,21 @@ Module Contents
    :type pregamma_initial: float
 
 
+   .. py:attribute:: prefactor
+
+
+   .. py:attribute:: pregamma
+
+
+   .. py:attribute:: softplus
+
+
+   .. py:attribute:: exp1
+
+
+   .. py:attribute:: exp2
+
+
    .. py:method:: forward(d_scaled: torch.Tensor) -> torch.Tensor
 
 
@@ -147,6 +189,24 @@ Module Contents
    :type envelope: dict = {"name": "polynomial", "exponent": 5}
    :param scale_basis: Whether to scale the basis values for better numerical stability.
    :type scale_basis: bool
+
+
+   .. py:attribute:: inv_cutoff
+
+
+   .. py:attribute:: scale_basis
+
+
+   .. py:attribute:: env_name
+
+
+   .. py:attribute:: env_hparams
+
+
+   .. py:attribute:: rbf_name
+
+
+   .. py:attribute:: rbf_hparams
 
 
    .. py:method:: forward(d: torch.Tensor) -> torch.Tensor

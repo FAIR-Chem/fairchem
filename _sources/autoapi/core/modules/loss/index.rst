@@ -54,6 +54,9 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: reduction
+
+
    .. py:method:: forward(input: torch.Tensor, target: torch.Tensor)
 
 
@@ -94,6 +97,9 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: reduction
+
+
    .. py:method:: forward(input: torch.Tensor, target: torch.Tensor, natoms: torch.Tensor)
 
 
@@ -132,6 +138,15 @@ Module Contents
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: loss_name
+
+
+   .. py:attribute:: reduction
 
 
    .. py:method:: forward(input: torch.Tensor, target: torch.Tensor, natoms: torch.Tensor | None = None, batch_size: int | None = None)

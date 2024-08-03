@@ -56,6 +56,24 @@ Module Contents
    :type num_bands: int
 
 
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: mmax
+
+
+   .. py:attribute:: num_taps
+
+
+   .. py:attribute:: num_bands
+
+
+   .. py:attribute:: sphere_basis
+
+
+   .. py:attribute:: sphere_basis_reduce
+
+
    .. py:method:: InitWignerDMatrix(edge_rot_mat) -> None
 
 

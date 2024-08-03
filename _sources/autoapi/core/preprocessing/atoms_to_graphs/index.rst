@@ -154,6 +154,36 @@ Module Contents
       
 
 
+   .. py:attribute:: max_neigh
+
+
+   .. py:attribute:: radius
+
+
+   .. py:attribute:: r_energy
+
+
+   .. py:attribute:: r_forces
+
+
+   .. py:attribute:: r_stress
+
+
+   .. py:attribute:: r_distances
+
+
+   .. py:attribute:: r_fixed
+
+
+   .. py:attribute:: r_edges
+
+
+   .. py:attribute:: r_pbc
+
+
+   .. py:attribute:: r_data_keys
+
+
    .. py:method:: _get_neighbors_pymatgen(atoms: ase.Atoms)
 
       Preforms nearest neighbor search and returns edge index, distances,

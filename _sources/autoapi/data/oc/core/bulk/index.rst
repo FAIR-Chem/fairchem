@@ -35,6 +35,12 @@ Module Contents
    :type bulk_db: List[Dict[str, Any]]
 
 
+   .. py:attribute:: bulk_id_from_db
+
+
+   .. py:attribute:: bulk_db_path
+
+
    .. py:method:: _get_bulk_from_random(bulk_db)
 
 

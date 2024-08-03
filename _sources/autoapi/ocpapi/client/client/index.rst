@@ -57,9 +57,19 @@ Module Contents
       call the API should be made.
 
 
+   .. py:attribute:: retry_after
+      :type:  datetime.timedelta | None
+
+
 .. py:class:: Client(host: str = 'open-catalyst-api.metademolab.com', scheme: str = 'https')
 
    Exposes each route in the OCP API as a method.
+
+
+   .. py:attribute:: _host
+
+
+   .. py:attribute:: _base_url
 
 
    .. py:property:: host

@@ -41,6 +41,9 @@ Module Contents
    :type activation: str
 
 
+   .. py:attribute:: linear
+
+
    .. py:method:: reset_parameters(initializer=he_orthogonal_init) -> None
 
 
@@ -84,6 +87,12 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: scale_factor
+
+
+   .. py:attribute:: _activation
+
+
    .. py:method:: forward(x)
 
 
@@ -102,6 +111,12 @@ Module Contents
    :type layer: torch.nn.Module
    :param layer_kwargs: Keyword arguments for initializing the layers.
    :type layer_kwargs: str
+
+
+   .. py:attribute:: dense_mlp
+
+
+   .. py:attribute:: inv_sqrt_2
 
 
    .. py:method:: forward(input)

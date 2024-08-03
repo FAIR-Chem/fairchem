@@ -63,6 +63,15 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: num_output
+
+
+   .. py:attribute:: offset
+
+
+   .. py:attribute:: coeff
+
+
    .. py:method:: forward(dist) -> torch.Tensor
 
 
@@ -101,6 +110,15 @@ Module Contents
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
+
+   .. py:attribute:: num_output
+
+
+   .. py:attribute:: offset
+
+
+   .. py:attribute:: coeff
 
 
    .. py:method:: forward(dist) -> torch.Tensor
@@ -143,6 +161,15 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: num_output
+
+
+   .. py:attribute:: offset
+
+
+   .. py:attribute:: coeff
+
+
    .. py:method:: forward(dist) -> torch.Tensor
 
 
@@ -181,6 +208,15 @@ Module Contents
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
+
+   .. py:attribute:: num_output
+
+
+   .. py:attribute:: fc1
+
+
+   .. py:attribute:: act
 
 
    .. py:method:: forward(dist)

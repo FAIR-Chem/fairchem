@@ -50,6 +50,14 @@ Module Contents
       the state so that not to pickle it) and change/remove the initial parameters.
 
 
+   .. py:attribute:: config
+      :value: None
+
+
+
+   .. py:attribute:: distributed
+
+
    .. py:method:: __call__(config: dict) -> None
 
 

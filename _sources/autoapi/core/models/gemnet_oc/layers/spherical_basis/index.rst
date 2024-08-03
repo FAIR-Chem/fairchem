@@ -40,6 +40,18 @@ Module Contents
    :type scale_basis: bool
 
 
+   .. py:attribute:: radial_basis
+
+
+   .. py:attribute:: scale_basis
+
+
+   .. py:attribute:: cbf_name
+
+
+   .. py:attribute:: cbf_hparams
+
+
    .. py:method:: forward(D_ca, cosφ_cab)
 
 
@@ -58,6 +70,21 @@ Module Contents
    :type sbf: dict
    :param scale_basis: Whether to scale the basis values for better numerical stability.
    :type scale_basis: bool
+
+
+   .. py:attribute:: num_spherical
+
+
+   .. py:attribute:: radial_basis
+
+
+   .. py:attribute:: scale_basis
+
+
+   .. py:attribute:: sbf_name
+
+
+   .. py:attribute:: sbf_hparams
 
 
    .. py:method:: forward(D_ca, cosφ_cab, θ_cabd)

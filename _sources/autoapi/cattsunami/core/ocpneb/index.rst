@@ -20,6 +20,33 @@ Module Contents
    Bases: :py:obj:`ase.neb.DyNEB`
 
 
+   .. py:attribute:: batch_size
+
+
+   .. py:attribute:: config
+
+
+   .. py:attribute:: trainer
+
+
+   .. py:attribute:: a2g
+
+
+   .. py:attribute:: intermediate_energies
+      :value: []
+
+
+
+   .. py:attribute:: intermediate_forces
+      :value: []
+
+
+
+   .. py:attribute:: cached
+      :value: False
+
+
+
    .. py:method:: load_checkpoint(checkpoint_path: str) -> None
 
       Load existing trained model

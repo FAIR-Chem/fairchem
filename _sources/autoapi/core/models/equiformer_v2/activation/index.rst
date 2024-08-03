@@ -60,6 +60,14 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: inplace
+
+
+   .. py:attribute:: scale_factor
+      :value: 1.6791767923989418
+
+
+
    .. py:method:: forward(inputs)
 
 
@@ -110,6 +118,18 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: out_channels
+
+
+   .. py:attribute:: w
+
+
+   .. py:attribute:: act
+
+
    .. py:method:: forward(inputs)
 
 
@@ -150,6 +170,18 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: out_channels
+
+
+   .. py:attribute:: w
+
+
+   .. py:attribute:: act
+
+
    .. py:method:: forward(inputs)
 
 
@@ -188,6 +220,9 @@ Module Contents
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
+
+   .. py:attribute:: alpha
 
 
    .. py:method:: forward(x)
@@ -240,6 +275,14 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: act
+
+
+   .. py:attribute:: scale_factor
+      :value: 1.531320475574866
+
+
+
    .. py:method:: forward(x)
 
 
@@ -290,6 +333,11 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: scale_factor
+      :value: 1.8467055342154763
+
+
+
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
 
 
@@ -330,6 +378,34 @@ Module Contents
    :vartype training: bool
 
 
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: mmax
+
+
+   .. py:attribute:: num_channels
+
+
+   .. py:attribute:: num_components
+      :value: 0
+
+
+
+   .. py:attribute:: expand_index
+
+
+   .. py:attribute:: start_idx
+      :value: 0
+
+
+
+   .. py:attribute:: scalar_act
+
+
+   .. py:attribute:: gate_act
+
+
    .. py:method:: forward(gating_scalars, input_tensors)
 
       `gating_scalars`: shape [N, lmax * num_channels]
@@ -343,6 +419,15 @@ Module Contents
 
 
    Assume we only have one resolution
+
+
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: mmax
+
+
+   .. py:attribute:: act
 
 
    .. py:method:: forward(inputs, SO3_grid)
@@ -383,6 +468,18 @@ Module Contents
    :ivar training: Boolean represents whether this module is in training or
                    evaluation mode.
    :vartype training: bool
+
+
+   .. py:attribute:: lmax
+
+
+   .. py:attribute:: mmax
+
+
+   .. py:attribute:: scalar_act
+
+
+   .. py:attribute:: s2_act
 
 
    .. py:method:: forward(input_scalars, input_tensors, SO3_grid)

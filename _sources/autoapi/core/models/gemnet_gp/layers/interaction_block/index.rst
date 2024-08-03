@@ -55,6 +55,36 @@ Module Contents
    :type activation: str
 
 
+   .. py:attribute:: name
+
+
+   .. py:attribute:: block_nr
+
+
+   .. py:attribute:: dense_ca
+
+
+   .. py:attribute:: trip_interaction
+
+
+   .. py:attribute:: layers_before_skip
+
+
+   .. py:attribute:: layers_after_skip
+
+
+   .. py:attribute:: atom_update
+
+
+   .. py:attribute:: concat_layer
+
+
+   .. py:attribute:: residual_m
+
+
+   .. py:attribute:: inv_sqrt_2
+
+
    .. py:method:: forward(h: torch.Tensor, m: torch.Tensor, rbf3, cbf3, id3_ragged_idx, id_swap, id3_ba, id3_ca, rbf_h, idx_s, idx_t, edge_offset, Kmax, nAtoms)
 
       :returns: * **h** (*torch.Tensor, shape=(nEdges, emb_size_atom)*) -- Atom embeddings.
@@ -84,6 +114,36 @@ Module Contents
    :type emb_size_cbf: int
    :param activation: Name of the activation function to use in the dense layers except for the final dense layer.
    :type activation: str
+
+
+   .. py:attribute:: name
+
+
+   .. py:attribute:: dense_ba
+
+
+   .. py:attribute:: mlp_rbf
+
+
+   .. py:attribute:: scale_rbf
+
+
+   .. py:attribute:: mlp_cbf
+
+
+   .. py:attribute:: scale_cbf_sum
+
+
+   .. py:attribute:: down_projection
+
+
+   .. py:attribute:: up_projection_ca
+
+
+   .. py:attribute:: up_projection_ac
+
+
+   .. py:attribute:: inv_sqrt_2
 
 
    .. py:method:: forward(m: torch.Tensor, rbf3, cbf3, id3_ragged_idx, id_swap, id3_ba, id3_ca, edge_offset, Kmax)
