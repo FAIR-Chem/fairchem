@@ -16,10 +16,6 @@ class Geometry(ABC):
     Base class for geometries
     """
 
-    @abstractmethod
-    def __init__(self):
-        pass
-
     @staticmethod
     def distance_point_plane(vec: np.array, point_plane: np.array, point_ext: np.array):
         """
@@ -144,7 +140,7 @@ class Geometry(ABC):
         return relation_list
 
     @abstractmethod
-    def packmol_structure(self, filename, number, side):
+    def packmol_structure(self, filename: str, number: int, side: str):
         """
         How to write packmol input file. To be defined by inherited class.
         """
@@ -168,7 +164,7 @@ class PlaneBoundTriclinicGeometry(Geometry):
         c = cell[2, :]
         self.ur_corner = a + b + c
 
-    def packmol_structure(self, filename, number, side):
+    def packmol_structure(self, filename: str, number: int, side: str):
         """
         Make file structure to be used in packmol input script
 
