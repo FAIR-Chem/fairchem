@@ -7,19 +7,20 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
+import numpy.testing as npt
 import pytest
 import yaml
+from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+
+from fairchem.core._cli import Runner
+from fairchem.core.common.flags import flags
 from fairchem.core.common.test_utils import (
     PGConfig,
     init_env_rank_and_launch_test,
     spawn_multi_process,
 )
-from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
-from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
-
-from fairchem.core._cli import Runner
-from fairchem.core.common.flags import flags
 from fairchem.core.common.utils import build_config, setup_logging
+from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
 
 setup_logging()
 
@@ -66,21 +67,56 @@ def tutorial_val_src(tutorial_dataset_path):
     return tutorial_dataset_path / "s2ef/val_20"
 
 
-def oc20_lmdb_train_and_val_from_paths(train_src, val_src, test_src=None):
+def oc20_lmdb_train_and_val_from_paths(
+    train_src, val_src, test_src=None, otf_norms=False
+):
     datasets = {}
     if train_src is not None:
         datasets["train"] = {
             "src": train_src,
-            "normalize_labels": True,
-            "target_mean": -0.7554450631141663,
-            "target_std": 2.887317180633545,
-            "grad_target_mean": 0.0,
-            "grad_target_std": 2.887317180633545,
+            "format": "lmdb",
+            "key_mapping": {"y": "energy", "force": "forces"},
         }
+        if otf_norms is True:
+            datasets["train"].update(
+                {
+                    "transforms": {
+                        "element_references": {
+                            "fit": {
+                                "targets": ["energy"],
+                                "batch_size": 4,
+                                "num_batches": 10,
+                                "driver": "gelsd",
+                            }
+                        },
+                        "normalizer": {
+                            "fit": {
+                                "targets": {"energy": None, "forces": {"mean": 0.0}},
+                                "batch_size": 4,
+                                "num_batches": 10,
+                            }
+                        },
+                    }
+                }
+            )
+        else:
+            datasets["train"].update(
+                {
+                    "transforms": {
+                        "normalizer": {
+                            "energy": {
+                                "mean": -0.7554450631141663,
+                                "stdev": 2.887317180633545,
+                            },
+                            "forces": {"mean": 0.0, "stdev": 2.887317180633545},
+                        }
+                    }
+                }
+            )
     if val_src is not None:
-        datasets["val"] = {"src": val_src}
+        datasets["val"] = {"src": val_src, "format": "lmdb"}
     if test_src is not None:
-        datasets["test"] = {"src": test_src}
+        datasets["test"] = {"src": test_src, "format": "lmdb"}
     return datasets
 
 
@@ -124,7 +160,6 @@ def _run_main(
         yaml_config["backend"] = "gloo"
     with open(str(config_yaml), "w") as yaml_file:
         yaml.dump(yaml_config, yaml_file)
-
     run_args = {
         "run_dir": rundir,
         "logdir": f"{rundir}/logs",
@@ -168,11 +203,6 @@ def _run_main(
     )
 
 
-@pytest.fixture(scope="class")
-def torch_tempdir(tmpdir_factory):
-    return tmpdir_factory.mktemp("torch_tempdir")
-
-
 """
 These tests are intended to be as quick as possible and test only that the network is runnable and outputs training+validation to tensorboard output
 These should catch errors such as shape mismatches or otherways to code wise break a network
@@ -180,12 +210,7 @@ These should catch errors such as shape mismatches or otherways to code wise bre
 
 
 class TestSmoke:
-    def smoke_test_train(
-        self,
-        model_name,
-        input_yaml,
-        tutorial_val_src,
-    ):
+    def smoke_test_train(self, input_yaml, tutorial_val_src, otf_norms=False):
         with tempfile.TemporaryDirectory() as tempdirname:
             # first train a very simple model, checkpoint
             train_rundir = Path(tempdirname) / "train"
@@ -201,6 +226,7 @@ class TestSmoke:
                         train_src=str(tutorial_val_src),
                         val_src=str(tutorial_val_src),
                         test_src=str(tutorial_val_src),
+                        otf_norms=otf_norms,
                     ),
                 },
                 save_checkpoint_to=checkpoint_path,
@@ -222,6 +248,7 @@ class TestSmoke:
                         train_src=str(tutorial_val_src),
                         val_src=str(tutorial_val_src),
                         test_src=str(tutorial_val_src),
+                        otf_norms=otf_norms,
                     ),
                 },
                 update_run_args_with={
@@ -231,42 +258,65 @@ class TestSmoke:
                 save_predictions_to=predictions_filename,
             )
 
+            if otf_norms is True:
+                norm_path = glob.glob(
+                    str(train_rundir / "checkpoints" / "*" / "normalizers.pt")
+                )
+                assert len(norm_path) == 1
+                assert os.path.isfile(norm_path[0])
+                ref_path = glob.glob(
+                    str(train_rundir / "checkpoints" / "*" / "element_references.pt")
+                )
+                assert len(ref_path) == 1
+                assert os.path.isfile(ref_path[0])
+
             # verify predictions from train and predict are identical
             energy_from_train = np.load(training_predictions_filename)["energy"]
             energy_from_checkpoint = np.load(predictions_filename)["energy"]
-            assert np.isclose(energy_from_train, energy_from_checkpoint).all()
+            npt.assert_allclose(
+                energy_from_train, energy_from_checkpoint, rtol=1e-6, atol=1e-6
+            )
 
+    # not all models are tested with otf normalization estimation
+    # only gemnet_oc, escn, equiformer, and their hydra versions
     @pytest.mark.parametrize(
-        "model_name",
+        ("model_name", "otf_norms"),
         [
-            pytest.param("schnet", id="schnet"),
-            pytest.param("scn", id="scn"),
-            pytest.param("gemnet_dt", id="gemnet_dt"),
-            pytest.param("gemnet_dt_hydra", id="gemnet_dt_hydra"),
-            pytest.param("gemnet_dt_hydra_grad", id="gemnet_dt_hydra_grad"),
-            pytest.param("gemnet_oc", id="gemnet_oc"),
-            pytest.param("gemnet_oc_hydra", id="gemnet_oc_hydra"),
-            pytest.param("gemnet_oc_hydra_grad", id="gemnet_oc_hydra_grad"),
-            pytest.param("dimenet++", id="dimenet++"),
-            pytest.param("dimenet++_hydra", id="dimenet++_hydra"),
-            pytest.param("painn", id="painn"),
-            pytest.param("painn_hydra", id="painn_hydra"),
-            pytest.param("escn", id="escn"),
-            pytest.param("escn_hydra", id="escn_hydra"),
-            pytest.param("equiformer_v2", id="equiformer_v2"),
-            pytest.param("equiformer_v2_hydra", id="equiformer_v2_hydra"),
+            ("schnet", False),
+            ("scn", False),
+            ("gemnet_dt", False),
+            ("gemnet_dt_hydra", False),
+            ("gemnet_dt_hydra_grad", False),
+            ("gemnet_oc", False),
+            ("gemnet_oc", True),
+            ("gemnet_oc_hydra", False),
+            ("gemnet_oc_hydra", True),
+            ("gemnet_oc_hydra_grad", False),
+            ("dimenet++", False),
+            ("dimenet++_hydra", False),
+            ("painn", False),
+            ("painn_hydra", False),
+            ("escn", False),
+            ("escn", True),
+            ("escn_hydra", False),
+            ("escn_hydra", True),
+            ("equiformer_v2", False),
+            ("equiformer_v2", True),
+            ("equiformer_v2_hydra", False),
+            ("equiformer_v2_hydra", True),
         ],
     )
     def test_train_and_predict(
         self,
         model_name,
+        otf_norms,
         configs,
         tutorial_val_src,
     ):
         self.smoke_test_train(
-            model_name=model_name,
             input_yaml=configs[model_name],
             tutorial_val_src=tutorial_val_src,
+            otf_norms=otf_norms,
         )
 
     @pytest.mark.parametrize(
@@ -307,7 +357,6 @@ class TestSmoke:
     def test_balanced_batch_sampler_ddp(
         self, world_size, ddp, configs, tutorial_val_src, torch_deterministic
     ):
-
         # make dataset metadata
         parser = get_lmdb_sizes_parser()
         args, override_args = parser.parse_known_args(
