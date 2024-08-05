@@ -126,9 +126,6 @@ class GraphModelMixin:
                         max_neighbors,
                         enforce_max_neighbors_strictly,
                     )
-                # assert (_edge_index == edge_index).all().item()
-                # assert (_cell_offsets == cell_offsets).all().item()
-                # assert (_neighbors == neighbors).all().item()
 
             out = get_pbc_distances(
                 data.pos,
