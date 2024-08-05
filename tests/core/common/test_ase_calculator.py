@@ -16,7 +16,10 @@ from ase.build import add_adsorbate, fcc111
 from ase.optimize import BFGS
 
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
-from fairchem.core.models.model_registry import model_name_to_local_file
+from fairchem.core.models.model_registry import (
+    available_pretrained_models,
+    model_name_to_local_file,
+)
 
 if TYPE_CHECKING:
     from ase import Atoms
@@ -38,6 +41,9 @@ def atoms() -> Atoms:
         "PaiNN-S2EF-OC20-All",
         "GemNet-OC-Large-S2EF-OC20-All+MD",
         "SCN-S2EF-OC20-All+MD",
+        "EquiformerV2-Large-S2EF-ODAC",
+        "eSCN-S2EF-ODAC",
+        "EquiformerV2-IS2RE-ODAC",
         # Equiformer v2  # already tested in test_relaxation_final_energy
         # "EquiformerV2-153M-S2EF-OC20-All+MD"
         # eSCNm # already tested in test_random_seed_final_energy
@@ -50,8 +56,10 @@ def checkpoint_path(request, tmp_path):
 
 # First let's just make sure all checkpoints are being loaded without any
 # errors as part of the ASE calculator setup.
-def test_calculator_setup(checkpoint_path):
-    _ = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
+def test_calculator_setup(atoms, checkpoint_path):
+    calc = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
+    atoms.calc = calc
+    atoms.get_potential_energy()
 
 
 # test relaxation with EqV2
@@ -97,3 +105,16 @@ def test_random_seed_final_energy(atoms, tmp_path):
     for seed_a in set(seeds):
         for seed_b in set(seeds) - {seed_a}:
             assert results_by_seed[seed_a] != results_by_seed[seed_b]
+
+
+@pytest.fixture(params=available_pretrained_models)
+def all_checkpoint_path(request, tmp_path):
+    return model_name_to_local_file(request.param, tmp_path)
+
+
+# Slow tests
+@pytest.mark.slow()
+def test_all_calculator_setup(atoms, all_checkpoint_path):
+    calc = OCPCalculator(checkpoint_path=all_checkpoint_path, cpu=True)
+    atoms.calc = calc
+    atoms.get_potential_energy()

@@ -64,13 +64,16 @@ fragments = [
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts  =  "-p no:warnings -x --quiet -rxXs --color yes"
+addopts  =  "-p no:warnings --quiet -rxXs --color yes --strict-markers"
 filterwarnings  = [
     'ignore::UserWarning',
     'ignore::FutureWarning',
     'ignore::RuntimeWarning'
     ]
 testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
 
 [tool.coverage.run]
 source = ["fairchem.core"]
