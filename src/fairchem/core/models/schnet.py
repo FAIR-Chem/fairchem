@@ -13,11 +13,11 @@ from torch_scatter import scatter
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import GraphModelMixin
 
 
 @registry.register_model("schnet")
-class SchNetWrap(SchNet, BaseModel):
+class SchNetWrap(SchNet, GraphModelMixin):
     r"""Wrapper around the continuous-filter convolutional neural network SchNet from the
     `"SchNet: A Continuous-filter Convolutional Neural Network for Modeling
     Quantum Interactions" <https://arxiv.org/abs/1706.08566>`_. Each layer uses interaction
@@ -28,9 +28,6 @@ class SchNetWrap(SchNet, BaseModel):
         h_{\mathbf{\Theta}} ( \exp(-\gamma(\mathbf{e}_{j,i} - \mathbf{\mu}))),
 
     Args:
-        num_atoms (int): Unused argument
-        bond_feat_dim (int): Unused argument
-        num_targets (int): Number of targets to predict.
         use_pbc (bool, optional): If set to :obj:`True`, account for periodic boundary conditions.
             (default: :obj:`True`)
         regress_forces (bool, optional): If set to :obj:`True`, predict forces by differentiating
@@ -54,9 +51,6 @@ class SchNetWrap(SchNet, BaseModel):
 
     def __init__(
         self,
-        num_atoms: int,  # not used
-        bond_feat_dim: int,  # not used
-        num_targets: int,
         use_pbc: bool = True,
         regress_forces: bool = True,
         otf_graph: bool = False,
@@ -67,7 +61,7 @@ class SchNetWrap(SchNet, BaseModel):
         cutoff: float = 10.0,
         readout: str = "add",
     ) -> None:
-        self.num_targets = num_targets
+        self.num_targets = 1
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.cutoff = cutoff
@@ -88,25 +82,17 @@ class SchNetWrap(SchNet, BaseModel):
         z = data.atomic_numbers.long()
         pos = data.pos
         batch = data.batch
-
-        (
-            edge_index,
-            edge_weight,
-            distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(data)
+        graph = self.generate_graph(data)
 
         if self.use_pbc:
             assert z.dim() == 1
             assert z.dtype == torch.long
 
-            edge_attr = self.distance_expansion(edge_weight)
+            edge_attr = self.distance_expansion(graph.edge_distance)
 
             h = self.embedding(z)
             for interaction in self.interactions:
-                h = h + interaction(h, edge_index, edge_weight, edge_attr)
+                h = h + interaction(h, graph.edge_index, graph.edge_distance, edge_attr)
 
             h = self.lin1(h)
             h = self.act(h)
