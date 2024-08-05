@@ -43,7 +43,11 @@ from fairchem.core.datasets.base_dataset import create_dataset
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
-from fairchem.core.modules.normalizer import Normalizer
+from fairchem.core.modules.normalization.element_references import (
+    LinearReferences,
+    load_references_from_config,
+)
+from fairchem.core.modules.normalization.normalizer import load_normalizers_from_config
 from fairchem.core.modules.scaling.compat import load_scales_compat
 from fairchem.core.modules.scaling.util import ensure_fitted
 from fairchem.core.modules.scheduler import LRScheduler
@@ -185,6 +189,11 @@ class BaseTrainer(ABC):
         if distutils.is_master():
             logging.info(yaml.dump(self.config, default_flow_style=False))
 
+        self.elementrefs = {}
+        self.normalizers = {}
+        self.train_dataset = None
+        self.val_dataset = None
+        self.test_dataset = None
         self.load()
 
     @abstractmethod
@@ -208,6 +217,7 @@ class BaseTrainer(ABC):
         self.load_seed_from_config()
         self.load_logger()
         self.load_datasets()
+        self.load_references_and_normalizers()
         self.load_task()
         self.load_model()
         self.load_loss()
@@ -395,20 +405,68 @@ class BaseTrainer(ABC):
                 self.relax_sampler,
             )
 
-    def load_task(self):
-        # Normalizer for the dataset.
-
+    def load_references_and_normalizers(self):
+        """Load or create element references and normalizers from config"""
         # Is it troublesome that we assume any normalizer info is in train? What if there is no
         # training dataset? What happens if we just specify a test
-        normalizer = self.config["dataset"].get("transforms", {}).get("normalizer", {})
-        self.normalizers = {}
-        if normalizer:
-            for target in normalizer:
-                self.normalizers[target] = Normalizer(
-                    mean=normalizer[target].get("mean", 0),
-                    std=normalizer[target].get("stdev", 1),
+
+        elementref_config = (
+            self.config["dataset"].get("transforms", {}).get("element_references")
+        )
+        norms_config = self.config["dataset"].get("transforms", {}).get("normalizer")
+        elementrefs, normalizers = {}, {}
+        if distutils.is_master():
+            if elementref_config is not None:
+                # put them in a list to allow broadcasting python objects
+                elementrefs = load_references_from_config(
+                    elementref_config,
+                    dataset=self.train_dataset,
+                    seed=self.config["cmd"]["seed"],
+                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"]
+                    if not self.is_debug
+                    else None,
                 )
 
+            if norms_config is not None:
+                normalizers = load_normalizers_from_config(
+                    norms_config,
+                    dataset=self.train_dataset,
+                    seed=self.config["cmd"]["seed"],
+                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"]
+                    if not self.is_debug
+                    else None,
+                    element_references=elementrefs,
+                )
+
+                # log out the values that will be used.
+                for output, normalizer in normalizers.items():
+                    logging.info(
+                        f"Normalization values for output {output}: mean={normalizer.mean.item()}, rmsd={normalizer.rmsd.item()}."
+                    )
+
+        # put them in a list to broadcast them
+        elementrefs, normalizers = [elementrefs], [normalizers]
+        distutils.broadcast_object_list(
+            object_list=elementrefs, src=0, device=self.device
+        )
+        distutils.broadcast_object_list(
+            object_list=normalizers, src=0, device=self.device
+        )
+        # make sure element refs and normalizers are on this device
+        self.elementrefs.update(
+            {
+                output: elementref.to(self.device)
+                for output, elementref in elementrefs[0].items()
+            }
+        )
+        self.normalizers.update(
+            {
+                output: normalizer.to(self.device)
+                for output, normalizer in normalizers[0].items()
+            }
+        )
+
+    def load_task(self):
         self.output_targets = {}
         for target_name in self.config["outputs"]:
             self.output_targets[target_name] = self.config["outputs"][target_name]
@@ -425,15 +483,15 @@ class BaseTrainer(ABC):
                         ][target_name].get("level", "system")
                     if "train_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["train_on_free_atoms"] = (
-                            self.config["outputs"][target_name].get(
-                                "train_on_free_atoms", True
-                            )
+                            self.config[
+                                "outputs"
+                            ][target_name].get("train_on_free_atoms", True)
                         )
                     if "eval_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["eval_on_free_atoms"] = (
-                            self.config["outputs"][target_name].get(
-                                "eval_on_free_atoms", True
-                            )
+                            self.config[
+                                "outputs"
+                            ][target_name].get("eval_on_free_atoms", True)
                         )
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
@@ -550,9 +608,20 @@ class BaseTrainer(ABC):
                 target_key = key
 
             if target_key in self.normalizers:
-                self.normalizers[target_key].load_state_dict(
+                mkeys = self.normalizers[target_key].load_state_dict(
                     checkpoint["normalizers"][key]
                 )
+                assert len(mkeys.missing_keys) == 0
+                assert len(mkeys.unexpected_keys) == 0
+
+        for key, state_dict in checkpoint.get("elementrefs", {}).items():
+            elementrefs = LinearReferences(
+                max_num_elements=len(state_dict["element_references"]) - 1
+            )
+            mkeys = elementrefs.load_state_dict(state_dict)
+            self.elementrefs[key] = elementrefs
+            assert len(mkeys.missing_keys) == 0
+            assert len(mkeys.unexpected_keys) == 0
 
         if self.scaler and checkpoint["amp"]:
             self.scaler.load_state_dict(checkpoint["amp"])
@@ -649,32 +718,40 @@ class BaseTrainer(ABC):
         training_state: bool = True,
     ) -> str | None:
         if not self.is_debug and distutils.is_master():
+            state = {
+                "state_dict": self.model.state_dict(),
+                "normalizers": {
+                    key: value.state_dict() for key, value in self.normalizers.items()
+                },
+                "elementrefs": {
+                    key: value.state_dict() for key, value in self.elementrefs.items()
+                },
+                "config": self.config,
+                "val_metrics": metrics,
+                "amp": self.scaler.state_dict() if self.scaler else None,
+            }
             if training_state:
-                return save_checkpoint(
+                state.update(
                     {
                         "epoch": self.epoch,
                         "step": self.step,
-                        "state_dict": self.model.state_dict(),
                         "optimizer": self.optimizer.state_dict(),
                         "scheduler": (
                             self.scheduler.scheduler.state_dict()
                             if self.scheduler.scheduler_type != "Null"
                             else None
                         ),
-                        "normalizers": {
-                            key: value.state_dict()
-                            for key, value in self.normalizers.items()
-                        },
                         "config": self.config,
-                        "val_metrics": metrics,
                         "ema": self.ema.state_dict() if self.ema else None,
-                        "amp": self.scaler.state_dict() if self.scaler else None,
                         "best_val_metric": self.best_val_metric,
                         "primary_metric": self.evaluation_metrics.get(
                             "primary_metric",
                             self.evaluator.task_primary_metric[self.name],
                         ),
                     },
+                )
+                ckpt_path = save_checkpoint(
+                    state,
                     checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
                 )
@@ -683,22 +760,13 @@ class BaseTrainer(ABC):
                     self.ema.store()
                     self.ema.copy_to()
                 ckpt_path = save_checkpoint(
-                    {
-                        "state_dict": self.model.state_dict(),
-                        "normalizers": {
-                            key: value.state_dict()
-                            for key, value in self.normalizers.items()
-                        },
-                        "config": self.config,
-                        "val_metrics": metrics,
-                        "amp": self.scaler.state_dict() if self.scaler else None,
-                    },
+                    state,
                     checkpoint_dir=self.config["cmd"]["checkpoint_dir"],
                     checkpoint_file=checkpoint_file,
                 )
                 if self.ema:
                     self.ema.restore()
-                return ckpt_path
+            return ckpt_path
         return None
 
     def update_best(

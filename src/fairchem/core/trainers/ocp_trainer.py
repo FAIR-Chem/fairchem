@@ -11,6 +11,7 @@ import logging
 import os
 from collections import defaultdict
 from itertools import chain
+from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
@@ -24,6 +25,9 @@ from fairchem.core.common.utils import cg_change_mat, check_traj_files, irreps_s
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.scaling.util import ensure_fitted
 from fairchem.core.trainers.base_trainer import BaseTrainer
+
+if TYPE_CHECKING:
+    from torch_geometric.data import Batch
 
 
 @registry.register_trainer("ocp")
@@ -148,7 +152,6 @@ class OCPTrainer(BaseTrainer):
 
                 # Get a batch.
                 batch = next(train_loader_iter)
-
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     out = self._forward(batch)
@@ -227,10 +230,21 @@ class OCPTrainer(BaseTrainer):
             if checkpoint_every == -1:
                 self.save(checkpoint_file="checkpoint.pt", training_state=True)
 
+    def _denorm_preds(self, target_key: str, prediction: torch.Tensor, batch: Batch):
+        """Convert model output from a batch into raw prediction by denormalizing and adding references"""
+        # denorm the outputs
+        if target_key in self.normalizers:
+            prediction = self.normalizers[target_key](prediction)
+
+        # add element references
+        if target_key in self.elementrefs:
+            prediction = self.elementrefs[target_key](prediction, batch)
+
+        return prediction
+
     def _forward(self, batch):
         out = self.model(batch.to(self.device))
 
-        ### TODO: Move into BaseModel in OCP 2.0
         outputs = {}
         batch_size = batch.natoms.numel()
         num_atoms_in_batch = batch.natoms.sum()
@@ -254,10 +268,7 @@ class OCPTrainer(BaseTrainer):
 
                 for subtarget_key in self.output_targets[target_key]["decomposition"]:
                     irreps = self.output_targets[subtarget_key]["irrep_dim"]
-                    _pred = out[subtarget_key]
-
-                    if self.normalizers.get(subtarget_key, False):
-                        _pred = self.normalizers[subtarget_key].denorm(_pred)
+                    _pred = self._denorm_preds(subtarget_key, out[subtarget_key], batch)
 
                     ## Fill in the corresponding irreps prediction
                     ## Reshape irrep prediction to (batch_size, irrep_dim)
@@ -278,7 +289,6 @@ class OCPTrainer(BaseTrainer):
                 pred = pred.view(num_atoms_in_batch, -1)
             else:
                 pred = pred.view(batch_size, -1)
-
             outputs[target_key] = pred
 
         return outputs
@@ -307,14 +317,20 @@ class OCPTrainer(BaseTrainer):
                 natoms = natoms[mask]
 
             num_atoms_in_batch = natoms.numel()
-            if self.normalizers.get(target_name, False):
-                target = self.normalizers[target_name].norm(target)
 
             ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
             if self.output_targets[target_name]["level"] == "atom":
                 target = target.view(num_atoms_in_batch, -1)
             else:
                 target = target.view(batch_size, -1)
+
+            # to keep the loss coefficient weights balanced we remove linear references
+            # subtract element references from target data
+            if target_name in self.elementrefs:
+                target = self.elementrefs[target_name].dereference(target, batch)
+            # normalize the targets data
+            if target_name in self.normalizers:
+                target = self.normalizers[target_name].norm(target)
 
             mult = loss_info["coefficient"]
             loss.append(
@@ -373,11 +389,8 @@ class OCPTrainer(BaseTrainer):
             else:
                 target = target.view(batch_size, -1)
 
+            out[target_name] = self._denorm_preds(target_name, out[target_name], batch)
             targets[target_name] = target
-            if self.normalizers.get(target_name, False):
-                out[target_name] = self.normalizers[target_name].denorm(
-                    out[target_name]
-                )
 
         targets["natoms"] = natoms
         out["natoms"] = natoms
@@ -385,7 +398,7 @@ class OCPTrainer(BaseTrainer):
         return evaluator.eval(out, targets, prev_metrics=metrics)
 
     # Takes in a new data source and generates predictions on it.
-    @torch.no_grad()
+    @torch.no_grad
     def predict(
         self,
         data_loader,
@@ -419,7 +432,7 @@ class OCPTrainer(BaseTrainer):
 
         predictions = defaultdict(list)
 
-        for _i, batch in tqdm(
+        for _, batch in tqdm(
             enumerate(data_loader),
             total=len(data_loader),
             position=rank,
@@ -430,9 +443,7 @@ class OCPTrainer(BaseTrainer):
                 out = self._forward(batch)
 
             for target_key in self.config["outputs"]:
-                pred = out[target_key]
-                if self.normalizers.get(target_key, False):
-                    pred = self.normalizers[target_key].denorm(pred)
+                pred = self._denorm_preds(target_key, out[target_key], batch)
 
                 if per_image:
                     ### Save outputs in desired precision, default float16
@@ -449,7 +460,8 @@ class OCPTrainer(BaseTrainer):
                     else:
                         dtype = torch.float16
 
-                    pred = pred.cpu().detach().to(dtype)
+                    pred = pred.detach().cpu().to(dtype)
+
                     ### Split predictions into per-image predictions
                     if self.config["outputs"][target_key]["level"] == "atom":
                         batch_natoms = batch.natoms
@@ -510,6 +522,7 @@ class OCPTrainer(BaseTrainer):
 
         return predictions
 
+    @torch.no_grad
     def run_relaxations(self, split="val"):
         ensure_fitted(self._unwrapped_model)
 
@@ -642,9 +655,7 @@ class OCPTrainer(BaseTrainer):
                 )
                 gather_results["chunk_idx"] = np.cumsum(
                     [gather_results["chunk_idx"][i] for i in idx]
-                )[
-                    :-1
-                ]  # np.split does not need last idx, assumes n-1:end
+                )[:-1]  # np.split does not need last idx, assumes n-1:end
 
                 full_path = os.path.join(
                     self.config["cmd"]["results_dir"], "relaxed_positions.npz"
