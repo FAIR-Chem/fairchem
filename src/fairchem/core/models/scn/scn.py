@@ -18,7 +18,7 @@ import torch.nn as nn
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import GraphModelMixin
 from fairchem.core.models.scn.sampling import CalcSpherePoints
 from fairchem.core.models.scn.smearing import (
     GaussianSmearing,
@@ -33,7 +33,7 @@ with contextlib.suppress(ImportError):
 
 
 @registry.register_model("scn")
-class SphericalChannelNetwork(BaseModel):
+class SphericalChannelNetwork(nn.Module, GraphModelMixin):
     """Spherical Channel Network
     Paper: Spherical Channels for Modeling Atomic Interactions
 
@@ -75,9 +75,6 @@ class SphericalChannelNetwork(BaseModel):
 
     def __init__(
         self,
-        num_atoms: int,  # not used
-        bond_feat_dim: int,  # not used
-        num_targets: int,  # not used
         use_pbc: bool = True,
         regress_forces: bool = True,
         otf_graph: bool = False,
@@ -262,15 +259,7 @@ class SphericalChannelNetwork(BaseModel):
         atomic_numbers = data.atomic_numbers.long()
         num_atoms = len(atomic_numbers)
         pos = data.pos
-
-        (
-            edge_index,
-            edge_distance,
-            edge_distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(data)
+        graph = self.generate_graph(data)
 
         ###############################################################
         # Initialize data structures
@@ -278,12 +267,12 @@ class SphericalChannelNetwork(BaseModel):
 
         # Calculate which message block each edge should use. Based on edge distance rank.
         edge_rank = self._rank_edge_distances(
-            edge_distance, edge_index, self.max_num_neighbors
+            graph.edge_distance, graph.edge_index, self.max_num_neighbors
         )
 
         # Reorder edges so that they are grouped by distance rank (lowest to highest)
         last_cutoff = -0.1
-        message_block_idx = torch.zeros(len(edge_distance), device=pos.device)
+        message_block_idx = torch.zeros(len(graph.edge_distance), device=pos.device)
         edge_distance_reorder = torch.tensor([], device=self.device)
         edge_index_reorder = torch.tensor([], device=self.device)
         edge_distance_vec_reorder = torch.tensor([], device=self.device)
@@ -297,21 +286,21 @@ class SphericalChannelNetwork(BaseModel):
             edge_distance_reorder = torch.cat(
                 [
                     edge_distance_reorder,
-                    torch.masked_select(edge_distance, mask),
+                    torch.masked_select(graph.edge_distance, mask),
                 ],
                 dim=0,
             )
             edge_index_reorder = torch.cat(
                 [
                     edge_index_reorder,
-                    torch.masked_select(edge_index, mask.view(1, -1).repeat(2, 1)).view(
-                        2, -1
-                    ),
+                    torch.masked_select(
+                        graph.edge_index, mask.view(1, -1).repeat(2, 1)
+                    ).view(2, -1),
                 ],
                 dim=1,
             )
             edge_distance_vec_mask = torch.masked_select(
-                edge_distance_vec, mask.view(-1, 1).repeat(1, 3)
+                graph.edge_distance_vec, mask.view(-1, 1).repeat(1, 3)
             ).view(-1, 3)
             edge_distance_vec_reorder = torch.cat(
                 [edge_distance_vec_reorder, edge_distance_vec_mask], dim=0
