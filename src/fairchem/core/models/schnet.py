@@ -30,6 +30,7 @@ class SchNetWrap(SchNet, GraphModelMixin):
     Args:
         use_pbc (bool, optional): If set to :obj:`True`, account for periodic boundary conditions.
             (default: :obj:`True`)
+        use_pbc_single (bool,optional):         Process batch PBC graphs one at a time
         regress_forces (bool, optional): If set to :obj:`True`, predict forces by differentiating
             energy with respect to positions.
             (default: :obj:`True`)
@@ -52,6 +53,7 @@ class SchNetWrap(SchNet, GraphModelMixin):
     def __init__(
         self,
         use_pbc: bool = True,
+        use_pbc_single: bool = False,
         regress_forces: bool = True,
         otf_graph: bool = False,
         hidden_channels: int = 128,
@@ -64,6 +66,7 @@ class SchNetWrap(SchNet, GraphModelMixin):
         self.num_targets = 1
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
+        self.use_pbc_single = use_pbc_single
         self.cutoff = cutoff
         self.otf_graph = otf_graph
         self.max_neighbors = 50
@@ -111,16 +114,13 @@ class SchNetWrap(SchNet, GraphModelMixin):
         outputs = {"energy": energy}
 
         if self.regress_forces:
-            forces = (
-                -1
-                * (
-                    torch.autograd.grad(
-                        energy,
-                        data.pos,
-                        grad_outputs=torch.ones_like(energy),
-                        create_graph=True,
-                    )[0]
-                )
+            forces = -1 * (
+                torch.autograd.grad(
+                    energy,
+                    data.pos,
+                    grad_outputs=torch.ones_like(energy),
+                    create_graph=True,
+                )[0]
             )
             outputs["forces"] = forces
 
