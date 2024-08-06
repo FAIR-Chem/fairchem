@@ -290,6 +290,7 @@ class OCPTrainer(BaseTrainer):
             else:
                 pred = pred.view(batch_size, -1)
             outputs[target_key] = pred
+
         return outputs
 
     def _compute_loss(self, out, batch):
