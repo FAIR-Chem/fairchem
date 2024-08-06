@@ -108,6 +108,8 @@ class GemNetOC(nn.Module, GraphModelMixin):
         If False predict forces based on negative gradient of energy potential.
     use_pbc: bool
         Whether to use periodic boundary conditions.
+    use_pbc_single:
+        Process batch PBC graphs one at a time
     scale_backprop_forces: bool
         Whether to scale up the energy and then scales down the forces
         to prevent NaNs and infs in backpropagated forces.
@@ -203,6 +205,7 @@ class GemNetOC(nn.Module, GraphModelMixin):
         regress_forces: bool = True,
         direct_forces: bool = False,
         use_pbc: bool = True,
+        use_pbc_single: bool = False,
         scale_backprop_forces: bool = False,
         cutoff: float = 6.0,
         cutoff_qint: float | None = None,
@@ -269,6 +272,7 @@ class GemNetOC(nn.Module, GraphModelMixin):
         )
         self.enforce_max_neighbors_strictly = enforce_max_neighbors_strictly
         self.use_pbc = use_pbc
+        self.use_pbc_single = use_pbc_single
 
         self.direct_forces = direct_forces
         self.forces_coupled = forces_coupled

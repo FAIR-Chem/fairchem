@@ -73,6 +73,7 @@ class PaiNN(nn.Module, GraphModelMixin):
         regress_forces: bool = True,
         direct_forces: bool = True,
         use_pbc: bool = True,
+        use_pbc_single: bool = False,
         otf_graph: bool = True,
         num_elements: int = 83,
         scale_file: str | None = None,
@@ -92,6 +93,7 @@ class PaiNN(nn.Module, GraphModelMixin):
         self.direct_forces = direct_forces
         self.otf_graph = otf_graph
         self.use_pbc = use_pbc
+        self.use_pbc_single = use_pbc_single
 
         # Borrowed from GemNet.
         self.symmetric_edge_symmetrization = False
