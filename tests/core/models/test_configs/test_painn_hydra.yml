@@ -38,7 +38,6 @@ model:
 optim:
   batch_size: 32
   eval_batch_size: 32
-  load_balancing: atoms
   eval_every: 5000
   num_workers: 2
   optimizer: AdamW
