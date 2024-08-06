@@ -58,6 +58,7 @@ class GraphModelMixin:
         cutoff = cutoff or self.cutoff
         max_neighbors = max_neighbors or self.max_neighbors
         use_pbc = use_pbc or self.use_pbc
+        use_pbc_single = use_pbc_single or self.use_pbc_single
         otf_graph = otf_graph or self.otf_graph
 
         if enforce_max_neighbors_strictly is not None:
