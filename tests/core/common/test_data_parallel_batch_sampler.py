@@ -1,9 +1,16 @@
+"""
+Copyright (c) Meta, Inc. and its affiliates.
+
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.
+"""
+
 from __future__ import annotations
 
-import functools
-import tempfile
 from contextlib import contextmanager
 from pathlib import Path
+import functools
+import tempfile
 from typing import TypeVar
 
 import numpy as np
@@ -13,11 +20,13 @@ from torch.utils.data import Dataset, DistributedSampler
 from fairchem.core.common.data_parallel import (
     BalancedBatchSampler,
     StatefulDistributedSampler,
+    UnsupportedDatasetError,
+    _balanced_partition,
 )
+from fairchem.core.datasets.base_dataset import BaseDataset, DatasetMetadata
 
 DATA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-SIZE_ATOMS = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-SIZE_NEIGHBORS = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+SIZE_ATOMS = [2, 20, 3, 51, 10, 11, 41, 31, 13, 14]
 
 T_co = TypeVar("T_co", covariant=True)
 
@@ -29,11 +38,15 @@ def _temp_file(name: str):
 
 
 @pytest.fixture()
-def valid_path_dataset():
-    class _Dataset(Dataset[T_co]):
-        def __init__(self, data, fpath: Path) -> None:
+def valid_dataset():
+    class _Dataset(BaseDataset):
+        @functools.cached_property
+        def _metadata(self) -> DatasetMetadata:
+            return DatasetMetadata(natoms=np.array(SIZE_ATOMS))
+
+        def __init__(self, data) -> None:
+            super().__init__(config={})
             self.data = data
-            self.metadata_path = fpath
 
         def __len__(self):
             return len(self.data)
@@ -41,10 +54,40 @@ def valid_path_dataset():
         def __getitem__(self, idx):
             return self.data[idx]
 
+        def get_metadata(self, attr, idx):
+            assert attr == "natoms"
+            metadata_attr = getattr(self._metadata, attr)
+            if isinstance(idx, list):
+                return [metadata_attr[_idx] for _idx in idx]
+            return metadata_attr[idx]
+
+    return _Dataset(DATA)
+
+
+@pytest.fixture()
+def valid_path_dataset():
+    class _Dataset(BaseDataset):
+        @functools.cached_property
+        def _metadata(self) -> DatasetMetadata:
+            return self.metadata
+
+        def __init__(self, data, fpath: Path) -> None:
+            super().__init__(config={})
+            self.data = data
+            self.metadata = DatasetMetadata(natoms=np.load(fpath)["natoms"])
+
+        def __len__(self):
+            return len(self.data)
+
+        def __getitem__(self, idx):
+            metadata_attr = getattr(self._metadata, "natoms")
+            if isinstance(idx, list):
+                return [metadata_attr[_idx] for _idx in idx]
+            return metadata_attr[idx]
+
     with _temp_file("metadata.npz") as file:
         np.savez(
             natoms=np.array(SIZE_ATOMS),
-            neighbors=np.array(SIZE_NEIGHBORS),
             file=file,
         )
         yield _Dataset(DATA, file)
@@ -52,8 +95,10 @@ def valid_path_dataset():
 
 @pytest.fixture()
 def invalid_path_dataset():
-    class _Dataset(Dataset):
+    class _Dataset(BaseDataset):
+
         def __init__(self, data) -> None:
+            super().__init__(config={})
             self.data = data
             self.metadata_path = Path("/tmp/does/not/exist.np")
 
@@ -68,8 +113,10 @@ def invalid_path_dataset():
 
 @pytest.fixture()
 def invalid_dataset():
-    class _Dataset(Dataset):
+    class _Dataset(BaseDataset):
+
         def __init__(self, data) -> None:
+            super().__init__(config={})
             self.data = data
 
         def __len__(self):
@@ -81,99 +128,68 @@ def invalid_dataset():
     return _Dataset(DATA)
 
 
-def test_lowercase(invalid_dataset) -> None:
-    sampler = BalancedBatchSampler(
-        dataset=invalid_dataset,
+def test_lowercase(valid_dataset) -> None:
+    _ = BalancedBatchSampler(
+        dataset=valid_dataset,
         batch_size=1,
         rank=0,
         num_replicas=2,
         device=None,
         mode="ATOMS",
-        throw_on_error=False,
-        seed=0
+        on_error="raise",
+        seed=0,
     )
-    assert sampler.mode == "atoms"
-
-    sampler = BalancedBatchSampler(
-        dataset=invalid_dataset,
-        batch_size=1,
-        rank=0,
-        num_replicas=2,
-        device=None,
-        mode="NEIGHBORS",
-        throw_on_error=False,
-        seed=0
-    )
-    assert sampler.mode == "neighbors"
 
 
 def test_invalid_mode(invalid_dataset) -> None:
     with pytest.raises(
-        ValueError, match="Must be one of 'atoms', 'neighbors', or a boolean."
+        ValueError,
+        match="Only mode='atoms' or mode=True is supported, got mode='natoms'.",
     ):
-        BalancedBatchSampler(
+        _ = BalancedBatchSampler(
             dataset=invalid_dataset,
             batch_size=1,
             rank=0,
             num_replicas=2,
             device=None,
             mode="natoms",
-            throw_on_error=True,
-            seed=0
+            on_error="raise",
+            seed=0,
         )
 
     with pytest.raises(
-        ValueError, match="Must be one of 'atoms', 'neighbors', or a boolean."
+        ValueError,
+        match="Only mode='atoms' or mode=True is supported, got mode='neighbors'.",
     ):
-        BalancedBatchSampler(
+        _ = BalancedBatchSampler(
             dataset=invalid_dataset,
             batch_size=1,
             rank=0,
             num_replicas=2,
             device=None,
-            mode="nneighbors",
-            throw_on_error=True,
-            seed=0
+            mode="neighbors",
+            on_error="raise",
+            seed=0,
         )
 
 
 def test_invalid_dataset(invalid_dataset) -> None:
-    with pytest.raises(
-        RuntimeError,
-        match="does not have a metadata_path attribute. BalancedBatchSampler has to load the data to  determine batch sizes, which incurs significant overhead!",
-    ):
-        BalancedBatchSampler(
+    with pytest.raises(UnsupportedDatasetError):
+        sampler = BalancedBatchSampler(
             dataset=invalid_dataset,
             batch_size=1,
             rank=0,
             num_replicas=2,
             device=None,
             mode="atoms",
-            throw_on_error=True,
-            force_balancing=True,
-            seed=0
-        )
-    with pytest.raises(
-        RuntimeError,
-        match="does not have a metadata_path attribute. Batches will not be balanced, which can incur significant overhead!",
-    ):
-        BalancedBatchSampler(
-            dataset=invalid_dataset,
-            batch_size=1,
-            rank=0,
-            num_replicas=2,
-            device=None,
-            mode="atoms",
-            throw_on_error=True,
-            force_balancing=False,
-            seed=0
+            on_error="raise",
+            seed=0,
         )
 
 
 def test_invalid_path_dataset(invalid_path_dataset) -> None:
     with pytest.raises(
-        RuntimeError,
-        match="Metadata file .+ does not exist. BalancedBatchSampler has to load the data to  determine batch sizes, which incurs significant overhead!",
+        UnsupportedDatasetError,
     ):
         BalancedBatchSampler(
             dataset=invalid_path_dataset,
@@ -182,13 +198,11 @@ def test_invalid_path_dataset(invalid_path_dataset) -> None:
             num_replicas=2,
             device=None,
             mode="atoms",
-            throw_on_error=True,
-            force_balancing=True,
-            seed=0
+            on_error="raise",
+            seed=0,
         )
     with pytest.raises(
-        RuntimeError,
-        match="Metadata file .+ does not exist. Batches will not be balanced, which can incur significant overhead!",
+        UnsupportedDatasetError,
     ):
         BalancedBatchSampler(
             dataset=invalid_path_dataset,
@@ -197,70 +211,59 @@ def test_invalid_path_dataset(invalid_path_dataset) -> None:
             num_replicas=2,
             device=None,
             mode="atoms",
-            throw_on_error=True,
-            force_balancing=False,
-            seed=0
+            on_error="raise",
+            seed=0,
         )
 
 
-def test_valid_dataset(valid_path_dataset) -> None:
+def test_valid_dataset(valid_dataset, valid_path_dataset) -> None:
     sampler = BalancedBatchSampler(
-        dataset=valid_path_dataset,
+        dataset=valid_dataset,
         batch_size=1,
         rank=0,
         num_replicas=2,
         device=None,
         mode="atoms",
-        throw_on_error=True,
-        seed=0
+        on_error="raise",
+        seed=0,
     )
-    assert (sampler.sizes == np.array(SIZE_ATOMS)).all()
+    assert (
+        sampler._get_natoms(list(range(len(SIZE_ATOMS)))) == np.array(SIZE_ATOMS)
+    ).all()
 
+
+def test_disabled(valid_dataset) -> None:
     sampler = BalancedBatchSampler(
-        dataset=valid_path_dataset,
-        batch_size=1,
-        rank=0,
-        num_replicas=2,
-        device=None,
-        mode="neighbors",
-        throw_on_error=True,
-        seed=0
-    )
-    assert (sampler.sizes == np.array(SIZE_NEIGHBORS)).all()
-
-
-def test_disabled(valid_path_dataset) -> None:
-    sampler = BalancedBatchSampler(
-        dataset=valid_path_dataset,
+        dataset=valid_dataset,
         batch_size=1,
         rank=0,
         num_replicas=2,
         device=None,
         mode=False,
-        throw_on_error=True,
-        seed=0
+        on_error="raise",
+        seed=0,
     )
-    assert sampler.balance_batches is False
+    assert sampler.disabled or not sampler._dist_enabled()
 
 
-def test_single_node(valid_path_dataset) -> None:
+def test_single_node(valid_dataset) -> None:
     sampler = BalancedBatchSampler(
-        dataset=valid_path_dataset,
+        dataset=valid_dataset,
         batch_size=1,
         rank=0,
         num_replicas=1,
         device=None,
         mode="atoms",
-        throw_on_error=True,
-        seed=0
+        on_error="raise",
+        seed=0,
     )
-    assert sampler.balance_batches is False
+    assert sampler.disabled or not sampler._dist_enabled()
 
 
-def test_stateful_distributed_sampler_noshuffle(valid_path_dataset) -> None:
+def test_stateful_distributed_sampler_noshuffle(valid_dataset) -> None:
     for batch_size in range(1, 4):
         sampler = StatefulDistributedSampler(
-            dataset=valid_path_dataset,
+            dataset=valid_dataset,
             batch_size=batch_size,
             rank=0,
             num_replicas=1,
@@ -272,12 +275,12 @@ def test_stateful_distributed_sampler_noshuffle(valid_path_dataset) -> None:
 
 
 def test_stateful_distributed_sampler_vs_distributed_sampler(
-    valid_path_dataset,
+    valid_dataset,
 ) -> None:
     for seed in [0, 100, 200]:
         for batch_size in range(1, 4):
             stateful_sampler = StatefulDistributedSampler(
-                dataset=valid_path_dataset,
+                dataset=valid_dataset,
                 batch_size=batch_size,
                 rank=0,
                 num_replicas=2,
@@ -286,7 +289,7 @@ def test_stateful_distributed_sampler_vs_distributed_sampler(
                 drop_last=True,
             )
             sampler = DistributedSampler(
-                dataset=valid_path_dataset,
+                dataset=valid_dataset,
                 rank=0,
                 num_replicas=2,
                 seed=seed,
@@ -296,10 +299,10 @@ def test_stateful_distributed_sampler_vs_distributed_sampler(
             assert list(stateful_sampler) == list(sampler)
 
 
-def test_stateful_distributed_sampler(valid_path_dataset) -> None:
+def test_stateful_distributed_sampler(valid_dataset) -> None:
     for batch_size in range(1, 4):
         sampler = StatefulDistributedSampler(
-            dataset=valid_path_dataset,
+            dataset=valid_dataset,
             batch_size=batch_size,
             rank=0,
             num_replicas=1,
@@ -309,7 +312,7 @@ def test_stateful_distributed_sampler(valid_path_dataset) -> None:
 
         offset_step = 2
         loaded_sampler = StatefulDistributedSampler(
-            dataset=valid_path_dataset,
+            dataset=valid_dataset,
             batch_size=batch_size,
             rank=0,
             seed=0,
@@ -319,7 +322,7 @@ def test_stateful_distributed_sampler(valid_path_dataset) -> None:
         assert list(loaded_sampler) == original_order[offset_step * batch_size :]
 
         diff_sampler = StatefulDistributedSampler(
-            dataset=valid_path_dataset,
+            dataset=valid_dataset,
             batch_size=batch_size,
             rank=0,
             num_replicas=1,
@@ -328,14 +331,14 @@ def test_stateful_distributed_sampler(valid_path_dataset) -> None:
         assert list(diff_sampler) != original_order
 
 
-def test_stateful_distributed_sampler_numreplicas(valid_path_dataset) -> None:
-    fullset = set(range(len(valid_path_dataset)))
+def test_stateful_distributed_sampler_numreplicas(valid_dataset) -> None:
+    fullset = set(range(len(valid_dataset)))
     for drop_last in [True, False]:
         for num_replicas in range(1, 4):
             for batch_size in [1]:
                 samplers = [
                     StatefulDistributedSampler(
-                        dataset=valid_path_dataset,
+                        dataset=valid_dataset,
                         batch_size=batch_size,
                         rank=rank,
                         seed=0,
@@ -360,14 +363,14 @@ def test_stateful_distributed_sampler_numreplicas(valid_path_dataset) -> None:
 
 
 def test_stateful_distributed_sampler_numreplicas_drop_last(
-    valid_path_dataset,
+    valid_dataset,
 ) -> None:
-    fullset = set(range(len(valid_path_dataset)))
+    fullset = set(range(len(valid_dataset)))
     for num_replicas in range(1, 4):
         for batch_size in range(1, 4):
             samplers = [
                 StatefulDistributedSampler(
-                    dataset=valid_path_dataset,
+                    dataset=valid_dataset,
                     batch_size=batch_size,
                     rank=rank,
                     seed=0,
@@ -387,3 +390,15 @@ def test_stateful_distributed_sampler_numreplicas_drop_last(
             )
             assert len(concat_idxs) == len(np.unique(concat_idxs))
             assert len(concat_idxs) == (len(fullset) // num_replicas) * num_replicas
+
+
+def test_balancedbatchsampler_partition(valid_dataset) -> None:
+    assert np.array(
+        _balanced_partition(np.array(SIZE_ATOMS), 4)
+        == [[1, 9, 5, 0], [7, 8, 2], [3], [6, 4]]
+    )
+    # test case with local batch size = 1, GPU0(rank0) always gets smallest
+    # we cant say anything about the remaining elements because it is a heap
+    assert np.array(
+        _balanced_partition(np.array(SIZE_ATOMS)[[3, 6, 7, 1]], 4)[0] == [3]
+    )

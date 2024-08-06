@@ -46,7 +46,7 @@ def load_model(request) -> None:
     setup_imports()
 
     model = registry.get_model_class("schnet")(
-        None, 32, 1, cutoff=6.0, regress_forces=True, use_pbc=True
+        cutoff=6.0, regress_forces=True, use_pbc=True
     )
     request.cls.model = model
 
