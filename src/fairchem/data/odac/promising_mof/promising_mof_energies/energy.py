@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import os
+
 import matplotlib.pyploat as plt
 import pandas as pd
 
+from fairchem.core.scripts import download_large_files
+
+if not os.path.exists("adsorption_energy.txt"):
+    download_large_files.download_file_group("odac")
 raw_ads_energy_data = pd.read_csv("adsorption_energy.txt", header=None, sep=" ")
 complete_data = pd.DataFrame(
     index=range(raw_ads_energy_data.shape[0]),
@@ -170,12 +176,12 @@ for i in range(complete_data_merged_pristine_co2.shape[0]):
             current_lowest_energy
             < lowest_energy_data_co2.loc[index_this_case, "ads_energy_ev"]
         ):
-            lowest_energy_data_co2.loc[index_this_case, "ads_energy_ev"] = (
-                current_lowest_energy
-            )
-            lowest_energy_data_co2.loc[index_this_case, "configuration_index"] = (
-                current_configuration_index
-            )
+            lowest_energy_data_co2.loc[
+                index_this_case, "ads_energy_ev"
+            ] = current_lowest_energy
+            lowest_energy_data_co2.loc[
+                index_this_case, "configuration_index"
+            ] = current_configuration_index
             lowest_energy_data_co2.loc[index_this_case, "Name"] = current_name
 
 
@@ -212,12 +218,12 @@ for i in range(complete_data_merged_pristine_h2o.shape[0]):
             current_lowest_energy
             < lowest_energy_data_h2o.loc[index_this_case, "ads_energy_ev"]
         ):
-            lowest_energy_data_h2o.loc[index_this_case, "ads_energy_ev"] = (
-                current_lowest_energy
-            )
-            lowest_energy_data_h2o.loc[index_this_case, "configuration_index"] = (
-                current_configuration_index
-            )
+            lowest_energy_data_h2o.loc[
+                index_this_case, "ads_energy_ev"
+            ] = current_lowest_energy
+            lowest_energy_data_h2o.loc[
+                index_this_case, "configuration_index"
+            ] = current_configuration_index
             lowest_energy_data_h2o.loc[index_this_case, "Name"] = current_name
 
 lowest_energy_data_co_ads = pd.DataFrame(
@@ -254,12 +260,12 @@ for i in range(complete_data_merged_pristine_co_ads.shape[0]):
             current_lowest_energy
             < lowest_energy_data_co_ads.loc[index_this_case, "ads_energy_ev"]
         ):
-            lowest_energy_data_co_ads.loc[index_this_case, "ads_energy_ev"] = (
-                current_lowest_energy
-            )
-            lowest_energy_data_co_ads.loc[index_this_case, "configuration_index"] = (
-                current_configuration_index
-            )
+            lowest_energy_data_co_ads.loc[
+                index_this_case, "ads_energy_ev"
+            ] = current_lowest_energy
+            lowest_energy_data_co_ads.loc[
+                index_this_case, "configuration_index"
+            ] = current_configuration_index
             lowest_energy_data_co_ads.loc[index_this_case, "Name"] = current_name
 
 
@@ -298,12 +304,12 @@ for i in range(complete_data_merged_pristine_co_ads_2.shape[0]):
             current_lowest_energy
             < lowest_energy_data_co_ads_2.loc[index_this_case, "ads_energy_ev"]
         ):
-            lowest_energy_data_co_ads_2.loc[index_this_case, "ads_energy_ev"] = (
-                current_lowest_energy
-            )
-            lowest_energy_data_co_ads_2.loc[index_this_case, "configuration_index"] = (
-                current_configuration_index
-            )
+            lowest_energy_data_co_ads_2.loc[
+                index_this_case, "ads_energy_ev"
+            ] = current_lowest_energy
+            lowest_energy_data_co_ads_2.loc[
+                index_this_case, "configuration_index"
+            ] = current_configuration_index
             lowest_energy_data_co_ads_2.loc[index_this_case, "Name"] = current_name
 
 
@@ -439,9 +445,9 @@ for i in range(complete_data_merged_defective_co2.shape[0]):
             current_lowest_energy
             < lowest_energy_data_co2_defective.loc[index_this_case, "ads_energy_ev"]
         ):
-            lowest_energy_data_co2_defective.loc[index_this_case, "ads_energy_ev"] = (
-                current_lowest_energy
-            )
+            lowest_energy_data_co2_defective.loc[
+                index_this_case, "ads_energy_ev"
+            ] = current_lowest_energy
             lowest_energy_data_co2_defective.loc[
                 index_this_case, "configuration_index"
             ] = current_configuration_index
@@ -485,9 +491,9 @@ for i in range(complete_data_merged_defective_h2o.shape[0]):
             current_lowest_energy
             < lowest_energy_data_h2o_defective.loc[index_this_case, "ads_energy_ev"]
         ):
-            lowest_energy_data_h2o_defective.loc[index_this_case, "ads_energy_ev"] = (
-                current_lowest_energy
-            )
+            lowest_energy_data_h2o_defective.loc[
+                index_this_case, "ads_energy_ev"
+            ] = current_lowest_energy
             lowest_energy_data_h2o_defective.loc[
                 index_this_case, "configuration_index"
             ] = current_configuration_index
@@ -542,9 +548,9 @@ for i in range(complete_data_merged_defective_co_ads.shape[0]):
             lowest_energy_data_co_ads_defective.loc[
                 index_this_case, "configuration_index"
             ] = current_configuration_index
-            lowest_energy_data_co_ads_defective.loc[index_this_case, "Name"] = (
-                current_name
-            )
+            lowest_energy_data_co_ads_defective.loc[
+                index_this_case, "Name"
+            ] = current_name
 
 lowest_energy_data_co_ads_2_defective = pd.DataFrame(
     columns=complete_data_merged_defective_co_ads_2.columns
@@ -600,9 +606,9 @@ for i in range(complete_data_merged_defective_co_ads_2.shape[0]):
             lowest_energy_data_co_ads_2_defective.loc[
                 index_this_case, "configuration_index"
             ] = current_configuration_index
-            lowest_energy_data_co_ads_2_defective.loc[index_this_case, "Name"] = (
-                current_name
-            )
+            lowest_energy_data_co_ads_2_defective.loc[
+                index_this_case, "Name"
+            ] = current_name
 
 
 adsorption_data_defective = pd.DataFrame(
@@ -646,136 +652,132 @@ for count in range(adsorption_data_defective.shape[0]):
 
     # adsorption_data_defective_defective.iloc[count,0]=mof_name
 
-    adsorption_data_defective.loc[count, "n_converged_CO2"] = (
-        complete_data_merged_defective[
-            (complete_data_merged_defective["MOF"] == mof_name)
-            & (complete_data_merged_defective["defect_conc"] == current_defect_conc)
-            & (complete_data_merged_defective["defect_index"] == current_defect_index)
-            & (complete_data_merged_defective["n_CO2"] == 1)
-            & (complete_data_merged_defective["n_H2O"] == 0)
-        ].shape[0]
-    )
-    adsorption_data_defective.loc[count, "n_converged_H2O"] = (
-        complete_data_merged_defective[
-            (complete_data_merged_defective["MOF"] == mof_name)
-            & (complete_data_merged_defective["defect_conc"] == current_defect_conc)
-            & (complete_data_merged_defective["defect_index"] == current_defect_index)
-            & (complete_data_merged_defective["n_CO2"] == 0)
-            & (complete_data_merged_defective["n_H2O"] == 1)
-        ].shape[0]
-    )
-    adsorption_data_defective.loc[count, "n_converged_co"] = (
-        complete_data_merged_defective[
-            (complete_data_merged_defective["MOF"] == mof_name)
-            & (complete_data_merged_defective["defect_conc"] == current_defect_conc)
-            & (complete_data_merged_defective["defect_index"] == current_defect_index)
-            & (complete_data_merged_defective["n_CO2"] == 1)
-            & (complete_data_merged_defective["n_H2O"] == 1)
-        ].shape[0]
-    )
-    adsorption_data_defective.loc[count, "n_converged_co_2"] = (
-        complete_data_merged_defective[
-            (complete_data_merged_defective["MOF"] == mof_name)
-            & (complete_data_merged_defective["defect_conc"] == current_defect_conc)
-            & (complete_data_merged_defective["defect_index"] == current_defect_index)
-            & (complete_data_merged_defective["n_CO2"] == 1)
-            & (complete_data_merged_defective["n_H2O"] == 2)
-        ].shape[0]
-    )
+    adsorption_data_defective.loc[
+        count, "n_converged_CO2"
+    ] = complete_data_merged_defective[
+        (complete_data_merged_defective["MOF"] == mof_name)
+        & (complete_data_merged_defective["defect_conc"] == current_defect_conc)
+        & (complete_data_merged_defective["defect_index"] == current_defect_index)
+        & (complete_data_merged_defective["n_CO2"] == 1)
+        & (complete_data_merged_defective["n_H2O"] == 0)
+    ].shape[
+        0
+    ]
+    adsorption_data_defective.loc[
+        count, "n_converged_H2O"
+    ] = complete_data_merged_defective[
+        (complete_data_merged_defective["MOF"] == mof_name)
+        & (complete_data_merged_defective["defect_conc"] == current_defect_conc)
+        & (complete_data_merged_defective["defect_index"] == current_defect_index)
+        & (complete_data_merged_defective["n_CO2"] == 0)
+        & (complete_data_merged_defective["n_H2O"] == 1)
+    ].shape[
+        0
+    ]
+    adsorption_data_defective.loc[
+        count, "n_converged_co"
+    ] = complete_data_merged_defective[
+        (complete_data_merged_defective["MOF"] == mof_name)
+        & (complete_data_merged_defective["defect_conc"] == current_defect_conc)
+        & (complete_data_merged_defective["defect_index"] == current_defect_index)
+        & (complete_data_merged_defective["n_CO2"] == 1)
+        & (complete_data_merged_defective["n_H2O"] == 1)
+    ].shape[
+        0
+    ]
+    adsorption_data_defective.loc[
+        count, "n_converged_co_2"
+    ] = complete_data_merged_defective[
+        (complete_data_merged_defective["MOF"] == mof_name)
+        & (complete_data_merged_defective["defect_conc"] == current_defect_conc)
+        & (complete_data_merged_defective["defect_index"] == current_defect_index)
+        & (complete_data_merged_defective["n_CO2"] == 1)
+        & (complete_data_merged_defective["n_H2O"] == 2)
+    ].shape[
+        0
+    ]
 
     if not lowest_energy_data_co2_defective[
         (lowest_energy_data_co2_defective["MOF"] == mof_name)
         & (lowest_energy_data_co2_defective["defect_conc"] == current_defect_conc)
         & (lowest_energy_data_co2_defective["defect_index"] == current_defect_index)
     ].empty:
-        adsorption_data_defective.loc[count, "ads_CO2"] = (
-            lowest_energy_data_co2_defective[
-                (lowest_energy_data_co2_defective["MOF"] == mof_name)
-                & (
-                    lowest_energy_data_co2_defective["defect_conc"]
-                    == current_defect_conc
-                )
-                & (
-                    lowest_energy_data_co2_defective["defect_index"]
-                    == current_defect_index
-                )
-            ].iloc[0, 6]
-        )
-        adsorption_data_defective.loc[count, "config_CO2"] = (
-            lowest_energy_data_co2_defective[
-                (lowest_energy_data_co2_defective["MOF"] == mof_name)
-                & (
-                    lowest_energy_data_co2_defective["defect_conc"]
-                    == current_defect_conc
-                )
-                & (
-                    lowest_energy_data_co2_defective["defect_index"]
-                    == current_defect_index
-                )
-            ].iloc[0, 5]
-        )
+        adsorption_data_defective.loc[
+            count, "ads_CO2"
+        ] = lowest_energy_data_co2_defective[
+            (lowest_energy_data_co2_defective["MOF"] == mof_name)
+            & (lowest_energy_data_co2_defective["defect_conc"] == current_defect_conc)
+            & (lowest_energy_data_co2_defective["defect_index"] == current_defect_index)
+        ].iloc[
+            0, 6
+        ]
+        adsorption_data_defective.loc[
+            count, "config_CO2"
+        ] = lowest_energy_data_co2_defective[
+            (lowest_energy_data_co2_defective["MOF"] == mof_name)
+            & (lowest_energy_data_co2_defective["defect_conc"] == current_defect_conc)
+            & (lowest_energy_data_co2_defective["defect_index"] == current_defect_index)
+        ].iloc[
+            0, 5
+        ]
     if not lowest_energy_data_h2o_defective[
         (lowest_energy_data_h2o_defective["MOF"] == mof_name)
         & (lowest_energy_data_h2o_defective["defect_conc"] == current_defect_conc)
         & (lowest_energy_data_h2o_defective["defect_index"] == current_defect_index)
     ].empty:
-        adsorption_data_defective.loc[count, "ads_H2O"] = (
-            lowest_energy_data_h2o_defective[
-                (lowest_energy_data_h2o_defective["MOF"] == mof_name)
-                & (
-                    lowest_energy_data_h2o_defective["defect_conc"]
-                    == current_defect_conc
-                )
-                & (
-                    lowest_energy_data_h2o_defective["defect_index"]
-                    == current_defect_index
-                )
-            ].iloc[0, 6]
-        )
-        adsorption_data_defective.loc[count, "config_H2O"] = (
-            lowest_energy_data_h2o_defective[
-                (lowest_energy_data_h2o_defective["MOF"] == mof_name)
-                & (
-                    lowest_energy_data_h2o_defective["defect_conc"]
-                    == current_defect_conc
-                )
-                & (
-                    lowest_energy_data_h2o_defective["defect_index"]
-                    == current_defect_index
-                )
-            ].iloc[0, 5]
-        )
+        adsorption_data_defective.loc[
+            count, "ads_H2O"
+        ] = lowest_energy_data_h2o_defective[
+            (lowest_energy_data_h2o_defective["MOF"] == mof_name)
+            & (lowest_energy_data_h2o_defective["defect_conc"] == current_defect_conc)
+            & (lowest_energy_data_h2o_defective["defect_index"] == current_defect_index)
+        ].iloc[
+            0, 6
+        ]
+        adsorption_data_defective.loc[
+            count, "config_H2O"
+        ] = lowest_energy_data_h2o_defective[
+            (lowest_energy_data_h2o_defective["MOF"] == mof_name)
+            & (lowest_energy_data_h2o_defective["defect_conc"] == current_defect_conc)
+            & (lowest_energy_data_h2o_defective["defect_index"] == current_defect_index)
+        ].iloc[
+            0, 5
+        ]
     if not lowest_energy_data_co_ads_defective[
         (lowest_energy_data_co_ads_defective["MOF"] == mof_name)
         & (lowest_energy_data_co_ads_defective["defect_conc"] == current_defect_conc)
         & (lowest_energy_data_co_ads_defective["defect_index"] == current_defect_index)
     ].empty:
-        adsorption_data_defective.loc[count, "ads_co"] = (
-            lowest_energy_data_co_ads_defective[
-                (lowest_energy_data_co_ads_defective["MOF"] == mof_name)
-                & (
-                    lowest_energy_data_co_ads_defective["defect_conc"]
-                    == current_defect_conc
-                )
-                & (
-                    lowest_energy_data_co_ads_defective["defect_index"]
-                    == current_defect_index
-                )
-            ].iloc[0, 6]
-        )
-        adsorption_data_defective.loc[count, "config_co"] = (
-            lowest_energy_data_co_ads_defective[
-                (lowest_energy_data_co_ads_defective["MOF"] == mof_name)
-                & (
-                    lowest_energy_data_co_ads_defective["defect_conc"]
-                    == current_defect_conc
-                )
-                & (
-                    lowest_energy_data_co_ads_defective["defect_index"]
-                    == current_defect_index
-                )
-            ].iloc[0, 5]
-        )
+        adsorption_data_defective.loc[
+            count, "ads_co"
+        ] = lowest_energy_data_co_ads_defective[
+            (lowest_energy_data_co_ads_defective["MOF"] == mof_name)
+            & (
+                lowest_energy_data_co_ads_defective["defect_conc"]
+                == current_defect_conc
+            )
+            & (
+                lowest_energy_data_co_ads_defective["defect_index"]
+                == current_defect_index
+            )
+        ].iloc[
+            0, 6
+        ]
+        adsorption_data_defective.loc[
+            count, "config_co"
+        ] = lowest_energy_data_co_ads_defective[
+            (lowest_energy_data_co_ads_defective["MOF"] == mof_name)
+            & (
+                lowest_energy_data_co_ads_defective["defect_conc"]
+                == current_defect_conc
+            )
+            & (
+                lowest_energy_data_co_ads_defective["defect_index"]
+                == current_defect_index
+            )
+        ].iloc[
+            0, 5
+        ]
     if not lowest_energy_data_co_ads_2_defective[
         (lowest_energy_data_co_ads_2_defective["MOF"] == mof_name)
         & (lowest_energy_data_co_ads_2_defective["defect_conc"] == current_defect_conc)
@@ -784,32 +786,36 @@ for count in range(adsorption_data_defective.shape[0]):
             == current_defect_index
         )
     ].empty:
-        adsorption_data_defective.loc[count, "ads_co_2"] = (
-            lowest_energy_data_co_ads_2_defective[
-                (lowest_energy_data_co_ads_2_defective["MOF"] == mof_name)
-                & (
-                    lowest_energy_data_co_ads_2_defective["defect_conc"]
-                    == current_defect_conc
-                )
-                & (
-                    lowest_energy_data_co_ads_2_defective["defect_index"]
-                    == current_defect_index
-                )
-            ].iloc[0, 6]
-        )
-        adsorption_data_defective.loc[count, "config_co_2"] = (
-            lowest_energy_data_co_ads_2_defective[
-                (lowest_energy_data_co_ads_2_defective["MOF"] == mof_name)
-                & (
-                    lowest_energy_data_co_ads_2_defective["defect_conc"]
-                    == current_defect_conc
-                )
-                & (
-                    lowest_energy_data_co_ads_2_defective["defect_index"]
-                    == current_defect_index
-                )
-            ].iloc[0, 5]
-        )
+        adsorption_data_defective.loc[
+            count, "ads_co_2"
+        ] = lowest_energy_data_co_ads_2_defective[
+            (lowest_energy_data_co_ads_2_defective["MOF"] == mof_name)
+            & (
+                lowest_energy_data_co_ads_2_defective["defect_conc"]
+                == current_defect_conc
+            )
+            & (
+                lowest_energy_data_co_ads_2_defective["defect_index"]
+                == current_defect_index
+            )
+        ].iloc[
+            0, 6
+        ]
+        adsorption_data_defective.loc[
+            count, "config_co_2"
+        ] = lowest_energy_data_co_ads_2_defective[
+            (lowest_energy_data_co_ads_2_defective["MOF"] == mof_name)
+            & (
+                lowest_energy_data_co_ads_2_defective["defect_conc"]
+                == current_defect_conc
+            )
+            & (
+                lowest_energy_data_co_ads_2_defective["defect_index"]
+                == current_defect_index
+            )
+        ].iloc[
+            0, 5
+        ]
 
 
 # read the mofs missing DDEC charges

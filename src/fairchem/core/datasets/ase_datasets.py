@@ -13,20 +13,19 @@ import logging
 import os
 import warnings
 from abc import ABC, abstractmethod
-from functools import cache, reduce
+from functools import cache
 from glob import glob
 from pathlib import Path
 from typing import Any, Callable
 
 import ase
 import numpy as np
-import torch.nn
 from torch import tensor
-from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from fairchem.core.common.registry import registry
 from fairchem.core.datasets._utils import rename_data_object_keys
+from fairchem.core.datasets.base_dataset import BaseDataset
 from fairchem.core.datasets.lmdb_database import LMDBDatabase
 from fairchem.core.datasets.target_metadata_guesser import guess_property_metadata
 from fairchem.core.modules.transforms import DataTransforms
@@ -60,7 +59,7 @@ def apply_one_tags(
     return atoms
 
 
-class AseAtomsDataset(Dataset, ABC):
+class AseAtomsDataset(BaseDataset, ABC):
     """
     This is an abstract Dataset that includes helpful utilities for turning
     ASE atoms objects into OCP-usable data objects. This should not be instantiated directly
@@ -81,7 +80,7 @@ class AseAtomsDataset(Dataset, ABC):
         config: dict,
         atoms_transform: Callable[[ase.Atoms, Any, ...], ase.Atoms] = apply_one_tags,
     ) -> None:
-        self.config = config
+        super().__init__(config)
 
         a2g_args = config.get("a2g_args", {}) or {}
 
@@ -96,28 +95,19 @@ class AseAtomsDataset(Dataset, ABC):
         self.key_mapping = self.config.get("key_mapping", None)
         self.transforms = DataTransforms(self.config.get("transforms", {}))
 
-        self.lin_ref = None
-        if self.config.get("lin_ref", False):
-            lin_ref = torch.tensor(
-                np.load(self.config["lin_ref"], allow_pickle=True)["coeff"]
-            )
-            self.lin_ref = torch.nn.Parameter(lin_ref, requires_grad=False)
-
         self.atoms_transform = atoms_transform
 
         if self.config.get("keep_in_memory", False):
             self.__getitem__ = cache(self.__getitem__)
 
         self.ids = self._load_dataset_get_ids(config)
+        self.num_samples = len(self.ids)
 
         if len(self.ids) == 0:
             raise ValueError(
                 rf"No valid ase data found!"
                 f"Double check that the src path and/or glob search pattern gives ASE compatible data: {config['src']}"
             )
-
-    def __len__(self) -> int:
-        return len(self.ids)
 
     def __getitem__(self, idx):
         # Handle slicing
@@ -174,11 +164,7 @@ class AseAtomsDataset(Dataset, ABC):
     def get_relaxed_energy(self, identifier):
         raise NotImplementedError("IS2RE-Direct is not implemented with this dataset.")
 
-    def close_db(self) -> None:
-        # This method is sometimes called by a trainer
-        pass
-
-    def get_metadata(self, num_samples: int = 100) -> dict:
+    def sample_property_metadata(self, num_samples: int = 100) -> dict:
         metadata = {}
 
         if num_samples < len(self):
@@ -196,6 +182,18 @@ class AseAtomsDataset(Dataset, ABC):
             )
 
         return metadata
+
+    def get_metadata(self, attr, idx):
+        # try the parent method
+        metadata = super().get_metadata(attr, idx)
+        if metadata is not None:
+            return metadata
+        # try to resolve it here
+        if attr != "natoms":
+            return None
+        if isinstance(idx, (list, np.ndarray)):
+            return np.array([self.get_metadata(attr, i) for i in idx])
+        return len(self.get_atoms(idx))
 
 
 @registry.register_dataset("ase_read")
@@ -399,7 +397,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
 
         return atoms
 
-    def get_metadata(self, num_samples: int = 100) -> dict:
+    def sample_property_metadata(self, num_samples: int = 100) -> dict:
         return {}
 
     def get_relaxed_energy(self, identifier) -> float:
@@ -469,13 +467,14 @@ class AseDBDataset(AseAtomsDataset):
 
     def _load_dataset_get_ids(self, config: dict) -> list[int]:
         if isinstance(config["src"], list):
-            if os.path.isdir(config["src"][0]):
-                filepaths = reduce(
-                    lambda x, y: x + y,
-                    (glob(f"{path}/*") for path in config["src"]),
-                )
-            else:
-                filepaths = config["src"]
+            filepaths = []
+            for path in config["src"]:
+                if os.path.isdir(path):
+                    filepaths.extend(glob(f"{path}/*"))
+                elif os.path.isfile(path):
+                    filepaths.append(path)
+                else:
+                    raise RuntimeError(f"Error reading dataset in {path}!")
         elif os.path.isfile(config["src"]):
             filepaths = [config["src"]]
         elif os.path.isdir(config["src"]):
@@ -556,17 +555,17 @@ class AseDBDataset(AseAtomsDataset):
 
         return ase.db.connect(address, **connect_args)
 
-    def close_db(self) -> None:
+    def __del__(self):
         for db in self.dbs:
             if hasattr(db, "close"):
                 db.close()
 
-    def get_metadata(self, num_samples: int = 100) -> dict:
+    def sample_property_metadata(self, num_samples: int = 100) -> dict:
         logging.warning(
             "You specific a folder of ASE dbs, so it's impossible to know which metadata to use. Using the first!"
         )
         if self.dbs[0].metadata == {}:
-            return super().get_metadata(num_samples)
+            return super().sample_property_metadata(num_samples)
 
         return copy.deepcopy(self.dbs[0].metadata)
 
