@@ -39,18 +39,26 @@ from torch_scatter import scatter, segment_coo, segment_csr
 
 import fairchem.core
 from fairchem.core.modules.loss import AtomwiseL2Loss, L2MAELoss
+from fairchem.experimental.foundation_models.multi_task_dataloader.merge_stats import (
+    combine_means_and_variances,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from torch.nn.modules.module import _IncompatibleKeys
 
+# Statistics of IS2RE 100K
+_AVG_NUM_NODES = 77.81317
+_AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
+
 
 DEFAULT_ENV_VARS = {
     # Expandable segments is a new cuda feature that helps with memory fragmentation during frequent allocations (ie: in the case of variable batch sizes).
     # see https://pytorch.org/docs/stable/notes/cuda.html.
-    "PYTORCH_CUDA_ALLOC_CONF" : "expandable_segments:True",
+    "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
 }
+
 
 # copied from https://stackoverflow.com/questions/33490870/parsing-yaml-in-python-detect-duplicated-keys
 # prevents loading YAMLS where keys have been overwritten
@@ -87,6 +95,15 @@ def save_checkpoint(
     filename = os.path.join(checkpoint_dir, checkpoint_file)
     torch.save(state, filename)
     return filename
+
+
+multitask_required_keys = {
+    "tasks",
+    "datasets",
+    "combined_dataset",
+    "model",
+    "optim",
+}
 
 
 class Complete:
@@ -391,7 +408,11 @@ def create_dict_from_args(args: list, sep: str = "."):
     return return_dict
 
 
-def load_config(path: str, previous_includes: list | None = None):
+def load_config(
+    path: str, previous_includes: list | None = None, include_paths: list | None = None
+):
+    if include_paths is None:
+        include_paths = []
     if previous_includes is None:
         previous_includes = []
     path = Path(path)
@@ -409,13 +430,24 @@ def load_config(path: str, previous_includes: list | None = None):
     if not isinstance(includes, list):
         raise AttributeError(f"Includes must be a list, '{type(includes)}' provided")
 
+    def find_include(include, include_paths):
+        if os.path.exists(include):
+            return include
+        for path in include_paths:
+            include_filename = os.path.join(path, include)
+            if os.path.exists(include_filename):
+                return include_filename
+        raise ValueError(f"Cannot find include YML {include}")
+
     config = {}
     duplicates_warning = []
     duplicates_error = []
-
     for include in includes:
+        include_filename = find_include(
+            include, [os.path.dirname(path), *include_paths]
+        )
         include_config, inc_dup_warning, inc_dup_error = load_config(
-            include, previous_includes
+            include_filename, previous_includes
         )
         duplicates_warning += inc_dup_warning
         duplicates_error += inc_dup_error
@@ -427,12 +459,13 @@ def load_config(path: str, previous_includes: list | None = None):
     # Duplicates between included and main file causes warnings
     config, merge_dup_warning = merge_dicts(config, direct_config)
     duplicates_warning += merge_dup_warning
-
     return config, duplicates_warning, duplicates_error
 
 
-def build_config(args, args_override):
-    config, duplicates_warning, duplicates_error = load_config(args.config_yml)
+def build_config(args, args_override, include_paths=None):
+    config, duplicates_warning, duplicates_error = load_config(
+        args.config_yml, include_paths=include_paths
+    )
     if len(duplicates_warning) > 0:
         logging.warning(
             f"Overwritten config parameters from included configs "
@@ -997,34 +1030,70 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
             task_name = "s2ef"
         elif trainer_name in ["energy", "equiformerv2_energy"]:
             task_name = "is2re"
+        elif "multitask" in trainer_name.lower():
+            task_name = "multitask"
         else:
             task_name = "ocp"
 
         trainer_cls = registry.get_trainer_class(trainer_name)
         assert trainer_cls is not None, "Trainer not found"
-        trainer = trainer_cls(
-            task=config.get("task", {}),
-            model=config["model"],
-            outputs=config.get("outputs", {}),
-            dataset=config["dataset"],
-            optimizer=config["optim"],
-            loss_functions=config.get("loss_functions", {}),
-            evaluation_metrics=config.get("evaluation_metrics", {}),
-            identifier=config["identifier"],
-            timestamp_id=config.get("timestamp_id", None),
-            run_dir=config.get("run_dir", "./"),
-            is_debug=config.get("is_debug", False),
-            print_every=config.get("print_every", 10),
-            seed=config.get("seed", 0),
-            logger=config.get("logger", "wandb"),
-            local_rank=config["local_rank"],
-            amp=config.get("amp", False),
-            cpu=config.get("cpu", False),
-            slurm=config.get("slurm", {}),
-            noddp=config.get("noddp", False),
-            name=task_name,
-            gp_gpus=config.get("gp_gpus"),
-        )
+
+        if task_name == "multitask":
+            missing_keys = multitask_required_keys - {
+                required_key
+                for required_key in multitask_required_keys
+                if required_key in config
+            }
+            if len(missing_keys) > 0:
+                raise RuntimeError(
+                    f"Required key missing from config: {missing_keys!s}"
+                )
+            trainer = trainer_cls(
+                tasks=config.get("tasks", {}),
+                dataset_configs=config["datasets"],
+                combined_dataset_config=config.get("combined_dataset", {}),
+                model=config["model"],
+                optimizer=config["optim"],
+                evaluations=config.get("evaluations", {}),
+                identifier=config["identifier"],
+                timestamp_id=config.get("timestamp_id", None),
+                run_dir=config.get("run_dir", "./"),
+                is_debug=config.get("is_debug", False),
+                print_every=config.get("print_every", 10),
+                seed=config.get("seed", 0),
+                logger=config.get("logger", "wandb"),
+                local_rank=config["local_rank"],
+                amp=config.get("amp", False),
+                cpu=config.get("cpu", False),
+                slurm=config.get("slurm", {}),
+                noddp=config.get("noddp", False),
+                name=task_name,
+                gp_gpus=config.get("gp_gpus"),
+            )
+        else:
+            trainer = trainer_cls(
+                task=config.get("task", {}),
+                model=config["model"],
+                outputs=config.get("outputs", {}),
+                dataset=config["dataset"],
+                optimizer=config["optim"],
+                loss_functions=config.get("loss_functions", {}),
+                evaluation_metrics=config.get("evaluation_metrics", {}),
+                identifier=config["identifier"],
+                timestamp_id=config.get("timestamp_id", None),
+                run_dir=config.get("run_dir", "./"),
+                is_debug=config.get("is_debug", False),
+                print_every=config.get("print_every", 10),
+                seed=config.get("seed", 0),
+                logger=config.get("logger", "wandb"),
+                local_rank=config["local_rank"],
+                amp=config.get("amp", False),
+                cpu=config.get("cpu", False),
+                slurm=config.get("slurm", {}),
+                noddp=config.get("noddp", False),
+                name=task_name,
+                gp_gpus=config.get("gp_gpus"),
+            )
 
         task_cls = registry.get_task_class(config["mode"])
         assert task_cls is not None, "Task not found"
@@ -1341,3 +1410,86 @@ def get_loss_module(loss_name):
         raise NotImplementedError(f"Unknown loss function name: {loss_name}")
 
     return loss_fn
+
+
+def compute_mean_and_std_for_target(target_name, config, concat_dataset, level):
+    """
+    Given a target name , check the datasets used, their means and stdev,
+    their relative sizes in the virtual dataset and compute the corresponding
+    mean and stdev
+    """
+
+    # get the expanded sizes of each named dataset in the training virtual dataset
+    # along with mean and stdev for each property listed
+    _, expanded_sizes, _ = concat_dataset.updated_dataset_sizes
+    dataset_name_to_size_and_stats = {}
+    for dataset_idx in range(len(expanded_sizes)):
+        dataset_name = concat_dataset.dataset_names[dataset_idx]
+        dataset_name_to_size_and_stats[dataset_name] = {
+            "size": expanded_sizes[dataset_idx]
+        }
+        if "normalization_constants" in config["datasets"][dataset_name]:
+            dataset_name_to_size_and_stats[dataset_name].update(
+                config["datasets"][dataset_name]["normalization_constants"]
+            )
+            if (
+                "average_atoms_per_system"
+                not in dataset_name_to_size_and_stats[dataset_name]
+            ):
+                logging.warn(
+                    f"{dataset_name} is missing normalization constant: 'average_atoms_per_system', assuming {_AVG_NUM_NODES}"
+                )
+                dataset_name_to_size_and_stats[dataset_name][
+                    "average_atoms_per_system"
+                ] = _AVG_NUM_NODES
+        assert level in {"atom", "system"}
+        if level == "atom":
+            dataset_name_to_size_and_stats[dataset_name][
+                "size"
+            ] *= dataset_name_to_size_and_stats[dataset_name][
+                "average_atoms_per_system"
+            ]
+
+    # TODO this is hacky, should be replaced with task.property
+    property = config["tasks"][target_name]["property"]
+    dataset_names = config["tasks"][target_name]["datasets"]
+
+    dataset_sizes, dataset_means, dataset_vars = [], [], []
+
+    for dataset_name in dataset_names:
+        if property not in dataset_name_to_size_and_stats[dataset_name]:
+            raise ValueError(
+                f"Failed to compute mean and std on the fly because missing '{property}' for dataset '{dataset_name}'"
+            )
+        if (
+            "mean" not in dataset_name_to_size_and_stats[dataset_name][property]
+            or "stdev" not in dataset_name_to_size_and_stats[dataset_name][property]
+        ):
+            raise ValueError(
+                f"Failed to compute mean and std on the fly because missing mean,stdev for '{property}' on dataset '{dataset_name}'"
+            )
+        dataset_sizes.append(dataset_name_to_size_and_stats[dataset_name]["size"])
+        dataset_means.append(
+            dataset_name_to_size_and_stats[dataset_name][property]["mean"]
+        )
+        dataset_vars.append(
+            dataset_name_to_size_and_stats[dataset_name][property]["stdev"] ** 2
+        )
+
+    calculated_mean, calculated_variance = combine_means_and_variances(
+        pop_sizes=dataset_sizes,
+        pop_variances=dataset_vars,
+        pop_means=dataset_means,
+        ddof=1,
+    )
+    calculated_stdev = np.sqrt(calculated_variance)
+
+    if len(dataset_means) == 1:
+        logging.info(
+            f"Using pass through mean,stdev for {target_name} , mean={calculated_mean}, stdev={calculated_stdev}, from {dataset_names}"
+        )
+    else:
+        logging.info(
+            f"Computed mean,stdev for {target_name} , mean={calculated_mean}, stdev={calculated_stdev}, across datasets {dataset_names}"
+        )
+    return calculated_mean, calculated_stdev

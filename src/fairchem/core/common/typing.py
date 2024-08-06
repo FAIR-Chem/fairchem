@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import TYPE_CHECKING
 
-_T = TypeVar("_T")
+if TYPE_CHECKING:
+    from typing import TypeVar
+
+    _T = TypeVar("_T")
 
 
 def assert_is_instance(obj: object, cls: type[_T]) -> _T:
