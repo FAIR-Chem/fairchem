@@ -114,6 +114,7 @@ class GraphParallelGemNetT(nn.Module, GraphModelMixin):
         extensive: bool = True,
         otf_graph: bool = False,
         use_pbc: bool = True,
+        use_pbc_single: bool = False,
         output_init: str = "HeOrthogonal",
         activation: str = "swish",
         scale_num_blocks: bool = False,
@@ -142,6 +143,7 @@ class GraphParallelGemNetT(nn.Module, GraphModelMixin):
         self.regress_forces = regress_forces
         self.otf_graph = otf_graph
         self.use_pbc = use_pbc
+        self.use_pbc_single = use_pbc_single
 
         # GemNet variants
         self.direct_forces = direct_forces
