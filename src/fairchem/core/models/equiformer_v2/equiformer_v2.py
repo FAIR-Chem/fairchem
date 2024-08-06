@@ -116,6 +116,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
     def __init__(
         self,
         use_pbc: bool = True,
+        use_pbc_single: bool = False,
         regress_forces: bool = True,
         otf_graph: bool = True,
         max_neighbors: int = 500,
@@ -168,6 +169,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
             logging.error("You need to install e3nn==0.4.4 to use EquiformerV2.")
             raise ImportError
         self.use_pbc = use_pbc
+        self.use_pbc_single = use_pbc_single
         self.regress_forces = regress_forces
         self.otf_graph = otf_graph
         self.max_neighbors = max_neighbors

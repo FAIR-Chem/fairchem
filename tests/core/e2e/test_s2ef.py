@@ -319,6 +319,25 @@ class TestSmoke:
             otf_norms=otf_norms,
         )
 
+    def test_use_pbc_single(self, configs, tutorial_val_src, torch_deterministic):
+        with tempfile.TemporaryDirectory() as tempdirname:
+            tempdir = Path(tempdirname)
+            extra_args = {"seed": 0}
+            _ = _run_main(
+                rundir=str(tempdir),
+                update_dict_with={
+                    "optim": {"max_epochs": 1},
+                    "model": {"use_pbc_single": True},
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                    ),
+                },
+                update_run_args_with=extra_args,
+                input_yaml=configs["equiformer_v2"],
+            )
+
     @pytest.mark.parametrize(
         ("world_size", "ddp"),
         [
