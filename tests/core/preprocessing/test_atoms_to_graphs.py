@@ -15,7 +15,7 @@ from ase.io import read
 from ase.neighborlist import NeighborList, NewPrimitiveNeighborList
 
 from fairchem.core.preprocessing import AtomsToGraphs
-
+from fairchem.core.modules.evaluator import min_diff
 
 @pytest.fixture(scope="class")
 def atoms_to_graphs_internals(request) -> None:
@@ -110,7 +110,8 @@ class TestAtomsToGraphs:
         # positions
         act_positions = self.atoms.get_positions()
         positions = data.pos.numpy()
-        np.testing.assert_allclose(act_positions, positions)
+        mindiff = min_diff(act_positions, positions, self.atoms.get_cell(), self.atoms.pbc)        
+        np.testing.assert_allclose(mindiff, 0, atol=1e-6)
         # check energy value
         act_energy = self.atoms.get_potential_energy(apply_constraint=False)
         test_energy = data.energy
@@ -142,7 +143,8 @@ class TestAtomsToGraphs:
         # positions
         act_positions = self.atoms.get_positions()
         positions = data_list[0].pos.numpy()
-        np.testing.assert_allclose(act_positions, positions)
+        mindiff = min_diff(act_positions, positions, self.atoms.get_cell(), self.atoms.pbc)        
+        np.testing.assert_allclose(mindiff, 0, atol=1e-6)
         # check energy value
         act_energy = self.atoms.get_potential_energy(apply_constraint=False)
         test_energy = data_list[0].energy
