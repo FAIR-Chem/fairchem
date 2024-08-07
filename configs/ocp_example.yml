@@ -12,7 +12,7 @@ dataset:
     # Can use 'single_point_lmdb' or 'trajectory_lmdb' for backward compatibility.
     # 'single_point_lmdb' was for training IS2RE models, and 'trajectory_lmdb' was
     # for training S2EF models.
-    format: lmdb                                                                 # 'lmdb' or 'oc22_lmdb'
+    format: lmdb                                                   # 'lmdb', 'oc22_lmdb', or 'ase_d'
     # Directory containing training set LMDBs
     src: data/s2ef/all/train/
     # If we want to rename a target value stored in the data object, specify the mapping here.
@@ -34,9 +34,11 @@ dataset:
             irrep_dim: 0
           anisotropic_stress:
             irrep_dim: 2
-      # If we want to normalize targets, i.e. subtract the mean and
-      # divide by standard deviation, then specify the 'mean' and 'stdev' here.
+      # If we want to normalize targets, there are a couple of ways to specify normalization values.
+      # normalization values are applied as: (target - mean) / rmsd
+      # Note root mean squared difference (rmsd) is equal to stdev if mean != 0, and equal to rms if mean == 0.
       # Statistics will by default be applied to the validation and test set.
+      # 1) specify the 'mean' and 'stdev' explicitly here.
       normalizer:
         energy:
           mean: -0.7554450631141663
@@ -49,6 +51,52 @@ dataset:
           stdev: 674.1657344451734
         anisotropic_stress:
           stdev: 143.72764771869745
+      # 2) Estimate the values on-the-fly (OTF) from training data
+      normalizer:
+        fit:
+          targets:
+            forces: { mean: 0.0 }   # values can be explicitly set, ie if you need RMS forces instead of stdev force
+            stress_isotropic: { }   # to estimate both mean and rmsd set to {} or None
+            stress_anisotropic: { }
+          batch_size: 64
+          num_batches: 5000   # if num_batches is not given, the whole dataset will be used
+      # 3) Specify a single .pt file with dict of target names and Normalizer modules
+      # (this is the format that OTF vales are saved in)
+      # see Normalizer module in fairchem.core.modules.normalization.normalizer
+      normalizer:
+        file: normalizers.pt
+      # 4) specify an individual file either .pt or .npz with keys 'mean' and 'rmsd' or 'stdev'
+      normalizer:
+        energy:
+          file: energy_norm.pt
+        forces:
+          file: forces_norm.npz
+        isotropic_stress:
+          file: isostress_norm.npz
+        anisotropic_stress:
+          file: anisostress_norm.npz
+      # If we want to train on total energies and use a per-element linear reference
+      # normalization scheme, we can estimate those from the data or specify the path to the per-element
+      # 1) Fit element references from data
+      element_references:
+        fit:
+          targets:
+            - energy
+          batch_size: 64
+          num_batches: 5000   # if num_batches is not given, the whole dataset will be used
+      # 2) Specify a file with with key energy and LinearReference object. This is the format OTF references are saved in.
+      # see fairchem.core.modules.normalization.element_references for references.
+      element_references:
+        file: element_references.pt
+      # 3) Legacy files in npz format can be specified as well. They must have the elemenet references
+      #  under the key coeff
+      element_references:
+        energy:
+          file: element_ref.npz
+    # 4) backwards compatibility only, linear references can be set as follows. Setting the references
+    # file as follows is a legacy setting and only works with oc22_lmdb and ase_lmdb datasets
+    lin_ref: element_ref.npz
+
     # If we want to train OC20 on total energy, a path to OC20 reference
     # energies `oc20_ref` must be specified to unreference existing OC20 data.
     # download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl
@@ -56,10 +104,7 @@ dataset:
     # OC22 defaults to total energy, so these flags are not necessary.
     train_on_oc20_total_energies: False                                         # True or False
     oc20_ref: None                                                              # path to oc20_ref
-    # If we want to train on total energies and use a linear reference
-    # normalization scheme, we must specify the path to the per-element
-    # coefficients in a `.npz` format.
-    lin_ref: False                                                              # True or False
+
   val:
     # Directory containing val set LMDBs
     src: data/s2ef/all/val_id/

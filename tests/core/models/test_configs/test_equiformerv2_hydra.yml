@@ -1,0 +1,98 @@
+
+
+trainer: forces
+
+model:
+  name: hydra
+  backbone:
+    model: equiformer_v2_backbone
+    use_pbc:                  True
+    regress_forces:           True
+    otf_graph:                True
+
+    enforce_max_neighbors_strictly: False
+
+    max_neighbors:            1
+    max_radius:               12.0
+    max_num_elements:         90
+
+    num_layers:               1
+    sphere_channels:          4
+    attn_hidden_channels:     4              # [64, 96] This determines the hidden size of message passing. Do not necessarily use 96.
+    num_heads:                1
+    attn_alpha_channels:      4              # Not used when `use_s2_act_attn` is True.
+    attn_value_channels:      4
+    ffn_hidden_channels:      8
+    norm_type:                'layer_norm_sh'    # ['rms_norm_sh', 'layer_norm', 'layer_norm_sh']
+
+    lmax_list:                [1]
+    mmax_list:                [1]
+    grid_resolution:          18              # [18, 16, 14, None] For `None`, simply comment this line.
+
+    num_sphere_samples:       128
+
+    edge_channels:              32
+    use_atom_edge_embedding:    True
+    distance_function:          'gaussian'
+    num_distance_basis:         16           # not used
+
+    attn_activation:          'silu'
+    use_s2_act_attn:          False       # [False, True] Switch between attention after S2 activation or the original EquiformerV1 attention.
+    ffn_activation:           'silu'      # ['silu', 'swiglu']
+    use_gate_act:             False       # [True, False] Switch between gate activation and S2 activation
+    use_grid_mlp:             False        # [False, True] If `True`, use projecting to grids and performing MLPs for FFNs.
+
+    alpha_drop:               0.0         # [0.0, 0.1]
+    drop_path_rate:           0.0         # [0.0, 0.05]
+    proj_drop:                0.0
+
+    weight_init:              'normal'    # ['uniform', 'normal']
+  heads:
+    energy:
+      module: equiformer_v2_energy_head
+    forces:
+      module: equiformer_v2_force_head
+
+dataset:
+  train:
+    src: tutorial_dset/s2ef/train_100/
+    normalize_labels: True
+    target_mean: -0.7554450631141663
+    target_std: 2.887317180633545
+    grad_target_mean: 0.0
+    grad_target_std: 2.887317180633545
+  val:
+    format: lmdb
+    src: tutorial_dset/s2ef/val_20/
+
+logger:
+  name: tensorboard
+
+task:
+  dataset: lmdb
+  type: regression
+  metric: mae
+  primary_metric: forces_mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
+  prediction_dtype: float32
+
+
+optim:
+  batch_size: 5
+  eval_batch_size: 2
+  num_workers: 0
+  lr_initial: 0.0025
+  optimizer: AdamW
+  optimizer_params: {"amsgrad": True,weight_decay: 0.0}
+  eval_every: 190
+  max_epochs: 50
+  force_coefficient: 20
+  scheduler: "Null"
+  energy_coefficient: 1
+  clip_grad_norm: 20
+  loss_energy: mae
+  loss_force: l2mae
