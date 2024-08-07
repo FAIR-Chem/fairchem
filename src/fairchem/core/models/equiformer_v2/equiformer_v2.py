@@ -686,6 +686,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
 class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # TODO remove these once we deprecate/stop-inheriting EquiformerV2 class
         self.energy_block = None
         self.force_block = None
 
