@@ -1,0 +1,55 @@
+trainer: forces
+
+task:
+  dataset: lmdb
+  type: regression
+  metric: mae
+  primary_metric: forces_mae
+  labels:
+    - potential energy
+  grad_input: atomic forces
+  train_on_free_atoms: True
+  eval_on_free_atoms: True
+  prediction_dtype: float32
+
+logger:
+    name: tensorboard
+
+model:
+  name: hydra
+  backbone:
+    model: dimenetplusplus_backbone
+    hidden_channels: 4
+    out_emb_channels: 4
+    num_blocks: 1
+    cutoff: 6.0
+    num_radial: 6
+    num_spherical: 7
+    num_before_skip: 1
+    num_after_skip: 2
+    num_output_layers: 3
+    regress_forces: True
+    use_pbc: True
+  heads:
+    energy:
+      module: dimenetplusplus_energy_and_force_head
+
+# *** Important note ***
+#   The total number of gpus used for this run was 256.
+#   If the global batch size (num_gpus * batch_size) is modified
+#   the lr_milestones and warmup_steps need to be adjusted accordingly.
+
+optim:
+  batch_size: 5
+  eval_batch_size: 2
+  eval_every: 1000
+  num_workers: 8
+  lr_initial: 0.0001
+  lr_gamma: 0.1
+  lr_milestones: # steps at which lr_initial <- lr_initial * lr_gamma
+    - 130794
+    - 196192
+    - 261589
+  warmup_steps: 130794
+  warmup_factor: 0.2
+  max_epochs: 7

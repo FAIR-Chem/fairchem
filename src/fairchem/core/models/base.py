@@ -8,27 +8,42 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import logging
+from abc import ABCMeta, abstractmethod
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import torch
-import torch.nn as nn
+from torch import nn
 from torch_geometric.nn import radius_graph
 
+from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import (
     compute_neighbors,
     get_pbc_distances,
     radius_graph_pbc,
 )
 
+if TYPE_CHECKING:
+    from torch_geometric.data import Batch
 
-class BaseModel(nn.Module):
-    def __init__(self, num_atoms=None, bond_feat_dim=None, num_targets=None) -> None:
-        super().__init__()
-        self.num_atoms = num_atoms
-        self.bond_feat_dim = bond_feat_dim
-        self.num_targets = num_targets
 
-    def forward(self, data):
-        raise NotImplementedError
+@dataclass
+class GraphData:
+    """Class to keep graph attributes nicely packaged."""
+
+    edge_index: torch.Tensor
+    edge_distance: torch.Tensor
+    edge_distance_vec: torch.Tensor
+    cell_offsets: torch.Tensor
+    offset_distances: torch.Tensor
+    neighbors: torch.Tensor
+    batch_full: torch.Tensor  # used for GP functionality
+    atomic_numbers_full: torch.Tensor  # used for GP functionality
+    node_offset: int = 0  # used for GP functionality
+
+
+class GraphModelMixin:
+    """Mixin Model class implementing some general convenience properties and methods."""
 
     def generate_graph(
         self,
@@ -38,10 +53,12 @@ class BaseModel(nn.Module):
         use_pbc=None,
         otf_graph=None,
         enforce_max_neighbors_strictly=None,
+        use_pbc_single=False,
     ):
         cutoff = cutoff or self.cutoff
         max_neighbors = max_neighbors or self.max_neighbors
         use_pbc = use_pbc or self.use_pbc
+        use_pbc_single = use_pbc_single or self.use_pbc_single
         otf_graph = otf_graph or self.otf_graph
 
         if enforce_max_neighbors_strictly is not None:
@@ -69,12 +86,47 @@ class BaseModel(nn.Module):
 
         if use_pbc:
             if otf_graph:
-                edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                    data,
-                    cutoff,
-                    max_neighbors,
-                    enforce_max_neighbors_strictly,
-                )
+                if use_pbc_single:
+                    (
+                        edge_index_per_system,
+                        cell_offsets_per_system,
+                        neighbors_per_system,
+                    ) = list(
+                        zip(
+                            *[
+                                radius_graph_pbc(
+                                    data[idx],
+                                    cutoff,
+                                    max_neighbors,
+                                    enforce_max_neighbors_strictly,
+                                )
+                                for idx in range(len(data))
+                            ]
+                        )
+                    )
+
+                    # atom indexs in the edge_index need to be offset
+                    atom_index_offset = data.natoms.cumsum(dim=0).roll(1)
+                    atom_index_offset[0] = 0
+                    edge_index = torch.hstack(
+                        [
+                            edge_index_per_system[idx] + atom_index_offset[idx]
+                            for idx in range(len(data))
+                        ]
+                    )
+                    cell_offsets = torch.vstack(cell_offsets_per_system)
+                    neighbors = torch.hstack(neighbors_per_system)
+                else:
+                    ## TODO this is the original call, but blows up with memory
+                    ## using two different samples
+                    ## sid='mp-675045-mp-675045-0-7' (MPTRAJ)
+                    ## sid='75396' (OC22)
+                    edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                        data,
+                        cutoff,
+                        max_neighbors,
+                        enforce_max_neighbors_strictly,
+                    )
 
             out = get_pbc_distances(
                 data.pos,
@@ -109,13 +161,16 @@ class BaseModel(nn.Module):
             )
             neighbors = compute_neighbors(data, edge_index)
 
-        return (
-            edge_index,
-            edge_dist,
-            distance_vec,
-            cell_offsets,
-            cell_offset_distances,
-            neighbors,
+        return GraphData(
+            edge_index=edge_index,
+            edge_distance=edge_dist,
+            edge_distance_vec=distance_vec,
+            cell_offsets=cell_offsets,
+            offset_distances=cell_offset_distances,
+            neighbors=neighbors,
+            node_offset=0,
+            batch_full=data.batch,
+            atomic_numbers_full=data.atomic_numbers.long(),
         )
 
     @property
@@ -130,3 +185,90 @@ class BaseModel(nn.Module):
             if "embedding" in name or "frequencies" in name or "bias" in name:
                 no_wd_list.append(name)
         return no_wd_list
+
+
+class HeadInterface(metaclass=ABCMeta):
+    @abstractmethod
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
+        """Head forward.
+
+        Arguments
+        ---------
+        data: DataBatch
+            Atomic systems as input
+        emb: dict[str->torch.Tensor]
+            Embeddings of the input as generated by the backbone
+
+        Returns
+        -------
+        outputs: dict[str->torch.Tensor]
+            Return one or more targets generated by this head
+        """
+        return
+
+
+class BackboneInterface(metaclass=ABCMeta):
+    @abstractmethod
+    def forward(self, data: Batch) -> dict[str, torch.Tensor]:
+        """Backbone forward.
+
+        Arguments
+        ---------
+        data: DataBatch
+            Atomic systems as input
+
+        Returns
+        -------
+        embedding: dict[str->torch.Tensor]
+            Return backbone embeddings for the given input
+        """
+        return
+
+
+@registry.register_model("hydra")
+class HydraModel(nn.Module, GraphModelMixin):
+    def __init__(
+        self,
+        backbone: dict,
+        heads: dict,
+        otf_graph: bool = True,
+    ):
+        super().__init__()
+        self.otf_graph = otf_graph
+
+        backbone_model_name = backbone.pop("model")
+        self.backbone: BackboneInterface = registry.get_model_class(
+            backbone_model_name
+        )(
+            **backbone,
+        )
+
+        # Iterate through outputs_cfg and create heads
+        self.output_heads: dict[str, HeadInterface] = {}
+
+        head_names_sorted = sorted(heads.keys())
+        for head_name in head_names_sorted:
+            head_config = heads[head_name]
+            if "module" not in head_config:
+                raise ValueError(
+                    f"{head_name} head does not specify module to use for the head"
+                )
+
+            module_name = head_config.pop("module")
+            self.output_heads[head_name] = registry.get_model_class(module_name)(
+                self.backbone,
+                **head_config,
+            )
+
+        self.output_heads = torch.nn.ModuleDict(self.output_heads)
+
+    def forward(self, data: Batch):
+        emb = self.backbone(data)
+        # Predict all output properties for all structures in the batch for now.
+        out = {}
+        for k in self.output_heads:
+            out.update(self.output_heads[k](data, emb))
+
+        return out

@@ -15,26 +15,6 @@ from fairchem.core.datasets import (
 )
 from fairchem.core.datasets.lmdb_database import LMDBDatabase
 
-structures = [
-    build.molecule("H2O", vacuum=4),
-    build.bulk("Cu"),
-    build.fcc111("Pt", size=[2, 2, 3], vacuum=8, periodic=True),
-]
-for atoms in structures:
-    calc = SinglePointCalculator(
-        atoms,
-        energy=1,
-        forces=atoms.positions,
-        # there is an issue with ASE db when writing a db with 3x3 stress it is flattened to (9,) and then
-        # errors when trying to read it
-        stress=np.random.random((6,)),
-    )
-    atoms.calc = calc
-    atoms.info["extensive_property"] = 3 * len(atoms)
-    atoms.info["tensor_property"] = np.random.random((6, 6))
-
-structures[2].set_pbc(True)
-
 
 @pytest.fixture(
     params=[
@@ -46,7 +26,7 @@ structures[2].set_pbc(True)
         "aselmdb_dataset",
     ],
 )
-def ase_dataset(request, tmp_path_factory):
+def ase_dataset(request, structures, tmp_path_factory):
     tmp_path = tmp_path_factory.mktemp("dataset")
     mult = 1
     a2g_args = {
@@ -110,7 +90,7 @@ def ase_dataset(request, tmp_path_factory):
     return dataset, mult
 
 
-def test_ase_dataset(ase_dataset):
+def test_ase_dataset(ase_dataset, structures):
     dataset, mult = ase_dataset
     assert len(dataset) == mult * len(structures)
     for data in dataset:
@@ -121,7 +101,7 @@ def test_ase_dataset(ase_dataset):
         assert isinstance(data.extensive_property, int)
 
 
-def test_ase_read_dataset(tmp_path) -> None:
+def test_ase_read_dataset(tmp_path, structures):
     # unfortunately there is currently no clean (already implemented) way to save atoms.info when saving
     # individual structures - so test separately
     for i, structure in enumerate(structures):
@@ -137,13 +117,16 @@ def test_ase_read_dataset(tmp_path) -> None:
     assert len(dataset) == len(structures)
     data = dataset[0]
     del data
-    dataset.close_db()
 
 
-def test_ase_metadata_guesser(ase_dataset) -> None:
+def test_ase_get_metadata(ase_dataset):
+    assert ase_dataset[0].get_metadata("natoms", [0])[0] == 3
+
+
+def test_ase_metadata_guesser(ase_dataset):
     dataset, _ = ase_dataset
 
-    metadata = dataset.get_metadata()
+    metadata = dataset.sample_property_metadata()
 
     # Confirm energy metadata guessed properly
     assert metadata["targets"]["energy"]["extensive"] is False
@@ -171,7 +154,7 @@ def test_ase_metadata_guesser(ase_dataset) -> None:
     assert metadata["targets"]["info.tensor_property"]["type"] == "per-image"
 
 
-def test_db_add_delete(tmp_path) -> None:
+def test_db_add_delete(tmp_path, structures):
     database = db.connect(tmp_path / "asedb.db")
     for _i, atoms in enumerate(structures):
         database.write(atoms, data=atoms.info)
@@ -192,10 +175,9 @@ def test_db_add_delete(tmp_path) -> None:
 
     dataset = AseDBDataset(config={"src": str(tmp_path / "asedb.db")})
     assert len(dataset) == orig_len + len(new_structures) - 1
-    dataset.close_db()
 
 
-def test_ase_multiread_dataset(tmp_path) -> None:
+def test_ase_multiread_dataset(tmp_path):
     atoms_objects = [build.bulk("Cu", a=a) for a in np.linspace(3.5, 3.7, 10)]
 
     energies = np.linspace(1, 0, len(atoms_objects))
@@ -224,13 +206,17 @@ def test_ase_multiread_dataset(tmp_path) -> None:
         f.write(f"{tmp_path / 'test.traj'} {len(atoms_objects)}")
 
     dataset = AseReadMultiStructureDataset(
-        config={"index_file": str(tmp_path / "test_index_file")},
+        config={
+            "src": str(tmp_path),
+            "index_file": str(tmp_path / "test_index_file"),
+        },
     )
 
     assert len(dataset) == len(atoms_objects)
 
     dataset = AseReadMultiStructureDataset(
         config={
+            "src": str(tmp_path),
             "index_file": str(tmp_path / "test_index_file"),
             "a2g_args": {
                 "r_energy": True,
