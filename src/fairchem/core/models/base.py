@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import copy
 import logging
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
@@ -200,6 +201,9 @@ class HydraModel(nn.Module, GraphModelMixin):
     ):
         super().__init__()
         self.otf_graph = otf_graph
+        # make a copy so we don't modify the original config
+        backbone = copy.deepcopy(backbone)
+        heads = copy.deepcopy(heads)
 
         backbone_model_name = backbone.pop("model")
         self.backbone: BackboneInterface = registry.get_model_class(

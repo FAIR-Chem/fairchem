@@ -15,10 +15,12 @@ import os
 import random
 from abc import ABC, abstractmethod
 from itertools import chain
+import shutil
 from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
+from fairchem.core.models.finetune_hydra import FTStartingConfig, FineTuneModelInterface, get_hydra_model_config_from_checkpoint
 import torch
 import torch.nn as nn
 import yaml
@@ -36,6 +38,7 @@ from fairchem.core.common.utils import (
     get_commit_hash,
     get_loss_module,
     load_state_dict,
+    match_state_dict,
     save_checkpoint,
     update_config,
 )
@@ -112,8 +115,7 @@ class BaseTrainer(ABC):
         self.config = {
             "task": task,
             "trainer": name,
-            "model": aii(model.pop("name"), str),
-            "model_attributes": model,
+            "model": model,
             "outputs": outputs,
             "optim": optimizer,
             "loss_functions": loss_functions,
@@ -293,7 +295,7 @@ class BaseTrainer(ABC):
 
     def load_datasets(self) -> None:
         self.ocp_collater = OCPCollater(
-            self.config["model_attributes"].get("otf_graph", False)
+            self.config["model"].get("otf_graph", True)
         )
         self.train_loader = None
         self.val_loader = None
@@ -506,16 +508,20 @@ class BaseTrainer(ABC):
     def load_model(self) -> None:
         # Build model
         if distutils.is_master():
-            logging.info(f"Loading model: {self.config['model']}")
+            logging.info(f"Loading model: {self.config['model']['name']}")
 
-        self.model = registry.get_model_class(self.config["model"])(
-            **self.config["model_attributes"],
+        model_config_copy = copy.deepcopy(self.config["model"])
+        model_name = model_config_copy.pop("name")
+        self.model = registry.get_model_class(model_name)(
+            **model_config_copy,
         ).to(self.device)
+
+        num_params = sum(p.numel() for p in self.model.parameters())
 
         if distutils.is_master():
             logging.info(
                 f"Loaded {self.model.__class__.__name__} with "
-                f"{self.model.num_params} parameters."
+                f"{num_params} parameters."
             )
 
         if self.logger is not None:
@@ -525,11 +531,11 @@ class BaseTrainer(ABC):
                 self.logger.watch(
                     self.model, log_freq=int(self.config["logger"]["watch"])
                 )
-            self.logger.log_summary({"num_params": self.model.num_params})
+            self.logger.log_summary({"num_params": num_params})
 
         if distutils.initialized() and not self.config["noddp"]:
             self.model = DistributedDataParallel(
-                self.model, device_ids=None if self.cpu else [self.device]
+                self.model, device_ids=None if self.cpu else [self.device], find_unused_parameters=True
             )
 
     @property
@@ -556,28 +562,8 @@ class BaseTrainer(ABC):
         self.best_val_metric = checkpoint.get("best_val_metric", None)
         self.primary_metric = checkpoint.get("primary_metric", None)
 
-        # Match the "module." count in the keys of model and checkpoint state_dict
-        # DataParallel model has 1 "module.",  DistributedDataParallel has 2 "module."
-        # Not using either of the above two would have no "module."
-
-        ckpt_key_count = next(iter(checkpoint["state_dict"])).count("module")
-        mod_key_count = next(iter(self.model.state_dict())).count("module")
-        key_count_diff = mod_key_count - ckpt_key_count
-
-        if key_count_diff > 0:
-            new_dict = {
-                key_count_diff * "module." + k: v
-                for k, v in checkpoint["state_dict"].items()
-            }
-        elif key_count_diff < 0:
-            new_dict = {
-                k[len("module.") * abs(key_count_diff) :]: v
-                for k, v in checkpoint["state_dict"].items()
-            }
-        else:
-            new_dict = checkpoint["state_dict"]
-
-        strict = self.config["task"].get("strict_load", True)
+        new_dict = match_state_dict(self.model.state_dict(), checkpoint["state_dict"])
+        strict = self.config.get("task", dict()).get("strict_load", True)
         load_state_dict(self.model, new_dict, strict=strict)
 
         if "optimizer" in checkpoint:
@@ -718,6 +704,12 @@ class BaseTrainer(ABC):
         training_state: bool = True,
     ) -> str | None:
         if not self.is_debug and distutils.is_master():
+            # if we are using a FineTune-able model, then we need to modify the config to remove 
+            # the original starting checkpoint so it can be loaded standalone, can move this to save function
+            if isinstance(self.model, FineTuneModelInterface):
+                starting_config = FTStartingConfig(self.config["model"][FTStartingConfig.STARTING_CONFIG])
+                self.config["model"][FTStartingConfig.STARTING_CONFIG] = starting_config.get_standalone_config()
+
             state = {
                 "state_dict": self.model.state_dict(),
                 "normalizers": {
