@@ -47,6 +47,7 @@ class eSCN(nn.Module, GraphModelMixin):
 
     Args:
         use_pbc (bool):         Use periodic boundary conditions
+        use_pbc_single (bool):         Process batch PBC graphs one at a time
         regress_forces (bool):  Compute forces
         otf_graph (bool):       Compute graph On The Fly (OTF)
         max_neighbors (int):    Maximum number of neighbors per atom
@@ -69,6 +70,7 @@ class eSCN(nn.Module, GraphModelMixin):
     def __init__(
         self,
         use_pbc: bool = True,
+        use_pbc_single: bool = False,
         regress_forces: bool = True,
         otf_graph: bool = False,
         max_neighbors: int = 40,
@@ -100,6 +102,7 @@ class eSCN(nn.Module, GraphModelMixin):
 
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
+        self.use_pbc_single = use_pbc_single
         self.cutoff = cutoff
         self.otf_graph = otf_graph
         self.show_timing_info = show_timing_info
@@ -527,7 +530,7 @@ class eSCNBackbone(eSCN, BackboneInterface):
 class eSCNEnergyHead(nn.Module, HeadInterface):
     def __init__(self, backbone):
         super().__init__()
-
+        backbone.energy_block = None
         # Output blocks for energy and forces
         self.energy_block = EnergyBlock(
             backbone.sphere_channels_all, backbone.num_sphere_samples, backbone.act
@@ -547,7 +550,7 @@ class eSCNEnergyHead(nn.Module, HeadInterface):
 class eSCNForceHead(nn.Module, HeadInterface):
     def __init__(self, backbone):
         super().__init__()
-
+        backbone.force_block = None
         self.force_block = ForceBlock(
             backbone.sphere_channels_all, backbone.num_sphere_samples, backbone.act
         )
