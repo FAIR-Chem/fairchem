@@ -93,7 +93,7 @@ def get_gp_rank() -> int:
 
 
 def get_dp_world_size() -> int:
-    return dist.get_world_size(group=get_dp_group())
+    return dist.get_world_size(group=get_dp_group()) if dist.is_initialized() else 1
 
 
 def get_gp_world_size() -> int:
