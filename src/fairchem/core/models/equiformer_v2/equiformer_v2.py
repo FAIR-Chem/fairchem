@@ -61,6 +61,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
 
     Args:
         use_pbc (bool):         Use periodic boundary conditions
+        use_pbc_single (bool):         Process batch PBC graphs one at a time
         regress_forces (bool):  Compute forces
         otf_graph (bool):       Compute graph On The Fly (OTF)
         max_neighbors (int):    Maximum number of neighbors per atom
@@ -116,6 +117,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
     def __init__(
         self,
         use_pbc: bool = True,
+        use_pbc_single: bool = False,
         regress_forces: bool = True,
         otf_graph: bool = True,
         max_neighbors: int = 500,
@@ -169,6 +171,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
             raise ImportError
 
         self.use_pbc = use_pbc
+        self.use_pbc_single = use_pbc_single
         self.regress_forces = regress_forces
         self.otf_graph = otf_graph
         self.max_neighbors = max_neighbors
@@ -681,6 +684,12 @@ class EquiformerV2(nn.Module, GraphModelMixin):
 
 @registry.register_model("equiformer_v2_backbone")
 class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # TODO remove these once we deprecate/stop-inheriting EquiformerV2 class
+        self.energy_block = None
+        self.force_block = None
+
     @conditional_grad(torch.enable_grad())
     def forward(self, data: Batch) -> dict[str, torch.Tensor]:
         self.batch_size = len(data.natoms)
@@ -813,6 +822,7 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
 class EquiformerV2EnergyHead(nn.Module, HeadInterface):
     def __init__(self, backbone):
         super().__init__()
+
         self.avg_num_nodes = backbone.avg_num_nodes
         self.energy_block = FeedForwardNetwork(
             backbone.sphere_channels,
@@ -826,6 +836,8 @@ class EquiformerV2EnergyHead(nn.Module, HeadInterface):
             backbone.use_grid_mlp,
             backbone.use_sep_s2_act,
         )
+        self.apply(backbone._init_weights)
+        self.apply(backbone._uniform_init_rad_func_linear_weights)
 
     def forward(self, data: Batch, emb: dict[str, torch.Tensor | GraphData]):
         node_energy = self.energy_block(emb["node_embedding"])
@@ -869,6 +881,8 @@ class EquiformerV2ForceHead(nn.Module, HeadInterface):
             backbone.use_sep_s2_act,
             alpha_drop=0.0,
         )
+        self.apply(backbone._init_weights)
+        self.apply(backbone._uniform_init_rad_func_linear_weights)
 
     def forward(self, data: Batch, emb: dict[str, torch.Tensor]):
         forces = self.force_block(

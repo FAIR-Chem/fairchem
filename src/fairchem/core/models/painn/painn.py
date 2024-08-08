@@ -73,6 +73,7 @@ class PaiNN(nn.Module, GraphModelMixin):
         regress_forces: bool = True,
         direct_forces: bool = True,
         use_pbc: bool = True,
+        use_pbc_single: bool = False,
         otf_graph: bool = True,
         num_elements: int = 83,
         scale_file: str | None = None,
@@ -92,6 +93,7 @@ class PaiNN(nn.Module, GraphModelMixin):
         self.direct_forces = direct_forces
         self.otf_graph = otf_graph
         self.use_pbc = use_pbc
+        self.use_pbc_single = use_pbc_single
 
         # Borrowed from GemNet.
         self.symmetric_edge_symmetrization = False
@@ -669,7 +671,7 @@ class GatedEquivariantBlock(nn.Module):
 class PaiNNEnergyHead(nn.Module, HeadInterface):
     def __init__(self, backbone):
         super().__init__()
-
+        backbone.out_energy = None
         self.out_energy = nn.Sequential(
             nn.Linear(backbone.hidden_channels, backbone.hidden_channels // 2),
             ScaledSiLU(),
@@ -695,6 +697,7 @@ class PaiNNForceHead(nn.Module, HeadInterface):
         self.direct_forces = backbone.direct_forces
 
         if self.direct_forces:
+            backbone.out_forces = None
             self.out_forces = PaiNNOutput(backbone.hidden_channels)
 
     def forward(
