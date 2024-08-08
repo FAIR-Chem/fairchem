@@ -530,7 +530,7 @@ class eSCNBackbone(eSCN, BackboneInterface):
 class eSCNEnergyHead(nn.Module, HeadInterface):
     def __init__(self, backbone):
         super().__init__()
-
+        backbone.energy_block = None
         # Output blocks for energy and forces
         self.energy_block = EnergyBlock(
             backbone.sphere_channels_all, backbone.num_sphere_samples, backbone.act
@@ -550,7 +550,7 @@ class eSCNEnergyHead(nn.Module, HeadInterface):
 class eSCNForceHead(nn.Module, HeadInterface):
     def __init__(self, backbone):
         super().__init__()
-
+        backbone.force_block = None
         self.force_block = ForceBlock(
             backbone.sphere_channels_all, backbone.num_sphere_samples, backbone.act
         )
