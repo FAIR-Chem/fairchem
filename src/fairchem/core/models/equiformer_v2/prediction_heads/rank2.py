@@ -99,7 +99,7 @@ class Rank2DecompositionEdgeBlock(nn.Module):
     Args:
         emb_size (int):     Size of edge embedding used to compute outer product
         num_layers (int):   Number of layers of the MLP
-        edge_level (bool):  Apply MLP to edges' outer product
+        edge_level (bool):   If true apply MLP at edge level before pooling, otherwise use MLP at nodes after pooling
         extensive (bool):   Whether to sum or average the outer products
     """
 
@@ -244,7 +244,7 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
         """
         Args:
             backbone: Backbone model that the head is attached to
-            decompose: Wether to decompose the rank2 tensor into isotropic and anisotropic components
+            decompose: Whether to decompose the rank2 tensor into isotropic and anisotropic components
             use_source_target_embedding: Whether to use both source and target atom embeddings
             extensive: Whether to do sum-pooling (extensive) vs mean pooling (intensive).
         """
