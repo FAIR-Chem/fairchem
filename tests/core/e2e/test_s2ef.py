@@ -210,7 +210,9 @@ These should catch errors such as shape mismatches or otherways to code wise bre
 
 
 class TestSmoke:
-    def smoke_test_train(self, input_yaml, tutorial_val_src, otf_norms=False):
+    def smoke_test_train(
+        self, input_yaml, tutorial_val_src, world_size, num_workers, otf_norms=False
+    ):
         with tempfile.TemporaryDirectory() as tempdirname:
             # first train a very simple model, checkpoint
             train_rundir = Path(tempdirname) / "train"
@@ -221,7 +223,12 @@ class TestSmoke:
                 rundir=str(train_rundir),
                 input_yaml=input_yaml,
                 update_dict_with={
-                    "optim": {"max_epochs": 2, "eval_every": 8, "batch_size": 5},
+                    "optim": {
+                        "max_epochs": 2,
+                        "eval_every": 8,
+                        "batch_size": 5,
+                        "num_workers": num_workers,
+                    },
                     "dataset": oc20_lmdb_train_and_val_from_paths(
                         train_src=str(tutorial_val_src),
                         val_src=str(tutorial_val_src),
@@ -231,6 +238,7 @@ class TestSmoke:
                 },
                 save_checkpoint_to=checkpoint_path,
                 save_predictions_to=training_predictions_filename,
+                world_size=world_size,
             )
             assert "train/energy_mae" in acc.Tags()["scalars"]
             assert "val/energy_mae" in acc.Tags()["scalars"]
@@ -313,10 +321,21 @@ class TestSmoke:
         configs,
         tutorial_val_src,
     ):
+        # test without ddp
         self.smoke_test_train(
             input_yaml=configs[model_name],
             tutorial_val_src=tutorial_val_src,
             otf_norms=otf_norms,
+            world_size=0,
+            num_workers=2,
+        )
+        # test with ddp but no wokers
+        self.smoke_test_train(
+            input_yaml=configs[model_name],
+            tutorial_val_src=tutorial_val_src,
+            otf_norms=otf_norms,
+            world_size=1,
+            num_workers=0,
         )
 
     def test_use_pbc_single(self, configs, tutorial_val_src, torch_deterministic):
@@ -341,11 +360,21 @@ class TestSmoke:
     @pytest.mark.parametrize(
         ("world_size", "ddp"),
         [
-            pytest.param(2, True),
+            pytest.param(
+                2,
+                True,
+            ),
             pytest.param(0, False),
         ],
     )
-    def test_ddp(self, world_size, ddp, configs, tutorial_val_src, torch_deterministic):
+    def test_ddp(
+        self,
+        world_size,
+        ddp,
+        configs,
+        tutorial_val_src,
+        torch_deterministic,
+    ):
         with tempfile.TemporaryDirectory() as tempdirname:
             tempdir = Path(tempdirname)
             extra_args = {"seed": 0}

@@ -1431,6 +1431,9 @@ class GemNetOCEnergyAndGradForceHead(nn.Module, HeadInterface):
         self.direct_forces = backbone.direct_forces
         self.force_scaler = backbone.force_scaler
 
+        backbone.out_mlp_E = None
+        backbone.out_energy = None
+
         out_mlp_E = [
             Dense(
                 backbone.atom_emb.emb_size * (len(backbone.int_blocks) + 1),
@@ -1495,6 +1498,8 @@ class GemNetOCForceHead(nn.Module, HeadInterface):
 
         emb_size_edge = backbone.edge_emb.dense.linear.out_features
         if self.direct_forces:
+            backbone.out_mlp_F = None
+            backbone.out_forces = None
             out_mlp_F = [
                 Dense(
                     emb_size_edge * (len(backbone.int_blocks) + 1),
