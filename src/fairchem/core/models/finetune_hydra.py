@@ -8,7 +8,7 @@ import os
 from typing import TYPE_CHECKING
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import load_state_dict, match_state_dict
-from fairchem.core.models.base import HeadInterface
+from fairchem.core.models.base import BackboneInterface, HeadInterface, HydraInterface
 from torch import nn
 import torch
 import logging
@@ -34,18 +34,17 @@ def get_hydra_model_config_from_checkpoint(checkpoint_path: str) -> dict:
     return checkpoint["config"]["model"]
 
 
-def load_hydra_model(checkpoint_path: str) -> nn.Module:
+def load_hydra_model(checkpoint_path: str) -> HydraInterface:
     if not os.path.isfile(checkpoint_path):
         raise FileNotFoundError(
             errno.ENOENT, "Checkpoint file not found", checkpoint_path
         )
     logging.info(f"Loading checkpoint from: {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path)
-    assert checkpoint["config"]["model"]["name"] in FTConfig.SUPPORTED_FINETUNE_MODELS, \
-        f"Currently, can only finetune from the following models {FTConfig.SUPPORTED_FINETUNE_MODELS}"
     config_copy = copy.deepcopy(checkpoint["config"]["model"])
-    config_copy.pop("name")
-    hydra_model = registry.get_model_class("hydra")(**config_copy)
+    name = config_copy.pop("name")
+    hydra_model = registry.get_model_class(name)(**config_copy)
+    assert isinstance(hydra_model, HydraInterface), "Can only load models with the HydraInterface"
     matched_dict = match_state_dict(hydra_model.state_dict(), checkpoint["state_dict"])
     load_state_dict(hydra_model, matched_dict, strict=True)
     return hydra_model
@@ -57,8 +56,6 @@ class FTConfig:
     STARTING_MODEL = "starting_model"
     MODE = "mode"
     HEADS = "heads"
-    # currently only support finetuning from hydra, we can however easily add finetune-hydra as well if needed for multi-round finetune
-    SUPPORTED_FINETUNE_MODELS = ["hydra"]
 
     def __init__(self, config: dict):
         self.config = config
@@ -74,13 +71,14 @@ class FTConfig:
     def load_model(self) -> nn.Module:
         # if provided a checkpoint to start then load the model and weights from the given checkpoint
         if FTConfig.CHECKPOINT_PROPERTY in self.config:
-            hydra_model = load_hydra_model(self.config[FTConfig.CHECKPOINT_PROPERTY])
+            hydra_model: HydraInterface = load_hydra_model(self.config[FTConfig.CHECKPOINT_PROPERTY])
         # if provided a hydra config to start, build from the starting hydra model
         elif FTConfig.STARTING_MODEL in self.config:
             # register model from hydra_config
             config_copy = copy.deepcopy(self.config[FTConfig.STARTING_MODEL])
             name = config_copy.pop("name")
             hydra_model = registry.get_model_class(name)(**config_copy)
+            assert isinstance(hydra_model, HydraInterface)
 
         num_params = sum(p.numel() for p in hydra_model.parameters())
         logging.info(f"Loaded Original hydra model with {num_params} params")
@@ -117,17 +115,17 @@ class FineTuneModelInterface(ABC):
         
 
 @registry.register_model("finetune_hydra")
-class FineTuneHydra(nn.Module, FineTuneModelInterface):
+class FineTuneHydra(nn.Module, HydraInterface, FineTuneModelInterface):
     def __init__(self, finetune_config: dict):
         super().__init__()
         ft_config = FTConfig(finetune_config)
         logging.info(f"Initializing FineTuneHydra model in {ft_config.mode} mode")
-        hydra_model = ft_config.load_model()
-        self.backbone = hydra_model.backbone
+        hydra_model: HydraInterface = ft_config.load_model()
+        self.backbone: BackboneInterface = hydra_model.get_backbone()
 
         if ft_config.mode == FineTuneMode.DATA_ONLY:
             # in this mode, we just use the model as is and train on it with new data
-            self.output_heads = hydra_model.output_heads
+            self.output_heads: dict[str, HeadInterface] = hydra_model.get_output_heads()
         elif ft_config.mode == FineTuneMode.RETAIN_BACKBONE_ONLY:
             # in this mode, we keep the backbone but attach new output heads specified in head config
             self.output_heads: dict[str, HeadInterface] = {}
@@ -155,3 +153,9 @@ class FineTuneHydra(nn.Module, FineTuneModelInterface):
         for k in self.output_heads.keys():
             out.update(self.output_heads[k](data, emb))
         return out
+    
+    def get_backbone(self) -> BackboneInterface:
+        return self.backbone
+    
+    def get_heads(self) -> dict[str, HeadInterface]:
+        return self.output_heads

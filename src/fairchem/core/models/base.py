@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import copy
 import logging
-from abc import ABCMeta, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -190,9 +190,16 @@ class BackboneInterface(metaclass=ABCMeta):
         """
         return
 
+class HydraInterface(ABC):
+    # a hydra has a backbone and heads
+    def get_backbone(self) -> BackboneInterface:
+        raise not NotImplementedError
+    
+    def get_heads(self) -> dict[str, HeadInterface]:
+        raise not NotImplementedError
 
 @registry.register_model("hydra")
-class HydraModel(nn.Module, GraphModelMixin):
+class HydraModel(nn.Module, GraphModelMixin, HydraInterface):
     def __init__(
         self,
         backbone: dict,
@@ -239,3 +246,9 @@ class HydraModel(nn.Module, GraphModelMixin):
             out.update(self.output_heads[k](data, emb))
 
         return out
+    
+    def get_backbone(self) -> BackboneInterface:
+        return self.backbone
+    
+    def get_heads(self) -> dict[str, HeadInterface]:
+        return self.output_heads

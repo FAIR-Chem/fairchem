@@ -39,6 +39,8 @@ model:
     mode: RETAIN_BACKBONE_ONLY
     starting_checkpoint: "./checkpoints/2024-08-07-20-20-16-test/checkpoint.pt"
     heads:
+      energy:
+        module: equiformer_v2_energy_head
       forces:
         module: equiformer_v2_force_head
 
