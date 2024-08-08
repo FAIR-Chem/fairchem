@@ -142,6 +142,12 @@ class BaseTrainer(ABC):
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp and not self.cpu else None
+        self.train_batch_size = self.config["optim"]["batch_size"]
+        self.eval_batch_size =  self.config["optim"].get("eval_batch_size", self.train_batch_size)
+        if self.logger is not None:
+            self.logger.log_summary({"global_batch_size": gp_utils.get_dp_world_size() * self.train_batch_size,
+                                     "gp_size": gp_utils.get_gp_world_size(),
+                                     "dp_size": gp_utils.get_dp_world_size()})
 
         # Fill in SLURM information in config, if applicable
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
@@ -321,7 +327,7 @@ class BaseTrainer(ABC):
             )
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
-                self.config["optim"]["batch_size"],
+                self.train_batch_size,
                 shuffle=True,
             )
             self.train_loader = self.get_dataloader(
@@ -352,7 +358,7 @@ class BaseTrainer(ABC):
             self.val_sampler = self.get_sampler(
                 self.val_dataset,
                 self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
+                    "eval_batch_size", self.train_batch_size
                 ),
                 shuffle=False,
             )
@@ -373,9 +379,7 @@ class BaseTrainer(ABC):
             )
             self.test_sampler = self.get_sampler(
                 self.test_dataset,
-                self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
-                ),
+                self.eval_batch_size,
                 shuffle=False,
             )
             self.test_loader = self.get_dataloader(
@@ -395,9 +399,7 @@ class BaseTrainer(ABC):
             )(relax_config)
             self.relax_sampler = self.get_sampler(
                 self.relax_dataset,
-                self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
-                ),
+                self.eval_batch_size,
                 shuffle=False,
             )
             self.relax_loader = self.get_dataloader(
