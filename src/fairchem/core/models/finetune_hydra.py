@@ -1,3 +1,5 @@
+from __future__ import annotations 
+
 from abc import ABC
 import copy
 from enum import Enum
@@ -6,12 +8,14 @@ import os
 from typing import TYPE_CHECKING
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import load_state_dict, match_state_dict
+from fairchem.core.models.base import HeadInterface
 from torch import nn
 import torch
 import logging
 
 if TYPE_CHECKING:
     from torch_geometric.data import Batch
+
 
 class FineTuneMode(Enum):
     # in DATA_ONLY, we load the entire model and only finetune on new data
@@ -37,7 +41,8 @@ def load_hydra_model(checkpoint_path: str) -> nn.Module:
         )
     logging.info(f"Loading checkpoint from: {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path)
-    assert checkpoint["config"]["model"]["name"] == "hydra", "Can only finetune a hydra model"
+    assert checkpoint["config"]["model"]["name"] in FTConfig.SUPPORTED_FINETUNE_MODELS, \
+        f"Currently, can only finetune from the following models {FTConfig.SUPPORTED_FINETUNE_MODELS}"
     config_copy = copy.deepcopy(checkpoint["config"]["model"])
     config_copy.pop("name")
     hydra_model = registry.get_model_class("hydra")(**config_copy)
@@ -46,24 +51,34 @@ def load_hydra_model(checkpoint_path: str) -> nn.Module:
     return hydra_model
 
 
-class FTStartingConfig:
+class FTConfig:
+    FT_CONFIG_NAME = "finetune_config"
     CHECKPOINT_PROPERTY = "starting_checkpoint"
     STARTING_MODEL = "starting_model"
-    STARTING_CONFIG = "starting_config"
+    MODE = "mode"
+    HEADS = "heads"
+    # currently only support finetuning from hydra, we can however easily add finetune-hydra as well if needed for multi-round finetune
+    SUPPORTED_FINETUNE_MODELS = ["hydra"]
 
     def __init__(self, config: dict):
         self.config = config
-        assert (FTStartingConfig.CHECKPOINT_PROPERTY in self.config) ^ (FTStartingConfig.STARTING_MODEL in self.config), \
+        self._mode = FineTuneMode[self.config[FTConfig.MODE]]
+        assert (FTConfig.CHECKPOINT_PROPERTY in self.config) ^ (FTConfig.STARTING_MODEL in self.config), \
             "Only one of checkpoint or starting model config can be provided to FineTuneHydra!"
+        assert FTConfig.MODE in self.config
+        if self._mode == FineTuneMode.RETAIN_BACKBONE_ONLY:
+            # in this mode, we keep the backbone but attach new output heads specified in head config
+            assert FTConfig.HEADS in self.config, "heads cannot be empty when using RETAIN_BACKBONE_ONLY mode!"
+
 
     def load_model(self) -> nn.Module:
         # if provided a checkpoint to start then load the model and weights from the given checkpoint
-        if FTStartingConfig.CHECKPOINT_PROPERTY in self.config:
-            hydra_model = load_hydra_model(self.config[FTStartingConfig.CHECKPOINT_PROPERTY])
+        if FTConfig.CHECKPOINT_PROPERTY in self.config:
+            hydra_model = load_hydra_model(self.config[FTConfig.CHECKPOINT_PROPERTY])
         # if provided a hydra config to start, build from the starting hydra model
-        elif FTStartingConfig.STARTING_MODEL in self.config:
+        elif FTConfig.STARTING_MODEL in self.config:
             # register model from hydra_config
-            config_copy = copy.deepcopy(self.config[FTStartingConfig.STARTING_MODEL])
+            config_copy = copy.deepcopy(self.config[FTConfig.STARTING_MODEL])
             name = config_copy.pop("name")
             hydra_model = registry.get_model_class(name)(**config_copy)
 
@@ -73,49 +88,68 @@ class FTStartingConfig:
 
     def get_standalone_config(self) -> dict:
         # replace a config with a checkpoint with one that has the model config only
-        if FTStartingConfig.CHECKPOINT_PROPERTY in self.config:
+        # this is required for standalone prediction (so we don't need to ship the original checkpoint),
+        # multi-round finetuning, and better robustness
+        standalone_config = {"name": "finetune_hydra", FTConfig.FT_CONFIG_NAME: self.config}
+        if FTConfig.CHECKPOINT_PROPERTY in self.config:
             # modify the config to store the original model config inside model attrs so we dont need the checkpoint again when loading from checkpoint
             new_config = copy.deepcopy(self.config)
-            new_config[FTStartingConfig.STARTING_CONFIG] = get_hydra_model_config_from_checkpoint(self.config[FTStartingConfig.CHECKPOINT_PROPERTY])
-            del new_config[FTStartingConfig.CHECKPOINT_PROPERTY]
-            return new_config
+            new_config[FTConfig.STARTING_MODEL] = get_hydra_model_config_from_checkpoint(self.config[FTConfig.CHECKPOINT_PROPERTY])
+            del new_config[FTConfig.CHECKPOINT_PROPERTY]
+            standalone_config[FTConfig.FT_CONFIG_NAME] = new_config
+            return standalone_config
         else:
-            return self.config
+            return standalone_config
+
+    @property
+    def mode(self) -> FineTuneMode:
+        return self._mode
+
+    @property
+    def head_config(self) -> dict:
+        return copy.deepcopy(self.config[FTConfig.HEADS])
+        
 
 
 class FineTuneModelInterface(ABC):
-    def __init__(self, 
-                 mode: FineTuneMode,
-                 finetune_config: dict,
-                 tasks_config: dict | None = None):
+    def __init__(self, finetune_config: dict):
         pass
         
 
 @registry.register_model("finetune_hydra")
 class FineTuneHydra(nn.Module, FineTuneModelInterface):
-    def __init__(
-        self,
-        mode: FineTuneMode,
-        starting_config: dict,
-        tasks_config: dict | None = None,
-    ):
+    def __init__(self, finetune_config: dict):
         super().__init__()
-        self.mode = FineTuneMode[mode]
-        logging.info(f"Initializing FineTuneHydra model in {self.mode} mode")
-        ft_config = FTStartingConfig(starting_config)
+        ft_config = FTConfig(finetune_config)
+        logging.info(f"Initializing FineTuneHydra model in {ft_config.mode} mode")
         hydra_model = ft_config.load_model()
         self.backbone = hydra_model.backbone
 
-        if self.mode == FineTuneMode.DATA_ONLY:
+        if ft_config.mode == FineTuneMode.DATA_ONLY:
             # in this mode, we just use the model as is and train on it with new data
             self.output_heads = hydra_model.output_heads
-        elif self.mode == FineTuneMode.RETAIN_BACKBONE_ONLY:
-            # in this mode, we keep the backbone but attach new output heads specified in tasks_config
-            assert tasks_config, "tasks_config cannot be empty when using RETAIN_BACKBONE_ONLY mode!"
-            # initialize new output heads, throw away old ones
+        elif ft_config.mode == FineTuneMode.RETAIN_BACKBONE_ONLY:
+            # in this mode, we keep the backbone but attach new output heads specified in head config
+            self.output_heads: dict[str, HeadInterface] = {}
+            heads_config = ft_config.head_config
+            head_names_sorted = sorted(heads_config.keys())
+            for head_name in head_names_sorted:
+                head_config = heads_config[head_name]
+                if "module" not in head_config:
+                    raise ValueError(
+                        f"{head_name} head does not specify module to use for the head"
+                    )
 
+                module_name = head_config.pop("module")
+                self.output_heads[head_name] = registry.get_model_class(module_name)(
+                    self.backbone,
+                    **head_config,
+                )
+                num_params = sum(p.numel() for p in self.output_heads[head_name].parameters())
+                logging.info(f"Attaching new output head: {module_name} with {num_params} params")
+            self.output_heads = torch.nn.ModuleDict(self.output_heads)
 
-    def forward(self, data):
+    def forward(self, data: Batch):
         emb = self.backbone(data)
         out = {}
         for k in self.output_heads.keys():

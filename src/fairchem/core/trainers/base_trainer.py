@@ -15,12 +15,11 @@ import os
 import random
 from abc import ABC, abstractmethod
 from itertools import chain
-import shutil
 from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
-from fairchem.core.models.finetune_hydra import FTStartingConfig, FineTuneModelInterface, get_hydra_model_config_from_checkpoint
+from fairchem.core.models.finetune_hydra import FTConfig, FineTuneModelInterface
 import torch
 import torch.nn as nn
 import yaml
@@ -707,8 +706,7 @@ class BaseTrainer(ABC):
             # if we are using a FineTune-able model, then we need to modify the config to remove 
             # the original starting checkpoint so it can be loaded standalone, can move this to save function
             if isinstance(self.model, FineTuneModelInterface):
-                starting_config = FTStartingConfig(self.config["model"][FTStartingConfig.STARTING_CONFIG])
-                self.config["model"][FTStartingConfig.STARTING_CONFIG] = starting_config.get_standalone_config()
+                self.config["model"] = FTConfig(self.config["model"][FTConfig.FT_CONFIG_NAME]).get_standalone_config()
 
             state = {
                 "state_dict": self.model.state_dict(),
