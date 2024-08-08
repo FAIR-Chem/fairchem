@@ -144,10 +144,6 @@ class BaseTrainer(ABC):
         self.scaler = torch.cuda.amp.GradScaler() if amp and not self.cpu else None
         self.train_batch_size = self.config["optim"]["batch_size"]
         self.eval_batch_size =  self.config["optim"].get("eval_batch_size", self.train_batch_size)
-        if self.logger is not None:
-            self.logger.log_summary({"global_batch_size": gp_utils.get_dp_world_size() * self.train_batch_size,
-                                     "gp_size": gp_utils.get_gp_world_size(),
-                                     "dp_size": gp_utils.get_dp_world_size()})
 
         # Fill in SLURM information in config, if applicable
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
@@ -200,7 +196,13 @@ class BaseTrainer(ABC):
         self.train_dataset = None
         self.val_dataset = None
         self.test_dataset = None
+        self.logger = None
         self.load()
+        if self.logger is not None:
+            self.logger.log_summary({"global_batch_size": gp_utils.get_dp_world_size() * self.train_batch_size,
+                                     "gp_size": gp_utils.get_gp_world_size(),
+                                     "dp_size": gp_utils.get_dp_world_size()})
+
 
     @abstractmethod
     def train(self, disable_eval_tqdm: bool = False) -> None:
@@ -246,7 +248,6 @@ class BaseTrainer(ABC):
         self.set_seed(self.config["cmd"]["seed"])
 
     def load_logger(self) -> None:
-        self.logger = None
         if not self.is_debug and distutils.is_master():
             assert self.config["logger"] is not None, "Specify logger in config"
 
