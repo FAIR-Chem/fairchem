@@ -534,7 +534,6 @@ class BaseTrainer(ABC):
             self.model = DistributedDataParallel(
                 self.model,
                 device_ids=None if self.cpu else [self.device],
-                find_unused_parameters=True,
             )
 
     @property
