@@ -228,7 +228,7 @@ class BackboneInterface(metaclass=ABCMeta):
 
 
 @registry.register_model("hydra")
-class HydraModel(nn.Module, GraphModelMixin):
+class HydraModel(nn.Module):
     def __init__(
         self,
         backbone: dict,

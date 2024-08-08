@@ -25,7 +25,7 @@ class Rank2Block(nn.Module):
     Args:
         emb_size (int):     Size of edge embedding used to compute outer product
         num_layers (int):   Number of layers of the MLP
-        edge_level (bool):  Apply MLP to edges' outer product
+        edge_level (bool):  If true apply MLP at edge level before pooling, otherwise use MLP at nodes after pooling
         extensive (bool):   Whether to sum or average the outer products
     """
 
@@ -324,7 +324,7 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
                 graph.edge_distance_vec, x_edge, graph.edge_index[1], data
             )
 
-            if self.extensive:  # legacy, may be interesting to try
+            if self.block.extensive:  # legacy, may be interesting to try
                 tensor_0 = tensor_0 / self.avg_num_nodes
                 tensor_2 = tensor_2 / self.avg_num_nodes
 

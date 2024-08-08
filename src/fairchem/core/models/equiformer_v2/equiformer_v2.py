@@ -836,7 +836,7 @@ class EquiformerV2EnergyHead(nn.Module, HeadInterface):
             backbone.use_grid_mlp,
             backbone.use_sep_s2_act,
         )
-        self.apply(backbone._init_weights)
+        self.apply(backbone.init_weights)
         self.apply(backbone._uniform_init_rad_func_linear_weights)
 
     def forward(self, data: Batch, emb: dict[str, torch.Tensor | GraphData]):
@@ -881,7 +881,7 @@ class EquiformerV2ForceHead(nn.Module, HeadInterface):
             backbone.use_sep_s2_act,
             alpha_drop=0.0,
         )
-        self.apply(backbone._init_weights)
+        self.apply(backbone.init_weights)
         self.apply(backbone._uniform_init_rad_func_linear_weights)
 
     def forward(self, data: Batch, emb: dict[str, torch.Tensor]):
