@@ -190,13 +190,15 @@ class BackboneInterface(metaclass=ABCMeta):
         """
         return
 
+
 class HydraInterface(ABC):
     # a hydra has a backbone and heads
     def get_backbone(self) -> BackboneInterface:
         raise not NotImplementedError
-    
+
     def get_heads(self) -> dict[str, HeadInterface]:
         raise not NotImplementedError
+
 
 @registry.register_model("hydra")
 class HydraModel(nn.Module, GraphModelMixin, HydraInterface):
@@ -246,9 +248,9 @@ class HydraModel(nn.Module, GraphModelMixin, HydraInterface):
             out.update(self.output_heads[k](data, emb))
 
         return out
-    
+
     def get_backbone(self) -> BackboneInterface:
         return self.backbone
-    
+
     def get_heads(self) -> dict[str, HeadInterface]:
         return self.output_heads

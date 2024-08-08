@@ -49,8 +49,9 @@ if TYPE_CHECKING:
 DEFAULT_ENV_VARS = {
     # Expandable segments is a new cuda feature that helps with memory fragmentation during frequent allocations (ie: in the case of variable batch sizes).
     # see https://pytorch.org/docs/stable/notes/cuda.html.
-    "PYTORCH_CUDA_ALLOC_CONF" : "expandable_segments:True",
+    "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
 }
+
 
 # copied from https://stackoverflow.com/questions/33490870/parsing-yaml-in-python-detect-duplicated-keys
 # prevents loading YAMLS where keys have been overwritten
@@ -1102,8 +1103,10 @@ def _report_incompat_keys(
     return missing_keys, unexpected_keys
 
 
-def match_state_dict(model_state_dict: Mapping[str, torch.Tensor],
-                     checkpoint_state_dict: Mapping[str, torch.Tensor]) -> dict:
+def match_state_dict(
+    model_state_dict: Mapping[str, torch.Tensor],
+    checkpoint_state_dict: Mapping[str, torch.Tensor],
+) -> dict:
     # match the model's state dict with the checkpoint state and return a new dict
     # that's compatible with the models
 
@@ -1117,8 +1120,7 @@ def match_state_dict(model_state_dict: Mapping[str, torch.Tensor],
 
     if key_count_diff > 0:
         new_dict = {
-            key_count_diff * "module." + k: v
-            for k, v in checkpoint_state_dict.items()
+            key_count_diff * "module." + k: v for k, v in checkpoint_state_dict.items()
         }
     elif key_count_diff < 0:
         new_dict = {

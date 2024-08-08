@@ -293,9 +293,7 @@ class BaseTrainer(ABC):
         )
 
     def load_datasets(self) -> None:
-        self.ocp_collater = OCPCollater(
-            self.config["model"].get("otf_graph", True)
-        )
+        self.ocp_collater = OCPCollater(self.config["model"].get("otf_graph", True))
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
@@ -534,7 +532,9 @@ class BaseTrainer(ABC):
 
         if distutils.initialized() and not self.config["noddp"]:
             self.model = DistributedDataParallel(
-                self.model, device_ids=None if self.cpu else [self.device], find_unused_parameters=True
+                self.model,
+                device_ids=None if self.cpu else [self.device],
+                find_unused_parameters=True,
             )
 
     @property
@@ -703,10 +703,12 @@ class BaseTrainer(ABC):
         training_state: bool = True,
     ) -> str | None:
         if not self.is_debug and distutils.is_master():
-            # if we are using a FineTune-able model, then we need to modify the config to remove 
+            # if we are using a FineTune-able model, then we need to modify the config to remove
             # the original starting checkpoint so it can be loaded standalone, can move this to save function
             if isinstance(self.model, FineTuneModelInterface):
-                self.config["model"] = FTConfig(self.config["model"][FTConfig.FT_CONFIG_NAME]).get_standalone_config()
+                self.config["model"] = FTConfig(
+                    self.config["model"][FTConfig.FT_CONFIG_NAME]
+                ).get_standalone_config()
 
             state = {
                 "state_dict": self.model.state_dict(),
