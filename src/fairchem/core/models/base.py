@@ -193,9 +193,11 @@ class BackboneInterface(metaclass=ABCMeta):
 
 class HydraInterface(ABC):
     # a hydra has a backbone and heads
+    @abstractmethod
     def get_backbone(self) -> BackboneInterface:
         raise not NotImplementedError
 
+    @abstractmethod
     def get_heads(self) -> dict[str, HeadInterface]:
         raise not NotImplementedError
 

@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
-from fairchem.core.models.finetune_hydra import FTConfig, FineTuneModelInterface
 import torch
 import torch.nn as nn
 import yaml
@@ -42,6 +41,7 @@ from fairchem.core.common.utils import (
     update_config,
 )
 from fairchem.core.datasets.base_dataset import create_dataset
+from fairchem.core.models.finetune_hydra import FineTuneModelInterface, FTConfig
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
@@ -562,7 +562,7 @@ class BaseTrainer(ABC):
         self.primary_metric = checkpoint.get("primary_metric", None)
 
         new_dict = match_state_dict(self.model.state_dict(), checkpoint["state_dict"])
-        strict = self.config.get("task", dict()).get("strict_load", True)
+        strict = self.config.get("task", {}).get("strict_load", True)
         load_state_dict(self.model, new_dict, strict=strict)
 
         if "optimizer" in checkpoint:

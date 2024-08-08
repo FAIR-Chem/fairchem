@@ -1,17 +1,19 @@
 from __future__ import annotations
 
-from abc import ABC
 import copy
-from enum import Enum
 import errno
+import logging
 import os
+from abc import ABC, abstractmethod
+from enum import Enum
 from typing import TYPE_CHECKING
+
+import torch
+from torch import nn
+
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import load_state_dict, match_state_dict
 from fairchem.core.models.base import BackboneInterface, HeadInterface, HydraInterface
-from torch import nn
-import torch
-import logging
 
 if TYPE_CHECKING:
     from torch_geometric.data import Batch
@@ -126,6 +128,8 @@ class FTConfig:
 
 
 class FineTuneModelInterface(ABC):
+
+    @abstractmethod
     def __init__(self, finetune_config: dict):
         pass
 
@@ -170,7 +174,7 @@ class FineTuneHydra(nn.Module, HydraInterface, FineTuneModelInterface):
     def forward(self, data: Batch):
         emb = self.backbone(data)
         out = {}
-        for k in self.output_heads.keys():
+        for k in self.output_heads:
             out.update(self.output_heads[k](data, emb))
         return out
 
