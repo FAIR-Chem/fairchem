@@ -39,7 +39,7 @@ model:
     mode: RETAIN_BACKBONE_ONLY
     starting_checkpoint: "./checkpoints/2024-08-07-20-20-16-test/checkpoint.pt"
     heads:
-      oc22_forces:
+      forces:
         module: equiformer_v2_force_head
 
 
@@ -63,10 +63,10 @@ optim:
   loss_force: l2mae
 
 outputs:
-  # energy:
-  #   shape: 1
-  #   level: system
-  oc22_forces:
+  energy:
+    shape: 1
+    level: system
+  forces:
     irrep_dim: 1
     level: atom
     train_on_free_atoms: True
