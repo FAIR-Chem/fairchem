@@ -1102,6 +1102,35 @@ def _report_incompat_keys(
     return missing_keys, unexpected_keys
 
 
+def match_state_dict(
+    model_state_dict: Mapping[str, torch.Tensor],
+    checkpoint_state_dict: Mapping[str, torch.Tensor],
+) -> dict:
+    # match the model's state dict with the checkpoint state and return a new dict
+    # that's compatible with the models
+
+    # Match the "module." count in the keys of model and checkpoint state_dict
+    # DataParallel model has 1 "module.",  DistributedDataParallel has 2 "module."
+    # Not using either of the above two would have no "module."
+
+    ckpt_key_count = next(iter(checkpoint_state_dict)).count("module")
+    mod_key_count = next(iter(model_state_dict)).count("module")
+    key_count_diff = mod_key_count - ckpt_key_count
+
+    if key_count_diff > 0:
+        new_dict = {
+            key_count_diff * "module." + k: v for k, v in checkpoint_state_dict.items()
+        }
+    elif key_count_diff < 0:
+        new_dict = {
+            k[len("module.") * abs(key_count_diff) :]: v
+            for k, v in checkpoint_state_dict.items()
+        }
+    else:
+        new_dict = checkpoint_state_dict
+    return new_dict
+
+
 def load_state_dict(
     module: nn.Module,
     state_dict: Mapping[str, torch.Tensor],

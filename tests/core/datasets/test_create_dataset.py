@@ -36,7 +36,7 @@ def test_real_dataset_config(lmdb_database):
             return None
 
     config = {
-        "model_attributes": {},
+        "model": {},
         "optim": {"batch_size": 0},
         "dataset": {
             "format": "ase_db",
