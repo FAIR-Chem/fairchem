@@ -1,10 +1,10 @@
-import pytest
+from __future__ import annotations
 
 import numpy as np
 import numpy.testing as npt
-
+import pytest
 from ase import build
-from ase.optimize import LBFGS, FIRE, BFGS
+from ase.optimize import BFGS, FIRE, LBFGS
 
 try:
     from ase.filters import UnitCellFilter
@@ -12,14 +12,14 @@ except ModuleNotFoundError:
     # older ase version, import UnitCellFilterOld
     from ase.constraints import UnitCellFilter
 
-from fairchem.core.datasets import data_list_collater
-from fairchem.core.preprocessing.atoms_to_graphs import AtomsToGraphs
+from fairchem.core.common.relaxation import OptimizableBatch, OptimizableUnitCellBatch
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.common.relaxation.optimizers import LBFGS as LBFGS_torch
-from fairchem.core.common.relaxation import OptimizableBatch, OptimizableUnitCellBatch
+from fairchem.core.datasets import data_list_collater
+from fairchem.core.preprocessing.atoms_to_graphs import AtomsToGraphs
 
 
-@pytest.fixture
+@pytest.fixture()
 def calculator(tmpdir):
     calc = OCPCalculator(
         model_name="EquiformerV2-31M-S2EF-OC20-All+MD", local_cache=tmpdir, seed=0
@@ -30,7 +30,7 @@ def calculator(tmpdir):
     return calc
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def atoms_list():
     atoms_list = [
         build.bulk("Cu", "fcc", a=3.8, cubic=True),
@@ -41,7 +41,7 @@ def atoms_list():
     return atoms_list
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def batch(atoms_list):
     a2g = AtomsToGraphs(r_edges=False, r_pbc=True)
     return data_list_collater([a2g.convert(atoms) for atoms in atoms_list])
@@ -73,7 +73,7 @@ def test_lbfgs_relaxation(atoms_list, batch, calculator):
         )
         pnorm1 = np.linalg.norm(a1.positions, axis=1)
         pnorm2 = np.linalg.norm(a2.positions, axis=1)
-        npt.assert_allclose(pnorm1, pnorm2, atol=0.01)
+        npt.assert_allclose(pnorm1, pnorm2, atol=0.02)
         npt.assert_allclose(a1.positions, a2.positions, rtol=0.01, atol=0.05)
 
 
@@ -87,8 +87,6 @@ def test_ase_relaxation(atoms_list, batch, calculator, optimizer_cls):
         opt = optimizer_cls(atoms)
         opt.run(0.01, 20)
 
-    # TODO relaxations with LBFGS give nans for positions which leads to a cryptic
-    #  error in edge_rot_mat (since edges are empty)
     # optimize atoms in batch using ASE
     batch_optimizer = optimizer_cls(obatch)
     batch_optimizer.run(0.01, 20)

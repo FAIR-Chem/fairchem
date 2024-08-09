@@ -342,7 +342,7 @@ class OptimizableUnitCellBatch(OptimizableBatch):
         mask_converged: bool = True,
         cumulative_mask: bool = True,
         mask: Sequence[bool] | None = None,
-        cell_factor: float | None = None,
+        cell_factor: float | torch.Tensor | None = None,
         hydrostatic_strain: bool = False,
         constant_volume: bool = False,
         scalar_pressure: float = 0.0,
@@ -369,7 +369,7 @@ class OptimizableUnitCellBatch(OptimizableBatch):
                 it on the same scale as the positions when assembling
                 the combined position/cell vector. The stress contribution to
                 the forces is scaled down by the same factor. This can be thought
-                of as a very simple preconditioners. Default is number of atoms
+                of as a very simple preconditioner. Default is number of atoms
                 which gives approximately the correct scaling.
             hydrostatic_strain:
                 Constrain the cell by only allowing hydrostatic deformation.
@@ -414,8 +414,10 @@ class OptimizableUnitCellBatch(OptimizableBatch):
         else:
             raise ValueError("shape of mask should be (3,3) or (6,)")
 
+        if isinstance(cell_factor, float):
+            cell_factor = cell_factor * torch.ones(len(batch), requires_grad=False)
         if cell_factor is None:
-            cell_factor = self.batch.natoms.to(torch.float32).mean().item()
+            cell_factor = self.batch.natoms
 
         self.hydrostatic_strain = hydrostatic_strain
         self.constant_volume = constant_volume
