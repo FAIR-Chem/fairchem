@@ -282,8 +282,8 @@ def _import_local_file(path: Path, *, project_root: Path) -> None:
     :type project_root: Path
     """
 
-    path = path.resolve()
-    project_root = project_root.parent.resolve()
+    path = path.absolute()
+    project_root = project_root.parent.absolute()
 
     module_name = ".".join(
         path.absolute().relative_to(project_root.absolute()).with_suffix("").parts
@@ -302,7 +302,7 @@ def setup_experimental_imports(project_root: Path) -> None:
 
     :param project_root: The root directory of the project (i.e., the "ocp" folder)
     """
-    experimental_dir = (project_root / "experimental").resolve()
+    experimental_dir = (project_root / "experimental").absolute()
     if not experimental_dir.exists() or not experimental_dir.is_dir():
         return
 
@@ -315,8 +315,7 @@ def setup_experimental_imports(project_root: Path) -> None:
 
         for inc_dir in include_dirs:
             experimental_files.extend(
-                f.resolve().absolute()
-                for f in (experimental_dir / inc_dir).rglob("*.py")
+                f.absolute() for f in (experimental_dir / inc_dir).rglob("*.py")
             )
 
     for f in experimental_files:
