@@ -18,6 +18,7 @@ from fairchem.core.models.base import BackboneInterface, HeadInterface, HydraInt
 if TYPE_CHECKING:
     from torch_geometric.data import Batch
 
+FTHYDRA_NAME = "finetune_hydra"
 
 class FineTuneMode(Enum):
     # in DATA_ONLY, we load the entire model and only finetune on new data
@@ -101,7 +102,7 @@ class FTConfig:
         # this is required for standalone prediction (so we don't need to ship the original checkpoint),
         # multi-round finetuning, and better robustness
         standalone_config = {
-            "name": "finetune_hydra",
+            "name": FTHYDRA_NAME,
             FTConfig.FT_CONFIG_NAME: self.config,
         }
         if FTConfig.CHECKPOINT_PROPERTY in self.config:
@@ -134,7 +135,7 @@ class FineTuneModelInterface(ABC):
         pass
 
 
-@registry.register_model("finetune_hydra")
+@registry.register_model(FTHYDRA_NAME)
 class FineTuneHydra(nn.Module, HydraInterface, FineTuneModelInterface):
     def __init__(self, finetune_config: dict):
         super().__init__()
@@ -145,7 +146,7 @@ class FineTuneHydra(nn.Module, HydraInterface, FineTuneModelInterface):
 
         if ft_config.mode == FineTuneMode.DATA_ONLY:
             # in this mode, we just use the model as is and train on it with new data
-            self.output_heads: dict[str, HeadInterface] = hydra_model.get_output_heads()
+            self.output_heads: dict[str, HeadInterface] = hydra_model.get_heads()
         elif ft_config.mode == FineTuneMode.RETAIN_BACKBONE_ONLY:
             # in this mode, we keep the backbone but attach new output heads specified in head config
             self.output_heads: dict[str, HeadInterface] = {}
@@ -170,6 +171,7 @@ class FineTuneHydra(nn.Module, HydraInterface, FineTuneModelInterface):
                     f"Attaching new output head: {module_name} with {num_params} params"
                 )
             self.output_heads = torch.nn.ModuleDict(self.output_heads)
+
 
     def forward(self, data: Batch):
         emb = self.backbone(data)

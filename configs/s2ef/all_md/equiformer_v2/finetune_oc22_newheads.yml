@@ -27,42 +27,39 @@ dataset:
 
 trainer: forces
 
-# model:
-#   name: finetune_hydra
-#   finetune_config:
-#     mode: DATA_ONLY
-#     starting_checkpoint: "./checkpoints/2024-08-07-20-20-16-test/checkpoint.pt"
-
 model:
   name: finetune_hydra
   finetune_config:
     mode: RETAIN_BACKBONE_ONLY
-    starting_checkpoint: "./checkpoints/2024-08-07-20-20-16-test/checkpoint.pt"
+    starting_checkpoint: "./checkpoints/2024-08-09-06-19-44-fc_main_allmd_EQV231Mhydra/checkpoint.pt"
     heads:
       energy:
         module: equiformer_v2_energy_head
       forces:
         module: equiformer_v2_force_head
 
-
-logger:
+logger: 
   name: wandb
+  project: fm_testing
+  entity: fairchem
 
 optim:
-  batch_size: 5
-  eval_batch_size: 2
-  num_workers: 0
-  lr_initial: 0.0025
+  batch_size: 8
+  eval_batch_size: 8
+  load_balancing: atoms
+  num_workers: 8
   optimizer: AdamW
-  optimizer_params: {"amsgrad": True,weight_decay: 0.0}
-  eval_every: 190
-  max_epochs: 50
-  force_coefficient: 20
-  scheduler: "Null"
-  energy_coefficient: 1
-  clip_grad_norm: 20
-  loss_energy: mae
-  loss_force: l2mae
+  optimizer_params:
+    amsgrad: True
+    weight_decay: 0  # 2e-6 (TF weight decay) / 1e-4 (lr) = 2e-2
+  lr_initial: 1.e-4
+  scheduler: ReduceLROnPlateau
+  mode: min
+  factor: 0.8
+  patience: 3
+  max_epochs: 80
+  ema_decay: 0.999
+  clip_grad_norm: 10
 
 outputs:
   energy:
@@ -93,3 +90,6 @@ evaluation_metrics:
     misc:
       - energy_forces_within_threshold
   primary_metric: forces_mae
+
+slurm:
+  constraint: "volta32gb"
