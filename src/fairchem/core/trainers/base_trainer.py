@@ -321,7 +321,7 @@ class BaseTrainer(ABC):
             )
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
-                self.config["optim"]["batch_size"],
+                self.config["optim"].get("batch_size", 1),
                 shuffle=True,
             )
             self.train_loader = self.get_dataloader(
@@ -352,7 +352,7 @@ class BaseTrainer(ABC):
             self.val_sampler = self.get_sampler(
                 self.val_dataset,
                 self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
+                    "eval_batch_size", self.config["optim"].get("batch_size", 1)
                 ),
                 shuffle=False,
             )
@@ -374,7 +374,7 @@ class BaseTrainer(ABC):
             self.test_sampler = self.get_sampler(
                 self.test_dataset,
                 self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
+                    "eval_batch_size", self.config["optim"].get("batch_size", 1)
                 ),
                 shuffle=False,
             )
