@@ -178,6 +178,8 @@ class OCPTrainer(BaseTrainer):
                         "step": self.step,
                     }
                 )
+                if self.scaler is not None:
+                    log_dict.update({"amp_scale": self.scaler.get_scale()})
                 if (
                     self.step % self.config["cmd"]["print_every"] == 0
                     and distutils.is_master()
