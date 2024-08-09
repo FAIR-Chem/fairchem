@@ -29,7 +29,7 @@ jobs:
       - name: Generate CalVer version
         id: calver
         run: |
-          export VERSION=$(date "+%Y.%m.%d")
+          export VERSION=v$(date "+%Y.%m.%d")
           echo ::set-output name=version::${VERSION}
           echo "Version set to ${VERSION}"
       - uses: release-drafter/release-drafter@v6
