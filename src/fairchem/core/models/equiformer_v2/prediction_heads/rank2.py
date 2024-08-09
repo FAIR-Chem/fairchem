@@ -252,6 +252,7 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
         self.output_name = output_name
         self.decompose = decompose
         self.use_source_target_embedding = use_source_target_embedding
+        self.avg_num_nodes = backbone.avg_num_nodes
 
         self.sphharm_norm = get_normalization_layer(
             backbone.norm_type,
