@@ -16,6 +16,7 @@ from fairchem.core.common.relaxation import OptimizableBatch, OptimizableUnitCel
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.common.relaxation.optimizers import LBFGS as LBFGS_torch
 from fairchem.core.datasets import data_list_collater
+from fairchem.core.modules.evaluator import min_diff
 from fairchem.core.preprocessing.atoms_to_graphs import AtomsToGraphs
 
 
@@ -72,11 +73,8 @@ def test_lbfgs_relaxation(atoms_list, batch, calculator):
         assert a1.get_potential_energy() / len(a1) == pytest.approx(
             a2.get_potential_energy() / len(a2), abs=0.05
         )
-        # wrapping positions in a2g breaks this (see like 170 in atoms_to_graphs.py)
-        # pnorm1 = np.linalg.norm(a1.positions, axis=1)
-        # pnorm2 = np.linalg.norm(a2.positions, axis=1)
-        # npt.assert_allclose(pnorm1, pnorm2, atol=0.02)
-        # npt.assert_allclose(a1.positions, a2.positions, rtol=0.01, atol=0.05)
+        diff = min_diff(a1.positions, a2.positions, a1.get_cell(), pbc=a1.pbc)
+        npt.assert_allclose(diff, 0, atol=0.01)
 
 
 def test_ase_relaxation(atoms_list, batch, calculator, optimizer_cls):
@@ -98,11 +96,8 @@ def test_ase_relaxation(atoms_list, batch, calculator, optimizer_cls):
         assert a1.get_potential_energy() / len(a1) == pytest.approx(
             a2.get_potential_energy() / len(a2), abs=0.05
         )
-        # wrapping positions in a2g breaks this (see like 170 in atoms_to_graphs.py)
-        # pnorm1 = np.linalg.norm(a1.positions, axis=1)
-        # pnorm2 = np.linalg.norm(a2.positions, axis=1)
-        # npt.assert_allclose(pnorm1, pnorm2, atol=0.01)
-        # npt.assert_allclose(a1.positions, a2.positions, rtol=0.01, atol=0.05)
+        diff = min_diff(a1.positions, a2.positions, a1.get_cell(), pbc=a1.pbc)
+        npt.assert_allclose(diff, 0, atol=0.01)
 
 
 @pytest.mark.parametrize("mask_converged", [False, True])
@@ -162,10 +157,8 @@ def test_ase_cell_relaxation(atoms_list, batch, calculator, optimizer_cls):
             a2.get_potential_energy() / len(a2), abs=0.05
         )
 
-        pnorm1 = np.linalg.norm(a1.positions, axis=1)
-        pnorm2 = np.linalg.norm(a2.positions, axis=1)
-        npt.assert_allclose(pnorm1, pnorm2, atol=0.01)
-        npt.assert_allclose(a1.positions, a2.positions, rtol=0.01, atol=0.05)
+        diff = min_diff(a1.positions, a2.positions, a1.get_cell(), pbc=a1.pbc)
+        npt.assert_allclose(diff, 0, atol=0.01)
 
         cnorm1 = np.linalg.norm(a1.cell.array, axis=1)
         cnorm2 = np.linalg.norm(a2.cell.array, axis=1)
