@@ -22,6 +22,7 @@ from ase import Atoms
 from ase.calculators.calculator import Calculator
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms
+from ase.geometry import wrap_positions
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import (
@@ -45,7 +46,10 @@ ASE_PROP_RESHAPE = MappingProxyType(
 
 
 def batch_to_atoms(
-    batch: Batch, results: dict[str, torch.Tensor] | None = None
+    batch: Batch,
+    results: dict[str, torch.Tensor] | None = None,
+    wrap_pos: bool = False,
+    eps: float = 1e-7,
 ) -> list[Atoms]:
     """Convert a data batch to ase Atoms
 
@@ -53,6 +57,10 @@ def batch_to_atoms(
         batch: data batch
         results: dictionary with predicted result tensors. If no results are given,
             energy and forces are assumed to be included in the batch
+        wrap_pos: wrap positions back into the cell.
+        eps: Small number to prevent slightly negative coordinates from being wrapped.
+
+
 
     Returns:
         list of Atoms
@@ -82,11 +90,18 @@ def batch_to_atoms(
 
     atoms_objects = []
     for idx in range(n_systems):
+        pos = positions[idx].cpu().detach().numpy()
+        cell = cells[idx].cpu().detach().numpy()
+
+        # TODO take pbc from data
+        if wrap_pos:
+            pos = wrap_positions(pos, cell, pbc=[True, True, True], eps=eps)
+
         atoms = Atoms(
             numbers=numbers[idx].tolist(),
-            positions=positions[idx].cpu().detach().numpy(),
+            cell=cell,
+            positions=pos,
             tags=tags[idx].tolist(),
-            cell=cells[idx].cpu().detach().numpy(),
             constraint=FixAtoms(mask=fixed[idx].tolist()),
             pbc=[True, True, True],
         )
