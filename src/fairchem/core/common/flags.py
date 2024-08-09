@@ -48,7 +48,7 @@ class Flags:
         )
         self.parser.add_argument(
             "--run-dir",
-            default="./",
+            default="./runs",
             type=str,
             help="Directory to store checkpoint/log/result directory",
         )
@@ -86,9 +86,6 @@ class Flags:
         )
         self.parser.add_argument(
             "--summit", action="store_true", help="Running on Summit cluster"
-        )
-        self.parser.add_argument(
-            "--logdir", default="logs", type=Path, help="Where to store logs"
         )
         self.parser.add_argument(
             "--slurm-partition",

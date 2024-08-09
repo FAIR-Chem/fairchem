@@ -20,13 +20,19 @@ class BaseTask:
 
     def setup(self, trainer) -> None:
         self.trainer = trainer
-        if self.config["checkpoint"] is not None:
-            self.trainer.load_checkpoint(checkpoint_path=self.config["checkpoint"])
 
-        # save checkpoint path to runner state for slurm resubmissions
         self.chkpt_path = os.path.join(
             self.trainer.config["cmd"]["checkpoint_dir"], "checkpoint.pt"
         )
+
+        # if the supplied checkpoint exists, then load that
+        if self.config["checkpoint"] is not None:
+            logging.info(f"Attemping to load user specified checkpoint at {self.config['checkpoint']}")
+            self.trainer.load_checkpoint(checkpoint_path=self.config["checkpoint"])
+        elif os.path.exists(self.chkpt_path):
+            logging.info(f"Previous checkpoint found at {self.chkpt_path}, resuming job from this checkecpoint")
+            self.trainer.load_checkpoint(checkpoint_path=self.chkpt_path)
+
 
     def run(self):
         raise NotImplementedError
