@@ -1,6 +1,8 @@
 include-paths: 
   - src/fairchem/demo/ocpapi
+  - packages/fairchem-demo-ocpapi
 tag-prefix: fairchem_demo_ocpapi
+tag-template: 'fairchem_demo_ocpapi_v$RESOLVED_VERSION'
 name-template: 'fairchem_demo_ocpapi_v$RESOLVED_VERSION'
 exclude-contributors: [github-actions] 
 categories:
@@ -27,6 +29,7 @@ version-resolver:
   minor:
     labels:
       - 'minor'
+      - 'dependencies'
   patch:
     labels:
       - 'patch'

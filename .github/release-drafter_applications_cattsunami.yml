@@ -1,6 +1,8 @@
 include-paths: 
   - src/fairchem/applications/cattsunami
+  - packages/fairchem-applications-cattsunami/
 tag-prefix: fairchem_applications_cattsunami
+tag-template: 'fairchem_applications_cattsunami_v$RESOLVED_VERSION'
 name-template: 'fairchem_applications_cattsunami_v$RESOLVED_VERSION'
 exclude-contributors: [github-actions] 
 categories:
@@ -27,6 +29,7 @@ version-resolver:
   minor:
     labels:
       - 'minor'
+      - 'dependencies'
   patch:
     labels:
       - 'patch'

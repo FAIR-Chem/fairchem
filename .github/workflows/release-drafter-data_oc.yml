@@ -2,11 +2,11 @@ name: Release Drafter - fairchem_data_oc
 
 on:
   push:
-    # branches to consider in the event; optional, defaults to all
     branches:
       - main
     paths:
       - 'src/fairchem/data/oc/**'
+      - 'packages/fairchem-data-oc/**'
   workflow_dispatch:
 
 

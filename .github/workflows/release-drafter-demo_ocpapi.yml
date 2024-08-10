@@ -2,11 +2,11 @@ name: Release Drafter - fairchem_demo_ocpapi
 
 on:
   push:
-    # branches to consider in the event; optional, defaults to all
     branches:
       - main
     paths:
       - 'src/fairchem/demo/ocpapi/**'
+      - 'packages/fairchem-demo-ocpapi/**'
   workflow_dispatch:
 
 
