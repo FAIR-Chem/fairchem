@@ -28,15 +28,12 @@ class FineTuneMode(Enum):
     RETAIN_BACKBONE_ONLY = 2
 
 
-def get_hydra_model_config_from_checkpoint(checkpoint_path: str) -> dict:
+def get_model_config_from_checkpoint(checkpoint_path: str) -> dict:
     if not os.path.isfile(checkpoint_path):
         raise FileNotFoundError(
             errno.ENOENT, "Checkpoint file not found", checkpoint_path
         )
     checkpoint = torch.load(checkpoint_path)
-    assert (
-        checkpoint["config"]["model"]["name"] == "hydra"
-    ), "Can only finetune a hydra model"
     return checkpoint["config"]["model"]
 
 
@@ -60,7 +57,7 @@ def load_hydra_model(checkpoint_path: str) -> HydraInterface:
 
 class FTConfig:
     FT_CONFIG_NAME = "finetune_config"
-    CHECKPOINT_PROPERTY = "starting_checkpoint"
+    STARTING_CHECKPOINT = "starting_checkpoint"
     STARTING_MODEL = "starting_model"
     MODE = "mode"
     HEADS = "heads"
@@ -69,9 +66,9 @@ class FTConfig:
         self.config = config
         self._mode = FineTuneMode[self.config[FTConfig.MODE]]
         assert (
-            (FTConfig.CHECKPOINT_PROPERTY in self.config)
-            ^ (FTConfig.STARTING_MODEL in self.config)
-        ), "Only one of checkpoint or starting model config can be provided to FineTuneHydra!"
+            (FTConfig.STARTING_CHECKPOINT in self.config)
+            or (FTConfig.STARTING_MODEL in self.config)
+        ), "Either a starting checkpoint or a starting model must be provided!"
         assert FTConfig.MODE in self.config
         if self._mode == FineTuneMode.RETAIN_BACKBONE_ONLY:
             # in this mode, we keep the backbone but attach new output heads specified in head config
@@ -80,18 +77,21 @@ class FTConfig:
             ), "heads cannot be empty when using RETAIN_BACKBONE_ONLY mode!"
 
     def load_model(self) -> nn.Module:
-        # if provided a checkpoint to start then load the model and weights from the given checkpoint
-        if FTConfig.CHECKPOINT_PROPERTY in self.config:
-            hydra_model: HydraInterface = load_hydra_model(
-                self.config[FTConfig.CHECKPOINT_PROPERTY]
-            )
         # if provided a hydra config to start, build from the starting hydra model
-        elif FTConfig.STARTING_MODEL in self.config:
+        # this assumes the weights are loaded from the state_dict in the checkpoint.pt file instead
+        # so no actual weights are loaded here
+        if FTConfig.STARTING_MODEL in self.config:
             # register model from hydra_config
             config_copy = copy.deepcopy(self.config[FTConfig.STARTING_MODEL])
             name = config_copy.pop("name")
             hydra_model = registry.get_model_class(name)(**config_copy)
             assert isinstance(hydra_model, HydraInterface)
+        # if provided a checkpoint to start then load the model and weights from the given checkpoint
+        # this happens used in the beginning of a finetuning run
+        elif FTConfig.STARTING_CHECKPOINT in self.config:
+            hydra_model: HydraInterface = load_hydra_model(
+                self.config[FTConfig.STARTING_CHECKPOINT]
+            )
 
         num_params = sum(p.numel() for p in hydra_model.parameters())
         logging.info(f"Loaded Original hydra model with {num_params} params")
@@ -105,15 +105,15 @@ class FTConfig:
             "name": FTHYDRA_NAME,
             FTConfig.FT_CONFIG_NAME: self.config,
         }
-        if FTConfig.CHECKPOINT_PROPERTY in self.config:
-            # modify the config to store the original model config inside model attrs so we dont need the checkpoint again when loading from checkpoint
+        if FTConfig.STARTING_CHECKPOINT in self.config:
+            # modify the config to store the original model config inside model attrs
+            # so we dont need the checkpoint again when loading from checkpoint
             new_config = copy.deepcopy(self.config)
             new_config[FTConfig.STARTING_MODEL] = (
-                get_hydra_model_config_from_checkpoint(
-                    self.config[FTConfig.CHECKPOINT_PROPERTY]
+                get_model_config_from_checkpoint(
+                    self.config[FTConfig.STARTING_CHECKPOINT]
                 )
             )
-            del new_config[FTConfig.CHECKPOINT_PROPERTY]
             standalone_config[FTConfig.FT_CONFIG_NAME] = new_config
             return standalone_config
         else:
