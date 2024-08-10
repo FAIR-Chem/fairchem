@@ -23,6 +23,6 @@ jobs:
         with:
           disable-autolabeler: true
           latest: true
-          config-name: release-draft-core
+          config-name: release-drafter-core.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

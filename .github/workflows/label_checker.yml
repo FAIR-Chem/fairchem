@@ -16,7 +16,7 @@ jobs:
           contains(github.event.pull_request.labels.*.name, 'major') == false && 
           contains(github.event.pull_request.labels.*.name, 'dependencies') == false
         run: exit 1
-      - name: Labels not added (enhancement,bug,test,deprecation,dependencies,documentatoni,deprecation)
+      - name: Labels not added (enhancement,bug,test,deprecation,dependencies,documentation,deprecation)
         if: >
           contains(github.event.pull_request.labels.*.name, 'enhancement') == false &&
           contains(github.event.pull_request.labels.*.name, 'bug') == false &&

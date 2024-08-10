@@ -23,6 +23,6 @@ jobs:
       - uses: release-drafter/release-drafter@v6
         with:
           disable-autolabeler: true
-          config-name: release-draft-demo_ocpapi
+          config-name: release-drafter-demo_ocpapi.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

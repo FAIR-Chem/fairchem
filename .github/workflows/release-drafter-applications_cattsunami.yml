@@ -22,6 +22,6 @@ jobs:
       - uses: release-drafter/release-drafter@v6
         with:
           disable-autolabeler: true
-          config-name: release-draft-applications_cattsunami
+          config-name: release-drafter-applications_cattsunami.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
