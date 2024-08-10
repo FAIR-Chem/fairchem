@@ -1,0 +1,14 @@
+name: PR labels contains one of (patch, minor, major)
+
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize]
+
+jobs:
+  check-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Labels not added (patch, minor, major)
+        if: contains(github.event.pull_request.labels.*.name, 'patch') == false && contains(github.event.pull_request.labels.*.name, 'minor') == false && contains(github.event.pull_request.labels.*.name, 'major') == false
+        run: exit 1

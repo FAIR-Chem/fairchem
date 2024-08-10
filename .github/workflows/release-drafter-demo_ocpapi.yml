@@ -1,0 +1,29 @@
+name: Release Drafter - fairchem_demo_ocpapi
+
+on:
+  push:
+    # branches to consider in the event; optional, defaults to all
+    branches:
+      - main
+    paths:
+      - 'src/fairchem/demo/ocpapi/**'
+  workflow_dispatch:
+
+
+permissions:
+  contents: read
+  
+jobs:
+  update_release_draft:
+    permissions:
+        # write permission is required to create a github release
+        contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter@v6
+        with:
+          disable-autolabeler: true
+          latest: true
+          config-name: release-draft-demo_ocpapi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

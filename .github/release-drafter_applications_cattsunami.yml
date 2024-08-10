@@ -1,3 +1,7 @@
+include-paths: 
+  - src/fairchem/applications/cattsunami
+tag-prefix: fairchem_applications_cattsunami
+name-template: 'fairchem_applications_cattsunami_v$RESOLVED_VERSION'
 exclude-contributors: [github-actions, dependabot] 
 categories:
   - title: New Features
@@ -14,6 +18,17 @@ categories:
     labels: [deprecation]
   - title: Other Changes
     labels: ["*"]
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+  patch:
+    labels:
+      - 'patch'
+  default: patch
 template: |
   ## What’s Changed
 
