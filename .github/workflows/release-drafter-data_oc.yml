@@ -23,6 +23,6 @@ jobs:
       - uses: release-drafter/release-drafter@v6
         with:
           disable-autolabeler: true
-          config-name: release-draft-data_oc
+          config-name: release-drafter-data_oc.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
