@@ -1,4 +1,4 @@
-name: PR labels contains one of (patch, minor, major)
+name: PR label checking (major/minor/patch, enhancement, etc)
 
 on:
   pull_request:
