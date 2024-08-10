@@ -2,8 +2,8 @@ include-paths:
   - packages/fairchem-core/
   - src/fairchem/core/
 tag-prefix: fairchem_core
-tag-template: 'fairchem_core_v$RESOLVED_VERSION'
-name-template: 'fairchem-core_v$RESOLVED_VERSION'
+tag-template: 'fairchem_core-$RESOLVED_VERSION'
+name-template: 'fairchem-core-$RESOLVED_VERSION'
 exclude-contributors: [github-actions] 
 categories:
   - title: New Features

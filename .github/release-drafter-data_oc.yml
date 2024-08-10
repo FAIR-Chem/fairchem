@@ -2,8 +2,8 @@ include-paths:
   - src/fairchem/data/oc
   - packages/fairchem-data-oc
 tag-prefix: fairchem_data_oc
-tag-template: 'fairchem_data_oc_v$RESOLVED_VERSION'
-name-template: 'fairchem_data_oc_v$RESOLVED_VERSION'
+tag-template: 'fairchem_data_oc-$RESOLVED_VERSION'
+name-template: 'fairchem_data_oc-$RESOLVED_VERSION'
 exclude-contributors: [github-actions] 
 categories:
   - title: New Features
