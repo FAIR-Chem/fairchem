@@ -2,7 +2,7 @@ include-paths:
   - src/fairchem/data/oc
 tag-prefix: fairchem_data_oc
 name-template: 'fairchem_data_oc_v$RESOLVED_VERSION'
-exclude-contributors: [github-actions, dependabot] 
+exclude-contributors: [github-actions] 
 categories:
   - title: New Features
     labels: [enhancement]
@@ -16,6 +16,8 @@ categories:
     labels: [test]
   - title: Deprecations
     labels: [deprecation]
+  - title: Dependencies
+    labels: [dependencies]
   - title: Other Changes
     labels: ["*"]
 version-resolver:
