@@ -16,3 +16,13 @@ jobs:
           contains(github.event.pull_request.labels.*.name, 'major') == false && 
           contains(github.event.pull_request.labels.*.name, 'dependencies') == false
         run: exit 1
+      - name: Labels not added (enhancement,bug,test,deprecation,dependencies,documentatoni,deprecation)
+        if: >
+          contains(github.event.pull_request.labels.*.name, 'enhancement') == false &&
+          contains(github.event.pull_request.labels.*.name, 'bug') == false &&
+          contains(github.event.pull_request.labels.*.name, 'test') == false && 
+          contains(github.event.pull_request.labels.*.name, 'deprecation') == false &&
+          contains(github.event.pull_request.labels.*.name, 'dependencies') == false &&
+          contains(github.event.pull_request.labels.*.name, 'documentation') == false &&
+          contains(github.event.pull_request.labels.*.name, 'deprecation') == false
+        run: exit 1
