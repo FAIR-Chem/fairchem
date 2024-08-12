@@ -22,9 +22,6 @@ import numpy.typing as npt
 import torch
 import torch.nn as nn
 import yaml
-from fairchem.core.common.slurm import (
-    add_timestamp_id_to_submission_pickle,
-)
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -33,6 +30,9 @@ from fairchem.core import __version__
 from fairchem.core.common import distutils, gp_utils
 from fairchem.core.common.data_parallel import BalancedBatchSampler, OCPCollater
 from fairchem.core.common.registry import registry
+from fairchem.core.common.slurm import (
+    add_timestamp_id_to_submission_pickle,
+)
 from fairchem.core.common.typing import assert_is_instance as aii
 from fairchem.core.common.typing import none_throws
 from fairchem.core.common.utils import (
