@@ -139,6 +139,7 @@ class BaseTrainer(ABC):
             "slurm": slurm,
             "noddp": noddp,
             "gp_gpus": gp_gpus,
+            "timestamp_id": self.timestamp_id,
         }
         # AMP Scaler
         self.scaler = torch.cuda.amp.GradScaler() if amp and not self.cpu else None
