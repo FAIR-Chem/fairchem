@@ -22,6 +22,9 @@ import numpy.typing as npt
 import torch
 import torch.nn as nn
 import yaml
+from fairchem.src.fairchem.core.common.slurm import (
+    add_timestamp_id_to_submission_pickle,
+)
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -156,6 +159,7 @@ class BaseTrainer(ABC):
             self.config["slurm"]["folder"] = self.config["slurm"]["folder"].replace(
                 "%j", self.config["slurm"]["job_id"]
             )
+            add_timestamp_id_to_submission_pickle(self.config["slurm"]["folder"], self.config["slurm"]["job_id"], self.timestamp_id)
 
         # Define datasets
         if isinstance(dataset, list):
