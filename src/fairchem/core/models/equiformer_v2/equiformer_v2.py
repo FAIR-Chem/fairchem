@@ -169,6 +169,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
         if "e3nn" not in sys.modules:
             logging.error("You need to install e3nn==0.4.4 to use EquiformerV2.")
             raise ImportError
+
         self.use_pbc = use_pbc
         self.use_pbc_single = use_pbc_single
         self.regress_forces = regress_forces
