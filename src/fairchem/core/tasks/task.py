@@ -27,8 +27,8 @@ class BaseTask:
         )
 
         # if the supplied checkpoint exists, then load that, ie: when user specifies the --checkpoint option
-        # OR if the a job was preempted correctly and the submitit checkpoint function was called 
-        # (https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/_cli.py#L44), then we should attempt to 
+        # OR if the a job was preempted correctly and the submitit checkpoint function was called
+        # (https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/_cli.py#L44), then we should attempt to
         # load that checkpoint
         if self.config["checkpoint"] is not None:
             logging.info(f"Attemping to load user specified checkpoint at {self.config['checkpoint']}")
