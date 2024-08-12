@@ -17,6 +17,7 @@ jobs:
     permissions:
         # write permission is required to create a github release
         contents: write
+        pull-requests: read
     runs-on: ubuntu-latest
     steps:
       - uses: release-drafter/release-drafter@v6
