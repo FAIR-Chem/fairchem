@@ -87,6 +87,7 @@ class eSCN(nn.Module, GraphModelMixin):
         basis_width_scalar: float = 1.0,
         distance_resolution: float = 0.02,
         show_timing_info: bool = False,
+        resolution: int | None = None,
     ) -> None:
         if mmax_list is None:
             mmax_list = [2]
@@ -176,7 +177,7 @@ class eSCN(nn.Module, GraphModelMixin):
         for lval in range(max(self.lmax_list) + 1):
             SO3_m_grid = nn.ModuleList()
             for m in range(max(self.lmax_list) + 1):
-                SO3_m_grid.append(SO3_Grid(lval, m))
+                SO3_m_grid.append(SO3_Grid(lval, m, resolution=resolution))
 
             self.SO3_grid.append(SO3_m_grid)
 
