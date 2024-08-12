@@ -22,7 +22,7 @@ import numpy.typing as npt
 import torch
 import torch.nn as nn
 import yaml
-from fairchem.src.fairchem.core.common.slurm import (
+from fairchem.core.common.slurm import (
     add_timestamp_id_to_submission_pickle,
 )
 from torch.nn.parallel.distributed import DistributedDataParallel
