@@ -6,12 +6,10 @@ tag-template: 'fairchem_demo_ocpapi-$RESOLVED_VERSION'
 name-template: 'fairchem_demo_ocpapi-$RESOLVED_VERSION'
 exclude-contributors: [github-actions] 
 categories:
-  - title: New Features
+  - title: New Features / Enhancements
     labels: [enhancement]
   - title: Bug Fixes
     labels: [bug]
-  - title: 🛠 Enhancements
-    labels: [enhancement]
   - title: Documentation
     labels: [documentation]
   - title: Tests
