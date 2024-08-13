@@ -45,10 +45,6 @@ if TYPE_CHECKING:
 
     from torch.nn.modules.module import _IncompatibleKeys
 
-# Statistics of IS2RE 100K
-_AVG_NUM_NODES = 77.81317
-_AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
-
 
 DEFAULT_ENV_VARS = {
     # Expandable segments is a new cuda feature that helps with memory fragmentation during frequent allocations (ie: in the case of variable batch sizes).
