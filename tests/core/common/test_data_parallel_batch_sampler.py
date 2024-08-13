@@ -185,7 +185,6 @@ def test_invalid_dataset(invalid_dataset) -> None:
             on_error="raise",
             seed=0,
         )
-        _ = sampler._get_natoms(list(range(len(SIZE_ATOMS))))
 
 
 def test_invalid_path_dataset(invalid_path_dataset) -> None:
