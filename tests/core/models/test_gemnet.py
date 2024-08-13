@@ -109,6 +109,8 @@ class TestGemNetT:
         outputs = self.model(data_list_collater([data]))
         energy, forces = outputs["energy"], outputs["forces"]
 
+        print(energy)
+        
         assert snapshot == energy.shape
         assert snapshot == pytest.approx(energy.detach())
 

@@ -124,6 +124,8 @@ class GemNetT(BaseModel):
         activation: str = "swish",
         num_elements: int = 83,
         scale_file: str | None = None,
+        regress_stress: bool = False,
+        use_pbc_single: bool = False,
     ):
         if cbf is None:
             cbf = {"name": "spherical_harmonics"}
@@ -254,6 +256,9 @@ class GemNetT(BaseModel):
         ]
 
         load_scales_compat(self, scale_file)
+        
+        self.regress_stress = regress_stress
+        self.use_pbc_single = use_pbc_single
 
     def get_triplets(self, edge_index, num_atoms):
         """
@@ -429,7 +434,7 @@ class GemNetT(BaseModel):
             cell_offsets,
             _,  # cell offset distances
             neighbors,
-        ) = self.generate_graph(data)
+        ) = self.generate_graph(data, use_pbc_single=self.use_pbc_single)
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
         V_st = -distance_vec / D_st[:, None]
@@ -497,6 +502,25 @@ class GemNetT(BaseModel):
         batch = data.batch
         atomic_numbers = data.atomic_numbers.long()
 
+        if self.regress_stress:
+            displacement = torch.zeros(
+                (3, 3),
+                dtype=data.pos.dtype,
+                device=data.pos.device,
+            )
+            num_batch = data.num_graphs
+            displacement = displacement.view(-1, 3, 3).expand(num_batch, 3, 3)
+            displacement.requires_grad = True
+            symmetric_displacement = 0.5 * (displacement + displacement.transpose(-1, -2))
+            
+            data.pos.requires_grad = True
+            data.pos = data.pos + torch.bmm(
+                data.pos.unsqueeze(-2), torch.index_select(symmetric_displacement, 0, data.batch)
+            ).squeeze(-2)
+            
+            orig_cell = data.cell
+            data.cell = data.cell + torch.bmm(data.cell, symmetric_displacement)
+            
         if self.regress_forces and not self.direct_forces:
             pos.requires_grad_(True)
 
@@ -565,7 +589,22 @@ class GemNetT(BaseModel):
 
         outputs = {"energy": E_t}
 
-        if self.regress_forces:
+        if self.regress_stress:
+            grads = torch.autograd.grad(
+                [E_t.sum()], 
+                [data.pos, displacement], 
+                create_graph=self.training
+            )
+            forces = torch.neg(grads[0])
+            virial = grads[1].view(-1, 3, 3)
+            # TODO is this volume calculation correct?
+            volume = torch.det(data.cell).abs().unsqueeze(-1)
+            stress = virial / volume.view(-1, 1, 1)
+            virial = torch.neg(virial)
+            outputs["forces"] = forces
+            outputs["stress"] = stress.view(-1, 3, 3)
+            data.cell = orig_cell
+        elif self.regress_forces:
             if self.direct_forces:
                 # map forces in edge directions
                 F_st_vec = F_st[:, :, None] * V_st[:, None, :]
@@ -593,8 +632,7 @@ class GemNetT(BaseModel):
                 else:
                     F_t = -torch.autograd.grad(E_t.sum(), pos, create_graph=True)[0]
                     # (nAtoms, 3)
-
-            outputs["forces"] = F_t
+            outputs["forces"] = F_t            
 
         return outputs
 

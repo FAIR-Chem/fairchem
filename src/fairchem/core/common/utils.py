@@ -38,7 +38,7 @@ from torch_geometric.utils import remove_self_loops
 from torch_scatter import scatter, segment_coo, segment_csr
 
 import fairchem.core
-from fairchem.core.modules.loss import AtomwiseL2Loss, L2MAELoss
+from fairchem.core.modules.loss import AtomwiseL2Loss, L2MAELoss, PerAtomL2Loss
 from fairchem.experimental.foundation_models.multi_task_dataloader.merge_stats import (
     combine_means_and_variances,
 )
@@ -685,7 +685,7 @@ def radius_graph_pbc(
 
     # Tensor of unit cells
     cells_per_dim = [
-        torch.arange(-rep, rep + 1, device=device, dtype=torch.float) for rep in max_rep
+        torch.arange(-int(rep), int(rep) + 1, device=device, dtype=torch.float) for rep in max_rep
     ]
     unit_cell = torch.cartesian_prod(*cells_per_dim)
     num_cells = len(unit_cell)
@@ -1360,6 +1360,8 @@ def get_loss_module(loss_name):
         loss_fn = L2MAELoss()
     elif loss_name == "atomwisel2":
         loss_fn = AtomwiseL2Loss()
+    elif loss_name == "peratoml2":
+        loss_fn = PerAtomL2Loss()
     else:
         raise NotImplementedError(f"Unknown loss function name: {loss_name}")
 

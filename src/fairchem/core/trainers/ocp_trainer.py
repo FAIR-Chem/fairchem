@@ -288,15 +288,24 @@ class OCPTrainer(BaseTrainer):
 
     def _compute_loss(self, out, batch):
         batch_size = batch.natoms.numel()
-        fixed = batch.fixed
+        fixed = batch.get("fixed", torch.zeros_like(batch.atomic_numbers))
         mask = fixed == 0
 
         loss = []
         for loss_fn in self.loss_fns:
             target_name, loss_info = loss_fn
 
-            target = batch[target_name]
             pred = out[target_name]
+            target = batch[target_name].to(pred.dtype)
+            
+            found_nans_or_infs = not torch.all(pred.isfinite())
+            if found_nans_or_infs:
+                self.save(checkpoint_file="found_nan.pt")
+                torch.save(batch, '/private/home/xiangfu/problem/mptraj_batch_.pt')
+                torch.save(self.model, '/private/home/xiangfu/problem/mptraj_model.pt')
+                print(batch)
+                print('Found nans while computing loss!!!!')
+                raise ValueError("Found nans while computing loss")
 
             natoms = batch.natoms
             natoms = torch.repeat_interleave(natoms, natoms)
@@ -325,7 +334,8 @@ class OCPTrainer(BaseTrainer):
                 * loss_info["fn"](
                     pred,
                     target,
-                    natoms=natoms,
+                    # natoms=natoms,
+                    natoms=batch.natoms, # TODO: hacky here. this works for our own peratoml2loss but not the original one.
                     batch_size=batch_size,
                 )
             )
@@ -347,7 +357,7 @@ class OCPTrainer(BaseTrainer):
         batch_size = natoms.numel()
 
         ### Retrieve free atoms
-        fixed = batch.fixed
+        fixed = batch.get("fixed", torch.zeros_like(batch.atomic_numbers))
         mask = fixed == 0
 
         s_idx = 0
@@ -384,6 +394,10 @@ class OCPTrainer(BaseTrainer):
 
         targets["natoms"] = natoms
         out["natoms"] = natoms
+        
+        if "energy" in targets:
+            out["per_atom_energy"] = out["energy"] / natoms.double()
+            targets["per_atom_energy"] = targets["energy"] / natoms.float()
 
         return evaluator.eval(out, targets, prev_metrics=metrics)
 

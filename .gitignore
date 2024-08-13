@@ -126,3 +126,5 @@ config.yml
 
 docs/autoapi/
 docs/tutorial/advanced/*.db
+
+.editorconfig

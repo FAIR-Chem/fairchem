@@ -316,6 +316,17 @@ def mae(
         "numel": error.numel(),
     }
 
+def rmse(
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
+    key: Hashable = NONE,
+) -> dict[str, float | int]:
+    error = torch.sqrt(((target[key] - prediction[key]) ** 2).sum(dim=-1))
+    return {
+        "metric": torch.mean(error).item(),
+        "total": torch.sum(error).item(),
+        "numel": error.numel(),
+    }
 
 def mse(
     prediction: dict[str, torch.Tensor],

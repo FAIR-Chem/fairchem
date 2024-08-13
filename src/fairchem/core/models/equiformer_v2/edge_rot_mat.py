@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 
 import torch
+from e3nn.o3 import rand_matrix
 
+YTOL = 0.9999
 
 def init_edge_rot_mat(edge_distance_vec):
     edge_vec_0 = edge_distance_vec
@@ -44,6 +46,7 @@ def init_edge_rot_mat(edge_distance_vec):
     norm_y = torch.cross(norm_x, norm_z, dim=1)
     norm_y = norm_y / (torch.sqrt(torch.sum(norm_y**2, dim=1, keepdim=True)))
 
+    yprod = (norm_x @ norm_x.new_tensor([0.,1.,0.]))
     # Construct the 3D rotation matrix
     norm_x = norm_x.view(-1, 3, 1)
     norm_y = -norm_y.view(-1, 3, 1)
@@ -51,5 +54,10 @@ def init_edge_rot_mat(edge_distance_vec):
 
     edge_rot_mat_inv = torch.cat([norm_z, norm_x, norm_y], dim=2)
     edge_rot_mat = torch.transpose(edge_rot_mat_inv, 1, 2)
-
-    return edge_rot_mat.detach()
+    
+    mask = (yprod > -YTOL) & (yprod < YTOL)
+    edge_rot_mat[~mask] = rand_matrix(int((~mask).sum()), dtype=edge_rot_mat.dtype, device=edge_rot_mat.device)
+    edge_rot_mat[yprod > YTOL, :, 1] = edge_rot_mat.new_tensor([[0., 1., 0.]])
+    edge_rot_mat[yprod < -YTOL, :, 1] = edge_rot_mat.new_tensor([[0., -1., 0.]])
+    
+    return edge_rot_mat

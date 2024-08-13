@@ -41,13 +41,33 @@ class AtomwiseL2Loss(nn.Module):
 
         dists = torch.norm(input - target, p=2, dim=-1)
         loss = natoms * dists
-
         if self.reduction == "mean":
             return torch.mean(loss)
         elif self.reduction == "sum":
             return torch.sum(loss)
         return None
 
+class PerAtomL2Loss(nn.Module):
+    def __init__(self, reduction: str = "mean") -> None:
+        super().__init__()
+        self.func = nn.MSELoss(reduction="none")
+        self.reduction = reduction
+        assert reduction in ["mean", "sum"]
+
+    def forward(
+        self,
+        input: torch.Tensor,
+        target: torch.Tensor,
+        natoms: torch.Tensor,
+    ):
+        dists = self.func(input, target)
+        loss = dists / natoms
+
+        if self.reduction == "mean":
+            return torch.mean(loss)
+        elif self.reduction == "sum":
+            return torch.sum(loss)
+        return None
 
 class DDPLoss(nn.Module):
     def __init__(
@@ -83,8 +103,8 @@ class DDPLoss(nn.Module):
         if found_nans_or_infs is True:
             logging.warning("Found nans while computing loss")
             input = torch.nan_to_num(input, nan=0.0)
-
-        if self.loss_name.startswith("atomwise"):
+            
+        if self.loss_name.startswith("atomwise") or self.loss_name.startswith("peratom"):
             loss = self.loss_fn(input, target, natoms)
         else:
             loss = self.loss_fn(input, target)

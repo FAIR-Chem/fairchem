@@ -453,8 +453,6 @@ class SO3_Rotation(torch.nn.Module):
         self.device, self.dtype = rot_mat3x3.device, rot_mat3x3.dtype
         self.wigner = self.RotationToWignerDMatrix(rot_mat3x3, 0, self.lmax)
         self.wigner_inv = torch.transpose(self.wigner, 1, 2).contiguous()
-        self.wigner = self.wigner.detach()
-        self.wigner_inv = self.wigner_inv.detach()
 
     # Rotate the embedding
     def rotate(self, embedding, out_lmax: int, out_mmax: int):
@@ -482,16 +480,28 @@ class SO3_Rotation(torch.nn.Module):
         )
         gamma = torch.atan2(R[..., 0, 2], R[..., 0, 0])
 
+        yprod = (x @ x.new_tensor([0, 1, 0])).detach()
+        mask = (yprod > -0.9999) & (yprod < 0.9999)
+        alpha_detach = alpha[~mask].clone().detach()
+        gamma_detach = gamma[~mask].clone().detach()
+        beta_detach = beta.clone().detach()
+        beta_detach[yprod > 0.9999] = 0.
+        beta_detach[yprod < -0.9999] = math.pi
+        beta_detach = beta_detach[~mask]
+        
         size = (end_lmax + 1) ** 2 - (start_lmax) ** 2
         wigner = torch.zeros(len(alpha), size, size, device=self.device)
         start = 0
+        
         for lmax in range(start_lmax, end_lmax + 1):
-            block = wigner_D(lmax, alpha, beta, gamma)
-            end = start + block.size()[1]
-            wigner[:, start:end, start:end] = block
+            block = wigner_D(lmax, alpha[mask], beta[mask], gamma[mask]).to(wigner.dtype)
+            block_detach = wigner_D(lmax, alpha_detach, beta_detach, gamma_detach).to(wigner.dtype)
+            end = start + block.size()[1]            
+            wigner[mask, start:end, start:end] = block
+            wigner[~mask, start:end, start:end] = block_detach
             start = end
 
-        return wigner.detach()
+        return wigner
 
 
 class SO3_Grid(torch.nn.Module):
