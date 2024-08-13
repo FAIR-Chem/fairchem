@@ -126,15 +126,8 @@ class FTConfig:
         return copy.deepcopy(self.config[FTConfig.HEADS])
 
 
-class FineTuneModelInterface(ABC):
-
-    @abstractmethod
-    def __init__(self, finetune_config: dict):
-        pass
-
-
 @registry.register_model(FTHYDRA_NAME)
-class FineTuneHydra(nn.Module, HydraInterface, FineTuneModelInterface):
+class FineTuneHydra(nn.Module, HydraInterface):
     def __init__(self, finetune_config: dict):
         super().__init__()
         ft_config = FTConfig(finetune_config)
