@@ -39,9 +39,6 @@ from torch_scatter import scatter, segment_coo, segment_csr
 
 import fairchem.core
 from fairchem.core.modules.loss import AtomwiseL2Loss, L2MAELoss
-from fairchem.experimental.foundation_models.multi_task_dataloader.merge_stats import (
-    combine_means_and_variances,
-)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -1409,86 +1406,3 @@ def get_loss_module(loss_name):
         raise NotImplementedError(f"Unknown loss function name: {loss_name}")
 
     return loss_fn
-
-
-def compute_mean_and_std_for_target(target_name, config, concat_dataset, level):
-    """
-    Given a target name , check the datasets used, their means and stdev,
-    their relative sizes in the virtual dataset and compute the corresponding
-    mean and stdev
-    """
-
-    # get the expanded sizes of each named dataset in the training virtual dataset
-    # along with mean and stdev for each property listed
-    _, expanded_sizes, _ = concat_dataset.updated_dataset_sizes
-    dataset_name_to_size_and_stats = {}
-    for dataset_idx in range(len(expanded_sizes)):
-        dataset_name = concat_dataset.dataset_names[dataset_idx]
-        dataset_name_to_size_and_stats[dataset_name] = {
-            "size": expanded_sizes[dataset_idx]
-        }
-        if "normalization_constants" in config["datasets"][dataset_name]:
-            dataset_name_to_size_and_stats[dataset_name].update(
-                config["datasets"][dataset_name]["normalization_constants"]
-            )
-            if (
-                "average_atoms_per_system"
-                not in dataset_name_to_size_and_stats[dataset_name]
-            ):
-                logging.warn(
-                    f"{dataset_name} is missing normalization constant: 'average_atoms_per_system', assuming {_AVG_NUM_NODES}"
-                )
-                dataset_name_to_size_and_stats[dataset_name][
-                    "average_atoms_per_system"
-                ] = _AVG_NUM_NODES
-        assert level in {"atom", "system"}
-        if level == "atom":
-            dataset_name_to_size_and_stats[dataset_name][
-                "size"
-            ] *= dataset_name_to_size_and_stats[dataset_name][
-                "average_atoms_per_system"
-            ]
-
-    # TODO this is hacky, should be replaced with task.property
-    property = config["tasks"][target_name]["property"]
-    dataset_names = config["tasks"][target_name]["datasets"]
-
-    dataset_sizes, dataset_means, dataset_vars = [], [], []
-
-    for dataset_name in dataset_names:
-        if property not in dataset_name_to_size_and_stats[dataset_name]:
-            raise ValueError(
-                f"Failed to compute mean and std on the fly because missing '{property}' for dataset '{dataset_name}'"
-            )
-        if (
-            "mean" not in dataset_name_to_size_and_stats[dataset_name][property]
-            or "stdev" not in dataset_name_to_size_and_stats[dataset_name][property]
-        ):
-            raise ValueError(
-                f"Failed to compute mean and std on the fly because missing mean,stdev for '{property}' on dataset '{dataset_name}'"
-            )
-        dataset_sizes.append(dataset_name_to_size_and_stats[dataset_name]["size"])
-        dataset_means.append(
-            dataset_name_to_size_and_stats[dataset_name][property]["mean"]
-        )
-        dataset_vars.append(
-            dataset_name_to_size_and_stats[dataset_name][property]["stdev"] ** 2
-        )
-
-    calculated_mean, calculated_variance = combine_means_and_variances(
-        pop_sizes=dataset_sizes,
-        pop_variances=dataset_vars,
-        pop_means=dataset_means,
-        ddof=1,
-    )
-    calculated_stdev = np.sqrt(calculated_variance)
-
-    if len(dataset_means) == 1:
-        logging.info(
-            f"Using pass through mean,stdev for {target_name} , mean={calculated_mean}, stdev={calculated_stdev}, from {dataset_names}"
-        )
-    else:
-        logging.info(
-            f"Computed mean,stdev for {target_name} , mean={calculated_mean}, stdev={calculated_stdev}, across datasets {dataset_names}"
-        )
-    return calculated_mean, calculated_stdev
