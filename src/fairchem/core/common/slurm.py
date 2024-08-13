@@ -5,9 +5,12 @@ import os
 import pickle
 
 
-def add_timestamp_id_to_submission_pickle(slurm_folder, slurm_job_id, timestamp_id):
-    # Try to put the timestamp-id into the original submission pickle's config so that if the node crashes, it can be pick up
-    # the correct run to resume
+def add_timestamp_id_to_submission_pickle(slurm_folder: str, slurm_job_id: str, timestamp_id: str):
+    # Try to put the timestamp-id into the original submission pickle's config
+    # so that if the node crashes, it can be pick up the correct run to resume
+    #
+    # we need to do this after the job has started because the timestamp-id is generated at runtime
+    # instead a-priori before the submission starts (ie: if we had a db to store a global job unique job)
     submission_pickle_path = os.path.join(slurm_folder, f"{slurm_job_id}_submitted.pkl")
     try:
         with open(submission_pickle_path, "rb") as f:
@@ -17,4 +20,6 @@ def add_timestamp_id_to_submission_pickle(slurm_folder, slurm_job_id, timestamp_
         with open(submission_pickle_path, "wb") as f:
             pickle.dump(pkl, f)
     except Exception as e:
+        # Since this only affects the ability to resume jobs, if the pickle doesn't exist
+        # or the format changed, throw a warning instead of failing the job here
         logging.warn(f"Couldn't modify the submission pickle with error: {e}")
