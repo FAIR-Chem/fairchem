@@ -30,6 +30,9 @@ from fairchem.core import __version__
 from fairchem.core.common import distutils, gp_utils
 from fairchem.core.common.data_parallel import BalancedBatchSampler, OCPCollater
 from fairchem.core.common.registry import registry
+from fairchem.core.common.slurm import (
+    add_timestamp_id_to_submission_pickle,
+)
 from fairchem.core.common.typing import assert_is_instance as aii
 from fairchem.core.common.typing import none_throws
 from fairchem.core.common.utils import (
@@ -155,6 +158,8 @@ class BaseTrainer(ABC):
             self.config["slurm"]["folder"] = self.config["slurm"]["folder"].replace(
                 "%j", self.config["slurm"]["job_id"]
             )
+            if distutils.is_master():
+                add_timestamp_id_to_submission_pickle(self.config["slurm"]["folder"], self.config["slurm"]["job_id"], self.timestamp_id)
 
         # Define datasets
         if isinstance(dataset, list):
