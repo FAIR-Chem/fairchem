@@ -159,7 +159,8 @@ class BaseTrainer(ABC):
             self.config["slurm"]["folder"] = self.config["slurm"]["folder"].replace(
                 "%j", self.config["slurm"]["job_id"]
             )
-            add_timestamp_id_to_submission_pickle(self.config["slurm"]["folder"], self.config["slurm"]["job_id"], self.timestamp_id)
+            if distutils.is_master():
+                add_timestamp_id_to_submission_pickle(self.config["slurm"]["folder"], self.config["slurm"]["job_id"], self.timestamp_id)
 
         # Define datasets
         if isinstance(dataset, list):
