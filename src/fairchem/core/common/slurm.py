@@ -12,7 +12,7 @@ def add_timestamp_id_to_submission_pickle(slurm_folder: str, slurm_job_id: str, 
     #
     # we need to do this after the job has started because the timestamp-id is generated at runtime
     # instead a-priori before the submission starts (ie: if we had a db to store a global job unique job)
-    submission_pickle_path = JobPaths(folder=slurm_folder, job_id=slurm_job_id).result_pickle
+    submission_pickle_path = JobPaths(folder=slurm_folder, job_id=slurm_job_id).submitted_pickle
     try:
         with open(str(submission_pickle_path), "rb") as f:
             pkl = pickle.load(f)
