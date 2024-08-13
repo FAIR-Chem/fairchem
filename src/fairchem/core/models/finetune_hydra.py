@@ -44,9 +44,9 @@ def load_hydra_model(checkpoint_path: str) -> HydraInterface:
         )
     logging.info(f"Loading checkpoint from: {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path)
-    config_copy = copy.deepcopy(checkpoint["config"]["model"])
-    name = config_copy.pop("name")
-    hydra_model = registry.get_model_class(name)(**config_copy)
+    config = checkpoint["config"]["model"]
+    name = config.pop("name")
+    hydra_model = registry.get_model_class(name)(**config)
     assert isinstance(
         hydra_model, HydraInterface
     ), "Can only load models with the HydraInterface"
@@ -85,13 +85,13 @@ class FTConfig:
             config_copy = copy.deepcopy(self.config[FTConfig.STARTING_MODEL])
             name = config_copy.pop("name")
             hydra_model = registry.get_model_class(name)(**config_copy)
-            assert isinstance(hydra_model, HydraInterface)
         # if provided a checkpoint to start then load the model and weights from the given checkpoint
         # this happens used in the beginning of a finetuning run
         elif FTConfig.STARTING_CHECKPOINT in self.config:
             hydra_model: HydraInterface = load_hydra_model(
                 self.config[FTConfig.STARTING_CHECKPOINT]
             )
+        assert isinstance(hydra_model, HydraInterface)
 
         num_params = sum(p.numel() for p in hydra_model.parameters())
         logging.info(f"Loaded Original hydra model with {num_params} params")
@@ -115,9 +115,7 @@ class FTConfig:
                 )
             )
             standalone_config[FTConfig.FT_CONFIG_NAME] = new_config
-            return standalone_config
-        else:
-            return standalone_config
+        return standalone_config
 
     @property
     def mode(self) -> FineTuneMode:

@@ -293,7 +293,7 @@ class BaseTrainer(ABC):
         )
 
     def load_datasets(self) -> None:
-        self.ocp_collater = OCPCollater(self.config["model"].get("otf_graph", True))
+        self.ocp_collater = OCPCollater(self.config["model"].get("otf_graph", False))
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
