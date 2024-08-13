@@ -3,7 +3,7 @@ trainer: equiformerv2_forces
 dataset:
   train:
     format: lmdb
-    src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/train/all #data/s2ef/train/
+    src: data/s2ef/train/
     key_mapping:
       y: energy
       force: forces
@@ -16,7 +16,7 @@ dataset:
           mean: 0
           stdev: 2.887317180633545
   val:
-    src: /datasets01/open_catalyst/oc20/082422/struct_to_energy_forces/val/id #data/s2ef/val_id/
+    src: data/s2ef/val_id/
 
 logger: wandb
 
