@@ -814,7 +814,7 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
                     graph.edge_index,
                     data_batch,  # for GraphDropPath
                     graph.node_offset,
-                    use_reentrant=False if self.training else True
+                    use_reentrant=not self.training,
                 )
             else:
                 x = self.blocks[i](
@@ -908,7 +908,7 @@ class EquiformerV2ForceHead(nn.Module, HeadInterface):
                 emb["graph"].edge_distance,
                 emb["graph"].edge_index,
                 emb["graph"].node_offset,
-                use_reentrant=False if self.training else True,
+                use_reentrant=not self.training,
             )
         else:
             forces = self.force_block(

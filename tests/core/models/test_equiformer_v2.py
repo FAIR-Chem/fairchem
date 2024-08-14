@@ -14,9 +14,8 @@ from pathlib import Path
 
 import pytest
 import requests
-import yaml
-from fairchem.core.models.base import HydraModel
 import torch
+import yaml
 from ase.io import read
 from torch.nn.parallel.distributed import DistributedDataParallel
 
@@ -239,7 +238,7 @@ def _load_hydra_model():
     torch.manual_seed(4)
     with open(Path("tests/core/models/test_configs/test_equiformerv2_hydra.yml")) as yaml_file:
         yaml_config = yaml.safe_load(yaml_file)
-        model = registry.get_model_class("hydra")(yaml_config['model']['backbone'],yaml_config['model']['heads'])
+        model = registry.get_model_class("hydra")(yaml_config["model"]["backbone"],yaml_config["model"]["heads"])
     model.backbone.num_layers = 1
     return model
 
@@ -264,13 +263,13 @@ def test_eqv2_hydra():
     start_rng_state = torch.random.get_rng_state()
     outputs_no_ac = no_ac_model(inputs)
     print(outputs_no_ac)
-    torch.autograd.backward(outputs_no_ac['energy'].sum() + outputs_no_ac['forces'].sum())
+    torch.autograd.backward(outputs_no_ac["energy"].sum() + outputs_no_ac["forces"].sum())
 
     # reset the rng state to the beginning
     torch.random.set_rng_state(start_rng_state)
     outptuts_ac = ac_model(inputs)
     print(outptuts_ac)
-    torch.autograd.backward(outptuts_ac['energy'].sum() + outptuts_ac['forces'].sum())
+    torch.autograd.backward(outptuts_ac["energy"].sum() + outptuts_ac["forces"].sum())
 
     ac_model_grad_dict = {name:p.grad for name, p in ac_model.named_parameters() if p.grad is not None}
     no_ac_model_grad_dict = {name:p.grad for name, p in no_ac_model.named_parameters() if p.grad is not None}
