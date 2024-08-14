@@ -813,7 +813,7 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
                     graph.edge_distance,
                     graph.edge_index,
                     data_batch,  # for GraphDropPath
-                    node_offset,
+                    graph.node_offset,
                     use_reentrant=False if self.training else True
                 )
             else:
