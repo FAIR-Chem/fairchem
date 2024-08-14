@@ -702,6 +702,9 @@ class BaseTrainer(ABC):
         self.clip_grad_norm = aii(
             self.config["optim"].get("clip_grad_norm", None), (int, float)
         )
+        self.clip_grad_value = aii(
+            self.config["optim"].get("clip_grad_value", None), (int, float)
+        )
         self.ema_decay = aii(self.config["optim"].get("ema_decay"), float)
         if self.ema_decay:
             self.ema = ExponentialMovingAverage(
@@ -886,15 +889,18 @@ class BaseTrainer(ABC):
                             "Please check if all shared parameters are used "
                             "and point to PyTorch parameters."
                         )
-        if self.clip_grad_norm:
+        if self.clip_grad_norm or self.clip_grad_value:
             if self.scaler:
                 self.scaler.unscale_(self.optimizer)
-            grad_norm = torch.nn.utils.clip_grad_norm_(
-                self.model.parameters(),
-                max_norm=self.clip_grad_norm,
-            )
-            if self.logger is not None:
-                self.logger.log({"grad_norm": grad_norm}, step=self.step, split="train")
+            if self.clip_grad_norm:
+                grad_norm = torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(),
+                    max_norm=self.clip_grad_norm,
+                )
+                if self.logger is not None:
+                    self.logger.log({"grad_norm": grad_norm}, step=self.step, split="train")
+            if self.clip_grad_value:
+                torch.nn.utils.clip_grad_value_(self.model.parameters(), clip_value=self.clip_grad_value)
         if self.scaler:
             self.scaler.step(self.optimizer)
             self.scaler.update()
