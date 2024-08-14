@@ -70,6 +70,27 @@ Package Contents
    .. py:attribute:: scaler
 
 
+   .. py:attribute:: elementrefs
+
+
+   .. py:attribute:: normalizers
+
+
+   .. py:attribute:: train_dataset
+      :value: None
+
+
+
+   .. py:attribute:: val_dataset
+      :value: None
+
+
+
+   .. py:attribute:: test_dataset
+      :value: None
+
+
+
    .. py:method:: train(disable_eval_tqdm: bool = False) -> None
       :abstractmethod:
 
@@ -102,6 +123,12 @@ Package Contents
 
 
    .. py:method:: load_datasets() -> None
+
+
+   .. py:method:: load_references_and_normalizers()
+
+      Load or create element references and normalizers from config
+
 
 
    .. py:method:: load_task()
@@ -201,6 +228,12 @@ Package Contents
    .. py:method:: train(disable_eval_tqdm: bool = False) -> None
 
       Run model training iterations.
+
+
+
+   .. py:method:: _denorm_preds(target_key: str, prediction: torch.Tensor, batch: torch_geometric.data.Batch)
+
+      Convert model output from a batch into raw prediction by denormalizing and adding references
 
 
 

@@ -13,8 +13,11 @@ Submodules
    /autoapi/data/oc/core/adsorbate/index
    /autoapi/data/oc/core/adsorbate_slab_config/index
    /autoapi/data/oc/core/bulk/index
+   /autoapi/data/oc/core/interface_config/index
+   /autoapi/data/oc/core/ion/index
    /autoapi/data/oc/core/multi_adsorbate_slab_config/index
    /autoapi/data/oc/core/slab/index
+   /autoapi/data/oc/core/solvent/index
 
 
 Classes
@@ -25,8 +28,11 @@ Classes
    data.oc.core.Adsorbate
    data.oc.core.AdsorbateSlabConfig
    data.oc.core.Bulk
+   data.oc.core.InterfaceConfig
+   data.oc.core.Ion
    data.oc.core.MultipleAdsorbateSlabConfig
    data.oc.core.Slab
+   data.oc.core.Solvent
 
 
 Package Contents
@@ -310,6 +316,171 @@ Package Contents
 
 
 
+.. py:class:: InterfaceConfig(slab: fairchem.data.oc.core.slab.Slab, adsorbates: list[fairchem.data.oc.core.adsorbate.Adsorbate], solvent: fairchem.data.oc.core.solvent.Solvent, ions: list[fairchem.data.oc.core.ion.Ion] | None = None, num_sites: int = 100, num_configurations: int = 1, interstitial_gap: float = 0.1, vacuum_size: int = 15, solvent_interstitial_gap: float = 2, solvent_depth: float = 8, pbc_shift: float = 0.0, packmol_tolerance: float = 2, mode: str = 'random_site_heuristic_placement')
+
+   Bases: :py:obj:`fairchem.data.oc.core.multi_adsorbate_slab_config.MultipleAdsorbateSlabConfig`
+
+
+   Class to represent a solvent, adsorbate, slab, ion config. This class only
+   returns a fixed combination of adsorbates placed on the surface. Solvent
+   placement is performed by packmol
+   (https://m3g.github.io/packmol/userguide.shtml), with the number of solvent
+   molecules controlled by its corresponding density. Ion placement is random
+   within the desired volume.
+
+   :param slab: Slab object.
+   :type slab: Slab
+   :param adsorbates: List of adsorbate objects to place on the slab.
+   :type adsorbates: List[Adsorbate]
+   :param solvent: Solvent object
+   :type solvent: Solvent
+   :param ions: List of ion objects to place
+   :type ions: List[Ion] = []
+   :param num_sites: Number of sites to sample.
+   :type num_sites: int
+   :param num_configurations: Number of configurations to generate per slab+adsorbate(s) combination.
+                              This corresponds to selecting different site combinations to place
+                              the adsorbates on.
+   :type num_configurations: int
+   :param interstitial_gap: Minimum distance, in Angstroms, between adsorbate and slab atoms as
+                            well as the inter-adsorbate distance.
+   :type interstitial_gap: float
+   :param vacuum_size: Size of vacuum layer to add to both ends of the resulting atoms object.
+   :type vacuum_size: int
+   :param solvent_interstitial_gap: Minimum distance, in Angstroms, between the solvent environment and the
+                                    adsorbate-slab environment.
+   :type solvent_interstitial_gap: float
+   :param solvent_depth: Volume depth to be used to pack solvents inside.
+   :type solvent_depth: float
+   :param pbc_shift: Cushion to add to the packmol volume to avoid overlapping atoms over pbc.
+   :type pbc_shift: float
+   :param packmol_tolerance: Packmol minimum distance to impose between molecules.
+   :type packmol_tolerance: float
+   :param mode: "random", "heuristic", or "random_site_heuristic_placement".
+                This affects surface site sampling and adsorbate placement on each site.
+
+                In "random", we do a Delaunay triangulation of the surface atoms, then
+                sample sites uniformly at random within each triangle. When placing the
+                adsorbate, we randomly rotate it along xyz, and place it such that the
+                center of mass is at the site.
+
+                In "heuristic", we use Pymatgen's AdsorbateSiteFinder to find the most
+                energetically favorable sites, i.e., ontop, bridge, or hollow sites.
+                When placing the adsorbate, we randomly rotate it along z with only
+                slight rotation along x and y, and place it such that the binding atom
+                is at the site.
+
+                In "random_site_heuristic_placement", we do a Delaunay triangulation of
+                the surface atoms, then sample sites uniformly at random within each
+                triangle. When placing the adsorbate, we randomly rotate it along z with
+                only slight rotation along x and y, and place it such that the binding
+                atom is at the site.
+
+                In all cases, the adsorbate is placed at the closest position of no
+                overlap with the slab plus `interstitial_gap` along the surface normal.
+   :type mode: str
+
+
+   .. py:attribute:: solvent
+
+
+   .. py:attribute:: ions
+
+
+   .. py:attribute:: vacuum_size
+
+
+   .. py:attribute:: solvent_depth
+
+
+   .. py:attribute:: solvent_interstitial_gap
+
+
+   .. py:attribute:: pbc_shift
+
+
+   .. py:attribute:: packmol_tolerance
+
+
+   .. py:attribute:: n_mol_per_volume
+
+
+   .. py:method:: create_interface_on_sites(atoms_list: list[ase.Atoms], metadata_list: list[dict])
+
+      Given adsorbate+slab configurations generated from
+      (Multi)AdsorbateSlabConfig and its corresponding metadata, create the
+      solvent/ion interface on top of the provided atoms objects.
+
+
+
+   .. py:method:: create_packmol_atoms(geometry: fairchem.data.oc.utils.geometry.Geometry, n_solvent_mols: int)
+
+      Pack solvent molecules in a provided unit cell volume. Packmol is used
+      to randomly pack solvent molecules in the desired volume.
+
+      :param geometry: Geometry object corresponding to the desired cell.
+      :type geometry: Geometry
+      :param n_solvent_mols: Number of solvent molecules to pack in the volume.
+      :type n_solvent_mols: int
+
+
+
+   .. py:method:: run_packmol(packmol_input: str)
+
+      Run packmol.
+
+
+
+   .. py:method:: randomize_coords(atoms: ase.Atoms)
+
+      Randomly place the atoms in its unit cell.
+
+
+
+.. py:class:: Ion(ion_atoms: ase.Atoms = None, ion_id_from_db: int | None = None, ion_db_path: str = ION_PKL_PATH)
+
+   Initializes an ion object in one of 2 ways:
+   - Directly pass in an ase.Atoms object.
+   - Pass in index of ion to select from ion database.
+
+   :param ion_atoms: ion structure.
+   :type ion_atoms: ase.Atoms
+   :param ion_id_from_db: Index of ion to select.
+   :type ion_id_from_db: int
+   :param ion_db_path: Path to ion database.
+   :type ion_db_path: str
+
+
+   .. py:attribute:: ion_id_from_db
+
+
+   .. py:attribute:: ion_db_path
+
+
+   .. py:method:: __len__()
+
+
+   .. py:method:: __str__()
+
+      Return str(self).
+
+
+
+   .. py:method:: _load_ion(ion: dict) -> None
+
+      Saves the fields from an ion stored in a database. Fields added
+      after the first revision are conditionally added for backwards
+      compatibility with older database files.
+
+
+
+   .. py:method:: get_ion_concentration(volume)
+
+      Compute the ion concentration units of M, given a volume in units of
+      Angstrom^3.
+
+
+
 .. py:class:: MultipleAdsorbateSlabConfig(slab: fairchem.data.oc.core.slab.Slab, adsorbates: list[fairchem.data.oc.core.adsorbate.Adsorbate], num_sites: int = 100, num_configurations: int = 1, interstitial_gap: float = 0.1, mode: str = 'random_site_heuristic_placement')
 
    Bases: :py:obj:`fairchem.data.oc.core.adsorbate_slab_config.AdsorbateSlabConfig`
@@ -486,5 +657,56 @@ Package Contents
 
       Return self==value.
 
+
+
+.. py:class:: Solvent(solvent_atoms: ase.Atoms = None, solvent_id_from_db: int | None = None, solvent_db_path: str | None = SOLVENT_PKL_PATH, solvent_density: float | None = None)
+
+   Initializes a solvent object in one of 2 ways:
+   - Directly pass in an ase.Atoms object.
+   - Pass in index of solvent to select from solvent database.
+
+   :param solvent_atoms: Solvent molecule
+   :type solvent_atoms: ase.Atoms
+   :param solvent_id_from_db: Index of solvent to select.
+   :type solvent_id_from_db: int
+   :param solvent_db_path: Path to solvent database.
+   :type solvent_db_path: str
+   :param solvent_density: Desired solvent density to use. If not specified, the default is used
+                           from the solvent databases.
+   :type solvent_density: float
+
+
+   .. py:attribute:: solvent_id_from_db
+
+
+   .. py:attribute:: solvent_db_path
+
+
+   .. py:attribute:: solvent_density
+
+
+   .. py:attribute:: molar_mass
+
+
+   .. py:method:: __len__()
+
+
+   .. py:method:: __str__()
+
+      Return str(self).
+
+
+
+   .. py:method:: _load_solvent(solvent: dict) -> None
+
+      Saves the fields from an adsorbate stored in a database. Fields added
+      after the first revision are conditionally added for backwards
+      compatibility with older database files.
+
+
+
+   .. py:property:: molecules_per_volume
+      Convert the solvent density in g/cm3 to the number of molecules per
+      angstrom cubed of volume.
 
 

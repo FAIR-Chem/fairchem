@@ -336,7 +336,7 @@ Module Contents
 
 
 
-.. py:class:: DimeNetPlusPlusWrap(use_pbc: bool = True, regress_forces: bool = True, hidden_channels: int = 128, num_blocks: int = 4, int_emb_size: int = 64, basis_emb_size: int = 8, out_emb_channels: int = 256, num_spherical: int = 7, num_radial: int = 6, otf_graph: bool = False, cutoff: float = 10.0, envelope_exponent: int = 5, num_before_skip: int = 1, num_after_skip: int = 2, num_output_layers: int = 3)
+.. py:class:: DimeNetPlusPlusWrap(use_pbc: bool = True, use_pbc_single: bool = False, regress_forces: bool = True, hidden_channels: int = 128, num_blocks: int = 4, int_emb_size: int = 64, basis_emb_size: int = 8, out_emb_channels: int = 256, num_spherical: int = 7, num_radial: int = 6, otf_graph: bool = False, cutoff: float = 10.0, envelope_exponent: int = 5, num_before_skip: int = 1, num_after_skip: int = 2, num_output_layers: int = 3)
 
    Bases: :py:obj:`DimeNetPlusPlus`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
@@ -380,6 +380,9 @@ Module Contents
    .. py:attribute:: use_pbc
 
 
+   .. py:attribute:: use_pbc_single
+
+
    .. py:attribute:: cutoff
 
 
@@ -402,7 +405,7 @@ Module Contents
 
 
 
-.. py:class:: DimeNetPlusPlusWrapBackbone(use_pbc: bool = True, regress_forces: bool = True, hidden_channels: int = 128, num_blocks: int = 4, int_emb_size: int = 64, basis_emb_size: int = 8, out_emb_channels: int = 256, num_spherical: int = 7, num_radial: int = 6, otf_graph: bool = False, cutoff: float = 10.0, envelope_exponent: int = 5, num_before_skip: int = 1, num_after_skip: int = 2, num_output_layers: int = 3)
+.. py:class:: DimeNetPlusPlusWrapBackbone(use_pbc: bool = True, use_pbc_single: bool = False, regress_forces: bool = True, hidden_channels: int = 128, num_blocks: int = 4, int_emb_size: int = 64, basis_emb_size: int = 8, out_emb_channels: int = 256, num_spherical: int = 7, num_radial: int = 6, otf_graph: bool = False, cutoff: float = 10.0, envelope_exponent: int = 5, num_before_skip: int = 1, num_after_skip: int = 2, num_output_layers: int = 3)
 
    Bases: :py:obj:`DimeNetPlusPlusWrap`, :py:obj:`fairchem.core.models.base.BackboneInterface`
 

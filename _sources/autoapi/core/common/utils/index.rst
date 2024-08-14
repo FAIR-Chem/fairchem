@@ -66,6 +66,7 @@ Functions
    core.common.utils.new_trainer_context
    core.common.utils._resolve_scale_factor_submodule
    core.common.utils._report_incompat_keys
+   core.common.utils.match_state_dict
    core.common.utils.load_state_dict
    core.common.utils.scatter_det
    core.common.utils.get_commit_hash
@@ -254,6 +255,8 @@ Module Contents
 .. py:function:: _resolve_scale_factor_submodule(model: torch.nn.Module, name: str)
 
 .. py:function:: _report_incompat_keys(model: torch.nn.Module, keys: torch.nn.modules.module._IncompatibleKeys, strict: bool = False) -> tuple[list[str], list[str]]
+
+.. py:function:: match_state_dict(model_state_dict: collections.abc.Mapping[str, torch.Tensor], checkpoint_state_dict: collections.abc.Mapping[str, torch.Tensor]) -> dict
 
 .. py:function:: load_state_dict(module: torch.nn.Module, state_dict: collections.abc.Mapping[str, torch.Tensor], strict: bool = True) -> tuple[list[str], list[str]]
 

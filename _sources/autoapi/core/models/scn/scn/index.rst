@@ -26,7 +26,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: SphericalChannelNetwork(use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, max_num_neighbors: int = 20, cutoff: float = 8.0, max_num_elements: int = 90, num_interactions: int = 8, lmax: int = 6, mmax: int = 1, num_resolutions: int = 2, sphere_channels: int = 128, sphere_channels_reduce: int = 128, hidden_channels: int = 256, num_taps: int = -1, use_grid: bool = True, num_bands: int = 1, num_sphere_samples: int = 128, num_basis_functions: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, show_timing_info: bool = False, direct_forces: bool = True)
+.. py:class:: SphericalChannelNetwork(use_pbc: bool = True, use_pbc_single: bool = True, regress_forces: bool = True, otf_graph: bool = False, max_num_neighbors: int = 20, cutoff: float = 8.0, max_num_elements: int = 90, num_interactions: int = 8, lmax: int = 6, mmax: int = 1, num_resolutions: int = 2, sphere_channels: int = 128, sphere_channels_reduce: int = 128, hidden_channels: int = 256, num_taps: int = -1, use_grid: bool = True, num_bands: int = 1, num_sphere_samples: int = 128, num_basis_functions: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, show_timing_info: bool = False, direct_forces: bool = True)
 
    Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
@@ -36,6 +36,8 @@ Module Contents
 
    :param use_pbc: Use periodic boundary conditions
    :type use_pbc: bool
+   :param use_pbc_single: Process batch PBC graphs one at a time
+   :type use_pbc_single: bool
    :param regress_forces: Compute forces
    :type regress_forces: bool
    :param otf_graph: Compute graph On The Fly (OTF)
@@ -108,6 +110,9 @@ Module Contents
 
 
    .. py:attribute:: use_pbc
+
+
+   .. py:attribute:: use_pbc_single
 
 
    .. py:attribute:: cutoff

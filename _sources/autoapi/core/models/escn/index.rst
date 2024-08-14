@@ -25,7 +25,7 @@ Classes
 Package Contents
 ----------------
 
-.. py:class:: eSCN(use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, max_neighbors: int = 40, cutoff: float = 8.0, max_num_elements: int = 90, num_layers: int = 8, lmax_list: list[int] | None = None, mmax_list: list[int] | None = None, sphere_channels: int = 128, hidden_channels: int = 256, edge_channels: int = 128, num_sphere_samples: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, show_timing_info: bool = False)
+.. py:class:: eSCN(use_pbc: bool = True, use_pbc_single: bool = False, regress_forces: bool = True, otf_graph: bool = False, max_neighbors: int = 40, cutoff: float = 8.0, max_num_elements: int = 90, num_layers: int = 8, lmax_list: list[int] | None = None, mmax_list: list[int] | None = None, sphere_channels: int = 128, hidden_channels: int = 256, edge_channels: int = 128, num_sphere_samples: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, show_timing_info: bool = False)
 
    Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
@@ -36,6 +36,8 @@ Package Contents
 
    :param use_pbc: Use periodic boundary conditions
    :type use_pbc: bool
+   :param use_pbc_single: Process batch PBC graphs one at a time
+   :type use_pbc_single: bool
    :param regress_forces: Compute forces
    :type regress_forces: bool
    :param otf_graph: Compute graph On The Fly (OTF)
@@ -74,6 +76,9 @@ Package Contents
 
 
    .. py:attribute:: use_pbc
+
+
+   .. py:attribute:: use_pbc_single
 
 
    .. py:attribute:: cutoff

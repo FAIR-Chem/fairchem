@@ -34,6 +34,7 @@ Functions
    core.common.distutils.is_master
    core.common.distutils.synchronize
    core.common.distutils.broadcast
+   core.common.distutils.broadcast_object_list
    core.common.distutils.all_reduce
    core.common.distutils.all_gather
    core.common.distutils.gather_objects
@@ -61,6 +62,8 @@ Module Contents
 .. py:function:: synchronize() -> None
 
 .. py:function:: broadcast(tensor: torch.Tensor, src, group=dist.group.WORLD, async_op: bool = False) -> None
+
+.. py:function:: broadcast_object_list(object_list: list[Any], src: int, group=dist.group.WORLD, device: str | None = None) -> None
 
 .. py:function:: all_reduce(data, group=dist.group.WORLD, average: bool = False, device=None) -> torch.Tensor
 

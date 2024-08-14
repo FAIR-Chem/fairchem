@@ -87,6 +87,12 @@ Module Contents
 
 
 
+   .. py:method:: _denorm_preds(target_key: str, prediction: torch.Tensor, batch: torch_geometric.data.Batch)
+
+      Convert model output from a batch into raw prediction by denormalizing and adding references
+
+
+
    .. py:method:: _forward(batch)
 
 

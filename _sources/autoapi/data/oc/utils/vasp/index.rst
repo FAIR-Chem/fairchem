@@ -19,8 +19,6 @@ Attributes
 
    data.oc.utils.vasp.__author__
    data.oc.utils.vasp.__email__
-   data.oc.utils.vasp.VASP_FLAGS
-   data.oc.utils.vasp.BULK_VASP_FLAGS
 
 
 Functions
@@ -43,10 +41,6 @@ Module Contents
 .. py:data:: __email__
    :value: 'ktran@andrew.cmu.edu'
 
-
-.. py:data:: VASP_FLAGS
-
-.. py:data:: BULK_VASP_FLAGS
 
 .. py:function:: _clean_up_inputs(atoms, vasp_flags)
 

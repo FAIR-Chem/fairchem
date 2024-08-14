@@ -67,6 +67,27 @@ Module Contents
    .. py:attribute:: scaler
 
 
+   .. py:attribute:: elementrefs
+
+
+   .. py:attribute:: normalizers
+
+
+   .. py:attribute:: train_dataset
+      :value: None
+
+
+
+   .. py:attribute:: val_dataset
+      :value: None
+
+
+
+   .. py:attribute:: test_dataset
+      :value: None
+
+
+
    .. py:method:: train(disable_eval_tqdm: bool = False) -> None
       :abstractmethod:
 
@@ -99,6 +120,12 @@ Module Contents
 
 
    .. py:method:: load_datasets() -> None
+
+
+   .. py:method:: load_references_and_normalizers()
+
+      Load or create element references and normalizers from config
+
 
 
    .. py:method:: load_task()

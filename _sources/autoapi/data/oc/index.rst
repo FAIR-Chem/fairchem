@@ -20,7 +20,6 @@ Subpackages
 
    /autoapi/data/oc/core/index
    /autoapi/data/oc/databases/index
-   /autoapi/data/oc/tests/index
    /autoapi/data/oc/utils/index
 
 

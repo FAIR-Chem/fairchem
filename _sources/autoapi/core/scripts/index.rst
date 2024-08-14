@@ -29,6 +29,8 @@ Submodules
 
    /autoapi/core/scripts/download_data/index
    /autoapi/core/scripts/download_large_files/index
+   /autoapi/core/scripts/fit_normalizers/index
+   /autoapi/core/scripts/fit_references/index
    /autoapi/core/scripts/gif_maker_parallelized/index
    /autoapi/core/scripts/make_challenge_submission_file/index
    /autoapi/core/scripts/make_lmdb_sizes/index

@@ -11,6 +11,8 @@ Attributes
 
    data.oc.databases.pkls.BULK_PKL_PATH
    data.oc.databases.pkls.ADSORBATE_PKL_PATH
+   data.oc.databases.pkls.SOLVENT_PKL_PATH
+   data.oc.databases.pkls.ION_PKL_PATH
 
 
 Package Contents
@@ -19,4 +21,8 @@ Package Contents
 .. py:data:: BULK_PKL_PATH
 
 .. py:data:: ADSORBATE_PKL_PATH
+
+.. py:data:: SOLVENT_PKL_PATH
+
+.. py:data:: ION_PKL_PATH
 

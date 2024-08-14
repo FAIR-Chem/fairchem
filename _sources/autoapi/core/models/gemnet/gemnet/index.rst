@@ -26,7 +26,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: GemNetT(num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_bil_trip: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, regress_forces: bool = True, direct_forces: bool = False, cutoff: float = 6.0, max_neighbors: int = 50, rbf: dict | None = None, envelope: dict | None = None, cbf: dict | None = None, extensive: bool = True, otf_graph: bool = False, use_pbc: bool = True, output_init: str = 'HeOrthogonal', activation: str = 'swish', num_elements: int = 83, scale_file: str | None = None)
+.. py:class:: GemNetT(num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_bil_trip: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, regress_forces: bool = True, direct_forces: bool = False, cutoff: float = 6.0, max_neighbors: int = 50, rbf: dict | None = None, envelope: dict | None = None, cbf: dict | None = None, extensive: bool = True, otf_graph: bool = False, use_pbc: bool = True, use_pbc_single: bool = False, output_init: str = 'HeOrthogonal', activation: str = 'swish', num_elements: int = 83, scale_file: str | None = None)
 
    Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
@@ -101,6 +101,9 @@ Module Contents
 
 
    .. py:attribute:: use_pbc
+
+
+   .. py:attribute:: use_pbc_single
 
 
    .. py:attribute:: direct_forces
@@ -189,7 +192,7 @@ Module Contents
    .. py:property:: num_params
 
 
-.. py:class:: GemNetTBackbone(num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_bil_trip: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, regress_forces: bool = True, direct_forces: bool = False, cutoff: float = 6.0, max_neighbors: int = 50, rbf: dict | None = None, envelope: dict | None = None, cbf: dict | None = None, extensive: bool = True, otf_graph: bool = False, use_pbc: bool = True, output_init: str = 'HeOrthogonal', activation: str = 'swish', num_elements: int = 83, scale_file: str | None = None)
+.. py:class:: GemNetTBackbone(num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_bil_trip: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, regress_forces: bool = True, direct_forces: bool = False, cutoff: float = 6.0, max_neighbors: int = 50, rbf: dict | None = None, envelope: dict | None = None, cbf: dict | None = None, extensive: bool = True, otf_graph: bool = False, use_pbc: bool = True, use_pbc_single: bool = False, output_init: str = 'HeOrthogonal', activation: str = 'swish', num_elements: int = 83, scale_file: str | None = None)
 
    Bases: :py:obj:`GemNetT`, :py:obj:`fairchem.core.models.base.BackboneInterface`
 

@@ -11,7 +11,9 @@ Submodules
    :maxdepth: 1
 
    /autoapi/data/oc/utils/flag_anomaly/index
+   /autoapi/data/oc/utils/geometry/index
    /autoapi/data/oc/utils/vasp/index
+   /autoapi/data/oc/utils/vasp_flags/index
 
 
 Classes

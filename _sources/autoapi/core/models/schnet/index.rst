@@ -23,7 +23,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: SchNetWrap(use_pbc: bool = True, regress_forces: bool = True, otf_graph: bool = False, hidden_channels: int = 128, num_filters: int = 128, num_interactions: int = 6, num_gaussians: int = 50, cutoff: float = 10.0, readout: str = 'add')
+.. py:class:: SchNetWrap(use_pbc: bool = True, use_pbc_single: bool = False, regress_forces: bool = True, otf_graph: bool = False, hidden_channels: int = 128, num_filters: int = 128, num_interactions: int = 6, num_gaussians: int = 50, cutoff: float = 10.0, readout: str = 'add')
 
    Bases: :py:obj:`torch_geometric.nn.SchNet`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
@@ -40,6 +40,8 @@ Module Contents
    :param use_pbc: If set to :obj:`True`, account for periodic boundary conditions.
                    (default: :obj:`True`)
    :type use_pbc: bool, optional
+   :param use_pbc_single: Process batch PBC graphs one at a time
+   :type use_pbc_single: bool,optional
    :param regress_forces: If set to :obj:`True`, predict forces by differentiating
                           energy with respect to positions.
                           (default: :obj:`True`)
@@ -76,6 +78,9 @@ Module Contents
 
 
    .. py:attribute:: use_pbc
+
+
+   .. py:attribute:: use_pbc_single
 
 
    .. py:attribute:: cutoff

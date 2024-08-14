@@ -21,6 +21,7 @@ Classes
    core.models.base.GraphModelMixin
    core.models.base.HeadInterface
    core.models.base.BackboneInterface
+   core.models.base.HydraInterface
    core.models.base.HydraModel
 
 
@@ -75,7 +76,7 @@ Module Contents
    Mixin Model class implementing some general convenience properties and methods.
 
 
-   .. py:method:: generate_graph(data, cutoff=None, max_neighbors=None, use_pbc=None, otf_graph=None, enforce_max_neighbors_strictly=None)
+   .. py:method:: generate_graph(data, cutoff=None, max_neighbors=None, use_pbc=None, otf_graph=None, enforce_max_neighbors_strictly=None, use_pbc_single=False)
 
 
    .. py:property:: num_params
@@ -123,9 +124,28 @@ Module Contents
 
 
 
+.. py:class:: HydraInterface
+
+   Bases: :py:obj:`abc.ABC`
+
+
+   Helper class that provides a standard way to create an ABC using
+   inheritance.
+
+
+   .. py:method:: get_backbone() -> BackboneInterface
+      :abstractmethod:
+
+
+
+   .. py:method:: get_heads() -> dict[str, HeadInterface]
+      :abstractmethod:
+
+
+
 .. py:class:: HydraModel(backbone: dict, heads: dict, otf_graph: bool = True)
 
-   Bases: :py:obj:`torch.nn.Module`, :py:obj:`GraphModelMixin`
+   Bases: :py:obj:`torch.nn.Module`, :py:obj:`GraphModelMixin`, :py:obj:`HydraInterface`
 
 
    Base class for all neural network modules.
@@ -163,11 +183,13 @@ Module Contents
    .. py:attribute:: otf_graph
 
 
-   .. py:attribute:: backbone_model_name
-
-
    .. py:attribute:: backbone
-      :type:  BackboneInterface
+
+
+   .. py:attribute:: heads
+
+
+   .. py:attribute:: backbone_model_name
 
 
    .. py:attribute:: output_heads
@@ -178,5 +200,11 @@ Module Contents
 
 
    .. py:method:: forward(data: torch_geometric.data.Batch)
+
+
+   .. py:method:: get_backbone() -> BackboneInterface
+
+
+   .. py:method:: get_heads() -> dict[str, HeadInterface]
 
 

@@ -28,6 +28,7 @@ Submodules
 
    /autoapi/core/models/base/index
    /autoapi/core/models/dimenet_plus_plus/index
+   /autoapi/core/models/finetune_hydra/index
    /autoapi/core/models/model_registry/index
    /autoapi/core/models/schnet/index
 

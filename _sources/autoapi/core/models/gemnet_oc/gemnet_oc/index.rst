@@ -25,7 +25,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: GemNetOC(num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip_in: int, emb_size_trip_out: int, emb_size_quad_in: int, emb_size_quad_out: int, emb_size_aint_in: int, emb_size_aint_out: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_sbf: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, num_output_afteratom: int, num_atom_emb_layers: int = 0, num_global_out_layers: int = 2, regress_forces: bool = True, direct_forces: bool = False, use_pbc: bool = True, scale_backprop_forces: bool = False, cutoff: float = 6.0, cutoff_qint: float | None = None, cutoff_aeaint: float | None = None, cutoff_aint: float | None = None, max_neighbors: int = 50, max_neighbors_qint: int | None = None, max_neighbors_aeaint: int | None = None, max_neighbors_aint: int | None = None, enforce_max_neighbors_strictly: bool = True, rbf: dict[str, str] | None = None, rbf_spherical: dict | None = None, envelope: dict[str, str | int] | None = None, cbf: dict[str, str] | None = None, sbf: dict[str, str] | None = None, extensive: bool = True, forces_coupled: bool = False, output_init: str = 'HeOrthogonal', activation: str = 'silu', quad_interaction: bool = False, atom_edge_interaction: bool = False, edge_atom_interaction: bool = False, atom_interaction: bool = False, scale_basis: bool = False, qint_tags: list | None = None, num_elements: int = 83, otf_graph: bool = False, scale_file: str | None = None, **kwargs)
+.. py:class:: GemNetOC(num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip_in: int, emb_size_trip_out: int, emb_size_quad_in: int, emb_size_quad_out: int, emb_size_aint_in: int, emb_size_aint_out: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_sbf: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, num_output_afteratom: int, num_atom_emb_layers: int = 0, num_global_out_layers: int = 2, regress_forces: bool = True, direct_forces: bool = False, use_pbc: bool = True, use_pbc_single: bool = False, scale_backprop_forces: bool = False, cutoff: float = 6.0, cutoff_qint: float | None = None, cutoff_aeaint: float | None = None, cutoff_aint: float | None = None, max_neighbors: int = 50, max_neighbors_qint: int | None = None, max_neighbors_aeaint: int | None = None, max_neighbors_aint: int | None = None, enforce_max_neighbors_strictly: bool = True, rbf: dict[str, str] | None = None, rbf_spherical: dict | None = None, envelope: dict[str, str | int] | None = None, cbf: dict[str, str] | None = None, sbf: dict[str, str] | None = None, extensive: bool = True, forces_coupled: bool = False, output_init: str = 'HeOrthogonal', activation: str = 'silu', quad_interaction: bool = False, atom_edge_interaction: bool = False, edge_atom_interaction: bool = False, atom_interaction: bool = False, scale_basis: bool = False, qint_tags: list | None = None, num_elements: int = 83, otf_graph: bool = False, scale_file: str | None = None, **kwargs)
 
    Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
@@ -84,6 +84,7 @@ Module Contents
    :type direct_forces: bool
    :param use_pbc: Whether to use periodic boundary conditions.
    :type use_pbc: bool
+   :param use_pbc_single: Process batch PBC graphs one at a time
    :param scale_backprop_forces: Whether to scale up the energy and then scales down the forces
                                  to prevent NaNs and infs in backpropagated forces.
    :type scale_backprop_forces: bool
@@ -181,6 +182,9 @@ Module Contents
 
 
    .. py:attribute:: use_pbc
+
+
+   .. py:attribute:: use_pbc_single
 
 
    .. py:attribute:: direct_forces
@@ -321,7 +325,7 @@ Module Contents
 
 
 
-.. py:class:: GemNetOCBackbone(num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip_in: int, emb_size_trip_out: int, emb_size_quad_in: int, emb_size_quad_out: int, emb_size_aint_in: int, emb_size_aint_out: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_sbf: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, num_output_afteratom: int, num_atom_emb_layers: int = 0, num_global_out_layers: int = 2, regress_forces: bool = True, direct_forces: bool = False, use_pbc: bool = True, scale_backprop_forces: bool = False, cutoff: float = 6.0, cutoff_qint: float | None = None, cutoff_aeaint: float | None = None, cutoff_aint: float | None = None, max_neighbors: int = 50, max_neighbors_qint: int | None = None, max_neighbors_aeaint: int | None = None, max_neighbors_aint: int | None = None, enforce_max_neighbors_strictly: bool = True, rbf: dict[str, str] | None = None, rbf_spherical: dict | None = None, envelope: dict[str, str | int] | None = None, cbf: dict[str, str] | None = None, sbf: dict[str, str] | None = None, extensive: bool = True, forces_coupled: bool = False, output_init: str = 'HeOrthogonal', activation: str = 'silu', quad_interaction: bool = False, atom_edge_interaction: bool = False, edge_atom_interaction: bool = False, atom_interaction: bool = False, scale_basis: bool = False, qint_tags: list | None = None, num_elements: int = 83, otf_graph: bool = False, scale_file: str | None = None, **kwargs)
+.. py:class:: GemNetOCBackbone(num_spherical: int, num_radial: int, num_blocks: int, emb_size_atom: int, emb_size_edge: int, emb_size_trip_in: int, emb_size_trip_out: int, emb_size_quad_in: int, emb_size_quad_out: int, emb_size_aint_in: int, emb_size_aint_out: int, emb_size_rbf: int, emb_size_cbf: int, emb_size_sbf: int, num_before_skip: int, num_after_skip: int, num_concat: int, num_atom: int, num_output_afteratom: int, num_atom_emb_layers: int = 0, num_global_out_layers: int = 2, regress_forces: bool = True, direct_forces: bool = False, use_pbc: bool = True, use_pbc_single: bool = False, scale_backprop_forces: bool = False, cutoff: float = 6.0, cutoff_qint: float | None = None, cutoff_aeaint: float | None = None, cutoff_aint: float | None = None, max_neighbors: int = 50, max_neighbors_qint: int | None = None, max_neighbors_aeaint: int | None = None, max_neighbors_aint: int | None = None, enforce_max_neighbors_strictly: bool = True, rbf: dict[str, str] | None = None, rbf_spherical: dict | None = None, envelope: dict[str, str | int] | None = None, cbf: dict[str, str] | None = None, sbf: dict[str, str] | None = None, extensive: bool = True, forces_coupled: bool = False, output_init: str = 'HeOrthogonal', activation: str = 'silu', quad_interaction: bool = False, atom_edge_interaction: bool = False, edge_atom_interaction: bool = False, atom_interaction: bool = False, scale_basis: bool = False, qint_tags: list | None = None, num_elements: int = 83, otf_graph: bool = False, scale_file: str | None = None, **kwargs)
 
    Bases: :py:obj:`GemNetOC`, :py:obj:`fairchem.core.models.base.BackboneInterface`
 
@@ -380,6 +384,7 @@ Module Contents
    :type direct_forces: bool
    :param use_pbc: Whether to use periodic boundary conditions.
    :type use_pbc: bool
+   :param use_pbc_single: Process batch PBC graphs one at a time
    :param scale_backprop_forces: Whether to scale up the energy and then scales down the forces
                                  to prevent NaNs and infs in backpropagated forces.
    :type scale_backprop_forces: bool
@@ -508,9 +513,13 @@ Module Contents
 
 
    .. py:attribute:: out_mlp_E
+      :value: None
+
 
 
    .. py:attribute:: out_energy
+      :value: None
+
 
 
    .. py:attribute:: out_initializer

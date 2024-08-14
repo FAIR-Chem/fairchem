@@ -18,6 +18,7 @@ Subpackages
 .. toctree::
    :maxdepth: 1
 
+   /autoapi/core/modules/normalization/index
    /autoapi/core/modules/scaling/index
 
 
@@ -30,7 +31,6 @@ Submodules
    /autoapi/core/modules/evaluator/index
    /autoapi/core/modules/exponential_moving_average/index
    /autoapi/core/modules/loss/index
-   /autoapi/core/modules/normalizer/index
    /autoapi/core/modules/scheduler/index
    /autoapi/core/modules/transforms/index
 
