@@ -186,9 +186,6 @@ class LBFGS:
         p = -z
         dr = self.determine_step(p)
 
-        # if dr[self.optimizable.update_mask[self.optimizable.batch_indices]].isnan().any():
-        #     breakpoint()
-
         if torch.abs(dr).max() < 1e-7:
             # Same configuration again (maybe a restart):
             return
