@@ -20,7 +20,6 @@ from ase.stress import voigt_6_to_full_3x3_stress
 from torch_scatter import scatter
 
 from fairchem.core.common.relaxation.ase_utils import batch_to_atoms
-from fairchem.core.common.utils import radius_graph_pbc
 
 # unreleased ASE has Optimizable, last released version 3.22.1 does not
 # thankfully we can get away with backwards compatibility by creating a dummy
@@ -315,10 +314,10 @@ class OptimizableBatch(Optimizable):
 
     def update_graph(self):
         """Update the graph if model does not use otf_graph."""
-        edge_index, cell_offsets, num_neighbors = radius_graph_pbc(self.batch, 6, 50)
-        self.batch.edge_index = edge_index
-        self.batch.cell_offsets = cell_offsets
-        self.batch.neighbors = num_neighbors
+        graph = self.trainer.model.generate_graph(self.batch)
+        self.batch.edge_index = graph.edge_index
+        self.batch.cell_offsets = graph.cell_offsets
+        self.batch.neighbors = graph.neighbors
         if self.transform is not None:
             self.batch = self.transform(self.batch)
 
