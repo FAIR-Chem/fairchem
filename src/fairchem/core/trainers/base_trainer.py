@@ -605,11 +605,10 @@ class BaseTrainer(ABC):
                 target_key = key
 
             if target_key in self.normalizers:
-                mkeys = (
-                    self.normalizers[target_key]
-                    .load_state_dict(checkpoint["normalizers"][key])
-                    .to(map_location)
+                mkeys = self.normalizers[target_key].load_state_dict(
+                    checkpoint["normalizers"][key]
                 )
+                self.normalizers[target_key].to(map_location)
                 assert len(mkeys.missing_keys) == 0
                 assert len(mkeys.unexpected_keys) == 0
 
