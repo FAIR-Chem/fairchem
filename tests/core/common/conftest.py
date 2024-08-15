@@ -11,13 +11,9 @@ from fairchem.core.preprocessing.atoms_to_graphs import AtomsToGraphs
 @pytest.fixture(scope="session")
 def calculator(tmp_path_factory):
     dir = tmp_path_factory.mktemp("checkpoints")
-    calc = OCPCalculator(
+    return OCPCalculator(
         model_name="EquiformerV2-31M-S2EF-OC20-All+MD", local_cache=dir, seed=0
     )
-    # TODO debug this
-    # removing amp so that we always get float32 predictions
-    calc.trainer.scaler = None
-    return calc
 
 
 @pytest.fixture()
