@@ -673,17 +673,3 @@ class EquiformerV2ForceHead(nn.Module, HeadInterface):
         if gp_utils.initialized():
             forces = gp_utils.gather_from_model_parallel_region(forces, dim=0)
         return {"forces": forces}
-
-
-@registry.register_model("equiformer_v2_backbone_and_heads")
-class EquiformerV2BackboneAndHeads(nn.Module):
-    def __init__(self, **kwargs):
-        super().__init__()
-        kwargs["model"] = "equiformer_v2_backbone"
-        heads = {"energy": {"module": "equiformer_v2_energy_head"}}
-        if "regress_forces" in kwargs and kwargs["regress_forces"]:
-            heads["forces"] = {"module": "equiformer_v2_force_head"}
-        self.model = HydraModel(backbone=kwargs, heads=heads)
-
-    def forward(self, data: Batch):
-        return self.model(data)

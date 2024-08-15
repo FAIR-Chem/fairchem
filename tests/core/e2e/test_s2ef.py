@@ -42,9 +42,6 @@ def configs():
         "painn": Path("tests/core/models/test_configs/test_painn.yml"),
         "painn_hydra": Path("tests/core/models/test_configs/test_painn_hydra.yml"),
         "equiformer_v2": Path("tests/core/models/test_configs/test_equiformerv2.yml"),
-        "equiformer_v2_backbone_and_heads": Path(
-            "tests/core/models/test_configs/test_equiformerv2_backbone_and_heads.yml"
-        ),
         "equiformer_v2_hydra": Path(
             "tests/core/models/test_configs/test_equiformerv2_hydra.yml"
         ),
@@ -170,8 +167,6 @@ class TestSmoke:
             ("equiformer_v2", True),
             ("equiformer_v2_hydra", False),
             ("equiformer_v2_hydra", True),
-            ("equiformer_v2_backbone_and_heads", False),
-            ("equiformer_v2_backbone_and_heads", True),
         ],
     )
     def test_train_and_predict(
@@ -372,12 +367,6 @@ class TestSmallDatasetOptim:
             pytest.param("gemnet_oc", 0.41, 0.06, id="gemnet_oc"),
             pytest.param("escn", 0.41, 0.06, id="escn"),
             pytest.param("equiformer_v2", 0.41, 0.06, id="equiformer_v2"),
-            pytest.param(
-                "equiformer_v2_backbone_and_heads",
-                0.41,
-                0.06,
-                id="equiformer_v2_backbone_and_heads",
-            ),
         ],
     )
     def test_train_optimization(
