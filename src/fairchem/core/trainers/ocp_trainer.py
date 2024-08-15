@@ -523,7 +523,7 @@ class OCPTrainer(BaseTrainer):
         return predictions
 
     @torch.no_grad
-    def run_relaxations(self, split="val"):
+    def run_relaxations(self):
         ensure_fitted(self._unwrapped_model)
 
         # When set to true, uses deterministic CUDA scatter ops, if available.
