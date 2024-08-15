@@ -10,12 +10,7 @@ import torch.nn as nn
 from fairchem.core.common import gp_utils
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import (
-    BackboneInterface,
-    GraphModelMixin,
-    HeadInterface,
-    HydraModel,
-)
+from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
 from fairchem.core.models.scn.smearing import GaussianSmearing
 
 with contextlib.suppress(ImportError):
@@ -51,7 +46,6 @@ from .transformer_block import (
 
 if typing.TYPE_CHECKING:
     from torch_geometric.data.batch import Batch
-
     from fairchem.core.models.base import GraphData
 
 # Statistics of IS2RE 100K
@@ -59,9 +53,11 @@ _AVG_NUM_NODES = 77.81317
 _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
 
 
-@registry.register_model("equiformer_v2_backbone")
-class EquiformerV2Backbone(nn.Module, BackboneInterface, GraphModelMixin):
+@registry.register_model("equiformer_v2")
+class EquiformerV2(nn.Module, GraphModelMixin):
     """
+    THIS CLASS HAS BEEN DEPRECATED! Please use "EquiformerV2BackboneAndHeads"
+
     Equiformer with graph attention built upon SO(2) convolution and feedforward network built upon S2 activation
 
     Args:
@@ -163,6 +159,9 @@ class EquiformerV2Backbone(nn.Module, BackboneInterface, GraphModelMixin):
         use_energy_lin_ref: bool | None = False,
         load_energy_lin_ref: bool | None = False,
     ):
+        logging.warning(
+            "equiformer_v2 (EquiformerV2) class is deprecaed in favor of equiformer_v2_backbone_and_heads  (EquiformerV2BackboneAndHeads)"
+        )
         if mmax_list is None:
             mmax_list = [2]
         if lmax_list is None:
@@ -360,6 +359,43 @@ class EquiformerV2Backbone(nn.Module, BackboneInterface, GraphModelMixin):
             lmax=max(self.lmax_list),
             num_channels=self.sphere_channels,
         )
+        self.energy_block = FeedForwardNetwork(
+            self.sphere_channels,
+            self.ffn_hidden_channels,
+            1,
+            self.lmax_list,
+            self.mmax_list,
+            self.SO3_grid,
+            self.ffn_activation,
+            self.use_gate_act,
+            self.use_grid_mlp,
+            self.use_sep_s2_act,
+        )
+        if self.regress_forces:
+            self.force_block = SO2EquivariantGraphAttention(
+                self.sphere_channels,
+                self.attn_hidden_channels,
+                self.num_heads,
+                self.attn_alpha_channels,
+                self.attn_value_channels,
+                1,
+                self.lmax_list,
+                self.mmax_list,
+                self.SO3_rotation,
+                self.mappingReduced,
+                self.SO3_grid,
+                self.max_num_elements,
+                self.edge_channels_list,
+                self.block_use_atom_edge_embedding,
+                self.use_m_share_rad,
+                self.attn_activation,
+                self.use_s2_act_attn,
+                self.use_attn_renorm,
+                self.use_gate_act,
+                self.use_sep_s2_act,
+                alpha_drop=0.0,
+            )
+
         if self.load_energy_lin_ref:
             self.energy_lin_ref = nn.Parameter(
                 torch.zeros(self.max_num_elements),
@@ -369,8 +405,44 @@ class EquiformerV2Backbone(nn.Module, BackboneInterface, GraphModelMixin):
         self.apply(self._init_weights)
         self.apply(self._uniform_init_rad_func_linear_weights)
 
+    def _init_gp_partitions(
+        self,
+        atomic_numbers_full,
+        data_batch_full,
+        edge_index,
+        edge_distance,
+        edge_distance_vec,
+    ):
+        """Graph Parallel
+        This creates the required partial tensors for each rank given the full tensors.
+        The tensors are split on the dimension along the node index using node_partition.
+        """
+        node_partition = gp_utils.scatter_to_model_parallel_region(
+            torch.arange(len(atomic_numbers_full)).to(self.device)
+        )
+        edge_partition = torch.where(
+            torch.logical_and(
+                edge_index[1] >= node_partition.min(),
+                edge_index[1] <= node_partition.max(),  # TODO: 0 or 1?
+            )
+        )[0]
+        edge_index = edge_index[:, edge_partition]
+        edge_distance = edge_distance[edge_partition]
+        edge_distance_vec = edge_distance_vec[edge_partition]
+        atomic_numbers = atomic_numbers_full[node_partition]
+        data_batch = data_batch_full[node_partition]
+        node_offset = node_partition.min().item()
+        return (
+            atomic_numbers,
+            data_batch,
+            node_offset,
+            edge_index,
+            edge_distance,
+            edge_distance_vec,
+        )
+
     @conditional_grad(torch.enable_grad())
-    def forward(self, data: Batch) -> dict[str, torch.Tensor]:
+    def forward(self, data):
         self.batch_size = len(data.natoms)
         self.dtype = data.pos.dtype
         self.device = data.pos.device
@@ -494,43 +566,63 @@ class EquiformerV2Backbone(nn.Module, BackboneInterface, GraphModelMixin):
         # Final layer norm
         x.embedding = self.norm(x.embedding)
 
-        return {"node_embedding": x, "graph": graph}
+        ###############################################################
+        # Energy estimation
+        ###############################################################
+        node_energy = self.energy_block(x)
+        node_energy = node_energy.embedding.narrow(1, 0, 1)
+        if gp_utils.initialized():
+            node_energy = gp_utils.gather_from_model_parallel_region(node_energy, dim=0)
+        energy = torch.zeros(
+            len(data.natoms),
+            device=node_energy.device,
+            dtype=node_energy.dtype,
+        )
+        energy.index_add_(0, graph.batch_full, node_energy.view(-1))
+        energy = energy / self.avg_num_nodes
 
-    def _init_gp_partitions(
-        self,
-        atomic_numbers_full,
-        data_batch_full,
-        edge_index,
-        edge_distance,
-        edge_distance_vec,
-    ):
-        """Graph Parallel
-        This creates the required partial tensors for each rank given the full tensors.
-        The tensors are split on the dimension along the node index using node_partition.
-        """
-        node_partition = gp_utils.scatter_to_model_parallel_region(
-            torch.arange(len(atomic_numbers_full)).to(self.device)
-        )
-        edge_partition = torch.where(
-            torch.logical_and(
-                edge_index[1] >= node_partition.min(),
-                edge_index[1] <= node_partition.max(),  # TODO: 0 or 1?
+        # Add the per-atom linear references to the energy.
+        if self.use_energy_lin_ref and self.load_energy_lin_ref:
+            # During training, target E = (E_DFT - E_ref - E_mean) / E_std, and
+            # during inference, \hat{E_DFT} = \hat{E} * E_std + E_ref + E_mean
+            # where
+            #
+            # E_DFT = raw DFT energy,
+            # E_ref = reference energy,
+            # E_mean = normalizer mean,
+            # E_std = normalizer std,
+            # \hat{E} = predicted energy,
+            # \hat{E_DFT} = predicted DFT energy.
+            #
+            # We can also write this as
+            # \hat{E_DFT} = E_std * (\hat{E} + E_ref / E_std) + E_mean,
+            # which is why we save E_ref / E_std as the linear reference.
+            with torch.cuda.amp.autocast(False):
+                energy = energy.to(self.energy_lin_ref.dtype).index_add(
+                    0,
+                    graph.batch_full,
+                    self.energy_lin_ref[graph.atomic_numbers_full],
+                )
+
+        outputs = {"energy": energy}
+        ###############################################################
+        # Force estimation
+        ###############################################################
+        if self.regress_forces:
+            forces = self.force_block(
+                x,
+                graph.atomic_numbers_full,
+                graph.edge_distance,
+                graph.edge_index,
+                node_offset=graph.node_offset,
             )
-        )[0]
-        edge_index = edge_index[:, edge_partition]
-        edge_distance = edge_distance[edge_partition]
-        edge_distance_vec = edge_distance_vec[edge_partition]
-        atomic_numbers = atomic_numbers_full[node_partition]
-        data_batch = data_batch_full[node_partition]
-        node_offset = node_partition.min().item()
-        return (
-            atomic_numbers,
-            data_batch,
-            node_offset,
-            edge_index,
-            edge_distance,
-            edge_distance_vec,
-        )
+            forces = forces.embedding.narrow(1, 1, 3)
+            forces = forces.view(-1, 3).contiguous()
+            if gp_utils.initialized():
+                forces = gp_utils.gather_from_model_parallel_region(forces, dim=0)
+            outputs["forces"] = forces
+
+        return outputs
 
     # Initialize the edge rotation matrics
     def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
@@ -592,98 +684,3 @@ class EquiformerV2Backbone(nn.Module, BackboneInterface, GraphModelMixin):
                     no_wd_list.append(global_parameter_name)
 
         return set(no_wd_list)
-
-
-@registry.register_model("equiformer_v2_energy_head")
-class EquiformerV2EnergyHead(nn.Module, HeadInterface):
-    def __init__(self, backbone):
-        super().__init__()
-
-        self.avg_num_nodes = backbone.avg_num_nodes
-        self.energy_block = FeedForwardNetwork(
-            backbone.sphere_channels,
-            backbone.ffn_hidden_channels,
-            1,
-            backbone.lmax_list,
-            backbone.mmax_list,
-            backbone.SO3_grid,
-            backbone.ffn_activation,
-            backbone.use_gate_act,
-            backbone.use_grid_mlp,
-            backbone.use_sep_s2_act,
-        )
-        self.apply(backbone._init_weights)
-        self.apply(backbone._uniform_init_rad_func_linear_weights)
-
-    def forward(self, data: Batch, emb: dict[str, torch.Tensor | GraphData]):
-        node_energy = self.energy_block(emb["node_embedding"])
-        node_energy = node_energy.embedding.narrow(1, 0, 1)
-        if gp_utils.initialized():
-            node_energy = gp_utils.gather_from_model_parallel_region(node_energy, dim=0)
-        energy = torch.zeros(
-            len(data.natoms),
-            device=node_energy.device,
-            dtype=node_energy.dtype,
-        )
-        energy.index_add_(0, data.batch, node_energy.view(-1))
-        return {"energy": energy / self.avg_num_nodes}
-
-
-@registry.register_model("equiformer_v2_force_head")
-class EquiformerV2ForceHead(nn.Module, HeadInterface):
-    def __init__(self, backbone):
-        super().__init__()
-
-        self.force_block = SO2EquivariantGraphAttention(
-            backbone.sphere_channels,
-            backbone.attn_hidden_channels,
-            backbone.num_heads,
-            backbone.attn_alpha_channels,
-            backbone.attn_value_channels,
-            1,
-            backbone.lmax_list,
-            backbone.mmax_list,
-            backbone.SO3_rotation,
-            backbone.mappingReduced,
-            backbone.SO3_grid,
-            backbone.max_num_elements,
-            backbone.edge_channels_list,
-            backbone.block_use_atom_edge_embedding,
-            backbone.use_m_share_rad,
-            backbone.attn_activation,
-            backbone.use_s2_act_attn,
-            backbone.use_attn_renorm,
-            backbone.use_gate_act,
-            backbone.use_sep_s2_act,
-            alpha_drop=0.0,
-        )
-        self.apply(backbone._init_weights)
-        self.apply(backbone._uniform_init_rad_func_linear_weights)
-
-    def forward(self, data: Batch, emb: dict[str, torch.Tensor]):
-        forces = self.force_block(
-            emb["node_embedding"],
-            emb["graph"].atomic_numbers_full,
-            emb["graph"].edge_distance,
-            emb["graph"].edge_index,
-            node_offset=emb["graph"].node_offset,
-        )
-        forces = forces.embedding.narrow(1, 1, 3)
-        forces = forces.view(-1, 3).contiguous()
-        if gp_utils.initialized():
-            forces = gp_utils.gather_from_model_parallel_region(forces, dim=0)
-        return {"forces": forces}
-
-
-@registry.register_model("equiformer_v2_backbone_and_heads")
-class EquiformerV2BackboneAndHeads(nn.Module):
-    def __init__(self, **kwargs):
-        super().__init__()
-        kwargs["model"] = "equiformer_v2_backbone"
-        heads = {"energy": {"module": "equiformer_v2_energy_head"}}
-        if "regress_forces" in kwargs and kwargs["regress_forces"]:
-            heads["forces"] = {"module": "equiformer_v2_force_head"}
-        self.model = HydraModel(backbone=kwargs, heads=heads)
-
-    def forward(self, data: Batch):
-        return self.model(data)
