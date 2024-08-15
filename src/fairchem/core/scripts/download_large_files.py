@@ -36,6 +36,7 @@ FILE_GROUPS = {
     "docs": [
         Path("docs/tutorials/NRR/NRR_example_bulks.pkl"),
         Path("docs/core/fine-tuning/supporting-information.json"),
+        Path("docs/core/data.db"),
     ],
 }
 
