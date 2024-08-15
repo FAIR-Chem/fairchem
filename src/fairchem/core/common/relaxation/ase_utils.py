@@ -48,7 +48,7 @@ ASE_PROP_RESHAPE = MappingProxyType(
 def batch_to_atoms(
     batch: Batch,
     results: dict[str, torch.Tensor] | None = None,
-    wrap_pos: bool = False,
+    wrap_pos: bool = True,
     eps: float = 1e-7,
 ) -> list[Atoms]:
     """Convert a data batch to ase Atoms
