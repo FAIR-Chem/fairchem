@@ -264,6 +264,7 @@ class HydraModel(nn.Module, GraphModelMixin, HydraInterface):
         self.output_heads: dict[str, HeadInterface] = {}
 
         head_names_sorted = sorted(heads.keys())
+        assert len(set(head_names_sorted)) == len(head_names_sorted), "Head names must be unique!"
         for head_name in head_names_sorted:
             head_config = heads[head_name]
             if "module" not in head_config:
@@ -284,8 +285,7 @@ class HydraModel(nn.Module, GraphModelMixin, HydraInterface):
         # Predict all output properties for all structures in the batch for now.
         out = {}
         for k in self.output_heads:
-            out.update(self.output_heads[k](data, emb))
-
+            out[k] = self.output_heads[k](data, emb)
         return out
 
     def get_backbone(self) -> BackboneInterface:
