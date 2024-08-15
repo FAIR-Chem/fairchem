@@ -157,6 +157,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
         avg_degree: float | None = None,
         use_energy_lin_ref: bool | None = False,
         load_energy_lin_ref: bool | None = False,
+        activation_checkpoint: bool | None = False,
     ):
         if mmax_list is None:
             mmax_list = [2]
@@ -170,6 +171,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
             logging.error("You need to install e3nn==0.4.4 to use EquiformerV2.")
             raise ImportError
 
+        self.activation_checkpoint = activation_checkpoint
         self.use_pbc = use_pbc
         self.use_pbc_single = use_pbc_single
         self.regress_forces = regress_forces
@@ -803,14 +805,26 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
         ###############################################################
 
         for i in range(self.num_layers):
-            x = self.blocks[i](
-                x,  # SO3_Embedding
-                graph.atomic_numbers_full,
-                graph.edge_distance,
-                graph.edge_index,
-                batch=data_batch,  # for GraphDropPath
-                node_offset=graph.node_offset,
-            )
+            if self.activation_checkpoint:
+                x = torch.utils.checkpoint.checkpoint(
+                    self.blocks[i],
+                    x,  # SO3_Embedding
+                    graph.atomic_numbers_full,
+                    graph.edge_distance,
+                    graph.edge_index,
+                    data_batch,  # for GraphDropPath
+                    graph.node_offset,
+                    use_reentrant=not self.training,
+                )
+            else:
+                x = self.blocks[i](
+                    x,  # SO3_Embedding
+                    graph.atomic_numbers_full,
+                    graph.edge_distance,
+                    graph.edge_index,
+                    batch=data_batch,  # for GraphDropPath
+                    node_offset=graph.node_offset,
+                )
 
         # Final layer norm
         x.embedding = self.norm(x.embedding)
@@ -858,6 +872,7 @@ class EquiformerV2ForceHead(nn.Module, HeadInterface):
     def __init__(self, backbone):
         super().__init__()
 
+        self.activation_checkpoint = backbone.activation_checkpoint
         self.force_block = SO2EquivariantGraphAttention(
             backbone.sphere_channels,
             backbone.attn_hidden_channels,
@@ -885,13 +900,24 @@ class EquiformerV2ForceHead(nn.Module, HeadInterface):
         self.apply(backbone._uniform_init_rad_func_linear_weights)
 
     def forward(self, data: Batch, emb: dict[str, torch.Tensor]):
-        forces = self.force_block(
-            emb["node_embedding"],
-            emb["graph"].atomic_numbers_full,
-            emb["graph"].edge_distance,
-            emb["graph"].edge_index,
-            node_offset=emb["graph"].node_offset,
-        )
+        if self.activation_checkpoint:
+            forces = torch.utils.checkpoint.checkpoint(
+                self.force_block,
+                emb["node_embedding"],
+                emb["graph"].atomic_numbers_full,
+                emb["graph"].edge_distance,
+                emb["graph"].edge_index,
+                emb["graph"].node_offset,
+                use_reentrant=not self.training,
+            )
+        else:
+            forces = self.force_block(
+                emb["node_embedding"],
+                emb["graph"].atomic_numbers_full,
+                emb["graph"].edge_distance,
+                emb["graph"].edge_index,
+                node_offset=emb["graph"].node_offset,
+            )
         forces = forces.embedding.narrow(1, 1, 3)
         forces = forces.view(-1, 3).contiguous()
         if gp_utils.initialized():
