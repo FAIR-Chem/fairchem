@@ -238,21 +238,26 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
         output_name: str,
         decompose: bool = False,
         edge_level_mlp: bool = False,
+        num_mlp_layers: int = 2,
         use_source_target_embedding: bool = False,
         extensive: bool = False,
+        avg_num_nodes: int = 1.0,
     ):
         """
         Args:
             backbone: Backbone model that the head is attached to
             decompose: Whether to decompose the rank2 tensor into isotropic and anisotropic components
+            edge_level_mlp: If true apply MLP at edge level before pooling, otherwise use MLP at nodes after pooling
+            num_mlp_layers: number of MLP layers
             use_source_target_embedding: Whether to use both source and target atom embeddings
             extensive: Whether to do sum-pooling (extensive) vs mean pooling (intensive).
+            avg_num_nodes: Used only if extensive to divide prediction by avg num nodes.
         """
         super().__init__()
         self.output_name = output_name
         self.decompose = decompose
         self.use_source_target_embedding = use_source_target_embedding
-        self.avg_num_nodes = backbone.avg_num_nodes
+        self.avg_num_nodes = avg_num_nodes
 
         self.sphharm_norm = get_normalization_layer(
             backbone.norm_type,
@@ -270,14 +275,14 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
         if decompose:
             self.block = Rank2DecompositionEdgeBlock(
                 emb_size=r2_tensor_sphere_channels,
-                num_layers=2,
+                num_layers=num_mlp_layers,
                 edge_level=edge_level_mlp,
                 extensive=extensive,
             )
         else:
             self.block = Rank2Block(
                 emb_size=r2_tensor_sphere_channels,
-                num_layers=2,
+                num_layers=num_mlp_layers,
                 edge_level=edge_level_mlp,
                 extensive=extensive,
             )
