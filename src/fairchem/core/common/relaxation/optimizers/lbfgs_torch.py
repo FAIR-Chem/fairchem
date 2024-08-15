@@ -38,7 +38,7 @@ class LBFGS:
         """
         Args:
             optimizable_batch: an optimizable batch which includes a model and a batch of data
-            maxstep: maximum number of steps to run optimization
+            maxstep: largest step that any atom is allowed to move
             memory: Number of steps to be stored in memory
             damping: The calculated step is multiplied with this number before added to the positions.
             alpha: Initial guess for the Hessian (curvature of energy surface)
@@ -71,7 +71,6 @@ class LBFGS:
         assert not self.traj_dir or (
             traj_dir and len(traj_names)
         ), "Trajectory names should be specified to save trajectories"
-        logging.info("Step   Fmax(eV/A)")
 
     def run(self, fmax, steps):
         self.fmax = fmax
@@ -89,18 +88,18 @@ class LBFGS:
                 ase.io.Trajectory(self.traj_dir / f"{name}.traj_tmp", mode="w")
                 for name in self.traj_names
             ]
-            self.write()
 
         iteration = 0
         max_forces = self.optimizable.get_max_forces(apply_constraint=True)
-        while iteration < steps - 1 and not self.optimizable.converged(
+        logging.info("Step   Fmax(eV/A)")
+        while iteration < steps and not self.optimizable.converged(
             forces=None, fmax=self.fmax, max_forces=max_forces
         ):
             logging.info(
                 f"{iteration} " + " ".join(f"{x:0.3f}" for x in max_forces.tolist())
             )
 
-            if self.trajectories is not None and self.save_full:
+            if self.trajectories is not None and self.save_full is True:
                 self.write()
 
             self.step(iteration)
@@ -111,7 +110,7 @@ class LBFGS:
             f"{iteration} " + " ".join(f"{x:0.3f}" for x in max_forces.tolist())
         )
 
-        # save after converged on all iterations ran
+        # save after converged or all iterations ran
         if iteration > 0 and self.trajectories is not None:
             self.write()
 
@@ -203,7 +202,5 @@ class LBFGS:
         for atm, traj, mask in zip(
             atoms_objects, self.trajectories, self.optimizable.update_mask
         ):
-            if (
-                mask or not self.save_full
-            ):  # should this be "if mask or self.save_full"?
+            if mask:
                 traj.write(atm)
