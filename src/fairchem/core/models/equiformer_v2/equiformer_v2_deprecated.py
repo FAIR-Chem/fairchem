@@ -10,14 +10,13 @@ import torch.nn as nn
 from fairchem.core.common import gp_utils
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
+from fairchem.core.models.base import GraphModelMixin
 from fairchem.core.models.scn.smearing import GaussianSmearing
 
 with contextlib.suppress(ImportError):
     pass
 
 
-import typing
 
 from .edge_rot_mat import init_edge_rot_mat
 from .gaussian_rbf import GaussianRadialBasisLayer
@@ -43,10 +42,6 @@ from .transformer_block import (
     SO2EquivariantGraphAttention,
     TransBlockV2,
 )
-
-if typing.TYPE_CHECKING:
-    from torch_geometric.data.batch import Batch
-    from fairchem.core.models.base import GraphData
 
 # Statistics of IS2RE 100K
 _AVG_NUM_NODES = 77.81317

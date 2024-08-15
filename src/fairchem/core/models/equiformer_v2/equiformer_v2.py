@@ -14,7 +14,6 @@ from fairchem.core.models.base import (
     BackboneInterface,
     GraphModelMixin,
     HeadInterface,
-    HydraModel,
 )
 from fairchem.core.models.scn.smearing import GaussianSmearing
 
