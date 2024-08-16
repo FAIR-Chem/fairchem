@@ -241,6 +241,9 @@ class HydraModel(nn.Module, GraphModelMixin):
     ):
         super().__init__()
         self.otf_graph = otf_graph
+        # This is required for hydras with models that have multiple outputs per head, since we will deprecate
+        # the old config system at some point, this will prevent the need to make major modifications to the trainer
+        # because they all expect the name of the outputs directly instead of the head_name.property_name
         self.pass_through_head_outputs = pass_through_head_outputs
 
         # if finetune_config is provided, then attempt to load the model from the given finetune checkpoint

@@ -45,7 +45,6 @@ from fairchem.core.common.utils import (
 )
 from fairchem.core.datasets.base_dataset import create_dataset
 
-# from fairchem.core.models.finetune_hydra import FineTuneHydra, FTConfig
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
