@@ -424,7 +424,6 @@ class EquiformerV2(nn.Module, GraphModelMixin):
             )
 
         self.apply(partial(eqv2_init_weights, weight_init=self.weight_init))
-        # self.apply(eqv2_uniform_init_rad_func_linear_weights)
 
     def _init_gp_partitions(
         self,

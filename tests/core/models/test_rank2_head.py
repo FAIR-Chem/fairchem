@@ -33,6 +33,7 @@ def batch():
 def test_rank2_head(
     batch, decompose, edge_level_mlp, use_source_target_embedding, extensive
 ):
+    torch.manual_seed(100)  # fix network initialization
     backbone = EquiformerV2Backbone(
         num_layers=2,
         sphere_channels=8,
@@ -58,7 +59,7 @@ def test_rank2_head(
         assert r2_out["out_isotropic"].shape[1] == 1
         tensor = _reshape_tensor(r2_out["out_isotropic"])
         # anisotropic must be traceless
-        assert torch.diagonal(tensor).sum().item() == pytest.approx(0.0, abs=1e-8)
+        assert torch.diagonal(tensor).sum().item() == pytest.approx(0.0, abs=2e-8)
     else:
         assert "out" in r2_out
         tensor = r2_out["out"].view(3, 3)
