@@ -414,9 +414,11 @@ class OptimizableUnitCellBatch(OptimizableBatch):
             raise ValueError("shape of mask should be (3,3) or (6,)")
 
         if isinstance(cell_factor, float):
-            cell_factor = cell_factor * torch.ones(len(batch), requires_grad=False)
+            cell_factor = cell_factor * torch.ones(
+                (3 * len(batch), 1), requires_grad=False
+            )
         if cell_factor is None:
-            cell_factor = self.batch.natoms
+            cell_factor = self.batch.natoms.repeat_interleave(3).unsqueeze(dim=1)
 
         self.hydrostatic_strain = hydrostatic_strain
         self.constant_volume = constant_volume
@@ -461,7 +463,6 @@ class OptimizableUnitCellBatch(OptimizableBatch):
             cur_deform_grad[self.batch.batch, :, :],
             self.batch.pos.view(-1, 3, 1),
         ).view(-1, 3)
-
         # cell DOFs are the deformation gradient times a scaling factor
         pos[natoms:] = self.cell_factor * cur_deform_grad.view(-1, 3)
         return pos.cpu().numpy() if self.numpy else pos
@@ -479,7 +480,7 @@ class OptimizableUnitCellBatch(OptimizableBatch):
         positions = positions.to(dtype=torch.float32, device=self.device)
         natoms = self.batch.num_nodes
         new_atom_positions = positions[:natoms]
-        new_deform_grad = positions[natoms:].view(-1, 3, 3) / self.cell_factor
+        new_deform_grad = (positions[natoms:] / self.cell_factor).view(-1, 3, 3)
 
         # TODO check that in fact symmetry is preserved setting cells and positions
         # Set the new cell from the original cell and the new deformation gradient.  Both current and final structures
