@@ -8,12 +8,13 @@ from pathlib import Path
 import numpy as np
 import numpy.testing as npt
 import pytest
-from conftest import _run_main, oc20_lmdb_train_and_val_from_paths
+from test_e2e_commons import _run_main, oc20_lmdb_train_and_val_from_paths
 
 from fairchem.core.common.utils import setup_logging
 from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
 
 setup_logging()
+
 
 """
 These tests are intended to be as quick as possible and test only that the network is runnable and outputs training+validation to tensorboard output

@@ -1,0 +1,55 @@
+trainer: forces
+
+outputs:
+  energy:
+    shape: 1
+    level: system
+  forces:
+    irrep_dim: 1
+    level: atom
+    train_on_free_atoms: True
+    eval_on_free_atoms: True
+
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 2
+  - forces:
+      fn: l2mae
+      coefficient: 100
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+    forces:
+      - mae
+      - cosine_similarity
+      - magnitude_error
+    misc:
+      - energy_forces_within_threshold
+  primary_metric: forces_mae
+  
+logger:
+    name: tensorboard
+
+model:
+  name: finetune_hydra
+  finetune_config: {}
+
+
+optim:
+  batch_size: 5
+  eval_batch_size: 2
+  num_workers: 0
+  lr_initial: 0.0025
+  optimizer: AdamW
+  optimizer_params: {"amsgrad": True,weight_decay: 0.0}
+  eval_every: 190
+  max_epochs: 50
+  force_coefficient: 20
+  scheduler: "Null"
+  energy_coefficient: 1
+  clip_grad_norm: 20
+  loss_energy: mae
+  loss_force: l2mae

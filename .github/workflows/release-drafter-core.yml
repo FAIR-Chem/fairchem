@@ -1,0 +1,29 @@
+name: Release Drafter - fairchem_core
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/fairchem/core/**'
+      - 'packages/fairchem-core/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  
+jobs:
+  update_release_draft:
+    permissions:
+        # write permission is required to create a github release
+        contents: write
+        pull-requests: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter@v6
+        with:
+          disable-autolabeler: true
+          latest: true
+          config-name: release-drafter-core.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
