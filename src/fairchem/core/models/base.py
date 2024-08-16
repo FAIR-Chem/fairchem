@@ -262,6 +262,8 @@ class HydraModel(nn.Module, GraphModelMixin):
             )
         elif starting_model is not None:
             self.backbone = starting_model.backbone
+        else:
+            raise RuntimeError("Backbone not specified and not found in the starting checkpoint")
 
         if heads is not None:
             heads = copy.deepcopy(heads)
@@ -286,8 +288,9 @@ class HydraModel(nn.Module, GraphModelMixin):
             self.output_heads = torch.nn.ModuleDict(self.output_heads)
         elif starting_model is not None:
             self.output_heads = starting_model.output_heads
+        else:
+            raise RuntimeError("Heads not specified and not found in the starting checkpoint")
 
-        assert self.backbone is not None and self.output_heads is not None
 
     def forward(self, data: Batch):
         emb = self.backbone(data)
