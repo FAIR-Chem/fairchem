@@ -30,7 +30,7 @@ def test_smoke_s2efs_predict(
     updates = {
         "task": {"strict_load": False},
         "model": {
-            "backbone": {"max_num_elements": 118},
+            "backbone": {"max_num_elements": 118 + 1},
             "heads": {
                 "stress": {
                     "module": "rank2_symmetric_head",
@@ -45,17 +45,25 @@ def test_smoke_s2efs_predict(
             {"stress": {"fn": "mae", "coefficient": 100}},
         ],
         "outputs": {"stress": {"level": "system", "irrep_dim": 2}},
-        "evaluation_metrics": {"metrics": {"stress": "mae"}},
+        "evaluation_metrics": {"metrics": {"stress": ["mae"]}},
         "dataset": {
             "train": {
                 "src": str(dummy_binary_dataset_path),
                 "format": "ase_db",
                 "a2g_args": {"r_data_keys": ["energy", "forces", "stress"]},
+                "sample_n": 20,
             },
             "val": {
                 "src": str(dummy_binary_dataset_path),
                 "format": "ase_db",
                 "a2g_args": {"r_data_keys": ["energy", "forces", "stress"]},
+                "sample_n": 5,
+            },
+            "test": {
+                "src": str(dummy_binary_dataset_path),
+                "format": "ase_db",
+                "a2g_args": {"r_data_keys": ["energy", "forces", "stress"]},
+                "sample_n": 5,
             },
         },
     }
@@ -100,9 +108,9 @@ def test_smoke_s2efs_predict(
     )
     predictions = np.load(training_predictions_filename)
 
-    for output in input_yaml["outputs"]:
+    for output in updates["outputs"]:
         assert output in predictions
 
-    assert predictions["energy"].shape == (20,)
-    assert predictions["forces"].shape == (20, 3)
-    assert predictions["stress"].shape == (20, 9)
+    assert predictions["energy"].shape == (5, 1)
+    assert predictions["forces"].shape == (10, 3)
+    assert predictions["stress"].shape == (5, 9)

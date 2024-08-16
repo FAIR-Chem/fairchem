@@ -183,7 +183,7 @@ def _run_main(
         )
     else:
         Runner()(config)
-
+    f = glob.glob(f"{rundir}/checkpoints/*/*")
     if save_checkpoint_to is not None:
         checkpoints = glob.glob(f"{rundir}/checkpoints/*/checkpoint.pt")
         assert len(checkpoints) == 1

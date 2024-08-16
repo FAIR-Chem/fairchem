@@ -7,6 +7,8 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+from functools import partial
+
 import torch
 from e3nn import o3
 from torch import nn
@@ -14,6 +16,7 @@ from torch_scatter import scatter
 
 from fairchem.core.common.registry import registry
 from fairchem.core.models.base import BackboneInterface, HeadInterface
+from fairchem.core.models.equiformer_v2.equiformer_v2 import eqv2_init_weights
 from fairchem.core.models.equiformer_v2.layer_norm import get_normalization_layer
 
 
@@ -242,6 +245,7 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
         use_source_target_embedding: bool = False,
         extensive: bool = False,
         avg_num_nodes: int = 1.0,
+        default_norm_type: str = "layer_norm_sh",
     ):
         """
         Args:
@@ -260,7 +264,7 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
         self.avg_num_nodes = avg_num_nodes
 
         self.sphharm_norm = get_normalization_layer(
-            backbone.norm_type,
+            getattr(backbone, "norm_type", default_norm_type),
             lmax=max(backbone.lmax_list),
             num_channels=1,
         )
@@ -288,7 +292,7 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
             )
 
         # initialize weights
-        self.block.apply(backbone.init_weights)
+        self.block.apply(partial(eqv2_init_weights, weight_init="uniform"))
 
     def forward(
         self, data: dict[str, torch.Tensor] | torch.Tensor, emb: dict[str, torch.Tensor]

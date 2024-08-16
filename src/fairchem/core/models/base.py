@@ -188,6 +188,10 @@ class GraphModelMixin:
 
 
 class HeadInterface(metaclass=ABCMeta):
+    @property
+    def use_amp_in_head(self):
+        return False
+
     @abstractmethod
     def forward(
         self, data: Batch, emb: dict[str, torch.Tensor]
@@ -269,6 +273,10 @@ class HydraModel(nn.Module, GraphModelMixin):
         # Predict all output properties for all structures in the batch for now.
         out = {}
         for k in self.output_heads:
-            out.update(self.output_heads[k](data, emb))
+            with torch.autocast(
+                device_type=self.device, enabled=self.output_heads.use_amp
+            ):
+                print("USE AMP", self.output_heads.use_amp)
+                out.update(self.output_heads[k](data, emb))
 
         return out

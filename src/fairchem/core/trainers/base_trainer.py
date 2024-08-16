@@ -422,9 +422,11 @@ class BaseTrainer(ABC):
                     elementref_config,
                     dataset=self.train_dataset,
                     seed=self.config["cmd"]["seed"],
-                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"]
-                    if not self.is_debug
-                    else None,
+                    checkpoint_dir=(
+                        self.config["cmd"]["checkpoint_dir"]
+                        if not self.is_debug
+                        else None
+                    ),
                 )
 
             if norms_config is not None:
@@ -432,9 +434,11 @@ class BaseTrainer(ABC):
                     norms_config,
                     dataset=self.train_dataset,
                     seed=self.config["cmd"]["seed"],
-                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"]
-                    if not self.is_debug
-                    else None,
+                    checkpoint_dir=(
+                        self.config["cmd"]["checkpoint_dir"]
+                        if not self.is_debug
+                        else None
+                    ),
                     element_references=elementrefs,
                 )
 
@@ -483,15 +487,15 @@ class BaseTrainer(ABC):
                         ][target_name].get("level", "system")
                     if "train_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["train_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("train_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "train_on_free_atoms", True
+                            )
                         )
                     if "eval_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["eval_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("eval_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "eval_on_free_atoms", True
+                            )
                         )
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
