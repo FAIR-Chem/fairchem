@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import copy
 import logging
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -21,6 +21,7 @@ from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import (
     compute_neighbors,
     get_pbc_distances,
+    load_model_and_weights_from_checkpoint,
     radius_graph_pbc,
 )
 
@@ -228,57 +229,60 @@ class BackboneInterface(metaclass=ABCMeta):
         return
 
 
-class HydraInterface(ABC):
-    # a hydra has a backbone and heads
-    @abstractmethod
-    def get_backbone(self) -> BackboneInterface:
-        raise not NotImplementedError
-
-    @abstractmethod
-    def get_heads(self) -> dict[str, HeadInterface]:
-        raise not NotImplementedError
-
-
 @registry.register_model("hydra")
-class HydraModel(nn.Module, GraphModelMixin, HydraInterface):
+class HydraModel(nn.Module, GraphModelMixin):
     def __init__(
         self,
-        backbone: dict,
-        heads: dict,
+        backbone: dict | None = None,
+        heads: dict | None = None,
+        finetune_config: dict | None = None,
         otf_graph: bool = True,
     ):
         super().__init__()
         self.otf_graph = otf_graph
-        # make a copy so we don't modify the original config
-        backbone = copy.deepcopy(backbone)
-        heads = copy.deepcopy(heads)
 
-        backbone_model_name = backbone.pop("model")
-        self.backbone: BackboneInterface = registry.get_model_class(
-            backbone_model_name
-        )(
-            **backbone,
-        )
+        # if finetune_config is provided, then attempt to load the model from the given finetune checkpoint
+        starting_model = None
+        if finetune_config is not None:
+            starting_model: HydraModel = load_model_and_weights_from_checkpoint(finetune_config['starting_checkpoint'])
+            assert isinstance(starting_model, HydraModel), "Can only finetune starting from other hydra models!"
+            
+        if backbone is not None:
+            backbone = copy.deepcopy(backbone)
+            backbone_model_name = backbone.pop("model")
+            self.backbone: BackboneInterface = registry.get_model_class(
+                backbone_model_name
+            )(
+                **backbone,
+            )
+        elif starting_model is not None:
+            self.backbone = starting_model.backbone
 
-        # Iterate through outputs_cfg and create heads
-        self.output_heads: dict[str, HeadInterface] = {}
+        if heads is not None:
+            heads = copy.deepcopy(heads)
+            # Iterate through outputs_cfg and create heads
+            self.output_heads: dict[str, HeadInterface] = {}
 
-        head_names_sorted = sorted(heads.keys())
-        assert len(set(head_names_sorted)) == len(head_names_sorted), "Head names must be unique!"
-        for head_name in head_names_sorted:
-            head_config = heads[head_name]
-            if "module" not in head_config:
-                raise ValueError(
-                    f"{head_name} head does not specify module to use for the head"
+            head_names_sorted = sorted(heads.keys())
+            assert len(set(head_names_sorted)) == len(head_names_sorted), "Head names must be unique!"
+            for head_name in head_names_sorted:
+                head_config = heads[head_name]
+                if "module" not in head_config:
+                    raise ValueError(
+                        f"{head_name} head does not specify module to use for the head"
+                    )
+
+                module_name = head_config.pop("module")
+                self.output_heads[head_name] = registry.get_model_class(module_name)(
+                    self.backbone,
+                    **head_config,
                 )
 
-            module_name = head_config.pop("module")
-            self.output_heads[head_name] = registry.get_model_class(module_name)(
-                self.backbone,
-                **head_config,
-            )
+            self.output_heads = torch.nn.ModuleDict(self.output_heads)
+        elif starting_model is not None:
+            self.output_heads = starting_model.output_heads
 
-        self.output_heads = torch.nn.ModuleDict(self.output_heads)
+        assert self.backbone is not None and self.output_heads is not None
 
     def forward(self, data: Batch):
         emb = self.backbone(data)
@@ -288,8 +292,4 @@ class HydraModel(nn.Module, GraphModelMixin, HydraInterface):
             out[k] = self.output_heads[k](data, emb)
         return out
 
-    def get_backbone(self) -> BackboneInterface:
-        return self.backbone
 
-    def get_heads(self) -> dict[str, HeadInterface]:
-        return self.output_heads
