@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from conftest import _run_main
+from test_e2e_commons import _run_main
 
 
 # TODO add GemNet!
