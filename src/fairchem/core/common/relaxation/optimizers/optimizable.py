@@ -314,7 +314,7 @@ class OptimizableBatch(Optimizable):
 
     def update_graph(self):
         """Update the graph if model does not use otf_graph."""
-        graph = self.trainer.model.generate_graph(self.batch)
+        graph = self.trainer._unwrapped_model.generate_graph(self.batch)
         self.batch.edge_index = graph.edge_index
         self.batch.cell_offsets = graph.cell_offsets
         self.batch.neighbors = graph.neighbors
