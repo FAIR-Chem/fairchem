@@ -237,16 +237,18 @@ class HydraModel(nn.Module, GraphModelMixin):
         heads: dict | None = None,
         finetune_config: dict | None = None,
         otf_graph: bool = True,
+        pass_through_head_outputs: bool = False,
     ):
         super().__init__()
         self.otf_graph = otf_graph
+        self.pass_through_head_outputs = pass_through_head_outputs
 
         # if finetune_config is provided, then attempt to load the model from the given finetune checkpoint
         starting_model = None
         if finetune_config is not None:
-            starting_model: HydraModel = load_model_and_weights_from_checkpoint(finetune_config['starting_checkpoint'])
+            starting_model: HydraModel = load_model_and_weights_from_checkpoint(finetune_config["starting_checkpoint"])
             assert isinstance(starting_model, HydraModel), "Can only finetune starting from other hydra models!"
-            
+
         if backbone is not None:
             backbone = copy.deepcopy(backbone)
             backbone_model_name = backbone.pop("model")
@@ -289,7 +291,10 @@ class HydraModel(nn.Module, GraphModelMixin):
         # Predict all output properties for all structures in the batch for now.
         out = {}
         for k in self.output_heads:
-            out[k] = self.output_heads[k](data, emb)
+            if self.pass_through_head_outputs:
+                out.update(self.output_heads[k](data, emb))
+            else:
+                out[k] = self.output_heads[k](data, emb)
         return out
 
 

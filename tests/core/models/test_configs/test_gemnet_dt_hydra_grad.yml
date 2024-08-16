@@ -73,6 +73,7 @@ model:
   heads:
     energy_and_forces:
       module: gemnet_t_energy_and_grad_force_head
+  pass_through_head_outputs: True
 
 optim:
   batch_size: 8
