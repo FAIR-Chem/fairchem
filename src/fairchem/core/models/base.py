@@ -189,7 +189,7 @@ class GraphModelMixin:
 
 class HeadInterface(metaclass=ABCMeta):
     @property
-    def use_amp_in_head(self):
+    def use_amp(self):
         return False
 
     @abstractmethod
@@ -241,6 +241,7 @@ class HydraModel(nn.Module, GraphModelMixin):
     ):
         super().__init__()
         self.otf_graph = otf_graph
+        self.device = "cpu"
 
         backbone_model_name = backbone.pop("model")
         self.backbone: BackboneInterface = registry.get_model_class(
@@ -268,15 +269,19 @@ class HydraModel(nn.Module, GraphModelMixin):
 
         self.output_heads = torch.nn.ModuleDict(self.output_heads)
 
+    def to(self, *args, **kwargs):
+        if "device" in kwargs:
+            self.device = kwargs["device"]
+        return super().to(*args, **kwargs)
+
     def forward(self, data: Batch):
         emb = self.backbone(data)
         # Predict all output properties for all structures in the batch for now.
         out = {}
         for k in self.output_heads:
             with torch.autocast(
-                device_type=self.device, enabled=self.output_heads.use_amp
+                device_type=self.device, enabled=self.output_heads[k].use_amp
             ):
-                print("USE AMP", self.output_heads.use_amp)
                 out.update(self.output_heads[k](data, emb))
 
         return out
