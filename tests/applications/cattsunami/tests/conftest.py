@@ -1,6 +1,9 @@
-from pathlib import Path
+import os
 import pickle
+from pathlib import Path
+
 import pytest
+from fairchem.core.scripts import download_large_files
 
 
 @pytest.fixture(scope="class")
@@ -17,11 +20,17 @@ def desorption_inputs(request):
 
 @pytest.fixture(scope="class")
 def dissociation_inputs(request):
-    with open(Path(__file__).parent / "autoframe_inputs_dissociation.pkl", "rb") as fp:
+    pkl_path = Path(__file__).parent / "autoframe_inputs_dissociation.pkl"
+    if not pkl_path.exists():
+        download_large_files.download_file_group("cattsunami")
+    with open(pkl_path, "rb") as fp:
         request.cls.inputs = pickle.load(fp)
 
 
 @pytest.fixture(scope="class")
 def transfer_inputs(request):
-    with open(Path(__file__).parent / "autoframe_inputs_transfer.pkl", "rb") as fp:
+    pkl_path = Path(__file__).parent / "autoframe_inputs_transfer.pkl"
+    if not pkl_path.exists():
+        download_large_files.download_file_group("cattsunami")
+    with open(pkl_path, "rb") as fp:
         request.cls.inputs = pickle.load(fp)

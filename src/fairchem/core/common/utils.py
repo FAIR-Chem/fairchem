@@ -49,8 +49,9 @@ if TYPE_CHECKING:
 DEFAULT_ENV_VARS = {
     # Expandable segments is a new cuda feature that helps with memory fragmentation during frequent allocations (ie: in the case of variable batch sizes).
     # see https://pytorch.org/docs/stable/notes/cuda.html.
-    "PYTORCH_CUDA_ALLOC_CONF" : "expandable_segments:True",
+    "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
 }
+
 
 # copied from https://stackoverflow.com/questions/33490870/parsing-yaml-in-python-detect-duplicated-keys
 # prevents loading YAMLS where keys have been overwritten
@@ -265,8 +266,8 @@ def _import_local_file(path: Path, *, project_root: Path) -> None:
     :type project_root: Path
     """
 
-    path = path.resolve()
-    project_root = project_root.parent.resolve()
+    path = path.absolute()
+    project_root = project_root.parent.absolute()
 
     module_name = ".".join(
         path.absolute().relative_to(project_root.absolute()).with_suffix("").parts
@@ -285,7 +286,7 @@ def setup_experimental_imports(project_root: Path) -> None:
 
     :param project_root: The root directory of the project (i.e., the "ocp" folder)
     """
-    experimental_dir = (project_root / "experimental").resolve()
+    experimental_dir = (project_root / "experimental").absolute()
     if not experimental_dir.exists() or not experimental_dir.is_dir():
         return
 
@@ -298,8 +299,7 @@ def setup_experimental_imports(project_root: Path) -> None:
 
         for inc_dir in include_dirs:
             experimental_files.extend(
-                f.resolve().absolute()
-                for f in (experimental_dir / inc_dir).rglob("*.py")
+                f.absolute() for f in (experimental_dir / inc_dir).rglob("*.py")
             )
 
     for f in experimental_files:
@@ -1100,6 +1100,35 @@ def _report_incompat_keys(
         logging.warning(error_msg)
 
     return missing_keys, unexpected_keys
+
+
+def match_state_dict(
+    model_state_dict: Mapping[str, torch.Tensor],
+    checkpoint_state_dict: Mapping[str, torch.Tensor],
+) -> dict:
+    # match the model's state dict with the checkpoint state and return a new dict
+    # that's compatible with the models
+
+    # Match the "module." count in the keys of model and checkpoint state_dict
+    # DataParallel model has 1 "module.",  DistributedDataParallel has 2 "module."
+    # Not using either of the above two would have no "module."
+
+    ckpt_key_count = next(iter(checkpoint_state_dict)).count("module")
+    mod_key_count = next(iter(model_state_dict)).count("module")
+    key_count_diff = mod_key_count - ckpt_key_count
+
+    if key_count_diff > 0:
+        new_dict = {
+            key_count_diff * "module." + k: v for k, v in checkpoint_state_dict.items()
+        }
+    elif key_count_diff < 0:
+        new_dict = {
+            k[len("module.") * abs(key_count_diff) :]: v
+            for k, v in checkpoint_state_dict.items()
+        }
+    else:
+        new_dict = checkpoint_state_dict
+    return new_dict
 
 
 def load_state_dict(

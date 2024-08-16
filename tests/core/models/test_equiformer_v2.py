@@ -10,15 +10,21 @@ from __future__ import annotations
 import copy
 import io
 import os
+from pathlib import Path
 
 import pytest
 import requests
 import torch
+import yaml
 from ase.io import read
 from torch.nn.parallel.distributed import DistributedDataParallel
 
 from fairchem.core.common.registry import registry
-from fairchem.core.common.test_utils import PGConfig, spawn_multi_process
+from fairchem.core.common.test_utils import (
+    PGConfig,
+    init_pg_and_rank_and_launch_test,
+    spawn_multi_process,
+)
 from fairchem.core.common.utils import load_state_dict, setup_imports
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.models.equiformer_v2.so3 import (
@@ -59,9 +65,6 @@ def _load_model():
     checkpoint = torch.load(io.BytesIO(r.content), map_location=torch.device("cpu"))
 
     model = registry.get_model_class("equiformer_v2")(
-        None,
-        -1,
-        1,
         use_pbc=True,
         regress_forces=True,
         otf_graph=True,
@@ -140,7 +143,9 @@ class TestEquiformerV2:
     def test_ddp(self, snapshot):
         data_dist = self.data.clone().detach()
         config = PGConfig(backend="gloo", world_size=1, gp_group_size=1, use_gp=False)
-        output = spawn_multi_process(config, _runner, data_dist)
+        output = spawn_multi_process(
+            config, _runner, init_pg_and_rank_and_launch_test, data_dist
+        )
         assert len(output) == 1
         energy, forces = output[0]["energy"], output[0]["forces"]
         assert snapshot == energy.shape
@@ -151,7 +156,9 @@ class TestEquiformerV2:
     def test_gp(self, snapshot):
         data_dist = self.data.clone().detach()
         config = PGConfig(backend="gloo", world_size=2, gp_group_size=2, use_gp=True)
-        output = spawn_multi_process(config, _runner, data_dist)
+        output = spawn_multi_process(
+            config, _runner, init_pg_and_rank_and_launch_test, data_dist
+        )
         assert len(output) == 2
         energy, forces = output[0]["energy"], output[0]["forces"]
         assert snapshot == energy.shape
@@ -226,3 +233,46 @@ class TestMPrimaryLPrimary:
                 lp = embedding.embedding.clone()
                 (test_matrix_lp == lp).all()
 
+
+def _load_hydra_model():
+    torch.manual_seed(4)
+    with open(Path("tests/core/models/test_configs/test_equiformerv2_hydra.yml")) as yaml_file:
+        yaml_config = yaml.safe_load(yaml_file)
+        model = registry.get_model_class("hydra")(yaml_config["model"]["backbone"],yaml_config["model"]["heads"])
+    model.backbone.num_layers = 1
+    return model
+
+def test_eqv2_hydra_activation_checkpoint():
+    atoms = read(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "atoms.json"),
+        index=0,
+        format="json",
+    )
+    a2g = AtomsToGraphs(
+        max_neigh=200,
+        radius=6,
+        r_edges=False,
+        r_fixed=True,
+    )
+    data_list = a2g.convert_all([atoms])
+    inputs = data_list_collater(data_list)
+    no_ac_model = _load_hydra_model()
+    ac_model = _load_hydra_model()
+    ac_model.backbone.activation_checkpoint=True
+
+    # to do this test we need both models to have the exact same state and the only
+    # way to do this is save the rng state and reset it after stepping the first model
+    start_rng_state = torch.random.get_rng_state()
+    outputs_no_ac = no_ac_model(inputs)
+    torch.autograd.backward(outputs_no_ac["energy"].sum() + outputs_no_ac["forces"].sum())
+
+    # reset the rng state to the beginning
+    torch.random.set_rng_state(start_rng_state)
+    outptuts_ac = ac_model(inputs)
+    torch.autograd.backward(outptuts_ac["energy"].sum() + outptuts_ac["forces"].sum())
+
+    # assert all the gradients are identical between the model with checkpointing and no checkpointing
+    ac_model_grad_dict = {name:p.grad for name, p in ac_model.named_parameters() if p.grad is not None}
+    no_ac_model_grad_dict = {name:p.grad for name, p in no_ac_model.named_parameters() if p.grad is not None}
+    for name in no_ac_model_grad_dict:
+        assert torch.allclose(no_ac_model_grad_dict[name], ac_model_grad_dict[name], atol=1e-4)
