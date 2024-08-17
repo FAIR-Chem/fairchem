@@ -39,18 +39,18 @@ from torch_scatter import scatter, segment_coo, segment_csr
 
 import fairchem.core
 from fairchem.core.modules.loss import AtomwiseL2Loss, L2MAELoss
-from fairchem.experimental.foundation_models.multi_task_dataloader.merge_stats import (
-    combine_means_and_variances,
-)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from torch.nn.modules.module import _IncompatibleKeys
 
-# Statistics of IS2RE 100K
-_AVG_NUM_NODES = 77.81317
-_AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
+
+DEFAULT_ENV_VARS = {
+    # Expandable segments is a new cuda feature that helps with memory fragmentation during frequent allocations (ie: in the case of variable batch sizes).
+    # see https://pytorch.org/docs/stable/notes/cuda.html.
+    "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
+}
 
 
 # copied from https://stackoverflow.com/questions/33490870/parsing-yaml-in-python-detect-duplicated-keys
@@ -275,8 +275,8 @@ def _import_local_file(path: Path, *, project_root: Path) -> None:
     :type project_root: Path
     """
 
-    path = path.resolve()
-    project_root = project_root.parent.resolve()
+    path = path.absolute()
+    project_root = project_root.parent.absolute()
 
     module_name = ".".join(
         path.absolute().relative_to(project_root.absolute()).with_suffix("").parts
@@ -295,7 +295,7 @@ def setup_experimental_imports(project_root: Path) -> None:
 
     :param project_root: The root directory of the project (i.e., the "ocp" folder)
     """
-    experimental_dir = (project_root / "experimental").resolve()
+    experimental_dir = (project_root / "experimental").absolute()
     if not experimental_dir.exists() or not experimental_dir.is_dir():
         return
 
@@ -308,8 +308,7 @@ def setup_experimental_imports(project_root: Path) -> None:
 
         for inc_dir in include_dirs:
             experimental_files.extend(
-                f.resolve().absolute()
-                for f in (experimental_dir / inc_dir).rglob("*.py")
+                f.absolute() for f in (experimental_dir / inc_dir).rglob("*.py")
             )
 
     for f in experimental_files:
@@ -985,6 +984,12 @@ def check_traj_files(batch, traj_dir) -> bool:
     return all(fl.exists() for fl in traj_files)
 
 
+def setup_env_vars() -> None:
+    for k, v in DEFAULT_ENV_VARS.items():
+        os.environ[k] = v
+        logging.info(f"Setting env {k}={v}")
+
+
 @contextmanager
 def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
     from fairchem.core.common import distutils, gp_utils
@@ -1001,6 +1006,7 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
         trainer: BaseTrainer
 
     setup_logging()
+    setup_env_vars()
     original_config = config
     config = copy.deepcopy(original_config)
 
@@ -1063,8 +1069,8 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
                 outputs=config.get("outputs", {}),
                 dataset=config["dataset"],
                 optimizer=config["optim"],
-                loss_fns=config.get("loss_functions", {}),
-                eval_metrics=config.get("evaluation_metrics", {}),
+                loss_functions=config.get("loss_functions", {}),
+                evaluation_metrics=config.get("evaluation_metrics", {}),
                 identifier=config["identifier"],
                 timestamp_id=config.get("timestamp_id", None),
                 run_dir=config.get("run_dir", "./"),
@@ -1155,6 +1161,35 @@ def _report_incompat_keys(
         logging.warning(error_msg)
 
     return missing_keys, unexpected_keys
+
+
+def match_state_dict(
+    model_state_dict: Mapping[str, torch.Tensor],
+    checkpoint_state_dict: Mapping[str, torch.Tensor],
+) -> dict:
+    # match the model's state dict with the checkpoint state and return a new dict
+    # that's compatible with the models
+
+    # Match the "module." count in the keys of model and checkpoint state_dict
+    # DataParallel model has 1 "module.",  DistributedDataParallel has 2 "module."
+    # Not using either of the above two would have no "module."
+
+    ckpt_key_count = next(iter(checkpoint_state_dict)).count("module")
+    mod_key_count = next(iter(model_state_dict)).count("module")
+    key_count_diff = mod_key_count - ckpt_key_count
+
+    if key_count_diff > 0:
+        new_dict = {
+            key_count_diff * "module." + k: v for k, v in checkpoint_state_dict.items()
+        }
+    elif key_count_diff < 0:
+        new_dict = {
+            k[len("module.") * abs(key_count_diff) :]: v
+            for k, v in checkpoint_state_dict.items()
+        }
+    else:
+        new_dict = checkpoint_state_dict
+    return new_dict
 
 
 def load_state_dict(
@@ -1396,86 +1431,3 @@ def get_loss_module(loss_name):
         raise NotImplementedError(f"Unknown loss function name: {loss_name}")
 
     return loss_fn
-
-
-def compute_mean_and_std_for_target(target_name, config, concat_dataset, level):
-    """
-    Given a target name , check the datasets used, their means and stdev,
-    their relative sizes in the virtual dataset and compute the corresponding
-    mean and stdev
-    """
-
-    # get the expanded sizes of each named dataset in the training virtual dataset
-    # along with mean and stdev for each property listed
-    _, expanded_sizes, _ = concat_dataset.updated_dataset_sizes
-    dataset_name_to_size_and_stats = {}
-    for dataset_idx in range(len(expanded_sizes)):
-        dataset_name = concat_dataset.dataset_names[dataset_idx]
-        dataset_name_to_size_and_stats[dataset_name] = {
-            "size": expanded_sizes[dataset_idx]
-        }
-        if "normalization_constants" in config["datasets"][dataset_name]:
-            dataset_name_to_size_and_stats[dataset_name].update(
-                config["datasets"][dataset_name]["normalization_constants"]
-            )
-            if (
-                "average_atoms_per_system"
-                not in dataset_name_to_size_and_stats[dataset_name]
-            ):
-                logging.warn(
-                    f"{dataset_name} is missing normalization constant: 'average_atoms_per_system', assuming {_AVG_NUM_NODES}"
-                )
-                dataset_name_to_size_and_stats[dataset_name][
-                    "average_atoms_per_system"
-                ] = _AVG_NUM_NODES
-        assert level in {"atom", "system"}
-        if level == "atom":
-            dataset_name_to_size_and_stats[dataset_name][
-                "size"
-            ] *= dataset_name_to_size_and_stats[dataset_name][
-                "average_atoms_per_system"
-            ]
-
-    # TODO this is hacky, should be replaced with task.property
-    property = config["tasks"][target_name]["property"]
-    dataset_names = config["tasks"][target_name]["datasets"]
-
-    dataset_sizes, dataset_means, dataset_vars = [], [], []
-
-    for dataset_name in dataset_names:
-        if property not in dataset_name_to_size_and_stats[dataset_name]:
-            raise ValueError(
-                f"Failed to compute mean and std on the fly because missing '{property}' for dataset '{dataset_name}'"
-            )
-        if (
-            "mean" not in dataset_name_to_size_and_stats[dataset_name][property]
-            or "stdev" not in dataset_name_to_size_and_stats[dataset_name][property]
-        ):
-            raise ValueError(
-                f"Failed to compute mean and std on the fly because missing mean,stdev for '{property}' on dataset '{dataset_name}'"
-            )
-        dataset_sizes.append(dataset_name_to_size_and_stats[dataset_name]["size"])
-        dataset_means.append(
-            dataset_name_to_size_and_stats[dataset_name][property]["mean"]
-        )
-        dataset_vars.append(
-            dataset_name_to_size_and_stats[dataset_name][property]["stdev"] ** 2
-        )
-
-    calculated_mean, calculated_variance = combine_means_and_variances(
-        pop_sizes=dataset_sizes,
-        pop_variances=dataset_vars,
-        pop_means=dataset_means,
-        ddof=1,
-    )
-    calculated_stdev = np.sqrt(calculated_variance)
-
-    if len(dataset_means) == 1:
-        logging.info(
-            f"Using pass through mean,stdev for {target_name} , mean={calculated_mean}, stdev={calculated_stdev}, from {dataset_names}"
-        )
-    else:
-        logging.info(
-            f"Computed mean,stdev for {target_name} , mean={calculated_mean}, stdev={calculated_stdev}, across datasets {dataset_names}"
-        )
-    return calculated_mean, calculated_stdev

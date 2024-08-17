@@ -652,7 +652,7 @@ class TransBlockV2(torch.nn.Module):
         batch,  # for GraphDropPath
         node_offset: int = 0,
     ):
-        output_embedding = x
+        output_embedding = x.clone()
 
         x_res = output_embedding.embedding
         output_embedding.embedding = self.norm_1(output_embedding.embedding)

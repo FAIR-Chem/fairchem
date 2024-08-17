@@ -1388,7 +1388,7 @@ relax_dataset = "data/is2re/val_20/data.lmdb"
 
 from fairchem.core.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-dT-S2EF-OC20-All', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-dT-S2EF-OC20-All', local_cache='/tmp/fairchem_checkpoints/')
 
 ```
 
@@ -1807,7 +1807,7 @@ Similarly, to predict forces, we pass edge features through a fully-connected la
 
 @registry.register_model("simple")
 class SimpleAtomEdgeModel(torch.nn.Module):
-    def __init__(self, num_atoms, bond_feat_dim, num_targets, emb_size=64, num_radial=64, cutoff=6.0, env_exponent=5):
+    def __init__(self, emb_size=64, num_radial=64, cutoff=6.0, env_exponent=5):
         super().__init__()
 
         self.radial_basis = RadialBasis(
@@ -2021,7 +2021,7 @@ For this tutorial we download one of our earlier model checkpoints: GemNet-T
 
 from fairchem.core.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-dT-S2EF-OC20-All', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-dT-S2EF-OC20-All', local_cache='/tmp/fairchem_checkpoints/')
 
 ```
 

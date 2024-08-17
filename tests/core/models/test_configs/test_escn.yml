@@ -1,31 +1,37 @@
 trainer: forces
 
-dataset:
-  train:
-    src: tutorial_dset/s2ef/train_100/
-    normalize_labels: True
-    target_mean: -0.7554450631141663
-    target_std: 2.887317180633545
-    grad_target_mean: 0.0
-    grad_target_std: 2.887317180633545
-  val:
-    format: lmdb
-    src: tutorial_dset/s2ef/val_20/
-
 logger:
   name: tensorboard
 
-task:
-  dataset: lmdb
-  type: regression
-  metric: mae
+outputs:
+  energy:
+    shape: 1
+    level: system
+  forces:
+    irrep_dim: 1
+    level: atom
+    train_on_free_atoms: True
+    eval_on_free_atoms: True
+
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 2
+  - forces:
+      fn: l2mae
+      coefficient: 100
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+    forces:
+      - mae
+      - cosine_similarity
+      - magnitude_error
+    misc:
+      - energy_forces_within_threshold
   primary_metric: forces_mae
-  labels:
-    - potential energy
-  grad_input: atomic forces
-  train_on_free_atoms: True
-  eval_on_free_atoms: True
-  prediction_dtype: float32
 
 model:
   name: escn
