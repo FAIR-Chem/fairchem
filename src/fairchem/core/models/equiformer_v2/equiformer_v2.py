@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import logging
 import math
+from functools import partial
 
 import torch
 import torch.nn as nn
@@ -52,6 +53,28 @@ if typing.TYPE_CHECKING:
 # Statistics of IS2RE 100K
 _AVG_NUM_NODES = 77.81317
 _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
+
+
+def eqv2_init_weights(m, weight_init):
+    if isinstance(m, (torch.nn.Linear, SO3_LinearV2)):
+        if m.bias is not None:
+            torch.nn.init.constant_(m.bias, 0)
+        if weight_init == "normal":
+            std = 1 / math.sqrt(m.in_features)
+            torch.nn.init.normal_(m.weight, 0, std)
+    elif isinstance(m, torch.nn.LayerNorm):
+        torch.nn.init.constant_(m.bias, 0)
+        torch.nn.init.constant_(m.weight, 1.0)
+    elif isinstance(m, RadialFunction):
+        m.apply(eqv2_uniform_init_linear_weights)
+
+
+def eqv2_uniform_init_linear_weights(m):
+    if isinstance(m, torch.nn.Linear):
+        if m.bias is not None:
+            torch.nn.init.constant_(m.bias, 0)
+        std = 1 / math.sqrt(m.in_features)
+        torch.nn.init.uniform_(m.weight, -std, std)
 
 
 @registry.register_model("equiformer_v2")
@@ -400,8 +423,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
                 requires_grad=False,
             )
 
-        self.apply(self._init_weights)
-        self.apply(self._uniform_init_rad_func_linear_weights)
+        self.apply(partial(eqv2_init_weights, weight_init=self.weight_init))
 
     def _init_gp_partitions(
         self,
@@ -630,31 +652,6 @@ class EquiformerV2(nn.Module, GraphModelMixin):
     def num_params(self):
         return sum(p.numel() for p in self.parameters())
 
-    def _init_weights(self, m):
-        if isinstance(m, (torch.nn.Linear, SO3_LinearV2)):
-            if m.bias is not None:
-                torch.nn.init.constant_(m.bias, 0)
-            if self.weight_init == "normal":
-                std = 1 / math.sqrt(m.in_features)
-                torch.nn.init.normal_(m.weight, 0, std)
-            elif self.weight_init == "uniform":
-                self._uniform_init_linear_weights(m)
-
-        elif isinstance(m, torch.nn.LayerNorm):
-            torch.nn.init.constant_(m.bias, 0)
-            torch.nn.init.constant_(m.weight, 1.0)
-
-    def _uniform_init_rad_func_linear_weights(self, m):
-        if isinstance(m, RadialFunction):
-            m.apply(self._uniform_init_linear_weights)
-
-    def _uniform_init_linear_weights(self, m):
-        if isinstance(m, (torch.nn.Linear, SO3_LinearV2)):
-            if m.bias is not None:
-                torch.nn.init.constant_(m.bias, 0)
-            std = 1 / math.sqrt(m.in_features)
-            torch.nn.init.uniform_(m.weight, -std, std)
-
     @torch.jit.ignore
     def no_weight_decay(self) -> set:
         no_wd_list = []
@@ -852,8 +849,7 @@ class EquiformerV2EnergyHead(nn.Module, HeadInterface):
             backbone.use_grid_mlp,
             backbone.use_sep_s2_act,
         )
-        self.apply(backbone._init_weights)
-        self.apply(backbone._uniform_init_rad_func_linear_weights)
+        self.apply(partial(eqv2_init_weights, weight_init=backbone.weight_init))
 
     def forward(self, data: Batch, emb: dict[str, torch.Tensor | GraphData]):
         node_energy = self.energy_block(emb["node_embedding"])
@@ -898,8 +894,7 @@ class EquiformerV2ForceHead(nn.Module, HeadInterface):
             backbone.use_sep_s2_act,
             alpha_drop=0.0,
         )
-        self.apply(backbone._init_weights)
-        self.apply(backbone._uniform_init_rad_func_linear_weights)
+        self.apply(partial(eqv2_init_weights, weight_init=backbone.weight_init))
 
     def forward(self, data: Batch, emb: dict[str, torch.Tensor]):
         if self.activation_checkpoint:
