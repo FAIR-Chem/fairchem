@@ -124,7 +124,6 @@ class GemNetT(nn.Module, GraphModelMixin):
         num_elements: int = 83,
         scale_file: str | None = None,
         regress_stress: bool = False,
-        use_pbc_single: bool = False,
     ):
         if cbf is None:
             cbf = {"name": "spherical_harmonics"}
