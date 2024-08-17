@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import logging
 from abc import ABCMeta
 from functools import cached_property
 from pathlib import Path
@@ -13,9 +14,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     NamedTuple,
-    Protocol,
     TypeVar,
-    runtime_checkable,
 )
 
 import numpy as np
@@ -43,34 +42,7 @@ class UnsupportedDatasetError(ValueError):
     pass
 
 
-@runtime_checkable
-class DatasetWithSizes(Protocol):
-    # metadata: DatasetMetadata
-
-    def get_metadata(self, attr, idxs):
-        """get metadata attr for the given idx or idxs"""
-
-
-class Subset(Subset_, DatasetWithSizes):
-    """A pytorch subset that also takes metadata if given."""
-
-    def __init__(
-        self,
-        dataset: Dataset[T_co],
-        indices: Sequence[int],
-        metadata: DatasetMetadata | None = None,
-    ) -> None:
-        super().__init__(dataset, indices)
-        self.metadata = metadata
-        self.indices = indices
-
-    def get_metadata(self, attr, idx):
-        if isinstance(idx, list):
-            return getattr(self.dataset.metadata, attr)[[self.indices[i] for i in idx]]
-        return getattr(self.dataset.metadata, attr)[self.indices[idx]]
-
-
-class BaseDataset(Dataset[T_co], DatasetWithSizes, metaclass=ABCMeta):
+class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
     """Base Dataset class for all OCP datasets."""
 
     def __init__(self, config: dict):
@@ -80,11 +52,13 @@ class BaseDataset(Dataset[T_co], DatasetWithSizes, metaclass=ABCMeta):
             config (dict): dataset configuration
         """
         self.config = config
+        self.paths = []
 
-        if isinstance(config["src"], str):
-            self.paths = [Path(self.config["src"])]
-        else:
-            self.paths = tuple(Path(path) for path in config["src"])
+        if "src" in self.config:
+            if isinstance(config["src"], str):
+                self.paths = [Path(self.config["src"])]
+            else:
+                self.paths = tuple(Path(path) for path in config["src"])
 
         self.lin_ref = None
         if self.config.get("lin_ref", False):
@@ -96,12 +70,17 @@ class BaseDataset(Dataset[T_co], DatasetWithSizes, metaclass=ABCMeta):
     def __len__(self) -> int:
         return self.num_samples
 
+    def metadata_hasattr(self, attr) -> bool:
+        if self._metadata is None:
+            return False
+        return hasattr(self._metadata, attr)
+
     @cached_property
     def indices(self):
         return np.arange(self.num_samples, dtype=int)
 
     @cached_property
-    def metadata(self) -> DatasetMetadata:
+    def _metadata(self) -> DatasetMetadata:
         # logic to read metadata file here
         metadata_npzs = []
         if self.config.get("metadata_path", None) is not None:
@@ -119,9 +98,10 @@ class BaseDataset(Dataset[T_co], DatasetWithSizes, metaclass=ABCMeta):
                     metadata_npzs.append(np.load(metadata_file, allow_pickle=True))
 
         if len(metadata_npzs) == 0:
-            raise ValueError(
+            logging.warning(
                 f"Could not find dataset metadata.npz files in '{self.paths}'"
             )
+            return None
 
         metadata = DatasetMetadata(
             **{
@@ -137,10 +117,37 @@ class BaseDataset(Dataset[T_co], DatasetWithSizes, metaclass=ABCMeta):
         return metadata
 
     def get_metadata(self, attr, idx):
-        metadata_attr = getattr(self.metadata, attr)
+        if self._metadata is not None:
+            metadata_attr = getattr(self._metadata, attr)
+            if isinstance(idx, list):
+                return [metadata_attr[_idx] for _idx in idx]
+            return metadata_attr[idx]
+        return None
+
+
+class Subset(Subset_, BaseDataset):
+    """A pytorch subset that also takes metadata if given."""
+
+    def __init__(
+        self,
+        dataset: BaseDataset,
+        indices: Sequence[int],
+        metadata: DatasetMetadata | None = None,
+    ) -> None:
+        super().__init__(dataset, indices)
+        self.metadata = metadata
+        self.indices = indices
+        self.num_samples = len(indices)
+        self.config = dataset.config
+
+    @cached_property
+    def _metadata(self) -> DatasetMetadata:
+        return self.dataset._metadata
+
+    def get_metadata(self, attr, idx):
         if isinstance(idx, list):
-            return [metadata_attr[_idx] for _idx in idx]
-        return metadata_attr[idx]
+            return self.dataset.get_metadata(attr, [[self.indices[i] for i in idx]])
+        return self.dataset.get_metadata(attr, self.indices[idx])
 
 
 def create_dataset(config: dict[str, Any], split: str) -> Subset:
@@ -154,7 +161,7 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
         Subset: dataset subset class
     """
     # Initialize the dataset
-    dataset_cls = registry.get_dataset_class(config["format"])
+    dataset_cls = registry.get_dataset_class(config.get("format", "lmdb"))
     assert issubclass(dataset_cls, Dataset), f"{dataset_cls} is not a Dataset"
 
     # remove information about other splits, only keep specified split
@@ -178,7 +185,9 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
     indices = dataset.indices
     max_atoms = current_split_config.get("max_atoms", None)
     if max_atoms is not None:
-        indices = indices[dataset.metadata.natoms[indices] <= max_atoms]
+        if not dataset.metadata_hasattr("natoms"):
+            raise ValueError("Cannot use max_atoms without dataset metadata")
+        indices = indices[dataset.get_metadata("natoms", indices) <= max_atoms]
 
     # Apply dataset level transforms
     # TODO is no_shuffle mutually exclusive though? or what is the purpose of no_shuffle?
@@ -215,4 +224,4 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
 
     indices = indices[:max_index]
 
-    return Subset(dataset, indices, metadata=dataset.metadata)
+    return Subset(dataset, indices, metadata=dataset._metadata)

@@ -13,7 +13,7 @@ import logging
 import os
 import warnings
 from abc import ABC, abstractmethod
-from functools import cache, reduce
+from functools import cache
 from glob import glob
 from pathlib import Path
 from typing import Any, Callable
@@ -168,11 +168,7 @@ class AseAtomsDataset(BaseDataset, ABC):
     def get_relaxed_energy(self, identifier):
         raise NotImplementedError("IS2RE-Direct is not implemented with this dataset.")
 
-    def close_db(self) -> None:
-        # This method is sometimes called by a trainer
-        pass
-
-    def get_metadata(self, num_samples: int = 100) -> dict:
+    def sample_property_metadata(self, num_samples: int = 100) -> dict:
         metadata = {}
 
         if num_samples < len(self):
@@ -190,6 +186,18 @@ class AseAtomsDataset(BaseDataset, ABC):
             )
 
         return metadata
+
+    def get_metadata(self, attr, idx):
+        # try the parent method
+        metadata = super().get_metadata(attr, idx)
+        if metadata is not None:
+            return metadata
+        # try to resolve it here
+        if attr != "natoms":
+            return None
+        if isinstance(idx, (list, np.ndarray)):
+            return np.array([self.get_metadata(attr, i) for i in idx])
+        return len(self.get_atoms(idx))
 
 
 @registry.register_dataset("ase_read")
@@ -393,7 +401,7 @@ class AseReadMultiStructureDataset(AseAtomsDataset):
 
         return atoms
 
-    def get_metadata(self, num_samples: int = 100) -> dict:
+    def sample_property_metadata(self, num_samples: int = 100) -> dict:
         return {}
 
     def get_relaxed_energy(self, identifier) -> float:
@@ -463,13 +471,14 @@ class AseDBDataset(AseAtomsDataset):
 
     def _load_dataset_get_ids(self, config: dict) -> list[int]:
         if isinstance(config["src"], list):
-            if os.path.isdir(config["src"][0]):
-                filepaths = reduce(
-                    lambda x, y: x + y,
-                    (glob(f"{path}/*") for path in config["src"]),
-                )
-            else:
-                filepaths = config["src"]
+            filepaths = []
+            for path in config["src"]:
+                if os.path.isdir(path):
+                    filepaths.extend(glob(f"{path}/*"))
+                elif os.path.isfile(path):
+                    filepaths.append(path)
+                else:
+                    raise RuntimeError(f"Error reading dataset in {path}!")
         elif os.path.isfile(config["src"]):
             filepaths = [config["src"]]
         elif os.path.isdir(config["src"]):
@@ -550,17 +559,17 @@ class AseDBDataset(AseAtomsDataset):
 
         return ase.db.connect(address, **connect_args)
 
-    def close_db(self) -> None:
+    def __del__(self):
         for db in self.dbs:
             if hasattr(db, "close"):
                 db.close()
 
-    def get_metadata(self, num_samples: int = 100) -> dict:
+    def sample_property_metadata(self, num_samples: int = 100) -> dict:
         logging.warning(
             "You specific a folder of ASE dbs, so it's impossible to know which metadata to use. Using the first!"
         )
         if self.dbs[0].metadata == {}:
-            return super().get_metadata(num_samples)
+            return super().sample_property_metadata(num_samples)
 
         return copy.deepcopy(self.dbs[0].metadata)
 

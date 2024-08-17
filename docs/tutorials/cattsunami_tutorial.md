@@ -96,7 +96,7 @@ tags: ["skip-execution"]
 # Instantiate the calculator
 # NOTE: If you have a GPU, use cpu = False
 # NOTE: Change the checkpoint path to locally downloaded files as needed
-checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('EquiformerV2-31M-S2EF-OC20-All+MD', local_cache='/tmp/fairchem_checkpoints/')
 cpu = True
 calc = OCPCalculator(checkpoint_path = checkpoint_path, cpu = cpu)
 ```

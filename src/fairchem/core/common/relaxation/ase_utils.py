@@ -190,6 +190,7 @@ class OCPCalculator(Calculator):
             cpu=cpu,
             amp=config.get("amp", False),
         )
+
         if checkpoint_path is not None:
             self.load_checkpoint(checkpoint_path=checkpoint_path, checkpoint=checkpoint)
 

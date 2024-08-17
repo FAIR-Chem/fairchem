@@ -10,13 +10,17 @@ from __future__ import annotations
 import contextlib
 import logging
 import time
+import typing
 
 import torch
 import torch.nn as nn
 
+if typing.TYPE_CHECKING:
+    from torch_geometric.data.batch import Batch
+
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
 from fairchem.core.models.escn.so3 import (
     CoefficientMapping,
     SO3_Embedding,
@@ -36,13 +40,14 @@ with contextlib.suppress(ImportError):
 
 
 @registry.register_model("escn")
-class eSCN(BaseModel):
+class eSCN(nn.Module, GraphModelMixin):
     """Equivariant Spherical Channel Network
     Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
 
 
     Args:
         use_pbc (bool):         Use periodic boundary conditions
+        use_pbc_single (bool):         Process batch PBC graphs one at a time
         regress_forces (bool):  Compute forces
         otf_graph (bool):       Compute graph On The Fly (OTF)
         max_neighbors (int):    Maximum number of neighbors per atom
@@ -64,10 +69,8 @@ class eSCN(BaseModel):
 
     def __init__(
         self,
-        num_atoms: int,  # not used
-        bond_feat_dim: int,  # not used
-        num_targets: int,  # not used
         use_pbc: bool = True,
+        use_pbc_single: bool = False,
         regress_forces: bool = True,
         otf_graph: bool = False,
         max_neighbors: int = 40,
@@ -79,12 +82,12 @@ class eSCN(BaseModel):
         sphere_channels: int = 128,
         hidden_channels: int = 256,
         edge_channels: int = 128,
-        use_grid: bool = True,
         num_sphere_samples: int = 128,
         distance_function: str = "gaussian",
         basis_width_scalar: float = 1.0,
         distance_resolution: float = 0.02,
         show_timing_info: bool = False,
+        resolution: int | None = None,
     ) -> None:
         if mmax_list is None:
             mmax_list = [2]
@@ -100,6 +103,7 @@ class eSCN(BaseModel):
 
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
+        self.use_pbc_single = use_pbc_single
         self.cutoff = cutoff
         self.otf_graph = otf_graph
         self.show_timing_info = show_timing_info
@@ -173,7 +177,7 @@ class eSCN(BaseModel):
         for lval in range(max(self.lmax_list) + 1):
             SO3_m_grid = nn.ModuleList()
             for m in range(max(self.lmax_list) + 1):
-                SO3_m_grid.append(SO3_Grid(lval, m))
+                SO3_m_grid.append(SO3_Grid(lval, m, resolution=resolution))
 
             self.SO3_grid.append(SO3_m_grid)
 
@@ -232,22 +236,16 @@ class eSCN(BaseModel):
         start_time = time.time()
         atomic_numbers = data.atomic_numbers.long()
         num_atoms = len(atomic_numbers)
-
-        (
-            edge_index,
-            edge_distance,
-            edge_distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(data)
+        graph = self.generate_graph(data)
 
         ###############################################################
         # Initialize data structures
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(data, edge_index, edge_distance_vec)
+        edge_rot_mat = self._init_edge_rot_mat(
+            data, graph.edge_index, graph.edge_distance_vec
+        )
 
         # Initialize the WignerD matrices and other values for spherical harmonic calculations
         self.SO3_edge_rot = nn.ModuleList()
@@ -290,8 +288,8 @@ class eSCN(BaseModel):
                 x_message = self.layer_blocks[i](
                     x,
                     atomic_numbers,
-                    edge_distance,
-                    edge_index,
+                    graph.edge_distance,
+                    graph.edge_index,
                     self.SO3_edge_rot,
                     mappingReduced,
                 )
@@ -304,8 +302,8 @@ class eSCN(BaseModel):
                 x = self.layer_blocks[i](
                     x,
                     atomic_numbers,
-                    edge_distance,
-                    edge_index,
+                    graph.edge_distance,
+                    graph.edge_index,
                     self.SO3_edge_rot,
                     mappingReduced,
                 )
@@ -419,6 +417,149 @@ class eSCN(BaseModel):
     @property
     def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
+
+
+@registry.register_model("escn_backbone")
+class eSCNBackbone(eSCN, BackboneInterface):
+    @conditional_grad(torch.enable_grad())
+    def forward(self, data: Batch) -> dict[str, torch.Tensor]:
+        device = data.pos.device
+        self.batch_size = len(data.natoms)
+        self.dtype = data.pos.dtype
+
+        atomic_numbers = data.atomic_numbers.long()
+        num_atoms = len(atomic_numbers)
+
+        graph = self.generate_graph(data)
+
+        ###############################################################
+        # Initialize data structures
+        ###############################################################
+
+        # Compute 3x3 rotation matrix per edge
+        edge_rot_mat = self._init_edge_rot_mat(
+            data, graph.edge_index, graph.edge_distance_vec
+        )
+
+        # Initialize the WignerD matrices and other values for spherical harmonic calculations
+        self.SO3_edge_rot = nn.ModuleList()
+        for i in range(self.num_resolutions):
+            self.SO3_edge_rot.append(SO3_Rotation(edge_rot_mat, self.lmax_list[i]))
+
+        ###############################################################
+        # Initialize node embeddings
+        ###############################################################
+
+        # Init per node representations using an atomic number based embedding
+        offset = 0
+        x = SO3_Embedding(
+            num_atoms,
+            self.lmax_list,
+            self.sphere_channels,
+            device,
+            self.dtype,
+        )
+
+        offset_res = 0
+        offset = 0
+        # Initialize the l=0,m=0 coefficients for each resolution
+        for i in range(self.num_resolutions):
+            x.embedding[:, offset_res, :] = self.sphere_embedding(atomic_numbers)[
+                :, offset : offset + self.sphere_channels
+            ]
+            offset = offset + self.sphere_channels
+            offset_res = offset_res + int((self.lmax_list[i] + 1) ** 2)
+
+        # This can be expensive to compute (not implemented efficiently), so only do it once and pass it along to each layer
+        mappingReduced = CoefficientMapping(self.lmax_list, self.mmax_list, device)
+
+        ###############################################################
+        # Update spherical node embeddings
+        ###############################################################
+
+        for i in range(self.num_layers):
+            if i > 0:
+                x_message = self.layer_blocks[i](
+                    x,
+                    atomic_numbers,
+                    graph.edge_distance,
+                    graph.edge_index,
+                    self.SO3_edge_rot,
+                    mappingReduced,
+                )
+
+                # Residual layer for all layers past the first
+                x.embedding = x.embedding + x_message.embedding
+
+            else:
+                # No residual for the first layer
+                x = self.layer_blocks[i](
+                    x,
+                    atomic_numbers,
+                    graph.edge_distance,
+                    graph.edge_index,
+                    self.SO3_edge_rot,
+                    mappingReduced,
+                )
+
+        # Sample the spherical channels (node embeddings) at evenly distributed points on the sphere.
+        # These values are fed into the output blocks.
+        x_pt = torch.tensor([], device=device)
+        offset = 0
+        # Compute the embedding values at every sampled point on the sphere
+        for i in range(self.num_resolutions):
+            num_coefficients = int((x.lmax_list[i] + 1) ** 2)
+            x_pt = torch.cat(
+                [
+                    x_pt,
+                    torch.einsum(
+                        "abc, pb->apc",
+                        x.embedding[:, offset : offset + num_coefficients],
+                        self.sphharm_weights[i],
+                    ).contiguous(),
+                ],
+                dim=2,
+            )
+            offset = offset + num_coefficients
+
+        x_pt = x_pt.view(-1, self.sphere_channels_all)
+
+        return {"sphere_values": x_pt, "sphere_points": self.sphere_points}
+
+
+@registry.register_model("escn_energy_head")
+class eSCNEnergyHead(nn.Module, HeadInterface):
+    def __init__(self, backbone):
+        super().__init__()
+        backbone.energy_block = None
+        # Output blocks for energy and forces
+        self.energy_block = EnergyBlock(
+            backbone.sphere_channels_all, backbone.num_sphere_samples, backbone.act
+        )
+
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
+        node_energy = self.energy_block(emb["sphere_values"])
+        energy = torch.zeros(len(data.natoms), device=data.pos.device)
+        energy.index_add_(0, data.batch, node_energy.view(-1))
+        # Scale energy to help balance numerical precision w.r.t. forces
+        return {"energy": energy * 0.001}
+
+
+@registry.register_model("escn_force_head")
+class eSCNForceHead(nn.Module, HeadInterface):
+    def __init__(self, backbone):
+        super().__init__()
+        backbone.force_block = None
+        self.force_block = ForceBlock(
+            backbone.sphere_channels_all, backbone.num_sphere_samples, backbone.act
+        )
+
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
+        return {"forces": self.force_block(emb["sphere_values"], emb["sphere_points"])}
 
 
 class LayerBlock(torch.nn.Module):

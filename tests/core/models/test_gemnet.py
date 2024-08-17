@@ -47,9 +47,6 @@ def load_model(request) -> None:
     setup_imports()
 
     model = registry.get_model_class("gemnet_t")(
-        None,
-        -1,
-        1,
         cutoff=6.0,
         num_spherical=7,
         num_radial=128,

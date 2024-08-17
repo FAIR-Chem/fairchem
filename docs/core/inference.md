@@ -23,7 +23,8 @@ Boes, J. R., Groenenboom, M. C., Keith, J. A., & Kitchin, J. R. (2016). Neural n
 You can retrieve the dataset below. In this notebook we learn how to do "mass inference" without an ASE calculator. You do this by creating a config.yml file, and running the `main.py` command line utility.
 
 ```{code-cell} ipython3
-! wget https://figshare.com/ndownloader/files/11948267 -O data.db
+from fairchem.core.scripts.download_large_files import download_file_group
+download_file_group('docs')
 ```
 
 
@@ -70,7 +71,7 @@ print(available_pretrained_models)
 ```{code-cell} ipython3
 from fairchem.core.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-dT-S2EFS-OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-dT-S2EFS-OC22', local_cache='/tmp/fairchem_checkpoints/')
 checkpoint_path
 
 ```

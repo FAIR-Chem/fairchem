@@ -116,11 +116,8 @@ class OC22LmdbDataset(BaseDataset):
         if self.train_on_oc20_total_energies:
             with open(config["oc20_ref"], "rb") as fp:
                 self.oc20_ref = pickle.load(fp)
-        self.subsample = aii(self.config.get("subsample", False), bool)
 
     def __len__(self) -> int:
-        if self.subsample:
-            return min(self.subsample, self.num_samples)
         return self.num_samples
 
     def __getitem__(self, idx):

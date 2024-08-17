@@ -13,7 +13,7 @@ import shutil
 from importlib import resources
 from typing import TYPE_CHECKING
 
-import urllib3
+import requests
 import yaml
 
 from fairchem.core import models
@@ -56,9 +56,9 @@ def model_name_to_local_file(model_name: str, local_cache: str | Path) -> str:
     # download the file
     if not os.path.isfile(local_path):
         local_path_tmp = local_path + ".tmp"  # download to a tmp file in case we fail
-        http = urllib3.PoolManager()
         with open(local_path_tmp, "wb") as out:
-            r = http.request("GET", model_url, preload_content=False)
-            shutil.copyfileobj(r, out)
+            response = requests.get(model_url, stream=True)
+            response.raw.decode_content = True
+            shutil.copyfileobj(response.raw, out)
         shutil.move(local_path_tmp, local_path)
     return local_path
