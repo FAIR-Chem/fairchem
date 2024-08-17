@@ -189,6 +189,10 @@ class GraphModelMixin:
 
 
 class HeadInterface(metaclass=ABCMeta):
+    @property
+    def use_amp(self):
+        return False
+
     @abstractmethod
     def forward(
         self, data: Batch, emb: dict[str, torch.Tensor]
@@ -249,6 +253,7 @@ class HydraModel(nn.Module, GraphModelMixin, HydraInterface):
     ):
         super().__init__()
         self.otf_graph = otf_graph
+        self.device = "cpu"
         # make a copy so we don't modify the original config
         backbone = copy.deepcopy(backbone)
         heads = copy.deepcopy(heads)
@@ -279,12 +284,20 @@ class HydraModel(nn.Module, GraphModelMixin, HydraInterface):
 
         self.output_heads = torch.nn.ModuleDict(self.output_heads)
 
+    def to(self, *args, **kwargs):
+        if "device" in kwargs:
+            self.device = kwargs["device"]
+        return super().to(*args, **kwargs)
+
     def forward(self, data: Batch):
         emb = self.backbone(data)
         # Predict all output properties for all structures in the batch for now.
         out = {}
         for k in self.output_heads:
-            out.update(self.output_heads[k](data, emb))
+            with torch.autocast(
+                device_type=self.device, enabled=self.output_heads[k].use_amp
+            ):
+                out.update(self.output_heads[k](data, emb))
 
         return out
 
