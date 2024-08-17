@@ -6,6 +6,8 @@ Note that some of these scripts were taken from
 [GASpy](https://github.com/ulissigroup/GASpy) with permission of author.
 """
 
+from __future__ import annotations
+
 __authors__ = ["Kevin Tran", "Aini Palizhati", "Siddharth Goyal", "Zachary Ulissi"]
 __email__ = ["ktran@andrew.cmu.edu"]
 
@@ -96,8 +98,7 @@ def standardize_bulk(atoms):
     """
     struct = AseAtomsAdaptor.get_structure(atoms)
     sga = SpacegroupAnalyzer(struct, symprec=0.1)
-    standardized_struct = sga.get_conventional_standard_structure()
-    return standardized_struct
+    return sga.get_conventional_standard_structure()
 
 
 def is_structure_invertible(structure):
@@ -151,8 +152,7 @@ def flip_struct(struct):
         atoms.cell[1] = -atoms.cell[1]
     atoms.wrap()
 
-    flipped_struct = AseAtomsAdaptor.get_structure(atoms)
-    return flipped_struct
+    return AseAtomsAdaptor.get_structure(atoms)
 
 
 def precompute_enumerate_surface(bulk_database, bulk_index, opfile):

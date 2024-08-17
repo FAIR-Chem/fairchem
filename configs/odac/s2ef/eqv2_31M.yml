@@ -3,6 +3,14 @@ includes:
 
 trainer: equiformerv2_forces
 
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 1
+  - forces:
+      fn: l2mae
+      coefficient: 200
+
 model:
   name: equiformer_v2
 
@@ -59,19 +67,11 @@ optim:
   optimizer: AdamW
   optimizer_params:
     weight_decay: 0.3
-  scheduler: LambdaLR
-  scheduler_params:
-    lambda_type: cosine
-    warmup_factor: 0.2
-    warmup_epochs: 0.01
-    lr_min_factor: 0.01
+  scheduler: CosineAnnealingLR
+  T_max: 1600000
 
   max_epochs: 3
-  force_coefficient: 200
-  energy_coefficient: 1
   clip_grad_norm: 100
   ema_decay: 0.999
-  loss_energy: mae
-  loss_force: l2mae
 
   eval_every: 5000

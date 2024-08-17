@@ -1,30 +1,54 @@
 trainer: equiformerv2_forces
 
-
 dataset:
   train:
+    format: lmdb
     src: data/s2ef/all_md/train/
-    normalize_labels: True
-    target_mean: -0.7554450631141663
-    target_std: 2.887317180633545
-    grad_target_mean: 0.0
-    grad_target_std: 2.887317180633545
+    key_mapping:
+      y: energy
+      force: forces
+    transforms:
+      normalizer:
+        energy:
+          mean: -0.7554450631141663
+          stdev: 2.887317180633545
+        forces:
+          mean: 0
+          stdev: 2.887317180633545
   val:
     src: data/s2ef/all/val_id/
 
-
 logger: wandb
 
+outputs:
+  energy:
+    shape: 1
+    level: system
+  forces:
+    irrep_dim: 1
+    level: atom
+    train_on_free_atoms: True
+    eval_on_free_atoms: True
 
-task:
-  dataset: lmdb
+loss_functions:
+  - energy:
+      fn: mae
+      coefficient: 4
+  - forces:
+      fn: l2mae
+      coefficient: 100
+
+evaluation_metrics:
+  metrics:
+    energy:
+      - mae
+    forces:
+      - mae
+      - cosine_similarity
+      - magnitude_error
+    misc:
+      - energy_forces_within_threshold
   primary_metric: forces_mae
-  labels:
-    - potential energy
-  grad_input: atomic forces
-  train_on_free_atoms: True
-  eval_on_free_atoms: True
-
 
 hide_eval_progressbar: False
 
@@ -89,11 +113,7 @@ optim:
     lr_min_factor: 0.01         #
 
   max_epochs: 1
-  force_coefficient: 100
-  energy_coefficient: 4
   clip_grad_norm: 100
   ema_decay: 0.999
-  loss_energy: mae
-  loss_force: l2mae
 
   eval_every: 10000

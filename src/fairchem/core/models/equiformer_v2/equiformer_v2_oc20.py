@@ -7,6 +7,7 @@ import math
 import torch
 import torch.nn as nn
 
+from fairchem.core.common import gp_utils
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
 from fairchem.core.models.base import BaseModel
@@ -392,14 +393,48 @@ class EquiformerV2_OC20(BaseModel):
         self.apply(self._init_weights)
         self.apply(self._uniform_init_rad_func_linear_weights)
 
+    def _init_gp_partitions(
+        self,
+        atomic_numbers_full,
+        data_batch_full,
+        edge_index,
+        edge_distance,
+        edge_distance_vec,
+    ):
+        """Graph Parallel
+        This creates the required partial tensors for each rank given the full tensors.
+        The tensors are split on the dimension along the node index using node_partition.
+        """
+        node_partition = gp_utils.scatter_to_model_parallel_region(
+            torch.arange(len(atomic_numbers_full)).to(self.device)
+        )
+        edge_partition = torch.where(
+            torch.logical_and(
+                edge_index[1] >= node_partition.min(),
+                edge_index[1] <= node_partition.max(),  # TODO: 0 or 1?
+            )
+        )[0]
+        edge_index = edge_index[:, edge_partition]
+        edge_distance = edge_distance[edge_partition]
+        edge_distance_vec = edge_distance_vec[edge_partition]
+        atomic_numbers = atomic_numbers_full[node_partition]
+        data_batch = data_batch_full[node_partition]
+        node_offset = node_partition.min().item()
+        return (
+            atomic_numbers,
+            data_batch,
+            node_offset,
+            edge_index,
+            edge_distance,
+            edge_distance_vec,
+        )
+
     @conditional_grad(torch.enable_grad())
     def forward(self, data):
         self.batch_size = len(data.natoms)
         self.dtype = data.pos.dtype
         self.device = data.pos.device
-
         atomic_numbers = data.atomic_numbers.long()
-        num_atoms = len(atomic_numbers)
 
         (
             edge_index,
@@ -412,6 +447,37 @@ class EquiformerV2_OC20(BaseModel):
             data,
             enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly,
         )
+
+        data_batch_full = data.batch
+        data_batch = data.batch
+        atomic_numbers_full = atomic_numbers
+        node_offset = 0
+        if gp_utils.initialized():
+            (
+                atomic_numbers,
+                data_batch,
+                node_offset,
+                edge_index,
+                edge_distance,
+                edge_distance_vec,
+            ) = self._init_gp_partitions(
+                atomic_numbers_full,
+                data_batch_full,
+                edge_index,
+                edge_distance,
+                edge_distance_vec,
+            )
+        ###############################################################
+        # Entering Graph Parallel Region
+        # after this point, if using gp, then node, edge tensors are split
+        # across the graph parallel ranks, some full tensors such as
+        # atomic_numbers_full are required because we need to index into the
+        # full graph when computing edge embeddings or reducing nodes from neighbors
+        #
+        # all tensors that do not have the suffix "_full" refer to the partial tensors.
+        # if not using gp, the full values are equal to the partial values
+        # ie: atomic_numbers_full == atomic_numbers
+        ###############################################################
 
         ###############################################################
         # Initialize data structures
@@ -431,7 +497,7 @@ class EquiformerV2_OC20(BaseModel):
         # Init per node representations using an atomic number based embedding
         offset = 0
         x = SO3_Embedding(
-            num_atoms,
+            len(atomic_numbers),
             self.lmax_list,
             self.sphere_channels,
             self.device,
@@ -454,8 +520,12 @@ class EquiformerV2_OC20(BaseModel):
         # Edge encoding (distance and atom edge)
         edge_distance = self.distance_expansion(edge_distance)
         if self.share_atom_edge_embedding and self.use_atom_edge_embedding:
-            source_element = atomic_numbers[edge_index[0]]  # Source atom atomic number
-            target_element = atomic_numbers[edge_index[1]]  # Target atom atomic number
+            source_element = atomic_numbers_full[
+                edge_index[0]
+            ]  # Source atom atomic number
+            target_element = atomic_numbers_full[
+                edge_index[1]
+            ]  # Target atom atomic number
             source_embedding = self.source_embedding(source_element)
             target_embedding = self.target_embedding(target_element)
             edge_distance = torch.cat(
@@ -464,7 +534,11 @@ class EquiformerV2_OC20(BaseModel):
 
         # Edge-degree embedding
         edge_degree = self.edge_degree_embedding(
-            atomic_numbers, edge_distance, edge_index
+            atomic_numbers_full,
+            edge_distance,
+            edge_index,
+            len(atomic_numbers),
+            node_offset,
         )
         x.embedding = x.embedding + edge_degree.embedding
 
@@ -475,10 +549,11 @@ class EquiformerV2_OC20(BaseModel):
         for i in range(self.num_layers):
             x = self.blocks[i](
                 x,  # SO3_Embedding
-                atomic_numbers,
+                atomic_numbers_full,
                 edge_distance,
                 edge_index,
-                batch=data.batch,  # for GraphDropPath
+                batch=data_batch,  # for GraphDropPath
+                node_offset=node_offset,
             )
 
         # Final layer norm
@@ -489,12 +564,14 @@ class EquiformerV2_OC20(BaseModel):
         ###############################################################
         node_energy = self.energy_block(x)
         node_energy = node_energy.embedding.narrow(1, 0, 1)
+        if gp_utils.initialized():
+            node_energy = gp_utils.gather_from_model_parallel_region(node_energy, dim=0)
         energy = torch.zeros(
             len(data.natoms),
             device=node_energy.device,
             dtype=node_energy.dtype,
         )
-        energy.index_add_(0, data.batch, node_energy.view(-1))
+        energy.index_add_(0, data_batch_full, node_energy.view(-1))
         energy = energy / self.avg_num_nodes
 
         # Add the per-atom linear references to the energy.
@@ -516,8 +593,8 @@ class EquiformerV2_OC20(BaseModel):
             with torch.cuda.amp.autocast(False):
                 energy = energy.to(self.energy_lin_ref.dtype).index_add(
                     0,
-                    data.batch,
-                    self.energy_lin_ref[atomic_numbers],
+                    data_batch_full,
+                    self.energy_lin_ref[atomic_numbers_full],
                 )
 
         outputs = {"energy": energy}
@@ -525,9 +602,17 @@ class EquiformerV2_OC20(BaseModel):
         # Force estimation
         ###############################################################
         if self.regress_forces:
-            forces = self.force_block(x, atomic_numbers, edge_distance, edge_index)
+            forces = self.force_block(
+                x,
+                atomic_numbers_full,
+                edge_distance,
+                edge_index,
+                node_offset=node_offset,
+            )
             forces = forces.embedding.narrow(1, 1, 3)
-            forces = forces.view(-1, 3)
+            forces = forces.view(-1, 3).contiguous()
+            if gp_utils.initialized():
+                forces = gp_utils.gather_from_model_parallel_region(forces, dim=0)
             outputs["forces"] = forces
 
         return outputs

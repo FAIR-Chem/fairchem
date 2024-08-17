@@ -32,7 +32,7 @@ documentation = "https://fair-chem.github.io/"
 
 [project.optional-dependencies]
 dev = [
-    "ase == 3.22.1",
+    "ase",
     "readchar == 4.0.5",
 ]
 
