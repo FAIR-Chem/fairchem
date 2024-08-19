@@ -264,12 +264,12 @@ def test_eqv2_hydra_activation_checkpoint():
     # way to do this is save the rng state and reset it after stepping the first model
     start_rng_state = torch.random.get_rng_state()
     outputs_no_ac = no_ac_model(inputs)
-    torch.autograd.backward(outputs_no_ac["energy"].sum() + outputs_no_ac["forces"].sum())
+    torch.autograd.backward(outputs_no_ac["energy"]["energy"].sum() + outputs_no_ac["forces"]["forces"].sum())
 
     # reset the rng state to the beginning
     torch.random.set_rng_state(start_rng_state)
     outptuts_ac = ac_model(inputs)
-    torch.autograd.backward(outptuts_ac["energy"].sum() + outptuts_ac["forces"].sum())
+    torch.autograd.backward(outptuts_ac["energy"]["energy"].sum() + outptuts_ac["forces"]["forces"].sum())
 
     # assert all the gradients are identical between the model with checkpointing and no checkpointing
     ac_model_grad_dict = {name:p.grad for name, p in ac_model.named_parameters() if p.grad is not None}
