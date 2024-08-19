@@ -244,6 +244,7 @@ class HydraModel(nn.Module, GraphModelMixin):
         pass_through_head_outputs: bool = False,
     ):
         super().__init__()
+        self.device = None
         self.otf_graph = otf_graph
         # This is required for hydras with models that have multiple outputs per head, since we will deprecate
         # the old config system at some point, this will prevent the need to make major modifications to the trainer
@@ -299,17 +300,18 @@ class HydraModel(nn.Module, GraphModelMixin):
             raise RuntimeError("Heads not specified and not found in the starting checkpoint")
 
     def forward(self, data: Batch):
-        # get device from input, at least one input must be a tensor to figure out it's device
-        device_from_tensors = {x.device.type for x in data.values() if isinstance(x, torch.Tensor)}
-        assert len(device_from_tensors) == 1, f"all inputs must be on the same device, found the following devices {device_from_tensors}"
-        device = device_from_tensors.pop()
+        # lazily get device from input to use with amp, at least one input must be a tensor to figure out it's device
+        if not self.device:
+            device_from_tensors = {x.device.type for x in data.values() if isinstance(x, torch.Tensor)}
+            assert len(device_from_tensors) == 1, f"all inputs must be on the same device, found the following devices {device_from_tensors}"
+            self.device = device_from_tensors.pop()
 
         emb = self.backbone(data)
         # Predict all output properties for all structures in the batch for now.
         out = {}
         for k in self.output_heads:
             with torch.autocast(
-                device_type=device, enabled=self.output_heads[k].use_amp
+                device_type=self.device, enabled=self.output_heads[k].use_amp
             ):
                 if self.pass_through_head_outputs:
                     out.update(self.output_heads[k](data, emb))
