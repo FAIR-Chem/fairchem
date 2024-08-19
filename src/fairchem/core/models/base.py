@@ -254,6 +254,7 @@ class HydraModel(nn.Module, GraphModelMixin):
         starting_model = None
         if finetune_config is not None:
             starting_model: HydraModel = load_model_and_weights_from_checkpoint(finetune_config["starting_checkpoint"])
+            logging.info(f"Found and loaded fine-tuning checkpoint: {finetune_config['starting_checkpoint']} (Note we are NOT loading the training state from this checkpoint, only parts of the model and weights)")
             assert isinstance(starting_model, HydraModel), "Can only finetune starting from other hydra models!"
 
         if backbone is not None:
@@ -266,6 +267,7 @@ class HydraModel(nn.Module, GraphModelMixin):
             )
         elif starting_model is not None:
             self.backbone = starting_model.backbone
+            logging.info(f"User did not specify a backbone, using the backbone from the starting checkpoint {self.backbone}")
         else:
             raise RuntimeError("Backbone not specified and not found in the starting checkpoint")
 
@@ -292,6 +294,7 @@ class HydraModel(nn.Module, GraphModelMixin):
             self.output_heads = torch.nn.ModuleDict(self.output_heads)
         elif starting_model is not None:
             self.output_heads = starting_model.output_heads
+            logging.info(f"User did not specify heads, using the output heads from the starting checkpoint {self.output_heads}")
         else:
             raise RuntimeError("Heads not specified and not found in the starting checkpoint")
 
