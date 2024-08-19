@@ -1380,7 +1380,9 @@ def load_model_and_weights_from_checkpoint(checkpoint_path: str) -> nn.Module:
             errno.ENOENT, "Checkpoint file not found", checkpoint_path
         )
     logging.info(f"Loading checkpoint from: {checkpoint_path}")
-    checkpoint = torch.load(checkpoint_path)
+    checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'))
+    # this assumes the checkpont also contains the config with the full model in it
+    # TODO: need to schematize how we save and load the config from checkpoint
     config = checkpoint["config"]["model"]
     name = config.pop("name")
     model = registry.get_model_class(name)(**config)
