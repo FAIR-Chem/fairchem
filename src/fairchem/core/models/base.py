@@ -249,7 +249,6 @@ class HydraModel(nn.Module, GraphModelMixin):
         # the old config system at some point, this will prevent the need to make major modifications to the trainer
         # because they all expect the name of the outputs directly instead of the head_name.property_name
         self.pass_through_head_outputs = pass_through_head_outputs
-        self.device = "cpu"
 
         # if finetune_config is provided, then attempt to load the model from the given finetune checkpoint
         starting_model = None
@@ -296,18 +295,18 @@ class HydraModel(nn.Module, GraphModelMixin):
         else:
             raise RuntimeError("Heads not specified and not found in the starting checkpoint")
 
-    def to(self, *args, **kwargs):
-        if "device" in kwargs:
-            self.device = kwargs["device"]
-        return super().to(*args, **kwargs)
-
     def forward(self, data: Batch):
+        # get device from input, at least one input must be a tensor to figure out it's device
+        device_from_tensors = {x.device.type for x in data.values() if isinstance(x, torch.Tensor)}
+        assert len(device_from_tensors) == 1, f"all inputs must be on the same device, found the following devices {device_from_tensors}"
+        device = device_from_tensors.pop()
+
         emb = self.backbone(data)
         # Predict all output properties for all structures in the batch for now.
         out = {}
         for k in self.output_heads:
             with torch.autocast(
-                device_type=self.device, enabled=self.output_heads[k].use_amp
+                device_type=device, enabled=self.output_heads[k].use_amp
             ):
                 if self.pass_through_head_outputs:
                     out.update(self.output_heads[k](data, emb))
