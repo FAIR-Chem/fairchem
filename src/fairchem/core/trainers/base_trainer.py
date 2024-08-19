@@ -44,7 +44,6 @@ from fairchem.core.common.utils import (
     update_config,
 )
 from fairchem.core.datasets.base_dataset import create_dataset
-from fairchem.core.models.finetune_hydra import FineTuneHydra, FTConfig
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
@@ -716,13 +715,6 @@ class BaseTrainer(ABC):
         training_state: bool = True,
     ) -> str | None:
         if not self.is_debug and distutils.is_master():
-            # if we are using a FineTune-able model, then we need to modify the config to remove
-            # the original starting checkpoint so it can be loaded standalone, can move this to save function
-            if isinstance(self.model, FineTuneHydra):
-                self.config["model"] = FTConfig(
-                    self.config["model"][FTConfig.FT_CONFIG_NAME]
-                ).get_standalone_config()
-
             state = {
                 "state_dict": self.model.state_dict(),
                 "normalizers": {
