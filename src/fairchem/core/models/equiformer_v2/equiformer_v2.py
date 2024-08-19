@@ -82,7 +82,7 @@ def eqv2_uniform_init_linear_weights(m):
 
 
 @registry.register_model("equiformer_v2_backbone")
-class EquiformerV2(nn.Module, GraphModelMixin):
+class EquiformerV2Backbone(nn.Module, GraphModelMixin):
     """
     Equiformer with graph attention built upon SO(2) convolution and feedforward network built upon S2 activation
 
