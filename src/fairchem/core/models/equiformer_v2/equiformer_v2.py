@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import logging
 import math
+from functools import partial
 
 import torch
 import torch.nn as nn
@@ -52,6 +53,28 @@ if typing.TYPE_CHECKING:
 # Statistics of IS2RE 100K
 _AVG_NUM_NODES = 77.81317
 _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
+
+
+def eqv2_init_weights(m, weight_init):
+    if isinstance(m, (torch.nn.Linear, SO3_LinearV2)):
+        if m.bias is not None:
+            torch.nn.init.constant_(m.bias, 0)
+        if weight_init == "normal":
+            std = 1 / math.sqrt(m.in_features)
+            torch.nn.init.normal_(m.weight, 0, std)
+    elif isinstance(m, torch.nn.LayerNorm):
+        torch.nn.init.constant_(m.bias, 0)
+        torch.nn.init.constant_(m.weight, 1.0)
+    elif isinstance(m, RadialFunction):
+        m.apply(eqv2_uniform_init_linear_weights)
+
+
+def eqv2_uniform_init_linear_weights(m):
+    if isinstance(m, torch.nn.Linear):
+        if m.bias is not None:
+            torch.nn.init.constant_(m.bias, 0)
+        std = 1 / math.sqrt(m.in_features)
+        torch.nn.init.uniform_(m.weight, -std, std)
 
 
 @registry.register_model("equiformer_v2")
@@ -157,6 +180,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
         avg_degree: float | None = None,
         use_energy_lin_ref: bool | None = False,
         load_energy_lin_ref: bool | None = False,
+        activation_checkpoint: bool | None = False,
     ):
         if mmax_list is None:
             mmax_list = [2]
@@ -170,6 +194,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
             logging.error("You need to install e3nn==0.4.4 to use EquiformerV2.")
             raise ImportError
 
+        self.activation_checkpoint = activation_checkpoint
         self.use_pbc = use_pbc
         self.use_pbc_single = use_pbc_single
         self.regress_forces = regress_forces
@@ -398,8 +423,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
                 requires_grad=False,
             )
 
-        self.apply(self._init_weights)
-        self.apply(self._uniform_init_rad_func_linear_weights)
+        self.apply(partial(eqv2_init_weights, weight_init=self.weight_init))
 
     def _init_gp_partitions(
         self,
@@ -628,29 +652,6 @@ class EquiformerV2(nn.Module, GraphModelMixin):
     def num_params(self):
         return sum(p.numel() for p in self.parameters())
 
-    def _init_weights(self, m):
-        if isinstance(m, (torch.nn.Linear, SO3_LinearV2)):
-            if m.bias is not None:
-                torch.nn.init.constant_(m.bias, 0)
-            if self.weight_init == "normal":
-                std = 1 / math.sqrt(m.in_features)
-                torch.nn.init.normal_(m.weight, 0, std)
-
-        elif isinstance(m, torch.nn.LayerNorm):
-            torch.nn.init.constant_(m.bias, 0)
-            torch.nn.init.constant_(m.weight, 1.0)
-
-    def _uniform_init_rad_func_linear_weights(self, m):
-        if isinstance(m, RadialFunction):
-            m.apply(self._uniform_init_linear_weights)
-
-    def _uniform_init_linear_weights(self, m):
-        if isinstance(m, torch.nn.Linear):
-            if m.bias is not None:
-                torch.nn.init.constant_(m.bias, 0)
-            std = 1 / math.sqrt(m.in_features)
-            torch.nn.init.uniform_(m.weight, -std, std)
-
     @torch.jit.ignore
     def no_weight_decay(self) -> set:
         no_wd_list = []
@@ -803,14 +804,26 @@ class EquiformerV2Backbone(EquiformerV2, BackboneInterface):
         ###############################################################
 
         for i in range(self.num_layers):
-            x = self.blocks[i](
-                x,  # SO3_Embedding
-                graph.atomic_numbers_full,
-                graph.edge_distance,
-                graph.edge_index,
-                batch=data_batch,  # for GraphDropPath
-                node_offset=graph.node_offset,
-            )
+            if self.activation_checkpoint:
+                x = torch.utils.checkpoint.checkpoint(
+                    self.blocks[i],
+                    x,  # SO3_Embedding
+                    graph.atomic_numbers_full,
+                    graph.edge_distance,
+                    graph.edge_index,
+                    data_batch,  # for GraphDropPath
+                    graph.node_offset,
+                    use_reentrant=not self.training,
+                )
+            else:
+                x = self.blocks[i](
+                    x,  # SO3_Embedding
+                    graph.atomic_numbers_full,
+                    graph.edge_distance,
+                    graph.edge_index,
+                    batch=data_batch,  # for GraphDropPath
+                    node_offset=graph.node_offset,
+                )
 
         # Final layer norm
         x.embedding = self.norm(x.embedding)
@@ -836,8 +849,7 @@ class EquiformerV2EnergyHead(nn.Module, HeadInterface):
             backbone.use_grid_mlp,
             backbone.use_sep_s2_act,
         )
-        self.apply(backbone._init_weights)
-        self.apply(backbone._uniform_init_rad_func_linear_weights)
+        self.apply(partial(eqv2_init_weights, weight_init=backbone.weight_init))
 
     def forward(self, data: Batch, emb: dict[str, torch.Tensor | GraphData]):
         node_energy = self.energy_block(emb["node_embedding"])
@@ -858,6 +870,7 @@ class EquiformerV2ForceHead(nn.Module, HeadInterface):
     def __init__(self, backbone):
         super().__init__()
 
+        self.activation_checkpoint = backbone.activation_checkpoint
         self.force_block = SO2EquivariantGraphAttention(
             backbone.sphere_channels,
             backbone.attn_hidden_channels,
@@ -881,17 +894,27 @@ class EquiformerV2ForceHead(nn.Module, HeadInterface):
             backbone.use_sep_s2_act,
             alpha_drop=0.0,
         )
-        self.apply(backbone._init_weights)
-        self.apply(backbone._uniform_init_rad_func_linear_weights)
+        self.apply(partial(eqv2_init_weights, weight_init=backbone.weight_init))
 
     def forward(self, data: Batch, emb: dict[str, torch.Tensor]):
-        forces = self.force_block(
-            emb["node_embedding"],
-            emb["graph"].atomic_numbers_full,
-            emb["graph"].edge_distance,
-            emb["graph"].edge_index,
-            node_offset=emb["graph"].node_offset,
-        )
+        if self.activation_checkpoint:
+            forces = torch.utils.checkpoint.checkpoint(
+                self.force_block,
+                emb["node_embedding"],
+                emb["graph"].atomic_numbers_full,
+                emb["graph"].edge_distance,
+                emb["graph"].edge_index,
+                emb["graph"].node_offset,
+                use_reentrant=not self.training,
+            )
+        else:
+            forces = self.force_block(
+                emb["node_embedding"],
+                emb["graph"].atomic_numbers_full,
+                emb["graph"].edge_distance,
+                emb["graph"].edge_index,
+                node_offset=emb["graph"].node_offset,
+            )
         forces = forces.embedding.narrow(1, 1, 3)
         forces = forces.view(-1, 3).contiguous()
         if gp_utils.initialized():

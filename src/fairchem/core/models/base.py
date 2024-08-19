@@ -7,8 +7,9 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import copy
 import logging
-from abc import ABCMeta, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -187,6 +188,10 @@ class GraphModelMixin:
 
 
 class HeadInterface(metaclass=ABCMeta):
+    @property
+    def use_amp(self):
+        return False
+
     @abstractmethod
     def forward(
         self, data: Batch, emb: dict[str, torch.Tensor]
@@ -226,8 +231,19 @@ class BackboneInterface(metaclass=ABCMeta):
         return
 
 
+class HydraInterface(ABC):
+    # a hydra has a backbone and heads
+    @abstractmethod
+    def get_backbone(self) -> BackboneInterface:
+        raise not NotImplementedError
+
+    @abstractmethod
+    def get_heads(self) -> dict[str, HeadInterface]:
+        raise not NotImplementedError
+
+
 @registry.register_model("hydra")
-class HydraModel(nn.Module, GraphModelMixin):
+class HydraModel(nn.Module, GraphModelMixin, HydraInterface):
     def __init__(
         self,
         backbone: dict,
@@ -236,6 +252,10 @@ class HydraModel(nn.Module, GraphModelMixin):
     ):
         super().__init__()
         self.otf_graph = otf_graph
+        self.device = "cpu"
+        # make a copy so we don't modify the original config
+        backbone = copy.deepcopy(backbone)
+        heads = copy.deepcopy(heads)
 
         backbone_model_name = backbone.pop("model")
         self.backbone: BackboneInterface = registry.get_model_class(
@@ -263,11 +283,25 @@ class HydraModel(nn.Module, GraphModelMixin):
 
         self.output_heads = torch.nn.ModuleDict(self.output_heads)
 
+    def to(self, *args, **kwargs):
+        if "device" in kwargs:
+            self.device = kwargs["device"]
+        return super().to(*args, **kwargs)
+
     def forward(self, data: Batch):
         emb = self.backbone(data)
         # Predict all output properties for all structures in the batch for now.
         out = {}
         for k in self.output_heads:
-            out.update(self.output_heads[k](data, emb))
+            with torch.autocast(
+                device_type=self.device, enabled=self.output_heads[k].use_amp
+            ):
+                out.update(self.output_heads[k](data, emb))
 
         return out
+
+    def get_backbone(self) -> BackboneInterface:
+        return self.backbone
+
+    def get_heads(self) -> dict[str, HeadInterface]:
+        return self.output_heads

@@ -1,0 +1,28 @@
+name: Release Drafter - fairchem_applications_cattsunami
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/fairchem/applications/cattsunami/**'
+      - 'packages/fairchem-applications-cattsunami/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  
+jobs:
+  update_release_draft:
+    permissions:
+        # write permission is required to create a github release
+        contents: write
+        pull-requests: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter@v6
+        with:
+          disable-autolabeler: true
+          config-name: release-drafter-applications_cattsunami.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
