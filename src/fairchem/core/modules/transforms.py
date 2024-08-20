@@ -8,11 +8,10 @@ from fairchem.core.common.utils import cg_change_mat, irreps_sum
 
 if TYPE_CHECKING:
     from torch_geometric.data import Data
+from contextlib import suppress
 
-try:
-    from fairchem.experimental.foundation_models.multi_task_dataloader.transforms.data_object import *
-except ImportError:
-    pass
+with suppress(ImportError):
+    from fairchem.experimental.foundation_models.multi_task_dataloader.transforms.data_object import *  # noqa
 
 
 class DataTransforms:
