@@ -45,7 +45,7 @@ def test_smoke_s2efs_predict(
             {"stress": {"fn": "mae", "coefficient": 100}},
         ],
         "outputs": {"stress": {"level": "system", "irrep_dim": 2}},
-        "evaluation_metrics": {"metrics": {"stress": ["mae"]}},
+        "evaluation_metrics": {"metrics": {"stress": ["mae", "mae_density"]}},
         "dataset": {
             "train": {
                 "src": str(dummy_binary_dataset_path),

@@ -395,6 +395,15 @@ class OCPTrainer(BaseTrainer):
         targets["natoms"] = natoms
         out["natoms"] = natoms
 
+        # add all other tensor properties too, but filter out the ones that are changed above
+        for key in filter(
+            lambda k: k not in [*list(self.output_targets.keys()), "natoms"]
+            and isinstance(batch[k], torch.Tensor),
+            batch.keys(),
+        ):
+            targets[key] = batch[key].to(self.device)
+            out[key] = targets[key]
+
         return evaluator.eval(out, targets, prev_metrics=metrics)
 
     # Takes in a new data source and generates predictions on it.
@@ -655,9 +664,7 @@ class OCPTrainer(BaseTrainer):
                 )
                 gather_results["chunk_idx"] = np.cumsum(
                     [gather_results["chunk_idx"][i] for i in idx]
-                )[
-                    :-1
-                ]  # np.split does not need last idx, assumes n-1:end
+                )[:-1]  # np.split does not need last idx, assumes n-1:end
 
                 full_path = os.path.join(
                     self.config["cmd"]["results_dir"], "relaxed_positions.npz"
