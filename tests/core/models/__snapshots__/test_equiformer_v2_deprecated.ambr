@@ -1,0 +1,76 @@
+# serializer version: 1
+# name: TestEquiformerV2.test_ddp
+  Size(
+    1,
+  )
+# ---
+# name: TestEquiformerV2.test_ddp.1
+  Approx(
+  	array([0.12408739], dtype=float32), 
+  	rtol=0.001, 
+  	atol=0.001
+  )
+# ---
+# name: TestEquiformerV2.test_ddp.2
+  Size(
+    34,
+    3,
+  )
+# ---
+# name: TestEquiformerV2.test_ddp.3
+  Approx(
+  	array([ 1.4928584e-03, -7.4167408e-05,  2.9909366e-03], dtype=float32), 
+  	rtol=0.001, 
+  	atol=0.001
+  )
+# ---
+# name: TestEquiformerV2.test_energy_force_shape
+  Size(
+    1,
+  )
+# ---
+# name: TestEquiformerV2.test_energy_force_shape.1
+  Approx(
+  	array([0.12408739], dtype=float32), 
+  	rtol=0.001, 
+  	atol=0.001
+  )
+# ---
+# name: TestEquiformerV2.test_energy_force_shape.2
+  Size(
+    34,
+    3,
+  )
+# ---
+# name: TestEquiformerV2.test_energy_force_shape.3
+  Approx(
+  	array([ 1.4928584e-03, -7.4167408e-05,  2.9909366e-03], dtype=float32), 
+  	rtol=0.001, 
+  	atol=0.001
+  )
+# ---
+# name: TestEquiformerV2.test_gp
+  Size(
+    1,
+  )
+# ---
+# name: TestEquiformerV2.test_gp.1
+  Approx(
+  	array([0.12408739], dtype=float32), 
+  	rtol=0.001, 
+  	atol=0.001
+  )
+# ---
+# name: TestEquiformerV2.test_gp.2
+  Size(
+    34,
+    3,
+  )
+# ---
+# name: TestEquiformerV2.test_gp.3
+  Approx(
+  	array([ 1.4928661e-03, -7.4134863e-05,  2.9909245e-03], dtype=float32), 
+  	rtol=0.001, 
+  	atol=0.001
+  )
+# ---
