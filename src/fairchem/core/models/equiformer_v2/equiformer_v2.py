@@ -12,7 +12,6 @@ from fairchem.core.common import gp_utils
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
 from fairchem.core.models.base import (
-    BackboneInterface,
     GraphModelMixin,
     HeadInterface,
 )
