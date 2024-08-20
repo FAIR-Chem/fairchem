@@ -21,12 +21,18 @@ def rename_data_object_keys(
     Args:
         data_object: data object
         key_mapping: dictionary specifying keys to rename and new names {prev_key: new_key}
+
+        new_key can be a list of new keys, for example,
+        prev_key: energy
+        new_key: [common_energy, oc20_energy]
+
+        This is currently required when we use a single target/label for multiple tasks
     """
     for _property in key_mapping:
         # catch for test data not containing labels
         if _property in data_object:
             list_of_new_keys = key_mapping[_property]
-            if isinstance(list_of_new_keys,str):
+            if isinstance(list_of_new_keys, str):
                 list_of_new_keys = [list_of_new_keys]
             for new_property in list_of_new_keys:
                 if new_property == _property:

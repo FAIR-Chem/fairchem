@@ -1043,7 +1043,7 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
             task_name = "s2ef"
         elif trainer_name in ["energy", "equiformerv2_energy"]:
             task_name = "is2re"
-        elif "multitask" in trainer_name.lower():
+        elif "multitask" in trainer_name:
             task_name = "multitask"
         else:
             task_name = "ocp"
@@ -1051,62 +1051,45 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
         trainer_cls = registry.get_trainer_class(trainer_name)
         assert trainer_cls is not None, "Trainer not found"
 
+        trainer_config = {
+            "model": config["model"],
+            "optimizer": config["optim"],
+            "identifier": config["identifier"],
+            "timestamp_id": config.get("timestamp_id", None),
+            "run_dir": config.get("run_dir", "./"),
+            "is_debug": config.get("is_debug", False),
+            "print_every": config.get("print_every", 10),
+            "seed": config.get("seed", 0),
+            "logger": config.get("logger", "wandb"),
+            "local_rank": config["local_rank"],
+            "amp": config.get("amp", False),
+            "cpu": config.get("cpu", False),
+            "slurm": config.get("slurm", {}),
+            "noddp": config.get("noddp", False),
+            "name": task_name,
+            "gp_gpus": config.get("gp_gpus"),
+        }
+
         if task_name == "multitask":
-            missing_keys = multitask_required_keys - {
-                required_key
-                for required_key in multitask_required_keys
-                if required_key in config
-            }
-            if len(missing_keys) > 0:
-                raise RuntimeError(
-                    f"Required key missing from config: {missing_keys!s}"
-                )
-            trainer = trainer_cls(
-                tasks=config.get("tasks", {}),
-                dataset_configs=config["datasets"],
-                combined_dataset_config=config.get("combined_dataset", {}),
-                model=config["model"],
-                optimizer=config["optim"],
-                evaluations=config.get("evaluations", {}),
-                identifier=config["identifier"],
-                timestamp_id=config.get("timestamp_id", None),
-                run_dir=config.get("run_dir", "./"),
-                is_debug=config.get("is_debug", False),
-                print_every=config.get("print_every", 10),
-                seed=config.get("seed", 0),
-                logger=config.get("logger", "wandb"),
-                local_rank=config["local_rank"],
-                amp=config.get("amp", False),
-                cpu=config.get("cpu", False),
-                slurm=config.get("slurm", {}),
-                noddp=config.get("noddp", False),
-                name=task_name,
-                gp_gpus=config.get("gp_gpus"),
+            trainer_config.update(
+                {
+                    "tasks": config.get("tasks", {}),
+                    "dataset_configs": config["datasets"],
+                    "combined_dataset_config": config.get("combined_dataset", {}),
+                    "evaluations": config.get("evaluations", {}),
+                }
             )
         else:
-            trainer = trainer_cls(
-                task=config.get("task", {}),
-                model=config["model"],
-                outputs=config.get("outputs", {}),
-                dataset=config["dataset"],
-                optimizer=config["optim"],
-                loss_functions=config.get("loss_functions", {}),
-                evaluation_metrics=config.get("evaluation_metrics", {}),
-                identifier=config["identifier"],
-                timestamp_id=config.get("timestamp_id", None),
-                run_dir=config.get("run_dir", "./"),
-                is_debug=config.get("is_debug", False),
-                print_every=config.get("print_every", 10),
-                seed=config.get("seed", 0),
-                logger=config.get("logger", "wandb"),
-                local_rank=config["local_rank"],
-                amp=config.get("amp", False),
-                cpu=config.get("cpu", False),
-                slurm=config.get("slurm", {}),
-                noddp=config.get("noddp", False),
-                name=task_name,
-                gp_gpus=config.get("gp_gpus"),
+            trainer_config.update(
+                {
+                    "task": config.get("task", {}),
+                    "outputs": config.get("outputs", {}),
+                    "dataset": config["dataset"],
+                    "loss_functions": config.get("loss_functions", {}),
+                    "evaluation_metrics": config.get("evaluation_metrics", {}),
+                }
             )
+        trainer = trainer_cls(**trainer_config)
 
         task_cls = registry.get_task_class(config["mode"])
         assert task_cls is not None, "Task not found"

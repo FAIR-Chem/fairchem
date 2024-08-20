@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 from contextlib import suppress
 
 with suppress(ImportError):
+    # TODO remove this in favor of a better solution
+    # We should never be importing * from a module
     from fairchem.experimental.foundation_models.multi_task_dataloader.transforms.data_object import *  # noqa
 
 
