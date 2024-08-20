@@ -45,7 +45,6 @@ from fairchem.core.common.utils import (
     update_config,
 )
 from fairchem.core.datasets.base_dataset import create_dataset
-from fairchem.core.models.finetune_hydra import FineTuneHydra, FTConfig
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
@@ -162,7 +161,11 @@ class BaseTrainer(ABC):
                 "%j", self.config["slurm"]["job_id"]
             )
             if distutils.is_master():
-                add_timestamp_id_to_submission_pickle(self.config["slurm"]["folder"], self.config["slurm"]["job_id"], self.timestamp_id)
+                add_timestamp_id_to_submission_pickle(
+                    self.config["slurm"]["folder"],
+                    self.config["slurm"]["job_id"],
+                    self.timestamp_id,
+                )
 
         # Define datasets
         if isinstance(dataset, list):
@@ -430,9 +433,11 @@ class BaseTrainer(ABC):
                     elementref_config,
                     dataset=self.train_dataset,
                     seed=self.config["cmd"]["seed"],
-                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"]
-                    if not self.is_debug
-                    else None,
+                    checkpoint_dir=(
+                        self.config["cmd"]["checkpoint_dir"]
+                        if not self.is_debug
+                        else None
+                    ),
                 )
 
             if norms_config is not None:
@@ -440,9 +445,11 @@ class BaseTrainer(ABC):
                     norms_config,
                     dataset=self.train_dataset,
                     seed=self.config["cmd"]["seed"],
-                    checkpoint_dir=self.config["cmd"]["checkpoint_dir"]
-                    if not self.is_debug
-                    else None,
+                    checkpoint_dir=(
+                        self.config["cmd"]["checkpoint_dir"]
+                        if not self.is_debug
+                        else None
+                    ),
                     element_references=elementrefs,
                 )
 
@@ -491,15 +498,15 @@ class BaseTrainer(ABC):
                         ][target_name].get("level", "system")
                     if "train_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["train_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("train_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "train_on_free_atoms", True
+                            )
                         )
                     if "eval_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["eval_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("eval_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "eval_on_free_atoms", True
+                            )
                         )
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
@@ -555,13 +562,13 @@ class BaseTrainer(ABC):
     def load_checkpoint(
         self, checkpoint_path: str, checkpoint: dict | None = None
     ) -> None:
+        map_location = torch.device("cpu") if self.cpu else self.device
         if checkpoint is None:
             if not os.path.isfile(checkpoint_path):
                 raise FileNotFoundError(
                     errno.ENOENT, "Checkpoint file not found", checkpoint_path
                 )
             logging.info(f"Loading checkpoint from: {checkpoint_path}")
-            map_location = torch.device("cpu") if self.cpu else self.device
             checkpoint = torch.load(checkpoint_path, map_location=map_location)
 
         self.epoch = checkpoint.get("epoch", 0)
@@ -607,13 +614,14 @@ class BaseTrainer(ABC):
                 mkeys = self.normalizers[target_key].load_state_dict(
                     checkpoint["normalizers"][key]
                 )
+                self.normalizers[target_key].to(map_location)
                 assert len(mkeys.missing_keys) == 0
                 assert len(mkeys.unexpected_keys) == 0
 
         for key, state_dict in checkpoint.get("elementrefs", {}).items():
             elementrefs = LinearReferences(
                 max_num_elements=len(state_dict["element_references"]) - 1
-            )
+            ).to(map_location)
             mkeys = elementrefs.load_state_dict(state_dict)
             self.elementrefs[key] = elementrefs
             assert len(mkeys.missing_keys) == 0
@@ -714,13 +722,6 @@ class BaseTrainer(ABC):
         training_state: bool = True,
     ) -> str | None:
         if not self.is_debug and distutils.is_master():
-            # if we are using a FineTune-able model, then we need to modify the config to remove
-            # the original starting checkpoint so it can be loaded standalone, can move this to save function
-            if isinstance(self.model, FineTuneHydra):
-                self.config["model"] = FTConfig(
-                    self.config["model"][FTConfig.FT_CONFIG_NAME]
-                ).get_standalone_config()
-
             state = {
                 "state_dict": self.model.state_dict(),
                 "normalizers": {

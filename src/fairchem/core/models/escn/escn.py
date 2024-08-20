@@ -524,7 +524,12 @@ class eSCNBackbone(eSCN, BackboneInterface):
 
         x_pt = x_pt.view(-1, self.sphere_channels_all)
 
-        return {"sphere_values": x_pt, "sphere_points": self.sphere_points}
+        return {
+            "sphere_values": x_pt,
+            "sphere_points": self.sphere_points,
+            "node_embedding": x,
+            "graph": graph,
+        }
 
 
 @registry.register_model("escn_energy_head")
