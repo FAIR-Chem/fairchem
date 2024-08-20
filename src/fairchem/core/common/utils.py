@@ -10,6 +10,7 @@ from __future__ import annotations
 import ast
 import collections
 import copy
+import errno
 import importlib
 import itertools
 import json
@@ -38,6 +39,7 @@ from torch_geometric.utils import remove_self_loops
 from torch_scatter import scatter, segment_coo, segment_csr
 
 import fairchem.core
+from fairchem.core.common.registry import registry
 from fairchem.core.modules.loss import AtomwiseL2Loss, L2MAELoss
 
 if TYPE_CHECKING:
@@ -1370,3 +1372,20 @@ def get_loss_module(loss_name):
         raise NotImplementedError(f"Unknown loss function name: {loss_name}")
 
     return loss_fn
+
+
+def load_model_and_weights_from_checkpoint(checkpoint_path: str) -> nn.Module:
+    if not os.path.isfile(checkpoint_path):
+        raise FileNotFoundError(
+            errno.ENOENT, "Checkpoint file not found", checkpoint_path
+        )
+    logging.info(f"Loading checkpoint from: {checkpoint_path}")
+    checkpoint = torch.load(checkpoint_path, map_location=torch.device("cpu"))
+    # this assumes the checkpont also contains the config with the full model in it
+    # TODO: need to schematize how we save and load the config from checkpoint
+    config = checkpoint["config"]["model"]
+    name = config.pop("name")
+    model = registry.get_model_class(name)(**config)
+    matched_dict = match_state_dict(model.state_dict(), checkpoint["state_dict"])
+    load_state_dict(model, matched_dict, strict=True)
+    return model
