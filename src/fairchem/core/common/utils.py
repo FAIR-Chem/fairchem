@@ -402,58 +402,77 @@ def create_dict_from_args(args: list, sep: str = "."):
     return return_dict
 
 
+# given a filename and set of paths , return the full file path
+def find_relative_file_in_paths(filename, include_paths):
+    if os.path.exists(filename):
+        return filename
+    for path in include_paths:
+        include_filename = os.path.join(path, filename)
+        if os.path.exists(include_filename):
+            return include_filename
+    raise ValueError(f"Cannot find include YML {filename}")
+
+
 def load_config(
-    path: str, previous_includes: list | None = None, include_paths: list | None = None
+    path: str,
+    files_previously_included: list | None = None,
+    include_paths: list | None = None,
 ):
+    """
+    Load a given config with any defined imports
+
+    When imports are present this is a recursive function called on imports.
+    To prevent any cyclic imports we keep track of already imported yml files
+    using files_previously_included
+    """
     if include_paths is None:
         include_paths = []
-    if previous_includes is None:
-        previous_includes = []
+    if files_previously_included is None:
+        files_previously_included = []
     path = Path(path)
-    if path in previous_includes:
+    if path in files_previously_included:
         raise ValueError(
-            f"Cyclic config include detected. {path} included in sequence {previous_includes}."
+            f"Cyclic config include detected. {path} included in sequence {files_previously_included}."
         )
-    previous_includes = [*previous_includes, path]
+    files_previously_included = [*files_previously_included, path]
 
     with open(path) as fp:
-        direct_config = yaml.load(fp, Loader=UniqueKeyLoader)
+        current_config = yaml.load(fp, Loader=UniqueKeyLoader)
 
     # Load config from included files.
-    includes = direct_config.pop("includes") if "includes" in direct_config else []
-    if not isinstance(includes, list):
-        raise AttributeError(f"Includes must be a list, '{type(includes)}' provided")
+    includes_listed_in_config = (
+        current_config.pop("includes") if "includes" in current_config else []
+    )
+    if not isinstance(includes_listed_in_config, list):
+        raise AttributeError(
+            f"Includes must be a list, '{type(includes_listed_in_config)}' provided"
+        )
 
-    def find_include(include, include_paths):
-        if os.path.exists(include):
-            return include
-        for path in include_paths:
-            include_filename = os.path.join(path, include)
-            if os.path.exists(include_filename):
-                return include_filename
-        raise ValueError(f"Cannot find include YML {include}")
-
-    config = {}
+    config_from_includes = {}
     duplicates_warning = []
     duplicates_error = []
-    for include in includes:
-        include_filename = find_include(
+    for include in includes_listed_in_config:
+        include_filename = find_relative_file_in_paths(
             include, [os.path.dirname(path), *include_paths]
         )
         include_config, inc_dup_warning, inc_dup_error = load_config(
-            include_filename, previous_includes
+            include_filename, files_previously_included
         )
         duplicates_warning += inc_dup_warning
         duplicates_error += inc_dup_error
 
         # Duplicates between includes causes an error
-        config, merge_dup_error = merge_dicts(config, include_config)
+        config_from_includes, merge_dup_error = merge_dicts(
+            config_from_includes, include_config
+        )
         duplicates_error += merge_dup_error
 
     # Duplicates between included and main file causes warnings
-    config, merge_dup_warning = merge_dicts(config, direct_config)
+    config_from_includes, merge_dup_warning = merge_dicts(
+        config_from_includes, current_config
+    )
     duplicates_warning += merge_dup_warning
-    return config, duplicates_warning, duplicates_error
+    return config_from_includes, duplicates_warning, duplicates_error
 
 
 def build_config(args, args_override, include_paths=None):
