@@ -184,6 +184,7 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
         use_energy_lin_ref: bool | None = False,
         load_energy_lin_ref: bool | None = False,
         activation_checkpoint: bool | None = False,
+        repeat_blocks: bool = False,
     ):
         if mmax_list is None:
             mmax_list = [2]
@@ -206,6 +207,7 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
         self.max_radius = max_radius
         self.cutoff = max_radius
         self.max_num_elements = max_num_elements
+        self.repeat_blocks = repeat_blocks
 
         self.num_layers = num_layers
         self.sphere_channels = sphere_channels
@@ -345,37 +347,40 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
 
         # Initialize the blocks for each layer of EquiformerV2
         self.blocks = nn.ModuleList()
-        for _ in range(self.num_layers):
-            block = TransBlockV2(
-                self.sphere_channels,
-                self.attn_hidden_channels,
-                self.num_heads,
-                self.attn_alpha_channels,
-                self.attn_value_channels,
-                self.ffn_hidden_channels,
-                self.sphere_channels,
-                self.lmax_list,
-                self.mmax_list,
-                self.SO3_rotation,
-                self.mappingReduced,
-                self.SO3_grid,
-                self.max_num_elements,
-                self.edge_channels_list,
-                self.block_use_atom_edge_embedding,
-                self.use_m_share_rad,
-                self.attn_activation,
-                self.use_s2_act_attn,
-                self.use_attn_renorm,
-                self.ffn_activation,
-                self.use_gate_act,
-                self.use_grid_mlp,
-                self.use_sep_s2_act,
-                self.norm_type,
-                self.alpha_drop,
-                self.drop_path_rate,
-                self.proj_drop,
-            )
-            self.blocks.append(block)
+        for block_idx in range(self.num_layers):
+            if self.repeat_blocks is False or block_idx < 2:
+                block = TransBlockV2(
+                    self.sphere_channels,
+                    self.attn_hidden_channels,
+                    self.num_heads,
+                    self.attn_alpha_channels,
+                    self.attn_value_channels,
+                    self.ffn_hidden_channels,
+                    self.sphere_channels,
+                    self.lmax_list,
+                    self.mmax_list,
+                    self.SO3_rotation,
+                    self.mappingReduced,
+                    self.SO3_grid,
+                    self.max_num_elements,
+                    self.edge_channels_list,
+                    self.block_use_atom_edge_embedding,
+                    self.use_m_share_rad,
+                    self.attn_activation,
+                    self.use_s2_act_attn,
+                    self.use_attn_renorm,
+                    self.ffn_activation,
+                    self.use_gate_act,
+                    self.use_grid_mlp,
+                    self.use_sep_s2_act,
+                    self.norm_type,
+                    self.alpha_drop,
+                    self.drop_path_rate,
+                    self.proj_drop,
+                )
+                self.blocks.append(block)
+            else:
+                self.blocks.append(self.blocks[-1])  # repeat last
 
         # Output blocks for energy and forces
         self.norm = get_normalization_layer(
