@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 
@@ -48,7 +49,7 @@ class Flags:
         )
         self.parser.add_argument(
             "--run-dir",
-            default="./",
+            default=os.path.abspath("./"),
             type=str,
             help="Directory to store checkpoint/log/result directory",
         )
