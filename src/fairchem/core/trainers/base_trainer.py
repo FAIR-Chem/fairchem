@@ -127,7 +127,6 @@ class BaseTrainer(ABC):
             "gpus": distutils.get_world_size() if not self.cpu else 0,
             "cmd": {
                 "identifier": identifier,
-                "parent": identifier,
                 "print_every": print_every,
                 "seed": seed,
                 "timestamp_id": self.timestamp_id,
@@ -575,9 +574,6 @@ class BaseTrainer(ABC):
         self.step = checkpoint.get("step", 0)
         self.best_val_metric = checkpoint.get("best_val_metric", None)
         self.primary_metric = checkpoint.get("primary_metric", None)
-        self.config["cmd"]["parent"] = checkpoint["config"]["cmd"].get(
-            "parent", "identifier"
-        )
 
         new_dict = match_state_dict(self.model.state_dict(), checkpoint["state_dict"])
         strict = self.config.get("task", {}).get("strict_load", True)
