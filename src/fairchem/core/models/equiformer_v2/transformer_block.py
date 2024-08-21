@@ -331,7 +331,7 @@ class SO2EquivariantGraphAttention(torch.nn.Module):
             x_0_alpha = self.alpha_norm(x_0_alpha)
             x_0_alpha = self.alpha_act(x_0_alpha)
             alpha = torch.einsum("bik, ik -> bi", x_0_alpha, self.alpha_dot)
-        alpha = torch_geometric.utils.softmax(alpha, edge_index[1])
+        alpha = torch_geometric.utils.softmax(alpha, edge_index[1], num_nodes=atomic_numbers.shape[0])
         alpha = alpha.reshape(alpha.shape[0], 1, self.num_heads, 1)
         if self.alpha_dropout is not None:
             alpha = self.alpha_dropout(alpha)

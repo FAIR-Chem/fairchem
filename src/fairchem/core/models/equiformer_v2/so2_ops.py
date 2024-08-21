@@ -139,7 +139,7 @@ class SO2_Convolution(torch.nn.Module):
             self.rad_func = RadialFunction(self.edge_channels_list)
 
     def forward(self, x, x_edge):
-        num_edges = len(x_edge)
+        num_edges = x_edge.shape[0]
         out = []
 
         # Reshape the spherical harmonics based on m (order)
@@ -152,7 +152,7 @@ class SO2_Convolution(torch.nn.Module):
 
         # Compute m=0 coefficients separately since they only have real values (no imaginary)
         x_0 = x.embedding.narrow(1, 0, self.mappingReduced.m_size[0])
-        x_0 = x_0.reshape(num_edges, -1)
+        x_0 = x_0.reshape(x_edge.shape[0], -1)
         if self.rad_func is not None:
             x_edge_0 = x_edge.narrow(1, 0, self.fc_m0.in_features)
             x_0 = x_0 * x_edge_0
@@ -291,6 +291,9 @@ class SO2_Linear(torch.nn.Module):
             self.edge_channels_list.append(int(num_channels_rad))
             self.rad_func = RadialFunction(self.edge_channels_list)
 
+        for m in range(max(self.mmax_list) + 1):
+            assert int(self.mappingReduced.m_size[m]) == int(max(self.lmax_list) + 1 - m)
+
     def forward(self, x, x_edge):
         batch_size = x.embedding.shape[0]
         out = []
@@ -304,7 +307,8 @@ class SO2_Linear(torch.nn.Module):
         offset_rad = 0
 
         # Compute m=0 coefficients separately since they only have real values (no imaginary)
-        x_0 = x.embedding.narrow(1, 0, self.mappingReduced.m_size[0])
+        # x_0 = x.embedding.narrow(1, 0, self.mappingReduced.m_size[0])
+        x_0 = x.embedding.narrow(1, 0, int(max(self.lmax_list) + 1))
         x_0 = x_0.reshape(batch_size, -1)
         if self.rad_func is not None:
             x_edge_0 = x_edge.narrow(1, 0, self.fc_m0.in_features)
@@ -315,10 +319,12 @@ class SO2_Linear(torch.nn.Module):
         offset_rad = offset_rad + self.fc_m0.in_features
 
         # Compute the values for the m > 0 coefficients
-        offset = self.mappingReduced.m_size[0]
+        # offset = self.mappingReduced.m_size[0]
+        offset = int(max(self.lmax_list) + 1)
         for m in range(1, max(self.mmax_list) + 1):
             # Get the m order coefficients
-            x_m = x.embedding.narrow(1, offset, 2 * self.mappingReduced.m_size[m])
+            # x_m = x.embedding.narrow(1, offset, 2 * self.mappingReduced.m_size[m])
+            x_m = x.embedding.narrow(1, offset, 2 * int(max(self.lmax_list) + 1 - m))
             x_m = x_m.reshape(batch_size, 2, -1)
             if self.rad_func is not None:
                 x_edge_m = x_edge.narrow(
@@ -334,7 +340,8 @@ class SO2_Linear(torch.nn.Module):
             x_m = x_m.view(batch_size, -1, self.m_output_channels)
             out.append(x_m)
 
-            offset = offset + 2 * self.mappingReduced.m_size[m]
+            # offset = offset + 2 * self.mappingReduced.m_size[m]
+            offset = offset + 2 * int(max(self.lmax_list) + 1 - m)
             offset_rad = offset_rad + self.so2_m_fc[m - 1].in_features
 
         out = torch.cat(out, dim=1)
