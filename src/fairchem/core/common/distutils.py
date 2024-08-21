@@ -10,7 +10,8 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
-from typing import TypeVar
+from datetime import timedelta
+from typing import Any, TypeVar
 
 import torch
 import torch.distributed as dist
@@ -27,6 +28,7 @@ def os_environ_get_or_throw(x: str) -> str:
 
 
 def setup(config) -> None:
+    timeout = timedelta(minutes=config.get("timeout", 30))
     if config["submit"]:
         node_list = os.environ.get("SLURM_STEP_NODELIST")
         if node_list is None:
@@ -72,6 +74,7 @@ def setup(config) -> None:
                     init_method=config["init_method"],
                     world_size=config["world_size"],
                     rank=config["rank"],
+                    timeout=timeout,
                 )
             except subprocess.CalledProcessError as e:  # scontrol failed
                 raise e
@@ -95,10 +98,11 @@ def setup(config) -> None:
             rank=world_rank,
             world_size=world_size,
             init_method="env://",
+            timeout=timeout,
         )
     else:
         config["local_rank"] = int(os.environ.get("LOCAL_RANK", config["local_rank"]))
-        dist.init_process_group(backend="nccl")
+        dist.init_process_group(backend=config.get("backend", "nccl"), timeout=timeout)
 
 
 def cleanup() -> None:
@@ -135,6 +139,14 @@ def broadcast(
     dist.broadcast(tensor, src, group, async_op)
 
 
+def broadcast_object_list(
+    object_list: list[Any], src: int, group=dist.group.WORLD, device: str | None = None
+) -> None:
+    if get_world_size() == 1:
+        return
+    dist.broadcast_object_list(object_list, src, group, device)
+
+
 def all_reduce(
     data, group=dist.group.WORLD, average: bool = False, device=None
 ) -> torch.Tensor:
@@ -144,7 +156,7 @@ def all_reduce(
     if not isinstance(data, torch.Tensor):
         tensor = torch.tensor(data)
     if device is not None:
-        tensor = tensor.cuda(device)
+        tensor = tensor.to(device)
     dist.all_reduce(tensor, group=group)
     if average:
         tensor /= get_world_size()
@@ -162,7 +174,7 @@ def all_gather(data, group=dist.group.WORLD, device=None) -> list[torch.Tensor]:
     if not isinstance(data, torch.Tensor):
         tensor = torch.tensor(data)
     if device is not None:
-        tensor = tensor.cuda(device)
+        tensor = tensor.to(device)
     tensor_list = [tensor.new_zeros(tensor.shape) for _ in range(get_world_size())]
     dist.all_gather(tensor_list, tensor, group=group)
     if not isinstance(data, torch.Tensor):

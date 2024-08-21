@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import numpy as np
 import torch
+from torch import nn
 from torch_scatter import scatter
 from torch_sparse import SparseTensor
 
 from fairchem.core.common import gp_utils
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import GraphModelMixin
 from fairchem.core.modules.scaling.compat import load_scales_compat
 
 from .layers.atom_update_block import OutputBlock
@@ -29,17 +30,12 @@ from .utils import inner_product_normalized, mask_neighbors, ragged_range, repea
 
 
 @registry.register_model("gp_gemnet_t")
-class GraphParallelGemNetT(BaseModel):
+class GraphParallelGemNetT(nn.Module, GraphModelMixin):
     """
     GemNet-T, triplets-only variant of GemNet
 
     Parameters
     ----------
-        num_atoms (int): Unused argument
-        bond_feat_dim (int): Unused argument
-        num_targets: int
-            Number of prediction targets.
-
         num_spherical: int
             Controls maximum frequency.
         num_radial: int
@@ -95,9 +91,6 @@ class GraphParallelGemNetT(BaseModel):
 
     def __init__(
         self,
-        num_atoms: int | None,
-        bond_feat_dim: int,
-        num_targets: int,
         num_spherical: int,
         num_radial: int,
         num_blocks: int,
@@ -121,6 +114,7 @@ class GraphParallelGemNetT(BaseModel):
         extensive: bool = True,
         otf_graph: bool = False,
         use_pbc: bool = True,
+        use_pbc_single: bool = False,
         output_init: str = "HeOrthogonal",
         activation: str = "swish",
         scale_num_blocks: bool = False,
@@ -134,7 +128,6 @@ class GraphParallelGemNetT(BaseModel):
         if rbf is None:
             rbf = {"name": "gaussian"}
         super().__init__()
-        self.num_targets = num_targets
         assert num_blocks > 0
         self.num_blocks = num_blocks
         self.extensive = extensive
@@ -150,6 +143,7 @@ class GraphParallelGemNetT(BaseModel):
         self.regress_forces = regress_forces
         self.otf_graph = otf_graph
         self.use_pbc = use_pbc
+        self.use_pbc_single = use_pbc_single
 
         # GemNet variants
         self.direct_forces = direct_forces
@@ -239,7 +233,7 @@ class GraphParallelGemNetT(BaseModel):
                     emb_size_edge=emb_size_edge,
                     emb_size_rbf=emb_size_rbf,
                     nHidden=num_atom,
-                    num_targets=num_targets,
+                    num_targets=1,
                     activation=activation,
                     output_init=output_init,
                     direct_forces=direct_forces,
@@ -415,18 +409,10 @@ class GraphParallelGemNetT(BaseModel):
 
     def generate_interaction_graph(self, data):
         num_atoms = data.atomic_numbers.size(0)
-
-        (
-            edge_index,
-            D_st,
-            distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(data)
+        graph = self.generate_graph(data)
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
-        V_st = -distance_vec / D_st[:, None]
+        V_st = -graph.distance_vec / graph.edge_distance[:, None]
 
         # Mask interaction edges if required
         if self.otf_graph or np.isclose(self.cutoff, 6):
@@ -441,10 +427,10 @@ class GraphParallelGemNetT(BaseModel):
             V_st,
         ) = self.select_edges(
             data=data,
-            edge_index=edge_index,
-            cell_offsets=cell_offsets,
-            neighbors=neighbors,
-            edge_dist=D_st,
+            edge_index=graph.edge_index,
+            cell_offsets=graph.cell_offsets,
+            neighbors=graph.neighbors,
+            edge_dist=graph.edge_distance,
             edge_vector=V_st,
             cutoff=select_cutoff,
         )
@@ -563,7 +549,7 @@ class GraphParallelGemNetT(BaseModel):
         rbf_out = self.mlp_rbf_out(rbf)
 
         E_t, F_st = self.out_blocks[0](nAtoms, m, rbf_out, idx_t)
-        # (nAtoms, num_targets), (nEdges, num_targets)
+        # (nAtoms, 1), (nEdges, 1)
 
         for i in range(self.num_blocks):
             # Interaction block
@@ -585,7 +571,7 @@ class GraphParallelGemNetT(BaseModel):
             )  # (nAtoms, emb_size_atom), (nEdges, emb_size_edge)
 
             E, F = self.out_blocks[i + 1](nAtoms, m, rbf_out, idx_t)
-            # (nAtoms, num_targets), (nEdges, num_targets)
+            # (nAtoms, 1), (nEdges, 1)
             F_st += F
             E_t += E
 
@@ -601,41 +587,29 @@ class GraphParallelGemNetT(BaseModel):
             E_t = gp_utils.gather_from_model_parallel_region(E_t, dim=0)
             E_t = scatter(
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="add"
-            )  # (nMolecules, num_targets)
+            )  # (nMolecules, 1)
         else:
             E_t = scatter(
                 E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
-            )  # (nMolecules, num_targets)
+            )  # (nMolecules, 1)
 
         outputs = {"energy": E_t}
         if self.regress_forces:
             if self.direct_forces:
                 # map forces in edge directions
                 F_st_vec = F_st[:, :, None] * V_st[:, None, :]
-                # (nEdges, num_targets, 3)
+                # (nEdges, 1, 3)
                 F_t = scatter(
                     F_st_vec,
                     idx_t_full,
                     dim=0,
                     dim_size=data.atomic_numbers.size(0),
                     reduce="add",
-                )  # (nAtoms, num_targets, 3)
+                )  # (nAtoms, 1, 3)
                 F_t = F_t.squeeze(1)  # (nAtoms, 3)
             else:
-                if self.num_targets > 1:
-                    forces = []
-                    for i in range(self.num_targets):
-                        # maybe this can be solved differently
-                        forces += [
-                            -torch.autograd.grad(
-                                E_t[:, i].sum(), pos, create_graph=True
-                            )[0]
-                        ]
-                    F_t = torch.stack(forces, dim=1)
-                    # (nAtoms, num_targets, 3)
-                else:
-                    F_t = -torch.autograd.grad(E_t.sum(), pos, create_graph=True)[0]
-                    # (nAtoms, 3)
+                F_t = -torch.autograd.grad(E_t.sum(), pos, create_graph=True)[0]
+                # (nAtoms, 3)
 
             outputs["forces"] = F_t
 

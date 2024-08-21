@@ -1,0 +1,38 @@
+include-paths: 
+  - src/fairchem/data/oc
+  - packages/fairchem-data-oc
+tag-prefix: fairchem_data_oc
+tag-template: 'fairchem_data_oc-$RESOLVED_VERSION'
+name-template: 'fairchem_data_oc-$RESOLVED_VERSION'
+exclude-contributors: [github-actions] 
+categories:
+  - title: New Features / Enhancements
+    labels: [enhancement]
+  - title: Bug Fixes
+    labels: [bug]
+  - title: Documentation
+    labels: [documentation]
+  - title: Tests
+    labels: [test]
+  - title: Deprecations
+    labels: [deprecation]
+  - title: Dependencies
+    labels: [dependencies]
+  - title: Other Changes
+    labels: ["*"]
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+      - 'dependencies'
+  patch:
+    labels:
+      - 'patch'
+  default: patch
+template: |
+  ## What’s Changed
+
+  $CHANGES
