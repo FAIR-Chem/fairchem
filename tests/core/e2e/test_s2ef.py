@@ -179,7 +179,7 @@ class TestSmoke:
                     rundir=str(tempdir),
                     update_dict_with={
                         "optim": {"max_epochs": 1},
-                        "model": {"max_num_elements": 2},
+                        "model": {"backbone": {"max_num_elements": 2}},
                         "dataset": oc20_lmdb_train_and_val_from_paths(
                             train_src=str(tutorial_val_src),
                             val_src=str(tutorial_val_src),
@@ -187,7 +187,7 @@ class TestSmoke:
                         ),
                     },
                     update_run_args_with=extra_args,
-                    input_yaml=configs["equiformer_v2"],
+                    input_yaml=configs["equiformer_v2_hydra"],
                 )
 
     @pytest.mark.parametrize(
