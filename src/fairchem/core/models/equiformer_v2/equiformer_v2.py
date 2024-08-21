@@ -642,7 +642,7 @@ class EquiformerV2EnergyHead(nn.Module, HeadInterface):
             return {"energy": energy / data.natoms}
         else:
             raise ValueError(f"agg_fn can only be sum or mean, user provided: {self.agg_fn}")
-        
+
 
 
 @registry.register_model("equiformer_v2_force_head")
