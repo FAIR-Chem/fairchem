@@ -92,6 +92,15 @@ def save_checkpoint(
     return filename
 
 
+multitask_required_keys = {
+    "tasks",
+    "datasets",
+    "combined_dataset",
+    "model",
+    "optim",
+}
+
+
 class Complete:
     def __call__(self, data):
         device = data.edge_index.device
@@ -393,48 +402,83 @@ def create_dict_from_args(args: list, sep: str = "."):
     return return_dict
 
 
-def load_config(path: str, previous_includes: list | None = None):
-    if previous_includes is None:
-        previous_includes = []
+# given a filename and set of paths , return the full file path
+def find_relative_file_in_paths(filename, include_paths):
+    if os.path.exists(filename):
+        return filename
+    for path in include_paths:
+        include_filename = os.path.join(path, filename)
+        if os.path.exists(include_filename):
+            return include_filename
+    raise ValueError(f"Cannot find include YML {filename}")
+
+
+def load_config(
+    path: str,
+    files_previously_included: list | None = None,
+    include_paths: list | None = None,
+):
+    """
+    Load a given config with any defined imports
+
+    When imports are present this is a recursive function called on imports.
+    To prevent any cyclic imports we keep track of already imported yml files
+    using files_previously_included
+    """
+    if include_paths is None:
+        include_paths = []
+    if files_previously_included is None:
+        files_previously_included = []
     path = Path(path)
-    if path in previous_includes:
+    if path in files_previously_included:
         raise ValueError(
-            f"Cyclic config include detected. {path} included in sequence {previous_includes}."
+            f"Cyclic config include detected. {path} included in sequence {files_previously_included}."
         )
-    previous_includes = [*previous_includes, path]
+    files_previously_included = [*files_previously_included, path]
 
     with open(path) as fp:
-        direct_config = yaml.load(fp, Loader=UniqueKeyLoader)
+        current_config = yaml.load(fp, Loader=UniqueKeyLoader)
 
     # Load config from included files.
-    includes = direct_config.pop("includes") if "includes" in direct_config else []
-    if not isinstance(includes, list):
-        raise AttributeError(f"Includes must be a list, '{type(includes)}' provided")
+    includes_listed_in_config = (
+        current_config.pop("includes") if "includes" in current_config else []
+    )
+    if not isinstance(includes_listed_in_config, list):
+        raise AttributeError(
+            f"Includes must be a list, '{type(includes_listed_in_config)}' provided"
+        )
 
-    config = {}
+    config_from_includes = {}
     duplicates_warning = []
     duplicates_error = []
-
-    for include in includes:
+    for include in includes_listed_in_config:
+        include_filename = find_relative_file_in_paths(
+            include, [os.path.dirname(path), *include_paths]
+        )
         include_config, inc_dup_warning, inc_dup_error = load_config(
-            include, previous_includes
+            include_filename, files_previously_included
         )
         duplicates_warning += inc_dup_warning
         duplicates_error += inc_dup_error
 
         # Duplicates between includes causes an error
-        config, merge_dup_error = merge_dicts(config, include_config)
+        config_from_includes, merge_dup_error = merge_dicts(
+            config_from_includes, include_config
+        )
         duplicates_error += merge_dup_error
 
     # Duplicates between included and main file causes warnings
-    config, merge_dup_warning = merge_dicts(config, direct_config)
+    config_from_includes, merge_dup_warning = merge_dicts(
+        config_from_includes, current_config
+    )
     duplicates_warning += merge_dup_warning
+    return config_from_includes, duplicates_warning, duplicates_error
 
-    return config, duplicates_warning, duplicates_error
 
-
-def build_config(args, args_override):
-    config, duplicates_warning, duplicates_error = load_config(args.config_yml)
+def build_config(args, args_override, include_paths=None):
+    config, duplicates_warning, duplicates_error = load_config(
+        args.config_yml, include_paths=include_paths
+    )
     if len(duplicates_warning) > 0:
         logging.warning(
             f"Overwritten config parameters from included configs "
@@ -999,34 +1043,53 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
             task_name = "s2ef"
         elif trainer_name in ["energy", "equiformerv2_energy"]:
             task_name = "is2re"
+        elif "multitask" in trainer_name:
+            task_name = "multitask"
         else:
             task_name = "ocp"
 
         trainer_cls = registry.get_trainer_class(trainer_name)
         assert trainer_cls is not None, "Trainer not found"
-        trainer = trainer_cls(
-            task=config.get("task", {}),
-            model=config["model"],
-            outputs=config.get("outputs", {}),
-            dataset=config["dataset"],
-            optimizer=config["optim"],
-            loss_functions=config.get("loss_functions", {}),
-            evaluation_metrics=config.get("evaluation_metrics", {}),
-            identifier=config["identifier"],
-            timestamp_id=config.get("timestamp_id", None),
-            run_dir=config.get("run_dir", "./"),
-            is_debug=config.get("is_debug", False),
-            print_every=config.get("print_every", 10),
-            seed=config.get("seed", 0),
-            logger=config.get("logger", "wandb"),
-            local_rank=config["local_rank"],
-            amp=config.get("amp", False),
-            cpu=config.get("cpu", False),
-            slurm=config.get("slurm", {}),
-            noddp=config.get("noddp", False),
-            name=task_name,
-            gp_gpus=config.get("gp_gpus"),
-        )
+
+        trainer_config = {
+            "model": config["model"],
+            "optimizer": config["optim"],
+            "identifier": config["identifier"],
+            "timestamp_id": config.get("timestamp_id", None),
+            "run_dir": config.get("run_dir", "./"),
+            "is_debug": config.get("is_debug", False),
+            "print_every": config.get("print_every", 10),
+            "seed": config.get("seed", 0),
+            "logger": config.get("logger", "wandb"),
+            "local_rank": config["local_rank"],
+            "amp": config.get("amp", False),
+            "cpu": config.get("cpu", False),
+            "slurm": config.get("slurm", {}),
+            "noddp": config.get("noddp", False),
+            "name": task_name,
+            "gp_gpus": config.get("gp_gpus"),
+        }
+
+        if task_name == "multitask":
+            trainer_config.update(
+                {
+                    "tasks": config.get("tasks", {}),
+                    "dataset_configs": config["datasets"],
+                    "combined_dataset_config": config.get("combined_dataset", {}),
+                    "evaluations": config.get("evaluations", {}),
+                }
+            )
+        else:
+            trainer_config.update(
+                {
+                    "task": config.get("task", {}),
+                    "outputs": config.get("outputs", {}),
+                    "dataset": config["dataset"],
+                    "loss_functions": config.get("loss_functions", {}),
+                    "evaluation_metrics": config.get("evaluation_metrics", {}),
+                }
+            )
+        trainer = trainer_cls(**trainer_config)
 
         task_cls = registry.get_task_class(config["mode"])
         assert task_cls is not None, "Task not found"
