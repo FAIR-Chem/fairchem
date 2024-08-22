@@ -185,6 +185,7 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
         load_energy_lin_ref: bool | None = False,
         activation_checkpoint: bool | None = False,
         repeat_blocks: bool = False,
+        skip_layers: float = 0.0,
     ):
         if mmax_list is None:
             mmax_list = [2]
@@ -208,6 +209,7 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
         self.cutoff = max_radius
         self.max_num_elements = max_num_elements
         self.repeat_blocks = repeat_blocks
+        self.skip_layers = skip_layers
 
         self.num_layers = num_layers
         self.sphere_channels = sphere_channels
@@ -509,6 +511,9 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
         ###############################################################
 
         for i in range(self.num_layers):
+            if self.training and i > 1 and self.skip_layers > 0.0:
+                if torch.rand(1).item() < self.skip_layers:
+                    continue
             if self.activation_checkpoint:
                 x = torch.utils.checkpoint.checkpoint(
                     self.blocks[i],
