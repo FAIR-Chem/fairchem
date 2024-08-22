@@ -645,7 +645,7 @@ class EquiformerV2EnergyHead(nn.Module, HeadInterface):
         elif self.reduce == "mean":
             return {"energy": energy / data.natoms}
         else:
-            raise ValueError(f"agg_fn can only be sum or mean, user provided: {self.agg_fn}")
+            raise ValueError(f"reduce can only be sum or mean, user provided: {self.reduce}")
 
 
 
