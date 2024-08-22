@@ -53,7 +53,9 @@ def test_lbfgs_write_trajectory(save_full_traj, steps, batch, calculator, tmp_pa
     traj_files = list(tmp_path.glob("*.traj"))
     assert len(traj_files) == len(batch)
 
-    traj_length = 0 if steps == 0 else steps + 1 if save_full_traj else 1
+    traj_length = (
+        0 if steps == 0 else steps + 1 if save_full_traj else 2
+    )  # first and final frame
     for file in traj_files:
         traj = read(file, ":")
         assert len(traj) == traj_length
