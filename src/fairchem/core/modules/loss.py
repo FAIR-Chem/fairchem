@@ -1,11 +1,25 @@
 from __future__ import annotations
 
 import logging
+from typing import Literal
 
 import torch
 from torch import nn
 
 from fairchem.core.common import distutils
+
+
+class LossDensity(nn.Module):
+    """Simply divide a loss by the number of atoms/nodes in the graph."""
+
+    def __init__(self, loss: nn.Module):
+        super().__init__()
+        self.loss = loss
+
+    def forward(
+        self, pred: torch.Tensor, target: torch.Tensor, natoms: torch.Tensor
+    ) -> torch.Tensor:
+        return self.loss(pred / natoms, target / natoms)
 
 
 class L2MAELoss(nn.Module):
@@ -14,8 +28,8 @@ class L2MAELoss(nn.Module):
         self.reduction = reduction
         assert reduction in ["mean", "sum"]
 
-    def forward(self, input: torch.Tensor, target: torch.Tensor):
-        dists = torch.norm(input - target, p=2, dim=-1)
+    def forward(self, pred: torch.Tensor, target: torch.Tensor):
+        dists = torch.norm(pred - target, p=2, dim=-1)
         if self.reduction == "mean":
             return torch.mean(dists)
         elif self.reduction == "sum":
@@ -24,7 +38,7 @@ class L2MAELoss(nn.Module):
 
 
 class AtomwiseL2Loss(nn.Module):
-    def __init__(self, reduction: str = "mean") -> None:
+    def __init__(self, reduction: Literal["mean", "sum"] = "mean") -> None:
         super().__init__()
         self.reduction = reduction
         assert reduction in ["mean", "sum"]
@@ -50,13 +64,20 @@ class AtomwiseL2Loss(nn.Module):
 
 class DDPLoss(nn.Module):
     def __init__(
-        self, loss_fn, loss_name: str = "mae", reduction: str = "mean"
+        self,
+        loss_fn,
+        loss_name: str = "mae",
+        reduction: Literal["mean", "mean_all", "sum"] = "mean",
     ) -> None:
         super().__init__()
         self.loss_fn = loss_fn
         self.loss_name = loss_name
         self.reduction = reduction
-        assert reduction in ["mean", "mean_all", "sum"]
+        assert reduction in [
+            "mean",
+            "mean_all",
+            "sum",
+        ], "Reduction must be one of: 'mean', 'mean_all', 'sum'"
 
         # for forces, we want to sum over xyz errors and average over batches/atoms (mean)
         # for other metrics, we want to average over all axes (mean_all) or leave as a sum (sum)
@@ -83,7 +104,7 @@ class DDPLoss(nn.Module):
             logging.warning("Found nans while computing loss")
             input = torch.nan_to_num(input, nan=0.0)
 
-        if self.loss_name.startswith("atomwise"):
+        if any(idn in self.loss_name for idn in ("atomwise", "density")):
             loss = self.loss_fn(input, target, natoms)
         else:
             loss = self.loss_fn(input, target)

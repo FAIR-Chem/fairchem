@@ -338,7 +338,7 @@ class OCPTrainer(BaseTrainer):
                 * loss_info["fn"](
                     pred,
                     target,
-                    natoms=natoms,
+                    natoms=batch.natoms,
                     batch_size=batch_size,
                 )
             )
