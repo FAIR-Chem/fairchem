@@ -49,6 +49,7 @@ class AtomwiseL2Loss(nn.Module):
         target: torch.Tensor,
         natoms: torch.Tensor,
     ):
+        natoms = torch.repeat_interleave(natoms, natoms)
         assert natoms.shape[0] == input.shape[0] == target.shape[0]
         assert len(natoms.shape) == 1  # (nAtoms, )
 
