@@ -235,6 +235,9 @@ class eSCN(nn.Module, GraphModelMixin):
 
         start_time = time.time()
         atomic_numbers = data.atomic_numbers.long()
+        assert (
+            atomic_numbers.max().item() < self.max_num_elements
+        ), "Atomic number exceeds that given in model config"
         num_atoms = len(atomic_numbers)
         graph = self.generate_graph(data)
 
