@@ -93,6 +93,16 @@ def merge_dictionary(d, u):
     return d
 
 
+def update_yaml_with_dict(input_yaml, output_yaml, update_dict_with):
+    with open(input_yaml) as yaml_file:
+        yaml_config = yaml.safe_load(yaml_file)
+    if update_dict_with is not None:
+        yaml_config = merge_dictionary(yaml_config, update_dict_with)
+        yaml_config["backend"] = "gloo"
+    with open(str(output_yaml), "w") as yaml_file:
+        yaml.dump(yaml_config, yaml_file)
+
+
 def _run_main(
     rundir,
     input_yaml,
@@ -103,14 +113,7 @@ def _run_main(
     world_size=0,
 ):
     config_yaml = Path(rundir) / "train_and_val_on_val.yml"
-
-    with open(input_yaml) as yaml_file:
-        yaml_config = yaml.safe_load(yaml_file)
-    if update_dict_with is not None:
-        yaml_config = merge_dictionary(yaml_config, update_dict_with)
-        yaml_config["backend"] = "gloo"
-    with open(str(config_yaml), "w") as yaml_file:
-        yaml.dump(yaml_config, yaml_file)
+    update_yaml_with_dict(input_yaml, config_yaml, update_dict_with)
     run_args = {
         "run_dir": rundir,
         "logdir": f"{rundir}/logs",
