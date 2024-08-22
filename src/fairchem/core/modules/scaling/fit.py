@@ -202,16 +202,16 @@ def compute_scaling_factors(config, num_batches: int = 16) -> None:
         # region save the scale factors to the checkpoint file
         trainer.config["cmd"]["checkpoint_dir"] = ckpt_file.parent
         trainer.is_debug = False
-        out_file = trainer.save(
-            metrics=None,
-            checkpoint_file=ckpt_file.name,
-            training_state=False,
+
+        torch.save(
+            {
+                x[0].replace(".scale_factor", ""): x[1]
+                for x in trainer.model.to("cpu").named_parameters()
+                if ".scale_" in x[0]
+            },
+            str(ckpt_file),
         )
-        assert out_file is not None, "Failed to save checkpoint"
-        out_file = Path(out_file)
-        assert out_file.exists(), f"Failed to save checkpoint to {out_file}"
-        # endregion
-        logging.info(f"Saved results to: {out_file}")
+        logging.info(f"Saved results to: {ckpt_file}")
 
 
 if __name__ == "__main__":

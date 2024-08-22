@@ -127,7 +127,6 @@ class TestSmoke:
                     scaling_pt,
                 ]
             )
-
             update_yaml_with_dict(
                 configs["gemnet_oc"],
                 config_yaml,
