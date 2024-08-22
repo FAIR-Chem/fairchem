@@ -92,6 +92,7 @@ class LBFGS:
         iteration = 0
         max_forces = self.optimizable.get_max_forces(apply_constraint=True)
         logging.info("Step   Fmax(eV/A)")
+
         while iteration < steps and not self.optimizable.converged(
             forces=None, fmax=self.fmax, max_forces=max_forces
         ):
@@ -99,7 +100,9 @@ class LBFGS:
                 f"{iteration} " + " ".join(f"{x:0.3f}" for x in max_forces.tolist())
             )
 
-            if self.trajectories is not None and self.save_full is True:
+            if self.trajectories is not None and (
+                self.save_full is True or iteration == 0
+            ):
                 self.write()
 
             self.step(iteration)
