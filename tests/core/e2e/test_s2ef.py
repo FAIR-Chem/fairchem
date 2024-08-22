@@ -8,10 +8,18 @@ from pathlib import Path
 import numpy as np
 import numpy.testing as npt
 import pytest
-from test_e2e_commons import _run_main, oc20_lmdb_train_and_val_from_paths
+from fairchem.core._cli import Runner
+from fairchem.core.modules.scaling.fit import compute_scaling_factors
+from test_e2e_commons import (
+    _run_main,
+    oc20_lmdb_train_and_val_from_paths,
+    update_yaml_with_dict,
+)
 
-from fairchem.core.common.utils import setup_logging
+from fairchem.core.common.utils import build_config, setup_logging
 from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
+
+from fairchem.core.common.flags import flags
 
 setup_logging()
 
@@ -96,6 +104,61 @@ class TestSmoke:
             energy_from_checkpoint = np.load(predictions_filename)["energy"]
             npt.assert_allclose(
                 energy_from_train, energy_from_checkpoint, rtol=1e-6, atol=1e-6
+            )
+
+    def test_gemnet_fit_scaling(self, configs, tutorial_val_src):
+
+        with tempfile.TemporaryDirectory() as tempdirname:
+            # (1) generate scaling factors for gemnet config
+            config_yaml = f"{tempdirname}/train_and_val_on_val.yml"
+            scaling_pt = f"{tempdirname}/scaling.pt"
+            # run
+            parser = flags.get_parser()
+            args, override_args = parser.parse_known_args(
+                [
+                    "--mode",
+                    "train",
+                    "--seed",
+                    "100",
+                    "--config-yml",
+                    config_yaml,
+                    "--cpu",
+                    "--checkpoint",
+                    scaling_pt,
+                ]
+            )
+            update_yaml_with_dict(
+                configs["gemnet_oc"],
+                config_yaml,
+                update_dict_with={
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                    ),
+                },
+            )
+            config = build_config(args, override_args)
+
+            # (2) if existing scaling factors are present remove them
+            if "scale_file" in config["model"]:
+                config["model"].pop("scale_file")
+
+            compute_scaling_factors(config)
+
+            # (3) try to run the config with the newly generated scaling factors
+            _ = _run_main(
+                rundir=tempdirname,
+                update_dict_with={
+                    "optim": {"max_epochs": 1},
+                    "model": {"use_pbc_single": True, "scale_file": scaling_pt},
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                    ),
+                },
+                input_yaml=configs["gemnet_oc"],
             )
 
     # not all models are tested with otf normalization estimation
