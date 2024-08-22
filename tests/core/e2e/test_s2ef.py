@@ -170,6 +170,26 @@ class TestSmoke:
                 input_yaml=configs["equiformer_v2"],
             )
 
+    def test_max_num_atoms(self, configs, tutorial_val_src, torch_deterministic):
+        with tempfile.TemporaryDirectory() as tempdirname:
+            tempdir = Path(tempdirname)
+            extra_args = {"seed": 0}
+            with pytest.raises(AssertionError):
+                _ = _run_main(
+                    rundir=str(tempdir),
+                    update_dict_with={
+                        "optim": {"max_epochs": 1},
+                        "model": {"backbone": {"max_num_elements": 2}},
+                        "dataset": oc20_lmdb_train_and_val_from_paths(
+                            train_src=str(tutorial_val_src),
+                            val_src=str(tutorial_val_src),
+                            test_src=str(tutorial_val_src),
+                        ),
+                    },
+                    update_run_args_with=extra_args,
+                    input_yaml=configs["equiformer_v2_hydra"],
+                )
+
     @pytest.mark.parametrize(
         ("world_size", "ddp"),
         [
