@@ -607,9 +607,9 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
 
 @registry.register_model("equiformer_v2_energy_head")
 class EquiformerV2EnergyHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, agg_fn: str="sum"):
+    def __init__(self, backbone, reduce: str="sum"):
         super().__init__()
-        self.agg_fn = agg_fn
+        self.reduce = reduce
         self.avg_num_nodes = backbone.avg_num_nodes
         self.energy_block = FeedForwardNetwork(
             backbone.sphere_channels,
@@ -635,10 +635,11 @@ class EquiformerV2EnergyHead(nn.Module, HeadInterface):
             device=node_energy.device,
             dtype=node_energy.dtype,
         )
+
         energy.index_add_(0, data.batch, node_energy.view(-1))
-        if self.agg_fn == "sum":
+        if self.reduce == "sum":
             return {"energy": energy / self.avg_num_nodes}
-        elif self.agg_fn == "mean":
+        elif self.reduce == "mean":
             return {"energy": energy / data.natoms}
         else:
             raise ValueError(f"agg_fn can only be sum or mean, user provided: {self.agg_fn}")
