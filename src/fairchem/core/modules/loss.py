@@ -34,7 +34,8 @@ class L2MAELoss(nn.Module):
             return torch.mean(dists)
         elif self.reduction == "sum":
             return torch.sum(dists)
-        return None
+
+        return dists
 
 
 class AtomwiseL2Loss(nn.Module):

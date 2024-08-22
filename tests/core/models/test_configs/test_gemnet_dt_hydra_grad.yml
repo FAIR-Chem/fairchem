@@ -2,9 +2,11 @@ trainer: forces
 
 outputs:
   energy:
+    property: energy
     shape: 1
     level: system
   forces:
+    property: forces
     irrep_dim: 1
     level: atom
     train_on_free_atoms: True
@@ -71,6 +73,7 @@ model:
   heads:
     energy_and_forces:
       module: gemnet_t_energy_and_grad_force_head
+  pass_through_head_outputs: True
 
 optim:
   batch_size: 8

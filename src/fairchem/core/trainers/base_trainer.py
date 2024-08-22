@@ -13,6 +13,7 @@ import errno
 import logging
 import os
 import random
+import sys
 from abc import ABC, abstractmethod
 from itertools import chain
 from typing import TYPE_CHECKING
@@ -44,7 +45,6 @@ from fairchem.core.common.utils import (
     update_config,
 )
 from fairchem.core.datasets.base_dataset import create_dataset
-from fairchem.core.models.finetune_hydra import FineTuneHydra, FTConfig
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
@@ -233,6 +233,8 @@ class BaseTrainer(ABC):
         self.load_loss()
         self.load_optimizer()
         self.load_extras()
+        if self.config["optim"].get("load_datasets_and_model_then_exit", False):
+            sys.exit(0)
 
     def set_seed(self, seed) -> None:
         # https://pytorch.org/docs/stable/notes/randomness.html
@@ -716,13 +718,6 @@ class BaseTrainer(ABC):
         training_state: bool = True,
     ) -> str | None:
         if not self.is_debug and distutils.is_master():
-            # if we are using a FineTune-able model, then we need to modify the config to remove
-            # the original starting checkpoint so it can be loaded standalone, can move this to save function
-            if isinstance(self.model, FineTuneHydra):
-                self.config["model"] = FTConfig(
-                    self.config["model"][FTConfig.FT_CONFIG_NAME]
-                ).get_standalone_config()
-
             state = {
                 "state_dict": self.model.state_dict(),
                 "normalizers": {
@@ -800,6 +795,22 @@ class BaseTrainer(ABC):
                     disable_tqdm=disable_eval_tqdm,
                 )
 
+    def _aggregate_metrics(self, metrics):
+        aggregated_metrics = {}
+        for k in metrics:
+            aggregated_metrics[k] = {
+                "total": distutils.all_reduce(
+                    metrics[k]["total"], average=False, device=self.device
+                ),
+                "numel": distutils.all_reduce(
+                    metrics[k]["numel"], average=False, device=self.device
+                ),
+            }
+            aggregated_metrics[k]["metric"] = (
+                aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
+            )
+        return aggregated_metrics
+
     @torch.no_grad()
     def validate(self, split: str = "val", disable_tqdm: bool = False):
         ensure_fitted(self._unwrapped_model, warn=True)
@@ -841,20 +852,7 @@ class BaseTrainer(ABC):
             metrics = self._compute_metrics(out, batch, evaluator, metrics)
             metrics = evaluator.update("loss", loss.item(), metrics)
 
-        aggregated_metrics = {}
-        for k in metrics:
-            aggregated_metrics[k] = {
-                "total": distutils.all_reduce(
-                    metrics[k]["total"], average=False, device=self.device
-                ),
-                "numel": distutils.all_reduce(
-                    metrics[k]["numel"], average=False, device=self.device
-                ),
-            }
-            aggregated_metrics[k]["metric"] = (
-                aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
-            )
-        metrics = aggregated_metrics
+        metrics = self._aggregate_metrics(metrics)
 
         log_dict = {k: metrics[k]["metric"] for k in metrics}
         log_dict.update({"epoch": self.epoch})
