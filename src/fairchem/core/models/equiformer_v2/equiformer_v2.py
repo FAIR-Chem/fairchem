@@ -397,6 +397,9 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
         self.dtype = data.pos.dtype
         self.device = data.pos.device
         atomic_numbers = data.atomic_numbers.long()
+        assert (
+            atomic_numbers.max().item() < self.max_num_elements
+        ), "Atomic number exceeds that given in model config"
         graph = self.generate_graph(
             data,
             enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly,
