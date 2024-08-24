@@ -403,7 +403,7 @@ class SO3_Rotation(torch.nn.Module):
         )
         gamma = torch.atan2(R[..., 0, 2], R[..., 0, 0])
 
-        size = (end_lmax + 1) ** 2 - (start_lmax) ** 2
+        size = int((end_lmax + 1) ** 2) - int((start_lmax) ** 2)
         wigner = torch.zeros(len(alpha), size, size, device=self.device)
         start = 0
         for lmax in range(start_lmax, end_lmax + 1):
