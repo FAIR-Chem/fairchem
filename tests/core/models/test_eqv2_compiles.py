@@ -103,8 +103,6 @@ class TestEQV2Compiles:
         outputs = self.eqv2_baseline_output("gloo")
         energy, forces_mean = outputs["energy"].detach().cpu(), outputs["forces"].mean(0).detach().cpu()
         expected_energy, expected_forces = expected_energy_forces()
-        print(energy)
-        print(forces_mean)
         assert torch.allclose(energy, expected_energy, atol=1e-4)
         assert torch.allclose(forces_mean, expected_forces, atol=1e-4)
 
@@ -119,6 +117,7 @@ class TestEQV2Compiles:
         torch._dynamo.config.optimize_ddp = False
         torch._dynamo.config.assume_static_by_default = False
         torch._dynamo.config.automatic_dynamic_shapes = True
+        torch._dynamo.config.cache_size_limit = 1
         # torch._dynamo.config.suppress_errors = True
 
         os.environ["TORCH_LOGS"] = "+dynamo,recompiles"
