@@ -78,7 +78,7 @@ class CoefficientMappingModule(torch.nn.Module):
         num_coefficients = len(l_harmonic)
         # `self.to_m` moves m components from different L to contiguous index
         to_m = torch.zeros([num_coefficients, num_coefficients])
-        m_size = torch.zeros([max(self.mmax_list) + 1]).long()
+        self.m_size = torch.zeros([max(self.mmax_list) + 1]).long().tolist()
 
         offset = 0
         for m in range(max(self.mmax_list) + 1):
@@ -88,7 +88,7 @@ class CoefficientMappingModule(torch.nn.Module):
                 to_m[idx_out + offset, idx_in] = 1.0
             offset = offset + len(idx_r)
 
-            m_size[m] = int(len(idx_r))
+            self.m_size[m] = int(len(idx_r))
 
             for idx_out, idx_in in enumerate(idx_i):
                 to_m[idx_out + offset, idx_in] = 1.0
@@ -102,7 +102,7 @@ class CoefficientMappingModule(torch.nn.Module):
         self.register_buffer('m_complex',  m_complex)
         self.register_buffer('res_size',   res_size)
         self.register_buffer('to_m',       to_m)
-        self.register_buffer('m_size',     m_size)
+        # self.register_buffer('m_size',     m_size)
 
         self.pre_compute_coefficient_idx()
         if self.use_rotate_inv_rescale:

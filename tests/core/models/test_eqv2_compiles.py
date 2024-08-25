@@ -22,7 +22,13 @@ from fairchem.core.common.distutils import init_local_distributed_process_group
 from fairchem.core.common.utils import load_state_dict, setup_imports
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.preprocessing import AtomsToGraphs
+from torch_geometric.data import Data, Batch
 
+from fairchem.core.models.equiformer_v2.so3 import CoefficientMappingModule, SO3_Embedding
+from fairchem.core.models.equiformer_v2.so2_ops import SO2_Convolution, SO2_Convolution_Exportable
+
+from torch.export import export
+from torch.export import Dim
 
 def load_data():
     atoms = read(
@@ -90,6 +96,15 @@ def expected_energy_forces():
     return energy, forces
 
 
+def rand_input(natoms: int) -> BaseData:
+    data = Data(natoms=natoms, 
+                pos=torch.rand(natoms, 3),
+                cell=torch.rand([1, 3, 3]),
+                atomic_numbers=torch.randint(1, 99, (1, 3, 3))
+                )
+    batch = Batch.from_data_list([data])
+    return batch
+
 class TestEQV2Compiles:
     def eqv2_baseline_output(self, backend: str):
         init(backend=backend)
@@ -126,3 +141,54 @@ class TestEQV2Compiles:
         compiled_model(data0)
         compiled_model(data1)
         # import pdb; pdb.set_trace()
+
+class TestExportableEQV2:
+    def test_so2_conv_equivalent(self):
+        torch.manual_seed(4)
+        lmax, mmax = 4, 2
+        sc, mc = 128, 128
+        mappingReduced = CoefficientMappingModule([lmax], [mmax])
+
+        start_rng_state = torch.random.get_rng_state()
+        so2_export = SO2_Convolution_Exportable(sphere_channels=sc, m_output_channels=mc, lmax_list=[lmax], mmax_list=[mmax],mappingReduced=mappingReduced)
+        torch.random.set_rng_state(start_rng_state)
+        so2 = SO2_Convolution(sphere_channels=sc, m_output_channels=mc, lmax_list=[lmax], mmax_list=[mmax],mappingReduced=mappingReduced)
+
+        inputs_tensor = (torch.rand(129, 19, 128), torch.rand(129, 856))
+        inputs_embedding = SO3_Embedding(129, [lmax], 128, inputs_tensor[0].device, inputs_tensor[0].dtype)
+        inputs_embedding.set_embedding(inputs_tensor[0])
+        assert torch.allclose(inputs_tensor[0], inputs_embedding.embedding) 
+        output = so2(inputs_embedding, inputs_tensor[1])
+        output_export = so2_export(*inputs_tensor)
+        assert torch.allclose(output.embedding, output_export)
+
+    def test_so2_conv_exportable(self):
+        torch._dynamo.config.assume_static_by_default = False
+        torch._dynamo.config.automatic_dynamic_shapes = True
+        inp1_dim0 = Dim("inp1_dim0")
+        inp1_dim1 = None
+        inp1_dim2 = None
+        inp2_dim0 = inp1_dim0
+        inp2_dim1 = Dim("inp2_dim1")
+
+        dynamic_shapes1 = {
+            "x_emb": {0: inp1_dim0, 1: inp1_dim1, 2: inp1_dim2},
+            "x_edge": {0: inp2_dim0, 1: inp2_dim1},
+        }
+
+        lmax, mmax = 4, 2
+        mappingReduced = CoefficientMappingModule([lmax], [mmax])
+        args=(torch.rand(129, 19, 128), torch.rand(129, 856))
+
+        so2 = SO2_Convolution_Exportable(sphere_channels=128, m_output_channels=128, lmax_list=[lmax], mmax_list=[mmax],mappingReduced=mappingReduced)
+        prog = export(so2, args=args, dynamic_shapes=dynamic_shapes1)
+        export_out = prog.module()(*args)
+        regular_out = so2(*args)
+        assert torch.allclose(export_out, regular_out)
+
+        args2=(torch.rand(130, 19, 128), torch.rand(130, 856))
+        export_out2 = prog.module()(*args2)
+        regular_out2 = so2(*args2)
+        assert torch.allclose(export_out2, regular_out2)
+
+        
