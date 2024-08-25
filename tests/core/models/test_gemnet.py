@@ -98,16 +98,17 @@ class TestGemNetT:
             decimal=4,
         )
 
-    # def test_energy_force_shape(self, snapshot) -> None:
-    #     # Recreate the Data object to only keep the necessary features.
-    #     data = self.data
+    @pytest.mark.skip(reason="skipping cause it fails")
+    def test_energy_force_shape(self, snapshot) -> None:
+        # Recreate the Data object to only keep the necessary features.
+        data = self.data
 
-    #     # Pass it through the model.
-    #     outputs = self.model(data_list_collater([data]))
-    #     energy, forces = outputs["energy"], outputs["forces"]
+        # Pass it through the model.
+        outputs = self.model(data_list_collater([data]))
+        energy, forces = outputs["energy"], outputs["forces"]
 
-    #     assert snapshot == energy.shape
-    #     assert snapshot == pytest.approx(energy.detach())
+        assert snapshot == energy.shape
+        assert snapshot == pytest.approx(energy.detach())
 
-    #     assert snapshot == forces.shape
-    #     assert snapshot == pytest.approx(forces.detach())
+        assert snapshot == forces.shape
+        assert snapshot == pytest.approx(forces.detach())

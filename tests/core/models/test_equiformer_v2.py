@@ -17,6 +17,7 @@ import random
 import numpy as np
 import logging
 
+
 from fairchem.core.common.registry import registry
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.models.equiformer_v2.so3 import (
