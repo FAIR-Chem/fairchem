@@ -37,18 +37,9 @@ def _train_batch(trainer: BaseTrainer, batch) -> None:
         del out, loss
 
 
-def main(*, num_batches: int = 16) -> None:
-    # region args/config setup
-    setup_logging()
+def compute_scaling_factors(config, num_batches: int = 16) -> None:
 
-    parser = flags.get_parser()
-    args, override_args = parser.parse_known_args()
-    _config = build_config(args, override_args)
-    _config["logger"] = "wandb"
-    # endregion
-
-    assert not args.distributed, "This doesn't work with DDP"
-    with new_trainer_context(args=args, config=_config) as ctx:
+    with new_trainer_context(config=config) as ctx:
         config = ctx.config
         trainer = ctx.trainer
 
@@ -61,8 +52,8 @@ def main(*, num_batches: int = 16) -> None:
         logging.info(f"Input checkpoint path: {ckpt_file}, {ckpt_file.exists()=}")
 
         model: nn.Module = trainer.model
-        val_loader = trainer.val_loader
-        assert val_loader is not None, "Val dataset is required for making predictions"
+        data_loader = trainer.train_loader
+        assert data_loader is not None, "Train set required to load batches"
 
         if ckpt_file.exists():
             trainer.load_checkpoint(checkpoint_path=str(ckpt_file))
@@ -122,15 +113,8 @@ def main(*, num_batches: int = 16) -> None:
                 sys.exit(-1)
         # endregion
 
-        # region get the output path
-        out_path = Path(
-            _prefilled_input(
-                "Enter output path for fitted scale factors: ",
-                prefill=str(ckpt_file),
-            )
-        )
-        if out_path.exists():
-            logging.warning(f"Already found existing file: {out_path}")
+        if ckpt_file.exists():
+            logging.warning(f"Already found existing file: {ckpt_file}")
             flag = input(
                 "Do you want to continue and overwrite existing file (1), "
                 "or exit (2)? "
@@ -142,7 +126,7 @@ def main(*, num_batches: int = 16) -> None:
                 sys.exit()
 
         logging.info(
-            f"Output path for fitted scale factors: {out_path}, {out_path.exists()=}"
+            f"Output path for fitted scale factors: {ckpt_file}, {ckpt_file.exists()=}"
         )
         # endregion
 
@@ -175,7 +159,7 @@ def main(*, num_batches: int = 16) -> None:
             module.initialize_(index_fn=index_fn)
 
         # single pass through network
-        _train_batch(trainer, next(iter(val_loader)))
+        _train_batch(trainer, next(iter(data_loader)))
 
         # sort the scale factors by their computation order
         sorted_factors = sorted(
@@ -200,7 +184,7 @@ def main(*, num_batches: int = 16) -> None:
 
             logging.info(f"Fitting {name}...")
             with module.fit_context_():
-                for batch in islice(val_loader, num_batches):
+                for batch in islice(data_loader, num_batches):
                     _train_batch(trainer, batch)
                 stats, ratio, value = module.fit_()
 
@@ -216,19 +200,27 @@ def main(*, num_batches: int = 16) -> None:
             assert module.fitted, f"{name} is not fitted"
 
         # region save the scale factors to the checkpoint file
-        trainer.config["cmd"]["checkpoint_dir"] = out_path.parent
+        trainer.config["cmd"]["checkpoint_dir"] = ckpt_file.parent
         trainer.is_debug = False
-        out_file = trainer.save(
-            metrics=None,
-            checkpoint_file=out_path.name,
-            training_state=False,
+
+        torch.save(
+            {
+                x[0].replace(".scale_factor", ""): x[1]
+                for x in trainer.model.to("cpu").named_parameters()
+                if ".scale_" in x[0]
+            },
+            str(ckpt_file),
         )
-        assert out_file is not None, "Failed to save checkpoint"
-        out_file = Path(out_file)
-        assert out_file.exists(), f"Failed to save checkpoint to {out_file}"
-        # endregion
-        logging.info(f"Saved results to: {out_file}")
+        logging.info(f"Saved results to: {ckpt_file}")
 
 
 if __name__ == "__main__":
-    main()
+    # region args/config setup
+    setup_logging()
+
+    parser = flags.get_parser()
+    args, override_args = parser.parse_known_args()
+    assert not args.distributed, "This doesn't work with DDP"
+    config = build_config(args, override_args)
+
+    compute_scaling_factors(config)
