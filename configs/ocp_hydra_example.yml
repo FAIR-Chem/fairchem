@@ -22,9 +22,11 @@ logger: wandb
 
 outputs:
   energy:
+    property: energy
     shape: 1
     level: system
   forces:
+    property: forces
     irrep_dim: 1
     level: atom
     train_on_free_atoms: True
