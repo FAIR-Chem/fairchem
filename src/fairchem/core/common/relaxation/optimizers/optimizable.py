@@ -21,9 +21,7 @@ from torch_scatter import scatter
 
 from fairchem.core.common.relaxation.ase_utils import batch_to_atoms
 
-# unreleased ASE has Optimizable, last released version 3.22.1 does not
-# thankfully we can get away with backwards compatibility by creating a dummy
-# submit an issue to the ASE repo to make new releases if you find this code ugly :(
+# this can be removed after pinning ASE dependency >= 3.23
 try:
     from ase.optimize.optimize import Optimizable
 except ImportError:
