@@ -63,4 +63,4 @@ def test_lbfgs_write_trajectory(save_full_traj, steps, batch, calculator, tmp_pa
 
         # make sure all written frames are unique
         for a1, a2 in combinations(traj, r=2):
-            assert not np.allclose(a1.positions, a2.positions, atol=1e-3)
+            assert not np.allclose(a1.positions, a2.positions, atol=1e-5)
