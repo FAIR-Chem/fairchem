@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from itertools import product
+from itertools import combinations, product
 
+import numpy as np
 import numpy.testing as npt
 import pytest
 from ase.io import read
@@ -59,3 +60,7 @@ def test_lbfgs_write_trajectory(save_full_traj, steps, batch, calculator, tmp_pa
     for file in traj_files:
         traj = read(file, ":")
         assert len(traj) == traj_length
+
+        # make sure all written frames are unique
+        for a1, a2 in combinations(traj, r=2):
+            assert not np.allclose(a1.positions, a2.positions, atol=1e-3)
