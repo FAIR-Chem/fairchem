@@ -101,7 +101,6 @@ class OptimizableBatch(Optimizable):
         trainer: BaseTrainer,
         transform: torch.nn.Module | None = None,
         mask_converged: bool = True,
-        cumulative_mask: bool = True,
         numpy: bool = False,
         masked_eps: float = 1e-8,
     ):
@@ -112,9 +111,6 @@ class OptimizableBatch(Optimizable):
             model: An instance of a BaseTrainer derived class
             transform: graph transform
             mask_converged: if true will mask systems in batch that are already converged
-            cumulative_mask: if true, once system is masked then it remains masked even if new predictions give forces
-                above threshold, ie. once masked always masked. Note if this is used make sure to check convergence with
-                the same fmax always
             numpy: whether to cast results to numpy arrays
             masked_eps: masking systems that are converged when using ASE optimizers results in divisions by zero
                 from zero differences in masked positions at future steps, we add a small number to prevent this.
@@ -126,7 +122,6 @@ class OptimizableBatch(Optimizable):
         self.mask_converged = mask_converged
         self._cached_batch = None
         self._update_mask = None
-        self._cumulative_mask = cumulative_mask
         self.torch_results = {}
         self.results = {}
         self._eps = masked_eps
@@ -294,7 +289,7 @@ class OptimizableBatch(Optimizable):
         update_mask = max_forces.ge(fmax)
         # update cached mask
         if self.mask_converged:
-            if self._update_mask is None or self._cumulative_mask is False:
+            if self._update_mask is None:
                 self._update_mask = update_mask
             else:
                 # some models can have random noise in their predictions, so the mask is updated by
@@ -337,7 +332,6 @@ class OptimizableUnitCellBatch(OptimizableBatch):
         transform: torch.nn.Module | None = None,
         numpy: bool = False,
         mask_converged: bool = True,
-        cumulative_mask: bool = True,
         mask: Sequence[bool] | None = None,
         cell_factor: float | torch.Tensor | None = None,
         hydrostatic_strain: bool = False,
@@ -357,9 +351,6 @@ class OptimizableUnitCellBatch(OptimizableBatch):
             transform: graph transform
             numpy: whether to cast results to numpy arrays
             mask_converged: if true will mask systems in batch that are already converged
-            cumulative_mask: if true, once system is masked then it remains masked even if new predictions give forces
-                above threshold, ie. once masked always masked. Note if this is used make sure to check convergence with
-                the same fmax always
             mask: a boolean mask specifying which strain components are allowed to relax
             cell_factor:
                 Factor by which deformation gradient is multiplied to put
@@ -390,7 +381,6 @@ class OptimizableUnitCellBatch(OptimizableBatch):
             transform=transform,
             numpy=numpy,
             mask_converged=mask_converged,
-            cumulative_mask=cumulative_mask,
             masked_eps=masked_eps,
         )
 
