@@ -29,6 +29,7 @@ from fairchem.core.common.test_utils import (
 from fairchem.core.common.utils import load_state_dict, setup_imports
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.preprocessing import AtomsToGraphs
+import logging
 
 
 @pytest.fixture(scope="class")
@@ -102,6 +103,7 @@ def _load_model():
     # so we explicitly set the number of layers to 1 (instead of all 8).
     # The other alternative is to have different snapshots for mac vs. linux.
     model.num_layers = 1
+    model.eval()
     return model
 
 
