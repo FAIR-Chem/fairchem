@@ -69,7 +69,6 @@ def ml_relax(
                 trainer=model,
                 transform=transform,
                 mask_converged=mask_converged,
-                cumulative_mask=cumulative_mask,
                 hydrostatic_strain=relax_volume,
             )
         else:
@@ -78,7 +77,6 @@ def ml_relax(
                 trainer=model,
                 transform=transform,
                 mask_converged=mask_converged,
-                cumulative_mask=cumulative_mask,
             )
 
         # Run ML-based relaxation
