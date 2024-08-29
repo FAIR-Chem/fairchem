@@ -118,7 +118,10 @@ class TestESCNCompiles:
         torch._dynamo.config.optimize_ddp = False
         # torch._dynamo.explain(model)(data)
         # assert False
-        compiled_model(data)
+        output = compiled_model(data)
+        expected_energy, expected_forces = expected_energy_forces()
+        assert torch.allclose(output["energy"], expected_energy)
+        assert torch.allclose(output["forces"].mean(0), expected_forces)
 
     def test_rotation_invariance(self) -> None:
         random.seed(1)

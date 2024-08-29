@@ -274,12 +274,8 @@ class SO3_Embedding(torch.nn.Module):
             num_coefficients = res_size[i]
 
             x_res = self.embedding[:, offset : offset + num_coefficients].contiguous()
-            to_grid_mat = SO3_grid[self.lmax_list[i]][
-                self.mmax_list[i]
-            ].get_to_grid_mat(self.device)
-            from_grid_mat = SO3_grid[self.lmax_list[i]][
-                self.mmax_list[i]
-            ].get_from_grid_mat(self.device)
+            to_grid_mat = SO3_grid.get_to_grid_mat(self.device)
+            from_grid_mat = SO3_grid.get_from_grid_mat(self.device)
 
             x_grid = torch.einsum("bai,zic->zbac", to_grid_mat, x_res)
             x_grid = act(x_grid)
@@ -293,8 +289,8 @@ class SO3_Embedding(torch.nn.Module):
         if lmax == -1:
             lmax = max(self.lmax_list)
 
-        to_grid_mat_lmax = SO3_grid[lmax][lmax].get_to_grid_mat(self.device)
-        grid_mapping = SO3_grid[lmax][lmax].mapping
+        to_grid_mat_lmax = SO3_grid.get_to_grid_mat(self.device)
+        grid_mapping = SO3_grid.mapping
 
         offset = 0
         x_grid = torch.tensor([], device=self.device)
@@ -316,12 +312,9 @@ class SO3_Embedding(torch.nn.Module):
         return x_grid
 
     # Compute irreps from grid representation
-    def _from_grid(self, x_grid, SO3_grid, lmax: int = -1) -> None:
-        if lmax == -1:
-            lmax = max(self.lmax_list)
-
-        from_grid_mat_lmax = SO3_grid[lmax][lmax].get_from_grid_mat(self.device)
-        grid_mapping = SO3_grid[lmax][lmax].mapping
+    def _from_grid(self, x_grid, SO3_grid) -> None:
+        from_grid_mat_lmax = SO3_grid.get_from_grid_mat(self.device)
+        grid_mapping = SO3_grid.mapping
 
         offset = 0
         offset_channel = 0

@@ -173,14 +173,18 @@ class eSCN(nn.Module, GraphModelMixin):
             )
 
         # Initialize the transformations between spherical and grid representations
-        self.SO3_grid = nn.ModuleList()
-        for lval in range(max(self.lmax_list) + 1):
-            SO3_m_grid = nn.ModuleList()
-            for m in range(max(self.lmax_list) + 1):
-                SO3_m_grid.append(SO3_Grid(lval, m, resolution=resolution))
+        assert self.num_resolutions == 1, "Only one resolution is supported"
+        self.SO3_grid = nn.ModuleDict()
+        self.SO3_grid["lmax_lmax"] = SO3_Grid(self.lmax_list[0], self.lmax_list[0], resolution=resolution)
+        self.SO3_grid["lmax_mmax"] = SO3_Grid(self.lmax_list[0], self.mmax_list[0], resolution=resolution)
+        # self.SO3_grid = nn.ModuleList()
+        # for lval in range(max(self.lmax_list) + 1):
+        #     SO3_m_grid = nn.ModuleList()
+        #     for m in range(max(self.lmax_list) + 1):
+        #         SO3_m_grid.append(SO3_Grid(lval, m, resolution=resolution))
 
-            self.SO3_grid.append(SO3_m_grid)
-
+        #     self.SO3_grid.append(SO3_m_grid)
+        # import pdb;pdb.set_trace()
         self.mappingReduced = CoefficientMapping(self.lmax_list, self.mmax_list)
 
         # Initialize the blocks for each layer of the GNN
@@ -655,8 +659,8 @@ class LayerBlock(torch.nn.Module):
         max_lmax = max(self.lmax_list)
 
         # Project to grid
-        x_grid_message = x_message.to_grid(self.SO3_grid, lmax=max_lmax)
-        x_grid = x.to_grid(self.SO3_grid, lmax=max_lmax)
+        x_grid_message = x_message.to_grid(self.SO3_grid["lmax_lmax"])
+        x_grid = x.to_grid(self.SO3_grid["lmax_lmax"])
         x_grid = torch.cat([x_grid, x_grid_message], dim=3)
 
         # Perform point-wise convolution
@@ -665,7 +669,7 @@ class LayerBlock(torch.nn.Module):
         x_grid = self.fc3_sphere(x_grid)
 
         # Project back to spherical harmonic coefficients
-        x_message._from_grid(x_grid, self.SO3_grid, lmax=max_lmax)
+        x_message._from_grid(x_grid, self.SO3_grid["lmax_lmax"])
 
         # Return aggregated messages
         return x_message
@@ -780,7 +784,7 @@ class MessageBlock(torch.nn.Module):
         x_target.embedding = x_source.embedding + x_target.embedding
 
         # Point-wise spherical non-linearity
-        x_target._grid_act(self.SO3_grid, self.act, self.mappingReduced.res_size)
+        x_target._grid_act(self.SO3_grid["lmax_mmax"], self.act, self.mappingReduced.res_size)
 
         # Rotate back the irreps
         x_target._rotate_inv(SO3_edge_rot, self.mappingReduced.res_size)
