@@ -33,6 +33,9 @@ from fairchem.core.models.escn.escn import SO2Block
 from torch.export import export
 from torch.export import Dim
 
+skip_if_no_cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="skipping when no gpu")
+
+
 def load_data():
     atoms = read(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "atoms.json"),
@@ -86,7 +89,7 @@ def init(backend="nccl"):
 
 class TestESCNCompiles:
     def test_escn_baseline_cpu(self):
-        init("gloo")
+        init('gloo')
         data = load_data()
         data = data_list_collater([data])
         model = load_model()
@@ -96,6 +99,19 @@ class TestESCNCompiles:
         torch.set_printoptions(precision=8)
         assert torch.allclose(output["energy"], expected_energy)
         assert torch.allclose(output["forces"].mean(0), expected_forces)
+
+    @skip_if_no_cuda
+    def test_escn_baseline_cuda(self):
+        init('nccl')
+        data = load_data()
+        data = data_list_collater([data]).to("cuda")
+        model = load_model().cuda()
+        ddp_model = DistributedDataParallel(model)
+        output = ddp_model(data)
+        expected_energy, expected_forces = expected_energy_forces()
+        torch.set_printoptions(precision=8)
+        assert torch.allclose(output["energy"].cpu(), expected_energy)
+        assert torch.allclose(output["forces"].mean(0).cpu(), expected_forces)
 
     def test_escn_compiles(self):
         init("gloo")

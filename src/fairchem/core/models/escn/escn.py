@@ -757,7 +757,6 @@ class MessageBlock(torch.nn.Module):
         ###############################################################
         # Compute messages
         ###############################################################
-
         # Compute edge scalar features (invariant to rotations)
         # Uses atomic numbers and edge distance as inputs
         x_edge = self.edge_block(
