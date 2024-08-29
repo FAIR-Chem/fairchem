@@ -777,8 +777,8 @@ class MessageBlock(torch.nn.Module):
         x_target._rotate(SO3_edge_rot, self.lmax_list, self.mmax_list)
 
         # Compute messages
-        x_source = self.so2_block_source(x_source, x_edge)
-        x_target = self.so2_block_target(x_target, x_edge)
+        x_source.embedding = self.so2_block_source(x_source.embedding, x_edge)
+        x_target.embedding = self.so2_block_target(x_target.embedding, x_edge)
 
         # Add together the source and target results
         x_target.embedding = x_source.embedding + x_target.embedding
@@ -859,41 +859,42 @@ class SO2Block(torch.nn.Module):
         num_edges = len(x_edge)
 
         # Reshape the spherical harmonics based on m (order)
-        x._m_primary(self.mappingReduced)
+        x = torch.einsum("nac,ba->nbc", x, self.mappingReduced.to_m)
 
         # Compute m=0 coefficients separately since they only have real values (no imaginary)
 
         # Compute edge scalar features for m=0
         x_edge_0 = self.act(self.fc1_dist0(x_edge))
 
-        x_0 = x.embedding[:, 0 : self.mappingReduced.m_size[0]].contiguous()
+        x_0 = x[:, 0 : self.mappingReduced.m_size[0]].contiguous()
         x_0 = x_0.view(num_edges, -1)
 
         x_0 = self.fc1_m0(x_0)
         x_0 = x_0 * x_edge_0
         x_0 = self.fc2_m0(x_0)
-        x_0 = x_0.view(num_edges, -1, x.num_channels)
+        x_0 = x_0.view(num_edges, -1, self.sphere_channels)
 
         # Update the m=0 coefficients
-        x.embedding[:, 0 : self.mappingReduced.m_size[0]] = x_0
+        x[:, 0 : self.mappingReduced.m_size[0]] = x_0
 
         # Compute the values for the m > 0 coefficients
         offset = self.mappingReduced.m_size[0]
         for m in range(1, max(self.mmax_list) + 1):
             # Get the m order coefficients
-            x_m = x.embedding[
+            x_m = x[
                 :, offset : offset + 2 * self.mappingReduced.m_size[m]
             ].contiguous()
             x_m = x_m.view(num_edges, 2, -1)
             # Perform SO(2) convolution
             x_m = self.so2_conv[m - 1](x_m, x_edge)
-            x_m = x_m.view(num_edges, -1, x.num_channels)
-            x.embedding[:, offset : offset + 2 * self.mappingReduced.m_size[m]] = x_m
+            x_m = x_m.view(num_edges, -1, self.sphere_channels)
+            x[:, offset : offset + 2 * self.mappingReduced.m_size[m]] = x_m
 
             offset = offset + 2 * self.mappingReduced.m_size[m]
 
         # Reshape the spherical harmonics based on l (degree)
-        x._l_primary(self.mappingReduced)
+        # x._l_primary(self.mappingReduced)
+        x = torch.einsum("nac,ab->nbc", x, self.mappingReduced.to_m)
 
         return x
 
