@@ -10,6 +10,9 @@ from __future__ import annotations
 import copy
 import io
 import os
+import random
+import numpy as np
+import logging
 
 import pytest
 import requests
@@ -22,7 +25,13 @@ from fairchem.core.common.distutils import init_local_distributed_process_group
 from fairchem.core.common.utils import load_state_dict, setup_imports
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.preprocessing import AtomsToGraphs
+from fairchem.core.common.transforms import RandomRotate
 
+from fairchem.core.models.utils.so3_utils import CoefficientMapping
+from fairchem.core.models.escn.escn import SO2Block
+
+from torch.export import export
+from torch.export import Dim
 
 def load_data():
     atoms = read(
@@ -66,23 +75,33 @@ def load_model():
     )
     return model
 
-@pytest.fixture(scope="session")
-def init():
-    init_local_distributed_process_group()
+def expected_energy_forces():
+    energy = torch.tensor([0.0001747000])
+    forces = torch.tensor([-1.2720219900e-07, 8.2126695133e-07, -3.8776403244e-07])
+    return energy, forces
 
+def init(backend="nccl"):
+    if not torch.distributed.is_initialized():
+        init_local_distributed_process_group(backend=backend)
 
 class TestESCNCompiles:
-    def escn_baseline(self, init):
+    def test_escn_baseline_cpu(self):
+        init("gloo")
         data = load_data()
-        data = data_list_collater([data]).to("cuda")
-        model = load_model().cuda()
+        data = data_list_collater([data])
+        model = load_model()
         ddp_model = DistributedDataParallel(model)
-        return ddp_model(data)
+        output = ddp_model(data)
+        expected_energy, expected_forces = expected_energy_forces()
+        torch.set_printoptions(precision=8)
+        assert torch.allclose(output["energy"], expected_energy)
+        assert torch.allclose(output["forces"].mean(0), expected_forces)
 
-    def test_escn_compiles(self, init):
+    def test_escn_compiles(self):
+        init("gloo")
         data = load_data()
-        data = data_list_collater([data]).to("cuda")
-        model = load_model().cuda()
+        data = data_list_collater([data])
+        model = load_model()
         ddp_model = DistributedDataParallel(model)
 
         torch._dynamo.config.optimize_ddp = False
@@ -90,7 +109,63 @@ class TestESCNCompiles:
         torch._dynamo.config.automatic_dynamic_shapes = True
         # torch._dynamo.config.suppress_errors = True
 
-        os.environ["TORCH_LOGS"] = "+dynamo,recompiles"
+        # os.environ["TORCH_LOGS"] = "+dynamo,recompiles"
+        # torch._logging.set_logs(dynamo = logging.INFO)
+        # os.environ["TORCHDYNAMO_VERBOSE"] = "1"
+        # os.environ["TORCHDYNAMO_REPRO_AFTER"]="dynamo"
+        # torch._dynamo.config.verbose = True
         compiled_model = torch.compile(model, dynamic=True)
         torch._dynamo.config.optimize_ddp = False
+        # torch._dynamo.explain(model)(data)
+        # assert False
         compiled_model(data)
+
+    def test_rotation_invariance(self) -> None:
+        random.seed(1)
+        data = load_data()
+
+        # Sampling a random rotation within [-180, 180] for all axes.
+        transform = RandomRotate([-180, 180], [0, 1, 2])
+        data_rotated, rot, inv_rot = transform(data.clone())
+        assert not np.array_equal(data.pos, data_rotated.pos)
+
+        # Pass it through the model.
+        batch = data_list_collater([data, data_rotated])
+        model = load_model()
+        model.eval()
+        out = model(batch)
+
+        # Compare predicted energies and forces (after inv-rotation).
+        energies = out["energy"].detach()
+        np.testing.assert_almost_equal(energies[0], energies[1], decimal=5)
+
+        forces = out["forces"].detach()
+        logging.info(forces)
+        np.testing.assert_array_almost_equal(
+            forces[: forces.shape[0] // 2],
+            torch.matmul(forces[forces.shape[0] // 2 :], inv_rot),
+            decimal=5,
+        )
+
+    # def test_escn_so2_conv_compiles(self) -> None:
+    #     torch._dynamo.config.assume_static_by_default = False
+    #     torch._dynamo.config.automatic_dynamic_shapes = True
+    #     inp1_dim0 = Dim("inp1_dim0")
+    #     inp1_dim1 = None
+    #     inp1_dim2 = None
+    #     inp2_dim0 = inp1_dim0
+    #     inp2_dim1 = Dim("inp2_dim1")
+
+    #     dynamic_shapes1 = {
+    #         "x_emb": {0: inp1_dim0, 1: inp1_dim1, 2: inp1_dim2},
+    #         "x_edge": {0: inp2_dim0, 1: inp2_dim1},
+    #     }
+
+    #     lmax, mmax = 4, 2
+    #     mappingReduced = CoefficientMapping([lmax], [mmax])
+    #     edge_channels = 128
+    #     args=(torch.rand(680, 19, 128), torch.rand(680, edge_channels))
+
+    #     so2 = SO2Block(sphere_channels=128, hidden_channels=128, edge_channels=edge_channels, lmax_list=[lmax], mmax_list=[mmax], act=torch.nn.SiLU())
+    #     prog = export(so2, args=args, dynamic_shapes=dynamic_shapes1)
+    #     export_out = prog.module()(*args)

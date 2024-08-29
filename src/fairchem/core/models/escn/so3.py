@@ -241,12 +241,12 @@ class SO3_Embedding(torch.nn.Module):
         self.set_lmax_mmax(lmax_list.copy(), mmax_list.copy())
 
     # Rotate the embedding by the inverse of the rotation matrix
-    def _rotate_inv(self, SO3_rotation, mappingReduced) -> None:
+    def _rotate_inv(self, SO3_rotation, res_size) -> None:
         embedding_rotate = torch.tensor([], device=self.device, dtype=self.dtype)
 
         offset = 0
         for i in range(self.num_resolutions):
-            num_coefficients = mappingReduced.res_size[i]
+            num_coefficients = res_size[i]
             embedding_i = self.embedding[:, offset : offset + num_coefficients]
             embedding_rotate = torch.cat(
                 [
@@ -268,10 +268,10 @@ class SO3_Embedding(torch.nn.Module):
         self.set_lmax_mmax(self.lmax_list, self.mmax_list)
 
     # Compute point-wise spherical non-linearity
-    def _grid_act(self, SO3_grid, act, mappingReduced) -> None:
+    def _grid_act(self, SO3_grid, act, res_size) -> None:
         offset = 0
         for i in range(self.num_resolutions):
-            num_coefficients = mappingReduced.res_size[i]
+            num_coefficients = res_size[i]
 
             x_res = self.embedding[:, offset : offset + num_coefficients].contiguous()
             to_grid_mat = SO3_grid[self.lmax_list[i]][
