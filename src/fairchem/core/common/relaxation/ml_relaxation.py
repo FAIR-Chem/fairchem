@@ -33,7 +33,6 @@ def ml_relax(
     device: str = "cuda:0",
     transform: torch.nn.Module | None = None,
     mask_converged: bool = True,
-    cumulative_mask: bool = True,
 ):
     """Runs ML-based relaxations.
 
@@ -63,9 +62,11 @@ def ml_relax(
         oom = False
         ids = batch.sid
 
+        # clone the batch otherwise you can not run batch.to_data_list
+        # see https://github.com/pyg-team/pytorch_geometric/issues/8439#issuecomment-1826747915
         if relax_cell or relax_volume:
             optimizable = OptimizableUnitCellBatch(
-                batch,
+                batch.clone(),
                 trainer=model,
                 transform=transform,
                 mask_converged=mask_converged,
@@ -73,7 +74,7 @@ def ml_relax(
             )
         else:
             optimizable = OptimizableBatch(
-                batch,
+                batch.clone(),
                 trainer=model,
                 transform=transform,
                 mask_converged=mask_converged,
@@ -96,14 +97,14 @@ def ml_relax(
         e: RuntimeError | None = None
         try:
             optimizer.run(fmax=fmax, steps=steps)
-            relaxed_batches.append(batch)
+            relaxed_batches.append(optimizable.batch)
         except RuntimeError as err:
             e = err
             oom = True
             torch.cuda.empty_cache()
 
         if oom:
-            # move OOM recovery code outside of except clause to allow tensors to be freed.
+            # move OOM recovery code outside off except clause to allow tensors to be freed.
             data_list = batch.to_data_list()
             if len(data_list) == 1:
                 raise assert_is_instance(e, RuntimeError)
@@ -111,10 +112,23 @@ def ml_relax(
                 f"Failed to relax batch with size: {len(data_list)}, splitting into two..."
             )
             mid = len(data_list) // 2
-            batches.appendleft(data_list_collater(data_list[:mid]))
-            batches.appendleft(data_list_collater(data_list[mid:]))
+            batches.appendleft(
+                data_list_collater(data_list[:mid], otf_graph=optimizable.otf_graph)
+            )
+            batches.appendleft(
+                data_list_collater(data_list[mid:], otf_graph=optimizable.otf_graph)
+            )
 
     # reset for good measure
     OptimizableBatch.ignored_changes = {}
 
-    return Batch.from_data_list(relaxed_batches)
+    relaxed_batch = Batch.from_data_list(relaxed_batches)
+
+    # Batch.from_data_list is not intended to be used with a list of batches, so when sid is a list of str
+    # it will be incorrectly collated as a list of lists for each batch.
+    # but we can not use to_data_list in the relaxed batches (since the have been changed, see linked comment above).
+    # So instead just manually fix it
+    if isinstance(relaxed_batch.sid, list):
+        relaxed_batch.sid = [sid for sid_list in relaxed_batch.sid for sid in sid_list]
+
+    return relaxed_batch
