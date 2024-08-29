@@ -126,8 +126,8 @@ class OptimizableBatch(Optimizable):
         self.results = {}
         self._eps = masked_eps
 
-        self._otf_graph = trainer._unwrapped_model.otf_graph
-        if not self._otf_graph and "edge_index" not in self.batch:
+        self.otf_graph = trainer._unwrapped_model.otf_graph
+        if not self.otf_graph and "edge_index" not in self.batch:
             self.update_graph()
 
     @property
@@ -211,7 +211,7 @@ class OptimizableBatch(Optimizable):
         else:
             self.batch.pos = positions
 
-        if not self._otf_graph:
+        if not self.otf_graph:
             self.update_graph()
 
     def get_forces(
