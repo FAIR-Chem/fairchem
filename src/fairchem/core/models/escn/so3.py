@@ -241,12 +241,12 @@ class SO3_Embedding(torch.nn.Module):
         self.set_lmax_mmax(lmax_list.copy(), mmax_list.copy())
 
     # Rotate the embedding by the inverse of the rotation matrix
-    def _rotate_inv(self, SO3_rotation, res_size) -> None:
+    def _rotate_inv(self, SO3_rotation, mappingReduced) -> None:
         embedding_rotate = torch.tensor([], device=self.device, dtype=self.dtype)
 
         offset = 0
         for i in range(self.num_resolutions):
-            num_coefficients = res_size[i]
+            num_coefficients = mappingReduced.res_size[i]
             embedding_i = self.embedding[:, offset : offset + num_coefficients]
             embedding_rotate = torch.cat(
                 [
@@ -268,14 +268,18 @@ class SO3_Embedding(torch.nn.Module):
         self.set_lmax_mmax(self.lmax_list, self.mmax_list)
 
     # Compute point-wise spherical non-linearity
-    def _grid_act(self, SO3_grid, act, res_size) -> None:
+    def _grid_act(self, SO3_grid, act, mappingReduced) -> None:
         offset = 0
         for i in range(self.num_resolutions):
-            num_coefficients = res_size[i]
+            num_coefficients = mappingReduced.res_size[i]
 
             x_res = self.embedding[:, offset : offset + num_coefficients].contiguous()
-            to_grid_mat = SO3_grid.get_to_grid_mat(self.device)
-            from_grid_mat = SO3_grid.get_from_grid_mat(self.device)
+            to_grid_mat = SO3_grid[self.lmax_list[i]][
+                self.mmax_list[i]
+            ].get_to_grid_mat(self.device)
+            from_grid_mat = SO3_grid[self.lmax_list[i]][
+                self.mmax_list[i]
+            ].get_from_grid_mat(self.device)
 
             x_grid = torch.einsum("bai,zic->zbac", to_grid_mat, x_res)
             x_grid = act(x_grid)
@@ -289,8 +293,8 @@ class SO3_Embedding(torch.nn.Module):
         if lmax == -1:
             lmax = max(self.lmax_list)
 
-        to_grid_mat_lmax = SO3_grid.get_to_grid_mat(self.device)
-        grid_mapping = SO3_grid.mapping
+        to_grid_mat_lmax = SO3_grid[lmax][lmax].get_to_grid_mat(self.device)
+        grid_mapping = SO3_grid[lmax][lmax].mapping
 
         offset = 0
         x_grid = torch.tensor([], device=self.device)
@@ -312,9 +316,12 @@ class SO3_Embedding(torch.nn.Module):
         return x_grid
 
     # Compute irreps from grid representation
-    def _from_grid(self, x_grid, SO3_grid) -> None:
-        from_grid_mat_lmax = SO3_grid.get_from_grid_mat(self.device)
-        grid_mapping = SO3_grid.mapping
+    def _from_grid(self, x_grid, SO3_grid, lmax: int = -1) -> None:
+        if lmax == -1:
+            lmax = max(self.lmax_list)
+
+        from_grid_mat_lmax = SO3_grid[lmax][lmax].get_from_grid_mat(self.device)
+        grid_mapping = SO3_grid[lmax][lmax].mapping
 
         offset = 0
         offset_channel = 0
@@ -396,7 +403,7 @@ class SO3_Rotation(torch.nn.Module):
         )
         gamma = torch.atan2(R[..., 0, 2], R[..., 0, 0])
 
-        size = int((end_lmax + 1) ** 2) - int((start_lmax) ** 2)
+        size = (end_lmax + 1) ** 2 - (start_lmax) ** 2
         wigner = torch.zeros(len(alpha), size, size, device=self.device)
         start = 0
         for lmax in range(start_lmax, end_lmax + 1):

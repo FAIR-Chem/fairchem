@@ -28,7 +28,7 @@ from fairchem.core.preprocessing import AtomsToGraphs
 from fairchem.core.common.transforms import RandomRotate
 
 from fairchem.core.models.utils.so3_utils import CoefficientMapping
-from fairchem.core.models.escn.escn import SO2Block
+from fairchem.core.models.escn import escn_exportable
 
 from torch.export import export
 from torch.export import Dim
@@ -52,10 +52,10 @@ def load_data():
     return data_list[0]
 
 
-def load_model():
+def load_model(name: str):
     torch.manual_seed(4)
     setup_imports()
-    model = registry.get_model_class("escn")(
+    model = registry.get_model_class(name)(
         use_pbc = True,
         use_pbc_single = False,
         regress_forces = True,
@@ -78,16 +78,6 @@ def load_model():
     )
     return model
 
-def expected_energy_forces():
-    energy = torch.tensor([0.0001747000])
-    forces = torch.tensor([-1.2720219900e-07, 8.2126695133e-07, -3.8776403244e-07])
-    return energy, forces
-
-def expected_energy_forces_cuda():
-    energy = torch.tensor([0.0001747000])
-    forces = torch.tensor([-4.5273015559e-08,  9.0246174977e-07, -3.8560736471e-07])
-    return energy, forces
-
 def init(backend: str):
     if not torch.distributed.is_initialized():
         init_local_distributed_process_group(backend=backend)
@@ -97,26 +87,26 @@ class TestESCNCompiles:
         init('gloo')
         data = load_data()
         data = data_list_collater([data])
-        model = load_model()
-        ddp_model = DistributedDataParallel(model)
-        output = ddp_model(data)
-        expected_energy, expected_forces = expected_energy_forces()
+        base_model = DistributedDataParallel(load_model("escn"))
+        export_model = DistributedDataParallel(load_model("escn_export"))
+        base_output = base_model(data)
+        export_output = export_model(data)
         torch.set_printoptions(precision=8)
-        assert torch.allclose(output["energy"], expected_energy, atol=tol)
-        assert torch.allclose(output["forces"].mean(0), expected_forces, atol=tol)
+        assert torch.allclose(base_output["energy"], export_output["energy"], atol=tol)
+        assert torch.allclose(base_output["forces"].mean(0), export_output["forces"].mean(0), atol=tol)
 
     @skip_if_no_cuda
     def test_escn_baseline_cuda(self, tol=1e-5):
         init('nccl')
         data = load_data()
         data = data_list_collater([data]).to("cuda")
-        model = load_model().cuda()
-        ddp_model = DistributedDataParallel(model)
-        output = ddp_model(data)
-        expected_energy, expected_forces = expected_energy_forces_cuda()
+        base_model = DistributedDataParallel(load_model("escn")).cuda()
+        export_model = DistributedDataParallel(load_model("escn_export")).cuda()
+        base_output = base_model(data)
+        export_output = export_model(data)
         torch.set_printoptions(precision=8)
-        assert torch.allclose(output["energy"].cpu(), expected_energy, atol=tol)
-        assert torch.allclose(output["forces"].mean(0).cpu(), expected_forces, atol=tol)
+        assert torch.allclose(base_output["energy"], export_output["energy"], atol=tol)
+        assert torch.allclose(base_output["forces"].mean(0), export_output["forces"].mean(0), atol=tol)
 
     def test_escn_compiles(self):
         init("gloo")
@@ -159,7 +149,7 @@ class TestESCNCompiles:
 
         # Pass it through the model.
         batch = data_list_collater([data, data_rotated])
-        model = load_model()
+        model = load_model("escn_export")
         model.eval()
         out = model(batch)
 
@@ -190,12 +180,20 @@ class TestESCNCompiles:
         }
 
         lmax, mmax = 4, 2
-        mappingReduced = CoefficientMapping([lmax], [mmax])
+        mappingReduced = escn_exportable.CoefficientMapping([lmax], [mmax])
         shpere_channels = 128
         edge_channels = 128
         args=(torch.rand(680, 19, shpere_channels), torch.rand(680, edge_channels))
 
-        so2 = SO2Block(sphere_channels=shpere_channels, hidden_channels=128, edge_channels=edge_channels, lmax_list=[lmax], mmax_list=[mmax], act=torch.nn.SiLU(), mappingReduced=mappingReduced)
+        so2 = escn_exportable.SO2Block(
+            sphere_channels=shpere_channels, 
+            hidden_channels=128,
+            edge_channels=edge_channels,
+            lmax_list=[lmax], 
+            mmax_list=[mmax], 
+            act=torch.nn.SiLU(), 
+            mappingReduced=mappingReduced
+        )
         prog = export(so2, args=args, dynamic_shapes=dynamic_shapes1)
         export_out = prog.module()(*args)
         regular_out = so2(*args)
