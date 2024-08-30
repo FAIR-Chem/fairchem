@@ -26,8 +26,10 @@ from fairchem.core.common.utils import load_state_dict, setup_imports
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.preprocessing import AtomsToGraphs
 from fairchem.core.common.transforms import RandomRotate
+from fairchem.core.models.scn.smearing import GaussianSmearing
+from fairchem.core.models.base import GraphModelMixin
 
-from fairchem.core.models.utils.so3_utils import CoefficientMapping
+from fairchem.core.models.utils.so3_utils import CoefficientMapping, SO3_Grid, SO3_Rotation
 from fairchem.core.models.escn import escn_exportable
 
 from torch.export import export
@@ -108,36 +110,6 @@ class TestESCNCompiles:
         assert torch.allclose(base_output["energy"], export_output["energy"], atol=tol)
         assert torch.allclose(base_output["forces"].mean(0), export_output["forces"].mean(0), atol=tol)
 
-    def test_escn_compiles(self):
-        init("gloo")
-        data = load_data()
-        data = data_list_collater([data])
-        model = load_model()
-        ddp_model = DistributedDataParallel(model)
-
-        torch._dynamo.config.optimize_ddp = False
-        torch._dynamo.config.assume_static_by_default = False
-        torch._dynamo.config.automatic_dynamic_shapes = True
-        # torch._dynamo.config.suppress_errors = True
-
-        # os.environ["TORCH_LOGS"] = "+dynamo,recompiles"
-        torch._logging.set_logs(dynamo = logging.INFO)
-        # os.environ["TORCHDYNAMO_VERBOSE"] = "1"
-        # os.environ["TORCHDYNAMO_REPRO_AFTER"]="dynamo"
-        # torch._dynamo.config.verbose = True
-        compiled_model = torch.compile(model, dynamic=True)
-        torch._dynamo.config.optimize_ddp = False
-        # torch._dynamo.explain(model)(data)
-        # assert False
-        # torch._dynamo.reset()
-        # explain_output = torch._dynamo.explain(model)(data)
-        # print(explain_output)
-
-        output = compiled_model(data)
-        # expected_energy, expected_forces = expected_energy_forces()
-        # assert torch.allclose(output["energy"], expected_energy)
-        # assert torch.allclose(output["forces"].mean(0), expected_forces)
-
     def test_rotation_invariance(self) -> None:
         random.seed(1)
         data = load_data()
@@ -165,7 +137,7 @@ class TestESCNCompiles:
             decimal=5,
         )
 
-    def test_escn_so2_conv_exports(self) -> None:
+    def test_escn_so2_conv_exports_and_compiles(self, tol=1e-5) -> None:
         torch._dynamo.config.assume_static_by_default = False
         torch._dynamo.config.automatic_dynamic_shapes = True
         inp1_dim0 = Dim("inp1_dim0")
@@ -197,4 +169,93 @@ class TestESCNCompiles:
         prog = export(so2, args=args, dynamic_shapes=dynamic_shapes1)
         export_out = prog.module()(*args)
         regular_out = so2(*args)
-        assert torch.allclose(export_out, regular_out)
+        assert torch.allclose(export_out, regular_out, atol=tol)
+
+        compiled_model = torch.compile(so2, dynamic=True)
+        compiled_out = compiled_model(*args)
+        assert torch.allclose(compiled_out, regular_out, atol=tol)
+
+    def test_escn_message_block_exports_and_compiles(self) -> None:
+        random.seed(1)
+
+        sphere_channels = 128
+        hidden_channels = 128
+        edge_channels = 128
+        lmax, mmax = 4, 2
+        distance_expansion = GaussianSmearing(0.0, 8.0, int(8.0 / 0.02), 1.0)
+        SO3_grid = torch.nn.ModuleDict()
+        SO3_grid["lmax_lmax"] = SO3_Grid(lmax, lmax)
+        SO3_grid["lmax_mmax"] = SO3_Grid(lmax, mmax)
+        mappingReduced = escn_exportable.CoefficientMapping([lmax], [mmax])
+        message_block = escn_exportable.MessageBlock(
+            layer_idx = 0,
+            sphere_channels = sphere_channels,
+            hidden_channels = hidden_channels,
+            edge_channels = edge_channels,
+            lmax_list = [lmax],
+            mmax_list = [mmax],
+            distance_expansion = distance_expansion,
+            max_num_elements = 90,
+            SO3_grid = SO3_grid,
+            act = torch.nn.SiLU(),
+            mappingReduced = mappingReduced
+        )
+
+        data = load_data()
+        data = data_list_collater([data])
+        full_model = load_model("escn_export")
+        graph = full_model.generate_graph(data)
+        edge_rot_mat = full_model._init_edge_rot_mat(
+            data, graph.edge_index, graph.edge_distance_vec
+        )
+        SO3_edge_rot = SO3_Rotation(edge_rot_mat, lmax)
+
+        # generate inputs
+        batch_sizes = [34]
+        num_coefs = 25
+        num_edges = 680
+        args = []
+        for b in batch_sizes:
+            x = torch.rand([b, num_coefs, sphere_channels])
+            atom_n = torch.randint(1, 90, (b,))
+            edge_d = torch.rand([num_edges])
+            edge_indx = torch.randint(0, b, (2, num_edges))
+            args.append((x, atom_n, edge_d, edge_indx, SO3_edge_rot))
+
+        # compiled_model = torch.compile(message_block, dynamic=True)
+        exported_prog = export(message_block, args=args[0])
+        exported_output = exported_prog(*args[0])
+
+        # output = message_block(*args)
+        # compiled_output = compiled_model(*args)
+
+
+    def test_escn_compiles(self):
+        init("gloo")
+        data = load_data()
+        data = data_list_collater([data])
+        model = load_model('escn_export')
+        ddp_model = DistributedDataParallel(model)
+
+        torch._dynamo.config.optimize_ddp = False
+        torch._dynamo.config.assume_static_by_default = False
+        torch._dynamo.config.automatic_dynamic_shapes = True
+        # torch._dynamo.config.suppress_errors = True
+
+        # os.environ["TORCH_LOGS"] = "+dynamo,recompiles"
+        # torch._logging.set_logs(dynamo = logging.INFO)
+        # os.environ["TORCHDYNAMO_VERBOSE"] = "1"
+        # os.environ["TORCHDYNAMO_REPRO_AFTER"]="dynamo"
+        # torch._dynamo.config.verbose = True
+        compiled_model = torch.compile(model, dynamic=True)
+        torch._dynamo.config.optimize_ddp = False
+        # torch._dynamo.explain(model)(data)
+        # assert False
+        # torch._dynamo.reset()
+        # explain_output = torch._dynamo.explain(model)(data)
+        # print(explain_output)
+
+        output = compiled_model(data)
+        # expected_energy, expected_forces = expected_energy_forces()
+        # assert torch.allclose(output["energy"], expected_energy)
+        # assert torch.allclose(output["forces"].mean(0), expected_forces)
