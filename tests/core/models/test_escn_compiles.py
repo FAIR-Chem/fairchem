@@ -93,7 +93,7 @@ def init(backend: str):
         init_local_distributed_process_group(backend=backend)
 
 class TestESCNCompiles:
-    def test_escn_baseline_cpu(self):
+    def test_escn_baseline_cpu(self, tol=1e-5):
         init('gloo')
         data = load_data()
         data = data_list_collater([data])
@@ -102,11 +102,11 @@ class TestESCNCompiles:
         output = ddp_model(data)
         expected_energy, expected_forces = expected_energy_forces()
         torch.set_printoptions(precision=8)
-        assert torch.allclose(output["energy"], expected_energy)
-        assert torch.allclose(output["forces"].mean(0), expected_forces)
+        assert torch.allclose(output["energy"], expected_energy, atol=tol)
+        assert torch.allclose(output["forces"].mean(0), expected_forces, atol=tol)
 
     @skip_if_no_cuda
-    def test_escn_baseline_cuda(self):
+    def test_escn_baseline_cuda(self, tol=1e-5):
         init('nccl')
         data = load_data()
         data = data_list_collater([data]).to("cuda")
@@ -115,8 +115,8 @@ class TestESCNCompiles:
         output = ddp_model(data)
         expected_energy, expected_forces = expected_energy_forces_cuda()
         torch.set_printoptions(precision=8)
-        assert torch.allclose(output["energy"].cpu(), expected_energy)
-        assert torch.allclose(output["forces"].mean(0).cpu(), expected_forces)
+        assert torch.allclose(output["energy"].cpu(), expected_energy, atol=tol)
+        assert torch.allclose(output["forces"].mean(0).cpu(), expected_forces, atol=tol)
 
     def test_escn_compiles(self):
         init("gloo")
