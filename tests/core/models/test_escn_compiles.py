@@ -29,7 +29,7 @@ from fairchem.core.common.transforms import RandomRotate
 from fairchem.core.models.scn.smearing import GaussianSmearing
 from fairchem.core.models.base import GraphModelMixin
 
-from fairchem.core.models.utils.so3_utils import CoefficientMapping, SO3_Grid, SO3_Rotation
+from fairchem.core.models.utils.so3_utils import CoefficientMapping, SO3_Grid, rotation_to_wigner
 from fairchem.core.models.escn import escn_exportable
 
 from torch.export import export
@@ -175,7 +175,7 @@ class TestESCNCompiles:
         compiled_out = compiled_model(*args)
         assert torch.allclose(compiled_out, regular_out, atol=tol)
 
-    def test_escn_message_block_exports_and_compiles(self) -> None:
+    def test_escn_message_block_exports_and_compiles(self, tol=1e-5) -> None:
         random.seed(1)
 
         sphere_channels = 128
@@ -186,7 +186,7 @@ class TestESCNCompiles:
         SO3_grid = torch.nn.ModuleDict()
         SO3_grid["lmax_lmax"] = SO3_Grid(lmax, lmax)
         SO3_grid["lmax_mmax"] = SO3_Grid(lmax, mmax)
-        mappingReduced = escn_exportable.CoefficientMapping([lmax], [mmax])
+        mappingReduced = CoefficientMapping([lmax], [mmax])
         message_block = escn_exportable.MessageBlock(
             layer_idx = 0,
             sphere_channels = sphere_channels,
@@ -208,7 +208,7 @@ class TestESCNCompiles:
         edge_rot_mat = full_model._init_edge_rot_mat(
             data, graph.edge_index, graph.edge_distance_vec
         )
-        SO3_edge_rot = SO3_Rotation(edge_rot_mat, lmax)
+        wigner = rotation_to_wigner(edge_rot_mat, 0, lmax).detach()
 
         # generate inputs
         batch_sizes = [34]
@@ -220,15 +220,25 @@ class TestESCNCompiles:
             atom_n = torch.randint(1, 90, (b,))
             edge_d = torch.rand([num_edges])
             edge_indx = torch.randint(0, b, (2, num_edges))
-            args.append((x, atom_n, edge_d, edge_indx, SO3_edge_rot))
+            args.append((x, atom_n, edge_d, edge_indx, wigner))
 
-        # compiled_model = torch.compile(message_block, dynamic=True)
+        torch._dynamo.config.optimize_ddp = False
+        torch._dynamo.config.assume_static_by_default = False
+        torch._dynamo.config.automatic_dynamic_shapes = True
+        torch._dynamo.config.verbose = True
+        # torch._logging.set_logs(dynamo = logging.INFO)
+        # torch._dynamo.reset()
+        # explain_output = torch._dynamo.explain(message_block)(*args[0])
+        # print(explain_output)
+        compiled_model = torch.compile(message_block, dynamic=True)
+        compiled_output = compiled_model(*args[0])
+
         exported_prog = export(message_block, args=args[0])
         exported_output = exported_prog(*args[0])
 
-        # output = message_block(*args)
-        # compiled_output = compiled_model(*args)
-
+        regular_out = message_block(*args[0])
+        assert torch.allclose(compiled_output, regular_out, atol=tol)
+        assert torch.allclose(exported_output, regular_out, atol=tol)
 
     def test_escn_compiles(self):
         init("gloo")

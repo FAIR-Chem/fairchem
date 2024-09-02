@@ -25,6 +25,7 @@ from fairchem.core.models.utils.so3_utils import (
     CoefficientMapping,
     SO3_Grid,
     SO3_Rotation,
+    rotation_to_wigner
 )
 from fairchem.core.models.escn.so3 import SO3_Embedding
 from fairchem.core.models.scn.sampling import CalcSpherePoints
@@ -177,14 +178,6 @@ class eSCN(nn.Module, GraphModelMixin):
         self.SO3_grid = nn.ModuleDict()
         self.SO3_grid["lmax_lmax"] = SO3_Grid(self.lmax_list[0], self.lmax_list[0], resolution=resolution)
         self.SO3_grid["lmax_mmax"] = SO3_Grid(self.lmax_list[0], self.mmax_list[0], resolution=resolution)
-        # self.SO3_grid = nn.ModuleList()
-        # for lval in range(max(self.lmax_list) + 1):
-        #     SO3_m_grid = nn.ModuleList()
-        #     for m in range(max(self.lmax_list) + 1):
-        #         SO3_m_grid.append(SO3_Grid(lval, m, resolution=resolution))
-
-        #     self.SO3_grid.append(SO3_m_grid)
-        # import pdb;pdb.set_trace()
         self.mappingReduced = CoefficientMapping(self.lmax_list, self.mmax_list)
 
         # Initialize the blocks for each layer of the GNN
@@ -257,9 +250,7 @@ class eSCN(nn.Module, GraphModelMixin):
         edge_rot_mat = self._init_edge_rot_mat(
             data, graph.edge_index, graph.edge_distance_vec
         )
-
-        # Initialize the WignerD matrices and other values for spherical harmonic calculations
-        self.SO3_edge_rot = SO3_Rotation(edge_rot_mat, self.lmax_list[0])
+        wigner = rotation_to_wigner(edge_rot_mat, 0, self.lmax_list[0]).detach()
 
         ###############################################################
         # Initialize node embeddings
@@ -296,7 +287,7 @@ class eSCN(nn.Module, GraphModelMixin):
                     atomic_numbers,
                     graph.edge_distance,
                     graph.edge_index,
-                    self.SO3_edge_rot,
+                    wigner,
                 )
 
                 # Residual layer for all layers past the first
@@ -309,7 +300,7 @@ class eSCN(nn.Module, GraphModelMixin):
                     atomic_numbers,
                     graph.edge_distance,
                     graph.edge_index,
-                    self.SO3_edge_rot,
+                    wigner,
                 )
         x.embedding = x_message
 
@@ -499,7 +490,7 @@ class LayerBlock(torch.nn.Module):
         atomic_numbers: torch.Tensor,
         edge_distance: torch.Tensor,
         edge_index: torch.Tensor,
-        SO3_edge_rot: SO3_Rotation,
+        wigner: torch.Tensor,
     ) -> torch.Tensor:
         # Compute messages by performing message block
         x_message = self.message_block(
@@ -507,7 +498,7 @@ class LayerBlock(torch.nn.Module):
             atomic_numbers,
             edge_distance,
             edge_index,
-            SO3_edge_rot,
+            wigner,
         )
         print(f"x_message: {x_message.mean()}")
 
@@ -580,6 +571,7 @@ class MessageBlock(torch.nn.Module):
         self.mmax_list = mmax_list
         self.edge_channels = edge_channels
         self.mappingReduced = mappingReduced
+        self.out_mask = self.mappingReduced.coefficient_idx(self.lmax_list[0], self.mmax_list[0])
 
         # Create edge scalar (invariant to rotations) features
         self.edge_block = EdgeBlock(
@@ -615,7 +607,7 @@ class MessageBlock(torch.nn.Module):
         atomic_numbers: torch.Tensor,
         edge_distance: torch.Tensor,
         edge_index: torch.Tensor,
-        SO3_edge_rot: SO3_Rotation,
+        wigner: torch.Tensor,
     ) -> torch.Tensor:
         ###############################################################
         # Compute messages
@@ -635,8 +627,10 @@ class MessageBlock(torch.nn.Module):
         x_target = x_target[edge_index[1, :]]
 
         # Rotate the irreps to align with the edge
-        x_source = SO3_edge_rot.rotate(x_source, self.lmax_list[0], self.mmax_list[0])
-        x_target = SO3_edge_rot.rotate(x_target, self.lmax_list[0], self.mmax_list[0])
+        x_source = torch.bmm(wigner[:, self.out_mask, :], x_source)
+        x_target = torch.bmm(wigner[:, self.out_mask, :], x_target)
+        # x_source = SO3_edge_rot.rotate(x_source, self.lmax_list[0], self.mmax_list[0])
+        # x_target = SO3_edge_rot.rotate(x_target, self.lmax_list[0], self.mmax_list[0])
 
         # Compute messages
         x_source = self.so2_block_source(x_source, x_edge)
@@ -653,7 +647,9 @@ class MessageBlock(torch.nn.Module):
         x_target = torch.einsum("bai,zbac->zic", from_grid_mat, x_grid)
 
         # Rotate back the irreps
-        x_target = SO3_edge_rot.rotate_inv(x_target, self.lmax_list[0], self.mmax_list[0])
+        # x_target = SO3_edge_rot.rotate_inv(x_target, self.lmax_list[0], self.mmax_list[0])
+        wigner_inv = torch.transpose(wigner, 1, 2).contiguous()
+        x_target = torch.bmm(wigner_inv[:, :, self.out_mask], x_target)
 
         # Compute the sum of the incoming neighboring messages for each target node
         new_embedding = torch.fill(x.clone(), 0)

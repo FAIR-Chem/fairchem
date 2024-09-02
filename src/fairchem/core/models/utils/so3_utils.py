@@ -48,6 +48,28 @@ def _z_rot_mat(angle: torch.Tensor, lv: int) -> torch.Tensor:
     M[..., inds, inds] = torch.cos(frequencies * angle[..., None])
     return M
 
+def rotation_to_wigner(
+    edge_rot_mat: torch.Tensor, start_lmax: int, end_lmax: int
+) -> torch.Tensor:
+    x = edge_rot_mat @ edge_rot_mat.new_tensor([0.0, 1.0, 0.0])
+    alpha, beta = o3.xyz_to_angles(x)
+    R = (
+        o3.angles_to_matrix(alpha, beta, torch.zeros_like(alpha)).transpose(-1, -2)
+        @ edge_rot_mat
+    )
+    gamma = torch.atan2(R[..., 0, 2], R[..., 0, 0])
+
+    size = int((end_lmax + 1) ** 2) - int((start_lmax) ** 2)
+    wigner = torch.zeros(len(alpha), size, size, device=edge_rot_mat.device)
+    start = 0
+    for lmax in range(start_lmax, end_lmax + 1):
+        block = wigner_D(lmax, alpha, beta, gamma)
+        end = start + block.size()[1]
+        wigner[:, start:end, start:end] = block
+        start = end
+
+    return wigner.detach()
+
 
 class CoefficientMapping(torch.nn.Module):
     """
@@ -63,13 +85,11 @@ class CoefficientMapping(torch.nn.Module):
         self,
         lmax_list,
         mmax_list,
-        use_rotate_inv_rescale=False
     ):
         super().__init__()
 
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
-        self.use_rotate_inv_rescale = use_rotate_inv_rescale
         self.num_resolutions = len(lmax_list)
 
         assert (len(self.lmax_list) == 1) and (len(self.mmax_list) == 1)
@@ -121,13 +141,9 @@ class CoefficientMapping(torch.nn.Module):
         self.register_buffer('l_harmonic', l_harmonic)
         self.register_buffer('m_harmonic', m_harmonic)
         self.register_buffer('m_complex',  m_complex)
-        # self.register_buffer('res_size',   res_size)
         self.register_buffer('to_m',       to_m)
-        # self.register_buffer('m_size',     m_size)
 
         self.pre_compute_coefficient_idx()
-        if self.use_rotate_inv_rescale:
-            self.pre_compute_rotate_inv_rescale()
 
 
     # Return mask containing coefficients of order m (real and imaginary parts)
@@ -215,30 +231,11 @@ class CoefficientMapping(torch.nn.Module):
                     rotate_inv_rescale[:, start_idx : (start_idx + length), start_idx : (start_idx + length)] = rescale_factor
                 rotate_inv_rescale = rotate_inv_rescale[:, :, mask_indices]
                 self.register_buffer('rotate_inv_rescale_l{}_m{}'.format(l, m), rotate_inv_rescale)
-        
-    
-    def prepare_rotate_inv_rescale(self):
-        lmax = max(self.lmax_list)
-        rotate_inv_rescale_list = []
-        for l in range(lmax + 1):
-            l_list = []
-            for m in range(lmax + 1):
-                l_list.append(getattr(self, 'rotate_inv_rescale_l{}_m{}'.format(l, m), None))
-            rotate_inv_rescale_list.append(l_list)
-        return rotate_inv_rescale_list
-    
-
-    # Return the re-scaling for rotating back to original frame
-    # this is required since we only use a subset of m components for SO(2) convolution
-    def get_rotate_inv_rescale(self, lmax, mmax):
-        temp = self.prepare_rotate_inv_rescale()
-        return temp[lmax][mmax] 
-    
     
     def __repr__(self):
         return f"{self.__class__.__name__}(lmax_list={self.lmax_list}, mmax_list={self.mmax_list})"
 
-class SO3_Rotation(torch.nn.Module):
+class SO3_Rotation:
     """
     Helper functions for Wigner-D rotations
 
@@ -262,12 +259,10 @@ class SO3_Rotation(torch.nn.Module):
         self.wigner = self.wigner.detach()
         self.wigner_inv = self.wigner_inv.detach()
 
-        self.set_lmax(lmax)
-
-    # Initialize coefficients for reshape l<-->m
-    def set_lmax(self, lmax) -> None:
         self.lmax = lmax
-        self.mapping = CoefficientMapping([self.lmax], [self.lmax], use_rotate_inv_rescale=True)
+        import pdb;pdb.set_trace()
+        self.mapping = CoefficientMapping([self.lmax], [self.lmax])
+        
 
     # Rotate the embedding
     def rotate(self, embedding, out_lmax, out_mmax) -> torch.Tensor:
@@ -286,7 +281,7 @@ class SO3_Rotation(torch.nn.Module):
     def RotationToWignerDMatrix(
         self, edge_rot_mat: torch.Tensor, start_lmax: int, end_lmax: int
     ) -> torch.Tensor:
-        x = edge_rot_mat @ edge_rot_mat.new_tensor([0.0, 1.0, 0.0])
+        x = edge_rot_mat[:,:,1]
         alpha, beta = o3.xyz_to_angles(x)
         R = (
             o3.angles_to_matrix(alpha, beta, torch.zeros_like(alpha)).transpose(-1, -2)
