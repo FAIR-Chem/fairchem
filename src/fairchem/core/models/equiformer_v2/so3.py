@@ -30,52 +30,56 @@ from .wigner import wigner_D
 
 class CoefficientMappingModule(torch.nn.Module):
     """
-    Helper module for coefficients used to reshape lval <--> m and to get coefficients of specific degree or order
+    Helper module for coefficients used to reshape l <--> m and to get coefficients of specific degree or order
 
     Args:
         lmax_list (list:int):   List of maximum degree of the spherical harmonics
         mmax_list (list:int):   List of maximum order of the spherical harmonics
+        use_rotate_inv_rescale (bool):  Whether to pre-compute inverse rotation rescale matrices
     """
 
     def __init__(
         self,
-        lmax_list: list[int],
-        mmax_list: list[int],
+        lmax_list,
+        mmax_list,
+        use_rotate_inv_rescale=False
     ):
         super().__init__()
 
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
+        self.use_rotate_inv_rescale = use_rotate_inv_rescale
         self.num_resolutions = len(lmax_list)
 
-        # Temporarily use `cpu` as device and this will be overwritten.
-        self.device = "cpu"
+        assert (len(self.lmax_list) == 1) and (len(self.mmax_list) == 1)
+        
+        # Compute the degree (l) and order (m) for each entry of the embedding
+        l_harmonic = torch.tensor([]).long()
+        m_harmonic = torch.tensor([]).long()
+        m_complex  = torch.tensor([]).long()
 
-        # Compute the degree (lval) and order (m) for each entry of the embedding
-        l_harmonic = torch.tensor([], device=self.device).long()
-        m_harmonic = torch.tensor([], device=self.device).long()
-        m_complex = torch.tensor([], device=self.device).long()
-
-        res_size = torch.zeros([self.num_resolutions], device=self.device).long()
+        res_size = torch.zeros([self.num_resolutions]).long()
 
         offset = 0
         for i in range(self.num_resolutions):
-            for lval in range(self.lmax_list[i] + 1):
-                mmax = min(self.mmax_list[i], lval)
-                m = torch.arange(-mmax, mmax + 1, device=self.device).long()
+            for l in range(0, self.lmax_list[i] + 1):
+                mmax = min(self.mmax_list[i], l)
+                m = torch.arange(-mmax, mmax + 1).long()
                 m_complex = torch.cat([m_complex, m], dim=0)
-                m_harmonic = torch.cat([m_harmonic, torch.abs(m).long()], dim=0)
-                l_harmonic = torch.cat([l_harmonic, m.fill_(lval).long()], dim=0)
+                m_harmonic = torch.cat(
+                    [m_harmonic, torch.abs(m).long()], dim=0
+                )
+                l_harmonic = torch.cat(
+                    [l_harmonic, m.fill_(l).long()], dim=0
+                )
             res_size[i] = len(l_harmonic) - offset
             offset = len(l_harmonic)
 
         num_coefficients = len(l_harmonic)
         # `self.to_m` moves m components from different L to contiguous index
-        to_m = torch.zeros([num_coefficients, num_coefficients], device=self.device)
-        m_size = torch.zeros([max(self.mmax_list) + 1], device=self.device).long()
+        to_m = torch.zeros([num_coefficients, num_coefficients])
+        self.m_size = torch.zeros([max(self.mmax_list) + 1]).long().tolist()
 
-        # The following is implemented poorly - very slow. It only gets called
-        # a few times so haven't optimized.
         offset = 0
         for m in range(max(self.mmax_list) + 1):
             idx_r, idx_i = self.complex_idx(m, -1, m_complex, l_harmonic)
@@ -84,7 +88,7 @@ class CoefficientMappingModule(torch.nn.Module):
                 to_m[idx_out + offset, idx_in] = 1.0
             offset = offset + len(idx_r)
 
-            m_size[m] = int(len(idx_r))
+            self.m_size[m] = int(len(idx_r))
 
             for idx_out, idx_in in enumerate(idx_i):
                 to_m[idx_out + offset, idx_in] = 1.0
@@ -93,93 +97,124 @@ class CoefficientMappingModule(torch.nn.Module):
         to_m = to_m.detach()
 
         # save tensors and they will be moved to GPU
-        self.register_buffer("l_harmonic", l_harmonic)
-        self.register_buffer("m_harmonic", m_harmonic)
-        self.register_buffer("m_complex", m_complex)
-        self.register_buffer("res_size", res_size)
-        self.register_buffer("to_m", to_m)
-        self.register_buffer("m_size", m_size)
+        self.register_buffer('l_harmonic', l_harmonic)
+        self.register_buffer('m_harmonic', m_harmonic)
+        self.register_buffer('m_complex',  m_complex)
+        self.register_buffer('res_size',   res_size)
+        self.register_buffer('to_m',       to_m)
+        # self.register_buffer('m_size',     m_size)
 
-        # for caching the output of `coefficient_idx`
-        self.lmax_cache, self.mmax_cache = None, None
-        self.mask_indices_cache = None
-        self.rotate_inv_rescale_cache = None
+        self.pre_compute_coefficient_idx()
+        if self.use_rotate_inv_rescale:
+            self.pre_compute_rotate_inv_rescale()
+
 
     # Return mask containing coefficients of order m (real and imaginary parts)
-    def complex_idx(self, m: int, lmax: int, m_complex, l_harmonic):
-        """
-        Add `m_complex` and `l_harmonic` to the input arguments
-        since we cannot use `self.m_complex`.
-        """
+    def complex_idx(self, m, lmax, m_complex, l_harmonic):
+        '''
+            Add `m_complex` and `l_harmonic` to the input arguments 
+            since we cannot use `self.m_complex`. 
+        '''
         if lmax == -1:
             lmax = max(self.lmax_list)
 
-        indices = torch.arange(len(l_harmonic), device=self.device)
+        indices = torch.arange(len(l_harmonic))
         # Real part
-        mask_r = torch.bitwise_and(l_harmonic.le(lmax), m_complex.eq(m))
+        mask_r = torch.bitwise_and(
+            l_harmonic.le(lmax), m_complex.eq(m)
+        )
         mask_idx_r = torch.masked_select(indices, mask_r)
 
-        mask_idx_i = torch.tensor([], device=self.device).long()
+        mask_idx_i = torch.tensor([]).long()
         # Imaginary part
         if m != 0:
-            mask_i = torch.bitwise_and(l_harmonic.le(lmax), m_complex.eq(-m))
+            mask_i = torch.bitwise_and(
+                l_harmonic.le(lmax), m_complex.eq(-m)
+            )
             mask_idx_i = torch.masked_select(indices, mask_i)
 
         return mask_idx_r, mask_idx_i
 
-    # Return mask containing coefficients less than or equal to degree (lval) and order (m)
-    def coefficient_idx(self, lmax: int, mmax: int):
-        if (
-            (self.lmax_cache is not None)
-            and (self.mmax_cache is not None)
-            and (self.lmax_cache == lmax)
-            and (self.mmax_cache == mmax)
-            and self.mask_indices_cache is not None
-        ):
-            return self.mask_indices_cache
 
-        mask = torch.bitwise_and(self.l_harmonic.le(lmax), self.m_harmonic.le(mmax))
-        self.device = mask.device
-        indices = torch.arange(len(mask), device=self.device)
-        mask_indices = torch.masked_select(indices, mask)
-        self.lmax_cache, self.mmax_cache = lmax, mmax
-        self.mask_indices_cache = mask_indices
-        return self.mask_indices_cache
+    def pre_compute_coefficient_idx(self):
+        '''
+            Pre-compute the results of `coefficient_idx()` and access them with `prepare_coefficient_idx()`
+        '''
+        lmax = max(self.lmax_list)
+        for l in range(lmax + 1):
+            for m in range(lmax + 1):
+                mask = torch.bitwise_and(
+                    self.l_harmonic.le(l), self.m_harmonic.le(m)
+                )
+                indices = torch.arange(len(mask))
+                mask_indices = torch.masked_select(indices, mask)
+                self.register_buffer('coefficient_idx_l{}_m{}'.format(l, m), mask_indices)
+
+    
+    def prepare_coefficient_idx(self):
+        '''
+            Construct a list of buffers
+        '''
+        lmax = max(self.lmax_list)
+        coefficient_idx_list = []
+        for l in range(lmax + 1):
+            l_list = []
+            for m in range(lmax + 1):
+                l_list.append(getattr(self, 'coefficient_idx_l{}_m{}'.format(l, m), None))
+            coefficient_idx_list.append(l_list)
+        return coefficient_idx_list
+
+
+    # Return mask containing coefficients less than or equal to degree (l) and order (m)
+    def coefficient_idx(self, lmax, mmax):
+        if lmax > max(self.lmax_list) or mmax > max(self.lmax_list):
+            mask = torch.bitwise_and(
+                self.l_harmonic.le(lmax), self.m_harmonic.le(mmax)
+            )
+            indices = torch.arange(len(mask), device=mask.device)
+            mask_indices = torch.masked_select(indices, mask)
+            return mask_indices
+        else:
+            temp = self.prepare_coefficient_idx()
+            return temp[lmax][mmax]        
+    
+
+    def pre_compute_rotate_inv_rescale(self):
+        lmax = max(self.lmax_list)
+        for l in range(lmax + 1):
+            for m in range(lmax + 1):
+                mask_indices = self.coefficient_idx(l, m)
+                rotate_inv_rescale = torch.ones((1, int((l + 1)**2), int((l + 1)**2)))
+                for l_sub in range(l + 1):
+                    if l_sub <= m:
+                        continue
+                    start_idx = l_sub ** 2
+                    length = 2 * l_sub + 1
+                    rescale_factor = math.sqrt(length / (2 * m + 1))
+                    rotate_inv_rescale[:, start_idx : (start_idx + length), start_idx : (start_idx + length)] = rescale_factor
+                rotate_inv_rescale = rotate_inv_rescale[:, :, mask_indices]
+                self.register_buffer('rotate_inv_rescale_l{}_m{}'.format(l, m), rotate_inv_rescale)
+        
+    
+    def prepare_rotate_inv_rescale(self):
+        lmax = max(self.lmax_list)
+        rotate_inv_rescale_list = []
+        for l in range(lmax + 1):
+            l_list = []
+            for m in range(lmax + 1):
+                l_list.append(getattr(self, 'rotate_inv_rescale_l{}_m{}'.format(l, m), None))
+            rotate_inv_rescale_list.append(l_list)
+        return rotate_inv_rescale_list
+    
 
     # Return the re-scaling for rotating back to original frame
     # this is required since we only use a subset of m components for SO(2) convolution
-    def get_rotate_inv_rescale(self, lmax: int, mmax: int):
-        if (
-            (self.lmax_cache is not None)
-            and (self.mmax_cache is not None)
-            and (self.lmax_cache == lmax)
-            and (self.mmax_cache == mmax)
-            and self.rotate_inv_rescale_cache is not None
-        ):
-            return self.rotate_inv_rescale_cache
-
-        if self.mask_indices_cache is None:
-            self.coefficient_idx(lmax, mmax)
-
-        rotate_inv_rescale = torch.ones(
-            (1, (lmax + 1) ** 2, (lmax + 1) ** 2), device=self.device
-        )
-        for lval in range(lmax + 1):
-            if lval <= mmax:
-                continue
-            start_idx = lval**2
-            length = 2 * lval + 1
-            rescale_factor = math.sqrt(length / (2 * mmax + 1))
-            rotate_inv_rescale[
-                :,
-                start_idx : (start_idx + length),
-                start_idx : (start_idx + length),
-            ] = rescale_factor
-        rotate_inv_rescale = rotate_inv_rescale[:, :, self.mask_indices_cache]
-        self.rotate_inv_rescale_cache = rotate_inv_rescale
-        return self.rotate_inv_rescale_cache
-
-    def __repr__(self) -> str:
+    def get_rotate_inv_rescale(self, lmax, mmax):
+        temp = self.prepare_rotate_inv_rescale()
+        return temp[lmax][mmax] 
+    
+    
+    def __repr__(self):
         return f"{self.__class__.__name__}(lmax_list={self.lmax_list}, mmax_list={self.mmax_list})"
 
 
@@ -447,7 +482,7 @@ class SO3_Rotation(torch.nn.Module):
     ):
         super().__init__()
         self.lmax = lmax
-        self.mapping = CoefficientMappingModule([self.lmax], [self.lmax])
+        self.mapping = CoefficientMappingModule([self.lmax], [self.lmax], use_rotate_inv_rescale=True)
 
     def set_wigner(self, rot_mat3x3):
         self.device, self.dtype = rot_mat3x3.device, rot_mat3x3.dtype
@@ -482,7 +517,7 @@ class SO3_Rotation(torch.nn.Module):
         )
         gamma = torch.atan2(R[..., 0, 2], R[..., 0, 0])
 
-        size = (end_lmax + 1) ** 2 - (start_lmax) ** 2
+        size = int((end_lmax + 1) ** 2) - int((start_lmax) ** 2)
         wigner = torch.zeros(len(alpha), size, size, device=self.device)
         start = 0
         for lmax in range(start_lmax, end_lmax + 1):
@@ -511,6 +546,7 @@ class SO3_Grid(torch.nn.Module):
         resolution: int | None = None,
     ):
         super().__init__()
+
         self.lmax = lmax
         self.mmax = mmax
         self.lat_resolution = 2 * (self.lmax + 1)
