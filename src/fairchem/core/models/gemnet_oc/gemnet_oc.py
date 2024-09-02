@@ -1489,12 +1489,17 @@ class GemNetOCEnergyAndGradForceHead(nn.Module, HeadInterface):
 @registry.register_model("gemnet_oc_force_head")
 class GemNetOCForceHead(nn.Module, HeadInterface):
     def __init__(
-        self, backbone, num_global_out_layers: int, output_init: str = "HeOrthogonal"
+        self,
+        backbone,
+        num_global_out_layers: int,
+        use_amp: bool = True,
+        output_init: str = "HeOrthogonal",
     ):
         super().__init__()
 
         self.direct_forces = backbone.direct_forces
         self.forces_coupled = backbone.forces_coupled
+        self._use_amp = use_amp
 
         emb_size_edge = backbone.edge_emb.dense.linear.out_features
         if self.direct_forces:
@@ -1523,11 +1528,18 @@ class GemNetOCForceHead(nn.Module, HeadInterface):
             out_initializer = get_initializer(output_init)
             self.out_forces.reset_parameters(out_initializer)
 
+    @property
+    def use_amp(self):
+        return self._use_amp
+
     def forward(
         self, data: Batch, emb: dict[str, torch.Tensor]
     ) -> dict[str, torch.Tensor]:
         if self.direct_forces:
-            x_F = self.out_mlp_F(torch.cat(emb["xs_F"], dim=-1))
+            if self.use_amp:
+                x_F = self.out_mlp_F(torch.cat(emb["xs_F"], dim=-1))
+            else:
+                x_F = self.out_mlp_F(torch.cat(emb["xs_F"], dim=-1).float())
             with torch.cuda.amp.autocast(False):
                 F_st = self.out_forces(x_F.float())
 
