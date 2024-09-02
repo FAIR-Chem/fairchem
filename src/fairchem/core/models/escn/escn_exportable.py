@@ -500,7 +500,6 @@ class LayerBlock(torch.nn.Module):
             edge_index,
             wigner,
         )
-        print(f"x_message: {x_message.mean()}")
 
         # Compute point-wise spherical non-linearity on aggregated messages
 
@@ -517,14 +516,12 @@ class LayerBlock(torch.nn.Module):
         x_grid = self.act(self.fc1_sphere(x_grid))
         x_grid = self.act(self.fc2_sphere(x_grid))
         x_grid = self.fc3_sphere(x_grid)
-        print(f"x_grid: {x_grid.mean()}")
 
         # Project back to spherical harmonic coefficients
         # x_message._from_grid(x_grid, self.SO3_grid["lmax_lmax"])
         from_grid_mat = self.SO3_grid["lmax_lmax"].from_grid_mat[:, :, self.SO3_grid["lmax_lmax"].mapping.coefficient_idx(self.lmax_list[0], self.lmax_list[0])]
         x_message_final = torch.einsum("bai,zbac->zic", from_grid_mat, x_grid)
 
-        print(f"x_message_final: {x_message_final.mean()}")
         # Return aggregated messages
         return x_message_final
 
