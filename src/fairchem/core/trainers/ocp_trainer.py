@@ -12,6 +12,7 @@ import os
 from collections import defaultdict
 from itertools import chain
 from typing import TYPE_CHECKING
+import time
 
 import numpy as np
 import torch
@@ -139,6 +140,7 @@ class OCPTrainer(BaseTrainer):
         # Calculate start_epoch from step instead of loading the epoch number
         # to prevent inconsistencies due to different batch size in checkpoint.
         start_epoch = self.step // len(self.train_loader)
+        previous_wall_time = time.time()
 
         for epoch_int in range(start_epoch, self.config["optim"]["max_epochs"]):
             skip_steps = self.step % len(self.train_loader)
@@ -182,6 +184,9 @@ class OCPTrainer(BaseTrainer):
                     self.step % self.config["cmd"]["print_every"] == 0
                     and distutils.is_master()
                 ):
+                    time_delta = time.time() - previous_wall_time
+                    previous_wall_time = time.time()
+                    log_dict.update({'step_per_s' : self.config["cmd"]["print_every"] / time_delta})
                     log_str = [f"{k}: {v:.2e}" for k, v in log_dict.items()]
                     logging.info(", ".join(log_str))
                     self.metrics = {}

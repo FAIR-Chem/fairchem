@@ -268,10 +268,8 @@ class eSCN(nn.Module, GraphModelMixin):
                     graph.edge_index,
                     wigner,
                 )
-
                 # Residual layer for all layers past the first
-                x_xessage = x_message + x_message_new
-
+                x_message = x_message + x_message_new
             else:
                 # No residual for the first layer
                 x_message = self.layer_blocks[i](
@@ -599,11 +597,11 @@ class MessageBlock(torch.nn.Module):
         x_target = torch.einsum("bai,zbac->zic", from_grid_mat, x_grid)
 
         # Rotate back the irreps
-        wigner_inv = torch.transpose(wigner, 1, 2).contiguous()
+        wigner_inv = torch.transpose(wigner, 1, 2).contiguous().detach()
         x_target = torch.bmm(wigner_inv[:, :, self.out_mask], x_target)
 
         # Compute the sum of the incoming neighboring messages for each target node
-        new_embedding = torch.fill(x.clone(), 0)
+        new_embedding = torch.zeros(x.shape, dtype=x_target.dtype, device=x_target.device)
         new_embedding.index_add_(0, edge_index[1], x_target)
 
         return new_embedding

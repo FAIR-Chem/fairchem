@@ -85,7 +85,7 @@ def init(backend: str):
         init_local_distributed_process_group(backend=backend)
 
 class TestESCNCompiles:
-    def test_escn_baseline_cpu(self, tol=1e-5):
+    def test_escn_baseline_cpu(self, tol=1e-8):
         init('gloo')
         data = load_data()
         data = data_list_collater([data])
@@ -98,7 +98,7 @@ class TestESCNCompiles:
         assert torch.allclose(base_output["forces"].mean(0), export_output["forces"].mean(0), atol=tol)
 
     @skip_if_no_cuda
-    def test_escn_baseline_cuda(self, tol=1e-5):
+    def test_escn_baseline_cuda(self, tol=1e-8):
         init('nccl')
         data = load_data()
         data = data_list_collater([data]).to("cuda")
