@@ -161,8 +161,8 @@ class TestESCNCompiles:
             sphere_channels=shpere_channels, 
             hidden_channels=128,
             edge_channels=edge_channels,
-            lmax_list=[lmax], 
-            mmax_list=[mmax], 
+            lmax=lmax, 
+            mmax=mmax, 
             act=torch.nn.SiLU(), 
             mappingReduced=mappingReduced
         )
@@ -192,8 +192,8 @@ class TestESCNCompiles:
             sphere_channels = sphere_channels,
             hidden_channels = hidden_channels,
             edge_channels = edge_channels,
-            lmax_list = [lmax],
-            mmax_list = [mmax],
+            lmax = lmax,
+            mmax = mmax,
             distance_expansion = distance_expansion,
             max_num_elements = 90,
             SO3_grid = SO3_grid,
@@ -253,8 +253,8 @@ class TestESCNCompiles:
             sphere_channels = sphere_channels,
             hidden_channels = hidden_channels,
             edge_channels = edge_channels,
-            lmax_list = [lmax],
-            mmax_list = [mmax],
+            lmax = lmax,
+            mmax = mmax,
             distance_expansion = distance_expansion,
             max_num_elements = 90,
             SO3_grid = SO3_grid,
@@ -320,7 +320,6 @@ class TestESCNCompiles:
         # os.environ["TORCHDYNAMO_REPRO_AFTER"]="dynamo"
         # torch._dynamo.config.verbose = True
         compiled_model = torch.compile(model, dynamic=True)
-        torch._dynamo.config.optimize_ddp = False
         # torch._dynamo.explain(model)(data)
         # assert False
         # torch._dynamo.reset()
