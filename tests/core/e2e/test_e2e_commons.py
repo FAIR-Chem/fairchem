@@ -111,6 +111,7 @@ def _run_main(
     save_checkpoint_to=None,
     save_predictions_to=None,
     world_size=0,
+    amp=False,
 ):
     config_yaml = Path(rundir) / "train_and_val_on_val.yml"
     update_yaml_with_dict(input_yaml, config_yaml, update_dict_with)
@@ -124,9 +125,18 @@ def _run_main(
 
     # run
     parser = flags.get_parser()
-    args, override_args = parser.parse_known_args(
-        ["--mode", "train", "--seed", "100", "--config-yml", "config.yml", "--cpu"]
-    )
+    command_line_args = [
+        "--mode",
+        "train",
+        "--seed",
+        "100",
+        "--config-yml",
+        "config.yml",
+        "--cpu",
+    ]
+    if amp:
+        command_line_args.append("--amp")
+    args, override_args = parser.parse_known_args(command_line_args)
     for arg_name, arg_value in run_args.items():
         setattr(args, arg_name, arg_value)
     config = build_config(args, override_args)

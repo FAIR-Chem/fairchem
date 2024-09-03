@@ -32,7 +32,13 @@ These should catch errors such as shape mismatches or otherways to code wise bre
 
 class TestSmoke:
     def smoke_test_train(
-        self, input_yaml, tutorial_val_src, world_size, num_workers, otf_norms=False
+        self,
+        input_yaml,
+        tutorial_val_src,
+        world_size,
+        num_workers,
+        otf_norms=False,
+        amp=False,
     ):
         with tempfile.TemporaryDirectory() as tempdirname:
             # first train a very simple model, checkpoint
@@ -60,6 +66,7 @@ class TestSmoke:
                 save_checkpoint_to=checkpoint_path,
                 save_predictions_to=training_predictions_filename,
                 world_size=world_size,
+                amp=amp,
             )
             assert "train/energy_mae" in acc.Tags()["scalars"]
             assert "val/energy_mae" in acc.Tags()["scalars"]
@@ -197,6 +204,15 @@ class TestSmoke:
         configs,
         tutorial_val_src,
     ):
+        # test with amp
+        self.smoke_test_train(
+            input_yaml=configs[model_name],
+            tutorial_val_src=tutorial_val_src,
+            otf_norms=otf_norms,
+            world_size=0,
+            num_workers=1,
+            amp=True,
+        )
         # test without ddp
         self.smoke_test_train(
             input_yaml=configs[model_name],
