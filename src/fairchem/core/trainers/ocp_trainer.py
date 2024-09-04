@@ -153,7 +153,9 @@ class OCPTrainer(BaseTrainer):
                 # Get a batch.
                 batch = next(train_loader_iter)
                 # Forward, loss, backward.
-                with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+                with torch.autocast(
+                    device_type=self.device.type, enabled=self.scaler is not None
+                ):
                     out = self._forward(batch)
                     loss = self._compute_loss(out, batch)
 
@@ -256,8 +258,9 @@ class OCPTrainer(BaseTrainer):
                 elif isinstance(out[target_key], dict):
                     # if output is a nested dictionary (in the case of hydra models), we attempt to retrieve it using the property name
                     # ie: "output_head_name.property"
-                    assert "property" in self.output_targets[target_key], \
-                        f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
+                    assert (
+                        "property" in self.output_targets[target_key]
+                    ), f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
                     property = self.output_targets[target_key]["property"]
                     pred = out[target_key][property]
 
@@ -448,7 +451,9 @@ class OCPTrainer(BaseTrainer):
             desc=f"device {rank}",
             disable=disable_tqdm,
         ):
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+            with torch.autocast(
+                device_type=self.device.type, enabled=self.scaler is not None
+            ):
                 out = self._forward(batch)
 
             for target_key in self.config["outputs"]:

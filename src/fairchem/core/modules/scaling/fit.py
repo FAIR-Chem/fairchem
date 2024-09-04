@@ -31,7 +31,9 @@ def _prefilled_input(prompt: str, prefill: str = "") -> str:
 
 def _train_batch(trainer: BaseTrainer, batch) -> None:
     with torch.no_grad():
-        with torch.cuda.amp.autocast(enabled=trainer.scaler is not None):
+        with torch.autocast(
+            device_type=trainer.device.type, enabled=trainer.scaler is not None
+        ):
             out = trainer._forward(batch)
         loss = trainer._compute_loss(out, batch)
         del out, loss
