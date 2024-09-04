@@ -184,7 +184,7 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
         use_energy_lin_ref: bool | None = False,
         load_energy_lin_ref: bool | None = False,
         activation_checkpoint: bool | None = False,
-        repeat_blocks: bool = False,
+        repeat_blocks: list[int] | None = None,
         skip_layers: float = 0.0,
     ):
         if mmax_list is None:
@@ -350,7 +350,7 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
         # Initialize the blocks for each layer of EquiformerV2
         self.blocks = nn.ModuleList()
         for block_idx in range(self.num_layers):
-            if self.repeat_blocks is False or block_idx < 2:
+            if self.repeat_blocks is None or block_idx < max(self.repeat_blocks):
                 block = TransBlockV2(
                     self.sphere_channels,
                     self.attn_hidden_channels,
@@ -382,7 +382,13 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
                 )
                 self.blocks.append(block)
             else:
-                self.blocks.append(self.blocks[-1])  # repeat last
+                repeat_block_idx = (
+                    self.repeat_blocks[block_idx % len(self.repeat_blocks)] - 1
+                )
+                print(
+                    f"Layer {block_idx} initialized with shared layer from {repeat_block_idx}"
+                )
+                self.blocks.append(self.blocks[repeat_block_idx])  # repeat last
 
         # Output blocks for energy and forces
         self.norm = get_normalization_layer(
