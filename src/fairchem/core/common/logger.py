@@ -74,6 +74,11 @@ class WandBLogger(Logger):
             if isinstance(self.config["logger"], dict)
             else None
         )
+        group = (
+            self.config["logger"].get("group", None)
+            if isinstance(self.config["logger"], dict)
+            else None
+        )
 
         wandb.init(
             config=self.config,
@@ -83,6 +88,7 @@ class WandBLogger(Logger):
             project=project,
             entity=entity,
             resume="allow",
+            group=group,
         )
 
     def watch(self, model, log_freq: int = 1000) -> None:
