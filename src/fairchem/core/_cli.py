@@ -15,7 +15,6 @@ from submitit import AutoExecutor
 from submitit.helpers import Checkpointable, DelayedSubmission
 from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
-from fairchem.core.common.distutils import init_local_distributed_process_group
 from fairchem.core.common.flags import flags
 from fairchem.core.common.utils import (
     build_config,
@@ -117,9 +116,6 @@ def main():
             elastic_launch(launch_config, runner_wrapper)(config)
         else:
             logging.info("Running in local mode")
-            # this initializes a local distributed process group with torch elastic and makes debugging easier
-            init_local_distributed_process_group(backend="nccl")
-
             runner_wrapper(config)
 
 

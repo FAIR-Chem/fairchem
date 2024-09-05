@@ -102,8 +102,7 @@ def setup(config) -> None:
             timeout=timeout,
         )
     else:
-        config["local_rank"] = int(os.environ.get("LOCAL_RANK", config["local_rank"]))
-        dist.init_process_group(backend=config.get("backend", "nccl"), timeout=timeout)
+        init_local_distributed_process_group(backend="nccl")
 
 
 def cleanup() -> None:
