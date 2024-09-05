@@ -15,6 +15,7 @@ from submitit import AutoExecutor
 from submitit.helpers import Checkpointable, DelayedSubmission
 from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
+from fairchem.core.common.distutils import init_local_distributed_process_group
 from fairchem.core.common.flags import flags
 from fairchem.core.common.utils import (
     build_config,
@@ -29,12 +30,11 @@ if TYPE_CHECKING:
 
 
 class Runner(Checkpointable):
-    def __init__(self, distributed: bool = False) -> None:
+    def __init__(self) -> None:
         self.config = None
-        self.distributed = distributed
 
     def __call__(self, config: dict) -> None:
-        with new_trainer_context(config=config, distributed=self.distributed) as ctx:
+        with new_trainer_context(config=config) as ctx:
             self.config = ctx.config
             self.task = ctx.task
             self.trainer = ctx.trainer
@@ -42,7 +42,7 @@ class Runner(Checkpointable):
             self.task.run()
 
     def checkpoint(self, *args, **kwargs):
-        new_runner = Runner(self.distributed)
+        new_runner = Runner()
         self.trainer.save(checkpoint_file="checkpoint.pt", training_state=True)
         self.config["checkpoint"] = self.task.chkpt_path
         self.config["timestamp_id"] = self.trainer.timestamp_id
@@ -52,8 +52,8 @@ class Runner(Checkpointable):
         return DelayedSubmission(new_runner, self.config)
 
 
-def runner_wrapper(distributed: bool, config: dict):
-    Runner(distributed=distributed)(config)
+def runner_wrapper(config: dict):
+    Runner()(config)
 
 
 def main():
@@ -79,7 +79,7 @@ def main():
             slurm_partition=args.slurm_partition,
             gpus_per_node=args.num_gpus,
             cpus_per_task=(config["optim"]["num_workers"] + 1),
-            tasks_per_node=(args.num_gpus if args.distributed else 1),
+            tasks_per_node=args.num_gpus,
             nodes=args.num_nodes,
             slurm_additional_parameters=slurm_add_params,
             slurm_qos=args.slurm_qos,
@@ -88,15 +88,15 @@ def main():
         for config in configs:
             config["slurm"] = copy.deepcopy(executor.parameters)
             config["slurm"]["folder"] = str(executor.folder)
-        jobs = executor.map_array(Runner(distributed=args.distributed), configs)
+        jobs = executor.map_array(Runner(), configs)
         logging.info(f"Submitted jobs: {', '.join([job.job_id for job in jobs])}")
         log_file = save_experiment_log(args, jobs, configs)
         logging.info(f"Experiment log saved to: {log_file}")
 
     else:  # Run locally on a single node, n-processes
-        if args.distributed:
+        if args.num_gpus > 1:
             logging.info(
-                f"Running in distributed local mode with {args.num_gpus} ranks"
+                f"Running in local mode with {args.num_gpus} ranks"
             )
             # HACK to disable multiprocess dataloading in local mode
             # there is an open issue where LMDB's environment cannot be pickled and used
@@ -114,13 +114,13 @@ def main():
                 rdzv_backend="c10d",
                 max_restarts=0,
             )
-            elastic_launch(launch_config, runner_wrapper)(args.distributed, config)
+            elastic_launch(launch_config, runner_wrapper)(config)
         else:
-            logging.info("Running in non-distributed local mode")
-            assert (
-                args.num_gpus == 1
-            ), "Can only run with a single gpu in non distributed local mode, use --distributed flag instead if using >1 gpu"
-            runner_wrapper(args.distributed, config)
+            logging.info("Running in local mode")
+            # this initializes a local distributed process group with torch elastic and makes debugging easier
+            init_local_distributed_process_group(backend="nccl")
+
+            runner_wrapper(config)
 
 
 if __name__ == "__main__":
