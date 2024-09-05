@@ -452,11 +452,7 @@ class SO3_Grid(torch.nn.Module):
         mmax (int):   Maximum order of the spherical harmonics
     """
 
-    def __init__(
-        self,
-        lmax: int,
-        mmax: int,
-    ) -> None:
+    def __init__(self, lmax: int, mmax: int, resolution: int | None = None) -> None:
         super().__init__()
         self.lmax = lmax
         self.mmax = mmax
@@ -465,6 +461,9 @@ class SO3_Grid(torch.nn.Module):
             self.long_resolution = 2 * (self.mmax + 1) + 1
         else:
             self.long_resolution = 2 * (self.mmax) + 1
+        if resolution:
+            self.long_resolution=resolution
+            self.lat_resolution=resolution
 
         self.initialized = False
 

@@ -87,17 +87,17 @@ class Slab:
         else:
             # If we're not saving all slabs, just tile and tag one
             assert bulk is not None
-            untiled_slabs = compute_slabs(
-                bulk.atoms,
-                max_miller=max_miller,
+            bulk_struct = standardize_bulk(bulk.atoms)
+            avail_millers = get_symmetrically_distinct_miller_indices(
+                bulk_struct, max_miller
             )
-            slab_idx = np.random.randint(len(untiled_slabs))
-            unit_slab_struct, millers, shift, top, oriented_bulk = untiled_slabs[
-                slab_idx
-            ]
-            slab_atoms = tile_and_tag_atoms(unit_slab_struct, bulk.atoms, min_ab=min_ab)
+            sampled_miller_idx = np.random.randint(len(avail_millers))
+            slabs = Slab.from_bulk_get_specific_millers(
+                avail_millers[sampled_miller_idx], bulk, min_ab
+            )
 
-            return cls(bulk, slab_atoms, millers, shift, top, oriented_bulk)
+            # If multiple shifts exist, sample one randomly
+            return np.random.choice(slabs)
 
     @classmethod
     def from_bulk_get_specific_millers(

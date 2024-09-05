@@ -6,7 +6,7 @@
 # ---
 # name: TestEquiformerV2.test_ddp.1
   Approx(
-  	array([0.12408741], dtype=float32), 
+  	array([0.12408739], dtype=float32), 
   	rtol=0.001, 
   	atol=0.001
   )
@@ -19,7 +19,7 @@
 # ---
 # name: TestEquiformerV2.test_ddp.3
   Approx(
-  	array([ 1.4928594e-03, -7.4167736e-05,  2.9909366e-03], dtype=float32), 
+  	array([ 1.4928584e-03, -7.4167408e-05,  2.9909366e-03], dtype=float32), 
   	rtol=0.001, 
   	atol=0.001
   )
@@ -31,7 +31,7 @@
 # ---
 # name: TestEquiformerV2.test_energy_force_shape.1
   Approx(
-  	array([0.12408741], dtype=float32), 
+  	array([0.12408739], dtype=float32), 
   	rtol=0.001, 
   	atol=0.001
   )
@@ -44,7 +44,7 @@
 # ---
 # name: TestEquiformerV2.test_energy_force_shape.3
   Approx(
-  	array([ 1.4928594e-03, -7.4167736e-05,  2.9909366e-03], dtype=float32), 
+  	array([ 1.4928584e-03, -7.4167408e-05,  2.9909366e-03], dtype=float32), 
   	rtol=0.001, 
   	atol=0.001
   )
@@ -56,7 +56,7 @@
 # ---
 # name: TestEquiformerV2.test_gp.1
   Approx(
-  	array([0.12408741], dtype=float32), 
+  	array([0.12408739], dtype=float32), 
   	rtol=0.001, 
   	atol=0.001
   )
@@ -69,7 +69,7 @@
 # ---
 # name: TestEquiformerV2.test_gp.3
   Approx(
-  	array([ 1.4928658e-03, -7.4134972e-05,  2.9909210e-03], dtype=float32), 
+  	array([ 1.4928661e-03, -7.4134863e-05,  2.9909245e-03], dtype=float32), 
   	rtol=0.001, 
   	atol=0.001
   )
