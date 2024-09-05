@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 import readline
 import sys
 from itertools import islice
@@ -56,6 +57,7 @@ def compute_scaling_factors(config, num_batches: int = 16) -> None:
         assert data_loader is not None, "Train set required to load batches"
 
         if ckpt_file.exists():
+            assert 1 == 0
             trainer.load_checkpoint(checkpoint_path=str(ckpt_file))
 
         # region reoad scale file contents if necessary
@@ -205,7 +207,7 @@ def compute_scaling_factors(config, num_batches: int = 16) -> None:
 
         torch.save(
             {
-                x[0].replace(".scale_factor", ""): x[1]
+                re.sub("^backbone.", "", x[0].replace(".scale_factor", "")): x[1]
                 for x in trainer.model.to("cpu").named_parameters()
                 if ".scale_" in x[0]
             },
