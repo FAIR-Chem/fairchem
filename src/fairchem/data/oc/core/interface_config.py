@@ -183,6 +183,7 @@ class InterfaceConfig(MultipleAdsorbateSlabConfig):
                 "slab_shift": self.slab.shift,
                 "slab_top": self.slab.top,
                 "bulk_idx": self.slab.bulk.bulk_id_from_db,
+                "ase_tags": interface_atoms.get_tags(),
             }
             metadata_interface_list.append(metadata)
 
