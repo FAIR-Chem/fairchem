@@ -93,7 +93,7 @@ class Slab:
             )
             sampled_miller_idx = np.random.randint(len(avail_millers))
             slabs = Slab.from_bulk_get_specific_millers(
-                avail_millers[sampled_miller_idx], bulk
+                avail_millers[sampled_miller_idx], bulk, min_ab
             )
 
             # If multiple shifts exist, sample one randomly
