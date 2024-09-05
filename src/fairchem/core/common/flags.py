@@ -11,6 +11,8 @@ import argparse
 import os
 from pathlib import Path
 
+import torch
+
 
 class Flags:
     def __init__(self) -> None:
@@ -136,7 +138,7 @@ class Flags:
         self.parser.add_argument(
             "--distributed-backend",
             type=str,
-            default="nccl",
+            default="nccl" if torch.cuda.is_available() else "gloo",
             help="Backend for DDP",
         )
         self.parser.add_argument("--local-rank", default=0, type=int, help="Local rank")

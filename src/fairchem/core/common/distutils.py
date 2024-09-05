@@ -102,7 +102,8 @@ def setup(config) -> None:
             timeout=timeout,
         )
     else:
-        init_local_distributed_process_group(backend="nccl")
+        logging.info(f"initializing distributed process group using {config['distributed_backend']} backend")
+        init_local_distributed_process_group(backend=config["distributed_backend"])
 
 
 def cleanup() -> None:
