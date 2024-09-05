@@ -137,7 +137,7 @@ def _run_main(
         )
         spawn_multi_process(
             pg_config,
-            Runner(distributed=True),
+            Runner(),
             init_env_rank_and_launch_test,
             config,
         )
