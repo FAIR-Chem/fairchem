@@ -67,7 +67,7 @@ def calculate_surface_k_points(atoms):
     )
 
 
-def write_vasp_input_files(atoms, outdir=".", vasp_flags=None):
+def write_vasp_input_files(atoms, outdir=".", vasp_flags=None, pp_setups="minimal"):
     """
     Effectively goes through the same motions as the `run_vasp` function,
     except it only writes the input files instead of running.
@@ -84,4 +84,5 @@ def write_vasp_input_files(atoms, outdir=".", vasp_flags=None):
 
     atoms, vasp_flags = _clean_up_inputs(atoms, vasp_flags.copy())
     calc = Vasp(directory=outdir, **vasp_flags)
+    calc.input_params["setups"] = pp_setups
     calc.write_input(atoms)
