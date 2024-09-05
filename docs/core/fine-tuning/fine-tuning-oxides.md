@@ -29,7 +29,7 @@ We get this checkpoint here.
 ```{code-cell} ipython3
 from fairchem.core.models.model_registry import model_name_to_local_file
 
-checkpoint_path = model_name_to_local_file('GemNet-OC-S2EFS-OC20+OC22', local_cache='/tmp/ocp_checkpoints/')
+checkpoint_path = model_name_to_local_file('GemNet-OC-S2EFS-OC20+OC22', local_cache='/tmp/fairchem_checkpoints/')
 ```
 
 The data we need is provided in `supporting-information.json`. That file is embedded in the supporting information for the article, and is provided here in the tutorial. We load this data and explore it a little. The json file provides a dictionary with the structure:
@@ -205,6 +205,7 @@ from fairchem.core.common.tutorial_utils import generate_yml_config
 yml = generate_yml_config(checkpoint_path, 'config.yml',
                    delete=['slurm', 'cmd', 'logger', 'task', 'model_attributes',
                            'optim.loss_force', # the checkpoint setting causes an error
+			   'optim.load_balancing',
                            'dataset', 'test_dataset', 'val_dataset'],
                    update={'gpus': 1,
                            'optim.eval_every': 10,

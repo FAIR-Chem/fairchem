@@ -22,7 +22,7 @@ jobs:
 
   docs:
     needs: test
-    uses: ./.github/workflows/docs.yml
+    uses: ./.github/workflows/deploy_docs.yml
     secrets: inherit
 
   release-core:

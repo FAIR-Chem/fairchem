@@ -43,6 +43,15 @@ jobs:
           pip install -e packages/fairchem-demo-ocpapi[dev]
           pip install -e packages/fairchem-applications-cattsunami
 
+      - name: Install additional dependencies
+        run: |
+          wget https://github.com/m3g/packmol/archive/refs/tags/v20.15.0.tar.gz
+          tar -xzvf v20.15.0.tar.gz
+          cd packmol-20.15.0
+          ./configure
+          make
+          echo "$(readlink -f .)" >> $GITHUB_PATH
+
       - name: Test core with pytest
         run: |
           pytest tests -x -m "not slow" -vv --ignore=tests/demo/ocpapi/tests/integration/  --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml

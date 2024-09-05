@@ -44,49 +44,23 @@ class PGConfig:
     use_gp: bool = True
 
 
-def spawn_multi_process(
-    config: PGConfig,
+def init_env_rank_and_launch_test(
+    rank: int,
+    pg_setup_params: PGConfig,
+    mp_output_dict: dict[int, object],
     test_method: callable,
-    *test_method_args: Any,
-    **test_method_kwargs: Any,
-) -> list[Any]:
-    """
-    Spawn single node, multi-rank function.
-    Uses localhost and free port to communicate.
-
-    Args:
-        world_size: number of processes
-        backend: backend to use. for example, "nccl", "gloo", etc
-        test_method: callable to spawn. first 3 arguments are rank, world_size and mp output dict
-        test_method_args: args for the test method
-        test_method_kwargs: kwargs for the test method
-
-    Returns:
-        A list, l, where l[i] is the return value of test_method on rank i
-    """
-    manager = multiprocessing.Manager()
-    mp_output_dict = manager.dict()
-
-    port = str(get_free_port())
-    config.port = port
-    torch.multiprocessing.spawn(
-        # torch.multiprocessing.spawn sends rank as the first param
-        # https://pytorch.org/docs/stable/multiprocessing.html#torch.multiprocessing.spawn
-        _init_pg_and_rank_and_launch_test,
-        args=(
-            config,
-            mp_output_dict,
-            test_method,
-            test_method_args,
-            test_method_kwargs,
-        ),
-        nprocs=config.world_size,
-    )
-
-    return [mp_output_dict[i] for i in range(config.world_size)]
+    args: list[object],
+    kwargs: dict[str, object],
+) -> None:
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = pg_setup_params.port
+    os.environ["WORLD_SIZE"] = str(pg_setup_params.world_size)
+    os.environ["LOCAL_RANK"] = str(rank)
+    os.environ["RANK"] = str(rank)
+    mp_output_dict[rank] = test_method(*args, **kwargs)  # pyre-fixme
 
 
-def _init_pg_and_rank_and_launch_test(
+def init_pg_and_rank_and_launch_test(
     rank: int,
     pg_setup_params: PGConfig,
     mp_output_dict: dict[int, object],
@@ -113,3 +87,46 @@ def _init_pg_and_rank_and_launch_test(
         }
         setup_gp(config)
     mp_output_dict[rank] = test_method(*args, **kwargs)  # pyre-fixme
+
+
+def spawn_multi_process(
+    config: PGConfig,
+    test_method: callable,
+    init_and_launch: callable,
+    *test_method_args: Any,
+    **test_method_kwargs: Any,
+) -> list[Any]:
+    """
+    Spawn single node, multi-rank function.
+    Uses localhost and free port to communicate.
+
+    Args:
+        world_size: number of processes
+        backend: backend to use. for example, "nccl", "gloo", etc
+        test_method: callable to spawn. first 3 arguments are rank, world_size and mp output dict
+        test_method_args: args for the test method
+        test_method_kwargs: kwargs for the test method
+
+    Returns:
+        A list, l, where l[i] is the return value of test_method on rank i
+    """
+    manager = multiprocessing.Manager()
+    mp_output_dict = manager.dict()
+
+    port = str(get_free_port())
+    config.port = port
+    torch.multiprocessing.spawn(
+        # torch.multiprocessing.spawn sends rank as the first param
+        # https://pytorch.org/docs/stable/multiprocessing.html#torch.multiprocessing.spawn
+        init_and_launch,
+        args=(
+            config,
+            mp_output_dict,
+            test_method,
+            test_method_args,
+            test_method_kwargs,
+        ),
+        nprocs=config.world_size,
+    )
+
+    return [mp_output_dict[i] for i in range(config.world_size)]

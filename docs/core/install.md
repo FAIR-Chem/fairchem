@@ -44,28 +44,28 @@ You can also install `pytorch` and `torch_geometric` dependencies from PyPI to s
    similarly by selecting the appropriate versions in the official
    [PyG docs](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html)
 
-## Install fairchem-core
+## Standard installation of fairchem-core
 Install `fairchem-core` from PyPi
 ```bash
 pip install fairchem-core
 ```
 
-## Additional packages
-
+### Additional packages
 `fairchem` is a namespace package, meaning all packages are installed seperately. If you need
 to install other packages you can do so by:
 ```bash
 pip install fairchem-{package-to-install}
 ```
+Available `fairchem` packages are `fairchem-core`,`fairchem-data-oc`,`fairchem-demo-ocpapi`,`fairchem-applications-cattsunami`
 
-## Development install
-
+## Development installation
 If you plan to make contributions you will need to fork and clone (for windows user please see next section) the repo,
 set up the environment, and install fairchem-core from source in editable mode with dev dependencies,
 ```bash
 git clone https://github.com/FAIR-Chem/fairchem.git
 cd fairchem
 pip install -e packages/fairchem-core[dev]
+pytest tests/core
 ```
 
 And similarly for any other namespace package:

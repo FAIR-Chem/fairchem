@@ -13,41 +13,7 @@ __email__ = "ktran@andrew.cmu.edu"
 
 import numpy as np
 from ase.calculators.vasp import Vasp
-
-# NOTE: this is the setting for slab and adslab
-VASP_FLAGS = {
-    "ibrion": 2,
-    "nsw": 2000,
-    "isif": 0,
-    "isym": 0,
-    "lreal": "Auto",
-    "ediffg": -0.03,
-    "symprec": 1e-10,
-    "encut": 350.0,
-    "laechg": True,
-    "lwave": False,
-    "ncore": 4,
-    "gga": "RP",
-    "pp": "PBE",
-    "xc": "PBE",
-}
-
-# This is the setting for bulk optmization.
-# Only use when expanding the bulk_db with other crystal structures.
-BULK_VASP_FLAGS = {
-    "ibrion": 1,
-    "nsw": 100,
-    "isif": 7,
-    "isym": 0,
-    "ediffg": 1e-08,
-    "encut": 500.0,
-    "kpts": (10, 10, 10),
-    "prec": "Accurate",
-    "gga": "RP",
-    "pp": "PBE",
-    "lwave": False,
-    "lcharg": False,
-}
+from fairchem.data.oc.utils.vasp_flags import VASP_FLAGS
 
 
 def _clean_up_inputs(atoms, vasp_flags):
@@ -101,7 +67,7 @@ def calculate_surface_k_points(atoms):
     )
 
 
-def write_vasp_input_files(atoms, outdir=".", vasp_flags=None):
+def write_vasp_input_files(atoms, outdir=".", vasp_flags=None, pp_setups="minimal"):
     """
     Effectively goes through the same motions as the `run_vasp` function,
     except it only writes the input files instead of running.
@@ -118,4 +84,5 @@ def write_vasp_input_files(atoms, outdir=".", vasp_flags=None):
 
     atoms, vasp_flags = _clean_up_inputs(atoms, vasp_flags.copy())
     calc = Vasp(directory=outdir, **vasp_flags)
+    calc.input_params["setups"] = pp_setups
     calc.write_input(atoms)

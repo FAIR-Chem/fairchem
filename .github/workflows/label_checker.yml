@@ -1,0 +1,28 @@
+name: PR label checking (major/minor/patch, enhancement, etc)
+
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize]
+
+jobs:
+  check-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Labels not added (patch, minor, major, dependencies)
+        if: >
+          contains(github.event.pull_request.labels.*.name, 'patch') == false &&
+          contains(github.event.pull_request.labels.*.name, 'minor') == false && 
+          contains(github.event.pull_request.labels.*.name, 'major') == false && 
+          contains(github.event.pull_request.labels.*.name, 'dependencies') == false
+        run: exit 1
+      - name: Labels not added (enhancement,bug,test,deprecation,dependencies,documentation,deprecation)
+        if: >
+          contains(github.event.pull_request.labels.*.name, 'enhancement') == false &&
+          contains(github.event.pull_request.labels.*.name, 'bug') == false &&
+          contains(github.event.pull_request.labels.*.name, 'test') == false && 
+          contains(github.event.pull_request.labels.*.name, 'deprecation') == false &&
+          contains(github.event.pull_request.labels.*.name, 'dependencies') == false &&
+          contains(github.event.pull_request.labels.*.name, 'documentation') == false &&
+          contains(github.event.pull_request.labels.*.name, 'deprecation') == false
+        run: exit 1
