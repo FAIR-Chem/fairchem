@@ -3,7 +3,8 @@ name: slow tests
 on:
   workflow_call:
   workflow_dispatch:
-    
+  push:
+  
 jobs:
   test:
     runs-on: ubuntu-latest  # TODO add macos tests too
