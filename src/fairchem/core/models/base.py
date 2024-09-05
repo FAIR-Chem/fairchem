@@ -15,14 +15,11 @@ from typing import TYPE_CHECKING
 
 import torch
 from torch import nn
-from torch_geometric.nn import radius_graph
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import (
-    compute_neighbors,
-    get_pbc_distances,
+    generate_graph_standalone,
     load_model_and_weights_from_checkpoint,
-    radius_graph_pbc,
 )
 
 if TYPE_CHECKING:
@@ -57,111 +54,45 @@ class GraphModelMixin:
         enforce_max_neighbors_strictly=None,
         use_pbc_single=False,
     ):
-        cutoff = cutoff or self.cutoff
-        max_neighbors = max_neighbors or self.max_neighbors
-        use_pbc = use_pbc or self.use_pbc
-        use_pbc_single = use_pbc_single or self.use_pbc_single
-        otf_graph = otf_graph or self.otf_graph
-
-        if enforce_max_neighbors_strictly is not None:
-            pass
-        elif hasattr(self, "enforce_max_neighbors_strictly"):
-            # Not all models will have this attribute
-            enforce_max_neighbors_strictly = self.enforce_max_neighbors_strictly
-        else:
-            # Default to old behavior
-            enforce_max_neighbors_strictly = True
-
-        if not otf_graph:
-            try:
-                edge_index = data.edge_index
-
-                if use_pbc:
-                    cell_offsets = data.cell_offsets
-                    neighbors = data.neighbors
-
-            except AttributeError:
-                logging.warning(
-                    "Turning otf_graph=True as required attributes not present in data object"
-                )
-                otf_graph = True
-
-        if use_pbc:
-            if otf_graph:
-                if use_pbc_single:
-                    (
-                        edge_index_per_system,
-                        cell_offsets_per_system,
-                        neighbors_per_system,
-                    ) = list(
-                        zip(
-                            *[
-                                radius_graph_pbc(
-                                    data[idx],
-                                    cutoff,
-                                    max_neighbors,
-                                    enforce_max_neighbors_strictly,
-                                )
-                                for idx in range(len(data))
-                            ]
-                        )
-                    )
-
-                    # atom indexs in the edge_index need to be offset
-                    atom_index_offset = data.natoms.cumsum(dim=0).roll(1)
-                    atom_index_offset[0] = 0
-                    edge_index = torch.hstack(
-                        [
-                            edge_index_per_system[idx] + atom_index_offset[idx]
-                            for idx in range(len(data))
-                        ]
-                    )
-                    cell_offsets = torch.vstack(cell_offsets_per_system)
-                    neighbors = torch.hstack(neighbors_per_system)
-                else:
-                    ## TODO this is the original call, but blows up with memory
-                    ## using two different samples
-                    ## sid='mp-675045-mp-675045-0-7' (MPTRAJ)
-                    ## sid='75396' (OC22)
-                    edge_index, cell_offsets, neighbors = radius_graph_pbc(
-                        data,
-                        cutoff,
-                        max_neighbors,
-                        enforce_max_neighbors_strictly,
-                    )
-
-            out = get_pbc_distances(
-                data.pos,
-                edge_index,
-                data.cell,
-                cell_offsets,
-                neighbors,
-                return_offsets=True,
-                return_distance_vec=True,
+        def choose_attr_from_input_or_self(attr, input_attr, default=None):
+            # logic: input_attr > model_attr > default
+            if input_attr is not None:
+                return input_attr
+            if hasattr(self, attr):
+                return getattr(self, attr)
+            if default is not None:
+                return default
+            raise ValueError(
+                f"Attribute {attr} of generate_graph not found in input or model"
             )
 
-            edge_index = out["edge_index"]
-            edge_dist = out["distances"]
-            cell_offset_distances = out["offsets"]
-            distance_vec = out["distance_vec"]
-        else:
-            if otf_graph:
-                edge_index = radius_graph(
-                    data.pos,
-                    r=cutoff,
-                    batch=data.batch,
-                    max_num_neighbors=max_neighbors,
-                )
+        cutoff = choose_attr_from_input_or_self("cutoff", cutoff)
+        max_neighbors = choose_attr_from_input_or_self("max_neighbors", max_neighbors)
+        use_pbc = choose_attr_from_input_or_self("use_pbc", use_pbc)
+        use_pbc_single = choose_attr_from_input_or_self(
+            "use_pbc_single", use_pbc_single, False
+        )
+        otf_graph = choose_attr_from_input_or_self("otf_graph", otf_graph)
+        enforce_max_neighbors_strictly = choose_attr_from_input_or_self(
+            "enforce_max_neighbors_strictly", enforce_max_neighbors_strictly, True
+        )
 
-            j, i = edge_index
-            distance_vec = data.pos[j] - data.pos[i]
-
-            edge_dist = distance_vec.norm(dim=-1)
-            cell_offsets = torch.zeros(edge_index.shape[1], 3, device=data.pos.device)
-            cell_offset_distances = torch.zeros_like(
-                cell_offsets, device=data.pos.device
-            )
-            neighbors = compute_neighbors(data, edge_index)
+        (
+            edge_index,
+            edge_dist,
+            distance_vec,
+            cell_offsets,
+            cell_offset_distances,
+            neighbors,
+        ) = generate_graph_standalone(
+            data,
+            cutoff,
+            max_neighbors,
+            use_pbc,
+            enforce_max_neighbors_strictly,
+            use_pbc_single,
+            otf_graph,
+        )
 
         return GraphData(
             edge_index=edge_index,
@@ -254,9 +185,15 @@ class HydraModel(nn.Module, GraphModelMixin):
         # if finetune_config is provided, then attempt to load the model from the given finetune checkpoint
         starting_model = None
         if finetune_config is not None:
-            starting_model: HydraModel = load_model_and_weights_from_checkpoint(finetune_config["starting_checkpoint"])
-            logging.info(f"Found and loaded fine-tuning checkpoint: {finetune_config['starting_checkpoint']} (Note we are NOT loading the training state from this checkpoint, only parts of the model and weights)")
-            assert isinstance(starting_model, HydraModel), "Can only finetune starting from other hydra models!"
+            starting_model: HydraModel = load_model_and_weights_from_checkpoint(
+                finetune_config["starting_checkpoint"]
+            )
+            logging.info(
+                f"Found and loaded fine-tuning checkpoint: {finetune_config['starting_checkpoint']} (Note we are NOT loading the training state from this checkpoint, only parts of the model and weights)"
+            )
+            assert isinstance(
+                starting_model, HydraModel
+            ), "Can only finetune starting from other hydra models!"
 
         if backbone is not None:
             backbone = copy.deepcopy(backbone)
@@ -268,9 +205,13 @@ class HydraModel(nn.Module, GraphModelMixin):
             )
         elif starting_model is not None:
             self.backbone = starting_model.backbone
-            logging.info(f"User did not specify a backbone, using the backbone from the starting checkpoint {self.backbone}")
+            logging.info(
+                f"User did not specify a backbone, using the backbone from the starting checkpoint {self.backbone}"
+            )
         else:
-            raise RuntimeError("Backbone not specified and not found in the starting checkpoint")
+            raise RuntimeError(
+                "Backbone not specified and not found in the starting checkpoint"
+            )
 
         if heads is not None:
             heads = copy.deepcopy(heads)
@@ -278,7 +219,9 @@ class HydraModel(nn.Module, GraphModelMixin):
             self.output_heads: dict[str, HeadInterface] = {}
 
             head_names_sorted = sorted(heads.keys())
-            assert len(set(head_names_sorted)) == len(head_names_sorted), "Head names must be unique!"
+            assert len(set(head_names_sorted)) == len(
+                head_names_sorted
+            ), "Head names must be unique!"
             for head_name in head_names_sorted:
                 head_config = heads[head_name]
                 if "module" not in head_config:
@@ -295,15 +238,23 @@ class HydraModel(nn.Module, GraphModelMixin):
             self.output_heads = torch.nn.ModuleDict(self.output_heads)
         elif starting_model is not None:
             self.output_heads = starting_model.output_heads
-            logging.info(f"User did not specify heads, using the output heads from the starting checkpoint {self.output_heads}")
+            logging.info(
+                f"User did not specify heads, using the output heads from the starting checkpoint {self.output_heads}"
+            )
         else:
-            raise RuntimeError("Heads not specified and not found in the starting checkpoint")
+            raise RuntimeError(
+                "Heads not specified and not found in the starting checkpoint"
+            )
 
     def forward(self, data: Batch):
         # lazily get device from input to use with amp, at least one input must be a tensor to figure out it's device
         if not self.device:
-            device_from_tensors = {x.device.type for x in data.values() if isinstance(x, torch.Tensor)}
-            assert len(device_from_tensors) == 1, f"all inputs must be on the same device, found the following devices {device_from_tensors}"
+            device_from_tensors = {
+                x.device.type for x in data.values() if isinstance(x, torch.Tensor)
+            }
+            assert (
+                len(device_from_tensors) == 1
+            ), f"all inputs must be on the same device, found the following devices {device_from_tensors}"
             self.device = device_from_tensors.pop()
 
         emb = self.backbone(data)
@@ -319,5 +270,3 @@ class HydraModel(nn.Module, GraphModelMixin):
                     out[k] = self.output_heads[k](data, emb)
 
         return out
-
-

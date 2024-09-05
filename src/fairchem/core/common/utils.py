@@ -35,6 +35,7 @@ import yaml
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from torch_geometric.data import Data
+from torch_geometric.nn import radius_graph
 from torch_geometric.utils import remove_self_loops
 from torch_scatter import scatter, segment_coo, segment_csr
 
@@ -777,6 +778,114 @@ def radius_graph_pbc(
     edge_index = torch.stack((index2, index1))
 
     return edge_index, unit_cell, num_neighbors_image
+
+
+def generate_graph_standalone(
+    data,
+    cutoff,
+    max_neighbors,
+    use_pbc,
+    use_pbc_single=False,
+    enforce_max_neighbors_strictly=True,
+    otf_graph=True,
+):
+    if not otf_graph:
+        try:
+            edge_index = data.edge_index
+
+            if use_pbc:
+                cell_offsets = data.cell_offsets
+                neighbors = data.neighbors
+
+        except AttributeError:
+            logging.warning(
+                "Turning otf_graph=True as required attributes not present in data object"
+            )
+            otf_graph = True
+
+    if use_pbc:
+        if otf_graph:
+            if use_pbc_single:
+                (
+                    edge_index_per_system,
+                    cell_offsets_per_system,
+                    neighbors_per_system,
+                ) = list(
+                    zip(
+                        *[
+                            radius_graph_pbc(
+                                data[idx],
+                                cutoff,
+                                max_neighbors,
+                                enforce_max_neighbors_strictly,
+                            )
+                            for idx in range(len(data))
+                        ]
+                    )
+                )
+
+                # atom indexs in the edge_index need to be offset
+                atom_index_offset = data.natoms.cumsum(dim=0).roll(1)
+                atom_index_offset[0] = 0
+                edge_index = torch.hstack(
+                    [
+                        edge_index_per_system[idx] + atom_index_offset[idx]
+                        for idx in range(len(data))
+                    ]
+                )
+                cell_offsets = torch.vstack(cell_offsets_per_system)
+                neighbors = torch.hstack(neighbors_per_system)
+            else:
+                ## TODO this is the original call, but blows up with memory
+                ## using two different samples
+                ## sid='mp-675045-mp-675045-0-7' (MPTRAJ)
+                ## sid='75396' (OC22)
+                edge_index, cell_offsets, neighbors = radius_graph_pbc(
+                    data,
+                    cutoff,
+                    max_neighbors,
+                    enforce_max_neighbors_strictly,
+                )
+
+        out = get_pbc_distances(
+            data.pos,
+            edge_index,
+            data.cell,
+            cell_offsets,
+            neighbors,
+            return_offsets=True,
+            return_distance_vec=True,
+        )
+
+        edge_index = out["edge_index"]
+        edge_dist = out["distances"]
+        cell_offset_distances = out["offsets"]
+        distance_vec = out["distance_vec"]
+    else:
+        if otf_graph:
+            edge_index = radius_graph(
+                data.pos,
+                r=cutoff,
+                batch=data.batch,
+                max_num_neighbors=max_neighbors,
+            )
+
+        j, i = edge_index
+        distance_vec = data.pos[j] - data.pos[i]
+
+        edge_dist = distance_vec.norm(dim=-1)
+        cell_offsets = torch.zeros(edge_index.shape[1], 3, device=data.pos.device)
+        cell_offset_distances = torch.zeros_like(cell_offsets, device=data.pos.device)
+        neighbors = compute_neighbors(data, edge_index)
+
+    return (
+        edge_index,
+        edge_dist,
+        distance_vec,
+        cell_offsets,
+        cell_offset_distances,
+        neighbors,
+    )
 
 
 def get_max_neighbors_mask(
