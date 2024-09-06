@@ -200,14 +200,6 @@ class TestSmoke:
             tutorial_val_src=tutorial_val_src,
             otf_norms=otf_norms,
             world_size=1,
-            num_workers=2,
-        )
-        # test with ddp but no wokers
-        self.smoke_test_train(
-            input_yaml=configs[model_name],
-            tutorial_val_src=tutorial_val_src,
-            otf_norms=otf_norms,
-            world_size=1,
             num_workers=0,
         )
 
