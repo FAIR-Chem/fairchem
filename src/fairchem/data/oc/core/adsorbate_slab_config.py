@@ -489,20 +489,22 @@ def custom_tile_atoms(atoms: ase.Atoms):
     return new_atoms
 
 
-def get_interstitial_distances(adsorbate_slab_config: ase.Atoms):
+def get_interstitial_distances(adsorbate_slab_config: ase.Atoms, overlap_tag=2):
     """
-    Check to see if there is any atomic overlap between surface atoms
-    and adsorbate atoms.
+    Check to see if there is any atomic overlap between atoms with a particular
+    tag and all other atoms. Used to check overlap between adsorbate and
+    surface atoms.
 
     Args:
         adsorbate_slab_configuration (ase.Atoms): an slab atoms object with an
             adsorbate placed
+        overlap_tag (int): Tag to check overlap with
 
     Returns:
         (bool): True if there is atomic overlap, otherwise False
     """
     ads_slab_config = adsorbate_slab_config.copy()
-    mask = adsorbate_slab_config.get_tags() == 2
+    mask = adsorbate_slab_config.get_tags() == overlap_tag
     adsorbate_atoms = adsorbate_slab_config[mask]
     adsorbate_com = adsorbate_atoms.get_center_of_mass()
 
@@ -514,7 +516,7 @@ def get_interstitial_distances(adsorbate_slab_config: ase.Atoms):
     adsorbate_atoms = ads_slab_config[mask]
     adsorbate_elements = adsorbate_atoms.get_chemical_symbols()
 
-    mask = ads_slab_config.get_tags() == 1
+    mask = ads_slab_config.get_tags() != overlap_tag
     surface_atoms = ads_slab_config[mask]
     surface_elements = surface_atoms.get_chemical_symbols()
 
@@ -537,7 +539,7 @@ def get_interstitial_distances(adsorbate_slab_config: ase.Atoms):
     return post_radial_distances
 
 
-def there_is_overlap(adsorbate_slab_config: ase.Atoms):
+def there_is_overlap(adsorbate_slab_config: ase.Atoms, overlap_tag=2):
     """
     Check to see if there is any atomic overlap between surface atoms
     and adsorbate atoms.
@@ -545,9 +547,12 @@ def there_is_overlap(adsorbate_slab_config: ase.Atoms):
     Args:
         adsorbate_slab_configuration (ase.Atoms): an slab atoms object with an
             adsorbate placed
+        overlap_tag (int): Tag to check overlap with
 
     Returns:
         (bool): True if there is atomic overlap, otherwise False
     """
-    post_radial_distances = get_interstitial_distances(adsorbate_slab_config)
+    post_radial_distances = get_interstitial_distances(
+        adsorbate_slab_config, overlap_tag
+    )
     return not all(np.array(post_radial_distances) >= 0)
