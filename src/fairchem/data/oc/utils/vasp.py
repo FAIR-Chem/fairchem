@@ -67,7 +67,9 @@ def calculate_surface_k_points(atoms):
     )
 
 
-def write_vasp_input_files(atoms, outdir=".", vasp_flags=None, pp_setups="minimal"):
+def write_vasp_input_files(
+    atoms, outdir=".", vasp_flags=None, pp_setups="minimal", pp_env="VASP_PP_PATH"
+):
     """
     Effectively goes through the same motions as the `run_vasp` function,
     except it only writes the input files instead of running.
@@ -78,11 +80,14 @@ def write_vasp_input_files(atoms, outdir=".", vasp_flags=None, pp_setups="minima
                     Defaults to '.'
         vasp_flags  A dictionary of settings we want to pass to the `Vasp`
                     calculator. Defaults to a standerd set of values if `None`
+        pp_setups   Pseudopotential setups to use - https://gitlab.com/ase/ase/-/blob/master/ase/calculators/vasp/setups.py
+        pp_env      Environment variable to read for pseudopotentials.
     """
     if vasp_flags is None:  # Immutable default
         vasp_flags = VASP_FLAGS
 
     atoms, vasp_flags = _clean_up_inputs(atoms, vasp_flags.copy())
     calc = Vasp(directory=outdir, **vasp_flags)
+    calc.VASP_PP_PATH = pp_env
     calc.input_params["setups"] = pp_setups
     calc.write_input(atoms)
