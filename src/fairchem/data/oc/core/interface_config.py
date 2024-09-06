@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 import ase.io
 import numpy as np
+from fairchem.data.oc.core.adsorbate_slab_config import there_is_overlap
 from fairchem.data.oc.core.multi_adsorbate_slab_config import (
     MultipleAdsorbateSlabConfig,
 )
@@ -57,9 +58,6 @@ class InterfaceConfig(MultipleAdsorbateSlabConfig):
         well as the inter-adsorbate distance.
     vacuum_size: int
         Size of vacuum layer to add to both ends of the resulting atoms object.
-    solvent_interstitial_gap: float
-        Minimum distance, in Angstroms, between the solvent environment and the
-        adsorbate-slab environment.
     solvent_depth: float
         Volume depth to be used to pack solvents inside.
     pbc_shift: float
@@ -101,7 +99,6 @@ class InterfaceConfig(MultipleAdsorbateSlabConfig):
         num_configurations: int = 1,
         interstitial_gap: float = 0.1,
         vacuum_size: int = 15,
-        solvent_interstitial_gap: float = 2,
         solvent_depth: float = 8,
         pbc_shift: float = 0.0,
         packmol_tolerance: float = 2,
@@ -120,7 +117,6 @@ class InterfaceConfig(MultipleAdsorbateSlabConfig):
         self.ions = ions
         self.vacuum_size = vacuum_size
         self.solvent_depth = solvent_depth
-        self.solvent_interstitial_gap = solvent_interstitial_gap
         self.pbc_shift = pbc_shift
         self.packmol_tolerance = packmol_tolerance
 
@@ -159,12 +155,25 @@ class InterfaceConfig(MultipleAdsorbateSlabConfig):
             solvent_ions_atoms = self.create_packmol_atoms(geometry, n_solvent_mols)
             solvent_ions_atoms.set_cell(cell)
 
-            max_z = atoms.positions[:, 2].max() + self.solvent_interstitial_gap
-            translation_vec = cell[2]
-            translation_vec[2] = max_z
-            solvent_ions_atoms.translate(translation_vec)
+            # Place the solvent+ion environment at the interface with the
+            # adsorbate-slab envrionment. Iteratively tile the solvated atoms
+            # to ensure no atomic overlap with the adsorbate+slab.
+            # Take max slab height as starting point
+            max_slab_z = atoms[atoms.get_tags() == 1].positions[:, 2].max()
+            translation_vec = cell[2] / np.linalg.norm(cell[2])
+            overlap = True
+            while overlap:
+                _tv = translation_vec.copy()
+                _tv *= max_slab_z
 
-            interface_atoms = atoms + solvent_ions_atoms
+                _solvent_ions_atoms = solvent_ions_atoms.copy()
+                _solvent_ions_atoms.translate(_tv)
+
+                adslab = atoms.copy()
+                interface_atoms = adslab + _solvent_ions_atoms
+                overlap = there_is_overlap(interface_atoms, overlap_tag=3)
+                max_slab_z += 0.5  # iteratively tile cell
+
             interface_atoms.center(vacuum=self.vacuum_size, axis=2)
             interface_atoms.wrap()
 
