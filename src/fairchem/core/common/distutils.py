@@ -20,7 +20,7 @@ from torch.distributed.elastic.utils.distributed import get_free_port
 from fairchem.core.common.typing import none_throws
 
 T = TypeVar("T")
-
+DISTRIBUTED_PORT = 13356
 
 def os_environ_get_or_throw(x: str) -> str:
     if x not in os.environ:
@@ -41,7 +41,7 @@ def setup(config) -> None:
                 )
                 config["init_method"] = "tcp://{host}:{port}".format(
                     host=hostnames.split()[0].decode("utf-8"),
-                    port=config["distributed_port"],
+                    port=DISTRIBUTED_PORT,
                 )
                 nnodes = int(os_environ_get_or_throw("SLURM_NNODES"))
                 ntasks_per_node = os.environ.get("SLURM_NTASKS_PER_NODE")
@@ -71,7 +71,7 @@ def setup(config) -> None:
                 torch.cuda.set_device(config["local_rank"])
 
                 dist.init_process_group(
-                    backend=config["distributed_backend"],
+                    backend="nccl",
                     init_method=config["init_method"],
                     world_size=config["world_size"],
                     rank=config["rank"],
