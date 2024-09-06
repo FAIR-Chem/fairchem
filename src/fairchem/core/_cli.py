@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import copy
 import logging
+import os
 from typing import TYPE_CHECKING
 
 from submitit import AutoExecutor
 from submitit.helpers import Checkpointable, DelayedSubmission
+from torch.distributed.elastic.utils.distributed import get_free_port
 from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
 from fairchem.core.common.flags import flags
@@ -55,14 +57,16 @@ def runner_wrapper(config: dict):
     Runner()(config)
 
 
-def main():
+def main(args: argparse.Namespace | None = None, override_args: list[str] | None = None):
     """Run the main fairchem program."""
     setup_logging()
 
-    parser: argparse.ArgumentParser = flags.get_parser()
-    args: argparse.Namespace
-    override_args: list[str]
-    args, override_args = parser.parse_known_args()
+    if args is None:
+        parser: argparse.ArgumentParser = flags.get_parser()
+        args, override_args = parser.parse_known_args()
+
+    # TODO: rename num_gpus -> num_ranks everywhere
+    assert args.num_gpus > 0, "num_gpus is used to determine number ranks, so it must be at least 1"
     config = build_config(args, override_args)
 
     if args.submit:  # Run on cluster
@@ -115,7 +119,10 @@ def main():
             )
             elastic_launch(launch_config, runner_wrapper)(config)
         else:
-            logging.info("Running in local mode")
+            logging.info("Running in local mode without elastic launch (single gpu only)")
+            os.environ["MASTER_ADDR"] = "localhost"
+            os.environ["LOCAL_RANK"] = "0"
+            os.environ["MASTER_PORT"] = str(get_free_port())
             runner_wrapper(config)
 
 

@@ -15,6 +15,7 @@ import os
 import random
 import sys
 from abc import ABC, abstractmethod
+from distutils import dist
 from itertools import chain
 from typing import TYPE_CHECKING
 
@@ -79,12 +80,10 @@ class BaseTrainer(ABC):
         print_every: int = 100,
         seed: int | None = None,
         logger: str = "wandb",
-        local_rank: int = 0,
         amp: bool = False,
         cpu: bool = False,
         name: str = "ocp",
         slurm=None,
-        noddp: bool = False,
         gp_gpus: int | None = None,
     ) -> None:
         if slurm is None:
@@ -96,7 +95,7 @@ class BaseTrainer(ABC):
         self.step = 0
 
         if torch.cuda.is_available() and not self.cpu:
-            self.device = torch.device(f"cuda:{local_rank}")
+            self.device = torch.device(f"cuda:{dist.get_rank()}")
         else:
             self.device = torch.device("cpu")
             self.cpu = True  # handle case when `--cpu` isn't specified
@@ -141,7 +140,6 @@ class BaseTrainer(ABC):
                 ),
             },
             "slurm": slurm,
-            "noddp": noddp,
             "gp_gpus": gp_gpus,
         }
         # AMP Scaler
@@ -545,11 +543,10 @@ class BaseTrainer(ABC):
                 )
             self.logger.log_summary({"num_params": num_params})
 
-        if distutils.initialized() and not self.config["noddp"]:
-            self.model = DistributedDataParallel(
-                self.model,
-                device_ids=None if self.cpu else [self.device],
-            )
+        assert distutils.initialized()
+        self.model = DistributedDataParallel(
+            self.model,
+        )
 
     @property
     def _unwrapped_model(self):

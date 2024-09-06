@@ -505,10 +505,8 @@ def build_config(args, args_override, include_paths=None):
     config["submit"] = args.submit
     config["summit"] = args.summit
     # Distributed
-    config["local_rank"] = args.local_rank
-    config["distributed_port"] = args.distributed_port
     config["world_size"] = args.num_nodes * args.num_gpus
-    config["distributed_backend"] = args.distributed_backend
+    config["distributed_backend"] = "gloo" if args.cpu else "nccl"
     config["gp_gpus"] = args.gp_gpus
 
     # Check for overridden parameters.
@@ -1059,11 +1057,9 @@ def new_trainer_context(*, config: dict[str, Any]):
             "print_every": config.get("print_every", 10),
             "seed": config.get("seed", 0),
             "logger": config.get("logger", "wandb"),
-            "local_rank": config["local_rank"],
             "amp": config.get("amp", False),
             "cpu": config.get("cpu", False),
             "slurm": config.get("slurm", {}),
-            "noddp": config.get("noddp", False),
             "name": task_name,
             "gp_gpus": config.get("gp_gpus"),
         }

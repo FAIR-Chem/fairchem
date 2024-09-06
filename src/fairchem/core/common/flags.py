@@ -11,8 +11,6 @@ import argparse
 import os
 from pathlib import Path
 
-import torch
-
 
 class Flags:
     def __init__(self) -> None:
@@ -129,19 +127,6 @@ class Flags:
             type=int,
             help="Number of Nodes to request",
         )
-        self.parser.add_argument(
-            "--distributed-port",
-            type=int,
-            default=13356,
-            help="Port on master for DDP",
-        )
-        self.parser.add_argument(
-            "--distributed-backend",
-            type=str,
-            default="nccl" if torch.cuda.is_available() else "gloo",
-            help="Backend for DDP",
-        )
-        self.parser.add_argument("--local-rank", default=0, type=int, help="Local rank")
         self.parser.add_argument(
             "--gp-gpus",
             type=int,

@@ -195,12 +195,11 @@ class TestSmoke:
         configs,
         tutorial_val_src,
     ):
-        # test without ddp
         self.smoke_test_train(
             input_yaml=configs[model_name],
             tutorial_val_src=tutorial_val_src,
             otf_norms=otf_norms,
-            world_size=0,
+            world_size=1,
             num_workers=2,
         )
         # test with ddp but no wokers
@@ -252,19 +251,15 @@ class TestSmoke:
                 )
 
     @pytest.mark.parametrize(
-        ("world_size", "ddp"),
+        ("world_size"),
         [
-            pytest.param(
-                2,
-                True,
-            ),
-            pytest.param(0, False),
+            pytest.param(2),
+            pytest.param(1),
         ],
     )
     def test_ddp(
         self,
         world_size,
-        ddp,
         configs,
         tutorial_val_src,
         torch_deterministic,
@@ -288,14 +283,14 @@ class TestSmoke:
             )
 
     @pytest.mark.parametrize(
-        ("world_size", "ddp"),
+        ("world_size"),
         [
-            pytest.param(2, True),
-            pytest.param(0, False),
+            pytest.param(2),
+            pytest.param(1),
         ],
     )
     def test_balanced_batch_sampler_ddp(
-        self, world_size, ddp, configs, tutorial_val_src, torch_deterministic
+        self, world_size, configs, tutorial_val_src, torch_deterministic
     ):
         # make dataset metadata
         parser = get_lmdb_sizes_parser()

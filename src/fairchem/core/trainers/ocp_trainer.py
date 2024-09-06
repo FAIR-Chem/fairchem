@@ -69,7 +69,6 @@ class OCPTrainer(BaseTrainer):
             (default: :obj:`False`)
         slurm (dict): Slurm configuration. Currently just for keeping track.
             (default: :obj:`{}`)
-        noddp (bool, optional): Run model without DDP.
     """
 
     def __init__(
@@ -88,11 +87,9 @@ class OCPTrainer(BaseTrainer):
         print_every=100,
         seed=None,
         logger="wandb",
-        local_rank=0,
         amp=False,
         cpu=False,
         slurm=None,
-        noddp=False,
         name="ocp",
         gp_gpus=None,
     ):
@@ -113,11 +110,9 @@ class OCPTrainer(BaseTrainer):
             print_every=print_every,
             seed=seed,
             logger=logger,
-            local_rank=local_rank,
             amp=amp,
             cpu=cpu,
             slurm=slurm,
-            noddp=noddp,
             name=name,
             gp_gpus=gp_gpus,
         )

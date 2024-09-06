@@ -102,8 +102,13 @@ def setup(config) -> None:
             timeout=timeout,
         )
     else:
-        logging.info(f"initializing distributed process group using {config['distributed_backend']} backend")
-        init_local_distributed_process_group(backend=config["distributed_backend"])
+        if not os.environ.get("MASTER_ADDR"):
+            assert config["world_size"] == 1, "Can only setup master address and port at this point for a single rank, otherwise we assume the processes and the comm addr/port have already been setup"
+            os.environ["MASTER_ADDR"] = "localhost"
+            os.environ["MASTER_PORT"] = str(get_free_port())
+            os.environ["LOCAL_RANK"] = "0"
+        config["local_rank"] = int(os.environ.get("LOCAL_RANK"))
+        dist.init_process_group(backend=config["distributed_backend"], rank=config["local_rank"], world_size=config["world_size"], timeout=timeout)
 
 
 def cleanup() -> None:
@@ -193,13 +198,3 @@ def gather_objects(data: T, group: dist.ProcessGroup = dist.group.WORLD) -> list
     output = [None for _ in range(get_world_size())] if is_master() else None
     dist.gather_object(data, output, group=group, dst=0)
     return output
-
-def init_local_distributed_process_group(backend: str = "nccl"):
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = str(get_free_port())
-    dist.init_process_group(
-        rank=0,
-        world_size=1,
-        backend=backend,
-        timeout=timedelta(seconds=10),  # setting up timeout for distributed collectives
-    )
