@@ -63,8 +63,6 @@ class OCPTrainer(BaseTrainer):
             (default: :obj:`None`)
         logger (str, optional): Type of logger to be used.
             (default: :obj:`wandb`)
-        local_rank (int, optional): Local rank of the process, only applicable for distributed training.
-            (default: :obj:`0`)
         amp (bool, optional): Run using automatic mixed precision.
             (default: :obj:`False`)
         slurm (dict): Slurm configuration. Currently just for keeping track.
