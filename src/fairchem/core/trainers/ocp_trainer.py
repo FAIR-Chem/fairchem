@@ -79,15 +79,15 @@ class OCPTrainer(BaseTrainer):
         loss_functions,
         evaluation_metrics,
         identifier,
+        # TODO: dealing with local rank is dangerous
+        # T201111838 remove this and use CUDA_VISIBILE_DEVICES instead so trainers don't need to know about which devie to use
+        local_rank,
         timestamp_id=None,
         run_dir=None,
         is_debug=False,
         print_every=100,
         seed=None,
         logger="wandb",
-        # TODO: dealing with local rank is dangerous
-        # T201111838 remove this and use CUDA_VISIBILE_DEVICES instead so trainers don't need to know about which devie to use
-        local_rank: int = 0,
         amp=False,
         cpu=False,
         slurm=None,
@@ -105,6 +105,7 @@ class OCPTrainer(BaseTrainer):
             loss_functions=loss_functions,
             evaluation_metrics=evaluation_metrics,
             identifier=identifier,
+            local_rank=local_rank,
             timestamp_id=timestamp_id,
             run_dir=run_dir,
             is_debug=is_debug,

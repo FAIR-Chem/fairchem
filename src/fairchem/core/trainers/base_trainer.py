@@ -73,15 +73,15 @@ class BaseTrainer(ABC):
         loss_functions,
         evaluation_metrics,
         identifier: str,
+        # TODO: dealing with local rank is dangerous
+        # T201111838 remove this and use CUDA_VISIBILE_DEVICES instead so trainers don't need to know about which devie to use
+        local_rank: int,
         timestamp_id: str | None = None,
         run_dir: str | None = None,
         is_debug: bool = False,
         print_every: int = 100,
         seed: int | None = None,
         logger: str = "wandb",
-        # TODO: dealing with local rank is dangerous
-        # T201111838 remove this and use CUDA_VISIBILE_DEVICES instead so trainers don't need to know about which devie to use
-        local_rank: int = 0,
         amp: bool = False,
         cpu: bool = False,
         name: str = "ocp",
@@ -97,6 +97,7 @@ class BaseTrainer(ABC):
         self.step = 0
 
         if torch.cuda.is_available() and not self.cpu:
+            logging.info(f"local rank base: {local_rank}")
             self.device = torch.device(f"cuda:{local_rank}")
         else:
             self.device = torch.device("cpu")
