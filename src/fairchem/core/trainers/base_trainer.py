@@ -79,6 +79,9 @@ class BaseTrainer(ABC):
         print_every: int = 100,
         seed: int | None = None,
         logger: str = "wandb",
+        # TODO: dealing with local rank is dangerous
+        # T201111838 remove this and use CUDA_VISIBILE_DEVICES instead so trainers don't need to know about which devie to use
+        local_rank: int = 0,
         amp: bool = False,
         cpu: bool = False,
         name: str = "ocp",
@@ -94,7 +97,7 @@ class BaseTrainer(ABC):
         self.step = 0
 
         if torch.cuda.is_available() and not self.cpu:
-            self.device = torch.device(f"cuda:{distutils.get_rank()}")
+            self.device = torch.device(f"cuda:{local_rank}")
         else:
             self.device = torch.device("cpu")
             self.cpu = True  # handle case when `--cpu` isn't specified

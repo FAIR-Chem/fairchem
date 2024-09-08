@@ -1057,6 +1057,7 @@ def new_trainer_context(*, config: dict[str, Any]):
             "print_every": config.get("print_every", 10),
             "seed": config.get("seed", 0),
             "logger": config.get("logger", "wandb"),
+            "local_rank": config["local_rank"],
             "amp": config.get("amp", False),
             "cpu": config.get("cpu", False),
             "slurm": config.get("slurm", {}),

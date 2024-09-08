@@ -68,6 +68,7 @@ def setup(config) -> None:
                 )
 
                 # ensures GPU0 does not have extra context/higher peak memory
+                logging.info(f"local rank: {config['local_rank']}, visible devices: {os.environ['CUDA_VISIBLE_DEVICES']}")
                 torch.cuda.set_device(config["local_rank"])
 
                 dist.init_process_group(
@@ -107,8 +108,9 @@ def setup(config) -> None:
             os.environ["MASTER_ADDR"] = "localhost"
             os.environ["MASTER_PORT"] = str(get_free_port())
             os.environ["LOCAL_RANK"] = "0"
+            os.environ["RANK"] = "0"
         config["local_rank"] = int(os.environ.get("LOCAL_RANK"))
-        dist.init_process_group(backend=config["distributed_backend"], rank=config["local_rank"], world_size=config["world_size"], timeout=timeout)
+        dist.init_process_group(backend=config["distributed_backend"], rank=int(os.environ.get("RANK")), world_size=config["world_size"], timeout=timeout)
 
 
 def cleanup() -> None:

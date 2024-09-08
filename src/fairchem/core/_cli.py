@@ -122,6 +122,7 @@ def main(args: argparse.Namespace | None = None, override_args: list[str] | None
             logging.info("Running in local mode without elastic launch (single gpu only)")
             os.environ["MASTER_ADDR"] = "localhost"
             os.environ["LOCAL_RANK"] = "0"
+            os.environ["RANK"] = "0"
             os.environ["MASTER_PORT"] = str(get_free_port())
             runner_wrapper(config)
 
