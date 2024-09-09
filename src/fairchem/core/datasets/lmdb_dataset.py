@@ -227,6 +227,6 @@ def data_list_collater(data_list: list[BaseData], otf_graph: bool = False, to_di
             )
 
     if to_dict:
-        batch = {k:v for k,v in batch.items()}
+        batch = dict(batch.items())
 
     return batch
