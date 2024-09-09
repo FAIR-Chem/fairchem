@@ -21,7 +21,7 @@ from ase.io import read
 from torch.nn.parallel.distributed import DistributedDataParallel
 
 from fairchem.core.common.registry import registry
-from fairchem.core.common.distutils import init_local_distributed_process_group
+from fairchem.core.common.test_utils import init_local_distributed_process_group
 from fairchem.core.common.utils import load_state_dict, setup_imports
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.preprocessing import AtomsToGraphs
@@ -29,7 +29,7 @@ from fairchem.core.common.transforms import RandomRotate
 from fairchem.core.models.scn.smearing import GaussianSmearing
 from fairchem.core.models.base import GraphModelMixin
 
-from fairchem.core.models.utils.so3_utils import CoefficientMapping, SO3_Grid, rotation_to_wigner
+from fairchem.core.models.escn.so3_exportable import CoefficientMapping, SO3_Grid, rotation_to_wigner
 from fairchem.core.models.escn import escn_exportable
 
 from torch.export import export
@@ -45,10 +45,11 @@ def load_data():
         format="json",
     )
     a2g = AtomsToGraphs(
-        max_neigh=200,
-        radius=6,
-        r_edges=False,
+        max_neigh=300,
+        radius=6.0,
+        r_edges=True,
         r_fixed=True,
+        r_distances=True,
     )
     data_list = a2g.convert_all([atoms])
     return data_list[0]
@@ -62,8 +63,8 @@ def load_model(name: str):
         use_pbc_single = False,
         regress_forces = True,
         otf_graph = True,
-        max_neighbors = 20,
-        cutoff = 8.0,
+        max_neighbors = 300,
+        cutoff = 6.0,
         max_num_elements = 90,
         num_layers = 8,
         lmax_list = [4],
@@ -75,7 +76,6 @@ def load_model(name: str):
         distance_function = "gaussian",
         basis_width_scalar = 1.0,
         distance_resolution = 0.02,
-        show_timing_info = False,
         resolution = None,
     )
     return model
@@ -88,11 +88,13 @@ class TestESCNCompiles:
     def test_escn_baseline_cpu(self, tol=1e-8):
         init('gloo')
         data = load_data()
-        data = data_list_collater([data])
+        data_tg = data_list_collater([data])
+        data_export = data_list_collater([data], to_dict=True)
+
         base_model = DistributedDataParallel(load_model("escn"))
         export_model = DistributedDataParallel(load_model("escn_export"))
-        base_output = base_model(data)
-        export_output = export_model(data)
+        base_output = base_model(data_tg)
+        export_output = export_model(data_export)
         torch.set_printoptions(precision=8)
         assert torch.allclose(base_output["energy"], export_output["energy"], atol=tol)
         assert torch.allclose(base_output["forces"].mean(0), export_output["forces"].mean(0), atol=tol)
@@ -101,11 +103,14 @@ class TestESCNCompiles:
     def test_escn_baseline_cuda(self, tol=1e-8):
         init('nccl')
         data = load_data()
-        data = data_list_collater([data]).to("cuda")
-        base_model = DistributedDataParallel(load_model("escn")).cuda()
-        export_model = DistributedDataParallel(load_model("escn_export")).cuda()
-        base_output = base_model(data)
-        export_output = export_model(data)
+        data_tg = data_list_collater([data]).to("cuda")
+        data_export = data_list_collater([data], to_dict=True)
+        data_export_cu = {k:v.to("cuda") for k,v in data_export.items()}
+
+        base_model = DistributedDataParallel(load_model("escn").cuda())
+        export_model = DistributedDataParallel(load_model("escn_export").cuda())
+        base_output = base_model(data_tg)
+        export_output = export_model(data_export_cu)
         torch.set_printoptions(precision=8)
         assert torch.allclose(base_output["energy"], export_output["energy"], atol=tol)
         assert torch.allclose(base_output["forces"].mean(0), export_output["forces"].mean(0), atol=tol)
@@ -120,7 +125,7 @@ class TestESCNCompiles:
         assert not np.array_equal(data.pos, data_rotated.pos)
 
         # Pass it through the model.
-        batch = data_list_collater([data, data_rotated])
+        batch = data_list_collater([data, data_rotated], to_dict=True)
         model = load_model("escn_export")
         model.eval()
         out = model(batch)
@@ -201,19 +206,11 @@ class TestESCNCompiles:
             mappingReduced = mappingReduced
         )
 
-        data = load_data()
-        data = data_list_collater([data])
-        full_model = load_model("escn_export")
-        graph = full_model.generate_graph(data)
-        edge_rot_mat = full_model._init_edge_rot_mat(
-            data, graph.edge_index, graph.edge_distance_vec
-        )
-        wigner = rotation_to_wigner(edge_rot_mat, 0, lmax).detach()
-
         # generate inputs
         batch_sizes = [34]
         num_coefs = 25
-        num_edges = 680
+        num_edges = 2000
+        wigner = torch.rand([num_edges, num_coefs, num_coefs])
         args = []
         for b in batch_sizes:
             x = torch.rand([b, num_coefs, sphere_channels])
@@ -279,10 +276,6 @@ class TestESCNCompiles:
         torch._dynamo.config.assume_static_by_default = False
         torch._dynamo.config.automatic_dynamic_shapes = True
         torch._dynamo.config.verbose = True
-        # torch._logging.set_logs(dynamo = logging.INFO)
-        # torch._dynamo.reset()
-        # explain_output = torch._dynamo.explain(message_block)(*args[0])
-        # print(explain_output)
 
         batch_dim = Dim("batch_dim")
         edges_dim = Dim("edges_dim")
@@ -302,31 +295,40 @@ class TestESCNCompiles:
             assert torch.allclose(compiled_output, regular_out, atol=tol)
             assert torch.allclose(exported_output, regular_out, atol=tol)
 
-    def test_escn_compiles(self):
+    def test_full_escn_compiles(self, tol=1e-5):
         init("gloo")
         data = load_data()
-        data = data_list_collater([data])
+        regular_data = data_list_collater([data])
+        compile_data = data_list_collater([data], to_dict=True)
         model = load_model('escn_export')
         ddp_model = DistributedDataParallel(model)
 
         torch._dynamo.config.optimize_ddp = False
         torch._dynamo.config.assume_static_by_default = False
         torch._dynamo.config.automatic_dynamic_shapes = True
-        # torch._dynamo.config.suppress_errors = True
+        compiled_model = torch.compile(ddp_model, dynamic=True)
+        output = compiled_model(compile_data)
+        expected_output = ddp_model(regular_data)
+        assert torch.allclose(expected_output["energy"], output["energy"], atol=tol)
+        assert torch.allclose(expected_output["forces"].mean(0), output["forces"].mean(0), atol=tol)
 
-        # os.environ["TORCH_LOGS"] = "+dynamo,recompiles"
+    def test_full_escn_exports(self):
+        init("gloo")
+        data = load_data()
+        regular_data = data_list_collater([data])
+        export_data = data_list_collater([data], to_dict=True)
+        model = load_model('escn_export')
+
+        torch._dynamo.config.optimize_ddp = False
+        torch._dynamo.config.assume_static_by_default = False
+        torch._dynamo.config.automatic_dynamic_shapes = True
         # torch._logging.set_logs(dynamo = logging.INFO)
-        # os.environ["TORCHDYNAMO_VERBOSE"] = "1"
-        # os.environ["TORCHDYNAMO_REPRO_AFTER"]="dynamo"
-        # torch._dynamo.config.verbose = True
-        compiled_model = torch.compile(model, dynamic=True)
-        # torch._dynamo.explain(model)(data)
-        # assert False
         # torch._dynamo.reset()
-        # explain_output = torch._dynamo.explain(model)(data)
-        # print(explain_output)
-
-        output = compiled_model(data)
-        # expected_energy, expected_forces = expected_energy_forces()
-        # assert torch.allclose(output["energy"], expected_energy)
-        # assert torch.allclose(output["forces"].mean(0), expected_forces)
+        # explained_output = torch._dynamo.explain(model)(*data)
+        # print(explained_output)
+        # TODO: add dynamic shapes
+        exported_prog = export(model, args=(export_data,))
+        export_output = exported_prog(export_data)
+        expected_output = model(regular_data)
+        assert torch.allclose(export_output["energy"], expected_output["energy"])
+        assert torch.allclose(export_output["forces"].mean(0), expected_output["forces"].mean(0))

@@ -15,16 +15,11 @@ import typing
 import torch
 import torch.nn as nn
 
-if typing.TYPE_CHECKING:
-    from torch_geometric.data.batch import Batch
-
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
-from fairchem.core.models.utils.so3_utils import (
+from fairchem.core.models.escn.so3_exportable import (
     CoefficientMapping,
     SO3_Grid,
-    SO3_Rotation,
     rotation_to_wigner
 )
 from fairchem.core.models.scn.sampling import CalcSpherePoints
@@ -40,7 +35,7 @@ with contextlib.suppress(ImportError):
 
 
 @registry.register_model("escn_export")
-class eSCN(nn.Module, GraphModelMixin):
+class eSCN(nn.Module):
     """Equivariant Spherical Channel Network
     Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
 
@@ -64,7 +59,6 @@ class eSCN(nn.Module, GraphModelMixin):
         distance_function ("gaussian", "sigmoid", "linearsigmoid", "silu"):  Basis function used for distances
         basis_width_scalar (float):   Width of distance basis function
         distance_resolution (float):  Distance between distance basis functions in Angstroms
-        show_timing_info (bool):      Show timing and memory info
     """
 
     def __init__(
@@ -86,7 +80,6 @@ class eSCN(nn.Module, GraphModelMixin):
         distance_function: str = "gaussian",
         basis_width_scalar: float = 1.0,
         distance_resolution: float = 0.02,
-        show_timing_info: bool = False,
         resolution: int | None = None,
     ) -> None:
         super().__init__()
@@ -102,7 +95,6 @@ class eSCN(nn.Module, GraphModelMixin):
         self.use_pbc_single = use_pbc_single
         self.cutoff = cutoff
         self.otf_graph = otf_graph
-        self.show_timing_info = show_timing_info
         self.max_num_elements = max_num_elements
         self.hidden_channels = hidden_channels
         self.num_layers = num_layers
@@ -120,9 +112,6 @@ class eSCN(nn.Module, GraphModelMixin):
         self.mmax = mmax_list[0]
         self.basis_width_scalar = basis_width_scalar
         self.distance_function = distance_function
-
-        # variables used for display purposes
-        self.counter = 0
 
         # non-linear activation function used throughout the network
         self.act = nn.SiLU()
@@ -218,19 +207,22 @@ class eSCN(nn.Module, GraphModelMixin):
         )
 
 
-    @conditional_grad(torch.enable_grad())
-    def forward(self, data):
-        device = data.pos.device
-        self.batch_size = len(data.natoms)
-        self.dtype = data.pos.dtype
+    # @conditional_grad(torch.enable_grad())
+    def forward(self, data: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+        pos: torch.Tensor = data["pos"]
+        batch_idx: torch.Tensor = data["batch"]
+        natoms: torch.Tensor = data["natoms"]
+        atomic_numbers: torch.Tensor = data["atomic_numbers"]
+        edge_index: torch.Tensor = data["edge_index"]
+        edge_distance: torch.Tensor = data["distances"]
+        edge_distance_vec: torch.Tensor = data["edge_distance_vec"]
 
-        start_time = time.time()
-        atomic_numbers = data.atomic_numbers.long()
-        assert (
-            atomic_numbers.max().item() < self.max_num_elements
-        ), "Atomic number exceeds that given in model config"
+        atomic_numbers = atomic_numbers.long()
+        # TODO: this requires upgrade to torch2.4 with export non-strict mode to enable
+        # assert (
+        #     atomic_numbers.max().item() < self.max_num_elements
+        # ), "Atomic number exceeds that given in model config"
         num_atoms = len(atomic_numbers)
-        graph = self.generate_graph(data)
 
         ###############################################################
         # Initialize data structures
@@ -238,7 +230,7 @@ class eSCN(nn.Module, GraphModelMixin):
 
         # Compute 3x3 rotation matrix per edge
         edge_rot_mat = self._init_edge_rot_mat(
-            data, graph.edge_index, graph.edge_distance_vec
+            edge_index, edge_distance_vec
         )
         wigner = rotation_to_wigner(edge_rot_mat, 0, self.lmax).detach()
 
@@ -251,8 +243,8 @@ class eSCN(nn.Module, GraphModelMixin):
             num_atoms,
             int((self.lmax + 1) ** 2),
             self.sphere_channels,
-            device=device,
-            dtype=self.dtype,
+            device=pos.device,
+            dtype=pos.dtype,
         )
         x_message[:, 0, :] = self.sphere_embedding(atomic_numbers)
 
@@ -264,8 +256,8 @@ class eSCN(nn.Module, GraphModelMixin):
                 x_message_new = self.layer_blocks[i](
                     x_message,
                     atomic_numbers,
-                    graph.edge_distance,
-                    graph.edge_index,
+                    edge_distance,
+                    edge_index,
                     wigner,
                 )
                 # Residual layer for all layers past the first
@@ -275,8 +267,8 @@ class eSCN(nn.Module, GraphModelMixin):
                 x_message = self.layer_blocks[i](
                     x_message,
                     atomic_numbers,
-                    graph.edge_distance,
-                    graph.edge_index,
+                    edge_distance,
+                    edge_index,
                     wigner,
                 )
 
@@ -288,8 +280,8 @@ class eSCN(nn.Module, GraphModelMixin):
         # Energy estimation
         ###############################################################
         node_energy = self.energy_block(x_pt)
-        energy = torch.zeros(len(data.natoms), device=device)
-        energy.index_add_(0, data.batch, node_energy.view(-1))
+        energy = torch.zeros(len(natoms), device=node_energy.device)
+        energy.index_add_(0, batch_idx, node_energy.view(-1))
         # Scale energy to help balance numerical precision w.r.t. forces
         energy = energy * 0.001
 
@@ -301,30 +293,23 @@ class eSCN(nn.Module, GraphModelMixin):
             forces = self.force_block(x_pt, self.sphere_points)
             outputs["forces"] = forces
 
-        if self.show_timing_info is True:
-            torch.cuda.synchronize()
-            logging.info(
-                f"{self.counter} Time: {time.time() - start_time}\tMemory: {len(data.pos)}\t{torch.cuda.max_memory_allocated() / 1000000}"
-            )
-
-        self.counter = self.counter + 1
-
         return outputs
 
     # Initialize the edge rotation matrics
-    def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
+    def _init_edge_rot_mat(self, edge_index, edge_distance_vec):
         edge_vec_0 = edge_distance_vec
         edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0**2, dim=1))
 
         # Make sure the atoms are far enough apart
-        if torch.min(edge_vec_0_distance) < 0.0001:
-            logging.error(
-                f"Error edge_vec_0_distance: {torch.min(edge_vec_0_distance)}"
-            )
-            (minval, minidx) = torch.min(edge_vec_0_distance, 0)
-            logging.error(
-                f"Error edge_vec_0_distance: {minidx} {edge_index[0, minidx]} {edge_index[1, minidx]} {data.pos[edge_index[0, minidx]]} {data.pos[edge_index[1, minidx]]}"
-            )
+        # TODO: this requires upgrade to torch2.4 with export non-strict mode to enable
+        # if torch.min(edge_vec_0_distance) < 0.0001:
+        #     logging.error(
+        #         f"Error edge_vec_0_distance: {torch.min(edge_vec_0_distance)}"
+        #     )
+        #     (minval, minidx) = torch.min(edge_vec_0_distance, 0)
+        #     logging.error(
+        #         f"Error edge_vec_0_distance: {minidx} {edge_index[0, minidx]} {edge_index[1, minidx]} {data.pos[edge_index[0, minidx]]} {data.pos[edge_index[1, minidx]]}"
+        #     )
 
         norm_x = edge_vec_0 / (edge_vec_0_distance.view(-1, 1))
 

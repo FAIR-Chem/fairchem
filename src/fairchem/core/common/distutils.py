@@ -193,13 +193,3 @@ def gather_objects(data: T, group: dist.ProcessGroup = dist.group.WORLD) -> list
     output = [None for _ in range(get_world_size())] if is_master() else None
     dist.gather_object(data, output, group=group, dst=0)
     return output
-
-def init_local_distributed_process_group(backend="nccl"):
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = str(get_free_port())
-    dist.init_process_group(
-        rank=0,
-        world_size=1,
-        backend=backend,
-        timeout=timedelta(seconds=10),  # setting up timeout for distributed collectives
-    )

@@ -14,7 +14,10 @@ except ImportError:
 # Borrowed from e3nn @ 0.4.0:
 # https://github.com/e3nn/e3nn/blob/0.4.0/e3nn/o3/_wigner.py#L10
 # _Jd is a list of tensors of shape (2l+1, 2l+1)
-_Jd = torch.load(os.path.join(os.path.dirname(__file__), "Jd.pt"))
+__Jd = torch.load(os.path.join(os.path.dirname(__file__), "Jd.pt"))
+@torch.compiler.assume_constant_result
+def get_jd() -> torch.Tensor:
+    return __Jd
 
 
 # Borrowed from e3nn @ 0.4.0:
@@ -25,10 +28,8 @@ _Jd = torch.load(os.path.join(os.path.dirname(__file__), "Jd.pt"))
 def wigner_D(
     lv: int, alpha: torch.Tensor, beta: torch.Tensor, gamma: torch.Tensor
 ) -> torch.Tensor:
-    if not lv < len(_Jd):
-        raise NotImplementedError(
-            f"wigner D maximum l implemented is {len(_Jd) - 1}, send us an email to ask for more"
-        )
+    _Jd = get_jd()
+    assert lv < len(_Jd), f"wigner D maximum l implemented is {len(_Jd) - 1}, send us an email to ask for more"
 
     alpha, beta, gamma = torch.broadcast_tensors(alpha, beta, gamma)
     J = _Jd[lv].to(dtype=alpha.dtype, device=alpha.device)
