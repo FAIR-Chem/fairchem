@@ -15,7 +15,6 @@ from submitit import AutoExecutor
 from submitit.helpers import Checkpointable, DelayedSubmission
 from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
-from fairchem.core.common.distutils import init_local_distributed_process_group
 from fairchem.core.common.flags import flags
 from fairchem.core.common.utils import (
     build_config,
@@ -95,7 +94,7 @@ def main():
         logging.info(f"Experiment log saved to: {log_file}")
 
     else:  # Run locally on a single node, n-processes
-        if args.num_gpus > 1:
+        if args.distributed:
             logging.info(
                 f"Running in distributed local mode with {args.num_gpus} ranks"
             )
@@ -117,8 +116,10 @@ def main():
             )
             elastic_launch(launch_config, runner_wrapper)(args.distributed, config)
         else:
-            logging.info("Running in local mode")
-            init_local_distributed_process_group(backend='nccl')
+            logging.info("Running in non-distributed local mode")
+            assert (
+                args.num_gpus == 1
+            ), "Can only run with a single gpu in non distributed local mode, use --distributed flag instead if using >1 gpu"
             runner_wrapper(args.distributed, config)
 
 

@@ -17,7 +17,6 @@ import torch
 import torch.distributed as dist
 
 from fairchem.core.common.typing import none_throws
-from torch.distributed.elastic.utils.distributed import get_free_port
 
 T = TypeVar("T")
 
