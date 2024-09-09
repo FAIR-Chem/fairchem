@@ -6,6 +6,7 @@ VASP_FLAGS = {
     "ibrion": 2,
     "nsw": 2000,
     "isif": 0,
+    "ispin": 1,
     "isym": 0,
     "lreal": "Auto",
     "ediffg": -0.03,
