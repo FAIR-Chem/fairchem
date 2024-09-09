@@ -7,33 +7,29 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-import copy
-import io
+import logging
 import os
 import random
-import numpy as np
-import logging
 
+import numpy as np
 import pytest
-import requests
 import torch
 from ase.io import read
+from torch.export import Dim, export
 from torch.nn.parallel.distributed import DistributedDataParallel
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.test_utils import init_local_distributed_process_group
-from fairchem.core.common.utils import load_state_dict, setup_imports
-from fairchem.core.datasets import data_list_collater
-from fairchem.core.preprocessing import AtomsToGraphs
 from fairchem.core.common.transforms import RandomRotate
-from fairchem.core.models.scn.smearing import GaussianSmearing
-from fairchem.core.models.base import GraphModelMixin
-
-from fairchem.core.models.escn.so3_exportable import CoefficientMapping, SO3_Grid, rotation_to_wigner
+from fairchem.core.common.utils import setup_imports
+from fairchem.core.datasets import data_list_collater
 from fairchem.core.models.escn import escn_exportable
-
-from torch.export import export
-from torch.export import Dim
+from fairchem.core.models.escn.so3_exportable import (
+    CoefficientMapping,
+    SO3_Grid,
+)
+from fairchem.core.models.scn.smearing import GaussianSmearing
+from fairchem.core.preprocessing import AtomsToGraphs
 
 skip_if_no_cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="skipping when no gpu")
 
@@ -58,7 +54,7 @@ def load_data():
 def load_model(name: str):
     torch.manual_seed(4)
     setup_imports()
-    model = registry.get_model_class(name)(
+    return registry.get_model_class(name)(
         use_pbc = True,
         use_pbc_single = False,
         regress_forces = True,
@@ -78,7 +74,6 @@ def load_model(name: str):
         distance_resolution = 0.02,
         resolution = None,
     )
-    return model
 
 def init(backend: str):
     if not torch.distributed.is_initialized():
@@ -86,7 +81,7 @@ def init(backend: str):
 
 class TestESCNCompiles:
     def test_escn_baseline_cpu(self, tol=1e-8):
-        init('gloo')
+        init("gloo")
         data = load_data()
         data_tg = data_list_collater([data])
         data_export = data_list_collater([data], to_dict=True)
@@ -101,7 +96,7 @@ class TestESCNCompiles:
 
     @skip_if_no_cuda
     def test_escn_baseline_cuda(self, tol=1e-8):
-        init('nccl')
+        init("nccl")
         data = load_data()
         data_tg = data_list_collater([data]).to("cuda")
         data_export = data_list_collater([data], to_dict=True)
@@ -163,12 +158,12 @@ class TestESCNCompiles:
         args=(torch.rand(680, 19, shpere_channels), torch.rand(680, edge_channels))
 
         so2 = escn_exportable.SO2Block(
-            sphere_channels=shpere_channels, 
+            sphere_channels=shpere_channels,
             hidden_channels=128,
             edge_channels=edge_channels,
-            lmax=lmax, 
-            mmax=mmax, 
-            act=torch.nn.SiLU(), 
+            lmax=lmax,
+            mmax=mmax,
+            act=torch.nn.SiLU(),
             mappingReduced=mappingReduced
         )
         prog = export(so2, args=args, dynamic_shapes=dynamic_shapes1)
@@ -284,7 +279,7 @@ class TestESCNCompiles:
             "atomic_numbers": {0: batch_dim},
             "edge_distance": {0: edges_dim},
             "edge_index": {0: None, 1: edges_dim},
-            "wigner": {0: edges_dim, 1: None, 2: None} 
+            "wigner": {0: edges_dim, 1: None, 2: None}
         }
         exported_prog = export(layer_block, args=run_args[0], dynamic_shapes=dynamic_shapes1)
         for run_arg in run_args:
@@ -300,7 +295,7 @@ class TestESCNCompiles:
         data = load_data()
         regular_data = data_list_collater([data])
         compile_data = data_list_collater([data], to_dict=True)
-        model = load_model('escn_export')
+        model = load_model("escn_export")
         ddp_model = DistributedDataParallel(model)
 
         torch._dynamo.config.optimize_ddp = False
@@ -317,7 +312,7 @@ class TestESCNCompiles:
         data = load_data()
         regular_data = data_list_collater([data])
         export_data = data_list_collater([data], to_dict=True)
-        model = load_model('escn_export')
+        model = load_model("escn_export")
 
         torch._dynamo.config.optimize_ddp = False
         torch._dynamo.config.assume_static_by_default = False

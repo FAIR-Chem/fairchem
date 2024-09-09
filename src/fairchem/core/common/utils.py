@@ -763,7 +763,6 @@ def radius_graph_pbc(
         atom_distance=atom_distance_sqr,
         max_num_neighbors_threshold=max_num_neighbors_threshold,
         enforce_max_strictly=enforce_max_neighbors_strictly,
-        batch=data.batch,
     )
 
     if not torch.all(mask_num_neighbors):
@@ -787,7 +786,6 @@ def get_max_neighbors_mask(
     max_num_neighbors_threshold,
     degeneracy_tolerance: float = 0.01,
     enforce_max_strictly: bool = False,
-    batch=None,
 ):
     """
     Give a mask that filters out edges so that each atom has at most
@@ -810,12 +808,14 @@ def get_max_neighbors_mask(
     # Get number of neighbors
     # segment_coo assumes sorted index
     ones = index.new_ones(1).expand_as(index)
-    num_neighbors = scatter(ones, index, dim_size=num_atoms)
+    num_neighbors = segment_coo(ones, index, dim_size=num_atoms)
     max_num_neighbors = num_neighbors.max()
     num_neighbors_thresholded = num_neighbors.clamp(max=max_num_neighbors_threshold)
 
     # Get number of (thresholded) neighbors per image
-    num_neighbors_image = scatter(num_neighbors_thresholded, batch, dim_size=natoms.shape[0])
+    image_indptr = torch.zeros(natoms.shape[0] + 1, device=device, dtype=torch.long)
+    image_indptr[1:] = torch.cumsum(natoms, dim=0)
+    num_neighbors_image = segment_csr(num_neighbors_thresholded, image_indptr)
 
     # If max_num_neighbors is below the threshold, return early
     if (

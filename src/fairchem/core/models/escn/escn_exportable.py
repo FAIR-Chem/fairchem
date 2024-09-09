@@ -9,18 +9,15 @@ from __future__ import annotations
 
 import contextlib
 import logging
-import time
-import typing
 
 import torch
 import torch.nn as nn
 
 from fairchem.core.common.registry import registry
-from fairchem.core.common.utils import conditional_grad
 from fairchem.core.models.escn.so3_exportable import (
     CoefficientMapping,
     SO3_Grid,
-    rotation_to_wigner
+    rotation_to_wigner,
 )
 from fairchem.core.models.scn.sampling import CalcSpherePoints
 from fairchem.core.models.scn.smearing import (
@@ -71,8 +68,8 @@ class eSCN(nn.Module):
         cutoff: float = 8.0,
         max_num_elements: int = 90,
         num_layers: int = 8,
-        lmax_list: List[int] = [4], # list of 1, for backward compat only right now, 
-        mmax_list: List[int] = [2], # list of 1, for backward compat only right now, 
+        lmax_list: list[int] = (4), # list of 1, for backward compat only right now,
+        mmax_list: list[int] = (2), # list of 1, for backward compat only right now,
         sphere_channels: int = 128,
         hidden_channels: int = 256,
         edge_channels: int = 128,
@@ -107,7 +104,8 @@ class eSCN(nn.Module):
         self.grad_forces = False
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
-        assert len(self.lmax_list) == 1 and len(self.mmax_list) == 1
+        assert len(self.lmax_list) == 1
+        assert len(self.mmax_list) == 1
         self.lmax = lmax_list[0]
         self.mmax = mmax_list[0]
         self.basis_width_scalar = basis_width_scalar
@@ -443,9 +441,7 @@ class LayerBlock(torch.nn.Module):
         )
 
         # Compute point-wise spherical non-linearity on aggregated messages
-
         # Project to grid
-        # x_grid_message = x_message.to_grid(self.SO3_grid["lmax_lmax"])
         to_grid_mat = self.SO3_grid["lmax_lmax"].to_grid_mat[:, :, self.SO3_grid["lmax_lmax"].mapping.coefficient_idx(self.lmax, self.lmax)]
         x_grid_message = torch.einsum("bai,zic->zbac", to_grid_mat, x_message)
 
@@ -459,12 +455,8 @@ class LayerBlock(torch.nn.Module):
         x_grid = self.fc3_sphere(x_grid)
 
         # Project back to spherical harmonic coefficients
-        # x_message._from_grid(x_grid, self.SO3_grid["lmax_lmax"])
         from_grid_mat = self.SO3_grid["lmax_lmax"].from_grid_mat[:, :, self.SO3_grid["lmax_lmax"].mapping.coefficient_idx(self.lmax, self.lmax)]
-        x_message_final = torch.einsum("bai,zbac->zic", from_grid_mat, x_grid)
-
-        # Return aggregated messages
-        return x_message_final
+        return torch.einsum("bai,zbac->zic", from_grid_mat, x_grid)
 
 
 class MessageBlock(torch.nn.Module):
@@ -686,10 +678,7 @@ class SO2Block(torch.nn.Module):
             offset = offset + 2 * self.mappingReduced.m_size[m]
 
         # Reshape the spherical harmonics based on l (degree)
-        # x._l_primary(self.mappingReduced)
-        x = torch.einsum("nac,ab->nbc", x, self.mappingReduced.to_m)
-
-        return x
+        return torch.einsum("nac,ab->nbc", x, self.mappingReduced.to_m)
 
 
 class SO2Conv(torch.nn.Module):

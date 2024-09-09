@@ -179,7 +179,7 @@ class AtomsToGraphs:
             tasks. Common sids used in OCP datasets include unique strings or integers.
 
         Returns:
-            data (torch_geometric.dqata.Data): A torch geometic data object with positions, atomic_numbers, tags,
+            data (torch_geometric.data.Data): A torch geometic data object with positions, atomic_numbers, tags,
             and optionally, energy, forces, distances, edges, and periodic boundary conditions.
             Optional properties can included by setting r_property=True when constructing the class.
         """
