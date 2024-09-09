@@ -484,7 +484,7 @@ class AseDBDataset(AseAtomsDataset):
 
         self.dbs = []
 
-        for path in filepaths:
+        for path in sorted(filepaths):
             try:
                 self.dbs.append(self.connect_db(path, config.get("connect_args", {})))
             except ValueError:
