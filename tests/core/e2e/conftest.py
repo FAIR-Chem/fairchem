@@ -24,6 +24,9 @@ def configs():
         "gemnet_oc_hydra_grad": Path(
             "tests/core/models/test_configs/test_gemnet_oc_hydra_grad.yml"
         ),
+        "gemnet_oc_hydra_energy_only": Path(
+            "tests/core/models/test_configs/test_gemnet_oc_hydra_energy_only.yml"
+        ),
         "dimenet++": Path("tests/core/models/test_configs/test_dpp.yml"),
         "dimenet++_hydra": Path("tests/core/models/test_configs/test_dpp_hydra.yml"),
         "painn": Path("tests/core/models/test_configs/test_painn.yml"),

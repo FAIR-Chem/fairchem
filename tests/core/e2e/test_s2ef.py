@@ -176,6 +176,7 @@ class TestSmoke:
             ("gemnet_oc_hydra", False),
             ("gemnet_oc_hydra", True),
             ("gemnet_oc_hydra_grad", False),
+            ("gemnet_oc_hydra_energy_only", False),
             ("dimenet++", False),
             ("dimenet++_hydra", False),
             ("painn", False),
