@@ -551,15 +551,6 @@ class BaseTrainer(ABC):
                 device_ids=None if self.cpu else [self.device],
             )
 
-        if self.config["optim"].get("compiles"):
-            torch._dynamo.config.optimize_ddp = False
-            torch._dynamo.config.assume_static_by_default = False
-            torch._dynamo.config.automatic_dynamic_shapes = True
-            os.environ["TORCH_LOGS"] = "recompiles"
-            self.model = torch.compile(self.model, dynamic=True)
-            torch._dynamo.config.optimize_ddp = False
-            logging.info("torch compiled model")
-
     @property
     def _unwrapped_model(self):
         module = self.model
