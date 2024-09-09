@@ -104,6 +104,7 @@ class eSCN(nn.Module):
         self.grad_forces = False
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
+        # TODO: completely remove for loops here associated with lmax and mmax lists
         assert len(self.lmax_list) == 1
         assert len(self.mmax_list) == 1
         self.lmax = lmax_list[0]

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import math
 import os
 
 import torch
-import math
 
 try:
     from e3nn import o3
@@ -93,8 +93,10 @@ class CoefficientMapping(torch.nn.Module):
         self.mmax_list = mmax_list
         self.num_resolutions = len(lmax_list)
 
-        assert (len(self.lmax_list) == 1) and (len(self.mmax_list) == 1)
-        
+        # TODO: remove this for loops here associated with lmax and mmax lists
+        assert len(self.lmax_list) == 1
+        assert len(self.mmax_list) == 1
+
         # Compute the degree (l) and order (m) for each entry of the embedding
         l_harmonic = torch.tensor([]).long()
         m_harmonic = torch.tensor([]).long()
@@ -104,7 +106,7 @@ class CoefficientMapping(torch.nn.Module):
 
         offset = 0
         for i in range(self.num_resolutions):
-            for l in range(0, self.lmax_list[i] + 1):
+            for l in range(self.lmax_list[i] + 1):
                 mmax = min(self.mmax_list[i], l)
                 m = torch.arange(-mmax, mmax + 1).long()
                 m_complex = torch.cat([m_complex, m], dim=0)
@@ -139,20 +141,20 @@ class CoefficientMapping(torch.nn.Module):
         to_m = to_m.detach()
 
         # save tensors and they will be moved to GPU
-        self.register_buffer('l_harmonic', l_harmonic)
-        self.register_buffer('m_harmonic', m_harmonic)
-        self.register_buffer('m_complex',  m_complex)
-        self.register_buffer('to_m',       to_m)
+        self.register_buffer("l_harmonic", l_harmonic)
+        self.register_buffer("m_harmonic", m_harmonic)
+        self.register_buffer("m_complex",  m_complex)
+        self.register_buffer("to_m",       to_m)
 
         self.pre_compute_coefficient_idx()
 
 
     # Return mask containing coefficients of order m (real and imaginary parts)
     def complex_idx(self, m, lmax, m_complex, l_harmonic):
-        '''
-            Add `m_complex` and `l_harmonic` to the input arguments 
-            since we cannot use `self.m_complex`. 
-        '''
+        """
+            Add `m_complex` and `l_harmonic` to the input arguments
+            since we cannot use `self.m_complex`.
+        """
         if lmax == -1:
             lmax = max(self.lmax_list)
 
@@ -175,9 +177,9 @@ class CoefficientMapping(torch.nn.Module):
 
 
     def pre_compute_coefficient_idx(self):
-        '''
+        """
             Pre-compute the results of `coefficient_idx()` and access them with `prepare_coefficient_idx()`
-        '''
+        """
         lmax = max(self.lmax_list)
         for l in range(lmax + 1):
             for m in range(lmax + 1):
@@ -186,19 +188,19 @@ class CoefficientMapping(torch.nn.Module):
                 )
                 indices = torch.arange(len(mask))
                 mask_indices = torch.masked_select(indices, mask)
-                self.register_buffer('coefficient_idx_l{}_m{}'.format(l, m), mask_indices)
+                self.register_buffer(f"coefficient_idx_l{l}_m{m}", mask_indices)
 
-    
+
     def prepare_coefficient_idx(self):
-        '''
+        """
             Construct a list of buffers
-        '''
+        """
         lmax = max(self.lmax_list)
         coefficient_idx_list = []
         for l in range(lmax + 1):
             l_list = []
             for m in range(lmax + 1):
-                l_list.append(getattr(self, 'coefficient_idx_l{}_m{}'.format(l, m), None))
+                l_list.append(getattr(self, f"coefficient_idx_l{l}_m{m}", None))
             coefficient_idx_list.append(l_list)
         return coefficient_idx_list
 
@@ -210,12 +212,11 @@ class CoefficientMapping(torch.nn.Module):
                 self.l_harmonic.le(lmax), self.m_harmonic.le(mmax)
             )
             indices = torch.arange(len(mask), device=mask.device)
-            mask_indices = torch.masked_select(indices, mask)
-            return mask_indices
+            return torch.masked_select(indices, mask)
         else:
             temp = self.prepare_coefficient_idx()
-            return temp[lmax][mmax]        
-    
+            return temp[lmax][mmax]
+
 
     def pre_compute_rotate_inv_rescale(self):
         lmax = max(self.lmax_list)
@@ -231,75 +232,11 @@ class CoefficientMapping(torch.nn.Module):
                     rescale_factor = math.sqrt(length / (2 * m + 1))
                     rotate_inv_rescale[:, start_idx : (start_idx + length), start_idx : (start_idx + length)] = rescale_factor
                 rotate_inv_rescale = rotate_inv_rescale[:, :, mask_indices]
-                self.register_buffer('rotate_inv_rescale_l{}_m{}'.format(l, m), rotate_inv_rescale)
-    
+                self.register_buffer(f"rotate_inv_rescale_l{l}_m{m}", rotate_inv_rescale)
+
     def __repr__(self):
         return f"{self.__class__.__name__}(lmax_list={self.lmax_list}, mmax_list={self.mmax_list})"
 
-class SO3_Rotation:
-    """
-    Helper functions for Wigner-D rotations
-
-    Args:
-        rot_mat3x3 (tensor):    Rotation matrix
-        lmax_list (list:int):   List of maximum degree of the spherical harmonics
-    """
-
-    def __init__(
-        self,
-        rot_mat3x3: torch.Tensor,
-        lmax: list[int],
-    ) -> None:
-        super().__init__()
-        self.device = rot_mat3x3.device
-        self.dtype = rot_mat3x3.dtype
-
-        self.wigner = self.RotationToWignerDMatrix(rot_mat3x3, 0, lmax)
-        self.wigner_inv = torch.transpose(self.wigner, 1, 2).contiguous()
-
-        self.wigner = self.wigner.detach()
-        self.wigner_inv = self.wigner_inv.detach()
-
-        self.lmax = lmax
-        import pdb;pdb.set_trace()
-        self.mapping = CoefficientMapping([self.lmax], [self.lmax])
-        
-
-    # Rotate the embedding
-    def rotate(self, embedding, out_lmax, out_mmax) -> torch.Tensor:
-        out_mask = self.mapping.coefficient_idx(out_lmax, out_mmax)
-        wigner = self.wigner[:, out_mask, :]
-        return torch.bmm(wigner, embedding)
-
-    # Rotate the embedding by the inverse of the rotation matrix
-    def rotate_inv(self, embedding, in_lmax, in_mmax) -> torch.Tensor:
-        in_mask = self.mapping.coefficient_idx(in_lmax, in_mmax)
-        wigner_inv = self.wigner_inv[:, :, in_mask]
-
-        return torch.bmm(wigner_inv, embedding)
-
-    # Compute Wigner matrices from rotation matrix
-    def RotationToWignerDMatrix(
-        self, edge_rot_mat: torch.Tensor, start_lmax: int, end_lmax: int
-    ) -> torch.Tensor:
-        x = edge_rot_mat[:,:,1]
-        alpha, beta = o3.xyz_to_angles(x)
-        R = (
-            o3.angles_to_matrix(alpha, beta, torch.zeros_like(alpha)).transpose(-1, -2)
-            @ edge_rot_mat
-        )
-        gamma = torch.atan2(R[..., 0, 2], R[..., 0, 0])
-
-        size = int((end_lmax + 1) ** 2) - int((start_lmax) ** 2)
-        wigner = torch.zeros(len(alpha), size, size, device=self.device)
-        start = 0
-        for lmax in range(start_lmax, end_lmax + 1):
-            block = wigner_D(lmax, alpha, beta, gamma)
-            end = start + block.size()[1]
-            wigner[:, start:end, start:end] = block
-            start = end
-
-        return wigner.detach()
 
 class SO3_Grid(torch.nn.Module):
     """
