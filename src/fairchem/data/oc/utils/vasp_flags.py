@@ -24,6 +24,7 @@ BULK_VASP_FLAGS = {
     "ibrion": 1,
     "nsw": 100,
     "isif": 7,
+    "ispin": 1,
     "isym": 0,
     "ediffg": 1e-08,
     "encut": 500.0,
