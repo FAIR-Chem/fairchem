@@ -338,7 +338,12 @@ class eSCN(nn.Module, GraphModelMixin):
         ###############################################################
         node_energy = self.energy_block(x_pt)
         energy = torch.zeros(len(data.natoms), device=device)
-        energy.index_add_(0, data.batch, node_energy.view(-1))
+        # CPU AMP does not allow this, but GPU AMP does. force conversion to float before hand
+        if node_energy.device.type == "cuda":
+            energy.index_add_(0, data.batch, node_energy.view(-1))
+        else:
+            energy.index_add_(0, data.batch, node_energy.float().view(-1))
+
         # Scale energy to help balance numerical precision w.r.t. forces
         energy = energy * 0.001
 

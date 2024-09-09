@@ -92,6 +92,7 @@ class TestSmoke:
                     "checkpoint": checkpoint_path,
                 },
                 save_predictions_to=predictions_filename,
+                amp=amp,
             )
 
             if otf_norms is True:
@@ -109,9 +110,14 @@ class TestSmoke:
             # verify predictions from train and predict are identical
             energy_from_train = np.load(training_predictions_filename)["energy"]
             energy_from_checkpoint = np.load(predictions_filename)["energy"]
-            npt.assert_allclose(
-                energy_from_train, energy_from_checkpoint, rtol=1e-6, atol=1e-6
-            )
+            if not amp:
+                npt.assert_allclose(
+                    energy_from_train, energy_from_checkpoint, rtol=1e-6, atol=1e-6
+                )
+            else:
+                npt.assert_allclose(
+                    energy_from_train, energy_from_checkpoint, rtol=1e-3, atol=1e-3
+                )
 
     def test_gemnet_fit_scaling(self, configs, tutorial_val_src):
 
