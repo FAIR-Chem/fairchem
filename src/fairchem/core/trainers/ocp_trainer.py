@@ -63,13 +63,10 @@ class OCPTrainer(BaseTrainer):
             (default: :obj:`None`)
         logger (str, optional): Type of logger to be used.
             (default: :obj:`wandb`)
-        local_rank (int, optional): Local rank of the process, only applicable for distributed training.
-            (default: :obj:`0`)
         amp (bool, optional): Run using automatic mixed precision.
             (default: :obj:`False`)
         slurm (dict): Slurm configuration. Currently just for keeping track.
             (default: :obj:`{}`)
-        noddp (bool, optional): Run model without DDP.
     """
 
     def __init__(
@@ -82,17 +79,18 @@ class OCPTrainer(BaseTrainer):
         loss_functions,
         evaluation_metrics,
         identifier,
+        # TODO: dealing with local rank is dangerous
+        # T201111838 remove this and use CUDA_VISIBILE_DEVICES instead so trainers don't need to know about which devie to use
+        local_rank,
         timestamp_id=None,
         run_dir=None,
         is_debug=False,
         print_every=100,
         seed=None,
         logger="wandb",
-        local_rank=0,
         amp=False,
         cpu=False,
         slurm=None,
-        noddp=False,
         name="ocp",
         gp_gpus=None,
     ):
@@ -107,17 +105,16 @@ class OCPTrainer(BaseTrainer):
             loss_functions=loss_functions,
             evaluation_metrics=evaluation_metrics,
             identifier=identifier,
+            local_rank=local_rank,
             timestamp_id=timestamp_id,
             run_dir=run_dir,
             is_debug=is_debug,
             print_every=print_every,
             seed=seed,
             logger=logger,
-            local_rank=local_rank,
             amp=amp,
             cpu=cpu,
             slurm=slurm,
-            noddp=noddp,
             name=name,
             gp_gpus=gp_gpus,
         )
