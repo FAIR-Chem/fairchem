@@ -162,11 +162,6 @@ class AtomsToGraphs:
         offsets = cell_offsets.float().view(-1, 1, 3).bmm(cell.float()).view(-1, 3)
         distance_vectors += offsets
 
-        # redundancy: remove zero distances
-        # TODO: do we need this?
-        # distances = distance_vectors.norm(dim=-1)
-        # nonzero_idx = torch.arange(len(distances))[distances != 0]
-
         return distance_vectors
 
     def convert(self, atoms: ase.Atoms, sid=None):
