@@ -38,14 +38,9 @@ class eSCN(nn.Module):
 
 
     Args:
-        use_pbc (bool):         Use periodic boundary conditions
-        use_pbc_single (bool):         Process batch PBC graphs one at a time
-        regress_forces (bool):  Compute forces
-        otf_graph (bool):       Compute graph On The Fly (OTF)
-        max_neighbors (int):    Maximum number of neighbors per atom
-        cutoff (float):         Maximum distance between nieghboring atoms in Angstroms
+        regress_forces (bool): Compute forces
+        cutoff (float): Maximum distance between nieghboring atoms in Angstroms
         max_num_elements (int): Maximum atomic number
-
         num_layers (int):             Number of layers in the GNN
         lmax (int):                   maximum degree of the spherical harmonics (1 to 10)
         mmax (int):                   maximum order of the spherical harmonics (0 to lmax)
@@ -60,15 +55,12 @@ class eSCN(nn.Module):
 
     def __init__(
         self,
-        use_pbc: bool = True,
-        use_pbc_single: bool = False,
         regress_forces: bool = True,
-        max_neighbors: int = 40,
         cutoff: float = 8.0,
         max_num_elements: int = 90,
         num_layers: int = 8,
-        lmax_list: list[int] = (4), # list of 1, for backward compat only right now,
-        mmax_list: list[int] = (2), # list of 1, for backward compat only right now,
+        lmax: int = 4,
+        mmax: int = 2,
         sphere_channels: int = 128,
         hidden_channels: int = 256,
         edge_channels: int = 128,
@@ -87,25 +79,16 @@ class eSCN(nn.Module):
             raise ImportError
 
         self.regress_forces = regress_forces
-        self.use_pbc = use_pbc
-        self.use_pbc_single = use_pbc_single
         self.cutoff = cutoff
         self.max_num_elements = max_num_elements
         self.hidden_channels = hidden_channels
         self.num_layers = num_layers
-        self.num_atoms = 0
         self.num_sphere_samples = num_sphere_samples
         self.sphere_channels = sphere_channels
-        self.max_neighbors = max_neighbors
         self.edge_channels = edge_channels
         self.distance_resolution = distance_resolution
-        self.lmax_list = lmax_list
-        self.mmax_list = mmax_list
-        # TODO: completely remove for loops here associated with lmax and mmax lists
-        assert len(self.lmax_list) == 1
-        assert len(self.mmax_list) == 1
-        self.lmax = lmax_list[0]
-        self.mmax = mmax_list[0]
+        self.lmax = lmax
+        self.mmax = mmax
         self.basis_width_scalar = basis_width_scalar
         self.distance_function = distance_function
 

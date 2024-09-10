@@ -51,10 +51,10 @@ def load_data():
     return data_list[0]
 
 
-def load_model(name: str):
+def load_escn_model():
     torch.manual_seed(4)
     setup_imports()
-    return registry.get_model_class(name)(
+    return registry.get_model_class("escn")(
         use_pbc = True,
         use_pbc_single = False,
         regress_forces = True,
@@ -64,6 +64,26 @@ def load_model(name: str):
         num_layers = 8,
         lmax_list = [4],
         mmax_list = [2],
+        sphere_channels = 128,
+        hidden_channels = 256,
+        edge_channels = 128,
+        num_sphere_samples = 128,
+        distance_function = "gaussian",
+        basis_width_scalar = 1.0,
+        distance_resolution = 0.02,
+        resolution = None,
+    )
+
+def load_escn_exportable_model():
+    torch.manual_seed(4)
+    setup_imports()
+    return registry.get_model_class("escn_export")(
+        regress_forces = True,
+        cutoff = 6.0,
+        max_num_elements = 90,
+        num_layers = 8,
+        lmax = 4,
+        mmax = 2,
         sphere_channels = 128,
         hidden_channels = 256,
         edge_channels = 128,
@@ -85,8 +105,8 @@ class TestESCNCompiles:
         data_tg = data_list_collater([data])
         data_export = data_list_collater([data], to_dict=True)
 
-        base_model = DistributedDataParallel(load_model("escn"))
-        export_model = DistributedDataParallel(load_model("escn_export"))
+        base_model = DistributedDataParallel(load_escn_model())
+        export_model = DistributedDataParallel(load_escn_exportable_model())
         base_output = base_model(data_tg)
         export_output = export_model(data_export)
         torch.set_printoptions(precision=8)
@@ -101,8 +121,8 @@ class TestESCNCompiles:
         data_export = data_list_collater([data], to_dict=True)
         data_export_cu = {k:v.to("cuda") for k,v in data_export.items()}
 
-        base_model = DistributedDataParallel(load_model("escn").cuda())
-        export_model = DistributedDataParallel(load_model("escn_export").cuda())
+        base_model = DistributedDataParallel(load_escn_model().cuda())
+        export_model = DistributedDataParallel(load_escn_exportable_model().cuda())
         base_output = base_model(data_tg)
         export_output = export_model(data_export_cu)
         torch.set_printoptions(precision=8)
@@ -120,7 +140,7 @@ class TestESCNCompiles:
 
         # Pass it through the model.
         batch = data_list_collater([data, data_rotated], to_dict=True)
-        model = load_model("escn_export")
+        model = load_escn_exportable_model()
         model.eval()
         out = model(batch)
 
@@ -294,15 +314,15 @@ class TestESCNCompiles:
         data = load_data()
         regular_data = data_list_collater([data])
         compile_data = data_list_collater([data], to_dict=True)
-        model = load_model("escn_export")
-        ddp_model = DistributedDataParallel(model)
+        escn_model = DistributedDataParallel(load_escn_model())
+        exportable_model = load_escn_exportable_model()
 
         torch._dynamo.config.optimize_ddp = False
         torch._dynamo.config.assume_static_by_default = False
         torch._dynamo.config.automatic_dynamic_shapes = True
-        compiled_model = torch.compile(ddp_model, dynamic=True)
+        compiled_model = torch.compile(exportable_model, dynamic=True)
         output = compiled_model(compile_data)
-        expected_output = ddp_model(regular_data)
+        expected_output = escn_model(regular_data)
         assert torch.allclose(expected_output["energy"], output["energy"], atol=tol)
         assert torch.allclose(expected_output["forces"].mean(0), output["forces"].mean(0), atol=tol)
 
@@ -311,7 +331,8 @@ class TestESCNCompiles:
         data = load_data()
         regular_data = data_list_collater([data])
         export_data = data_list_collater([data], to_dict=True)
-        model = load_model("escn_export")
+        escn_model = load_escn_model()
+        exportable_model = load_escn_exportable_model()
 
         torch._dynamo.config.optimize_ddp = False
         torch._dynamo.config.assume_static_by_default = False
@@ -321,8 +342,8 @@ class TestESCNCompiles:
         # explained_output = torch._dynamo.explain(model)(*data)
         # print(explained_output)
         # TODO: add dynamic shapes
-        exported_prog = export(model, args=(export_data,))
+        exported_prog = export(exportable_model, args=(export_data,))
         export_output = exported_prog(export_data)
-        expected_output = model(regular_data)
+        expected_output = escn_model(regular_data)
         assert torch.allclose(export_output["energy"], expected_output["energy"])
         assert torch.allclose(export_output["forces"].mean(0), expected_output["forces"].mean(0))
