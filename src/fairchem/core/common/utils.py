@@ -505,11 +505,8 @@ def build_config(args, args_override, include_paths=None):
     config["submit"] = args.submit
     config["summit"] = args.summit
     # Distributed
-    config["local_rank"] = args.local_rank
-    config["distributed_port"] = args.distributed_port
     config["world_size"] = args.num_nodes * args.num_gpus
-    config["distributed_backend"] = args.distributed_backend
-    config["noddp"] = args.no_ddp
+    config["distributed_backend"] = "gloo" if args.cpu else "nccl"
     config["gp_gpus"] = args.gp_gpus
 
     # Check for overridden parameters.
@@ -1024,7 +1021,7 @@ def setup_env_vars() -> None:
 
 
 @contextmanager
-def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
+def new_trainer_context(*, config: dict[str, Any]):
     from fairchem.core.common import distutils, gp_utils
     from fairchem.core.common.registry import registry
 
@@ -1043,10 +1040,9 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
     original_config = config
     config = copy.deepcopy(original_config)
 
-    if distributed:
-        distutils.setup(config)
-        if config["gp_gpus"] is not None:
-            gp_utils.setup_gp(config)
+    distutils.setup(config)
+    if config["gp_gpus"] is not None:
+        gp_utils.setup_gp(config)
     try:
         setup_imports(config)
         trainer_name = config.get("trainer", "ocp")
@@ -1077,7 +1073,6 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
             "amp": config.get("amp", False),
             "cpu": config.get("cpu", False),
             "slurm": config.get("slurm", {}),
-            "noddp": config.get("noddp", False),
             "name": task_name,
             "gp_gpus": config.get("gp_gpus"),
         }
@@ -1113,8 +1108,7 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
         if distutils.is_master():
             logging.info(f"Total time taken: {time.time() - start_time}")
     finally:
-        if distributed:
-            distutils.cleanup()
+        distutils.cleanup()
 
 
 def _resolve_scale_factor_submodule(model: nn.Module, name: str):
