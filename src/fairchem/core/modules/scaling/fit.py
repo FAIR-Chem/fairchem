@@ -57,7 +57,6 @@ def compute_scaling_factors(config, num_batches: int = 16) -> None:
         assert data_loader is not None, "Train set required to load batches"
 
         if ckpt_file.exists():
-            assert 1 == 0
             trainer.load_checkpoint(checkpoint_path=str(ckpt_file))
 
         # region reoad scale file contents if necessary
