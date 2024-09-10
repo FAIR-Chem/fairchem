@@ -42,7 +42,7 @@ SOLVENT_BASE_FLAGS = {
     "xc": "PBE",
     "ivdw": 11,
     "encut": 400.0,
-    "ediff": 1e-6,
+    "ediff": 1e-4,
     "nelm": 100,
     "ismear": 0,
     "sigma": 0.1,
