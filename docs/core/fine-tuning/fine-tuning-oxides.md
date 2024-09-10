@@ -269,6 +269,7 @@ from fairchem.core.common.tutorial_utils import fairchem_main
 t0 = time.time()
 ! python {fairchem_main()} --mode train --config-yml {yml} --checkpoint {checkpoint_path} --run-dir fine-tuning --identifier ft-oxides --amp > train.txt 2>&1 
 print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
+! cat train.txt
 ```
 
 Now since we have a file, we can find the training results in it. See [train.txt](./train.txt). At the top, the config is printed, so we can get the checkpoint directory. I use shell commands and Python to get the line, split and strip it here.
