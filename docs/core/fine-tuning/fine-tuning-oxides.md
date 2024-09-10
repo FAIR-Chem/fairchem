@@ -258,7 +258,7 @@ You can follow how the training is going by opening a terminal and running
     
 You can also visit it in a browser at [train.txt](./train.txt). You have to periodically refresh the view to see updates though.
 
-This can take up to 30 minutes for 80 epochs, so we only do a few here to see what happens.
+This can take up to 30 minutes for 80 epochs, so we only do a few here to see what happens. If you have a gpu or multiple gpus, you should use the flag --num-gpus=<number of gpus> and remove the --cpu flag.
 
 ```{code-cell} ipython3
 :tags: [hide-output]
@@ -274,7 +274,6 @@ print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
 Now since we have a file, we can find the training results in it. See [train.txt](./train.txt). At the top, the config is printed, so we can get the checkpoint directory. I use shell commands and Python to get the line, split and strip it here.
 
 ```{code-cell} ipython3
-! cat train.txt
 cpline = !grep "checkpoint_dir:" train.txt
 cpdir = cpline[0].split(':')[-1].strip()
 cpdir
