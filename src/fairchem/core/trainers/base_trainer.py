@@ -462,20 +462,6 @@ class BaseTrainer(ABC):
                     ) for config in val_configs
                 ])
 
-                if "split" in self.config["val_dataset"]:
-                    logging.info(f"original size {len(self.val_dataset)}, target size {val_config['split']}")
-                    # to make sampling deterministic, seed rng
-                    if len(self.val_dataset) >= val_config["split"]:
-                        indx = np.random.default_rng(seed=0).choice(
-                            len(self.val_dataset), 
-                            val_config["split"], 
-                            replace=False
-                        )
-                        self.val_dataset = Subset(self.val_dataset, torch.tensor(indx))
-                        logging.info("Subsetted validation set.")
-                    else:
-                        logging.info("Original size must be greater than target size!")
-
                 self.val_sampler = self.get_sampler(
                     self.val_dataset,
                     self.config["optim"].get(
