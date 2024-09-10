@@ -119,7 +119,7 @@ parser = flags.get_parser()
 args, args_override = parser.parse_known_args(["--mode=train",
                                                "--config-yml=config.yml",
                                                f"--checkpoint={checkpoint_path}",
-                                               "--amp"])
+                                               "--cpu"])
 args, args_override
 ```
 
