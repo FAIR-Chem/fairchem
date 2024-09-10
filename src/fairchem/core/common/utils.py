@@ -780,7 +780,7 @@ def radius_graph_pbc(
     return edge_index, unit_cell, num_neighbors_image
 
 
-def generate_graph_standalone(
+def generate_graph(
     data,
     cutoff,
     max_neighbors,

@@ -18,7 +18,7 @@ from torch import nn
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import (
-    generate_graph_standalone,
+    generate_graph,
     load_model_and_weights_from_checkpoint,
 )
 
@@ -84,7 +84,7 @@ class GraphModelMixin:
             cell_offsets,
             cell_offset_distances,
             neighbors,
-        ) = generate_graph_standalone(
+        ) = generate_graph(
             data,
             cutoff,
             max_neighbors,
