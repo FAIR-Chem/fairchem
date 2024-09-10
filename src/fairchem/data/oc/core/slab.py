@@ -54,7 +54,7 @@ class Slab:
         shift: float | None = None,
         top: bool | None = None,
         oriented_bulk: Structure = None,
-        min_ab: float = 0.8,
+        min_ab: float = 8.0,
     ):
         assert bulk is not None
         self.bulk = bulk
