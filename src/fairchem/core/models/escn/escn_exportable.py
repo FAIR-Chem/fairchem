@@ -63,7 +63,6 @@ class eSCN(nn.Module):
         use_pbc: bool = True,
         use_pbc_single: bool = False,
         regress_forces: bool = True,
-        otf_graph: bool = False,
         max_neighbors: int = 40,
         cutoff: float = 8.0,
         max_num_elements: int = 90,
@@ -91,7 +90,6 @@ class eSCN(nn.Module):
         self.use_pbc = use_pbc
         self.use_pbc_single = use_pbc_single
         self.cutoff = cutoff
-        self.otf_graph = otf_graph
         self.max_num_elements = max_num_elements
         self.hidden_channels = hidden_channels
         self.num_layers = num_layers
@@ -101,7 +99,6 @@ class eSCN(nn.Module):
         self.max_neighbors = max_neighbors
         self.edge_channels = edge_channels
         self.distance_resolution = distance_resolution
-        self.grad_forces = False
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
         # TODO: completely remove for loops here associated with lmax and mmax lists
@@ -206,7 +203,6 @@ class eSCN(nn.Module):
         )
 
 
-    # @conditional_grad(torch.enable_grad())
     def forward(self, data: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         pos: torch.Tensor = data["pos"]
         batch_idx: torch.Tensor = data["batch"]

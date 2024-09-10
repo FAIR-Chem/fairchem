@@ -58,7 +58,6 @@ def load_model(name: str):
         use_pbc = True,
         use_pbc_single = False,
         regress_forces = True,
-        otf_graph = True,
         max_neighbors = 300,
         cutoff = 6.0,
         max_num_elements = 90,
@@ -127,7 +126,7 @@ class TestESCNCompiles:
 
         # Compare predicted energies and forces (after inv-rotation).
         energies = out["energy"].detach()
-        np.testing.assert_almost_equal(energies[0], energies[1], decimal=5)
+        np.testing.assert_almost_equal(energies[0], energies[1], decimal=7)
 
         forces = out["forces"].detach()
         logging.info(forces)
