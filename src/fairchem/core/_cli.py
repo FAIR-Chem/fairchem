@@ -48,6 +48,7 @@ class Runner(Checkpointable):
         self.config["timestamp_id"] = self.trainer.timestamp_id
         if self.trainer.logger is not None:
             self.trainer.logger.mark_preempting()
+        logging.info(f'Checkpointing callback is triggered, checkpoint saved to: {self.config["checkpoint"]}, timestamp_id: {self.config["timestamp_id"]}')
         return DelayedSubmission(new_runner, self.config)
 
 

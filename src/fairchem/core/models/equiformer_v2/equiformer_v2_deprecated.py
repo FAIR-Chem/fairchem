@@ -10,11 +10,12 @@ import torch.nn as nn
 from fairchem.core.common import gp_utils
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BaseModel
+from fairchem.core.models.base import GraphModelMixin
 from fairchem.core.models.scn.smearing import GaussianSmearing
 
 with contextlib.suppress(ImportError):
     pass
+
 
 
 from .edge_rot_mat import init_edge_rot_mat
@@ -48,12 +49,15 @@ _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors =
 
 
 @registry.register_model("equiformer_v2")
-class EquiformerV2_OC20(BaseModel):
+class EquiformerV2(nn.Module, GraphModelMixin):
     """
+    THIS CLASS HAS BEEN DEPRECATED! Please use "EquiformerV2BackboneAndHeads"
+
     Equiformer with graph attention built upon SO(2) convolution and feedforward network built upon S2 activation
 
     Args:
         use_pbc (bool):         Use periodic boundary conditions
+        use_pbc_single (bool):         Process batch PBC graphs one at a time
         regress_forces (bool):  Compute forces
         otf_graph (bool):       Compute graph On The Fly (OTF)
         max_neighbors (int):    Maximum number of neighbors per atom
@@ -108,10 +112,8 @@ class EquiformerV2_OC20(BaseModel):
 
     def __init__(
         self,
-        num_atoms: int,  # not used
-        bond_feat_dim: int,  # not used
-        num_targets: int,  # not used
         use_pbc: bool = True,
+        use_pbc_single: bool = False,
         regress_forces: bool = True,
         otf_graph: bool = True,
         max_neighbors: int = 500,
@@ -152,6 +154,9 @@ class EquiformerV2_OC20(BaseModel):
         use_energy_lin_ref: bool | None = False,
         load_energy_lin_ref: bool | None = False,
     ):
+        logging.warning(
+            "equiformer_v2 (EquiformerV2) class is deprecaed in favor of equiformer_v2_backbone_and_heads  (EquiformerV2BackboneAndHeads)"
+        )
         if mmax_list is None:
             mmax_list = [2]
         if lmax_list is None:
@@ -165,6 +170,7 @@ class EquiformerV2_OC20(BaseModel):
             raise ImportError
 
         self.use_pbc = use_pbc
+        self.use_pbc_single = use_pbc_single
         self.regress_forces = regress_forces
         self.otf_graph = otf_graph
         self.max_neighbors = max_neighbors
@@ -436,23 +442,12 @@ class EquiformerV2_OC20(BaseModel):
         self.dtype = data.pos.dtype
         self.device = data.pos.device
         atomic_numbers = data.atomic_numbers.long()
-
-        (
-            edge_index,
-            edge_distance,
-            edge_distance_vec,
-            cell_offsets,
-            _,  # cell offset distances
-            neighbors,
-        ) = self.generate_graph(
+        graph = self.generate_graph(
             data,
             enforce_max_neighbors_strictly=self.enforce_max_neighbors_strictly,
         )
 
-        data_batch_full = data.batch
         data_batch = data.batch
-        atomic_numbers_full = atomic_numbers
-        node_offset = 0
         if gp_utils.initialized():
             (
                 atomic_numbers,
@@ -462,12 +457,17 @@ class EquiformerV2_OC20(BaseModel):
                 edge_distance,
                 edge_distance_vec,
             ) = self._init_gp_partitions(
-                atomic_numbers_full,
-                data_batch_full,
-                edge_index,
-                edge_distance,
-                edge_distance_vec,
+                graph.atomic_numbers_full,
+                graph.batch_full,
+                graph.edge_index,
+                graph.edge_distance,
+                graph.edge_distance_vec,
             )
+            graph.node_offset = node_offset
+            graph.edge_index = edge_index
+            graph.edge_distance = edge_distance
+            graph.edge_distance_vec = edge_distance_vec
+
         ###############################################################
         # Entering Graph Parallel Region
         # after this point, if using gp, then node, edge tensors are split
@@ -485,7 +485,9 @@ class EquiformerV2_OC20(BaseModel):
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(data, edge_index, edge_distance_vec)
+        edge_rot_mat = self._init_edge_rot_mat(
+            data, graph.edge_index, graph.edge_distance_vec
+        )
 
         # Initialize the WignerD matrices and other values for spherical harmonic calculations
         for i in range(self.num_resolutions):
@@ -496,7 +498,6 @@ class EquiformerV2_OC20(BaseModel):
         ###############################################################
 
         # Init per node representations using an atomic number based embedding
-        offset = 0
         x = SO3_Embedding(
             len(atomic_numbers),
             self.lmax_list,
@@ -519,27 +520,27 @@ class EquiformerV2_OC20(BaseModel):
             offset_res = offset_res + int((self.lmax_list[i] + 1) ** 2)
 
         # Edge encoding (distance and atom edge)
-        edge_distance = self.distance_expansion(edge_distance)
+        graph.edge_distance = self.distance_expansion(graph.edge_distance)
         if self.share_atom_edge_embedding and self.use_atom_edge_embedding:
-            source_element = atomic_numbers_full[
-                edge_index[0]
+            source_element = graph.atomic_numbers_full[
+                graph.edge_index[0]
             ]  # Source atom atomic number
-            target_element = atomic_numbers_full[
-                edge_index[1]
+            target_element = graph.atomic_numbers_full[
+                graph.edge_index[1]
             ]  # Target atom atomic number
             source_embedding = self.source_embedding(source_element)
             target_embedding = self.target_embedding(target_element)
-            edge_distance = torch.cat(
-                (edge_distance, source_embedding, target_embedding), dim=1
+            graph.edge_distance = torch.cat(
+                (graph.edge_distance, source_embedding, target_embedding), dim=1
             )
 
         # Edge-degree embedding
         edge_degree = self.edge_degree_embedding(
-            atomic_numbers_full,
-            edge_distance,
-            edge_index,
+            graph.atomic_numbers_full,
+            graph.edge_distance,
+            graph.edge_index,
             len(atomic_numbers),
-            node_offset,
+            graph.node_offset,
         )
         x.embedding = x.embedding + edge_degree.embedding
 
@@ -550,11 +551,11 @@ class EquiformerV2_OC20(BaseModel):
         for i in range(self.num_layers):
             x = self.blocks[i](
                 x,  # SO3_Embedding
-                atomic_numbers_full,
-                edge_distance,
-                edge_index,
+                graph.atomic_numbers_full,
+                graph.edge_distance,
+                graph.edge_index,
                 batch=data_batch,  # for GraphDropPath
-                node_offset=node_offset,
+                node_offset=graph.node_offset,
             )
 
         # Final layer norm
@@ -572,7 +573,7 @@ class EquiformerV2_OC20(BaseModel):
             device=node_energy.device,
             dtype=node_energy.dtype,
         )
-        energy.index_add_(0, data_batch_full, node_energy.view(-1))
+        energy.index_add_(0, graph.batch_full, node_energy.view(-1))
         energy = energy / self.avg_num_nodes
 
         # Add the per-atom linear references to the energy.
@@ -594,8 +595,8 @@ class EquiformerV2_OC20(BaseModel):
             with torch.cuda.amp.autocast(False):
                 energy = energy.to(self.energy_lin_ref.dtype).index_add(
                     0,
-                    data_batch_full,
-                    self.energy_lin_ref[atomic_numbers_full],
+                    graph.batch_full,
+                    self.energy_lin_ref[graph.atomic_numbers_full],
                 )
 
         outputs = {"energy": energy}
@@ -605,10 +606,10 @@ class EquiformerV2_OC20(BaseModel):
         if self.regress_forces:
             forces = self.force_block(
                 x,
-                atomic_numbers_full,
-                edge_distance,
-                edge_index,
-                node_offset=node_offset,
+                graph.atomic_numbers_full,
+                graph.edge_distance,
+                graph.edge_index,
+                node_offset=graph.node_offset,
             )
             forces = forces.embedding.narrow(1, 1, 3)
             forces = forces.view(-1, 3).contiguous()

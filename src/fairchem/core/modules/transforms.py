@@ -8,6 +8,12 @@ from fairchem.core.common.utils import cg_change_mat, irreps_sum
 
 if TYPE_CHECKING:
     from torch_geometric.data import Data
+from contextlib import suppress
+
+with suppress(ImportError):
+    # TODO remove this in favor of a better solution
+    # We should never be importing * from a module
+    from fairchem.experimental.foundation_models.multi_task_dataloader.transforms.data_object import *  # noqa
 
 
 class DataTransforms:
@@ -19,10 +25,12 @@ class DataTransforms:
             return data_object
 
         for transform_fn in self.config:
-            # TODO: Normalization information used in the trainers. Ignore here
-            # for now.
-            if transform_fn == "normalizer":
+            # TODO: Normalization information used in the trainers. Ignore here for now
+            # TODO: if we dont use them here, these should not be defined as "transforms" in the config
+            # TODO: add them as another entry under dataset, maybe "standardize"?
+            if transform_fn in ("normalizer", "element_references"):
                 continue
+
             data_object = eval(transform_fn)(data_object, self.config[transform_fn])
 
         return data_object
