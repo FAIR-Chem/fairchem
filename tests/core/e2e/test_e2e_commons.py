@@ -8,14 +8,8 @@ from pathlib import Path
 import yaml
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
-from fairchem.core._cli import Runner
+from fairchem.core._cli import main
 from fairchem.core.common.flags import flags
-from fairchem.core.common.test_utils import (
-    PGConfig,
-    init_env_rank_and_launch_test,
-    spawn_multi_process,
-)
-from fairchem.core.common.utils import build_config
 
 
 def oc20_lmdb_train_and_val_from_paths(
@@ -110,7 +104,7 @@ def _run_main(
     update_run_args_with=None,
     save_checkpoint_to=None,
     save_predictions_to=None,
-    world_size=0,
+    world_size=1,
 ):
     config_yaml = Path(rundir) / "train_and_val_on_val.yml"
     update_yaml_with_dict(input_yaml, config_yaml, update_dict_with)
@@ -125,24 +119,11 @@ def _run_main(
     # run
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args(
-        ["--mode", "train", "--seed", "100", "--config-yml", "config.yml", "--cpu"]
+        ["--mode", "train", "--seed", "100", "--config-yml", "config.yml", "--cpu", "--num-gpus", str(world_size)]
     )
     for arg_name, arg_value in run_args.items():
         setattr(args, arg_name, arg_value)
-    config = build_config(args, override_args)
-
-    if world_size > 0:
-        pg_config = PGConfig(
-            backend="gloo", world_size=world_size, gp_group_size=1, use_gp=False
-        )
-        spawn_multi_process(
-            pg_config,
-            Runner(distributed=True),
-            init_env_rank_and_launch_test,
-            config,
-        )
-    else:
-        Runner()(config)
+    main(args, override_args)
 
     if save_checkpoint_to is not None:
         checkpoints = glob.glob(f"{rundir}/checkpoints/*/checkpoint.pt")
