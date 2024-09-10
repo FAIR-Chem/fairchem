@@ -54,10 +54,10 @@ class GraphModelMixin:
         enforce_max_neighbors_strictly=None,
         use_pbc_single=False,
     ):
-        def choose_attr_from_input_or_self(attr, input_args, default=None):
-            # logic: input_args > model_attr > default
-            if input_args is not None:
-                return input_args
+        def choose_attr_from_input_or_self(attr, input_arg, default=None):
+            # logic: input_arg > model_attr > default
+            if input_arg is not None:
+                return input_arg
             if hasattr(self, attr):
                 return getattr(self, attr)
             if default is not None:
