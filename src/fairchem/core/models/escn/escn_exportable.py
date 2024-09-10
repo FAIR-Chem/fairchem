@@ -69,6 +69,7 @@ class eSCN(nn.Module):
         basis_width_scalar: float = 1.0,
         distance_resolution: float = 0.02,
         resolution: int | None = None,
+        full_export: bool = False
     ) -> None:
         super().__init__()
 
@@ -91,6 +92,7 @@ class eSCN(nn.Module):
         self.mmax = mmax
         self.basis_width_scalar = basis_width_scalar
         self.distance_function = distance_function
+        self.full_export = full_export
 
         # non-linear activation function used throughout the network
         self.act = nn.SiLU()
@@ -197,9 +199,10 @@ class eSCN(nn.Module):
 
         atomic_numbers = atomic_numbers.long()
         # TODO: this requires upgrade to torch2.4 with export non-strict mode to enable
-        # assert (
-        #     atomic_numbers.max().item() < self.max_num_elements
-        # ), "Atomic number exceeds that given in model config"
+        if not self.full_export:
+            assert (
+                atomic_numbers.max().item() < self.max_num_elements
+            ), f"Atomic numbe {atomic_numbers.max().item()} exceeds that given in model config {self.max_num_elements}"
         num_atoms = len(atomic_numbers)
 
         ###############################################################
@@ -280,14 +283,15 @@ class eSCN(nn.Module):
 
         # Make sure the atoms are far enough apart
         # TODO: this requires upgrade to torch2.4 with export non-strict mode to enable
-        # if torch.min(edge_vec_0_distance) < 0.0001:
-        #     logging.error(
-        #         f"Error edge_vec_0_distance: {torch.min(edge_vec_0_distance)}"
-        #     )
-        #     (minval, minidx) = torch.min(edge_vec_0_distance, 0)
-        #     logging.error(
-        #         f"Error edge_vec_0_distance: {minidx} {edge_index[0, minidx]} {edge_index[1, minidx]} {data.pos[edge_index[0, minidx]]} {data.pos[edge_index[1, minidx]]}"
-        #     )
+        if not self.full_export:
+            if torch.min(edge_vec_0_distance) < 0.0001:
+                logging.error(
+                    f"Error edge_vec_0_distance: {torch.min(edge_vec_0_distance)}"
+                )
+                (minval, minidx) = torch.min(edge_vec_0_distance, 0)
+                logging.error(
+                    f"Error edge_vec_0_distance: {minidx} {edge_index[0, minidx]} {edge_index[1, minidx]} {data.pos[edge_index[0, minidx]]} {data.pos[edge_index[1, minidx]]}"
+                )
 
         norm_x = edge_vec_0 / (edge_vec_0_distance.view(-1, 1))
 

@@ -240,7 +240,10 @@ class OCPTrainer(BaseTrainer):
         return prediction
 
     def _forward(self, batch):
-        out = self.model(batch.to(self.device))
+        if self.config["optim"].get("use_dict_inputs", False):
+            out = self.model(dict(batch.to(self.device).items()))
+        else:
+            out = self.model(batch.to(self.device))
 
         outputs = {}
         batch_size = batch.natoms.numel()
