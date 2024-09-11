@@ -241,7 +241,7 @@ class TestESCNCompiles:
         compiled_output = compiled_model(*args[0])
 
         exported_prog = export(message_block, args=args[0])
-        exported_output = exported_prog(*args[0])
+        exported_output = exported_prog.module()(*args[0])
 
         regular_out = message_block(*args[0])
         assert torch.allclose(compiled_output, regular_out, atol=tol)
