@@ -188,18 +188,19 @@ class eSCN(nn.Module):
             requires_grad=False,
         )
 
+        self.sph_feature_size = int((self.lmax + 1) ** 2)
         # Pre-load Jd tensors for wigner matrices
         # Borrowed from e3nn @ 0.4.0:
         # https://github.com/e3nn/e3nn/blob/0.4.0/e3nn/o3/_wigner.py#L10
         # _Jd is a list of tensors of shape (2l+1, 2l+1)
         Jd_list = torch.load(os.path.join(os.path.dirname(__file__), "Jd.pt"))
-        for l in range(0, lmax + 1):
+        for l in range(0, self.lmax + 1):
             self.register_buffer(f"Jd_{l}", Jd_list[l])
 
 
     def forward(self, data: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         pos: torch.Tensor = data["pos"]
-        batch_idx: torch.Tensor = data["batch"]
+        batch_idx: torch.Tensor = data["batch"].long()
         natoms: torch.Tensor = data["natoms"]
         atomic_numbers: torch.Tensor = data["atomic_numbers"]
         edge_index: torch.Tensor = data["edge_index"]
@@ -211,16 +212,16 @@ class eSCN(nn.Module):
         if not self.full_export:
             assert (
                 atomic_numbers.max().item() < self.max_num_elements
-            ), f"Atomic numbe {atomic_numbers.max().item()} exceeds that given in model config {self.max_num_elements}"
+            ), f"Atomic number {atomic_numbers.max().item()} exceeds that given in model config {self.max_num_elements}"
         num_atoms = len(atomic_numbers)
 
-        ###############################################################
-        # Initialize data structures
-        ###############################################################
+        # ###############################################################
+        # # Initialize data structures
+        # ###############################################################
 
-        # Compute 3x3 rotation matrix per edge
+        # # Compute 3x3 rotation matrix per edge
         edge_rot_mat = self._init_edge_rot_mat(
-            edge_index, edge_distance_vec
+            edge_distance_vec
         )
         Jd_buffers = [getattr(self, f"Jd_{l}").type(edge_rot_mat.dtype) for l in range(0, self.lmax + 1)]
         wigner = rotation_to_wigner(edge_rot_mat, 0, self.lmax, Jd_buffers).detach()
@@ -232,7 +233,7 @@ class eSCN(nn.Module):
         # Init per node representations using an atomic number based embedding
         x_message = torch.zeros(
             num_atoms,
-            int((self.lmax + 1) ** 2),
+            self.sph_feature_size,
             self.sphere_channels,
             device=pos.device,
             dtype=pos.dtype,
@@ -287,21 +288,14 @@ class eSCN(nn.Module):
         return outputs
 
     # Initialize the edge rotation matrics
-    def _init_edge_rot_mat(self, edge_index, edge_distance_vec):
+    def _init_edge_rot_mat(self, edge_distance_vec):
         edge_vec_0 = edge_distance_vec
         edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0**2, dim=1))
 
         # Make sure the atoms are far enough apart
         # TODO: this requires upgrade to torch2.4 with export non-strict mode to enable
         if not self.full_export:
-            if torch.min(edge_vec_0_distance) < 0.0001:
-                logging.error(
-                    f"Error edge_vec_0_distance: {torch.min(edge_vec_0_distance)}"
-                )
-                (minval, minidx) = torch.min(edge_vec_0_distance, 0)
-                logging.error(
-                    f"Error edge_vec_0_distance: {minidx} {edge_index[0, minidx]} {edge_index[1, minidx]} {data.pos[edge_index[0, minidx]]} {data.pos[edge_index[1, minidx]]}"
-                )
+            assert torch.min(edge_vec_0_distance) < 0.0001
 
         norm_x = edge_vec_0 / (edge_vec_0_distance.view(-1, 1))
 

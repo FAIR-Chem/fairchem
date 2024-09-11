@@ -27,15 +27,28 @@ def wigner_D(
     Xc = _z_rot_mat(gamma, lv)
     return Xa @ J @ Xb @ J @ Xc
 
-
 def _z_rot_mat(angle: torch.Tensor, lv: int) -> torch.Tensor:
     shape, device, dtype = angle.shape, angle.device, angle.dtype
     M = angle.new_zeros((*shape, 2 * lv + 1, 2 * lv + 1))
-    inds = torch.arange(0, 2 * lv + 1, 1, device=device)
-    reversed_inds = torch.arange(2 * lv, -1, -1, device=device)
-    frequencies = torch.arange(lv, -lv - 1, -1, dtype=dtype, device=device)
-    M[..., inds, reversed_inds] = torch.sin(frequencies * angle[..., None])
-    M[..., inds, inds] = torch.cos(frequencies * angle[..., None])
+
+    # The following code needs to replaced for a for loop because
+    # torch.export barfs on outer product like operations 
+    # ie: torch.outer(frequences, angle) (same as frequencies * angle[..., None]) 
+    # will place a non-sense Guard on the dimensions of angle when attempting to export setting
+    # angle (edge dimensions) as dynamic. This may be fixed in torch2.4.
+
+    # inds = torch.arange(0, 2 * lv + 1, 1, device=device)
+    # reversed_inds = torch.arange(2 * lv, -1, -1, device=device)
+    # frequencies = torch.arange(lv, -lv - 1, -1, dtype=dtype, device=device)
+    # M[..., inds, reversed_inds] = torch.sin(frequencies * angle[..., None])
+    # M[..., inds, inds] = torch.cos(frequencies * angle[..., None])
+
+    inds = list(range(0, 2 * lv + 1, 1))
+    reversed_inds = list(range(2 * lv, -1, -1))
+    frequencies = list(range(lv, -lv - 1, -1))
+    for i in range(len(frequencies)):
+        M[..., inds[i], reversed_inds[i]] = torch.sin(frequencies[i] * angle)
+        M[..., inds[i], inds[i]] = torch.cos(frequencies[i] * angle)
     return M
 
 def rotation_to_wigner(
