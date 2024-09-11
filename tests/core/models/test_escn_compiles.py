@@ -343,7 +343,7 @@ class TestESCNCompiles:
         # print(explained_output)
         # TODO: add dynamic shapes
         exported_prog = export(exportable_model, args=(export_data,))
-        export_output = exported_prog(export_data)
+        export_output = exported_prog.module()(export_data)
         expected_output = escn_model(regular_data)
         assert torch.allclose(export_output["energy"], expected_output["energy"])
         assert torch.allclose(export_output["forces"].mean(0), expected_output["forces"].mean(0))
