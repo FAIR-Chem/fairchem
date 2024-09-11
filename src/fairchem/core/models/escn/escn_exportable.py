@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import os
 
 import torch
 import torch.nn as nn
@@ -187,6 +188,14 @@ class eSCN(nn.Module):
             requires_grad=False,
         )
 
+        # Pre-load Jd tensors for wigner matrices
+        # Borrowed from e3nn @ 0.4.0:
+        # https://github.com/e3nn/e3nn/blob/0.4.0/e3nn/o3/_wigner.py#L10
+        # _Jd is a list of tensors of shape (2l+1, 2l+1)
+        Jd_list = torch.load(os.path.join(os.path.dirname(__file__), "Jd.pt"))
+        for l in range(0, lmax + 1):
+            self.register_buffer(f"Jd_{l}", Jd_list[l])
+
 
     def forward(self, data: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         pos: torch.Tensor = data["pos"]
@@ -213,7 +222,8 @@ class eSCN(nn.Module):
         edge_rot_mat = self._init_edge_rot_mat(
             edge_index, edge_distance_vec
         )
-        wigner = rotation_to_wigner(edge_rot_mat, 0, self.lmax).detach()
+        Jd_buffers = [getattr(self, f"Jd_{l}").type(edge_rot_mat.dtype) for l in range(0, self.lmax + 1)]
+        wigner = rotation_to_wigner(edge_rot_mat, 0, self.lmax, Jd_buffers).detach()
 
         ###############################################################
         # Initialize node embeddings

@@ -92,6 +92,7 @@ def load_escn_exportable_model():
         basis_width_scalar = 1.0,
         distance_resolution = 0.02,
         resolution = None,
+        full_export = True,
     )
 
 def init(backend: str):
