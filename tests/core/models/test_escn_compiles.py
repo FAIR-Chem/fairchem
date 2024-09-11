@@ -302,7 +302,7 @@ class TestESCNCompiles:
         }
         exported_prog = export(layer_block, args=run_args[0], dynamic_shapes=dynamic_shapes1)
         for run_arg in run_args:
-            exported_output = exported_prog(*run_arg)
+            exported_output = exported_prog.module()(*run_arg)
             compiled_model = torch.compile(layer_block, dynamic=True)
             compiled_output = compiled_model(*run_arg)
             regular_out = layer_block(*run_arg)
