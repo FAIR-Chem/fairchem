@@ -39,8 +39,8 @@ with contextlib.suppress(ImportError):
     from e3nn import o3
 
 
-@registry.register_model("escn_backbone")
-class eSCNBackbone(eSCN, BackboneInterface):
+@registry.register_model("escn")
+class eSCN(nn.Module, GraphModelMixin):
     """Equivariant Spherical Channel Network
     Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
 
@@ -228,14 +228,17 @@ class eSCNBackbone(eSCN, BackboneInterface):
         self.sphharm_weights = nn.ParameterList(sphharm_weights)
 
     @conditional_grad(torch.enable_grad())
-    def forward(self, data: Batch) -> dict[str, torch.Tensor]:
+    def forward(self, data):
         device = data.pos.device
         self.batch_size = len(data.natoms)
         self.dtype = data.pos.dtype
 
+        start_time = time.time()
         atomic_numbers = data.atomic_numbers.long()
+        assert (
+            atomic_numbers.max().item() < self.max_num_elements
+        ), "Atomic number exceeds that given in model config"
         num_atoms = len(atomic_numbers)
-
         graph = self.generate_graph(data)
 
         ###############################################################
@@ -330,165 +333,93 @@ class eSCNBackbone(eSCN, BackboneInterface):
 
         x_pt = x_pt.view(-1, self.sphere_channels_all)
 
-        return {
-            "sphere_values": x_pt,
-            "sphere_points": self.sphere_points,
-            "node_embedding": x,
-            "graph": graph,
-        }
+        ###############################################################
+        # Energy estimation
+        ###############################################################
+        node_energy = self.energy_block(x_pt)
+        energy = torch.zeros(len(data.natoms), device=device)
+        energy.index_add_(0, data.batch, node_energy.view(-1))
+        # Scale energy to help balance numerical precision w.r.t. forces
+        energy = energy * 0.001
+
+        outputs = {"energy": energy}
+        ###############################################################
+        # Force estimation
+        ###############################################################
+        if self.regress_forces:
+            forces = self.force_block(x_pt, self.sphere_points)
+            outputs["forces"] = forces
+
+        if self.show_timing_info is True:
+            torch.cuda.synchronize()
+            logging.info(
+                f"{self.counter} Time: {time.time() - start_time}\tMemory: {len(data.pos)}\t{torch.cuda.max_memory_allocated() / 1000000}"
+            )
+
+        self.counter = self.counter + 1
+
+        return outputs
+
+    # Initialize the edge rotation matrics
+    def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
+        edge_vec_0 = edge_distance_vec
+        edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0**2, dim=1))
+
+        # Make sure the atoms are far enough apart
+        if torch.min(edge_vec_0_distance) < 0.0001:
+            logging.error(
+                f"Error edge_vec_0_distance: {torch.min(edge_vec_0_distance)}"
+            )
+            (minval, minidx) = torch.min(edge_vec_0_distance, 0)
+            logging.error(
+                f"Error edge_vec_0_distance: {minidx} {edge_index[0, minidx]} {edge_index[1, minidx]} {data.pos[edge_index[0, minidx]]} {data.pos[edge_index[1, minidx]]}"
+            )
+
+        norm_x = edge_vec_0 / (edge_vec_0_distance.view(-1, 1))
+
+        edge_vec_2 = torch.rand_like(edge_vec_0) - 0.5
+        edge_vec_2 = edge_vec_2 / (
+            torch.sqrt(torch.sum(edge_vec_2**2, dim=1)).view(-1, 1)
+        )
+        # Create two rotated copys of the random vectors in case the random vector is aligned with norm_x
+        # With two 90 degree rotated vectors, at least one should not be aligned with norm_x
+        edge_vec_2b = edge_vec_2.clone()
+        edge_vec_2b[:, 0] = -edge_vec_2[:, 1]
+        edge_vec_2b[:, 1] = edge_vec_2[:, 0]
+        edge_vec_2c = edge_vec_2.clone()
+        edge_vec_2c[:, 1] = -edge_vec_2[:, 2]
+        edge_vec_2c[:, 2] = edge_vec_2[:, 1]
+        vec_dot_b = torch.abs(torch.sum(edge_vec_2b * norm_x, dim=1)).view(-1, 1)
+        vec_dot_c = torch.abs(torch.sum(edge_vec_2c * norm_x, dim=1)).view(-1, 1)
+
+        vec_dot = torch.abs(torch.sum(edge_vec_2 * norm_x, dim=1)).view(-1, 1)
+        edge_vec_2 = torch.where(torch.gt(vec_dot, vec_dot_b), edge_vec_2b, edge_vec_2)
+        vec_dot = torch.abs(torch.sum(edge_vec_2 * norm_x, dim=1)).view(-1, 1)
+        edge_vec_2 = torch.where(torch.gt(vec_dot, vec_dot_c), edge_vec_2c, edge_vec_2)
+
+        vec_dot = torch.abs(torch.sum(edge_vec_2 * norm_x, dim=1))
+        # Check the vectors aren't aligned
+        assert torch.max(vec_dot) < 0.99
+
+        norm_z = torch.cross(norm_x, edge_vec_2, dim=1)
+        norm_z = norm_z / (torch.sqrt(torch.sum(norm_z**2, dim=1, keepdim=True)))
+        norm_z = norm_z / (torch.sqrt(torch.sum(norm_z**2, dim=1)).view(-1, 1))
+        norm_y = torch.cross(norm_x, norm_z, dim=1)
+        norm_y = norm_y / (torch.sqrt(torch.sum(norm_y**2, dim=1, keepdim=True)))
+
+        # Construct the 3D rotation matrix
+        norm_x = norm_x.view(-1, 3, 1)
+        norm_y = -norm_y.view(-1, 3, 1)
+        norm_z = norm_z.view(-1, 3, 1)
+
+        edge_rot_mat_inv = torch.cat([norm_z, norm_x, norm_y], dim=2)
+        edge_rot_mat = torch.transpose(edge_rot_mat_inv, 1, 2)
+
+        return edge_rot_mat.detach()
 
     @property
     def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
-
-
-@registry.register_model("escn_energy_head")
-class eSCNEnergyHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, reduce="sum"):
-        super().__init__()
-        backbone.energy_block = None
-        self.reduce = reduce
-        # Output blocks for energy and forces
-        self.energy_block = EnergyBlock(
-            backbone.sphere_channels_all, backbone.num_sphere_samples, backbone.act
-        )
-
-    def forward(
-        self, data: Batch, emb: dict[str, torch.Tensor]
-    ) -> dict[str, torch.Tensor]:
-        node_energy = self.energy_block(emb["sphere_values"])
-        energy = torch.zeros(len(data.natoms), device=data.pos.device)
-        energy.index_add_(0, data.batch, node_energy.view(-1))
-        if self.reduce == "sum":
-            # Scale energy to help balance numerical precision w.r.t. forces
-            return {"energy": energy * 0.001}
-        elif self.reduce == "mean":
-            return {"energy": energy / data.natoms}
-        else:
-            raise ValueError(
-                f"reduce can only be sum or mean, user provided: {self.reduce}"
-            )
-
-
-@registry.register_model("escn_force_head")
-class eSCNForceHead(nn.Module, HeadInterface):
-    def __init__(self, backbone):
-        super().__init__()
-        backbone.force_block = None
-        self.force_block = ForceBlock(
-            backbone.sphere_channels_all, backbone.num_sphere_samples, backbone.act
-        )
-
-    def forward(
-        self, data: Batch, emb: dict[str, torch.Tensor]
-    ) -> dict[str, torch.Tensor]:
-        return {"forces": self.force_block(emb["sphere_values"], emb["sphere_points"])}
-
-
-class LayerBlock(torch.nn.Module):
-    """
-    Layer block: Perform one layer (message passing and aggregation) of the GNN
-
-    Args:
-        layer_idx (int):            Layer number
-        sphere_channels (int):      Number of spherical channels
-        hidden_channels (int):      Number of hidden channels used during the SO(2) conv
-        edge_channels (int):        Size of invariant edge embedding
-        lmax_list (list:int):       List of degrees (l) for each resolution
-        mmax_list (list:int):       List of orders (m) for each resolution
-        distance_expansion (func):  Function used to compute distance embedding
-        max_num_elements (int):     Maximum number of atomic numbers
-        SO3_grid (SO3_grid):        Class used to convert from grid the spherical harmonic representations
-        act (function):             Non-linear activation function
-    """
-
-    def __init__(
-        self,
-        layer_idx: int,
-        sphere_channels: int,
-        hidden_channels: int,
-        edge_channels: int,
-        lmax_list: list[int],
-        mmax_list: list[int],
-        distance_expansion,
-        max_num_elements: int,
-        SO3_grid: SO3_Grid,
-        act,
-    ) -> None:
-        super().__init__()
-        self.layer_idx = layer_idx
-        self.act = act
-        self.lmax_list = lmax_list
-        self.mmax_list = mmax_list
-        self.num_resolutions = len(lmax_list)
-        self.sphere_channels = sphere_channels
-        self.sphere_channels_all = self.num_resolutions * self.sphere_channels
-        self.SO3_grid = SO3_grid
-
-        # Message block
-        self.message_block = MessageBlock(
-            self.layer_idx,
-            self.sphere_channels,
-            hidden_channels,
-            edge_channels,
-            self.lmax_list,
-            self.mmax_list,
-            distance_expansion,
-            max_num_elements,
-            self.SO3_grid,
-            self.act,
-        )
-
-        # Non-linear point-wise comvolution for the aggregated messages
-        self.fc1_sphere = nn.Linear(
-            2 * self.sphere_channels_all, self.sphere_channels_all, bias=False
-        )
-
-        self.fc2_sphere = nn.Linear(
-            self.sphere_channels_all, self.sphere_channels_all, bias=False
-        )
-
-        self.fc3_sphere = nn.Linear(
-            self.sphere_channels_all, self.sphere_channels_all, bias=False
-        )
-
-    def forward(
-        self,
-        x,
-        atomic_numbers,
-        edge_distance,
-        edge_index,
-        SO3_edge_rot,
-        mappingReduced,
-    ):
-        # Compute messages by performing message block
-        x_message = self.message_block(
-            x,
-            atomic_numbers,
-            edge_distance,
-            edge_index,
-            SO3_edge_rot,
-            mappingReduced,
-        )
-
-        # Compute point-wise spherical non-linearity on aggregated messages
-        max_lmax = max(self.lmax_list)
-
-        # Project to grid
-        x_grid_message = x_message.to_grid(self.SO3_grid, lmax=max_lmax)
-        x_grid = x.to_grid(self.SO3_grid, lmax=max_lmax)
-        x_grid = torch.cat([x_grid, x_grid_message], dim=3)
-
-        # Perform point-wise convolution
-        x_grid = self.act(self.fc1_sphere(x_grid))
-        x_grid = self.act(self.fc2_sphere(x_grid))
-        x_grid = self.fc3_sphere(x_grid)
-
-        # Project back to spherical harmonic coefficients
-        x_message._from_grid(x_grid, self.SO3_grid, lmax=max_lmax)
-
-        # Return aggregated messages
-        return x_message
 
 
 class MessageBlock(torch.nn.Module):
