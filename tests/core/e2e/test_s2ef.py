@@ -164,7 +164,7 @@ class TestSmoke:
 
     def test_convert_checkpoint_and_config_to_hydra(self, configs, tutorial_val_src):
         with tempfile.TemporaryDirectory() as tempdirname:
-            # first train a very simple model, checkpoint
+            # first train a very simple model then checkpoint
             train_rundir = Path(tempdirname) / "train"
             train_rundir.mkdir()
             checkpoint_path = str(train_rundir / "checkpoint.pt")
@@ -187,7 +187,7 @@ class TestSmoke:
                 save_checkpoint_to=checkpoint_path,
             )
 
-            # second load the checkpoint and predict
+            # load the checkpoint and predict
             predictions_rundir = Path(tempdirname) / "predict"
             predictions_rundir.mkdir()
             predictions_filename = str(predictions_rundir / "predictions.npz")
@@ -210,7 +210,7 @@ class TestSmoke:
                 save_predictions_to=predictions_filename,
             )
 
-            # convert the checkpoint
+            # convert the checkpoint to hydra
             hydra_yaml = Path(tempdirname) / "hydra.yml"
             hydra_checkpoint = Path(tempdirname) / "hydra.pt"
 
@@ -221,7 +221,7 @@ class TestSmoke:
                 new_checkpoint_fn=hydra_checkpoint,
             )
 
-            # second load the checkpoint and predict
+            # load hydra checkpoint and predict
             hydra_predictions_rundir = Path(tempdirname) / "hydra_predict"
             hydra_predictions_rundir.mkdir()
             hydra_predictions_filename = str(predictions_rundir / "predictions.npz")
@@ -243,7 +243,8 @@ class TestSmoke:
                 },
                 save_predictions_to=hydra_predictions_filename,
             )
-            # # verify predictions from train and predict are identical
+
+            # verify predictions from eqv2 and hydra eqv2 are same
             energy_from_checkpoint = np.load(predictions_filename)["energy"]
             energy_from_hydra_checkpoint = np.load(hydra_predictions_filename)["energy"]
             npt.assert_allclose(
