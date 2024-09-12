@@ -485,7 +485,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(
+        edge_rot_mat = init_edge_rot_mat(
             data, graph.edge_index, graph.edge_distance_vec
         )
 
@@ -618,10 +618,6 @@ class EquiformerV2(nn.Module, GraphModelMixin):
             outputs["forces"] = forces
 
         return outputs
-
-    # Initialize the edge rotation matrics
-    def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
-        return init_edge_rot_mat(edge_distance_vec)
 
     @property
     def num_params(self):
