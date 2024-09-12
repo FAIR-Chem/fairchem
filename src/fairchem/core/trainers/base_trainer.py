@@ -17,7 +17,7 @@ import sys
 from abc import ABC, abstractmethod
 from functools import partial
 from itertools import chain
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import numpy.typing as npt
@@ -67,13 +67,13 @@ if TYPE_CHECKING:
 class BaseTrainer(ABC):
     def __init__(
         self,
-        task,
-        model,
-        outputs,
-        dataset,
-        optimizer,
-        loss_functions,
-        evaluation_metrics,
+        task: dict[str, str | Any],
+        model: dict[str, Any],
+        outputs: dict[str, str | int],
+        dataset: dict[str, str | float],
+        optimizer: dict[str, str | float],
+        loss_functions: dict[str, str | float],
+        evaluation_metrics: dict[str, str],
         identifier: str,
         # TODO: dealing with local rank is dangerous
         # T201111838 remove this and use CUDA_VISIBILE_DEVICES instead so trainers don't need to know about which devie to use
@@ -229,13 +229,15 @@ class BaseTrainer(ABC):
     def load(self) -> None:
         self.load_seed_from_config()
         self.load_logger()
-        self.load_datasets()
-        self.load_references_and_normalizers()
         self.load_task()
         self.load_model()
+        self.load_extras()
+
+        self.load_datasets()
+        self.load_references_and_normalizers()
         self.load_loss()
         self.load_optimizer()
-        self.load_extras()
+
         if self.config["optim"].get("load_datasets_and_model_then_exit", False):
             sys.exit(0)
 
