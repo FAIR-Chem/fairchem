@@ -189,6 +189,7 @@ class OCPCalculator(Calculator):
             is_debug=config.get("is_debug", True),
             cpu=cpu,
             amp=config.get("amp", False),
+            inference_only=True,
         )
 
         if checkpoint_path is not None:

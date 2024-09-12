@@ -89,6 +89,7 @@ class BaseTrainer(ABC):
         name: str = "ocp",
         slurm=None,
         gp_gpus: int | None = None,
+        inference_only: bool = False,
     ) -> None:
         if slurm is None:
             slurm = {}
@@ -207,7 +208,7 @@ class BaseTrainer(ABC):
         self.train_dataset = None
         self.val_dataset = None
         self.test_dataset = None
-        self.load()
+        self.load(inference_only)
 
     @abstractmethod
     def train(self, disable_eval_tqdm: bool = False) -> None:
@@ -226,17 +227,18 @@ class BaseTrainer(ABC):
             timestamp_str += "-" + suffix
         return timestamp_str
 
-    def load(self) -> None:
+    def load(self, inference_only: bool) -> None:
         self.load_seed_from_config()
         self.load_logger()
         self.load_task()
         self.load_model()
-        self.load_extras()
 
-        self.load_datasets()
-        self.load_references_and_normalizers()
-        self.load_loss()
-        self.load_optimizer()
+        if inference_only is False:
+            self.load_datasets()
+            self.load_references_and_normalizers()
+            self.load_loss()
+            self.load_optimizer()
+            self.load_extras()
 
         if self.config["optim"].get("load_datasets_and_model_then_exit", False):
             sys.exit(0)
