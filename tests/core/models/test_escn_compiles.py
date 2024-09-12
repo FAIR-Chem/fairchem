@@ -438,8 +438,10 @@ class TestESCNCompiles:
             path = os.path.join(tempdirname, 'exported_program.pt2')
             torch.export.save(exported_prog, path)
             saved_exported_program = torch.export.load(path)
-            data = sim_input_data(batch_size=batch_size, device=device)
-            saved_exported_program(data)
+            saved_output = saved_exported_program(example_data)
+            original_output = exportable_model(example_data)
+            assert torch.allclose(saved_output["energy"], original_output["energy"])
+            assert torch.allclose(saved_output["forces"].mean(0), original_output["forces"].mean(0))
 
             # test aot compile for C++
             # so_path = os.path.join(tempdirname, "aot_export.so")
