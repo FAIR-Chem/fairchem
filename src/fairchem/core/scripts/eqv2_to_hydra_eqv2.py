@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 
 from fairchem.core.common.eqv2_to_eqv2_hydra import (

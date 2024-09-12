@@ -1,17 +1,21 @@
+from __future__ import annotations
+
+import logging
+import os
 from collections import OrderedDict
 from copy import deepcopy
-import yaml
+
 import torch
-import os
-import logging
+import yaml
 
 
 def convert_checkpoint_and_config_to_hydra(
     yaml_fn, checkpoint_fn, new_yaml_fn, new_checkpoint_fn
 ):
-    assert not os.path.exists(new_yaml_fn) and not os.path.exists(
+    assert not os.path.exists(new_yaml_fn), "Output yaml cannot already exist!"
+    assert not os.path.exists(
         new_checkpoint_fn
-    ), "Output files cannot already exist!"
+    ), "Output checkpoint cannot already exist!"
 
     def eqv2_state_dict_to_hydra_state_dict(eqv2_state_dict):
         hydra_state_dict = OrderedDict()
@@ -63,7 +67,8 @@ def convert_checkpoint_and_config_to_hydra(
         return new_yaml_config, new_checkpoint_config
 
     # load existing from disk
-    yaml_config = yaml.safe_load(open(yaml_fn, "r"))
+    with open(yaml_fn) as yaml_f:
+        yaml_config = yaml.safe_load(yaml_f)
     checkpoint = torch.load(checkpoint_fn, map_location="cpu")
 
     new_checkpoint = checkpoint.copy()
