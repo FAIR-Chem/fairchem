@@ -6,7 +6,6 @@ import math
 
 import torch
 import torch.nn as nn
-from typing_extensions import deprecated
 
 from fairchem.core.common import gp_utils
 from fairchem.core.common.registry import registry
@@ -48,7 +47,6 @@ _AVG_NUM_NODES = 77.81317
 _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
 
 
-@deprecated()
 @registry.register_model("equiformer_v2")
 class EquiformerV2(nn.Module, GraphModelMixin):
     """
