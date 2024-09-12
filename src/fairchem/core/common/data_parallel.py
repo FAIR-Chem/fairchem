@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 
 @deprecated(
-    msg="OCPColatter is deprecated. Please use data_list_collater optionally with functools.partial to set defaults"
+    "OCPColatter is deprecated. Please use data_list_collater optionally with functools.partial to set defaults"
 )
 class OCPCollater:
     def __init__(self, otf_graph: bool = False) -> None:
