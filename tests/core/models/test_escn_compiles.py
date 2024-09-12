@@ -404,6 +404,13 @@ class TestESCNCompiles:
         assert torch.allclose(export_output["energy"], expected_output["energy"])
         assert torch.allclose(export_output["forces"].mean(0), expected_output["forces"].mean(0))
 
+    def check_escn_equivalent(self, data, model1, model2):
+        output1 = model1(data)
+        output2 = model2(data)
+        assert torch.allclose(output1["energy"], output2["energy"])
+        assert torch.allclose(output2["forces"].mean(0), output2["forces"].mean(0))
+
+
     def test_full_escn_exports_with_dynamic_inputs(self):
         with tempfile.TemporaryDirectory() as tempdirname:
             torch.manual_seed(4)
@@ -433,15 +440,14 @@ class TestESCNCompiles:
                 for i in range(0, 10):
                     data = sim_input_data(batch_size=batch_size, device=device)
                     export_output = exported_prog(data)
+                self.check_escn_equivalent(sim_input_data(batch_size=batch_size, device=device), exportable_model, exported_prog)
 
-            # test saving and loading
-            path = os.path.join(tempdirname, 'exported_program.pt2')
-            torch.export.save(exported_prog, path)
-            saved_exported_program = torch.export.load(path)
-            saved_output = saved_exported_program(example_data)
-            original_output = exportable_model(example_data)
-            assert torch.allclose(saved_output["energy"], original_output["energy"])
-            assert torch.allclose(saved_output["forces"].mean(0), original_output["forces"].mean(0))
+                # test saving and loading
+                path = os.path.join(tempdirname, 'exported_program.pt2')
+                torch.export.save(exported_prog, path)
+                saved_exported_program = torch.export.load(path)
+
+                self.check_escn_equivalent(sim_input_data(batch_size=batch_size, device=device), exportable_model, saved_exported_program)
 
             # test aot compile for C++
             # so_path = os.path.join(tempdirname, "aot_export.so")
