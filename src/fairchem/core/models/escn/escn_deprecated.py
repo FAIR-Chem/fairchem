@@ -10,17 +10,13 @@ from __future__ import annotations
 import contextlib
 import logging
 import time
-import typing
 
 import torch
 import torch.nn as nn
 
-if typing.TYPE_CHECKING:
-    from torch_geometric.data.batch import Batch
-
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
+from fairchem.core.models.base import GraphModelMixin
 from fairchem.core.models.escn.so3 import (
     CoefficientMapping,
     SO3_Embedding,
@@ -836,3 +832,109 @@ class ForceBlock(torch.nn.Module):
         x_pt = x_pt.view(-1, self.num_sphere_samples, 1)
         forces = x_pt * sphere_points.view(1, self.num_sphere_samples, 3)
         return torch.sum(forces, dim=1) / self.num_sphere_samples
+
+
+class LayerBlock(torch.nn.Module):
+    """
+    Layer block: Perform one layer (message passing and aggregation) of the GNN
+
+    Args:
+        layer_idx (int):            Layer number
+        sphere_channels (int):      Number of spherical channels
+        hidden_channels (int):      Number of hidden channels used during the SO(2) conv
+        edge_channels (int):        Size of invariant edge embedding
+        lmax_list (list:int):       List of degrees (l) for each resolution
+        mmax_list (list:int):       List of orders (m) for each resolution
+        distance_expansion (func):  Function used to compute distance embedding
+        max_num_elements (int):     Maximum number of atomic numbers
+        SO3_grid (SO3_grid):        Class used to convert from grid the spherical harmonic representations
+        act (function):             Non-linear activation function
+    """
+
+    def __init__(
+        self,
+        layer_idx: int,
+        sphere_channels: int,
+        hidden_channels: int,
+        edge_channels: int,
+        lmax_list: list[int],
+        mmax_list: list[int],
+        distance_expansion,
+        max_num_elements: int,
+        SO3_grid: SO3_Grid,
+        act,
+    ) -> None:
+        super().__init__()
+        self.layer_idx = layer_idx
+        self.act = act
+        self.lmax_list = lmax_list
+        self.mmax_list = mmax_list
+        self.num_resolutions = len(lmax_list)
+        self.sphere_channels = sphere_channels
+        self.sphere_channels_all = self.num_resolutions * self.sphere_channels
+        self.SO3_grid = SO3_grid
+
+        # Message block
+        self.message_block = MessageBlock(
+            self.layer_idx,
+            self.sphere_channels,
+            hidden_channels,
+            edge_channels,
+            self.lmax_list,
+            self.mmax_list,
+            distance_expansion,
+            max_num_elements,
+            self.SO3_grid,
+            self.act,
+        )
+
+        # Non-linear point-wise comvolution for the aggregated messages
+        self.fc1_sphere = nn.Linear(
+            2 * self.sphere_channels_all, self.sphere_channels_all, bias=False
+        )
+
+        self.fc2_sphere = nn.Linear(
+            self.sphere_channels_all, self.sphere_channels_all, bias=False
+        )
+
+        self.fc3_sphere = nn.Linear(
+            self.sphere_channels_all, self.sphere_channels_all, bias=False
+        )
+
+    def forward(
+        self,
+        x,
+        atomic_numbers,
+        edge_distance,
+        edge_index,
+        SO3_edge_rot,
+        mappingReduced,
+    ):
+        # Compute messages by performing message block
+        x_message = self.message_block(
+            x,
+            atomic_numbers,
+            edge_distance,
+            edge_index,
+            SO3_edge_rot,
+            mappingReduced,
+        )
+
+        # Compute point-wise spherical non-linearity on aggregated messages
+        max_lmax = max(self.lmax_list)
+
+        # Project to grid
+        x_grid_message = x_message.to_grid(self.SO3_grid, lmax=max_lmax)
+        x_grid = x.to_grid(self.SO3_grid, lmax=max_lmax)
+        x_grid = torch.cat([x_grid, x_grid_message], dim=3)
+
+        # Perform point-wise convolution
+        x_grid = self.act(self.fc1_sphere(x_grid))
+        x_grid = self.act(self.fc2_sphere(x_grid))
+        x_grid = self.fc3_sphere(x_grid)
+
+        # Project back to spherical harmonic coefficients
+        x_message._from_grid(x_grid, self.SO3_grid, lmax=max_lmax)
+
+        # Return aggregated messages
+        return x_message

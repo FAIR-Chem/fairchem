@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import contextlib
 import logging
-import time
 import typing
 
 import torch
@@ -20,7 +19,7 @@ if typing.TYPE_CHECKING:
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
+from fairchem.core.models.base import BackboneInterface, HeadInterface
 from fairchem.core.models.escn.so3 import (
     CoefficientMapping,
     SO3_Embedding,
@@ -40,7 +39,7 @@ with contextlib.suppress(ImportError):
 
 
 @registry.register_model("escn_backbone")
-class eSCNBackbone(eSCN, BackboneInterface):
+class eSCNBackbone(BackboneInterface):
     """Equivariant Spherical Channel Network
     Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
 
