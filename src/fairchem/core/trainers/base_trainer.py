@@ -15,6 +15,7 @@ import os
 import random
 import sys
 from abc import ABC, abstractmethod
+from functools import partial
 from itertools import chain
 from typing import TYPE_CHECKING
 
@@ -29,7 +30,7 @@ from tqdm import tqdm
 
 from fairchem.core import __version__
 from fairchem.core.common import distutils, gp_utils
-from fairchem.core.common.data_parallel import BalancedBatchSampler, OCPCollater
+from fairchem.core.common.data_parallel import BalancedBatchSampler
 from fairchem.core.common.registry import registry
 from fairchem.core.common.slurm import (
     add_timestamp_id_to_submission_pickle,
@@ -44,6 +45,7 @@ from fairchem.core.common.utils import (
     save_checkpoint,
     update_config,
 )
+from fairchem.core.datasets import data_list_collater
 from fairchem.core.datasets.base_dataset import create_dataset
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
@@ -298,14 +300,16 @@ class BaseTrainer(ABC):
     def get_dataloader(self, dataset, sampler) -> DataLoader:
         return DataLoader(
             dataset,
-            collate_fn=self.ocp_collater,
+            collate_fn=self.collater,
             num_workers=self.config["optim"]["num_workers"],
             pin_memory=True,
             batch_sampler=sampler,
         )
 
     def load_datasets(self) -> None:
-        self.ocp_collater = OCPCollater(self.config["model"].get("otf_graph", False))
+        self.collater = partial(
+            data_list_collater, otf_graph=self.config["model"].get("otf_graph", False)
+        )
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
@@ -498,15 +502,15 @@ class BaseTrainer(ABC):
                         ][target_name].get("level", "system")
                     if "train_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["train_on_free_atoms"] = (
-                            self.config["outputs"][target_name].get(
-                                "train_on_free_atoms", True
-                            )
+                            self.config[
+                                "outputs"
+                            ][target_name].get("train_on_free_atoms", True)
                         )
                     if "eval_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["eval_on_free_atoms"] = (
-                            self.config["outputs"][target_name].get(
-                                "eval_on_free_atoms", True
-                            )
+                            self.config[
+                                "outputs"
+                            ][target_name].get("eval_on_free_atoms", True)
                         )
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
