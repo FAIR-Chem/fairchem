@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import os
 
 import torch
 
@@ -28,12 +27,11 @@ def wigner_D(
     return Xa @ J @ Xb @ J @ Xc
 
 def _z_rot_mat(angle: torch.Tensor, lv: int) -> torch.Tensor:
-    shape, device, dtype = angle.shape, angle.device, angle.dtype
-    M = angle.new_zeros((*shape, 2 * lv + 1, 2 * lv + 1))
+    M = angle.new_zeros((*angle.shape, 2 * lv + 1, 2 * lv + 1))
 
     # The following code needs to replaced for a for loop because
-    # torch.export barfs on outer product like operations 
-    # ie: torch.outer(frequences, angle) (same as frequencies * angle[..., None]) 
+    # torch.export barfs on outer product like operations
+    # ie: torch.outer(frequences, angle) (same as frequencies * angle[..., None])
     # will place a non-sense Guard on the dimensions of angle when attempting to export setting
     # angle (edge dimensions) as dynamic. This may be fixed in torch2.4.
 

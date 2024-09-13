@@ -10,11 +10,11 @@ from __future__ import annotations
 import logging
 import os
 import random
+import tempfile
 
 import numpy as np
 import pytest
 import torch
-import tempfile
 from ase.io import read
 from torch.export import Dim, export
 from torch.nn.parallel.distributed import DistributedDataParallel
@@ -78,23 +78,21 @@ def load_escn_model():
     )
 
 def sim_input_data(
-        natoms_range: list[int] = [2, 100],
+        natoms_range: list[int] = (2, 100),
         nedges_max: int = 10000,
         batch_size: int = 2,
         atom_num_mnax: int = MAX_ELEMENTS,
         device: str = "cpu",
     ) -> dict[str, torch.Tensor]:
     natoms_list = []
-    for i in range(0, batch_size):
+    for _ in range(batch_size):
         natoms = torch.randint(natoms_range[0],natoms_range[1],(1,)).item()
         natoms_list.append(natoms)
     natoms_total = sum(natoms_list)
     nedges = torch.randint(1, nedges_max,(1,)).item()
     pos = torch.rand(natoms_total, 3)
 
-    batch_list = []
-    for i in range(0, batch_size):
-        batch_list.append(torch.ones(natoms_list[i]) * i)
+    batch_list = [torch.ones(natoms_list[i]) * i for i in range(batch_size)]
     batch = torch.cat(batch_list)
     natoms = torch.tensor(natoms_list)
     atomic_numbers = torch.randint(0, atom_num_mnax, (natoms_total,))
@@ -102,8 +100,7 @@ def sim_input_data(
     distances = torch.rand(nedges)
     edge_distance_vec = torch.rand(nedges, 3)
     output = {"pos": pos, "batch": batch, "natoms": natoms, "atomic_numbers": atomic_numbers, "edge_index": edge_index, "distances": distances, "edge_distance_vec": edge_distance_vec}
-    output = {k: v.to(device) for k, v in output.items()}
-    return output
+    return {k: v.to(device) for k, v in output.items()}
 
 def load_escn_exportable_model():
     torch.manual_seed(4)
@@ -419,7 +416,7 @@ class TestESCNCompiles:
             # if we want to use with variable batch dim, then we need to specify this
             # batch_dim = Dim("batch_dim")
             dynamic_shapes = {
-                'data': {
+                "data": {
                     "pos": {0: atoms_dim, 1: None}, # second dim fixed to 3
                     "batch": {0: atoms_dim},
                     "natoms": {0: None},
@@ -437,13 +434,13 @@ class TestESCNCompiles:
             print({k:v.shape for k, v in example_data.items()})
             with torch.inference_mode():
                 exported_prog = export(exportable_model, args=(example_data,), dynamic_shapes=dynamic_shapes)
-                for i in range(0, 10):
+                for _ in range(10):
                     data = sim_input_data(batch_size=batch_size, device=device)
-                    export_output = exported_prog(data)
+                    exported_prog(data)
                 self.check_escn_equivalent(sim_input_data(batch_size=batch_size, device=device), exportable_model, exported_prog)
 
                 # test saving and loading
-                path = os.path.join(tempdirname, 'exported_program.pt2')
+                path = os.path.join(tempdirname, "exported_program.pt2")
                 torch.export.save(exported_prog, path)
                 saved_exported_program = torch.export.load(path)
 

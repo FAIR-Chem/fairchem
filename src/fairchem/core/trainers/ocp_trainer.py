@@ -241,7 +241,16 @@ class OCPTrainer(BaseTrainer):
 
     def _forward(self, batch):
         if self.config["optim"].get("use_dict_inputs", False):
-            out = self.model(dict(batch.to(self.device).items()))
+            x = dict(batch.to(self.device).items())
+            try:
+                out = self.model(x)
+            except Exception as e:
+                logging.info(f"caught error e: {e}, on input {x}")
+                for k, v in x.items():
+                    if isinstance(v, torch.Tensor):
+                        logging.info(f"{k}:{v.shape}")
+                    else:
+                        logging.info(f"{k}:{v}")
         else:
             out = self.model(batch.to(self.device))
 
