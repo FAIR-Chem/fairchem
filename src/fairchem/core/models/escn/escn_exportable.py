@@ -193,6 +193,8 @@ class eSCN(nn.Module):
         # Borrowed from e3nn @ 0.4.0:
         # https://github.com/e3nn/e3nn/blob/0.4.0/e3nn/o3/_wigner.py#L10
         # _Jd is a list of tensors of shape (2l+1, 2l+1)
+        # TODO: we should probably just bake this into the file as strings to avoid
+        # carrying this extra file around
         Jd_list = torch.load(os.path.join(os.path.dirname(__file__), "Jd.pt"))
         for l in range(self.lmax + 1):
             self.register_buffer(f"Jd_{l}", Jd_list[l])
@@ -215,11 +217,11 @@ class eSCN(nn.Module):
             ), f"Atomic number {atomic_numbers.max().item()} exceeds that given in model config {self.max_num_elements}"
         num_atoms = len(atomic_numbers)
 
-        # ###############################################################
-        # # Initialize data structures
-        # ###############################################################
+        ###############################################################
+        # Initialize data structures
+        ###############################################################
 
-        # # Compute 3x3 rotation matrix per edge
+        # Compute 3x3 rotation matrix per edge
         edge_rot_mat = self._init_edge_rot_mat(
             edge_distance_vec
         )
