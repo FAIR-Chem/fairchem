@@ -39,7 +39,7 @@ with contextlib.suppress(ImportError):
 
 
 @registry.register_model("escn_backbone")
-class eSCNBackbone(BackboneInterface):
+class eSCNBackbone(nn.Module, BackboneInterface):
     """Equivariant Spherical Channel Network
     Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
 
