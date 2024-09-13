@@ -14,9 +14,10 @@ from test_e2e_commons import (
     update_yaml_with_dict,
 )
 
-from fairchem.core.common.eqv2_to_eqv2_hydra import (
+from fairchem.core.models.equiformer_v2.eqv2_to_eqv2_hydra import (
     convert_checkpoint_and_config_to_hydra,
 )
+
 from fairchem.core.common.flags import flags
 from fairchem.core.common.utils import build_config, setup_logging
 from fairchem.core.modules.scaling.fit import compute_scaling_factors
@@ -250,6 +251,14 @@ class TestSmoke:
             npt.assert_allclose(
                 energy_from_hydra_checkpoint,
                 energy_from_checkpoint,
+                rtol=1e-6,
+                atol=1e-6,
+            )
+            forces_from_checkpoint = np.load(predictions_filename)["forces"]
+            forces_from_hydra_checkpoint = np.load(hydra_predictions_filename)["forces"]
+            npt.assert_allclose(
+                forces_from_hydra_checkpoint,
+                forces_from_checkpoint,
                 rtol=1e-6,
                 atol=1e-6,
             )

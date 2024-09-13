@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 
-from fairchem.core.common.eqv2_to_eqv2_hydra import (
+from fairchem.core.models.equiformer_v2.eqv2_to_eqv2_hydra import (
     convert_checkpoint_and_config_to_hydra,
 )
 
