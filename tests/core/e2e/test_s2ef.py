@@ -8,18 +8,16 @@ from pathlib import Path
 import numpy as np
 import numpy.testing as npt
 import pytest
-from fairchem.core._cli import Runner
-from fairchem.core.modules.scaling.fit import compute_scaling_factors
 from test_e2e_commons import (
     _run_main,
     oc20_lmdb_train_and_val_from_paths,
     update_yaml_with_dict,
 )
 
-from fairchem.core.common.utils import build_config, setup_logging
-from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
-
 from fairchem.core.common.flags import flags
+from fairchem.core.common.utils import build_config, setup_logging
+from fairchem.core.modules.scaling.fit import compute_scaling_factors
+from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
 
 setup_logging()
 
@@ -215,25 +213,18 @@ class TestSmoke:
             input_yaml=configs[model_name],
             tutorial_val_src=tutorial_val_src,
             otf_norms=otf_norms,
-            world_size=0,
-            num_workers=1,
+            world_size=1,
+            num_workers=0,
             amp=True,
         )
-        # test without ddp
-        self.smoke_test_train(
-            input_yaml=configs[model_name],
-            tutorial_val_src=tutorial_val_src,
-            otf_norms=otf_norms,
-            world_size=0,
-            num_workers=2,
-        )
-        # test with ddp but no wokers
+        # test without amp
         self.smoke_test_train(
             input_yaml=configs[model_name],
             tutorial_val_src=tutorial_val_src,
             otf_norms=otf_norms,
             world_size=1,
             num_workers=0,
+            amp=False
         )
 
     def test_use_pbc_single(self, configs, tutorial_val_src, torch_deterministic):
@@ -276,19 +267,15 @@ class TestSmoke:
                 )
 
     @pytest.mark.parametrize(
-        ("world_size", "ddp"),
+        ("world_size"),
         [
-            pytest.param(
-                2,
-                True,
-            ),
-            pytest.param(0, False),
+            pytest.param(2),
+            pytest.param(1),
         ],
     )
     def test_ddp(
         self,
         world_size,
-        ddp,
         configs,
         tutorial_val_src,
         torch_deterministic,
@@ -296,8 +283,6 @@ class TestSmoke:
         with tempfile.TemporaryDirectory() as tempdirname:
             tempdir = Path(tempdirname)
             extra_args = {"seed": 0}
-            if not ddp:
-                extra_args["no_ddp"] = True
             _ = _run_main(
                 rundir=str(tempdir),
                 update_dict_with={
@@ -314,14 +299,14 @@ class TestSmoke:
             )
 
     @pytest.mark.parametrize(
-        ("world_size", "ddp"),
+        ("world_size"),
         [
-            pytest.param(2, True),
-            pytest.param(0, False),
+            pytest.param(2),
+            pytest.param(1),
         ],
     )
     def test_balanced_batch_sampler_ddp(
-        self, world_size, ddp, configs, tutorial_val_src, torch_deterministic
+        self, world_size, configs, tutorial_val_src, torch_deterministic
     ):
         # make dataset metadata
         parser = get_lmdb_sizes_parser()
@@ -333,8 +318,6 @@ class TestSmoke:
         with tempfile.TemporaryDirectory() as tempdirname:
             tempdir = Path(tempdirname)
             extra_args = {"seed": 0}
-            if not ddp:
-                extra_args["no_ddp"] = True
             _ = _run_main(
                 rundir=str(tempdir),
                 update_dict_with={
