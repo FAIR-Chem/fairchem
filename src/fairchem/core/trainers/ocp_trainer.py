@@ -256,6 +256,7 @@ class OCPTrainer(BaseTrainer):
                     logging.info(f"{k}:{v.shape}")
                 else:
                     logging.info(f"{k}:{v}")
+            raise e
 
         outputs = {}
         batch_size = batch.natoms.numel()
