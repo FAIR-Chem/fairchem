@@ -258,8 +258,8 @@ class OCPTrainer(BaseTrainer):
                     assert (
                         "property" in self.output_targets[target_key]
                     ), f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
-                    property = self.output_targets[target_key]["property"]
-                    pred = out[target_key][property]
+                    prop = self.output_targets[target_key]["property"]
+                    pred = out[target_key][prop]
 
             ## TODO: deprecate the following logic?
             ## Otherwise, assume target property is a derived output of the model. Construct the parent property
