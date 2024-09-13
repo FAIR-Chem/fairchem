@@ -17,7 +17,6 @@ with contextlib.suppress(ImportError):
     pass
 
 
-
 from .edge_rot_mat import init_edge_rot_mat
 from .gaussian_rbf import GaussianRadialBasisLayer
 from .input_block import EdgeDegreeEmbedding
@@ -155,7 +154,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
         load_energy_lin_ref: bool | None = False,
     ):
         logging.warning(
-            "equiformer_v2 (EquiformerV2) class is deprecaed in favor of equiformer_v2_backbone_and_heads  (EquiformerV2BackboneAndHeads)"
+            "equiformer_v2 (EquiformerV2) class is deprecated in favor of equiformer_v2_backbone_and_heads  (EquiformerV2BackboneAndHeads)"
         )
         if mmax_list is None:
             mmax_list = [2]
