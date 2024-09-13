@@ -267,7 +267,6 @@ class eSCN(nn.Module, GraphModelMixin):
             device,
             self.dtype,
         )
-
         offset_res = 0
         offset = 0
         # Initialize the l=0,m=0 coefficients for each resolution
