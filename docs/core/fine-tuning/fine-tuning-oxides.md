@@ -44,6 +44,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from ase import Atoms
 
+from fairchem.core.scripts import download_large_files
+
+download_large_files.download_file_group("docs")
+
 with open('supporting-information.json', 'rb') as f:
      d = json.loads(f.read())
         
