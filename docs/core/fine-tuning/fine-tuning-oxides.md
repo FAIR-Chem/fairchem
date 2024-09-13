@@ -44,6 +44,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from ase import Atoms
 
+from fairchem.core.scripts import download_large_files
+
+download_large_files.download_file_group("docs")
+
 with open('supporting-information.json', 'rb') as f:
      d = json.loads(f.read())
         
@@ -258,7 +262,7 @@ You can follow how the training is going by opening a terminal and running
     
 You can also visit it in a browser at [train.txt](./train.txt). You have to periodically refresh the view to see updates though.
 
-This can take up to 30 minutes for 80 epochs, so we only do a few here to see what happens.
+This can take up to 30 minutes for 80 epochs, so we only do a few here to see what happens. If you have a gpu or multiple gpus, you should use the flag --num-gpus=<number of gpus> and remove the --cpu flag.
 
 ```{code-cell} ipython3
 :tags: [hide-output]
@@ -267,7 +271,7 @@ import time
 from fairchem.core.common.tutorial_utils import fairchem_main
 
 t0 = time.time()
-! python {fairchem_main()} --mode train --config-yml {yml} --checkpoint {checkpoint_path} --run-dir fine-tuning --identifier ft-oxides --amp > train.txt 2>&1 
+! python {fairchem_main()} --mode train --config-yml {yml} --checkpoint {checkpoint_path} --run-dir fine-tuning --identifier ft-oxides --cpu > train.txt 2>&1
 print(f'Elapsed time = {time.time() - t0:1.1f} seconds')
 ```
 
