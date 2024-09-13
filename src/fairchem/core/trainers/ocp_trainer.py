@@ -302,7 +302,7 @@ class OCPTrainer(BaseTrainer):
 
         return outputs
 
-    def _compute_loss(self, out, batch):
+    def _compute_loss(self, out, batch) -> torch.Tensor:
         batch_size = batch.natoms.numel()
         fixed = batch.fixed
         mask = fixed == 0

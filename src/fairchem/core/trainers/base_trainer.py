@@ -51,10 +51,13 @@ from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
 from fairchem.core.modules.normalization.element_references import (
-    LinearReferences,
+    create_element_references,
     load_references_from_config,
 )
-from fairchem.core.modules.normalization.normalizer import load_normalizers_from_config
+from fairchem.core.modules.normalization.normalizer import (
+    create_normalizer,
+    load_normalizers_from_config,
+)
 from fairchem.core.modules.scaling.compat import load_scales_compat
 from fairchem.core.modules.scaling.util import ensure_fitted
 from fairchem.core.modules.scheduler import LRScheduler
@@ -203,11 +206,15 @@ class BaseTrainer(ABC):
         if distutils.is_master():
             logging.info(yaml.dump(self.config, default_flow_style=False))
 
+        # define attributes for readability
         self.elementrefs = {}
         self.normalizers = {}
         self.train_dataset = None
         self.val_dataset = None
         self.test_dataset = None
+        self.best_val_metric = None
+        self.primary_metric = None
+
         self.load(inference_only)
 
     @abstractmethod
@@ -243,7 +250,8 @@ class BaseTrainer(ABC):
         if self.config["optim"].get("load_datasets_and_model_then_exit", False):
             sys.exit(0)
 
-    def set_seed(self, seed) -> None:
+    @staticmethod
+    def set_seed(seed) -> None:
         # https://pytorch.org/docs/stable/notes/randomness.html
         random.seed(seed)
         np.random.seed(seed)
@@ -353,7 +361,7 @@ class BaseTrainer(ABC):
             or "sample_n" in self.config["dataset"]
             or "max_atom" in self.config["dataset"]
         ):
-            logging.warn(
+            logging.warning(
                 "Dataset attributes (first_n/sample_n/max_atom) passed to all datasets! Please don't do this, its dangerous!\n"
                 + "Add them under each dataset 'train_split_settings'/'val_split_settings'/'test_split_settings'"
             )
@@ -567,7 +575,10 @@ class BaseTrainer(ABC):
         return module
 
     def load_checkpoint(
-        self, checkpoint_path: str, checkpoint: dict | None = None
+        self,
+        checkpoint_path: str,
+        checkpoint: dict | None = None,
+        inference_only: bool | None = None,
     ) -> None:
         map_location = torch.device("cpu") if self.cpu else self.device
         if checkpoint is None:
@@ -578,23 +589,27 @@ class BaseTrainer(ABC):
             logging.info(f"Loading checkpoint from: {checkpoint_path}")
             checkpoint = torch.load(checkpoint_path, map_location=map_location)
 
-        self.epoch = checkpoint.get("epoch", 0)
-        self.step = checkpoint.get("step", 0)
-        self.best_val_metric = checkpoint.get("best_val_metric", None)
-        self.primary_metric = checkpoint.get("primary_metric", None)
+        # attributes that are necessary for training and validation
+        inference_only = self.train_dataset is None or inference_only
+        if inference_only is False:
+            self.epoch = checkpoint.get("epoch", 0)
+            self.step = checkpoint.get("step", 0)
+            self.best_val_metric = checkpoint.get("best_val_metric", None)
+            self.primary_metric = checkpoint.get("primary_metric", None)
 
-        new_dict = match_state_dict(self.model.state_dict(), checkpoint["state_dict"])
-        strict = self.config.get("task", {}).get("strict_load", True)
-        load_state_dict(self.model, new_dict, strict=strict)
+            if "optimizer" in checkpoint:
+                self.optimizer.load_state_dict(checkpoint["optimizer"])
+            if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
+                self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
 
-        if "optimizer" in checkpoint:
-            self.optimizer.load_state_dict(checkpoint["optimizer"])
-        if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
-            self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
         if "ema" in checkpoint and checkpoint["ema"] is not None:
             self.ema.load_state_dict(checkpoint["ema"])
         else:
             self.ema = None
+
+        new_dict = match_state_dict(self.model.state_dict(), checkpoint["state_dict"])
+        strict = self.config.get("task", {}).get("strict_load", True)
+        load_state_dict(self.model, new_dict, strict=strict)
 
         scale_dict = checkpoint.get("scale_dict", None)
         if scale_dict:
@@ -605,7 +620,7 @@ class BaseTrainer(ABC):
             )
             load_scales_compat(self._unwrapped_model, scale_dict)
 
-        for key in checkpoint["normalizers"]:
+        for key, state_dict in checkpoint["normalizers"].items():
             ### Convert old normalizer keys to new target keys
             if key == "target":
                 target_key = "energy"
@@ -614,22 +629,24 @@ class BaseTrainer(ABC):
             else:
                 target_key = key
 
-            if target_key in self.normalizers:
-                mkeys = self.normalizers[target_key].load_state_dict(
-                    checkpoint["normalizers"][key]
-                )
-                self.normalizers[target_key].to(map_location)
+            if target_key not in self.normalizers:
+                self.normalizers[target_key] = create_normalizer(state_dict=state_dict)
+            else:
+                mkeys = self.normalizers[target_key].load_state_dict(state_dict)
                 assert len(mkeys.missing_keys) == 0
                 assert len(mkeys.unexpected_keys) == 0
 
+            self.normalizers[target_key].to(map_location)
+
         for key, state_dict in checkpoint.get("elementrefs", {}).items():
-            elementrefs = LinearReferences(
-                max_num_elements=len(state_dict["element_references"]) - 1
-            ).to(map_location)
-            mkeys = elementrefs.load_state_dict(state_dict)
-            self.elementrefs[key] = elementrefs
-            assert len(mkeys.missing_keys) == 0
-            assert len(mkeys.unexpected_keys) == 0
+            if key not in self.elementrefs:
+                self.elementrefs[key] = create_element_references(state_dict=state_dict)
+            else:
+                mkeys = self.elementrefs[target_key].load_state_dict(state_dict)
+                assert len(mkeys.missing_keys) == 0
+                assert len(mkeys.unexpected_keys) == 0
+
+            self.elementrefs[key].to(map_location)
 
         if self.scaler and checkpoint["amp"]:
             self.scaler.load_state_dict(checkpoint["amp"])
