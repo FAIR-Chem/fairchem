@@ -642,7 +642,7 @@ class BaseTrainer(ABC):
             if key not in self.elementrefs:
                 self.elementrefs[key] = create_element_references(state_dict=state_dict)
             else:
-                mkeys = self.elementrefs[target_key].load_state_dict(state_dict)
+                mkeys = self.elementrefs[key].load_state_dict(state_dict)
                 assert len(mkeys.missing_keys) == 0
                 assert len(mkeys.unexpected_keys) == 0
 
