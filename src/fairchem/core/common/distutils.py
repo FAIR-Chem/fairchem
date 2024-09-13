@@ -15,11 +15,12 @@ from typing import Any, TypeVar
 
 import torch
 import torch.distributed as dist
+from torch.distributed.elastic.utils.distributed import get_free_port
 
 from fairchem.core.common.typing import none_throws
 
 T = TypeVar("T")
-
+DISTRIBUTED_PORT = 13356
 
 def os_environ_get_or_throw(x: str) -> str:
     if x not in os.environ:
@@ -40,7 +41,7 @@ def setup(config) -> None:
                 )
                 config["init_method"] = "tcp://{host}:{port}".format(
                     host=hostnames.split()[0].decode("utf-8"),
-                    port=config["distributed_port"],
+                    port=DISTRIBUTED_PORT,
                 )
                 nnodes = int(os_environ_get_or_throw("SLURM_NNODES"))
                 ntasks_per_node = os.environ.get("SLURM_NTASKS_PER_NODE")
@@ -67,10 +68,11 @@ def setup(config) -> None:
                 )
 
                 # ensures GPU0 does not have extra context/higher peak memory
+                logging.info(f"local rank: {config['local_rank']}, visible devices: {os.environ['CUDA_VISIBLE_DEVICES']}")
                 torch.cuda.set_device(config["local_rank"])
 
                 dist.init_process_group(
-                    backend=config["distributed_backend"],
+                    backend="nccl",
                     init_method=config["init_method"],
                     world_size=config["world_size"],
                     rank=config["rank"],
@@ -101,8 +103,14 @@ def setup(config) -> None:
             timeout=timeout,
         )
     else:
-        config["local_rank"] = int(os.environ.get("LOCAL_RANK", config["local_rank"]))
-        dist.init_process_group(backend=config.get("backend", "nccl"), timeout=timeout)
+        if not os.environ.get("MASTER_ADDR"):
+            assert config["world_size"] == 1, "Can only setup master address and port at this point for a single rank, otherwise we assume the processes and the comm addr/port have already been setup"
+            os.environ["MASTER_ADDR"] = "localhost"
+            os.environ["MASTER_PORT"] = str(get_free_port())
+            os.environ["LOCAL_RANK"] = "0"
+            os.environ["RANK"] = "0"
+        config["local_rank"] = int(os.environ.get("LOCAL_RANK"))
+        dist.init_process_group(backend=config["distributed_backend"], rank=int(os.environ.get("RANK")), world_size=config["world_size"], timeout=timeout)
 
 
 def cleanup() -> None:
