@@ -338,11 +338,7 @@ class eSCN(nn.Module, GraphModelMixin):
         ###############################################################
         node_energy = self.energy_block(x_pt)
         energy = torch.zeros(len(data.natoms), device=device)
-        # CPU AMP does not allow this, but GPU AMP does. force conversion to float before hand
-        if node_energy.device.type == "cuda":
-            energy.index_add_(0, data.batch, node_energy.view(-1))
-        else:
-            energy.index_add_(0, data.batch, node_energy.float().view(-1))
+        energy.index_add_(0, data.batch, node_energy.float().view(-1))
 
         # Scale energy to help balance numerical precision w.r.t. forces
         energy = energy * 0.001
@@ -542,7 +538,7 @@ class eSCNBackbone(eSCN, BackboneInterface):
 
 @registry.register_model("escn_energy_head")
 class eSCNEnergyHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, reduce = "sum"):
+    def __init__(self, backbone, reduce="sum"):
         super().__init__()
         backbone.energy_block = None
         self.reduce = reduce
@@ -563,7 +559,9 @@ class eSCNEnergyHead(nn.Module, HeadInterface):
         elif self.reduce == "mean":
             return {"energy": energy / data.natoms}
         else:
-            raise ValueError(f"reduce can only be sum or mean, user provided: {self.reduce}")
+            raise ValueError(
+                f"reduce can only be sum or mean, user provided: {self.reduce}"
+            )
 
 
 @registry.register_model("escn_force_head")
