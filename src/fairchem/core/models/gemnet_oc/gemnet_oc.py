@@ -1532,7 +1532,7 @@ class GemNetOCForceHead(nn.Module, HeadInterface):
         self, data: Batch, emb: dict[str, torch.Tensor]
     ) -> dict[str, torch.Tensor]:
         if self.direct_forces:
-            with torch.autocast(device_type=emb["xs_F"].device.type, enabled=False):
+            with torch.autocast(device_type=emb["edge_idx"].device.type, enabled=False):
                 x_F = self.out_mlp_F(torch.cat(emb["xs_F"], dim=-1).float())
                 F_st = self.out_forces(x_F)
 
