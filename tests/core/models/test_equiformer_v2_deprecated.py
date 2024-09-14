@@ -94,6 +94,7 @@ def _load_model():
         drop_path_rate=0.1,
         proj_drop=0.0,
         weight_init="uniform",
+        enforce_max_neighbors_strictly=False,
     )
 
     new_dict = {k[len("module.") * 2 :]: v for k, v in checkpoint["state_dict"].items()}
@@ -139,7 +140,7 @@ class TestEquiformerV2:
 
         # Compare predicted energies and forces (after inv-rotation).
         energies = out["energy"].detach()
-        np.testing.assert_almost_equal(energies[0], energies[1], decimal=5)
+        np.testing.assert_almost_equal(energies[0], energies[1], decimal=7)
 
         forces = out["forces"].detach()
         logging.info(forces)
