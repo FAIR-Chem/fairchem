@@ -15,7 +15,6 @@ Attributes
    data.oc.utils.vasp_flags.SOLVENT_BULK_VASP_FLAGS
    data.oc.utils.vasp_flags.RELAX_FLAGS
    data.oc.utils.vasp_flags.MD_FLAGS
-   data.oc.utils.vasp_flags.ML_FLAGS
 
 
 Module Contents
@@ -32,6 +31,4 @@ Module Contents
 .. py:data:: RELAX_FLAGS
 
 .. py:data:: MD_FLAGS
-
-.. py:data:: ML_FLAGS
 

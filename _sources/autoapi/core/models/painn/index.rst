@@ -121,7 +121,4 @@ Package Contents
 
    .. py:method:: __repr__() -> str
 
-      Return repr(self).
-
-
 

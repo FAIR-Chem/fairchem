@@ -60,6 +60,8 @@ Module Contents
       :value: ['energy', 'forces']
 
 
+      Properties calculator can handle (energy, forces, ...)
+
 
    .. py:attribute:: checkpoint
       :value: None

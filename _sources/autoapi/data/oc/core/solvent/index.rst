@@ -49,9 +49,6 @@ Module Contents
 
    .. py:method:: __str__()
 
-      Return str(self).
-
-
 
    .. py:method:: _load_solvent(solvent: dict) -> None
 

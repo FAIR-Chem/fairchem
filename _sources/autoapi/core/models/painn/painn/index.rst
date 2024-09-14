@@ -150,9 +150,6 @@ Module Contents
 
    .. py:method:: __repr__() -> str
 
-      Return repr(self).
-
-
 
 .. py:class:: PaiNNBackbone(hidden_channels: int = 512, num_layers: int = 6, num_rbf: int = 128, cutoff: float = 12.0, max_neighbors: int = 50, rbf: dict[str, str] | None = None, envelope: dict[str, str | int] | None = None, regress_forces: bool = True, direct_forces: bool = True, use_pbc: bool = True, use_pbc_single: bool = False, otf_graph: bool = True, num_elements: int = 83, scale_file: str | None = None)
 

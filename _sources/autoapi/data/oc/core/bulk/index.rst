@@ -61,19 +61,10 @@ Module Contents
 
    .. py:method:: __str__()
 
-      Return str(self).
-
-
 
    .. py:method:: __repr__()
 
-      Return repr(self).
-
-
 
    .. py:method:: __eq__(other) -> bool
-
-      Return self==value.
-
 
 

@@ -18,6 +18,7 @@ Attributes
 .. autoapisummary::
 
    core.common.distutils.T
+   core.common.distutils.DISTRIBUTED_PORT
 
 
 Functions
@@ -44,6 +45,10 @@ Module Contents
 ---------------
 
 .. py:data:: T
+
+.. py:data:: DISTRIBUTED_PORT
+   :value: 13356
+
 
 .. py:function:: os_environ_get_or_throw(x: str) -> str
 

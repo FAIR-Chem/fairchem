@@ -18,6 +18,7 @@ Attributes
 .. autoapisummary::
 
    core.common.utils.DEFAULT_ENV_VARS
+   core.common.utils.multitask_required_keys
 
 
 Classes
@@ -50,6 +51,7 @@ Functions
    core.common.utils.dict_set_recursively
    core.common.utils.parse_value
    core.common.utils.create_dict_from_args
+   core.common.utils.find_relative_file_in_paths
    core.common.utils.load_config
    core.common.utils.build_config
    core.common.utils.create_grid
@@ -74,6 +76,7 @@ Functions
    core.common.utils.irreps_sum
    core.common.utils.update_config
    core.common.utils.get_loss_module
+   core.common.utils.load_model_and_weights_from_checkpoint
 
 
 Module Contents
@@ -96,6 +99,8 @@ Module Contents
 
 
 .. py:function:: save_checkpoint(state, checkpoint_dir: str = 'checkpoints/', checkpoint_file: str = 'checkpoint.pt') -> str
+
+.. py:data:: multitask_required_keys
 
 .. py:class:: Complete
 
@@ -164,9 +169,18 @@ Module Contents
    Keys in different dictionary levels are separated by sep.
 
 
-.. py:function:: load_config(path: str, previous_includes: list | None = None)
+.. py:function:: find_relative_file_in_paths(filename, include_paths)
 
-.. py:function:: build_config(args, args_override)
+.. py:function:: load_config(path: str, files_previously_included: list | None = None, include_paths: list | None = None)
+
+   Load a given config with any defined imports
+
+   When imports are present this is a recursive function called on imports.
+   To prevent any cyclic imports we keep track of already imported yml files
+   using files_previously_included
+
+
+.. py:function:: build_config(args, args_override, include_paths=None)
 
 .. py:function:: create_grid(base_config, sweep_file: str)
 
@@ -250,7 +264,7 @@ Module Contents
 
 .. py:function:: setup_env_vars() -> None
 
-.. py:function:: new_trainer_context(*, config: dict[str, Any], distributed: bool = False)
+.. py:function:: new_trainer_context(*, config: dict[str, Any])
 
 .. py:function:: _resolve_scale_factor_submodule(model: torch.nn.Module, name: str)
 
@@ -280,4 +294,6 @@ Module Contents
 
 
 .. py:function:: get_loss_module(loss_name)
+
+.. py:function:: load_model_and_weights_from_checkpoint(checkpoint_path: str) -> torch.nn.Module
 

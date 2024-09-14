@@ -445,4 +445,13 @@ Module Contents
 
    .. py:method:: forward(data: torch_geometric.data.batch.Batch) -> dict[str, torch.Tensor]
 
+      Backbone forward.
+
+      :param data: Atomic systems as input
+      :type data: DataBatch
+
+      :returns: **embedding** -- Return backbone embeddings for the given input
+      :rtype: dict[str->torch.Tensor]
+
+
 

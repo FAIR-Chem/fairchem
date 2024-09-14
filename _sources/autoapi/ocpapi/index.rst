@@ -819,9 +819,6 @@ Package Contents
 
    .. py:method:: __str__() -> str
 
-      Return str(self).
-
-
 
 .. py:function:: get_results_ui_url(api_host: str, system_id: str) -> str | None
 

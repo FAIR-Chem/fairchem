@@ -34,7 +34,7 @@ Functions
 Module Contents
 ---------------
 
-.. py:class:: Slab(bulk=None, slab_atoms: ase.Atoms = None, millers: tuple | None = None, shift: float | None = None, top: bool | None = None, oriented_bulk: pymatgen.core.structure.Structure = None, min_ab: float = 0.8)
+.. py:class:: Slab(bulk=None, slab_atoms: ase.Atoms = None, millers: tuple | None = None, shift: float | None = None, top: bool | None = None, oriented_bulk: pymatgen.core.structure.Structure = None, min_ab: float = 8.0)
 
    Initializes a slab object, i.e. a particular slab tiled along xyz, in
    one of 2 ways:
@@ -110,20 +110,11 @@ Module Contents
 
    .. py:method:: __str__()
 
-      Return str(self).
-
-
 
    .. py:method:: __repr__()
 
-      Return repr(self).
-
-
 
    .. py:method:: __eq__(other)
-
-      Return self==value.
-
 
 
 .. py:function:: tile_and_tag_atoms(unit_slab_struct: pymatgen.core.structure.Structure, bulk_atoms: ase.Atoms, min_ab: float = 8)

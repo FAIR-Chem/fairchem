@@ -418,5 +418,5 @@ Package Contents
    .. py:method:: sample_property_metadata(num_samples: int = 100)
 
 
-.. py:function:: data_list_collater(data_list: list[torch_geometric.data.data.BaseData], otf_graph: bool = False) -> torch_geometric.data.data.BaseData
+.. py:function:: data_list_collater(data_list: list[torch_geometric.data.data.BaseData], otf_graph: bool = False, to_dict: bool = False) -> torch_geometric.data.data.BaseData | dict[str, torch.Tensor]
 

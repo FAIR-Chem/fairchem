@@ -95,9 +95,6 @@ Module Contents
 
    .. py:method:: __repr__() -> str
 
-      Return repr(self).
-
-
 
    .. py:method:: forward(node_input)
 
@@ -138,9 +135,6 @@ Module Contents
 
    .. py:method:: __repr__() -> str
 
-      Return repr(self).
-
-
 
    .. py:method:: forward(node_input)
 
@@ -172,9 +166,6 @@ Module Contents
 
 
    .. py:method:: __repr__() -> str
-
-      Return repr(self).
-
 
 
    .. py:method:: forward(node_input)
@@ -218,9 +209,6 @@ Module Contents
 
    .. py:method:: __repr__() -> str
 
-      Return repr(self).
-
-
 
    .. py:method:: forward(node_input)
 
@@ -253,9 +241,6 @@ Module Contents
 
 
    .. py:method:: __repr__() -> str
-
-      Return repr(self).
-
 
 
    .. py:method:: forward(node_input)

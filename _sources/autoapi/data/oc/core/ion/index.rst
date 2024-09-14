@@ -40,9 +40,6 @@ Module Contents
 
    .. py:method:: __str__()
 
-      Return str(self).
-
-
 
    .. py:method:: _load_ion(ion: dict) -> None
 

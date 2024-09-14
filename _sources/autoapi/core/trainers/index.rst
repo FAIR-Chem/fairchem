@@ -26,7 +26,7 @@ Classes
 Package Contents
 ----------------
 
-.. py:class:: BaseTrainer(task, model, outputs, dataset, optimizer, loss_functions, evaluation_metrics, identifier: str, timestamp_id: str | None = None, run_dir: str | None = None, is_debug: bool = False, print_every: int = 100, seed: int | None = None, logger: str = 'wandb', local_rank: int = 0, amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm=None, noddp: bool = False, gp_gpus: int | None = None)
+.. py:class:: BaseTrainer(task: dict[str, str | Any], model: dict[str, Any], outputs: dict[str, str | int], dataset: dict[str, str | float], optimizer: dict[str, str | float], loss_functions: dict[str, str | float], evaluation_metrics: dict[str, str], identifier: str, local_rank: int, timestamp_id: str | None = None, run_dir: str | None = None, is_debug: bool = False, print_every: int = 100, seed: int | None = None, logger: str = 'wandb', amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm=None, gp_gpus: int | None = None, inference_only: bool = False)
 
    Bases: :py:obj:`abc.ABC`
 
@@ -91,6 +91,16 @@ Package Contents
 
 
 
+   .. py:attribute:: best_val_metric
+      :value: None
+
+
+
+   .. py:attribute:: primary_metric
+      :value: None
+
+
+
    .. py:method:: train(disable_eval_tqdm: bool = False) -> None
       :abstractmethod:
 
@@ -104,10 +114,12 @@ Package Contents
 
 
 
-   .. py:method:: load() -> None
+   .. py:method:: load(inference_only: bool) -> None
 
 
    .. py:method:: set_seed(seed) -> None
+      :staticmethod:
+
 
 
    .. py:method:: load_seed_from_config() -> None
@@ -140,7 +152,7 @@ Package Contents
    .. py:property:: _unwrapped_model
 
 
-   .. py:method:: load_checkpoint(checkpoint_path: str, checkpoint: dict | None = None) -> None
+   .. py:method:: load_checkpoint(checkpoint_path: str, checkpoint: dict | None = None, inference_only: bool | None = None) -> None
 
 
    .. py:method:: load_loss() -> None
@@ -158,6 +170,9 @@ Package Contents
    .. py:method:: update_best(primary_metric, val_metrics, disable_eval_tqdm: bool = True) -> None
 
 
+   .. py:method:: _aggregate_metrics(metrics)
+
+
    .. py:method:: validate(split: str = 'val', disable_tqdm: bool = False)
 
 
@@ -167,7 +182,7 @@ Package Contents
    .. py:method:: save_results(predictions: dict[str, numpy.typing.NDArray], results_file: str | None, keys: collections.abc.Sequence[str] | None = None) -> None
 
 
-.. py:class:: OCPTrainer(task, model, outputs, dataset, optimizer, loss_functions, evaluation_metrics, identifier, timestamp_id=None, run_dir=None, is_debug=False, print_every=100, seed=None, logger='wandb', local_rank=0, amp=False, cpu=False, slurm=None, noddp=False, name='ocp', gp_gpus=None)
+.. py:class:: OCPTrainer(task: dict[str, str | Any], model: dict[str, Any], outputs: dict[str, str | int], dataset: dict[str, str | float], optimizer: dict[str, str | float], loss_functions: dict[str, str | float], evaluation_metrics: dict[str, str], identifier: str, local_rank: int, timestamp_id: str | None = None, run_dir: str | None = None, is_debug: bool = False, print_every: int = 100, seed: int | None = None, logger: str = 'wandb', amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm=None, gp_gpus: int | None = None, inference_only: bool = False)
 
    Bases: :py:obj:`fairchem.core.trainers.base_trainer.BaseTrainer`
 
@@ -212,17 +227,12 @@ Package Contents
    :param logger: Type of logger to be used.
                   (default: :obj:`wandb`)
    :type logger: str, optional
-   :param local_rank: Local rank of the process, only applicable for distributed training.
-                      (default: :obj:`0`)
-   :type local_rank: int, optional
    :param amp: Run using automatic mixed precision.
                (default: :obj:`False`)
    :type amp: bool, optional
    :param slurm: Slurm configuration. Currently just for keeping track.
                  (default: :obj:`{}`)
    :type slurm: dict
-   :param noddp: Run model without DDP.
-   :type noddp: bool, optional
 
 
    .. py:method:: train(disable_eval_tqdm: bool = False) -> None
@@ -240,7 +250,7 @@ Package Contents
    .. py:method:: _forward(batch)
 
 
-   .. py:method:: _compute_loss(out, batch)
+   .. py:method:: _compute_loss(out, batch) -> torch.Tensor
 
 
    .. py:method:: _compute_metrics(out, batch, evaluator, metrics=None)

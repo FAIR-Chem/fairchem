@@ -111,9 +111,6 @@ Module Contents
 
    .. py:method:: __repr__() -> str
 
-      Return repr(self).
-
-
 
 .. py:class:: SO3_Embedding(length: int, lmax_list: list[int], num_channels: int, device: torch.device, dtype: torch.dtype)
 
@@ -317,9 +314,6 @@ Module Contents
 
    .. py:method:: __repr__() -> str
 
-      Return repr(self).
-
-
 
 .. py:class:: SO3_LinearV2(in_features: int, out_features: int, lmax: int, bias: bool = True)
 
@@ -383,8 +377,5 @@ Module Contents
 
 
    .. py:method:: __repr__() -> str
-
-      Return repr(self).
-
 
 

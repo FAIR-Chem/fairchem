@@ -206,7 +206,7 @@ Module Contents
    .. py:method:: _z_rot_mat(angle: torch.Tensor, lv: int) -> torch.Tensor
 
 
-.. py:class:: SO3_Grid(lmax: int, mmax: int)
+.. py:class:: SO3_Grid(lmax: int, mmax: int, resolution: int | None = None)
 
    Bases: :py:obj:`torch.nn.Module`
 

@@ -32,7 +32,7 @@ Functions
 Module Contents
 ---------------
 
-.. py:class:: Runner(distributed: bool = False)
+.. py:class:: Runner
 
    Bases: :py:obj:`submitit.helpers.Checkpointable`
 
@@ -55,9 +55,6 @@ Module Contents
 
 
 
-   .. py:attribute:: distributed
-
-
    .. py:method:: __call__(config: dict) -> None
 
 
@@ -67,9 +64,9 @@ Module Contents
 
 
 
-.. py:function:: runner_wrapper(distributed: bool, config: dict)
+.. py:function:: runner_wrapper(config: dict)
 
-.. py:function:: main()
+.. py:function:: main(args: argparse.Namespace | None = None, override_args: list[str] | None = None)
 
    Run the main fairchem program.
 

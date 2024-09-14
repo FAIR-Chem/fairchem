@@ -158,9 +158,6 @@ Module Contents
 
    .. py:method:: __repr__()
 
-      Return repr(self).
-
-
 
    .. py:method:: packmol_structure(filename: str, number: int, side: str)
 

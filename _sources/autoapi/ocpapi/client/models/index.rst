@@ -381,9 +381,6 @@ Module Contents
 
    .. py:method:: __str__() -> str
 
-      Return str(self).
-
-
 
 .. py:class:: AdsorbateSlabRelaxationResult
 

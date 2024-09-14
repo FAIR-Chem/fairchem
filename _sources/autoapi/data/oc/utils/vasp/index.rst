@@ -67,7 +67,7 @@ Module Contents
    :returns: k_pts   A 3-tuple of integers indicating the k-point mesh to use
 
 
-.. py:function:: write_vasp_input_files(atoms, outdir='.', vasp_flags=None)
+.. py:function:: write_vasp_input_files(atoms, outdir='.', vasp_flags=None, pp_setups='minimal', pp_env='VASP_PP_PATH')
 
    Effectively goes through the same motions as the `run_vasp` function,
    except it only writes the input files instead of running.
@@ -75,5 +75,7 @@ Module Contents
    :param atoms       `ase.Atoms` object that we want to relax.:
    :param outdir      A string indicating where you want to save the input files.: Defaults to '.'
    :param vasp_flags  A dictionary of settings we want to pass to the `Vasp`: calculator. Defaults to a standerd set of values if `None`
+   :param pp_setups   Pseudopotential setups to use - https: //gitlab.com/ase/ase/-/blob/master/ase/calculators/vasp/setups.py
+   :param pp_env      Environment variable to read for pseudopotentials.:
 
 

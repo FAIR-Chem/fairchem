@@ -21,6 +21,7 @@ Functions
    core.common.test_utils.init_env_rank_and_launch_test
    core.common.test_utils.init_pg_and_rank_and_launch_test
    core.common.test_utils.spawn_multi_process
+   core.common.test_utils.init_local_distributed_process_group
 
 
 Module Contents
@@ -88,4 +89,6 @@ Module Contents
 
    :returns: A list, l, where l[i] is the return value of test_method on rank i
 
+
+.. py:function:: init_local_distributed_process_group(backend='nccl')
 

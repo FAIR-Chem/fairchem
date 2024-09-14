@@ -70,14 +70,8 @@ Package Contents
 
    .. py:method:: __str__()
 
-      Return str(self).
-
-
 
    .. py:method:: __repr__()
-
-      Return repr(self).
-
 
 
    .. py:method:: _get_adsorbate_from_random(adsorbate_db)
@@ -300,20 +294,11 @@ Package Contents
 
    .. py:method:: __str__()
 
-      Return str(self).
-
-
 
    .. py:method:: __repr__()
 
-      Return repr(self).
-
-
 
    .. py:method:: __eq__(other) -> bool
-
-      Return self==value.
-
 
 
 .. py:class:: InterfaceConfig(slab: fairchem.data.oc.core.slab.Slab, adsorbates: list[fairchem.data.oc.core.adsorbate.Adsorbate], solvent: fairchem.data.oc.core.solvent.Solvent, ions: list[fairchem.data.oc.core.ion.Ion] | None = None, num_sites: int = 100, num_configurations: int = 1, interstitial_gap: float = 0.1, vacuum_size: int = 15, solvent_interstitial_gap: float = 2, solvent_depth: float = 8, pbc_shift: float = 0.0, packmol_tolerance: float = 2, mode: str = 'random_site_heuristic_placement')
@@ -462,9 +447,6 @@ Package Contents
 
    .. py:method:: __str__()
 
-      Return str(self).
-
-
 
    .. py:method:: _load_ion(ion: dict) -> None
 
@@ -567,7 +549,7 @@ Package Contents
 
 
 
-.. py:class:: Slab(bulk=None, slab_atoms: ase.Atoms = None, millers: tuple | None = None, shift: float | None = None, top: bool | None = None, oriented_bulk: pymatgen.core.structure.Structure = None, min_ab: float = 0.8)
+.. py:class:: Slab(bulk=None, slab_atoms: ase.Atoms = None, millers: tuple | None = None, shift: float | None = None, top: bool | None = None, oriented_bulk: pymatgen.core.structure.Structure = None, min_ab: float = 8.0)
 
    Initializes a slab object, i.e. a particular slab tiled along xyz, in
    one of 2 ways:
@@ -643,20 +625,11 @@ Package Contents
 
    .. py:method:: __str__()
 
-      Return str(self).
-
-
 
    .. py:method:: __repr__()
 
-      Return repr(self).
-
-
 
    .. py:method:: __eq__(other)
-
-      Return self==value.
-
 
 
 .. py:class:: Solvent(solvent_atoms: ase.Atoms = None, solvent_id_from_db: int | None = None, solvent_db_path: str | None = SOLVENT_PKL_PATH, solvent_density: float | None = None)
@@ -692,9 +665,6 @@ Package Contents
 
 
    .. py:method:: __str__()
-
-      Return str(self).
-
 
 
    .. py:method:: _load_solvent(solvent: dict) -> None

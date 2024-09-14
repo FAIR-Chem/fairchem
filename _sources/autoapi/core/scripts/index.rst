@@ -29,6 +29,7 @@ Submodules
 
    /autoapi/core/scripts/download_data/index
    /autoapi/core/scripts/download_large_files/index
+   /autoapi/core/scripts/eqv2_to_hydra_eqv2/index
    /autoapi/core/scripts/fit_normalizers/index
    /autoapi/core/scripts/fit_references/index
    /autoapi/core/scripts/gif_maker_parallelized/index

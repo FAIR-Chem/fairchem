@@ -55,14 +55,8 @@ Module Contents
 
    .. py:method:: __str__()
 
-      Return str(self).
-
-
 
    .. py:method:: __repr__()
-
-      Return repr(self).
-
 
 
    .. py:method:: _get_adsorbate_from_random(adsorbate_db)

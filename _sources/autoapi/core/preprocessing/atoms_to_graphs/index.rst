@@ -198,6 +198,9 @@ Module Contents
 
 
 
+   .. py:method:: get_edge_distance_vec(pos, edge_index, cell, cell_offsets)
+
+
    .. py:method:: convert(atoms: ase.Atoms, sid=None)
 
       Convert a single atomic structure to a graph.
