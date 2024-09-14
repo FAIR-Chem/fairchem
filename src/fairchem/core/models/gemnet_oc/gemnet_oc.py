@@ -234,7 +234,6 @@ class GemNetOC(nn.Module, GraphModelMixin):
         num_elements: int = 83,
         otf_graph: bool = False,
         scale_file: str | None = None,
-        raise_on_scale_load_error: bool = True,
         **kwargs,  # backwards compatibility with deprecated arguments
     ) -> None:
         if qint_tags is None:
@@ -382,7 +381,7 @@ class GemNetOC(nn.Module, GraphModelMixin):
         if direct_forces:
             self.out_forces.reset_parameters(out_initializer)
 
-        load_scales_compat(self, scale_file, on_error_raise=raise_on_scale_load_error)
+        load_scales_compat(self, scale_file)
 
     def set_cutoffs(self, cutoff, cutoff_qint, cutoff_aeaint, cutoff_aint):
         self.cutoff = cutoff
