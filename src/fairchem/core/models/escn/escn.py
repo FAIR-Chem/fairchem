@@ -308,7 +308,6 @@ class eSCN(nn.Module, GraphModelMixin):
                     graph.edge_index,
                     self.SO3_edge_rot,
                     mappingReduced,
-                    use_reentrant=not self.training,
                 )
 
             if i > 0:
