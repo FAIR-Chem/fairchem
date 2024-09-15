@@ -67,7 +67,10 @@ def load_scales_compat(module: nn.Module, scale_file: str | ScaleDict | None) ->
     missing_keys = set(scale_factors.keys()) - set(scale_dict.keys())
     if len(missing_keys) > 0:
         raise ValueError(
-            "Failed to load scaling values. Missing entries for,", missing_keys
+            "Failed to load scaling values. Missing entries for,",
+            missing_keys,
+            "\nHave",
+            scale_dict.keys(),
         )
     for name, scale in scale_dict.items():
         if name not in scale_factors:
