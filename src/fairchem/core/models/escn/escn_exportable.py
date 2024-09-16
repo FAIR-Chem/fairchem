@@ -10,11 +10,16 @@ from __future__ import annotations
 import contextlib
 import logging
 import os
+import typing
 
 import torch
 import torch.nn as nn
 
+if typing.TYPE_CHECKING:
+    from torch_geometric.data.batch import Batch
+
 from fairchem.core.common.registry import registry
+from fairchem.core.models.base import GraphModelMixin
 from fairchem.core.models.escn.so3_exportable import (
     CoefficientMapping,
     SO3_Grid,
@@ -33,13 +38,12 @@ with contextlib.suppress(ImportError):
 
 
 @registry.register_model("escn_export")
-class eSCN(nn.Module):
+class eSCN(nn.Module, GraphModelMixin):
     """Equivariant Spherical Channel Network
     Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
 
 
     Args:
-        regress_forces (bool): Compute forces
         cutoff (float): Maximum distance between nieghboring atoms in Angstroms
         max_num_elements (int): Maximum atomic number
         num_layers (int):             Number of layers in the GNN
@@ -56,9 +60,9 @@ class eSCN(nn.Module):
 
     def __init__(
         self,
-        regress_forces: bool = True,
+        max_neighbors: int = 300, # for backwards compat-only with graph generation
         cutoff: float = 8.0,
-        max_num_elements: int = 90,
+        max_num_elements: int = 100,
         num_layers: int = 8,
         lmax: int = 4,
         mmax: int = 2,
@@ -70,7 +74,9 @@ class eSCN(nn.Module):
         basis_width_scalar: float = 1.0,
         distance_resolution: float = 0.02,
         resolution: int | None = None,
-        full_export: bool = False
+        compile: bool = False,
+        # need to turn off assertions for export mode
+        assertions: bool = True,
     ) -> None:
         super().__init__()
 
@@ -80,7 +86,7 @@ class eSCN(nn.Module):
             logging.error("You need to install the e3nn library to use the SCN model")
             raise ImportError
 
-        self.regress_forces = regress_forces
+        self.max_neighbors = max_neighbors
         self.cutoff = cutoff
         self.max_num_elements = max_num_elements
         self.hidden_channels = hidden_channels
@@ -93,7 +99,8 @@ class eSCN(nn.Module):
         self.mmax = mmax
         self.basis_width_scalar = basis_width_scalar
         self.distance_function = distance_function
-        self.full_export = full_export
+        self.compile = compile
+        self.assertions = assertions
 
         # non-linear activation function used throughout the network
         self.act = nn.SiLU()
@@ -168,10 +175,9 @@ class eSCN(nn.Module):
         self.energy_block = EnergyBlock(
             self.sphere_channels, self.num_sphere_samples, self.act
         )
-        if self.regress_forces:
-            self.force_block = ForceBlock(
-                self.sphere_channels, self.num_sphere_samples, self.act
-            )
+        self.force_block = ForceBlock(
+            self.sphere_channels, self.num_sphere_samples, self.act
+        )
 
         # Create a roughly evenly distributed point sampling of the sphere for the output blocks
         self.sphere_points = nn.Parameter(
@@ -200,18 +206,42 @@ class eSCN(nn.Module):
             self.register_buffer(f"Jd_{l}", Jd_list[l])
 
 
-    def forward(self, data: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        pos: torch.Tensor = data["pos"]
-        batch_idx: torch.Tensor = data["batch"].long()
-        natoms: torch.Tensor = data["natoms"]
-        atomic_numbers: torch.Tensor = data["atomic_numbers"]
-        edge_index: torch.Tensor = data["edge_index"]
-        edge_distance: torch.Tensor = data["distances"]
-        edge_distance_vec: torch.Tensor = data["edge_distance_vec"]
+    def forward(self, data: Batch) -> dict[str, torch.Tensor]:
+        # wrapper to make the exportable model compatible with torch.geometric.Batch inputs and returns dict outputs
+        # note this is slower to run graph generation here, for best performance
+        # generate the graph outside and call forward_exportable instead!
+        # once we remove torch geometric and standardize inputs, we can remove this wrapper!
+        #
+        # because generate_graph is not export/compile friendly we isolate this part of the call
+        graph = self.generate_graph(data, max_neighbors=self.max_neighbors, otf_graph=True, use_pbc=True, use_pbc_single=True)
+        if self.compile and not getattr(self, "already_compiled", False):
+            logging.error("Compiling the escn forward function...")
+            self.forward_exportable = torch.compile(options={"triton.cudagraphs": data.pos.type == "cuda"}, fullgraph=True, dynamic=True)(self.forward_exportable)
+            self.already_compiled = True
 
-        atomic_numbers = atomic_numbers.long()
-        # TODO: this requires upgrade to torch2.4 with export non-strict mode to enable
-        if not self.full_export:
+        energy, forces = self.forward_exportable(
+            data.pos,
+            data.batch,
+            data.natoms,
+            data.atomic_numbers.long(),
+            graph.edge_index,
+            graph.edge_distance,
+            graph.edge_distance_vec,
+        )
+        return {"energy": energy, "forces": forces}
+
+    # wrapper for exportable function where the inputs and outputs are tensor
+    def forward_exportable(
+        self,
+        pos: torch.Tensor, # float
+        batch_idx: torch.Tensor, # long
+        natoms: torch.Tensor, # long
+        atomic_numbers: torch.Tensor, # long
+        edge_index: torch.Tensor, # long
+        edge_distance: torch.Tensor, # float
+        edge_distance_vec: torch.Tensor, # float
+        ) -> list[torch.Tensor]:
+        if self.assertions:
             assert (
                 atomic_numbers.max().item() < self.max_num_elements
             ), f"Atomic number {atomic_numbers.max().item()} exceeds that given in model config {self.max_num_elements}"
@@ -222,9 +252,7 @@ class eSCN(nn.Module):
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(
-            edge_distance_vec
-        )
+        edge_rot_mat = self._init_edge_rot_mat(edge_distance_vec)
         Jd_buffers = [getattr(self, f"Jd_{l}").type(edge_rot_mat.dtype) for l in range(self.lmax + 1)]
         wigner = rotation_to_wigner(edge_rot_mat, 0, self.lmax, Jd_buffers).detach()
 
@@ -279,15 +307,12 @@ class eSCN(nn.Module):
         # Scale energy to help balance numerical precision w.r.t. forces
         energy = energy * 0.001
 
-        outputs = {"energy": energy}
         ###############################################################
         # Force estimation
         ###############################################################
-        if self.regress_forces:
-            forces = self.force_block(x_pt, self.sphere_points)
-            outputs["forces"] = forces
+        forces = self.force_block(x_pt, self.sphere_points)
 
-        return outputs
+        return energy, forces
 
     # Initialize the edge rotation matrics
     def _init_edge_rot_mat(self, edge_distance_vec):
@@ -295,8 +320,7 @@ class eSCN(nn.Module):
         edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0**2, dim=1))
 
         # Make sure the atoms are far enough apart
-        # TODO: this requires upgrade to torch2.4 with export non-strict mode to enable
-        if not self.full_export:
+        if self.assertions:
             assert torch.min(edge_vec_0_distance) < 0.0001
 
         norm_x = edge_vec_0 / (edge_vec_0_distance.view(-1, 1))

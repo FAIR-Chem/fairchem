@@ -34,8 +34,9 @@ from fairchem.core.preprocessing import AtomsToGraphs
 
 skip_if_no_cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="skipping when no gpu")
 
-MAX_ELEMENTS = 90
+MAX_ELEMENTS = 100
 CUTOFF = 6.0
+MAX_NEIGHBORS = 300
 
 def load_data():
     atoms = read(
@@ -51,39 +52,62 @@ def load_data():
         r_distances=True,
     )
     data_list = a2g.convert_all([atoms])
-    return data_list[0]
+    return data_list_collater(data_list)
 
 
-def load_escn_model():
+def load_model(type: str, compile=False):
     torch.manual_seed(4)
     setup_imports()
-    return registry.get_model_class("escn")(
-        use_pbc = True,
-        use_pbc_single = False,
-        regress_forces = True,
-        max_neighbors = 300,
-        cutoff = CUTOFF,
-        max_num_elements = MAX_ELEMENTS,
-        num_layers = 8,
-        lmax_list = [4],
-        mmax_list = [2],
-        sphere_channels = 128,
-        hidden_channels = 256,
-        edge_channels = 128,
-        num_sphere_samples = 128,
-        distance_function = "gaussian",
-        basis_width_scalar = 1.0,
-        distance_resolution = 0.02,
-        resolution = None,
-    )
+    if type=="baseline":
+        return registry.get_model_class("escn")(
+            use_pbc = True,
+            use_pbc_single = False,
+            regress_forces = True,
+            max_neighbors = MAX_NEIGHBORS,
+            cutoff = CUTOFF,
+            max_num_elements = MAX_ELEMENTS,
+            num_layers = 8,
+            lmax_list = [4],
+            mmax_list = [2],
+            sphere_channels = 128,
+            hidden_channels = 256,
+            edge_channels = 128,
+            num_sphere_samples = 128,
+            distance_function = "gaussian",
+            basis_width_scalar = 1.0,
+            distance_resolution = 0.02,
+            resolution = None,
+        )
+    elif type=="exportable":
+        return registry.get_model_class("escn_export")(
+            max_neighbors = MAX_NEIGHBORS,
+            cutoff = CUTOFF,
+            max_num_elements = MAX_ELEMENTS,
+            num_layers = 8,
+            lmax = 4,
+            mmax = 2,
+            sphere_channels = 128,
+            hidden_channels = 256,
+            edge_channels = 128,
+            num_sphere_samples = 128,
+            distance_function = "gaussian",
+            basis_width_scalar = 1.0,
+            distance_resolution = 0.02,
+            resolution = None,
+            compile = compile,
+            assertions = False,
+        )
+    else:
+        raise RuntimeError("type not recognized")
 
-def sim_input_data(
-        natoms_range: list[int] = (2, 100),
-        nedges_max: int = 10000,
-        batch_size: int = 2,
-        atom_num_mnax: int = MAX_ELEMENTS,
-        device: str = "cpu",
-    ) -> dict[str, torch.Tensor]:
+
+def sim_export_input(
+    natoms_range: list[int] = (2, 100),
+    nedges_max: int = 10000,
+    batch_size: int = 2,
+    atom_num_mnax: int = MAX_ELEMENTS,
+    device: str = "cpu",
+    ) -> tuple[torch.Tensor]:
     natoms_list = []
     for _ in range(batch_size):
         natoms = torch.randint(natoms_range[0],natoms_range[1],(1,)).item()
@@ -92,78 +116,44 @@ def sim_input_data(
     nedges = torch.randint(1, nedges_max,(1,)).item()
     pos = torch.rand(natoms_total, 3)
 
-    batch_list = [torch.ones(natoms_list[i]) * i for i in range(batch_size)]
+    batch_list = [torch.ones(natoms_list[i], dtype=torch.long) * i for i in range(batch_size)]
     batch = torch.cat(batch_list)
-    natoms = torch.tensor(natoms_list)
+    natoms = torch.tensor(natoms_list, dtype=torch.long)
     atomic_numbers = torch.randint(0, atom_num_mnax, (natoms_total,))
     edge_index = torch.randint(0, natoms_total, (2, nedges))
     distances = torch.rand(nedges)
     edge_distance_vec = torch.rand(nedges, 3)
-    output = {"pos": pos, "batch": batch, "natoms": natoms, "atomic_numbers": atomic_numbers, "edge_index": edge_index, "distances": distances, "edge_distance_vec": edge_distance_vec}
-    return {k: v.to(device) for k, v in output.items()}
+    output = (pos, batch, natoms, atomic_numbers, edge_index, distances, edge_distance_vec)
+    return tuple(x.to(device) for x in output)
 
-def load_escn_exportable_model():
-    torch.manual_seed(4)
-    setup_imports()
-    return registry.get_model_class("escn_export")(
-        regress_forces = True,
-        cutoff = CUTOFF,
-        max_num_elements = MAX_ELEMENTS,
-        num_layers = 8,
-        lmax = 4,
-        mmax = 2,
-        sphere_channels = 128,
-        hidden_channels = 256,
-        edge_channels = 128,
-        num_sphere_samples = 128,
-        distance_function = "gaussian",
-        basis_width_scalar = 1.0,
-        distance_resolution = 0.02,
-        resolution = None,
-        full_export = True,
-    )
 
 def init(backend: str):
     if not torch.distributed.is_initialized():
         init_local_distributed_process_group(backend=backend)
 
-class TestModule(torch.nn.Module):
-    def __init__(self):
-        super().__init__()
 
-    def forward(self, data: dict[str, torch.Tensor]):
-        return torch.ones(1)
+def check_escn_equivalent(data, model1, model2):
+    output1 = model1(data)
+    output2 = model2(data)
+    assert torch.allclose(output1["energy"], output2["energy"])
+    assert torch.allclose(output2["forces"], output2["forces"])
+
 
 class TestESCNCompiles:
-    def test_escn_baseline_cpu(self, tol=1e-8):
+    def test_escn_baseline_cpu(self):
         init("gloo")
         data = load_data()
-        data_tg = data_list_collater([data])
-        data_export = data_list_collater([data], to_dict=True)
-
-        base_model = DistributedDataParallel(load_escn_model())
-        export_model = DistributedDataParallel(load_escn_exportable_model())
-        base_output = base_model(data_tg)
-        export_output = export_model(data_export)
-        torch.set_printoptions(precision=8)
-        assert torch.allclose(base_output["energy"], export_output["energy"], atol=tol)
-        assert torch.allclose(base_output["forces"].mean(0), export_output["forces"].mean(0), atol=tol)
+        base_model = DistributedDataParallel(load_model("baseline"))
+        export_model = DistributedDataParallel(load_model("exportable"))
+        check_escn_equivalent(data, base_model, export_model)
 
     @skip_if_no_cuda
-    def test_escn_baseline_cuda(self, tol=1e-8):
+    def test_escn_baseline_cuda(self):
         init("nccl")
-        data = load_data()
-        data_tg = data_list_collater([data]).to("cuda")
-        data_export = data_list_collater([data], to_dict=True)
-        data_export_cu = {k:v.to("cuda") for k,v in data_export.items()}
-
-        base_model = DistributedDataParallel(load_escn_model().cuda())
-        export_model = DistributedDataParallel(load_escn_exportable_model().cuda())
-        base_output = base_model(data_tg)
-        export_output = export_model(data_export_cu)
-        torch.set_printoptions(precision=8)
-        assert torch.allclose(base_output["energy"], export_output["energy"], atol=tol)
-        assert torch.allclose(base_output["forces"].mean(0), export_output["forces"].mean(0), atol=tol)
+        data = load_data().to("cuda")
+        base_model = DistributedDataParallel(load_model("baseline")).cuda()
+        export_model = DistributedDataParallel(load_model("exportable")).cuda()
+        check_escn_equivalent(data, base_model, export_model)
 
     def test_rotation_invariance(self) -> None:
         random.seed(1)
@@ -171,12 +161,12 @@ class TestESCNCompiles:
 
         # Sampling a random rotation within [-180, 180] for all axes.
         transform = RandomRotate([-180, 180], [0, 1, 2])
-        data_rotated, rot, inv_rot = transform(data.clone())
+        data_rotated, _, inv_rot = transform(data.clone())
         assert not np.array_equal(data.pos, data_rotated.pos)
 
         # Pass it through the model.
-        batch = data_list_collater([data, data_rotated], to_dict=True)
-        model = load_escn_exportable_model()
+        batch = data_list_collater([data, data_rotated])
+        model = load_model("exportable")
         model.eval()
         out = model(batch)
 
@@ -345,68 +335,27 @@ class TestESCNCompiles:
             assert torch.allclose(compiled_output, regular_out, atol=tol)
             assert torch.allclose(exported_output, regular_out, atol=tol)
 
-    def test_full_escn_compiles(self, tol=1e-5):
+    def test_full_escn_compiles_cpu(self):
         init("gloo")
         data = load_data()
-        regular_data = data_list_collater([data])
-        compile_data = data_list_collater([data], to_dict=True)
-        escn_model = DistributedDataParallel(load_escn_model())
-        exportable_model = load_escn_exportable_model()
-
-        torch._dynamo.config.optimize_ddp = False
-        torch._dynamo.config.assume_static_by_default = False
-        torch._dynamo.config.automatic_dynamic_shapes = True
-        compiled_model = torch.compile(exportable_model, dynamic=True)
-        output = compiled_model(compile_data)
-        expected_output = escn_model(regular_data)
-        assert torch.allclose(expected_output["energy"], output["energy"], atol=tol)
-        assert torch.allclose(expected_output["forces"].mean(0), output["forces"].mean(0), atol=tol)
+        base_model = DistributedDataParallel(load_model("baseline"))
+        exportable_model = DistributedDataParallel(load_model("exportable", compile=True))
+        check_escn_equivalent(data, exportable_model, base_model)
+        #TODO: also check no recompile happens on changed inputs
 
     @skip_if_no_cuda
-    def test_full_escn_compiles_cuda(self, tol=1e-5):
+    def test_full_escn_compiles_cuda(self):
         init("nccl")
-        data = load_data()
-        regular_data = data_list_collater([data]).to("cuda")
-        compile_data = data_list_collater([data], to_dict=True)
-        compile_data = {k:v.to("cuda") for k,v in compile_data.items()}
-        escn_model = DistributedDataParallel(load_escn_model().cuda())
-        exportable_model = load_escn_exportable_model().cuda()
-
-        torch._dynamo.config.optimize_ddp = False
-        torch._dynamo.config.assume_static_by_default = False
-        torch._dynamo.config.automatic_dynamic_shapes = True
-        compiled_model = torch.compile(exportable_model, dynamic=True)
-        output = compiled_model(compile_data)
-        expected_output = escn_model(regular_data)
-        assert torch.allclose(expected_output["energy"], output["energy"], atol=tol)
-        assert torch.allclose(expected_output["forces"].mean(0), output["forces"].mean(0), atol=tol)
+        data = load_data().to("cuda")
+        base_model = DistributedDataParallel(load_model("baseline")).cuda()
+        exportable_model = DistributedDataParallel(load_model("exportable", compile=True).cuda())
+        check_escn_equivalent(data, exportable_model, base_model)
 
     def test_full_escn_exports(self):
-        data = load_data()
-        regular_data = data_list_collater([data])
-        export_data = data_list_collater([data], to_dict=True)
-        escn_model = load_escn_model()
-        exportable_model = load_escn_exportable_model()
-
-        torch._dynamo.config.optimize_ddp = False
-        torch._dynamo.config.assume_static_by_default = False
-        torch._dynamo.config.automatic_dynamic_shapes = True
-        # torch._logging.set_logs(dynamo = logging.INFO)
-        # torch._dynamo.reset()
-        # explained_output = torch._dynamo.explain(model)(*data)
-        # print(explained_output)
-        exported_prog = export(exportable_model, args=(export_data,))
-        export_output = exported_prog(export_data)
-        expected_output = escn_model(regular_data)
-        assert torch.allclose(export_output["energy"], expected_output["energy"])
-        assert torch.allclose(export_output["forces"].mean(0), expected_output["forces"].mean(0))
-
-    def check_escn_equivalent(self, data, model1, model2):
-        output1 = model1(data)
-        output2 = model2(data)
-        assert torch.allclose(output1["energy"], output2["energy"])
-        assert torch.allclose(output2["forces"].mean(0), output2["forces"].mean(0))
-
+        data = sim_export_input()
+        exportable_model = load_model("exportable")
+        exported_forward = export(exportable_model.forward_exportable, args=data)
+        exported_forward(*data)
 
     def test_full_escn_exports_with_dynamic_inputs(self):
         with tempfile.TemporaryDirectory() as tempdirname:
@@ -416,35 +365,36 @@ class TestESCNCompiles:
             # if we want to use with variable batch dim, then we need to specify this
             # batch_dim = Dim("batch_dim")
             dynamic_shapes = {
-                "data": {
-                    "pos": {0: atoms_dim, 1: None}, # second dim fixed to 3
-                    "batch": {0: atoms_dim},
-                    "natoms": {0: None},
-                    "atomic_numbers": {0: atoms_dim},
-                    "edge_index": {0: None, 1: edges_dim}, # first dim fixed to 2
-                    "distances": {0: edges_dim},
-                    "edge_distance_vec": {0: edges_dim, 1: None}, # second dim fixed to 3
-                }
+                "pos": {0: atoms_dim, 1: None}, # second dim fixed to 3
+                "batch_idx": {0: atoms_dim},
+                "natoms": {0: None},
+                "atomic_numbers": {0: atoms_dim},
+                "edge_index": {0: None, 1: edges_dim}, # first dim fixed to 2
+                "edge_distance": {0: edges_dim},
+                "edge_distance_vec": {0: edges_dim, 1: None}, # second dim fixed to 3
             }
 
             device = "cuda" if torch.cuda.is_available() else "cpu"
-            exportable_model = load_escn_exportable_model().to(device=device)
+            exportable_model = load_model("exportable").to(device=device)
             batch_size = 1
-            example_data = sim_input_data(batch_size=batch_size, device=device)
-            print({k:v.shape for k, v in example_data.items()})
+            example_data = sim_export_input(batch_size=batch_size, device=device)
             with torch.inference_mode():
-                exported_prog = export(exportable_model, args=(example_data,), dynamic_shapes=dynamic_shapes)
+                exported_prog = export(exportable_model.forward_exportable, args=example_data, dynamic_shapes=dynamic_shapes)
+                # test dynamic shapes
                 for _ in range(10):
-                    data = sim_input_data(batch_size=batch_size, device=device)
-                    exported_prog(data)
-                self.check_escn_equivalent(sim_input_data(batch_size=batch_size, device=device), exportable_model, exported_prog)
+                    data = sim_export_input(batch_size=batch_size, device=device)
+                    exported_prog(*data)
 
                 # test saving and loading
                 path = os.path.join(tempdirname, "exported_program.pt2")
                 torch.export.save(exported_prog, path)
                 saved_exported_program = torch.export.load(path)
-
-                self.check_escn_equivalent(sim_input_data(batch_size=batch_size, device=device), exportable_model, saved_exported_program)
+                data = sim_export_input(batch_size=batch_size, device=device)
+                energy_1, forces_1 = saved_exported_program(*data)
+                energy_2, forces_2 = exported_prog(*data)
+                # not exactly the same because the exported model has been ran previously, different seeds
+                assert torch.allclose(energy_1, energy_2, atol=1e-5)
+                assert torch.allclose(forces_1, forces_2, atol=1e-5)
 
             # test aot compile for C++
             # so_path = os.path.join(tempdirname, "aot_export.so")

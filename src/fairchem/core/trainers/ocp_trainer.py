@@ -240,23 +240,7 @@ class OCPTrainer(BaseTrainer):
         return prediction
 
     def _forward(self, batch):
-        try:
-            # TODO: this is required for dict inputs, we need to decide on the input format
-            # to move to instead of the torch.geometric Batch object
-            if self.config["optim"].get("use_dict_inputs", False):
-                x = dict(batch.to(self.device).items())
-            else:
-                x = batch.to(self.device)
-            out = self.model(x)
-        except Exception as e:
-            # print the input if we threw an exception
-            logging.info(f"caught error e: {e}, on step {self.step}, on input {x}")
-            for k, v in x.items():
-                if isinstance(v, torch.Tensor):
-                    logging.info(f"{k}:{v.shape}")
-                else:
-                    logging.info(f"{k}:{v}")
-            raise e
+        out = self.model(batch.to(self.device))
 
         outputs = {}
         batch_size = batch.natoms.numel()
