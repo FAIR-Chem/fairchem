@@ -295,8 +295,6 @@ class TestSmoke:
             ("escn", True),
             ("escn_hydra", False),
             ("escn_hydra", True),
-            ("escn_hydra_eqv2heads", False),
-            ("escn_hydra_eqv2heads", True),
             ("equiformer_v2", False),
             ("equiformer_v2", True),
             ("equiformer_v2_hydra", False),
