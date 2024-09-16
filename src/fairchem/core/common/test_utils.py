@@ -131,6 +131,7 @@ def spawn_multi_process(
 
     return [mp_output_dict[i] for i in range(config.world_size)]
 
+
 def init_local_distributed_process_group(backend="nccl"):
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(get_free_port())
