@@ -316,8 +316,7 @@ class TestSmoke:
             num_workers=0,
         )
 
-    # not all models are tested with otf normalization estimation
-    # only gemnet_oc, escn, equiformer, and their hydra versions
+    # test that both escn and equiv2 run with activation checkpointing
     @pytest.mark.parametrize(
         ("model_name"),
         [
