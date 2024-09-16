@@ -211,7 +211,7 @@ class LmdbDataset(BaseDataset):
         }
 
 
-def data_list_collater(data_list: list[BaseData], otf_graph: bool = False) -> BaseData:
+def data_list_collater(data_list: list[BaseData], otf_graph: bool = False, to_dict: bool = False) -> BaseData | dict[str, torch.Tensor]:
     batch = Batch.from_data_list(data_list)
 
     if not otf_graph:
@@ -225,5 +225,8 @@ def data_list_collater(data_list: list[BaseData], otf_graph: bool = False) -> Ba
             logging.warning(
                 "LMDB does not contain edge index information, set otf_graph=True"
             )
+
+    if to_dict:
+        batch = dict(batch.items())
 
     return batch
