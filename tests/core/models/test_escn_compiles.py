@@ -241,7 +241,7 @@ class TestESCNCompiles:
         compiled_output = compiled_model(*args[0])
 
         exported_prog = export(message_block, args=args[0])
-        exported_output = exported_prog(*args[0])
+        exported_output = exported_prog.module()(*args[0])
 
         regular_out = message_block(*args[0])
         assert torch.allclose(compiled_output, regular_out, atol=tol)
@@ -302,7 +302,7 @@ class TestESCNCompiles:
         }
         exported_prog = export(layer_block, args=run_args[0], dynamic_shapes=dynamic_shapes1)
         for run_arg in run_args:
-            exported_output = exported_prog(*run_arg)
+            exported_output = exported_prog.module()(*run_arg)
             compiled_model = torch.compile(layer_block, dynamic=True)
             compiled_output = compiled_model(*run_arg)
             regular_out = layer_block(*run_arg)
@@ -343,7 +343,7 @@ class TestESCNCompiles:
         # print(explained_output)
         # TODO: add dynamic shapes
         exported_prog = export(exportable_model, args=(export_data,))
-        export_output = exported_prog(export_data)
+        export_output = exported_prog.module()(export_data)
         expected_output = escn_model(regular_data)
         assert torch.allclose(export_output["energy"], expected_output["energy"])
         assert torch.allclose(export_output["forces"].mean(0), expected_output["forces"].mean(0))
