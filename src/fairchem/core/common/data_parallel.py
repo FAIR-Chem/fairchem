@@ -16,7 +16,7 @@ import numpy as np
 import torch
 import torch.distributed
 from torch.utils.data import BatchSampler, Dataset, DistributedSampler
-from typing_extensions import override
+from typing_extensions import deprecated, override
 
 from fairchem.core.common import distutils, gp_utils
 from fairchem.core.datasets import data_list_collater
@@ -29,6 +29,9 @@ if TYPE_CHECKING:
     from torch_geometric.data import Batch, Data
 
 
+@deprecated(
+    "OCPColatter is deprecated. Please use data_list_collater optionally with functools.partial to set defaults"
+)
 class OCPCollater:
     def __init__(self, otf_graph: bool = False) -> None:
         self.otf_graph = otf_graph

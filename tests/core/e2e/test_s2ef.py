@@ -8,18 +8,20 @@ from pathlib import Path
 import numpy as np
 import numpy.testing as npt
 import pytest
-from fairchem.core._cli import Runner
-from fairchem.core.modules.scaling.fit import compute_scaling_factors
 from test_e2e_commons import (
     _run_main,
     oc20_lmdb_train_and_val_from_paths,
     update_yaml_with_dict,
 )
 
-from fairchem.core.common.utils import build_config, setup_logging
-from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
+from fairchem.core.models.equiformer_v2.eqv2_to_eqv2_hydra import (
+    convert_checkpoint_and_config_to_hydra,
+)
 
 from fairchem.core.common.flags import flags
+from fairchem.core.common.utils import build_config, setup_logging
+from fairchem.core.modules.scaling.fit import compute_scaling_factors
+from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
 
 setup_logging()
 
@@ -161,6 +163,115 @@ class TestSmoke:
                 input_yaml=configs["gemnet_oc"],
             )
 
+    def test_convert_checkpoint_and_config_to_hydra(self, configs, tutorial_val_src):
+        with tempfile.TemporaryDirectory() as tempdirname:
+            # first train a very simple model then checkpoint
+            train_rundir = Path(tempdirname) / "train"
+            train_rundir.mkdir()
+            checkpoint_path = str(train_rundir / "checkpoint.pt")
+            acc = _run_main(
+                rundir=str(train_rundir),
+                input_yaml=configs["equiformer_v2"],
+                update_dict_with={
+                    "optim": {
+                        "max_epochs": 2,
+                        "eval_every": 8,
+                        "batch_size": 5,
+                    },
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                        otf_norms=False,
+                    ),
+                },
+                save_checkpoint_to=checkpoint_path,
+            )
+
+            # load the checkpoint and predict
+            predictions_rundir = Path(tempdirname) / "predict"
+            predictions_rundir.mkdir()
+            predictions_filename = str(predictions_rundir / "predictions.npz")
+            _run_main(
+                rundir=str(predictions_rundir),
+                input_yaml=configs["equiformer_v2"],
+                update_dict_with={
+                    "optim": {"max_epochs": 2, "eval_every": 8, "batch_size": 5},
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                        otf_norms=False,
+                    ),
+                },
+                update_run_args_with={
+                    "mode": "predict",
+                    "checkpoint": checkpoint_path,
+                },
+                save_predictions_to=predictions_filename,
+            )
+
+            # convert the checkpoint to hydra
+            hydra_yaml = Path(tempdirname) / "hydra.yml"
+            hydra_checkpoint = Path(tempdirname) / "hydra.pt"
+
+            convert_checkpoint_and_config_to_hydra(
+                yaml_fn=configs["equiformer_v2"],
+                checkpoint_fn=checkpoint_path,
+                new_yaml_fn=hydra_yaml,
+                new_checkpoint_fn=hydra_checkpoint,
+            )
+
+            # load hydra checkpoint and predict
+            hydra_predictions_rundir = Path(tempdirname) / "hydra_predict"
+            hydra_predictions_rundir.mkdir()
+            hydra_predictions_filename = str(predictions_rundir / "predictions.npz")
+            _run_main(
+                rundir=str(hydra_predictions_rundir),
+                input_yaml=hydra_yaml,
+                update_dict_with={
+                    "optim": {"max_epochs": 2, "eval_every": 8, "batch_size": 5},
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                        otf_norms=False,
+                    ),
+                },
+                update_run_args_with={
+                    "mode": "predict",
+                    "checkpoint": hydra_checkpoint,
+                },
+                save_predictions_to=hydra_predictions_filename,
+            )
+
+            # verify predictions from eqv2 and hydra eqv2 are same
+            energy_from_checkpoint = np.load(predictions_filename)["energy"]
+            energy_from_hydra_checkpoint = np.load(hydra_predictions_filename)["energy"]
+            npt.assert_allclose(
+                energy_from_hydra_checkpoint,
+                energy_from_checkpoint,
+                rtol=1e-6,
+                atol=1e-6,
+            )
+            forces_from_checkpoint = np.load(predictions_filename)["forces"]
+            forces_from_hydra_checkpoint = np.load(hydra_predictions_filename)["forces"]
+            npt.assert_allclose(
+                forces_from_hydra_checkpoint,
+                forces_from_checkpoint,
+                rtol=1e-6,
+                atol=1e-6,
+            )
+
+            # should not let you overwrite the files if they exist
+            with pytest.raises(AssertionError):
+                convert_checkpoint_and_config_to_hydra(
+                    yaml_fn=configs["equiformer_v2"],
+                    checkpoint_fn=checkpoint_path,
+                    new_yaml_fn=hydra_yaml,
+                    new_checkpoint_fn=hydra_checkpoint,
+                )
+
     # not all models are tested with otf normalization estimation
     # only gemnet_oc, escn, equiformer, and their hydra versions
     @pytest.mark.parametrize(
@@ -197,15 +308,6 @@ class TestSmoke:
         configs,
         tutorial_val_src,
     ):
-        # test without ddp
-        self.smoke_test_train(
-            input_yaml=configs[model_name],
-            tutorial_val_src=tutorial_val_src,
-            otf_norms=otf_norms,
-            world_size=0,
-            num_workers=2,
-        )
-        # test with ddp but no wokers
         self.smoke_test_train(
             input_yaml=configs[model_name],
             tutorial_val_src=tutorial_val_src,
@@ -254,19 +356,15 @@ class TestSmoke:
                 )
 
     @pytest.mark.parametrize(
-        ("world_size", "ddp"),
+        ("world_size"),
         [
-            pytest.param(
-                2,
-                True,
-            ),
-            pytest.param(0, False),
+            pytest.param(2),
+            pytest.param(1),
         ],
     )
     def test_ddp(
         self,
         world_size,
-        ddp,
         configs,
         tutorial_val_src,
         torch_deterministic,
@@ -274,8 +372,6 @@ class TestSmoke:
         with tempfile.TemporaryDirectory() as tempdirname:
             tempdir = Path(tempdirname)
             extra_args = {"seed": 0}
-            if not ddp:
-                extra_args["no_ddp"] = True
             _ = _run_main(
                 rundir=str(tempdir),
                 update_dict_with={
@@ -292,14 +388,14 @@ class TestSmoke:
             )
 
     @pytest.mark.parametrize(
-        ("world_size", "ddp"),
+        ("world_size"),
         [
-            pytest.param(2, True),
-            pytest.param(0, False),
+            pytest.param(2),
+            pytest.param(1),
         ],
     )
     def test_balanced_batch_sampler_ddp(
-        self, world_size, ddp, configs, tutorial_val_src, torch_deterministic
+        self, world_size, configs, tutorial_val_src, torch_deterministic
     ):
         # make dataset metadata
         parser = get_lmdb_sizes_parser()
@@ -311,8 +407,6 @@ class TestSmoke:
         with tempfile.TemporaryDirectory() as tempdirname:
             tempdir = Path(tempdirname)
             extra_args = {"seed": 0}
-            if not ddp:
-                extra_args["no_ddp"] = True
             _ = _run_main(
                 rundir=str(tempdir),
                 update_dict_with={
