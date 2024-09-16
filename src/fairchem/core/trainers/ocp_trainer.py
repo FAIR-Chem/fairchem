@@ -454,6 +454,7 @@ class OCPTrainer(BaseTrainer):
                 device_type=self.device.type, enabled=self.scaler is not None
             ):
                 out = self._forward(batch)
+            out = {k: v.float() for k, v in out.items()}
 
             for target_key in self.config["outputs"]:
                 pred = self._denorm_preds(target_key, out[target_key], batch)
