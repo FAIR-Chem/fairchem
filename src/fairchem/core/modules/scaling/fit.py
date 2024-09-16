@@ -204,9 +204,16 @@ def compute_scaling_factors(config, num_batches: int = 16) -> None:
         trainer.config["cmd"]["checkpoint_dir"] = ckpt_file.parent
         trainer.is_debug = False
 
+        def rename_module(name):
+            name = name.replace(".scale_factor", "")
+            # remove DDP wrapper
+            name = re.sub("^module.", "", name)
+            # remove hydra backbone
+            return re.sub("^backbone.", "", name)
+
         torch.save(
             {
-                re.sub("^backbone.", "", x[0].replace(".scale_factor", "")): x[1]
+                rename_module(x[0]): x[1]
                 for x in trainer.model.to("cpu").named_parameters()
                 if ".scale_" in x[0]
             },
