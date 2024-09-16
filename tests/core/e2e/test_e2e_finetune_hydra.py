@@ -37,7 +37,7 @@ def make_checkpoint(tempdir: str, data_source: Path, seed: int) -> str:
         },
         update_run_args_with={"seed": seed},
         save_checkpoint_to=ck_path,
-        world_size=0,
+        world_size=1,
     )
     assert os.path.isfile(ck_path)
     return ck_path
@@ -70,7 +70,7 @@ def run_main_with_ft_hydra(tempdir: str,
         },
         update_run_args_with=run_args,
         save_checkpoint_to=output_checkpoint,
-        world_size=0,
+        world_size=1,
     )
 
 
