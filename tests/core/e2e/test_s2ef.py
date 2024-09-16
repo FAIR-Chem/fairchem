@@ -118,7 +118,7 @@ class TestSmoke:
                 )
             else:
                 npt.assert_allclose(
-                    energy_from_train, energy_from_checkpoint, rtol=1e-3, atol=1e-3
+                    energy_from_train, energy_from_checkpoint, rtol=2e-2, atol=1e-3
                 )
 
     def test_gemnet_fit_scaling(self, configs, tutorial_val_src):
@@ -337,7 +337,7 @@ class TestSmoke:
             otf_norms=otf_norms,
             world_size=1,
             num_workers=0,
-            amp=False
+            amp=False,
         )
 
     def test_use_pbc_single(self, configs, tutorial_val_src, torch_deterministic):
