@@ -301,7 +301,7 @@ class eSCN(nn.Module, GraphModelMixin):
                     use_reentrant=not self.training,
                 )
             else:
-                self.layer_blocks[i](
+                x_message = self.layer_blocks[i](
                     x,
                     atomic_numbers,
                     graph.edge_distance,
