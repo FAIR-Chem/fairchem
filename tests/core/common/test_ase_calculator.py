@@ -50,12 +50,26 @@ def checkpoint_path(request, tmp_path):
 
 # First let's just make sure all checkpoints are being loaded without any
 # errors as part of the ASE calculator setup.
-def test_calculator_setup(checkpoint_path):
-    _ = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
+@pytest.mark.parametrize(
+    ("amp"),
+    [
+        (False),
+        (True),
+    ],
+)
+def test_calculator_setup(amp, checkpoint_path):
+    _ = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True, amp=amp)
 
 
 # test relaxation with EqV2
-def test_relaxation_final_energy(atoms, tmp_path, snapshot) -> None:
+@pytest.mark.parametrize(
+    ("amp"),
+    [
+        (False),
+        (True),
+    ],
+)
+def test_relaxation_final_energy(amp, atoms, tmp_path, snapshot) -> None:
     random.seed(1)
     torch.manual_seed(1)
     calc = OCPCalculator(
@@ -63,6 +77,7 @@ def test_relaxation_final_energy(atoms, tmp_path, snapshot) -> None:
             "EquiformerV2-153M-S2EF-OC20-All+MD", tmp_path
         ),
         cpu=True,
+        amp=amp,
     )
 
     atoms.set_calculator(calc)
