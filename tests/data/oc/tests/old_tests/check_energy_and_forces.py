@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import multiprocessing as mp
 import pickle
@@ -38,9 +40,7 @@ def check_DFT_energy(sid, path, e_tol=0.05):
     traj = Trajectory(path)
     if traj[-1].get_potential_energy() > traj[0].get_potential_energy():
         print(
-            "{} has final DFT energy that's higher than the initial energy, check traj {}".format(
-                sid, path
-            )
+            f"{sid} has final DFT energy that's higher than the initial energy, check traj {path}"
         )
     energies = [traj[i].get_potential_energy() for i in range(len(traj))]
     is_monotonic = all(
@@ -48,9 +48,7 @@ def check_DFT_energy(sid, path, e_tol=0.05):
     )
     if is_monotonic is False:
         print(
-            "There is a spike in energy during the relaxation of {}, double check its trajectory {}".format(
-                sid, path
-            )
+            f"There is a spike in energy during the relaxation of {sid}, double check its trajectory {path}"
         )
         is_almost_monotonic = all(
             energies[i] >= energies[i + 10]
@@ -58,9 +56,7 @@ def check_DFT_energy(sid, path, e_tol=0.05):
         )
         if is_almost_monotonic is False:
             print(
-                "almost_monotonic energy check fails, double check trajectory {}".format(
-                    path
-                )
+                f"almost_monotonic energy check fails, double check trajectory {path}"
             )
 
 

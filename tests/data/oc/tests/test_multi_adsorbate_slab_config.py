@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import random
 
 import numpy as np
 import pytest
 from ase import Atoms
 from ase.data import covalent_radii
-
 from fairchem.data.oc.core import Adsorbate, Bulk, MultipleAdsorbateSlabConfig, Slab
 
 

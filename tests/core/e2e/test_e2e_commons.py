@@ -119,7 +119,17 @@ def _run_main(
     # run
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args(
-        ["--mode", "train", "--seed", "100", "--config-yml", "config.yml", "--cpu", "--num-gpus", str(world_size)]
+        [
+            "--mode",
+            "train",
+            "--seed",
+            "100",
+            "--config-yml",
+            "config.yml",
+            "--cpu",
+            "--num-gpus",
+            str(world_size),
+        ]
     )
     for arg_name, arg_value in run_args.items():
         setattr(args, arg_name, arg_value)

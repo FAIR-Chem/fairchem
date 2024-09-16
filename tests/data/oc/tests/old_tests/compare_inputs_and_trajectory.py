@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import multiprocessing as mp
 import os
@@ -16,7 +18,7 @@ def get_starting_structure_from_input_dir(input_dir):
     metadata = pickle.load(m)
     m.close()
     sorts = []
-    with open(sort_path, "r") as f:
+    with open(sort_path) as f:
         for line in f:
             sort, resort = line.split()
             sorts.append(int(sort))

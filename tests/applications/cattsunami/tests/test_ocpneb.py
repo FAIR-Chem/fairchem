@@ -1,9 +1,13 @@
+from __future__ import annotations
+
+from copy import deepcopy
+
 import numpy as np
 import pytest
-from copy import deepcopy
-from fairchem.applications.cattsunami.core import OCPNEB
-from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from ase.optimize import BFGS
+from fairchem.applications.cattsunami.core import OCPNEB
+
+from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
 
 try:

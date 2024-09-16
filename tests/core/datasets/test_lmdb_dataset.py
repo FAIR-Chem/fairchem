@@ -1,12 +1,12 @@
-from fairchem.core.datasets.base_dataset import create_dataset
+from __future__ import annotations
 
 import numpy as np
 
+from fairchem.core.datasets.base_dataset import create_dataset
 from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
 
 
 def test_load_lmdb_dataset(tutorial_dataset_path):
-
     lmdb_path = str(tutorial_dataset_path / "s2ef/val_20")
 
     # make dataset metadata

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 import sys
 from contextlib import ExitStack
@@ -6,17 +8,16 @@ from io import StringIO
 from typing import Any, List, Optional, Tuple
 from unittest import IsolatedAsyncioTestCase, mock
 
-from inquirer import prompt
-from inquirer.events import KeyEventGenerator
-from inquirer.render import ConsoleRender
-from readchar import key
-
 from fairchem.demo.ocpapi.client import AdsorbateSlabConfigs, Atoms, Slab, SlabMetadata
 from fairchem.demo.ocpapi.workflows import (
     keep_all_slabs,
     keep_slabs_with_miller_indices,
     prompt_for_slabs_to_keep,
 )
+from inquirer import prompt
+from inquirer.events import KeyEventGenerator
+from inquirer.render import ConsoleRender
+from readchar import key
 
 
 # Function used to generate a new adslab instance. This filles the minimum

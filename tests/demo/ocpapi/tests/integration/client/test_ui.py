@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 from unittest import TestCase as UnitTestCase
 
 import requests
-
 from fairchem.demo.ocpapi.client import get_results_ui_url
 
 

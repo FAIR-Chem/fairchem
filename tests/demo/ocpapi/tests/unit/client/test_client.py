@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any, Dict, List, Optional, Union
 from unittest import IsolatedAsyncioTestCase
 
 import responses
-
 from fairchem.demo.ocpapi.client import (
     Adsorbates,
     AdsorbateSlabConfigs,

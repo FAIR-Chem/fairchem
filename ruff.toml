@@ -1,4 +1,4 @@
-include = ["src/fairchem/core/**/*.py", "src/fairchem/data/oc/**/*.py"]
+include = ["src/fairchem/core/**/*.py", "src/fairchem/data/oc/**/*.py", "tests/**.py"]
 line-length = 88
 
 [lint]

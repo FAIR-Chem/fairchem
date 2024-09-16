@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pickle
 
 import numpy as np
@@ -55,7 +57,7 @@ def create_df(metadata_lst, df_name=None):
             "tag",
         ],
     )
-    df.to_csv("{}.csv".format(df_name))
+    df.to_csv(f"{df_name}.csv")
     return df
 
 
@@ -92,11 +94,11 @@ def check_commonelems(df, split1, split2, check="adsorbate"):
     if check == "adsorbate":
         common_elems = set(split1_df.adsorbate.values) & set(split2_df.adsorbate.values)
         if len(common_elems) != 0:
-            raise ValueError("{} are in both datasets!".format(common_elems))
+            raise ValueError(f"{common_elems} are in both datasets!")
     elif check == "bulk":
         common_elems = set(split1_df.mpid.values) & set(split2_df.mpid.values)
         if len(common_elems) != 0:
-            raise ValueError("{} are in both dataset!".format(common_elems))
+            raise ValueError(f"{common_elems} are in both dataset!")
 
 
 def is_adsorbate_placed_correct(adslab_input, atoms_tag):

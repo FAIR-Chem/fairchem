@@ -1,12 +1,13 @@
+from __future__ import annotations
+
 import itertools
 from contextlib import ExitStack
 from dataclasses import dataclass, replace
 from datetime import timedelta
 from functools import partial
 from typing import Any, Dict, Final, Iterable, List, Optional, Type, Union
-from unittest import IsolatedAsyncioTestCase
+from unittest import IsolatedAsyncioTestCase, mock
 from unittest import TestCase as UnitTestCase
-from unittest import mock
 
 from fairchem.demo.ocpapi.client import (
     Adsorbates,

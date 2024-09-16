@@ -20,7 +20,7 @@ def _dummy_call(x):
 
 @pytest.mark.parametrize(
     "world_size, input, expected_output", [(1, 5, [5]), (3, 0, [0, 0, 0])]
-)  # noqa: PT006
+)
 def test_basic_setup(world_size: int, input: torch.Tensor, expected_output: list):
     config = PGConfig(
         backend="gloo", world_size=world_size, gp_group_size=1, use_gp=True

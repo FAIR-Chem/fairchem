@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from contextvars import ContextVar
 from unittest import TestCase as UnitTestCase
 from uuid import uuid4

@@ -7,15 +7,15 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from contextlib import contextmanager
-from pathlib import Path
 import functools
 import tempfile
+from contextlib import contextmanager
+from pathlib import Path
 from typing import TypeVar
 
 import numpy as np
 import pytest
-from torch.utils.data import Dataset, DistributedSampler
+from torch.utils.data import DistributedSampler
 
 from fairchem.core.common.data_parallel import (
     BalancedBatchSampler,
@@ -80,7 +80,7 @@ def valid_path_dataset():
             return len(self.data)
 
         def __getitem__(self, idx):
-            metadata_attr = getattr(self._metadata, "natoms")
+            metadata_attr = self._metadata.natoms
             if isinstance(idx, list):
                 return [metadata_attr[_idx] for _idx in idx]
             return metadata_attr[idx]
@@ -96,7 +96,6 @@ def valid_path_dataset():
 @pytest.fixture()
 def invalid_path_dataset():
     class _Dataset(BaseDataset):
-
         def __init__(self, data) -> None:
             super().__init__(config={})
             self.data = data
@@ -114,7 +113,6 @@ def invalid_path_dataset():
 @pytest.fixture()
 def invalid_dataset():
     class _Dataset(BaseDataset):
-
         def __init__(self, data) -> None:
             super().__init__(config={})
             self.data = data

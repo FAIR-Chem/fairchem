@@ -1,8 +1,10 @@
-import os
+from __future__ import annotations
+
 import pickle
 from pathlib import Path
 
 import pytest
+
 from fairchem.core.scripts import download_large_files
 
 

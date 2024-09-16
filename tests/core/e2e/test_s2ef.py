@@ -105,7 +105,6 @@ class TestSmoke:
             )
 
     def test_gemnet_fit_scaling(self, configs, tutorial_val_src):
-
         with tempfile.TemporaryDirectory() as tempdirname:
             # (1) generate scaling factors for gemnet config
             config_yaml = f"{tempdirname}/train_and_val_on_val.yml"

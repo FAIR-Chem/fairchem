@@ -62,7 +62,6 @@ def test_valid_config(valid_yaml_config):
 
 def test_load_config_with_include_path(include_path_in_yaml_config, valid_yaml_config):
     with tempfile.TemporaryDirectory() as tempdirname:
-
         this_yml_path = f"{tempdirname}/this.yml"
         with open(this_yml_path, "w") as fp:
             fp.write(include_path_in_yaml_config)

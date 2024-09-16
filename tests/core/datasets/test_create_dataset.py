@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import os
+import tempfile
+
 import numpy as np
 import pytest
 
 from fairchem.core.datasets import LMDBDatabase, create_dataset
 from fairchem.core.datasets.base_dataset import BaseDataset
-import tempfile
 from fairchem.core.trainers.base_trainer import BaseTrainer
 
 

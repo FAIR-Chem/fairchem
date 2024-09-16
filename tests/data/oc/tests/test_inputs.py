@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import random
 
 import numpy as np
 import pytest
-
 from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig, Bulk, Slab
 from fairchem.data.oc.utils.vasp import VASP_FLAGS, _clean_up_inputs
 

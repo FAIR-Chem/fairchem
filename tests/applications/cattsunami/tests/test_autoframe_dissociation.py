@@ -1,14 +1,17 @@
+from __future__ import annotations
+
 import pytest
+from fairchem.applications.cattsunami.core import Reaction
 from fairchem.applications.cattsunami.core.autoframe import (
     AutoFrameDissociation,
-    is_edge_list_respected,
     interpolate_and_correct_frames,
+    is_edge_list_respected,
 )
+from fairchem.applications.cattsunami.databases import DISSOCIATION_REACTION_DB_PATH
+from fairchem.data.oc.databases.pkls import ADSORBATE_PKL_PATH
+
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
-from fairchem.applications.cattsunami.core import Reaction
-from fairchem.data.oc.databases.pkls import ADSORBATE_PKL_PATH
-from fairchem.applications.cattsunami.databases import DISSOCIATION_REACTION_DB_PATH
 
 
 def get_ads_syms(adslab):

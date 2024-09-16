@@ -253,8 +253,9 @@ class OCPTrainer(BaseTrainer):
                 elif isinstance(out[target_key], dict):
                     # if output is a nested dictionary (in the case of hydra models), we attempt to retrieve it using the property name
                     # ie: "output_head_name.property"
-                    assert "property" in self.output_targets[target_key], \
-                        f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
+                    assert (
+                        "property" in self.output_targets[target_key]
+                    ), f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
                     property = self.output_targets[target_key]["property"]
                     pred = out[target_key][property]
 
@@ -661,9 +662,7 @@ class OCPTrainer(BaseTrainer):
                 )
                 gather_results["chunk_idx"] = np.cumsum(
                     [gather_results["chunk_idx"][i] for i in idx]
-                )[
-                    :-1
-                ]  # np.split does not need last idx, assumes n-1:end
+                )[:-1]  # np.split does not need last idx, assumes n-1:end
 
                 full_path = os.path.join(
                     self.config["cmd"]["results_dir"], "relaxed_positions.npz"

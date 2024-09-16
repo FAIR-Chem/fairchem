@@ -1,10 +1,10 @@
+from __future__ import annotations
+
 import random
 
 import ase
 import numpy as np
-
 from fairchem.data.oc.core import Adsorbate
-
 
 _test_db = {
     0: (ase.Atoms(symbols="H", pbc="False"), "*H", np.array([0]), "rxn_1"),

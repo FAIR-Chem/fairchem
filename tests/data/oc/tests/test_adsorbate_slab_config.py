@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import random
 
 import numpy as np
 import pytest
-
 from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig, Bulk, Slab
 from fairchem.data.oc.core.adsorbate_slab_config import get_interstitial_distances
 

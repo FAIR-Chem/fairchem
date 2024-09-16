@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import random
 
 import numpy as np
 import pytest
-
 from fairchem.data.oc.core import Bulk, Slab
 
 

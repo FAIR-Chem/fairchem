@@ -1,14 +1,17 @@
+from __future__ import annotations
+
+import numpy as np
+import pytest
+from fairchem.applications.cattsunami.core import Reaction
 from fairchem.applications.cattsunami.core.autoframe import (
     AutoFrameDesorption,
     interpolate_and_correct_frames,
 )
-from fairchem.applications.cattsunami.core import Reaction
+from fairchem.applications.cattsunami.databases import DESORPTION_REACTION_DB_PATH
+from fairchem.data.oc.databases.pkls import ADSORBATE_PKL_PATH
+
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
-import numpy as np
-import pytest
-from fairchem.data.oc.databases.pkls import ADSORBATE_PKL_PATH
-from fairchem.applications.cattsunami.databases import DESORPTION_REACTION_DB_PATH
 
 
 @pytest.mark.usefixtures("desorption_inputs")

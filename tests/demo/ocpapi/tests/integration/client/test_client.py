@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from unittest import IsolatedAsyncioTestCase, mock
 
-import numpy as np
 import pytest
 from fairchem.demo.ocpapi.client import (
     Atoms,
@@ -20,7 +21,8 @@ log = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def _ensure_system_deleted(
-    client: Client, system_id: str,
+    client: Client,
+    system_id: str,
 ) -> AsyncGenerator[None, None]:
     """
     Immediately yields control to the caller. When control returns to this
@@ -38,7 +40,8 @@ class TestClient(IsolatedAsyncioTestCase):
     """
 
     CLIENT: Client = Client(
-        host="open-catalyst-api.metademolab.com", scheme="https",
+        host="open-catalyst-api.metademolab.com",
+        scheme="https",
     )
     KNOWN_SYSTEM_ID: str = "f9eacd8f-748c-41dd-ae43-f263dd36d735"
 
@@ -48,7 +51,8 @@ class TestClient(IsolatedAsyncioTestCase):
         response = await self.CLIENT.get_models()
 
         self.assertIn(
-            Model(id="equiformer_v2_31M_s2ef_all_md"), response.models,
+            Model(id="equiformer_v2_31M_s2ef_all_md"),
+            response.models,
         )
 
     async def test_get_bulks(self) -> None:
@@ -80,12 +84,15 @@ class TestClient(IsolatedAsyncioTestCase):
             # what each value is.
             atoms=mock.ANY,
             metadata=SlabMetadata(
-                bulk_src_id="mp-149", millers=(1, 1, 1), shift=0.125, top=True,
+                bulk_src_id="mp-149",
+                millers=(1, 1, 1),
+                shift=0.125,
+                top=True,
             ),
         )
         if expected_slab not in response.slabs:
             pytest.xfail(
-                f"Expected slab can be slightly off (numerical error?) from the actual slab returned; This test is flaky;"
+                "Expected slab can be slightly off (numerical error?) from the actual slab returned; This test is flaky;"
             )
         self.assertIn(expected_slab, response.slabs)
 
@@ -97,7 +104,11 @@ class TestClient(IsolatedAsyncioTestCase):
             adsorbate="*CO",
             slab=Slab(
                 atoms=Atoms(
-                    cell=((11.6636, 0, 0), (-5.8318, 10.1010, 0), (0, 0, 38.0931),),
+                    cell=(
+                        (11.6636, 0, 0),
+                        (-5.8318, 10.1010, 0),
+                        (0, 0, 38.0931),
+                    ),
                     pbc=(True, True, True),
                     numbers=[14] * 54,
                     tags=[0] * 54,
@@ -159,14 +170,17 @@ class TestClient(IsolatedAsyncioTestCase):
                     ],
                 ),
                 metadata=SlabMetadata(
-                    bulk_src_id="mp-149", millers=(1, 1, 1), shift=0.125, top=True,
+                    bulk_src_id="mp-149",
+                    millers=(1, 1, 1),
+                    shift=0.125,
+                    top=True,
                 ),
             ),
         )
 
         self.assertGreater(len(response.adsorbate_configs), 10)
 
-    @pytest.mark.ocpapi_integration_test
+    @pytest.mark.ocpapi_integration_test()
     async def test_submit_adsorbate_slab_relaxations__gemnet_oc(self) -> None:
         # Make sure that a relaxation can be started for an adsorbate
         # placement on a slab with the gemnet oc model
@@ -175,17 +189,28 @@ class TestClient(IsolatedAsyncioTestCase):
             adsorbate="*CO",
             adsorbate_configs=[
                 Atoms(
-                    cell=((11.6636, 0, 0), (-5.8318, 10.1010, 0), (0, 0, 38.0931),),
+                    cell=(
+                        (11.6636, 0, 0),
+                        (-5.8318, 10.1010, 0),
+                        (0, 0, 38.0931),
+                    ),
                     pbc=(True, True, False),
                     numbers=[6, 8],
                     tags=[2, 2],
-                    positions=[(1.9439, 3.3670, 22.2070), (1.9822, 3.2849, 23.3697),],
+                    positions=[
+                        (1.9439, 3.3670, 22.2070),
+                        (1.9822, 3.2849, 23.3697),
+                    ],
                 )
             ],
             bulk=Bulk(src_id="mp-149", elements=["Si"], formula="Si"),
             slab=Slab(
                 atoms=Atoms(
-                    cell=((11.6636, 0, 0), (-5.8318, 10.1010, 0), (0, 0, 38.0931),),
+                    cell=(
+                        (11.6636, 0, 0),
+                        (-5.8318, 10.1010, 0),
+                        (0, 0, 38.0931),
+                    ),
                     pbc=(True, True, True),
                     numbers=[14] * 54,
                     tags=[0] * 54,
@@ -247,7 +272,10 @@ class TestClient(IsolatedAsyncioTestCase):
                     ],
                 ),
                 metadata=SlabMetadata(
-                    bulk_src_id="mp-149", millers=(1, 1, 1), shift=0.125, top=True,
+                    bulk_src_id="mp-149",
+                    millers=(1, 1, 1),
+                    shift=0.125,
+                    top=True,
                 ),
             ),
             model="gemnet_oc_base_s2ef_all_md",
@@ -258,7 +286,7 @@ class TestClient(IsolatedAsyncioTestCase):
             self.assertNotEqual(response.system_id, "")
             self.assertEqual(len(response.config_ids), 1)
 
-    @pytest.mark.ocpapi_integration_test
+    @pytest.mark.ocpapi_integration_test()
     async def test_submit_adsorbate_slab_relaxations__equiformer_v2(self) -> None:
         # Make sure that a relaxation can be started for an adsorbate
         # placement on a slab with the equiformer v2 model
@@ -267,17 +295,28 @@ class TestClient(IsolatedAsyncioTestCase):
             adsorbate="*CO",
             adsorbate_configs=[
                 Atoms(
-                    cell=((11.6636, 0, 0), (-5.8318, 10.1010, 0), (0, 0, 38.0931),),
+                    cell=(
+                        (11.6636, 0, 0),
+                        (-5.8318, 10.1010, 0),
+                        (0, 0, 38.0931),
+                    ),
                     pbc=(True, True, False),
                     numbers=[6, 8],
                     tags=[2, 2],
-                    positions=[(1.9439, 3.3670, 22.2070), (1.9822, 3.2849, 23.3697),],
+                    positions=[
+                        (1.9439, 3.3670, 22.2070),
+                        (1.9822, 3.2849, 23.3697),
+                    ],
                 )
             ],
             bulk=Bulk(src_id="mp-149", elements=["Si"], formula="Si"),
             slab=Slab(
                 atoms=Atoms(
-                    cell=((11.6636, 0, 0), (-5.8318, 10.1010, 0), (0, 0, 38.0931),),
+                    cell=(
+                        (11.6636, 0, 0),
+                        (-5.8318, 10.1010, 0),
+                        (0, 0, 38.0931),
+                    ),
                     pbc=(True, True, True),
                     numbers=[14] * 54,
                     tags=[0] * 54,
@@ -339,7 +378,10 @@ class TestClient(IsolatedAsyncioTestCase):
                     ],
                 ),
                 metadata=SlabMetadata(
-                    bulk_src_id="mp-149", millers=(1, 1, 1), shift=0.125, top=True,
+                    bulk_src_id="mp-149",
+                    millers=(1, 1, 1),
+                    shift=0.125,
+                    top=True,
                 ),
             ),
             model="equiformer_v2_31M_s2ef_all_md",

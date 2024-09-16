@@ -1,11 +1,15 @@
 # conftest.py
+from __future__ import annotations
 
 import pytest
 
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--skip-ocpapi-integration", action="store_true", default=False, help="skip ocpapi integration tests"
+        "--skip-ocpapi-integration",
+        action="store_true",
+        default=False,
+        help="skip ocpapi integration tests",
     )
 
 

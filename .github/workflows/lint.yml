@@ -29,4 +29,5 @@ jobs:
       - name: ruff
         run: |
           ruff --version
-          ruff check src
+        ruff check src # tests  , has a lot off issues :'( TODO
+        ruff format --check src tests

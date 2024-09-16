@@ -31,7 +31,9 @@ from fairchem.core.models.escn.so3_exportable import (
 from fairchem.core.models.scn.smearing import GaussianSmearing
 from fairchem.core.preprocessing import AtomsToGraphs
 
-skip_if_no_cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="skipping when no gpu")
+skip_if_no_cuda = pytest.mark.skipif(
+    not torch.cuda.is_available(), reason="skipping when no gpu"
+)
 
 
 def load_data():
@@ -55,48 +57,51 @@ def load_escn_model():
     torch.manual_seed(4)
     setup_imports()
     return registry.get_model_class("escn")(
-        use_pbc = True,
-        use_pbc_single = False,
-        regress_forces = True,
-        max_neighbors = 300,
-        cutoff = 6.0,
-        max_num_elements = 90,
-        num_layers = 8,
-        lmax_list = [4],
-        mmax_list = [2],
-        sphere_channels = 128,
-        hidden_channels = 256,
-        edge_channels = 128,
-        num_sphere_samples = 128,
-        distance_function = "gaussian",
-        basis_width_scalar = 1.0,
-        distance_resolution = 0.02,
-        resolution = None,
+        use_pbc=True,
+        use_pbc_single=False,
+        regress_forces=True,
+        max_neighbors=300,
+        cutoff=6.0,
+        max_num_elements=90,
+        num_layers=8,
+        lmax_list=[4],
+        mmax_list=[2],
+        sphere_channels=128,
+        hidden_channels=256,
+        edge_channels=128,
+        num_sphere_samples=128,
+        distance_function="gaussian",
+        basis_width_scalar=1.0,
+        distance_resolution=0.02,
+        resolution=None,
     )
+
 
 def load_escn_exportable_model():
     torch.manual_seed(4)
     setup_imports()
     return registry.get_model_class("escn_export")(
-        regress_forces = True,
-        cutoff = 6.0,
-        max_num_elements = 90,
-        num_layers = 8,
-        lmax = 4,
-        mmax = 2,
-        sphere_channels = 128,
-        hidden_channels = 256,
-        edge_channels = 128,
-        num_sphere_samples = 128,
-        distance_function = "gaussian",
-        basis_width_scalar = 1.0,
-        distance_resolution = 0.02,
-        resolution = None,
+        regress_forces=True,
+        cutoff=6.0,
+        max_num_elements=90,
+        num_layers=8,
+        lmax=4,
+        mmax=2,
+        sphere_channels=128,
+        hidden_channels=256,
+        edge_channels=128,
+        num_sphere_samples=128,
+        distance_function="gaussian",
+        basis_width_scalar=1.0,
+        distance_resolution=0.02,
+        resolution=None,
     )
+
 
 def init(backend: str):
     if not torch.distributed.is_initialized():
         init_local_distributed_process_group(backend=backend)
+
 
 class TestESCNCompiles:
     def test_escn_baseline_cpu(self, tol=1e-8):
@@ -111,7 +116,9 @@ class TestESCNCompiles:
         export_output = export_model(data_export)
         torch.set_printoptions(precision=8)
         assert torch.allclose(base_output["energy"], export_output["energy"], atol=tol)
-        assert torch.allclose(base_output["forces"].mean(0), export_output["forces"].mean(0), atol=tol)
+        assert torch.allclose(
+            base_output["forces"].mean(0), export_output["forces"].mean(0), atol=tol
+        )
 
     @skip_if_no_cuda
     def test_escn_baseline_cuda(self, tol=1e-8):
@@ -119,7 +126,7 @@ class TestESCNCompiles:
         data = load_data()
         data_tg = data_list_collater([data]).to("cuda")
         data_export = data_list_collater([data], to_dict=True)
-        data_export_cu = {k:v.to("cuda") for k,v in data_export.items()}
+        data_export_cu = {k: v.to("cuda") for k, v in data_export.items()}
 
         base_model = DistributedDataParallel(load_escn_model().cuda())
         export_model = DistributedDataParallel(load_escn_exportable_model().cuda())
@@ -127,7 +134,9 @@ class TestESCNCompiles:
         export_output = export_model(data_export_cu)
         torch.set_printoptions(precision=8)
         assert torch.allclose(base_output["energy"], export_output["energy"], atol=tol)
-        assert torch.allclose(base_output["forces"].mean(0), export_output["forces"].mean(0), atol=tol)
+        assert torch.allclose(
+            base_output["forces"].mean(0), export_output["forces"].mean(0), atol=tol
+        )
 
     def test_rotation_invariance(self) -> None:
         random.seed(1)
@@ -174,7 +183,7 @@ class TestESCNCompiles:
         mappingReduced = escn_exportable.CoefficientMapping([lmax], [mmax])
         shpere_channels = 128
         edge_channels = 128
-        args=(torch.rand(680, 19, shpere_channels), torch.rand(680, edge_channels))
+        args = (torch.rand(680, 19, shpere_channels), torch.rand(680, edge_channels))
 
         so2 = escn_exportable.SO2Block(
             sphere_channels=shpere_channels,
@@ -183,7 +192,7 @@ class TestESCNCompiles:
             lmax=lmax,
             mmax=mmax,
             act=torch.nn.SiLU(),
-            mappingReduced=mappingReduced
+            mappingReduced=mappingReduced,
         )
         prog = export(so2, args=args, dynamic_shapes=dynamic_shapes1)
         export_out = prog.module()(*args)
@@ -207,17 +216,17 @@ class TestESCNCompiles:
         SO3_grid["lmax_mmax"] = SO3_Grid(lmax, mmax)
         mappingReduced = CoefficientMapping([lmax], [mmax])
         message_block = escn_exportable.MessageBlock(
-            layer_idx = 0,
-            sphere_channels = sphere_channels,
-            hidden_channels = hidden_channels,
-            edge_channels = edge_channels,
-            lmax = lmax,
-            mmax = mmax,
-            distance_expansion = distance_expansion,
-            max_num_elements = 90,
-            SO3_grid = SO3_grid,
-            act = torch.nn.SiLU(),
-            mappingReduced = mappingReduced
+            layer_idx=0,
+            sphere_channels=sphere_channels,
+            hidden_channels=hidden_channels,
+            edge_channels=edge_channels,
+            lmax=lmax,
+            mmax=mmax,
+            distance_expansion=distance_expansion,
+            max_num_elements=90,
+            SO3_grid=SO3_grid,
+            act=torch.nn.SiLU(),
+            mappingReduced=mappingReduced,
         )
 
         # generate inputs
@@ -260,17 +269,17 @@ class TestESCNCompiles:
         SO3_grid["lmax_mmax"] = SO3_Grid(lmax, mmax)
         mappingReduced = CoefficientMapping([lmax], [mmax])
         layer_block = escn_exportable.LayerBlock(
-            layer_idx = 0,
-            sphere_channels = sphere_channels,
-            hidden_channels = hidden_channels,
-            edge_channels = edge_channels,
-            lmax = lmax,
-            mmax = mmax,
-            distance_expansion = distance_expansion,
-            max_num_elements = 90,
-            SO3_grid = SO3_grid,
-            act = torch.nn.SiLU(),
-            mappingReduced = mappingReduced
+            layer_idx=0,
+            sphere_channels=sphere_channels,
+            hidden_channels=hidden_channels,
+            edge_channels=edge_channels,
+            lmax=lmax,
+            mmax=mmax,
+            distance_expansion=distance_expansion,
+            max_num_elements=90,
+            SO3_grid=SO3_grid,
+            act=torch.nn.SiLU(),
+            mappingReduced=mappingReduced,
         )
 
         # generate inputs
@@ -278,7 +287,7 @@ class TestESCNCompiles:
         num_edges = [680, 700, 680]
         num_coefs = 25
         run_args = []
-        for b,edges in zip(batch_sizes, num_edges):
+        for b, edges in zip(batch_sizes, num_edges):
             x = torch.rand([b, num_coefs, sphere_channels])
             atom_n = torch.randint(1, 90, (b,))
             edge_d = torch.rand([edges])
@@ -298,9 +307,11 @@ class TestESCNCompiles:
             "atomic_numbers": {0: batch_dim},
             "edge_distance": {0: edges_dim},
             "edge_index": {0: None, 1: edges_dim},
-            "wigner": {0: edges_dim, 1: None, 2: None}
+            "wigner": {0: edges_dim, 1: None, 2: None},
         }
-        exported_prog = export(layer_block, args=run_args[0], dynamic_shapes=dynamic_shapes1)
+        exported_prog = export(
+            layer_block, args=run_args[0], dynamic_shapes=dynamic_shapes1
+        )
         for run_arg in run_args:
             exported_output = exported_prog(*run_arg)
             compiled_model = torch.compile(layer_block, dynamic=True)
@@ -324,7 +335,9 @@ class TestESCNCompiles:
         output = compiled_model(compile_data)
         expected_output = escn_model(regular_data)
         assert torch.allclose(expected_output["energy"], output["energy"], atol=tol)
-        assert torch.allclose(expected_output["forces"].mean(0), output["forces"].mean(0), atol=tol)
+        assert torch.allclose(
+            expected_output["forces"].mean(0), output["forces"].mean(0), atol=tol
+        )
 
     def test_full_escn_exports(self):
         init("gloo")
@@ -346,4 +359,6 @@ class TestESCNCompiles:
         export_output = exported_prog(export_data)
         expected_output = escn_model(regular_data)
         assert torch.allclose(export_output["energy"], expected_output["energy"])
-        assert torch.allclose(export_output["forces"].mean(0), expected_output["forces"].mean(0))
+        assert torch.allclose(
+            export_output["forces"].mean(0), expected_output["forces"].mean(0)
+        )
