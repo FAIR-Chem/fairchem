@@ -462,8 +462,8 @@ class SO3_Grid(torch.nn.Module):
         else:
             self.long_resolution = 2 * (self.mmax) + 1
         if resolution:
-            self.long_resolution=resolution
-            self.lat_resolution=resolution
+            self.long_resolution = resolution
+            self.lat_resolution = resolution
 
         self.initialized = False
 

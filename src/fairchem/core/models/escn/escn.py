@@ -537,7 +537,7 @@ class eSCNBackbone(eSCN, BackboneInterface):
 
 @registry.register_model("escn_energy_head")
 class eSCNEnergyHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, reduce = "sum"):
+    def __init__(self, backbone, reduce="sum"):
         super().__init__()
         backbone.energy_block = None
         self.reduce = reduce
@@ -558,7 +558,9 @@ class eSCNEnergyHead(nn.Module, HeadInterface):
         elif self.reduce == "mean":
             return {"energy": energy / data.natoms}
         else:
-            raise ValueError(f"reduce can only be sum or mean, user provided: {self.reduce}")
+            raise ValueError(
+                f"reduce can only be sum or mean, user provided: {self.reduce}"
+            )
 
 
 @registry.register_model("escn_force_head")

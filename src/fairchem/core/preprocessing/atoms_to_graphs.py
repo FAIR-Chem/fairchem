@@ -115,7 +115,6 @@ class AtomsToGraphs:
         _c_index, _n_index, _offsets, n_distance = struct.get_neighbor_list(
             r=self.radius, numerical_tol=0, exclude_self=True
         )
-
         _nonmax_idx = []
         for i in range(len(atoms)):
             idx_i = (_c_index == i).nonzero()[0]
@@ -147,6 +146,23 @@ class AtomsToGraphs:
         cell_offsets = cell_offsets[nonzero]
 
         return edge_index, edge_distances, cell_offsets
+
+    def get_edge_distance_vec(
+        self,
+        pos,
+        edge_index,
+        cell,
+        cell_offsets,
+    ):
+        row, col = edge_index
+        distance_vectors = pos[row] - pos[col]
+
+        # correct for pbc
+        cell = torch.repeat_interleave(cell, edge_index.shape[1], dim=0)
+        offsets = cell_offsets.float().view(-1, 1, 3).bmm(cell.float()).view(-1, 3)
+        distance_vectors += offsets
+
+        return distance_vectors
 
     def convert(self, atoms: ase.Atoms, sid=None):
         """Convert a single atomic structure to a graph.
@@ -203,6 +219,10 @@ class AtomsToGraphs:
 
             data.edge_index = edge_index
             data.cell_offsets = cell_offsets
+            data.edge_distance_vec = self.get_edge_distance_vec(
+                positions, edge_index, cell, cell_offsets
+            )
+
             del atoms_copy
         if self.r_energy:
             energy = atoms.get_potential_energy(apply_constraint=False)
