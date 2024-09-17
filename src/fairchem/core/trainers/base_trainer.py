@@ -514,15 +514,15 @@ class BaseTrainer(ABC):
                         ][target_name].get("level", "system")
                     if "train_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["train_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("train_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "train_on_free_atoms", True
+                            )
                         )
                     if "eval_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["eval_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("eval_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "eval_on_free_atoms", True
+                            )
                         )
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
@@ -648,8 +648,11 @@ class BaseTrainer(ABC):
 
             self.elementrefs[key].to(map_location)
 
-        if self.scaler and checkpoint["amp"]:
-            self.scaler.load_state_dict(checkpoint["amp"])
+        if self.scaler:
+            if "amp" in checkpoint and checkpoint["amp"]:
+                self.scaler.load_state_dict(checkpoint["amp"])
+            else:
+                self.scaler = torch.GradScaler(self.device.type)
 
     def load_loss(self) -> None:
         self.loss_functions = []
