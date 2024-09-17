@@ -11,7 +11,7 @@ import logging
 import os
 from collections import defaultdict
 from itertools import chain
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
@@ -63,38 +63,37 @@ class OCPTrainer(BaseTrainer):
             (default: :obj:`None`)
         logger (str, optional): Type of logger to be used.
             (default: :obj:`wandb`)
-        local_rank (int, optional): Local rank of the process, only applicable for distributed training.
-            (default: :obj:`0`)
         amp (bool, optional): Run using automatic mixed precision.
             (default: :obj:`False`)
         slurm (dict): Slurm configuration. Currently just for keeping track.
             (default: :obj:`{}`)
-        noddp (bool, optional): Run model without DDP.
     """
 
     def __init__(
         self,
-        task,
-        model,
-        outputs,
-        dataset,
-        optimizer,
-        loss_functions,
-        evaluation_metrics,
-        identifier,
-        timestamp_id=None,
-        run_dir=None,
-        is_debug=False,
-        print_every=100,
-        seed=None,
-        logger="wandb",
-        local_rank=0,
-        amp=False,
-        cpu=False,
+        task: dict[str, str | Any],
+        model: dict[str, Any],
+        outputs: dict[str, str | int],
+        dataset: dict[str, str | float],
+        optimizer: dict[str, str | float],
+        loss_functions: dict[str, str | float],
+        evaluation_metrics: dict[str, str],
+        identifier: str,
+        # TODO: dealing with local rank is dangerous
+        # T201111838 remove this and use CUDA_VISIBILE_DEVICES instead so trainers don't need to know about which devie to use
+        local_rank: int,
+        timestamp_id: str | None = None,
+        run_dir: str | None = None,
+        is_debug: bool = False,
+        print_every: int = 100,
+        seed: int | None = None,
+        logger: str = "wandb",
+        amp: bool = False,
+        cpu: bool = False,
+        name: str = "ocp",
         slurm=None,
-        noddp=False,
-        name="ocp",
-        gp_gpus=None,
+        gp_gpus: int | None = None,
+        inference_only: bool = False,
     ):
         if slurm is None:
             slurm = {}
@@ -107,19 +106,19 @@ class OCPTrainer(BaseTrainer):
             loss_functions=loss_functions,
             evaluation_metrics=evaluation_metrics,
             identifier=identifier,
+            local_rank=local_rank,
             timestamp_id=timestamp_id,
             run_dir=run_dir,
             is_debug=is_debug,
             print_every=print_every,
             seed=seed,
             logger=logger,
-            local_rank=local_rank,
             amp=amp,
             cpu=cpu,
             slurm=slurm,
-            noddp=noddp,
             name=name,
             gp_gpus=gp_gpus,
+            inference_only=inference_only,
         )
 
     def train(self, disable_eval_tqdm: bool = False) -> None:
@@ -256,10 +255,11 @@ class OCPTrainer(BaseTrainer):
                 elif isinstance(out[target_key], dict):
                     # if output is a nested dictionary (in the case of hydra models), we attempt to retrieve it using the property name
                     # ie: "output_head_name.property"
-                    assert "property" in self.output_targets[target_key], \
-                        f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
-                    property = self.output_targets[target_key]["property"]
-                    pred = out[target_key][property]
+                    assert (
+                        "property" in self.output_targets[target_key]
+                    ), f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
+                    prop = self.output_targets[target_key]["property"]
+                    pred = out[target_key][prop]
 
             ## TODO: deprecate the following logic?
             ## Otherwise, assume target property is a derived output of the model. Construct the parent property
@@ -302,7 +302,7 @@ class OCPTrainer(BaseTrainer):
 
         return outputs
 
-    def _compute_loss(self, out, batch):
+    def _compute_loss(self, out, batch) -> torch.Tensor:
         batch_size = batch.natoms.numel()
         fixed = batch.fixed
         mask = fixed == 0
@@ -666,9 +666,7 @@ class OCPTrainer(BaseTrainer):
                 )
                 gather_results["chunk_idx"] = np.cumsum(
                     [gather_results["chunk_idx"][i] for i in idx]
-                )[
-                    :-1
-                ]  # np.split does not need last idx, assumes n-1:end
+                )[:-1]  # np.split does not need last idx, assumes n-1:end
 
                 full_path = os.path.join(
                     self.config["cmd"]["results_dir"], "relaxed_positions.npz"
