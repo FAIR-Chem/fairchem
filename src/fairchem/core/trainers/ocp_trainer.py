@@ -263,7 +263,7 @@ class OCPTrainer(BaseTrainer):
 
             ## TODO: deprecate the following logic?
             ## Otherwise, assume target property is a derived output of the model. Construct the parent property
-            else:
+            elif self.output_targets[target_key] == "decomposition":
                 _max_rank = 0
                 for subtarget_key in self.output_targets[target_key]["decomposition"]:
                     _max_rank = max(
@@ -290,6 +290,10 @@ class OCPTrainer(BaseTrainer):
                     "ba, cb->ca",
                     cg_change_mat(_max_rank, self.device),
                     pred_irreps,
+                )
+            else:
+                raise ValueError(
+                    f"Output target {target_key} not found in model output"
                 )
 
             ### not all models are consistent with the output shape
