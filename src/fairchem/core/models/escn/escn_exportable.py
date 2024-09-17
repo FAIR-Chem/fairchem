@@ -139,8 +139,12 @@ class eSCN(nn.Module):
 
         # Initialize the transformations between spherical and grid representations
         self.SO3_grid = nn.ModuleDict()
-        self.SO3_grid["lmax_lmax"] = SO3_Grid(self.lmax, self.lmax, resolution=resolution)
-        self.SO3_grid["lmax_mmax"] = SO3_Grid(self.lmax, self.mmax, resolution=resolution)
+        self.SO3_grid["lmax_lmax"] = SO3_Grid(
+            self.lmax, self.lmax, resolution=resolution
+        )
+        self.SO3_grid["lmax_mmax"] = SO3_Grid(
+            self.lmax, self.mmax, resolution=resolution
+        )
         self.mappingReduced = CoefficientMapping([self.lmax], [self.mmax])
 
         # Initialize the blocks for each layer of the GNN
@@ -157,7 +161,7 @@ class eSCN(nn.Module):
                 self.max_num_elements,
                 self.SO3_grid,
                 self.act,
-                self.mappingReduced
+                self.mappingReduced,
             )
             self.layer_blocks.append(block)
 
@@ -185,7 +189,6 @@ class eSCN(nn.Module):
             requires_grad=False,
         )
 
-
     def forward(self, data: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         pos: torch.Tensor = data["pos"]
         batch_idx: torch.Tensor = data["batch"]
@@ -207,9 +210,7 @@ class eSCN(nn.Module):
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(
-            edge_index, edge_distance_vec
-        )
+        edge_rot_mat = self._init_edge_rot_mat(edge_index, edge_distance_vec)
         wigner = rotation_to_wigner(edge_rot_mat, 0, self.lmax).detach()
 
         ###############################################################
@@ -252,7 +253,9 @@ class eSCN(nn.Module):
 
         # Sample the spherical channels (node embeddings) at evenly distributed points on the sphere.
         # These values are fed into the output blocks.
-        x_pt = torch.einsum("abc, pb->apc", x_message, self.sphharm_weights).contiguous()
+        x_pt = torch.einsum(
+            "abc, pb->apc", x_message, self.sphharm_weights
+        ).contiguous()
 
         ###############################################################
         # Energy estimation
@@ -335,6 +338,7 @@ class eSCN(nn.Module):
     def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
 
+
 class LayerBlock(torch.nn.Module):
     """
     Layer block: Perform one layer (message passing and aggregation) of the GNN
@@ -387,7 +391,7 @@ class LayerBlock(torch.nn.Module):
             max_num_elements,
             self.SO3_grid,
             self.act,
-            self.mappingReduced
+            self.mappingReduced,
         )
 
         # Non-linear point-wise comvolution for the aggregated messages
@@ -422,7 +426,11 @@ class LayerBlock(torch.nn.Module):
 
         # Compute point-wise spherical non-linearity on aggregated messages
         # Project to grid
-        to_grid_mat = self.SO3_grid["lmax_lmax"].to_grid_mat[:, :, self.SO3_grid["lmax_lmax"].mapping.coefficient_idx(self.lmax, self.lmax)]
+        to_grid_mat = self.SO3_grid["lmax_lmax"].to_grid_mat[
+            :,
+            :,
+            self.SO3_grid["lmax_lmax"].mapping.coefficient_idx(self.lmax, self.lmax),
+        ]
         x_grid_message = torch.einsum("bai,zic->zbac", to_grid_mat, x_message)
 
         # x_grid = x.to_grid(self.SO3_grid["lmax_lmax"])
@@ -435,7 +443,11 @@ class LayerBlock(torch.nn.Module):
         x_grid = self.fc3_sphere(x_grid)
 
         # Project back to spherical harmonic coefficients
-        from_grid_mat = self.SO3_grid["lmax_lmax"].from_grid_mat[:, :, self.SO3_grid["lmax_lmax"].mapping.coefficient_idx(self.lmax, self.lmax)]
+        from_grid_mat = self.SO3_grid["lmax_lmax"].from_grid_mat[
+            :,
+            :,
+            self.SO3_grid["lmax_lmax"].mapping.coefficient_idx(self.lmax, self.lmax),
+        ]
         return torch.einsum("bai,zbac->zic", from_grid_mat, x_grid)
 
 
@@ -498,7 +510,7 @@ class MessageBlock(torch.nn.Module):
             self.lmax,
             self.mmax,
             self.act,
-            self.mappingReduced
+            self.mappingReduced,
         )
         self.so2_block_target = SO2Block(
             self.sphere_channels,
@@ -507,7 +519,7 @@ class MessageBlock(torch.nn.Module):
             self.lmax,
             self.mmax,
             self.act,
-            self.mappingReduced
+            self.mappingReduced,
         )
 
     def forward(
@@ -558,7 +570,9 @@ class MessageBlock(torch.nn.Module):
         x_target = torch.bmm(wigner_inv[:, :, self.out_mask], x_target)
 
         # Compute the sum of the incoming neighboring messages for each target node
-        new_embedding = torch.zeros(x.shape, dtype=x_target.dtype, device=x_target.device)
+        new_embedding = torch.zeros(
+            x.shape, dtype=x_target.dtype, device=x_target.device
+        )
         new_embedding.index_add_(0, edge_index[1], x_target)
 
         return new_embedding
@@ -585,7 +599,7 @@ class SO2Block(torch.nn.Module):
         lmax: int,
         mmax: int,
         act,
-        mappingReduced
+        mappingReduced,
     ) -> None:
         super().__init__()
         self.sphere_channels = sphere_channels
@@ -646,9 +660,7 @@ class SO2Block(torch.nn.Module):
         offset = self.mappingReduced.m_size[0]
         for m in range(1, self.mmax + 1):
             # Get the m order coefficients
-            x_m = x[
-                :, offset : offset + 2 * self.mappingReduced.m_size[m]
-            ].contiguous()
+            x_m = x[:, offset : offset + 2 * self.mappingReduced.m_size[m]].contiguous()
             x_m = x_m.view(num_edges, 2, -1)
             # Perform SO(2) convolution
             x_m = self.so2_conv[m - 1](x_m, x_edge)
