@@ -11,7 +11,7 @@ import logging
 import os
 from collections import defaultdict
 from itertools import chain
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
@@ -71,28 +71,29 @@ class OCPTrainer(BaseTrainer):
 
     def __init__(
         self,
-        task,
-        model,
-        outputs,
-        dataset,
-        optimizer,
-        loss_functions,
-        evaluation_metrics,
-        identifier,
+        task: dict[str, str | Any],
+        model: dict[str, Any],
+        outputs: dict[str, str | int],
+        dataset: dict[str, str | float],
+        optimizer: dict[str, str | float],
+        loss_functions: dict[str, str | float],
+        evaluation_metrics: dict[str, str],
+        identifier: str,
         # TODO: dealing with local rank is dangerous
         # T201111838 remove this and use CUDA_VISIBILE_DEVICES instead so trainers don't need to know about which devie to use
-        local_rank,
-        timestamp_id=None,
-        run_dir=None,
-        is_debug=False,
-        print_every=100,
-        seed=None,
-        logger="wandb",
-        amp=False,
-        cpu=False,
+        local_rank: int,
+        timestamp_id: str | None = None,
+        run_dir: str | None = None,
+        is_debug: bool = False,
+        print_every: int = 100,
+        seed: int | None = None,
+        logger: str = "wandb",
+        amp: bool = False,
+        cpu: bool = False,
+        name: str = "ocp",
         slurm=None,
-        name="ocp",
-        gp_gpus=None,
+        gp_gpus: int | None = None,
+        inference_only: bool = False,
     ):
         if slurm is None:
             slurm = {}
@@ -117,6 +118,7 @@ class OCPTrainer(BaseTrainer):
             slurm=slurm,
             name=name,
             gp_gpus=gp_gpus,
+            inference_only=inference_only,
         )
 
     def train(self, disable_eval_tqdm: bool = False) -> None:
@@ -258,8 +260,8 @@ class OCPTrainer(BaseTrainer):
                     assert (
                         "property" in self.output_targets[target_key]
                     ), f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
-                    property = self.output_targets[target_key]["property"]
-                    pred = out[target_key][property]
+                    prop = self.output_targets[target_key]["property"]
+                    pred = out[target_key][prop]
 
             ## TODO: deprecate the following logic?
             ## Otherwise, assume target property is a derived output of the model. Construct the parent property
@@ -302,7 +304,7 @@ class OCPTrainer(BaseTrainer):
 
         return outputs
 
-    def _compute_loss(self, out, batch):
+    def _compute_loss(self, out, batch) -> torch.Tensor:
         batch_size = batch.natoms.numel()
         fixed = batch.fixed
         mask = fixed == 0
@@ -452,6 +454,7 @@ class OCPTrainer(BaseTrainer):
                 device_type=self.device.type, enabled=self.scaler is not None
             ):
                 out = self._forward(batch)
+            out = {k: v.float() for k, v in out.items()}
 
             for target_key in self.config["outputs"]:
                 pred = self._denorm_preds(target_key, out[target_key], batch)

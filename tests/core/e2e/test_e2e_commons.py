@@ -119,11 +119,20 @@ def _run_main(
 
     # run
     parser = flags.get_parser()
-    args, override_args = parser.parse_known_args(
-        ["--mode", "train", "--seed", "100", "--config-yml", "config.yml", "--cpu", "--num-gpus", str(world_size)]
-    )
+    command_line_args = [
+        "--mode",
+        "train",
+        "--seed",
+        "100",
+        "--config-yml",
+        "config.yml",
+        "--cpu",
+        "--num-gpus",
+        str(world_size),
+    ]
     if amp:
         command_line_args.append("--amp")
+    args, override_args = parser.parse_known_args(command_line_args)
     for arg_name, arg_value in run_args.items():
         setattr(args, arg_name, arg_value)
     main(args, override_args)

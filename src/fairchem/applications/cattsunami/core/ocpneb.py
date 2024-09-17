@@ -36,6 +36,8 @@ class OCPNEB(DyNEB):
         precon=None,
         cpu=False,
         batch_size=4,
+        seed=0, # set a seed for reproducibility
+        amp=None,
     ):
         """
         Subclass of NEB that allows for scaled and dynamic optimizations of
@@ -110,10 +112,12 @@ class OCPNEB(DyNEB):
             local_rank=config.get("local_rank", 0),
             is_debug=config.get("is_debug", True),
             cpu=cpu,
-            amp=True,
+            amp=(amp==None or amp), # AMP on by default
         )
 
         self.load_checkpoint(checkpoint_path)
+
+        self.trainer.set_seed(seed)
 
         self.a2g = AtomsToGraphs(
             max_neigh=50,
