@@ -649,7 +649,7 @@ class BaseTrainer(ABC):
             self.elementrefs[key].to(map_location)
 
         if self.scaler:
-            if "amp" in checkpoint and checkpoint["amp"]:
+            if checkpoint.get("amp"):
                 self.scaler.load_state_dict(checkpoint["amp"])
             else:
                 self.scaler = torch.GradScaler(self.device.type)
