@@ -44,8 +44,9 @@ class eSCN(nn.Module, GraphModelMixin):
 
 
     Args:
-        cutoff (float): Maximum distance between nieghboring atoms in Angstroms
-        max_num_elements (int): Maximum atomic number
+        max_neighbors(int):           Max neighbors to take per node, when using the graph generation
+        cutoff (float):               Maximum distance between nieghboring atoms in Angstroms
+        max_num_elements (int):       Maximum atomic number
         num_layers (int):             Number of layers in the GNN
         lmax (int):                   maximum degree of the spherical harmonics (1 to 10)
         mmax (int):                   maximum order of the spherical harmonics (0 to lmax)
@@ -56,11 +57,13 @@ class eSCN(nn.Module, GraphModelMixin):
         distance_function ("gaussian", "sigmoid", "linearsigmoid", "silu"):  Basis function used for distances
         basis_width_scalar (float):   Width of distance basis function
         distance_resolution (float):  Distance between distance basis functions in Angstroms
+        compile (bool):               use torch.compile on the forward
+        export (bool):                use the exportable version of the module
     """
 
     def __init__(
         self,
-        max_neighbors: int = 300, # for backwards compat-only with graph generation
+        max_neighbors: int = 300,
         cutoff: float = 8.0,
         max_num_elements: int = 100,
         num_layers: int = 8,
@@ -75,8 +78,7 @@ class eSCN(nn.Module, GraphModelMixin):
         distance_resolution: float = 0.02,
         resolution: int | None = None,
         compile: bool = False,
-        # need to turn off assertions for export mode
-        assertions: bool = True,
+        export: bool = False,
     ) -> None:
         super().__init__()
 
@@ -100,7 +102,7 @@ class eSCN(nn.Module, GraphModelMixin):
         self.basis_width_scalar = basis_width_scalar
         self.distance_function = distance_function
         self.compile = compile
-        self.assertions = assertions
+        self.export = export
 
         # non-linear activation function used throughout the network
         self.act = nn.SiLU()
@@ -149,8 +151,12 @@ class eSCN(nn.Module, GraphModelMixin):
 
         # Initialize the transformations between spherical and grid representations
         self.SO3_grid = nn.ModuleDict()
-        self.SO3_grid["lmax_lmax"] = SO3_Grid(self.lmax, self.lmax, resolution=resolution)
-        self.SO3_grid["lmax_mmax"] = SO3_Grid(self.lmax, self.mmax, resolution=resolution)
+        self.SO3_grid["lmax_lmax"] = SO3_Grid(
+            self.lmax, self.lmax, resolution=resolution
+        )
+        self.SO3_grid["lmax_mmax"] = SO3_Grid(
+            self.lmax, self.mmax, resolution=resolution
+        )
         self.mappingReduced = CoefficientMapping([self.lmax], [self.mmax])
 
         # Initialize the blocks for each layer of the GNN
@@ -167,7 +173,7 @@ class eSCN(nn.Module, GraphModelMixin):
                 self.max_num_elements,
                 self.SO3_grid,
                 self.act,
-                self.mappingReduced
+                self.mappingReduced,
             )
             self.layer_blocks.append(block)
 
@@ -205,21 +211,35 @@ class eSCN(nn.Module, GraphModelMixin):
         for l in range(self.lmax + 1):
             self.register_buffer(f"Jd_{l}", Jd_list[l])
 
+        if self.compile:
+            logging.info("Using the compiled escn forward function...")
+            self.forward = torch.compile(
+                options={"triton.cudagraphs": True}, fullgraph=True, dynamic=True
+            )(self.forward)
 
-    def forward(self, data: Batch) -> dict[str, torch.Tensor]:
-        # wrapper to make the exportable model compatible with torch.geometric.Batch inputs and returns dict outputs
-        # note this is slower to run graph generation here, for best performance
-        # generate the graph outside and call forward_exportable instead!
-        # once we remove torch geometric and standardize inputs, we can remove this wrapper!
+        # torch.export only works with nn.module with an unaltered forward function,
+        # furthermore AOT Inductor currently requires a flat list of inputs
+        # this we need keep the module.forward function as the fully exportable region
+        # When not using export, ie for training, we swap out the forward with a version
+        # that wraps it with the graph generator
         #
-        # because generate_graph is not export/compile friendly we isolate this part of the call
-        graph = self.generate_graph(data, max_neighbors=self.max_neighbors, otf_graph=True, use_pbc=True, use_pbc_single=True)
-        if self.compile and not getattr(self, "already_compiled", False):
-            logging.error("Compiling the escn forward function...")
-            self.forward_exportable = torch.compile(options={"triton.cudagraphs": data.pos.type == "cuda"}, fullgraph=True, dynamic=True)(self.forward_exportable)
-            self.already_compiled = True
+        # TODO: this is really ugly and confusing to read, find a better way to deal
+        # with partially exportable model
+        if not self.export:
+            self._forward = self.forward
+            self.forward = self.forward_trainable
 
-        energy, forces = self.forward_exportable(
+    def forward_trainable(self, data: Batch) -> dict[str, torch.Tensor]:
+        # standard forward call that generates the graph on-the-fly with generate_graph
+        # this part of the code is not compile/export friendly so we keep it separated and wrap the exportaable forward
+        graph = self.generate_graph(
+            data,
+            max_neighbors=self.max_neighbors,
+            otf_graph=True,
+            use_pbc=True,
+            use_pbc_single=True,
+        )
+        energy, forces = self._forward(
             data.pos,
             data.batch,
             data.natoms,
@@ -230,21 +250,33 @@ class eSCN(nn.Module, GraphModelMixin):
         )
         return {"energy": energy, "forces": forces}
 
-    # wrapper for exportable function where the inputs and outputs are tensor
-    def forward_exportable(
+    # a fully compilable/exportable forward function
+    # takes a full graph with edges as input
+    def forward(
         self,
-        pos: torch.Tensor, # float
-        batch_idx: torch.Tensor, # long
-        natoms: torch.Tensor, # long
-        atomic_numbers: torch.Tensor, # long
-        edge_index: torch.Tensor, # long
-        edge_distance: torch.Tensor, # float
-        edge_distance_vec: torch.Tensor, # float
-        ) -> list[torch.Tensor]:
-        if self.assertions:
-            assert (
-                atomic_numbers.max().item() < self.max_num_elements
-            ), f"Atomic number {atomic_numbers.max().item()} exceeds that given in model config {self.max_num_elements}"
+        pos: torch.Tensor,
+        batch_idx: torch.Tensor,
+        natoms: torch.Tensor,
+        atomic_numbers: torch.Tensor,
+        edge_index: torch.Tensor,
+        edge_distance: torch.Tensor,
+        edge_distance_vec: torch.Tensor,
+    ) -> list[torch.Tensor]:
+        """
+        N: num atoms
+        N: batch size
+        E: num edges
+
+        pos: [N, 3] atom positions
+        batch_idx: [N] batch index of each atom
+        natoms: [B] number of atoms in each batch
+        atomic_numbers: [N] atomic number per atom
+        edge_index: [2, E] edges between source and target atoms
+        edge_distance: [E] cartesian distance for each edge
+        edge_distance_vec: [E, 3] direction vector of edges (includes pbc)
+        """
+        if not self.export and not self.compile:
+            assert atomic_numbers.max().item() < self.max_num_elements
         num_atoms = len(atomic_numbers)
 
         ###############################################################
@@ -253,7 +285,10 @@ class eSCN(nn.Module, GraphModelMixin):
 
         # Compute 3x3 rotation matrix per edge
         edge_rot_mat = self._init_edge_rot_mat(edge_distance_vec)
-        Jd_buffers = [getattr(self, f"Jd_{l}").type(edge_rot_mat.dtype) for l in range(self.lmax + 1)]
+        Jd_buffers = [
+            getattr(self, f"Jd_{l}").type(edge_rot_mat.dtype)
+            for l in range(self.lmax + 1)
+        ]
         wigner = rotation_to_wigner(edge_rot_mat, 0, self.lmax, Jd_buffers).detach()
 
         ###############################################################
@@ -296,7 +331,9 @@ class eSCN(nn.Module, GraphModelMixin):
 
         # Sample the spherical channels (node embeddings) at evenly distributed points on the sphere.
         # These values are fed into the output blocks.
-        x_pt = torch.einsum("abc, pb->apc", x_message, self.sphharm_weights).contiguous()
+        x_pt = torch.einsum(
+            "abc, pb->apc", x_message, self.sphharm_weights
+        ).contiguous()
 
         ###############################################################
         # Energy estimation
@@ -320,8 +357,7 @@ class eSCN(nn.Module, GraphModelMixin):
         edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0**2, dim=1))
 
         # Make sure the atoms are far enough apart
-        if self.assertions:
-            assert torch.min(edge_vec_0_distance) < 0.0001
+        # assert torch.min(edge_vec_0_distance) < 0.0001
 
         norm_x = edge_vec_0 / (edge_vec_0_distance.view(-1, 1))
 
@@ -368,6 +404,7 @@ class eSCN(nn.Module, GraphModelMixin):
     @property
     def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
+
 
 class LayerBlock(torch.nn.Module):
     """
@@ -421,7 +458,7 @@ class LayerBlock(torch.nn.Module):
             max_num_elements,
             self.SO3_grid,
             self.act,
-            self.mappingReduced
+            self.mappingReduced,
         )
 
         # Non-linear point-wise comvolution for the aggregated messages
@@ -456,7 +493,11 @@ class LayerBlock(torch.nn.Module):
 
         # Compute point-wise spherical non-linearity on aggregated messages
         # Project to grid
-        to_grid_mat = self.SO3_grid["lmax_lmax"].to_grid_mat[:, :, self.SO3_grid["lmax_lmax"].mapping.coefficient_idx(self.lmax, self.lmax)]
+        to_grid_mat = self.SO3_grid["lmax_lmax"].to_grid_mat[
+            :,
+            :,
+            self.SO3_grid["lmax_lmax"].mapping.coefficient_idx(self.lmax, self.lmax),
+        ]
         x_grid_message = torch.einsum("bai,zic->zbac", to_grid_mat, x_message)
 
         # x_grid = x.to_grid(self.SO3_grid["lmax_lmax"])
@@ -469,7 +510,11 @@ class LayerBlock(torch.nn.Module):
         x_grid = self.fc3_sphere(x_grid)
 
         # Project back to spherical harmonic coefficients
-        from_grid_mat = self.SO3_grid["lmax_lmax"].from_grid_mat[:, :, self.SO3_grid["lmax_lmax"].mapping.coefficient_idx(self.lmax, self.lmax)]
+        from_grid_mat = self.SO3_grid["lmax_lmax"].from_grid_mat[
+            :,
+            :,
+            self.SO3_grid["lmax_lmax"].mapping.coefficient_idx(self.lmax, self.lmax),
+        ]
         return torch.einsum("bai,zbac->zic", from_grid_mat, x_grid)
 
 
@@ -532,7 +577,7 @@ class MessageBlock(torch.nn.Module):
             self.lmax,
             self.mmax,
             self.act,
-            self.mappingReduced
+            self.mappingReduced,
         )
         self.so2_block_target = SO2Block(
             self.sphere_channels,
@@ -541,7 +586,7 @@ class MessageBlock(torch.nn.Module):
             self.lmax,
             self.mmax,
             self.act,
-            self.mappingReduced
+            self.mappingReduced,
         )
 
     def forward(
@@ -592,7 +637,9 @@ class MessageBlock(torch.nn.Module):
         x_target = torch.bmm(wigner_inv[:, :, self.out_mask], x_target)
 
         # Compute the sum of the incoming neighboring messages for each target node
-        new_embedding = torch.zeros(x.shape, dtype=x_target.dtype, device=x_target.device)
+        new_embedding = torch.zeros(
+            x.shape, dtype=x_target.dtype, device=x_target.device
+        )
         new_embedding.index_add_(0, edge_index[1], x_target)
 
         return new_embedding
@@ -619,7 +666,7 @@ class SO2Block(torch.nn.Module):
         lmax: int,
         mmax: int,
         act,
-        mappingReduced
+        mappingReduced,
     ) -> None:
         super().__init__()
         self.sphere_channels = sphere_channels
@@ -680,9 +727,7 @@ class SO2Block(torch.nn.Module):
         offset = self.mappingReduced.m_size[0]
         for m in range(1, self.mmax + 1):
             # Get the m order coefficients
-            x_m = x[
-                :, offset : offset + 2 * self.mappingReduced.m_size[m]
-            ].contiguous()
+            x_m = x[:, offset : offset + 2 * self.mappingReduced.m_size[m]].contiguous()
             x_m = x_m.view(num_edges, 2, -1)
             # Perform SO(2) convolution
             x_m = self.so2_conv[m - 1](x_m, x_edge)
