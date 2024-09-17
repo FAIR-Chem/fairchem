@@ -60,6 +60,7 @@ class Logger(ABC):
     def log_artifact(self, name: str, type: str, file_location: str) -> None:
         pass
 
+
 @registry.register_logger("wandb")
 class WandBLogger(Logger):
     def __init__(self, config) -> None:
@@ -114,6 +115,7 @@ class WandBLogger(Logger):
         art = wandb.Artifact(name=name, type=type)
         art.add_file(file_location)
         art.save()
+
 
 @registry.register_logger("tensorboard")
 class TensorboardLogger(Logger):

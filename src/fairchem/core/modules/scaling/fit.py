@@ -40,7 +40,6 @@ def _train_batch(trainer: BaseTrainer, batch) -> None:
 
 
 def compute_scaling_factors(config, num_batches: int = 16) -> None:
-
     with new_trainer_context(config=config) as ctx:
         config = ctx.config
         trainer = ctx.trainer
