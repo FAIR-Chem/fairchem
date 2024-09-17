@@ -31,13 +31,17 @@ class BaseTask:
         # (https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/_cli.py#L44), then we should attempt to
         # load that checkpoint
         if self.config["checkpoint"] is not None:
-            logging.info(f"Attemping to load user specified checkpoint at {self.config['checkpoint']}")
+            logging.info(
+                f"Attemping to load user specified checkpoint at {self.config['checkpoint']}"
+            )
             self.trainer.load_checkpoint(checkpoint_path=self.config["checkpoint"])
         # if the supplied checkpoint doesn't exist and there exists a previous checkpoint in the checkpoint path, this
         # means that the previous job didn't terminate "nicely" (due to node failures, crashes etc), then attempt
         # to load the last found checkpoint
         elif os.path.exists(self.chkpt_path):
-            logging.info(f"Previous checkpoint found at {self.chkpt_path}, resuming job from this checkecpoint")
+            logging.info(
+                f"Previous checkpoint found at {self.chkpt_path}, resuming job from this checkecpoint"
+            )
             self.trainer.load_checkpoint(checkpoint_path=self.chkpt_path)
 
     def run(self):
