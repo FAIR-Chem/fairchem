@@ -14,6 +14,10 @@ from test_e2e_commons import (
     update_yaml_with_dict,
 )
 
+from fairchem.core.models.equiformer_v2.eqv2_to_eqv2_hydra import (
+    convert_checkpoint_and_config_to_hydra,
+)
+
 from fairchem.core.common.flags import flags
 from fairchem.core.common.utils import build_config, setup_logging
 from fairchem.core.modules.scaling.fit import compute_scaling_factors
@@ -158,6 +162,115 @@ class TestSmoke:
                 },
                 input_yaml=configs["gemnet_oc"],
             )
+
+    def test_convert_checkpoint_and_config_to_hydra(self, configs, tutorial_val_src):
+        with tempfile.TemporaryDirectory() as tempdirname:
+            # first train a very simple model then checkpoint
+            train_rundir = Path(tempdirname) / "train"
+            train_rundir.mkdir()
+            checkpoint_path = str(train_rundir / "checkpoint.pt")
+            acc = _run_main(
+                rundir=str(train_rundir),
+                input_yaml=configs["equiformer_v2"],
+                update_dict_with={
+                    "optim": {
+                        "max_epochs": 2,
+                        "eval_every": 8,
+                        "batch_size": 5,
+                    },
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                        otf_norms=False,
+                    ),
+                },
+                save_checkpoint_to=checkpoint_path,
+            )
+
+            # load the checkpoint and predict
+            predictions_rundir = Path(tempdirname) / "predict"
+            predictions_rundir.mkdir()
+            predictions_filename = str(predictions_rundir / "predictions.npz")
+            _run_main(
+                rundir=str(predictions_rundir),
+                input_yaml=configs["equiformer_v2"],
+                update_dict_with={
+                    "optim": {"max_epochs": 2, "eval_every": 8, "batch_size": 5},
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                        otf_norms=False,
+                    ),
+                },
+                update_run_args_with={
+                    "mode": "predict",
+                    "checkpoint": checkpoint_path,
+                },
+                save_predictions_to=predictions_filename,
+            )
+
+            # convert the checkpoint to hydra
+            hydra_yaml = Path(tempdirname) / "hydra.yml"
+            hydra_checkpoint = Path(tempdirname) / "hydra.pt"
+
+            convert_checkpoint_and_config_to_hydra(
+                yaml_fn=configs["equiformer_v2"],
+                checkpoint_fn=checkpoint_path,
+                new_yaml_fn=hydra_yaml,
+                new_checkpoint_fn=hydra_checkpoint,
+            )
+
+            # load hydra checkpoint and predict
+            hydra_predictions_rundir = Path(tempdirname) / "hydra_predict"
+            hydra_predictions_rundir.mkdir()
+            hydra_predictions_filename = str(predictions_rundir / "predictions.npz")
+            _run_main(
+                rundir=str(hydra_predictions_rundir),
+                input_yaml=hydra_yaml,
+                update_dict_with={
+                    "optim": {"max_epochs": 2, "eval_every": 8, "batch_size": 5},
+                    "dataset": oc20_lmdb_train_and_val_from_paths(
+                        train_src=str(tutorial_val_src),
+                        val_src=str(tutorial_val_src),
+                        test_src=str(tutorial_val_src),
+                        otf_norms=False,
+                    ),
+                },
+                update_run_args_with={
+                    "mode": "predict",
+                    "checkpoint": hydra_checkpoint,
+                },
+                save_predictions_to=hydra_predictions_filename,
+            )
+
+            # verify predictions from eqv2 and hydra eqv2 are same
+            energy_from_checkpoint = np.load(predictions_filename)["energy"]
+            energy_from_hydra_checkpoint = np.load(hydra_predictions_filename)["energy"]
+            npt.assert_allclose(
+                energy_from_hydra_checkpoint,
+                energy_from_checkpoint,
+                rtol=1e-6,
+                atol=1e-6,
+            )
+            forces_from_checkpoint = np.load(predictions_filename)["forces"]
+            forces_from_hydra_checkpoint = np.load(hydra_predictions_filename)["forces"]
+            npt.assert_allclose(
+                forces_from_hydra_checkpoint,
+                forces_from_checkpoint,
+                rtol=1e-6,
+                atol=1e-6,
+            )
+
+            # should not let you overwrite the files if they exist
+            with pytest.raises(AssertionError):
+                convert_checkpoint_and_config_to_hydra(
+                    yaml_fn=configs["equiformer_v2"],
+                    checkpoint_fn=checkpoint_path,
+                    new_yaml_fn=hydra_yaml,
+                    new_checkpoint_fn=hydra_checkpoint,
+                )
 
     # not all models are tested with otf normalization estimation
     # only gemnet_oc, escn, equiformer, and their hydra versions
