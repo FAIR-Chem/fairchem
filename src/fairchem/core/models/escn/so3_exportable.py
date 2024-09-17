@@ -17,7 +17,11 @@ except ImportError:
 # In 0.5.0, e3nn shifted to torch.matrix_exp which is significantly slower:
 # https://github.com/e3nn/e3nn/blob/0.5.0/e3nn/o3/_wigner.py#L92
 def wigner_D(
-    lv: int, alpha: torch.Tensor, beta: torch.Tensor, gamma: torch.Tensor, _Jd: list[torch.Tensor]
+    lv: int,
+    alpha: torch.Tensor,
+    beta: torch.Tensor,
+    gamma: torch.Tensor,
+    _Jd: list[torch.Tensor],
 ) -> torch.Tensor:
     alpha, beta, gamma = torch.broadcast_tensors(alpha, beta, gamma)
     J = _Jd[lv]
@@ -25,6 +29,7 @@ def wigner_D(
     Xb = _z_rot_mat(beta, lv)
     Xc = _z_rot_mat(gamma, lv)
     return Xa @ J @ Xb @ J @ Xc
+
 
 def _z_rot_mat(angle: torch.Tensor, lv: int) -> torch.Tensor:
     M = angle.new_zeros((*angle.shape, 2 * lv + 1, 2 * lv + 1))
