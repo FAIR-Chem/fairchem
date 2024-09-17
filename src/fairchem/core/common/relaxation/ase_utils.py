@@ -179,6 +179,7 @@ class OCPCalculator(Calculator):
             logging.warning(
                 f"AMP option has not been explicitly set in calculator, will use amp from checkpoint, amp:{config.get('amp', False)}"
             )
+            amp = config.get("amp", False)
 
         self.trainer = registry.get_trainer_class(config["trainer"])(
             task=config.get("task", {}),
@@ -193,7 +194,7 @@ class OCPCalculator(Calculator):
             local_rank=config.get("local_rank", 0),
             is_debug=config.get("is_debug", True),
             cpu=cpu,
-            amp=config.get("amp", False),
+            amp=amp,
             inference_only=True,
         )
 
