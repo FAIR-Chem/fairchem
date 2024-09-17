@@ -352,13 +352,16 @@ class DimeNetPlusPlusWrapEnergyAndForceHead(nn.Module, HeadInterface):
             )
         }
         if self.regress_forces:
-            outputs["forces"] = -1 * (
-                torch.autograd.grad(
-                    outputs["energy"],
-                    data.pos,
-                    grad_outputs=torch.ones_like(outputs["energy"]),
-                    create_graph=True,
-                )[0]
+            outputs["forces"] = (
+                -1
+                * (
+                    torch.autograd.grad(
+                        outputs["energy"],
+                        data.pos,
+                        grad_outputs=torch.ones_like(outputs["energy"]),
+                        create_graph=True,
+                    )[0]
+                )
             )
         return outputs
 
@@ -465,13 +468,16 @@ class DimeNetPlusPlusWrap(DimeNetPlusPlus, GraphModelMixin):
         outputs = {"energy": energy}
 
         if self.regress_forces:
-            forces = -1 * (
-                torch.autograd.grad(
-                    energy,
-                    data.pos,
-                    grad_outputs=torch.ones_like(energy),
-                    create_graph=True,
-                )[0]
+            forces = (
+                -1
+                * (
+                    torch.autograd.grad(
+                        energy,
+                        data.pos,
+                        grad_outputs=torch.ones_like(energy),
+                        create_graph=True,
+                    )[0]
+                )
             )
             outputs["forces"] = forces
 
