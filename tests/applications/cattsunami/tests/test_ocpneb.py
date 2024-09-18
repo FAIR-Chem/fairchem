@@ -64,6 +64,7 @@ class TestNEB:
             cpu=True,
             batch_size=1,
             k=0.25,
+            amp=False,
         )
 
         batched_opt = BFGS(batched, trajectory="batched.traj")
@@ -74,7 +75,7 @@ class TestNEB:
         images_ub = deepcopy(self.images)
         for image in images_ub[1:-1]:
             image.calc = OCPCalculator(
-                checkpoint_path=checkpoint_path, cpu=True, amp=True
+                checkpoint_path=checkpoint_path, cpu=True, amp=False
             )
         unbatched = DyNEB(images_ub, k=0.25)
         unbatched_opt = BFGS(unbatched, trajectory="unbatched.traj")
