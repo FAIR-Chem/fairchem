@@ -149,7 +149,7 @@ Module Contents
    .. py:property:: _unwrapped_model
 
 
-   .. py:method:: load_checkpoint(checkpoint_path: str, checkpoint: dict | None = None, inference_only: bool | None = None) -> None
+   .. py:method:: load_checkpoint(checkpoint_path: str, checkpoint: dict | None = None, inference_only: bool = False) -> None
 
 
    .. py:method:: load_loss() -> None

@@ -4,14 +4,6 @@ core.models.escn.so3_exportable
 .. py:module:: core.models.escn.so3_exportable
 
 
-Attributes
-----------
-
-.. autoapisummary::
-
-   core.models.escn.so3_exportable.__Jd
-
-
 Classes
 -------
 
@@ -26,7 +18,6 @@ Functions
 
 .. autoapisummary::
 
-   core.models.escn.so3_exportable.get_jd
    core.models.escn.so3_exportable.wigner_D
    core.models.escn.so3_exportable._z_rot_mat
    core.models.escn.so3_exportable.rotation_to_wigner
@@ -35,15 +26,11 @@ Functions
 Module Contents
 ---------------
 
-.. py:data:: __Jd
-
-.. py:function:: get_jd() -> torch.Tensor
-
-.. py:function:: wigner_D(lv: int, alpha: torch.Tensor, beta: torch.Tensor, gamma: torch.Tensor) -> torch.Tensor
+.. py:function:: wigner_D(lv: int, alpha: torch.Tensor, beta: torch.Tensor, gamma: torch.Tensor, _Jd: list[torch.Tensor]) -> torch.Tensor
 
 .. py:function:: _z_rot_mat(angle: torch.Tensor, lv: int) -> torch.Tensor
 
-.. py:function:: rotation_to_wigner(edge_rot_mat: torch.Tensor, start_lmax: int, end_lmax: int) -> torch.Tensor
+.. py:function:: rotation_to_wigner(edge_rot_mat: torch.Tensor, start_lmax: int, end_lmax: int, Jd: list[torch.Tensor]) -> torch.Tensor
 
 .. py:class:: CoefficientMapping(lmax_list, mmax_list)
 

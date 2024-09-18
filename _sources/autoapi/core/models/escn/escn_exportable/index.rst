@@ -30,17 +30,17 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: eSCN(regress_forces: bool = True, cutoff: float = 8.0, max_num_elements: int = 90, num_layers: int = 8, lmax: int = 4, mmax: int = 2, sphere_channels: int = 128, hidden_channels: int = 256, edge_channels: int = 128, num_sphere_samples: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, resolution: int | None = None)
+.. py:class:: eSCN(max_neighbors: int = 300, cutoff: float = 8.0, max_num_elements: int = 100, num_layers: int = 8, lmax: int = 4, mmax: int = 2, sphere_channels: int = 128, hidden_channels: int = 256, edge_channels: int = 128, num_sphere_samples: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, resolution: int | None = None, compile: bool = False, export: bool = False)
 
-   Bases: :py:obj:`torch.nn.Module`
+   Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
 
    Equivariant Spherical Channel Network
    Paper: Reducing SO(3) Convolutions to SO(2) for Efficient Equivariant GNNs
 
 
-   :param regress_forces: Compute forces
-   :type regress_forces: bool
+   :param max_neighbors: Max neighbors to take per node, when using the graph generation
+   :type max_neighbors: int
    :param cutoff: Maximum distance between nieghboring atoms in Angstroms
    :type cutoff: float
    :param max_num_elements: Maximum atomic number
@@ -65,9 +65,13 @@ Module Contents
    :type basis_width_scalar: float
    :param distance_resolution: Distance between distance basis functions in Angstroms
    :type distance_resolution: float
+   :param compile: use torch.compile on the forward
+   :type compile: bool
+   :param export: use the exportable version of the module
+   :type export: bool
 
 
-   .. py:attribute:: regress_forces
+   .. py:attribute:: max_neighbors
 
 
    .. py:attribute:: cutoff
@@ -106,6 +110,19 @@ Module Contents
    .. py:attribute:: distance_function
 
 
+   .. py:attribute:: compile
+
+      Compile this Module's forward using :func:`torch.compile`.
+
+      This Module's `__call__` method is compiled and all arguments are passed as-is
+      to :func:`torch.compile`.
+
+      See :func:`torch.compile` for details on the arguments for this function.
+
+
+   .. py:attribute:: export
+
+
    .. py:attribute:: act
 
 
@@ -127,6 +144,9 @@ Module Contents
    .. py:attribute:: energy_block
 
 
+   .. py:attribute:: force_block
+
+
    .. py:attribute:: sphere_points
 
 
@@ -134,10 +154,32 @@ Module Contents
       :type:  torch.nn.Parameter
 
 
-   .. py:method:: forward(data: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]
+   .. py:attribute:: sph_feature_size
 
 
-   .. py:method:: _init_edge_rot_mat(edge_index, edge_distance_vec)
+   .. py:attribute:: Jd_list
+
+
+   .. py:method:: forward_trainable(data: torch_geometric.data.batch.Batch) -> dict[str, torch.Tensor]
+
+
+   .. py:method:: forward(pos: torch.Tensor, batch_idx: torch.Tensor, natoms: torch.Tensor, atomic_numbers: torch.Tensor, edge_index: torch.Tensor, edge_distance: torch.Tensor, edge_distance_vec: torch.Tensor) -> list[torch.Tensor]
+
+      N: num atoms
+      N: batch size
+      E: num edges
+
+      pos: [N, 3] atom positions
+      batch_idx: [N] batch index of each atom
+      natoms: [B] number of atoms in each batch
+      atomic_numbers: [N] atomic number per atom
+      edge_index: [2, E] edges between source and target atoms
+      edge_distance: [E] cartesian distance for each edge
+      edge_distance_vec: [E, 3] direction vector of edges (includes pbc)
+
+
+
+   .. py:method:: _init_edge_rot_mat(edge_distance_vec)
 
 
    .. py:property:: num_params

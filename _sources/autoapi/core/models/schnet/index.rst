@@ -102,6 +102,8 @@ Module Contents
 
    .. py:method:: forward(data)
 
+      Forward pass.
+
       :param z: Atomic number of each atom with shape
                 :obj:`[num_atoms]`.
       :type z: torch.Tensor

@@ -178,7 +178,9 @@ Module Contents
    Bases: :py:obj:`torch_geometric.nn.MessagePassing`
 
 
-   Base class for creating message passing layers of the form
+   Base class for creating message passing layers.
+
+   Message passing layers follow the form
 
    .. math::
        \mathbf{x}_i^{\prime} = \gamma_{\mathbf{\Theta}} \left( \mathbf{x}_i,
@@ -193,8 +195,8 @@ Module Contents
    create_gnn.html>`__ for the accompanying tutorial.
 
    :param aggr: The aggregation scheme
-                to use, *e.g.*, :obj:`"add"`, :obj:`"sum"` :obj:`"mean"`,
-                :obj:`"min"`, :obj:`"max"` or :obj:`"mul"`.
+                to use, *e.g.*, :obj:`"sum"` :obj:`"mean"`, :obj:`"min"`,
+                :obj:`"max"` or :obj:`"mul"`.
                 In addition, can be any
                 :class:`~torch_geometric.nn.aggr.Aggregation` module (or any string
                 that automatically resolves to it).

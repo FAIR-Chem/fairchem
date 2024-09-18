@@ -60,7 +60,8 @@ Module Contents
 
       .. warning::
           If :attr:`assign` is ``True`` the optimizer must be created after
-          the call to :attr:`load_state_dict`.
+          the call to :attr:`load_state_dict` unless
+          :func:`~torch.__future__.get_swap_module_params_on_conversion` is ``True``.
 
       :param state_dict: a dict containing parameters and
                          persistent buffers.
@@ -69,17 +70,20 @@ Module Contents
                      in :attr:`state_dict` match the keys returned by this module's
                      :meth:`~torch.nn.Module.state_dict` function. Default: ``True``
       :type strict: bool, optional
-      :param assign: whether to assign items in the state
-                     dictionary to their corresponding keys in the module instead
-                     of copying them inplace into the module's current parameters and buffers.
-                     When ``False``, the properties of the tensors in the current
-                     module are preserved while when ``True``, the properties of the
-                     Tensors in the state dict are preserved.
+      :param assign: When ``False``, the properties of the tensors
+                     in the current module are preserved while when ``True``, the
+                     properties of the Tensors in the state dict are preserved. The only
+                     exception is the ``requires_grad`` field of :class:`~torch.nn.Parameter`s
+                     for which the value from the module is preserved.
                      Default: ``False``
       :type assign: bool, optional
 
-      :returns:     * **missing_keys** is a list of str containing the missing keys
-                    * **unexpected_keys** is a list of str containing the unexpected keys
+      :returns:
+
+                    * **missing_keys** is a list of str containing any keys that are expected
+                        by this module but missing from the provided ``state_dict``.
+                    * **unexpected_keys** is a list of str containing the keys that are not
+                        expected by this module but present in the provided ``state_dict``.
       :rtype: ``NamedTuple`` with ``missing_keys`` and ``unexpected_keys`` fields
 
       .. note::
