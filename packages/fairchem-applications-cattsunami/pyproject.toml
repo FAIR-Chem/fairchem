@@ -8,7 +8,7 @@ dynamic = ["version", "readme"]
 description = "Accelerating Transition State Energy Calculations with Pre-trained Graph Neural Networks"
 license = {text = "MIT License"}
 dependencies = [
-    "torch>=2.2",
+    "torch>=2.4",
     "scipy",
     "ase",
     "networkx",
