@@ -211,7 +211,9 @@ class LmdbDataset(BaseDataset):
         }
 
 
-def data_list_collater(data_list: list[BaseData], otf_graph: bool = False, to_dict: bool = False) -> BaseData | dict[str, torch.Tensor]:
+def data_list_collater(
+    data_list: list[BaseData], otf_graph: bool = False, to_dict: bool = False
+) -> BaseData | dict[str, torch.Tensor]:
     batch = Batch.from_data_list(data_list)
 
     if not otf_graph:

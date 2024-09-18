@@ -292,8 +292,8 @@ class OCPTrainer(BaseTrainer):
                     pred_irreps,
                 )
             else:
-                raise ValueError(
-                    f"Output target {target_key} not found in model output"
+                raise AttributeError(
+                    f"Output target: '{target_key}', not found in model outputs: {list(out.keys())}"
                 )
 
             ### not all models are consistent with the output shape

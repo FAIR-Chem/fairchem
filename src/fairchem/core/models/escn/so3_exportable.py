@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import os
 
 import torch
 
@@ -11,14 +10,6 @@ try:
 except ImportError:
     pass
 
-# Borrowed from e3nn @ 0.4.0:
-# https://github.com/e3nn/e3nn/blob/0.4.0/e3nn/o3/_wigner.py#L10
-# _Jd is a list of tensors of shape (2l+1, 2l+1)
-__Jd = torch.load(os.path.join(os.path.dirname(__file__), "Jd.pt"))
-@torch.compiler.assume_constant_result
-def get_jd() -> torch.Tensor:
-    return __Jd
-
 
 # Borrowed from e3nn @ 0.4.0:
 # https://github.com/e3nn/e3nn/blob/0.4.0/e3nn/o3/_wigner.py#L37
@@ -26,13 +17,14 @@ def get_jd() -> torch.Tensor:
 # In 0.5.0, e3nn shifted to torch.matrix_exp which is significantly slower:
 # https://github.com/e3nn/e3nn/blob/0.5.0/e3nn/o3/_wigner.py#L92
 def wigner_D(
-    lv: int, alpha: torch.Tensor, beta: torch.Tensor, gamma: torch.Tensor
+    lv: int,
+    alpha: torch.Tensor,
+    beta: torch.Tensor,
+    gamma: torch.Tensor,
+    _Jd: list[torch.Tensor],
 ) -> torch.Tensor:
-    _Jd = get_jd()
-    assert lv < len(_Jd), f"wigner D maximum l implemented is {len(_Jd) - 1}, send us an email to ask for more"
-
     alpha, beta, gamma = torch.broadcast_tensors(alpha, beta, gamma)
-    J = _Jd[lv].to(dtype=alpha.dtype, device=alpha.device)
+    J = _Jd[lv]
     Xa = _z_rot_mat(alpha, lv)
     Xb = _z_rot_mat(beta, lv)
     Xc = _z_rot_mat(gamma, lv)
@@ -40,17 +32,31 @@ def wigner_D(
 
 
 def _z_rot_mat(angle: torch.Tensor, lv: int) -> torch.Tensor:
-    shape, device, dtype = angle.shape, angle.device, angle.dtype
-    M = angle.new_zeros((*shape, 2 * lv + 1, 2 * lv + 1))
-    inds = torch.arange(0, 2 * lv + 1, 1, device=device)
-    reversed_inds = torch.arange(2 * lv, -1, -1, device=device)
-    frequencies = torch.arange(lv, -lv - 1, -1, dtype=dtype, device=device)
-    M[..., inds, reversed_inds] = torch.sin(frequencies * angle[..., None])
-    M[..., inds, inds] = torch.cos(frequencies * angle[..., None])
+    M = angle.new_zeros((*angle.shape, 2 * lv + 1, 2 * lv + 1))
+
+    # The following code needs to replaced for a for loop because
+    # torch.export barfs on outer product like operations
+    # ie: torch.outer(frequences, angle) (same as frequencies * angle[..., None])
+    # will place a non-sense Guard on the dimensions of angle when attempting to export setting
+    # angle (edge dimensions) as dynamic. This may be fixed in torch2.4.
+
+    # inds = torch.arange(0, 2 * lv + 1, 1, device=device)
+    # reversed_inds = torch.arange(2 * lv, -1, -1, device=device)
+    # frequencies = torch.arange(lv, -lv - 1, -1, dtype=dtype, device=device)
+    # M[..., inds, reversed_inds] = torch.sin(frequencies * angle[..., None])
+    # M[..., inds, inds] = torch.cos(frequencies * angle[..., None])
+
+    inds = list(range(0, 2 * lv + 1, 1))
+    reversed_inds = list(range(2 * lv, -1, -1))
+    frequencies = list(range(lv, -lv - 1, -1))
+    for i in range(len(frequencies)):
+        M[..., inds[i], reversed_inds[i]] = torch.sin(frequencies[i] * angle)
+        M[..., inds[i], inds[i]] = torch.cos(frequencies[i] * angle)
     return M
 
+
 def rotation_to_wigner(
-    edge_rot_mat: torch.Tensor, start_lmax: int, end_lmax: int
+    edge_rot_mat: torch.Tensor, start_lmax: int, end_lmax: int, Jd: list[torch.Tensor]
 ) -> torch.Tensor:
     x = edge_rot_mat @ edge_rot_mat.new_tensor([0.0, 1.0, 0.0])
     alpha, beta = o3.xyz_to_angles(x)
@@ -64,7 +70,7 @@ def rotation_to_wigner(
     wigner = torch.zeros(len(alpha), size, size, device=edge_rot_mat.device)
     start = 0
     for lmax in range(start_lmax, end_lmax + 1):
-        block = wigner_D(lmax, alpha, beta, gamma)
+        block = wigner_D(lmax, alpha, beta, gamma, Jd)
         end = start + block.size()[1]
         wigner[:, start:end, start:end] = block
         start = end
@@ -100,7 +106,7 @@ class CoefficientMapping(torch.nn.Module):
         # Compute the degree (l) and order (m) for each entry of the embedding
         l_harmonic = torch.tensor([]).long()
         m_harmonic = torch.tensor([]).long()
-        m_complex  = torch.tensor([]).long()
+        m_complex = torch.tensor([]).long()
 
         self.res_size = torch.zeros([self.num_resolutions]).long().tolist()
 
@@ -110,12 +116,8 @@ class CoefficientMapping(torch.nn.Module):
                 mmax = min(self.mmax_list[i], l)
                 m = torch.arange(-mmax, mmax + 1).long()
                 m_complex = torch.cat([m_complex, m], dim=0)
-                m_harmonic = torch.cat(
-                    [m_harmonic, torch.abs(m).long()], dim=0
-                )
-                l_harmonic = torch.cat(
-                    [l_harmonic, m.fill_(l).long()], dim=0
-                )
+                m_harmonic = torch.cat([m_harmonic, torch.abs(m).long()], dim=0)
+                l_harmonic = torch.cat([l_harmonic, m.fill_(l).long()], dim=0)
             self.res_size[i] = len(l_harmonic) - offset
             offset = len(l_harmonic)
 
@@ -143,57 +145,48 @@ class CoefficientMapping(torch.nn.Module):
         # save tensors and they will be moved to GPU
         self.register_buffer("l_harmonic", l_harmonic)
         self.register_buffer("m_harmonic", m_harmonic)
-        self.register_buffer("m_complex",  m_complex)
-        self.register_buffer("to_m",       to_m)
+        self.register_buffer("m_complex", m_complex)
+        self.register_buffer("to_m", to_m)
 
         self.pre_compute_coefficient_idx()
-
 
     # Return mask containing coefficients of order m (real and imaginary parts)
     def complex_idx(self, m, lmax, m_complex, l_harmonic):
         """
-            Add `m_complex` and `l_harmonic` to the input arguments
-            since we cannot use `self.m_complex`.
+        Add `m_complex` and `l_harmonic` to the input arguments
+        since we cannot use `self.m_complex`.
         """
         if lmax == -1:
             lmax = max(self.lmax_list)
 
         indices = torch.arange(len(l_harmonic))
         # Real part
-        mask_r = torch.bitwise_and(
-            l_harmonic.le(lmax), m_complex.eq(m)
-        )
+        mask_r = torch.bitwise_and(l_harmonic.le(lmax), m_complex.eq(m))
         mask_idx_r = torch.masked_select(indices, mask_r)
 
         mask_idx_i = torch.tensor([]).long()
         # Imaginary part
         if m != 0:
-            mask_i = torch.bitwise_and(
-                l_harmonic.le(lmax), m_complex.eq(-m)
-            )
+            mask_i = torch.bitwise_and(l_harmonic.le(lmax), m_complex.eq(-m))
             mask_idx_i = torch.masked_select(indices, mask_i)
 
         return mask_idx_r, mask_idx_i
 
-
     def pre_compute_coefficient_idx(self):
         """
-            Pre-compute the results of `coefficient_idx()` and access them with `prepare_coefficient_idx()`
+        Pre-compute the results of `coefficient_idx()` and access them with `prepare_coefficient_idx()`
         """
         lmax = max(self.lmax_list)
         for l in range(lmax + 1):
             for m in range(lmax + 1):
-                mask = torch.bitwise_and(
-                    self.l_harmonic.le(l), self.m_harmonic.le(m)
-                )
+                mask = torch.bitwise_and(self.l_harmonic.le(l), self.m_harmonic.le(m))
                 indices = torch.arange(len(mask))
                 mask_indices = torch.masked_select(indices, mask)
                 self.register_buffer(f"coefficient_idx_l{l}_m{m}", mask_indices)
 
-
     def prepare_coefficient_idx(self):
         """
-            Construct a list of buffers
+        Construct a list of buffers
         """
         lmax = max(self.lmax_list)
         coefficient_idx_list = []
@@ -204,35 +197,39 @@ class CoefficientMapping(torch.nn.Module):
             coefficient_idx_list.append(l_list)
         return coefficient_idx_list
 
-
     # Return mask containing coefficients less than or equal to degree (l) and order (m)
     def coefficient_idx(self, lmax: int, mmax: int):
         if lmax > max(self.lmax_list) or mmax > max(self.lmax_list):
-            mask = torch.bitwise_and(
-                self.l_harmonic.le(lmax), self.m_harmonic.le(mmax)
-            )
+            mask = torch.bitwise_and(self.l_harmonic.le(lmax), self.m_harmonic.le(mmax))
             indices = torch.arange(len(mask), device=mask.device)
             return torch.masked_select(indices, mask)
         else:
             temp = self.prepare_coefficient_idx()
             return temp[lmax][mmax]
 
-
     def pre_compute_rotate_inv_rescale(self):
         lmax = max(self.lmax_list)
         for l in range(lmax + 1):
             for m in range(lmax + 1):
                 mask_indices = self.coefficient_idx(l, m)
-                rotate_inv_rescale = torch.ones((1, int((l + 1)**2), int((l + 1)**2)))
+                rotate_inv_rescale = torch.ones(
+                    (1, int((l + 1) ** 2), int((l + 1) ** 2))
+                )
                 for l_sub in range(l + 1):
                     if l_sub <= m:
                         continue
-                    start_idx = l_sub ** 2
+                    start_idx = l_sub**2
                     length = 2 * l_sub + 1
                     rescale_factor = math.sqrt(length / (2 * m + 1))
-                    rotate_inv_rescale[:, start_idx : (start_idx + length), start_idx : (start_idx + length)] = rescale_factor
+                    rotate_inv_rescale[
+                        :,
+                        start_idx : (start_idx + length),
+                        start_idx : (start_idx + length),
+                    ] = rescale_factor
                 rotate_inv_rescale = rotate_inv_rescale[:, :, mask_indices]
-                self.register_buffer(f"rotate_inv_rescale_l{l}_m{m}", rotate_inv_rescale)
+                self.register_buffer(
+                    f"rotate_inv_rescale_l{l}_m{m}", rotate_inv_rescale
+                )
 
     def __repr__(self):
         return f"{self.__class__.__name__}(lmax_list={self.lmax_list}, mmax_list={self.mmax_list})"
@@ -327,7 +324,7 @@ class SO3_Grid(torch.nn.Module):
         return self.to_grid_mat
 
     # Compute matrices to transform grid to irreps
-    def get_from_grid_mat(self,device=None):
+    def get_from_grid_mat(self, device=None):
         return self.from_grid_mat
 
     # Compute grid from irreps representation

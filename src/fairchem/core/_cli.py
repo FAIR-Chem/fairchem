@@ -49,7 +49,9 @@ class Runner(Checkpointable):
         self.config["timestamp_id"] = self.trainer.timestamp_id
         if self.trainer.logger is not None:
             self.trainer.logger.mark_preempting()
-        logging.info(f'Checkpointing callback is triggered, checkpoint saved to: {self.config["checkpoint"]}, timestamp_id: {self.config["timestamp_id"]}')
+        logging.info(
+            f'Checkpointing callback is triggered, checkpoint saved to: {self.config["checkpoint"]}, timestamp_id: {self.config["timestamp_id"]}'
+        )
         return DelayedSubmission(new_runner, self.config)
 
 
@@ -57,7 +59,9 @@ def runner_wrapper(config: dict):
     Runner()(config)
 
 
-def main(args: argparse.Namespace | None = None, override_args: list[str] | None = None):
+def main(
+    args: argparse.Namespace | None = None, override_args: list[str] | None = None
+):
     """Run the main fairchem program."""
     setup_logging()
 
@@ -66,7 +70,9 @@ def main(args: argparse.Namespace | None = None, override_args: list[str] | None
         args, override_args = parser.parse_known_args()
 
     # TODO: rename num_gpus -> num_ranks everywhere
-    assert args.num_gpus > 0, "num_gpus is used to determine number ranks, so it must be at least 1"
+    assert (
+        args.num_gpus > 0
+    ), "num_gpus is used to determine number ranks, so it must be at least 1"
     config = build_config(args, override_args)
 
     if args.submit:  # Run on cluster
@@ -98,9 +104,7 @@ def main(args: argparse.Namespace | None = None, override_args: list[str] | None
 
     else:  # Run locally on a single node, n-processes
         if args.num_gpus > 1:
-            logging.info(
-                f"Running in local mode with {args.num_gpus} ranks"
-            )
+            logging.info(f"Running in local mode with {args.num_gpus} ranks")
             # HACK to disable multiprocess dataloading in local mode
             # there is an open issue where LMDB's environment cannot be pickled and used
             # during torch multiprocessing https://github.com/pytorch/examples/issues/526
@@ -119,7 +123,9 @@ def main(args: argparse.Namespace | None = None, override_args: list[str] | None
             )
             elastic_launch(launch_config, runner_wrapper)(config)
         else:
-            logging.info("Running in local mode without elastic launch (single gpu only)")
+            logging.info(
+                "Running in local mode without elastic launch (single gpu only)"
+            )
             os.environ["MASTER_ADDR"] = "localhost"
             os.environ["LOCAL_RANK"] = "0"
             os.environ["RANK"] = "0"
