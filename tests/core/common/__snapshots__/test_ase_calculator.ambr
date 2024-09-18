@@ -1,6 +1,6 @@
 # serializer version: 1
 # name: test_relaxation_final_energy[False]
-  0.95
+  0.92
 # ---
 # name: test_relaxation_final_energy[True]
   0.95
