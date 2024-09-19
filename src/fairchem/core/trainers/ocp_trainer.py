@@ -262,10 +262,8 @@ class OCPTrainer(BaseTrainer):
                     ), f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
                     prop = self.output_targets[target_key]["property"]
                     pred = out[target_key][prop]
-
-            ## TODO: deprecate the following logic?
-            ## Otherwise, assume target property is a derived output of the model. Construct the parent property
-            else:
+            # TODO clean up this logic to reconstruct a tensor from its predicted decomposition
+            elif "decomposition" in self.output_targets[target_key]:
                 _max_rank = 0
                 for subtarget_key in self.output_targets[target_key]["decomposition"]:
                     _max_rank = max(
@@ -292,6 +290,10 @@ class OCPTrainer(BaseTrainer):
                     "ba, cb->ca",
                     cg_change_mat(_max_rank, self.device),
                     pred_irreps,
+                )
+            else:
+                raise AttributeError(
+                    f"Output target: '{target_key}', not found in model outputs: {list(out.keys())}"
                 )
 
             ### not all models are consistent with the output shape
