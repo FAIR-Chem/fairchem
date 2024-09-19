@@ -578,7 +578,7 @@ class BaseTrainer(ABC):
         self,
         checkpoint_path: str,
         checkpoint: dict | None = None,
-        inference_only: bool | None = None,
+        inference_only: bool = False,
     ) -> None:
         map_location = torch.device("cpu") if self.cpu else self.device
         if checkpoint is None:
@@ -590,7 +590,6 @@ class BaseTrainer(ABC):
             checkpoint = torch.load(checkpoint_path, map_location=map_location)
 
         # attributes that are necessary for training and validation
-        inference_only = self.train_dataset is None or inference_only
         if inference_only is False:
             self.epoch = checkpoint.get("epoch", 0)
             self.step = checkpoint.get("step", 0)
@@ -601,6 +600,10 @@ class BaseTrainer(ABC):
                 self.optimizer.load_state_dict(checkpoint["optimizer"])
             if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
                 self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
+        else:
+            logging.info(
+                "Loading checkpoint in inference-only mode, not loading keys associated with trainer state!"
+            )
 
         if "ema" in checkpoint and checkpoint["ema"] is not None:
             self.ema.load_state_dict(checkpoint["ema"])

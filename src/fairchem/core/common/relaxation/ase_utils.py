@@ -230,7 +230,9 @@ class OCPCalculator(Calculator):
                 Path to trained model
         """
         try:
-            self.trainer.load_checkpoint(checkpoint_path, checkpoint)
+            self.trainer.load_checkpoint(
+                checkpoint_path, checkpoint, inference_only=True
+            )
         except NotImplementedError:
             logging.warning("Unable to load checkpoint!")
 
