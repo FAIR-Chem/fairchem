@@ -69,6 +69,11 @@ def main(
         parser: argparse.ArgumentParser = flags.get_parser()
         args, override_args = parser.parse_known_args()
 
+    if args.hydra:
+        from fairchem.core._cli_hydra import main
+
+        main(args, override_args)
+
     # TODO: rename num_gpus -> num_ranks everywhere
     assert (
         args.num_gpus > 0
