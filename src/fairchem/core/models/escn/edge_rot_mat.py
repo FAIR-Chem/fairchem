@@ -52,7 +52,7 @@ def init_edge_rot_mat(edge_distance_vec):
     random_rotated_in_plane_perp_to_norm_x = vec3_rotate_around_axis(
         perp_to_norm_x,
         norm_x,
-        torch.rand((norm_x.shape[0], 1), device=norm_x.device) * math.pi,
+        torch.rand((norm_x.shape[0], 1), device=norm_x.device) * 2 * math.pi,
     )
 
     norm_z = random_rotated_in_plane_perp_to_norm_x / torch.linalg.norm(
