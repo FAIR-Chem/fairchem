@@ -241,7 +241,7 @@ class OCPCalculator(Calculator):
             r_energy=False,
             r_forces=False,
             r_distances=False,
-            r_pbc=self.trainer.model.use_pbc,
+            r_pbc=True,
             r_edges=not self.trainer.model.otf_graph,  # otf graph should not be a property of the model...
         )
         self.implemented_properties = list(self.config["outputs"].keys())
