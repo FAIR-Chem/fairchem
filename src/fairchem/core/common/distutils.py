@@ -220,9 +220,6 @@ def gather_objects(data: T, group: dist.ProcessGroup = dist.group.WORLD) -> list
 
 
 def assign_device_for_local_rank(cpu: bool, local_rank: int):
-    assert (
-        os.environ.get(CURRENT_DEVICE_STR) is None
-    ), "environment variable CURRENT_DEVICE is used for another purpose!"
     if cpu:
         os.environ[CURRENT_DEVICE_STR] = "cpu"
     else:

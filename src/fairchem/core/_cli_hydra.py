@@ -104,7 +104,7 @@ def main(
         )
         job = executor.submit(runner_wrapper, cfg, args)
         logger.info(
-            f"Submitted job id: {timestamp_id}, slurm id: {job}, logs: {log_dir}"
+            f"Submitted job id: {timestamp_id}, slurm id: {job.job_id}, logs: {log_dir}"
         )
     else:
         if args.num_gpus > 1:
