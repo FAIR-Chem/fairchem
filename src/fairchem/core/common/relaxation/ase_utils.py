@@ -55,12 +55,10 @@ def batch_to_atoms(
 
     Args:
         batch: data batch
-        results: dictionary with predicted result tensors. If no results are given,
-            energy and forces are assumed to be included in the batch
+        results: dictionary with predicted result tensors that will be added to a SinglePointCalculator. If no results
+            are given no calculator will be added to the atoms objects.
         wrap_pos: wrap positions back into the cell.
         eps: Small number to prevent slightly negative coordinates from being wrapped.
-
-
 
     Returns:
         list of Atoms
@@ -75,13 +73,6 @@ def batch_to_atoms(
             if len(val) == len(batch)
             else [v.cpu().detach().numpy() for v in torch.split(val, natoms)]
             for key, val in results.items()
-        }
-    else:
-        results = {
-            "energy": batch.energy.view(-1).tolist(),
-            "forces": [
-                v.cpu().detach().numpy() for v in torch.split(batch.forces, natoms)
-            ],
         }
 
     positions = torch.split(batch.pos, natoms)
@@ -105,10 +96,13 @@ def batch_to_atoms(
             constraint=FixAtoms(mask=fixed[idx].tolist()),
             pbc=[True, True, True],
         )
-        calc = SinglePointCalculator(
-            atoms=atoms, **{key: val[idx] for key, val in results.items()}
-        )
-        atoms.set_calculator(calc)
+
+        if results is not None:
+            calc = SinglePointCalculator(
+                atoms=atoms, **{key: val[idx] for key, val in results.items()}
+            )
+            atoms.set_calculator(calc)
+
         atoms_objects.append(atoms)
 
     return atoms_objects
