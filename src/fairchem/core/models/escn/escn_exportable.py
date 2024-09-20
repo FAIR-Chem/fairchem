@@ -79,6 +79,7 @@ class eSCN(nn.Module, GraphModelMixin):
         resolution: int | None = None,
         compile: bool = False,
         export: bool = False,
+        rescale_grid: bool = False,
     ) -> None:
         super().__init__()
 
@@ -103,6 +104,7 @@ class eSCN(nn.Module, GraphModelMixin):
         self.distance_function = distance_function
         self.compile = compile
         self.export = export
+        self.rescale_grid = rescale_grid
 
         # non-linear activation function used throughout the network
         self.act = nn.SiLU()
@@ -152,12 +154,11 @@ class eSCN(nn.Module, GraphModelMixin):
         # Initialize the transformations between spherical and grid representations
         self.SO3_grid = nn.ModuleDict()
         self.SO3_grid["lmax_lmax"] = SO3_Grid(
-            self.lmax, self.lmax, resolution=resolution
+            self.lmax, self.lmax, resolution=resolution, rescale=self.rescale_grid
         )
         self.SO3_grid["lmax_mmax"] = SO3_Grid(
-            self.lmax, self.mmax, resolution=resolution
+            self.lmax, self.mmax, resolution=resolution, rescale=self.rescale_grid
         )
-        self.mappingReduced = CoefficientMapping([self.lmax], [self.mmax])
 
         # Initialize the blocks for each layer of the GNN
         self.layer_blocks = nn.ModuleList()
@@ -173,7 +174,6 @@ class eSCN(nn.Module, GraphModelMixin):
                 self.max_num_elements,
                 self.SO3_grid,
                 self.act,
-                self.mappingReduced,
             )
             self.layer_blocks.append(block)
 
@@ -435,7 +435,6 @@ class LayerBlock(torch.nn.Module):
         max_num_elements: int,
         SO3_grid: SO3_Grid,
         act,
-        mappingReduced,
     ) -> None:
         super().__init__()
         self.layer_idx = layer_idx
@@ -444,7 +443,6 @@ class LayerBlock(torch.nn.Module):
         self.mmax = mmax
         self.sphere_channels = sphere_channels
         self.SO3_grid = SO3_grid
-        self.mappingReduced = mappingReduced
 
         # Message block
         self.message_block = MessageBlock(
@@ -458,7 +456,6 @@ class LayerBlock(torch.nn.Module):
             max_num_elements,
             self.SO3_grid,
             self.act,
-            self.mappingReduced,
         )
 
         # Non-linear point-wise comvolution for the aggregated messages
@@ -547,7 +544,6 @@ class MessageBlock(torch.nn.Module):
         max_num_elements: int,
         SO3_grid: SO3_Grid,
         act,
-        mappingReduced,
     ) -> None:
         super().__init__()
         self.layer_idx = layer_idx
@@ -558,8 +554,9 @@ class MessageBlock(torch.nn.Module):
         self.lmax = lmax
         self.mmax = mmax
         self.edge_channels = edge_channels
-        self.mappingReduced = mappingReduced
-        self.out_mask = self.mappingReduced.coefficient_idx(self.lmax, self.mmax)
+        self.out_mask = CoefficientMapping([self.lmax], [self.lmax]).coefficient_idx(
+            self.lmax, self.mmax
+        )
 
         # Create edge scalar (invariant to rotations) features
         self.edge_block = EdgeBlock(
@@ -577,7 +574,6 @@ class MessageBlock(torch.nn.Module):
             self.lmax,
             self.mmax,
             self.act,
-            self.mappingReduced,
         )
         self.so2_block_target = SO2Block(
             self.sphere_channels,
@@ -586,7 +582,6 @@ class MessageBlock(torch.nn.Module):
             self.lmax,
             self.mmax,
             self.act,
-            self.mappingReduced,
         )
 
     def forward(
@@ -666,7 +661,6 @@ class SO2Block(torch.nn.Module):
         lmax: int,
         mmax: int,
         act,
-        mappingReduced,
     ) -> None:
         super().__init__()
         self.sphere_channels = sphere_channels
@@ -674,7 +668,7 @@ class SO2Block(torch.nn.Module):
         self.lmax = lmax
         self.mmax = mmax
         self.act = act
-        self.mappingReduced = mappingReduced
+        self.mappingReduced = CoefficientMapping([self.lmax], [self.mmax])
 
         num_channels_m0 = (self.lmax + 1) * self.sphere_channels
 
