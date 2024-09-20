@@ -24,10 +24,11 @@ from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
 from fairchem.core.common import distutils
 from fairchem.core.common.flags import flags
-from fairchem.core.common.utils import get_timestamp_uid, setup_imports, setup_logging
+from fairchem.core.common.utils import get_timestamp_uid, setup_env_vars, setup_imports
 from fairchem.core.components.runner import Runner
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class Submitit(Checkpointable):
@@ -36,12 +37,14 @@ class Submitit(Checkpointable):
         self.cli_args = cli_args
         # TODO: setup_imports is not needed if we stop instantiating models with Registry.
         setup_imports()
-        setup_logging()
-
-        distutils.setup(map_cli_args_to_dist_config(cli_args))
-        runner: Runner = hydra.utils.instantiate(dict_config.runner)
-        runner.load_state()
-        runner.run()
+        setup_env_vars()
+        try:
+            distutils.setup(map_cli_args_to_dist_config(cli_args))
+            runner: Runner = hydra.utils.instantiate(dict_config.runner)
+            runner.load_state()
+            runner.run()
+        finally:
+            distutils.cleanup()
 
     def checkpoint(self, *args, **kwargs):
         logging.info("Submitit checkpointing callback is triggered")
