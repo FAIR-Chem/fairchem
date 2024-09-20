@@ -17,18 +17,28 @@ if TYPE_CHECKING:
     import argparse
 
     from omegaconf import DictConfig
-from submitit.helpers import Checkpointable, DelayedSubmission
 
+from submitit import AutoExecutor
+from submitit.helpers import Checkpointable, DelayedSubmission
+from torch.distributed.launcher.api import LaunchConfig, elastic_launch
+
+from fairchem.core.common import distutils
 from fairchem.core.common.flags import flags
-from fairchem.core.common.utils import setup_imports
+from fairchem.core.common.utils import get_timestamp_uid, setup_imports, setup_logging
 from fairchem.core.components.runner import Runner
+
+logger = logging.getLogger(__name__)
 
 
 class Submitit(Checkpointable):
-    def __call__(self, dict_config) -> None:
+    def __call__(self, dict_config: DictConfig, cli_args: argparse.Namespace) -> None:
         self.config = dict_config
-        # TODO: this is not needed if we stop instantiating models with Registry.
+        self.cli_args = cli_args
+        # TODO: setup_imports is not needed if we stop instantiating models with Registry.
         setup_imports()
+        setup_logging()
+
+        distutils.setup(map_cli_args_to_dist_config(cli_args))
         runner: Runner = hydra.utils.instantiate(dict_config.runner)
         runner.load_state()
         runner.run()
@@ -41,6 +51,17 @@ class Submitit(Checkpointable):
         return DelayedSubmission(new_runner, self.config)
 
 
+def map_cli_args_to_dist_config(cli_args: argparse.Namespace) -> dict:
+    return {
+        "world_size": cli_args.num_nodes * cli_args.num_gpus,
+        "distributed_backend": "gloo" if cli_args.cpu else "nccl",
+        "submit": cli_args.submit,
+        "summit": None,
+        "cpu": cli_args.cpu,
+        "use_cuda_visibile_devices": True,
+    }
+
+
 def get_hydra_config_from_yaml(
     config_yml: str, overrides_args: list[str]
 ) -> DictConfig:
@@ -49,8 +70,11 @@ def get_hydra_config_from_yaml(
     config_directory = os.path.dirname(os.path.abspath(config_yml))
     config_name = os.path.basename(config_yml)
     hydra.initialize_config_dir(config_directory)
-    # cfg = omegaconf.OmegaConf.load(args.config_yml)
     return hydra.compose(config_name=config_name, overrides=overrides_args)
+
+
+def runner_wrapper(config: DictConfig, cli_args: argparse.Namespace):
+    Submitit()(config, cli_args)
 
 
 # this is meant as a future replacement for the main entrypoint
@@ -62,6 +86,38 @@ def main(
         args, override_args = parser.parse_known_args()
 
     cfg = get_hydra_config_from_yaml(args.config_yml, override_args)
-    srunner = Submitit()
-    logging.info("Running in local mode without elastic launch (single gpu only)")
-    srunner(cfg)
+    timestamp_id = get_timestamp_uid()
+    log_dir = os.path.join(args.run_dir, timestamp_id, "logs")
+    if args.submit:  # Run on cluster
+        executor = AutoExecutor(folder=log_dir, slurm_max_num_timeout=3)
+        executor.update_parameters(
+            name=args.identifier,
+            mem_gb=args.slurm_mem,
+            timeout_min=args.slurm_timeout * 60,
+            slurm_partition=args.slurm_partition,
+            gpus_per_node=args.num_gpus,
+            cpus_per_task=8,
+            tasks_per_node=args.num_gpus,
+            nodes=args.num_nodes,
+            slurm_qos=args.slurm_qos,
+            slurm_account=args.slurm_account,
+        )
+        job = executor.submit(runner_wrapper, cfg, args)
+        logger.info(
+            f"Submitted job id: {timestamp_id}, slurm id: {job}, logs: {log_dir}"
+        )
+    else:
+        if args.num_gpus > 1:
+            logger.info(f"Running in local mode with {args.num_gpus} ranks")
+            launch_config = LaunchConfig(
+                min_nodes=1,
+                max_nodes=1,
+                nproc_per_node=args.num_gpus,
+                rdzv_backend="c10d",
+                max_restarts=0,
+            )
+            elastic_launch(launch_config, runner_wrapper)(cfg, args)
+        else:
+            logger.info("Running in local mode without elastic launch")
+            distutils.setup_env_local()
+            runner_wrapper(cfg, args)
