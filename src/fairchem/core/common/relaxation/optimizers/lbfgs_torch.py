@@ -26,9 +26,9 @@ class LBFGS:
     def __init__(
         self,
         optimizable_batch: OptimizableBatch,
-        maxstep: float = 0.01,
+        maxstep: float = 0.02,
         memory: int = 100,
-        damping: float = 0.25,
+        damping: float = 1.2,
         alpha: float = 100.0,
         device: str = "cuda:0",
         save_full_traj: bool = True,
