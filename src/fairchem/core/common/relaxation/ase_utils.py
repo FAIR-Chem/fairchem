@@ -36,6 +36,8 @@ from fairchem.core.models.model_registry import model_name_to_local_file
 from fairchem.core.preprocessing import AtomsToGraphs
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from torch_geometric.data import Batch
 
 
@@ -116,7 +118,7 @@ class OCPCalculator(Calculator):
     def __init__(
         self,
         config_yml: str | None = None,
-        checkpoint_path: str | None = None,
+        checkpoint_path: str | Path | None = None,
         model_name: str | None = None,
         local_cache: str | None = None,
         trainer: str | None = None,
@@ -204,7 +206,7 @@ class OCPCalculator(Calculator):
         config = update_config(config)
 
         self.config = copy.deepcopy(config)
-        self.config["checkpoint"] = checkpoint_path
+        self.config["checkpoint"] = str(checkpoint_path)
         del config["dataset"]["src"]
 
         self.trainer = registry.get_trainer_class(config["trainer"])(
