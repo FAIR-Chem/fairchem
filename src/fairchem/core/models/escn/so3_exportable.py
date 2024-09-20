@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import os
 
 import torch
 
@@ -11,16 +10,6 @@ try:
 except ImportError:
     pass
 
-# Borrowed from e3nn @ 0.4.0:
-# https://github.com/e3nn/e3nn/blob/0.4.0/e3nn/o3/_wigner.py#L10
-# _Jd is a list of tensors of shape (2l+1, 2l+1)
-__Jd = torch.load(os.path.join(os.path.dirname(__file__), "Jd.pt"))
-
-
-@torch.compiler.assume_constant_result
-def get_jd() -> torch.Tensor:
-    return __Jd
-
 
 # Borrowed from e3nn @ 0.4.0:
 # https://github.com/e3nn/e3nn/blob/0.4.0/e3nn/o3/_wigner.py#L37
@@ -28,15 +17,14 @@ def get_jd() -> torch.Tensor:
 # In 0.5.0, e3nn shifted to torch.matrix_exp which is significantly slower:
 # https://github.com/e3nn/e3nn/blob/0.5.0/e3nn/o3/_wigner.py#L92
 def wigner_D(
-    lv: int, alpha: torch.Tensor, beta: torch.Tensor, gamma: torch.Tensor
+    lv: int,
+    alpha: torch.Tensor,
+    beta: torch.Tensor,
+    gamma: torch.Tensor,
+    _Jd: list[torch.Tensor],
 ) -> torch.Tensor:
-    _Jd = get_jd()
-    assert (
-        lv < len(_Jd)
-    ), f"wigner D maximum l implemented is {len(_Jd) - 1}, send us an email to ask for more"
-
     alpha, beta, gamma = torch.broadcast_tensors(alpha, beta, gamma)
-    J = _Jd[lv].to(dtype=alpha.dtype, device=alpha.device)
+    J = _Jd[lv]
     Xa = _z_rot_mat(alpha, lv)
     Xb = _z_rot_mat(beta, lv)
     Xc = _z_rot_mat(gamma, lv)
@@ -44,18 +32,31 @@ def wigner_D(
 
 
 def _z_rot_mat(angle: torch.Tensor, lv: int) -> torch.Tensor:
-    shape, device, dtype = angle.shape, angle.device, angle.dtype
-    M = angle.new_zeros((*shape, 2 * lv + 1, 2 * lv + 1))
-    inds = torch.arange(0, 2 * lv + 1, 1, device=device)
-    reversed_inds = torch.arange(2 * lv, -1, -1, device=device)
-    frequencies = torch.arange(lv, -lv - 1, -1, dtype=dtype, device=device)
-    M[..., inds, reversed_inds] = torch.sin(frequencies * angle[..., None])
-    M[..., inds, inds] = torch.cos(frequencies * angle[..., None])
+    M = angle.new_zeros((*angle.shape, 2 * lv + 1, 2 * lv + 1))
+
+    # The following code needs to replaced for a for loop because
+    # torch.export barfs on outer product like operations
+    # ie: torch.outer(frequences, angle) (same as frequencies * angle[..., None])
+    # will place a non-sense Guard on the dimensions of angle when attempting to export setting
+    # angle (edge dimensions) as dynamic. This may be fixed in torch2.4.
+
+    # inds = torch.arange(0, 2 * lv + 1, 1, device=device)
+    # reversed_inds = torch.arange(2 * lv, -1, -1, device=device)
+    # frequencies = torch.arange(lv, -lv - 1, -1, dtype=dtype, device=device)
+    # M[..., inds, reversed_inds] = torch.sin(frequencies * angle[..., None])
+    # M[..., inds, inds] = torch.cos(frequencies * angle[..., None])
+
+    inds = list(range(0, 2 * lv + 1, 1))
+    reversed_inds = list(range(2 * lv, -1, -1))
+    frequencies = list(range(lv, -lv - 1, -1))
+    for i in range(len(frequencies)):
+        M[..., inds[i], reversed_inds[i]] = torch.sin(frequencies[i] * angle)
+        M[..., inds[i], inds[i]] = torch.cos(frequencies[i] * angle)
     return M
 
 
 def rotation_to_wigner(
-    edge_rot_mat: torch.Tensor, start_lmax: int, end_lmax: int
+    edge_rot_mat: torch.Tensor, start_lmax: int, end_lmax: int, Jd: list[torch.Tensor]
 ) -> torch.Tensor:
     x = edge_rot_mat @ edge_rot_mat.new_tensor([0.0, 1.0, 0.0])
     alpha, beta = o3.xyz_to_angles(x)
@@ -69,7 +70,7 @@ def rotation_to_wigner(
     wigner = torch.zeros(len(alpha), size, size, device=edge_rot_mat.device)
     start = 0
     for lmax in range(start_lmax, end_lmax + 1):
-        block = wigner_D(lmax, alpha, beta, gamma)
+        block = wigner_D(lmax, alpha, beta, gamma, Jd)
         end = start + block.size()[1]
         wigner[:, start:end, start:end] = block
         start = end
