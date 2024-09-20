@@ -257,7 +257,9 @@ class OCPCalculator(Calculator):
                 A pretrained checkpoint dict
         """
         try:
-            self.trainer.load_checkpoint(checkpoint_path, checkpoint)
+            self.trainer.load_checkpoint(
+                checkpoint_path, checkpoint, inference_only=True
+            )
         except NotImplementedError:
             logging.warning("Unable to load checkpoint!")
 
