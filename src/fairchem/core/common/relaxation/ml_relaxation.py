@@ -30,7 +30,7 @@ def ml_relax(
     model: BaseTrainer,
     steps: int,
     fmax: float,
-    relax_opt: dict[str],
+    relax_opt: dict[str] | None = None,
     relax_cell: bool = False,
     relax_volume: bool = False,
     save_full_traj: bool = True,
@@ -55,6 +55,7 @@ def ml_relax(
                 above threshold, ie. once masked always masked. Note if this is used make sure to check convergence with
                 the same fmax always
     """
+    relax_opt = relax_opt or {}
     # if not pbc is set, ignore it when comparing batches
     if not hasattr(batch, "pbc"):
         OptimizableBatch.ignored_changes = {"pbc"}
