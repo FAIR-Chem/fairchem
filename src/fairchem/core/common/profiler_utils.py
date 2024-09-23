@@ -10,6 +10,7 @@ from fairchem.core.common import distutils
 if TYPE_CHECKING:
     from fairchem.core.common.logger import Logger
 
+
 def get_default_profiler_handler(run_id: str, output_dir: str, logger: Logger):
     """Get a standard callback handle for the pytorch profiler"""
 
@@ -20,8 +21,12 @@ def get_default_profiler_handler(run_id: str, output_dir: str, logger: Logger):
             print(f"Saving trace in {output_path}")
             p.export_chrome_trace(output_path)
             if logger:
-                logger.log_artifact(name=trace_name, type="profile", file_location=output_path)
+                logger.log_artifact(
+                    name=trace_name, type="profile", file_location=output_path
+                )
+
     return trace_handler
+
 
 def get_profile_schedule(wait: int = 5, warmup: int = 5, active: int = 2):
     """Get a profile schedule and total number of steps to run
