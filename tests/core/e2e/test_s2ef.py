@@ -316,6 +316,52 @@ class TestSmoke:
             num_workers=0,
         )
 
+    # test that both escn and equiv2 run with activation checkpointing
+    @pytest.mark.parametrize(
+        ("model_name"),
+        [
+            ("escn_hydra"),
+            ("equiformer_v2_hydra"),
+        ],
+    )
+    def test_train_and_predict_with_checkpointing(
+        self,
+        model_name,
+        configs,
+        tutorial_val_src,
+    ):
+        with tempfile.TemporaryDirectory() as tempdirname:
+            # first train a very simple model, checkpoint
+            train_rundir = Path(tempdirname) / "train"
+            train_rundir.mkdir()
+            checkpoint_path = str(train_rundir / "checkpoint.pt")
+            training_predictions_filename = str(train_rundir / "train_predictions.npz")
+            update_dict = {
+                "optim": {
+                    "max_epochs": 2,
+                    "eval_every": 8,
+                    "batch_size": 5,
+                    "num_workers": 1,
+                },
+                "dataset": oc20_lmdb_train_and_val_from_paths(
+                    train_src=str(tutorial_val_src),
+                    val_src=str(tutorial_val_src),
+                    test_src=str(tutorial_val_src),
+                ),
+            }
+            if "hydra" in model_name:
+                update_dict["model"] = {"backbone": {"activation_checkpoint": True}}
+            else:
+                update_dict["model"] = {"activation_checkpoint": True}
+            acc = _run_main(
+                rundir=str(train_rundir),
+                input_yaml=configs[model_name],
+                update_dict_with=update_dict,
+                save_checkpoint_to=checkpoint_path,
+                save_predictions_to=training_predictions_filename,
+                world_size=1,
+            )
+
     def test_use_pbc_single(self, configs, tutorial_val_src, torch_deterministic):
         with tempfile.TemporaryDirectory() as tempdirname:
             tempdir = Path(tempdirname)
