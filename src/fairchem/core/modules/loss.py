@@ -4,6 +4,7 @@ import logging
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 from fairchem.core.common import distutils
 
@@ -47,6 +48,18 @@ class AtomwiseL2Loss(nn.Module):
         elif self.reduction == "sum":
             return torch.sum(loss)
         return None
+
+class SymmetricMAELoss(nn.Module):
+    def __init__(self, reduction: str = "mean") -> None:
+        super().__init__()
+        self.reduction = reduction
+        assert reduction in ["mean", "sum"]
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor):
+        input = torch.triu(input)
+        target = torch.triu(target)
+        dists = F.l1_loss(input, target, reduction=self.reduction)
+        return dists
 
 
 class DDPLoss(nn.Module):
