@@ -67,7 +67,7 @@ def batch_to_atoms(batch):
 
 
 class OCPCalculator(Calculator):
-    implemented_properties: ClassVar[list[str]] = ["energy", "forces"]
+    implemented_properties: ClassVar[list[str]] = ["energy", "forces", "stress", "free_energy"]
 
     def __init__(
         self,
@@ -235,8 +235,12 @@ class OCPCalculator(Calculator):
         batch = data_list_collater([data_object], otf_graph=True)
 
         predictions = self.trainer.predict(batch, per_image=False, disable_tqdm=True)
+        predictions["energy"] *= len(atoms)
+        predictions["free_energy"] = predictions["energy"]
 
         for key in predictions:
             _pred = predictions[key]
             _pred = _pred.item() if _pred.numel() == 1 else _pred.cpu().numpy()
+            if key == "stress":
+                _pred = _pred.reshape(3, 3)
             self.results[key] = _pred

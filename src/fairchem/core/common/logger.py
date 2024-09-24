@@ -17,8 +17,6 @@ from torch.utils.tensorboard import SummaryWriter
 
 from fairchem.core.common.registry import registry
 
-wandb.require("core")
-
 
 class Logger(ABC):
     """Generic class to interface with various logging modules, e.g. wandb,
