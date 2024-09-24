@@ -315,19 +315,6 @@ def cosine_similarity(
         "numel": error.numel(),
     }
 
-def symm_mae(
-    prediction: dict[str, torch.Tensor],
-    target: dict[str, torch.Tensor],
-    key: Hashable = NONE,
-) -> dict[str, float | int]:
-    error = torch.abs(torch.triu(target[key]) - torch.triu(prediction[key]))
-    return {
-        "metric": torch.mean(error).item(),
-        "total": torch.sum(error).item(),
-        "numel": error.numel(),
-    }
-
-
 def mae(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],

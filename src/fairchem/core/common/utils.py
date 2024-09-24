@@ -40,7 +40,7 @@ from torch_scatter import scatter, segment_coo, segment_csr
 
 import fairchem.core
 from fairchem.core.common.registry import registry
-from fairchem.core.modules.loss import AtomwiseL2Loss, L2MAELoss, SymmetricMAELoss
+from fairchem.core.modules.loss import AtomwiseL2Loss, L2MAELoss
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -1448,8 +1448,6 @@ def get_loss_module(loss_name):
         loss_fn = L2MAELoss()
     elif loss_name == "atomwisel2":
         loss_fn = AtomwiseL2Loss()
-    elif loss_name == "symm_mae":
-        loss_fn = SymmetricMAELoss()
     else:
         raise NotImplementedError(f"Unknown loss function name: {loss_name}")
 
