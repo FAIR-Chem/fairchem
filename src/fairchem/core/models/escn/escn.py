@@ -88,6 +88,7 @@ class eSCN(nn.Module, GraphModelMixin):
         distance_resolution: float = 0.02,
         show_timing_info: bool = False,
         resolution: int | None = None,
+        m0_spread: float = 0.0,
     ) -> None:
         if mmax_list is None:
             mmax_list = [2]
@@ -195,6 +196,7 @@ class eSCN(nn.Module, GraphModelMixin):
                 self.max_num_elements,
                 self.SO3_grid,
                 self.act,
+                m0_spread=m0_spread if i == 0 else 0.0,
             )
             self.layer_blocks.append(block)
 
@@ -607,6 +609,7 @@ class LayerBlock(torch.nn.Module):
         max_num_elements: int,
         SO3_grid: SO3_Grid,
         act,
+        m0_spread,
     ) -> None:
         super().__init__()
         self.layer_idx = layer_idx
@@ -630,6 +633,7 @@ class LayerBlock(torch.nn.Module):
             max_num_elements,
             self.SO3_grid,
             self.act,
+            m0_spread,
         )
 
         # Non-linear point-wise comvolution for the aggregated messages
@@ -713,6 +717,7 @@ class MessageBlock(torch.nn.Module):
         max_num_elements: int,
         SO3_grid: SO3_Grid,
         act,
+        m0_spread,
     ) -> None:
         super().__init__()
         self.layer_idx = layer_idx
@@ -734,22 +739,42 @@ class MessageBlock(torch.nn.Module):
         )
 
         # Create SO(2) convolution blocks
-        self.so2_block_source = SO2Block(
-            self.sphere_channels,
-            self.hidden_channels,
-            self.edge_channels,
-            self.lmax_list,
-            self.mmax_list,
-            self.act,
-        )
-        self.so2_block_target = SO2Block(
-            self.sphere_channels,
-            self.hidden_channels,
-            self.edge_channels,
-            self.lmax_list,
-            self.mmax_list,
-            self.act,
-        )
+        if m0_spread > 0.0:
+            self.so2_block_source = SO2Block_m0(
+                self.sphere_channels,
+                self.hidden_channels,
+                self.edge_channels,
+                self.lmax_list,
+                self.mmax_list,
+                self.act,
+                m0_spread=m0_spread,
+            )
+            self.so2_block_target = SO2Block_m0(
+                self.sphere_channels,
+                self.hidden_channels,
+                self.edge_channels,
+                self.lmax_list,
+                self.mmax_list,
+                self.act,
+                m0_spread=m0_spread,
+            )
+        else:
+            self.so2_block_source = SO2Block(
+                self.sphere_channels,
+                self.hidden_channels,
+                self.edge_channels,
+                self.lmax_list,
+                self.mmax_list,
+                self.act,
+            )
+            self.so2_block_target = SO2Block(
+                self.sphere_channels,
+                self.hidden_channels,
+                self.edge_channels,
+                self.lmax_list,
+                self.mmax_list,
+                self.act,
+            )
 
     def forward(
         self,
@@ -867,7 +892,6 @@ class SO2Block(torch.nn.Module):
         x._m_primary(mappingReduced)
 
         # Compute m=0 coefficients separately since they only have real values (no imaginary)
-
         # Compute edge scalar features for m=0
         x_edge_0 = self.act(self.fc1_dist0(x_edge))
 
@@ -897,6 +921,80 @@ class SO2Block(torch.nn.Module):
 
             offset = offset + 2 * mappingReduced.m_size[m]
 
+        # Reshape the spherical harmonics based on l (degree)
+        x._l_primary(mappingReduced)
+
+        return x
+
+
+class SO2Block_m0(torch.nn.Module):
+    """
+    SO(2) Block: Perform SO(2) convolutions for all m (orders)
+
+    Args:
+        sphere_channels (int):      Number of spherical channels
+        hidden_channels (int):      Number of hidden channels used during the SO(2) conv
+        edge_channels (int):        Size of invariant edge embedding
+        lmax_list (list:int):       List of degrees (l) for each resolution
+        mmax_list (list:int):       List of orders (m) for each resolution
+        act (function):             Non-linear activation function
+    """
+
+    def __init__(
+        self,
+        sphere_channels: int,
+        hidden_channels: int,
+        edge_channels: int,
+        lmax_list: list[int],
+        mmax_list: list[int],
+        act,
+        m0_spread,
+    ) -> None:
+        super().__init__()
+        self.sphere_channels = sphere_channels
+        self.hidden_channels = hidden_channels
+        self.lmax_list = lmax_list
+        self.mmax_list = mmax_list
+        self.num_resolutions: int = len(lmax_list)
+        self.act = act
+
+        num_channels_m0 = 0
+        for i in range(self.num_resolutions):
+            num_coefficents = self.lmax_list[i] + 1
+            num_channels_m0 = num_channels_m0 + num_coefficents * self.sphere_channels
+
+        # SO(2) convolution for m=0
+        self.fc1_dist0 = nn.Linear(edge_channels, num_channels_m0)
+        # self.fc1_spread = nn.Linear(num_channels_m0, num_channels_m0, bias=False)
+        # self.fc1_spread.weight.data.fill_(0)
+        # breakpoint()
+        # m0_spread / num_channels_m0)
+        self.m0_spread = m0_spread
+
+    def forward(
+        self,
+        x,
+        x_edge,
+        mappingReduced,
+    ):
+        num_edges = len(x_edge)
+
+        # Reshape the spherical harmonics based on m (order)
+        x._m_primary(mappingReduced)
+
+        # Compute m=0 coefficients separately since they only have real values (no imaginary)
+        # Compute edge scalar features for m=0
+        x_edge_0 = self.act(self.fc1_dist0(x_edge))
+
+        x_0 = x.embedding[:, 0 : mappingReduced.m_size[0]].contiguous()
+        x_0[:, 1:] += self.m0_spread * x_0[:, [0]] / mappingReduced.m_size[0]
+        x_0 = x_0.view(num_edges, -1)
+
+        x_0 *= self.m0_spread + x_edge_0  # try to pass through the values
+        # Update the m=0 coefficients
+        x_0 = x_0.view(num_edges, -1, x.num_channels)
+
+        x.embedding[:, 0 : mappingReduced.m_size[0]] = x_0
         # Reshape the spherical harmonics based on l (degree)
         x._l_primary(mappingReduced)
 
