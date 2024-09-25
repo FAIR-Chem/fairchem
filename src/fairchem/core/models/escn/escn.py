@@ -89,6 +89,8 @@ class eSCN(nn.Module, GraphModelMixin):
         show_timing_info: bool = False,
         resolution: int | None = None,
         m0_spread: float = 0.0,
+        m0_bias: bool = False,
+        edge_multiply: bool = True,
     ) -> None:
         if mmax_list is None:
             mmax_list = [2]
@@ -197,6 +199,8 @@ class eSCN(nn.Module, GraphModelMixin):
                 self.SO3_grid,
                 self.act,
                 m0_spread=m0_spread if i == 0 else 0.0,
+                edge_multiply=edge_multiply,
+                m0_bias=m0_bias,
             )
             self.layer_blocks.append(block)
 
@@ -610,6 +614,8 @@ class LayerBlock(torch.nn.Module):
         SO3_grid: SO3_Grid,
         act,
         m0_spread,
+        edge_multiply,
+        m0_bias,
     ) -> None:
         super().__init__()
         self.layer_idx = layer_idx
@@ -634,6 +640,8 @@ class LayerBlock(torch.nn.Module):
             self.SO3_grid,
             self.act,
             m0_spread,
+            edge_multiply=edge_multiply,
+            m0_bias=m0_bias,
         )
 
         # Non-linear point-wise comvolution for the aggregated messages
@@ -718,6 +726,8 @@ class MessageBlock(torch.nn.Module):
         SO3_grid: SO3_Grid,
         act,
         m0_spread,
+        edge_multiply,
+        m0_bias,
     ) -> None:
         super().__init__()
         self.layer_idx = layer_idx
@@ -766,6 +776,8 @@ class MessageBlock(torch.nn.Module):
                 self.lmax_list,
                 self.mmax_list,
                 self.act,
+                edge_multiply=edge_multiply,
+                m0_bias=m0_bias,
             )
             self.so2_block_target = SO2Block(
                 self.sphere_channels,
@@ -774,6 +786,8 @@ class MessageBlock(torch.nn.Module):
                 self.lmax_list,
                 self.mmax_list,
                 self.act,
+                edge_multiply=edge_multiply,
+                m0_bias=m0_bias,
             )
 
     def forward(
@@ -847,6 +861,8 @@ class SO2Block(torch.nn.Module):
         lmax_list: list[int],
         mmax_list: list[int],
         act,
+        edge_multiply,
+        m0_bias,
     ) -> None:
         super().__init__()
         self.sphere_channels = sphere_channels
@@ -855,6 +871,7 @@ class SO2Block(torch.nn.Module):
         self.mmax_list = mmax_list
         self.num_resolutions: int = len(lmax_list)
         self.act = act
+        self.edge_multiply = edge_multiply
 
         num_channels_m0 = 0
         for i in range(self.num_resolutions):
@@ -863,8 +880,8 @@ class SO2Block(torch.nn.Module):
 
         # SO(2) convolution for m=0
         self.fc1_dist0 = nn.Linear(edge_channels, self.hidden_channels)
-        self.fc1_m0 = nn.Linear(num_channels_m0, self.hidden_channels, bias=False)
-        self.fc2_m0 = nn.Linear(self.hidden_channels, num_channels_m0, bias=False)
+        self.fc1_m0 = nn.Linear(num_channels_m0, self.hidden_channels, bias=m0_bias)
+        self.fc2_m0 = nn.Linear(self.hidden_channels, num_channels_m0, bias=m0_bias)
 
         # SO(2) convolution for non-zero m
         self.so2_conv = nn.ModuleList()
@@ -899,7 +916,11 @@ class SO2Block(torch.nn.Module):
         x_0 = x_0.view(num_edges, -1)
 
         x_0 = self.fc1_m0(x_0)
-        x_0 = x_0 * x_edge_0
+        if self.edge_multiply:
+            x_0 = x_0 * x_edge_0
+        else:
+            x_0 = x_0 + x_edge_0
+        breakpoint()
         x_0 = self.fc2_m0(x_0)
         x_0 = x_0.view(num_edges, -1, x.num_channels)
 
