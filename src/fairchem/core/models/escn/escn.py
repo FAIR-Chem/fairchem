@@ -920,7 +920,6 @@ class SO2Block(torch.nn.Module):
             x_0 = x_0 * x_edge_0
         else:
             x_0 = x_0 + x_edge_0
-        breakpoint()
         x_0 = self.fc2_m0(x_0)
         x_0 = x_0.view(num_edges, -1, x.num_channels)
 
