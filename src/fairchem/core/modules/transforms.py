@@ -35,8 +35,9 @@ class DataTransforms:
 
         return data_object
 
-def prepend_dim(data_object, config) -> Data:
-    data_object[config] = torch.unsqueeze(data_object[config], 0)
+def convert_stress(data_object, config) -> Data:
+    data_object.stress = torch.unsqueeze(data_object.stress, 0)
+    data_object.stress *= 0.0062415091258833
     return data_object
     
 def shift_energy(data_object, config) -> Data:
