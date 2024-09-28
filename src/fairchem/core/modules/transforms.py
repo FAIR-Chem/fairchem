@@ -34,6 +34,10 @@ class DataTransforms:
             data_object = eval(transform_fn)(data_object, self.config[transform_fn])
 
         return data_object
+
+def prepend_dim(data_object, config) -> Data:
+    data_object[config] = torch.unsqueeze(data_object[config], 0)
+    return data_object
     
 def shift_energy(data_object, config) -> Data:
     data_object.energy = data_object.energy - config
