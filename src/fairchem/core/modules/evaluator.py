@@ -315,7 +315,6 @@ def cosine_similarity(
         "numel": error.numel(),
     }
 
-
 def mae(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
