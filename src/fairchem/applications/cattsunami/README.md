@@ -28,7 +28,6 @@ The validation dataset is comprised of 932 converged DFT NEB calculations to ass
 |Splits |Size of compressed version (in bytes)  |Size of uncompressed version (in bytes)    | MD5 checksum (download link)   |
 |---    |---    |---    |---    |
 |ASE Converged Trajectories   |1.5G  |6.3G   | [52af34a93758c82fae951e52af445089](https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20neb/oc20neb_dft_trajectories_04_23_24.tar.gz)   |
-
 |ASE All Trajectories         |6.7G  |30G    | [f5829eeaf7219c5cd3cfb499b8d951da](https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20neb/all_dft_neb_trajs.tar.gz) |
 
 ## Citing this work
