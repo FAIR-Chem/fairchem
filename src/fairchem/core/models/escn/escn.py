@@ -38,6 +38,8 @@ from fairchem.core.models.scn.smearing import (
 with contextlib.suppress(ImportError):
     from e3nn import o3
 
+debug = False
+
 
 @registry.register_model("escn")
 class eSCN(nn.Module, GraphModelMixin):
@@ -91,6 +93,7 @@ class eSCN(nn.Module, GraphModelMixin):
         m0_spread: float = 0.0,
         m0_bias: bool = False,
         edge_multiply: bool = True,
+        so2norm: bool = False,
     ) -> None:
         if mmax_list is None:
             mmax_list = [2]
@@ -201,6 +204,7 @@ class eSCN(nn.Module, GraphModelMixin):
                 m0_spread=m0_spread if i == 0 else 0.0,
                 edge_multiply=edge_multiply,
                 m0_bias=m0_bias,
+                so2norm=so2norm,
             )
             self.layer_blocks.append(block)
 
@@ -232,6 +236,8 @@ class eSCN(nn.Module, GraphModelMixin):
                 )
             )
         self.sphharm_weights = nn.ParameterList(sphharm_weights)
+
+        self.so2stats = SO2Stats(self.lmax_list[0])
 
     @conditional_grad(torch.enable_grad())
     def forward(self, data):
@@ -279,9 +285,11 @@ class eSCN(nn.Module, GraphModelMixin):
         offset = 0
         # Initialize the l=0,m=0 coefficients for each resolution
         for i in range(self.num_resolutions):
-            x.embedding[:, offset_res, :] = self.sphere_embedding(atomic_numbers)[
-                :, offset : offset + self.sphere_channels
-            ]
+            x.embedding[:, offset_res, :] = torch.nn.functional.sigmoid(
+                self.sphere_embedding(atomic_numbers)[
+                    :, offset : offset + self.sphere_channels
+                ]
+            )
             offset = offset + self.sphere_channels
             offset_res = offset_res + int((self.lmax_list[i] + 1) ** 2)
 
@@ -293,6 +301,8 @@ class eSCN(nn.Module, GraphModelMixin):
         ###############################################################
 
         for i in range(self.num_layers):
+            if debug:
+                print("LAYER", i)
             if i > 0:
                 x_message = self.layer_blocks[i](
                     x,
@@ -471,6 +481,7 @@ class eSCNBackbone(eSCN, BackboneInterface):
 
         offset_res = 0
         offset = 0
+
         # Initialize the l=0,m=0 coefficients for each resolution
         for i in range(self.num_resolutions):
             x.embedding[:, offset_res, :] = self.sphere_embedding(atomic_numbers)[
@@ -485,7 +496,8 @@ class eSCNBackbone(eSCN, BackboneInterface):
         ###############################################################
         # Update spherical node embeddings
         ###############################################################
-
+        if debug:
+            self.so2stats(x)
         for i in range(self.num_layers):
             if i > 0:
                 x_message = self.layer_blocks[i](
@@ -510,9 +522,13 @@ class eSCNBackbone(eSCN, BackboneInterface):
                     self.SO3_edge_rot,
                     mappingReduced,
                 )
+            if debug:
+                self.sphere_points_from_x(x)
+                self.so2stats(x)
 
         # Sample the spherical channels (node embeddings) at evenly distributed points on the sphere.
         # These values are fed into the output blocks.
+
         x_pt = torch.tensor([], device=device)
         offset = 0
         # Compute the embedding values at every sampled point on the sphere
@@ -532,13 +548,40 @@ class eSCNBackbone(eSCN, BackboneInterface):
             offset = offset + num_coefficients
 
         x_pt = x_pt.view(-1, self.sphere_channels_all)
-
         return {
             "sphere_values": x_pt,
             "sphere_points": self.sphere_points,
             "node_embedding": x,
             "graph": graph,
         }
+
+    def sphere_points_from_x(self, x):
+        # Sample the spherical channels (node embeddings) at evenly distributed points on the sphere.
+        # These values are fed into the output blocks.
+        # x_pt = torch.tensor([], device=x.embedding.device)
+        offset = 0
+        # Compute the embedding values at every sampled point on the sphere
+        x_pts = []
+        for i in range(x.lmax_list[0]):
+            num_coefficients = 2 * i + 1
+            x_pts.append(
+                torch.einsum(
+                    "abc, pb->apc",
+                    x.embedding[:, offset : offset + num_coefficients],
+                    self.sphharm_weights[0][:, offset : offset + num_coefficients],
+                ).contiguous()
+            )
+
+            print(
+                f"\tSphere points l={i}: u {x_pts[-1].mean().item():0.3e} o^2 {x_pts[-1].var().item():0.3e}"
+            )
+            offset = offset + num_coefficients
+        x_pt = torch.cat(x_pts, dim=2)
+        x_pt = x_pt.view(-1, self.sphere_channels_all)
+        print(
+            f"\tSphere points: u {x_pt.mean().item():0.3e} o^2 {x_pt.var().item():0.3e}"
+        )
+        return x_pt
 
 
 @registry.register_model("escn_energy_head")
@@ -558,9 +601,12 @@ class eSCNEnergyHead(nn.Module, HeadInterface):
         node_energy = self.energy_block(emb["sphere_values"])
         energy = torch.zeros(len(data.natoms), device=data.pos.device)
         energy.index_add_(0, data.batch, node_energy.view(-1))
+
         if self.reduce == "sum":
             # Scale energy to help balance numerical precision w.r.t. forces
-            return {"energy": energy * 0.001}
+            r = {"energy": energy * 0.001}
+
+            return r
         elif self.reduce == "mean":
             return {"energy": energy / data.natoms}
         else:
@@ -616,6 +662,7 @@ class LayerBlock(torch.nn.Module):
         m0_spread,
         edge_multiply,
         m0_bias,
+        so2norm,
     ) -> None:
         super().__init__()
         self.layer_idx = layer_idx
@@ -642,6 +689,7 @@ class LayerBlock(torch.nn.Module):
             m0_spread,
             edge_multiply=edge_multiply,
             m0_bias=m0_bias,
+            so2norm=so2norm,
         )
 
         # Non-linear point-wise comvolution for the aggregated messages
@@ -728,6 +776,7 @@ class MessageBlock(torch.nn.Module):
         m0_spread,
         edge_multiply,
         m0_bias,
+        so2norm,
     ) -> None:
         super().__init__()
         self.layer_idx = layer_idx
@@ -789,6 +838,11 @@ class MessageBlock(torch.nn.Module):
                 edge_multiply=edge_multiply,
                 m0_bias=m0_bias,
             )
+        self.norm = None
+        if so2norm and m0_spread == 0.0:
+            self.norm = SO2Norm(lmax=self.lmax_list[0], channels=self.sphere_channels)
+
+        # self.so2stats = SO2Stats(lmax=self.lmax_list[0])
 
     def forward(
         self,
@@ -837,7 +891,103 @@ class MessageBlock(torch.nn.Module):
         # Compute the sum of the incoming neighboring messages for each target node
         x_target._reduce_edge(edge_index[1], len(x.embedding))
 
+        if self.norm is not None:
+            x_target = self.norm(x_target)
+        # self.so2stats(x_target)
         return x_target
+
+
+class SO2Stats(torch.nn.Module):
+    def __init__(self, lmax):
+        super().__init__()
+        self.lmax = lmax
+
+    def forward(self, x):
+        offset = 0
+        for l in range(self.lmax):
+            mag = (
+                (x.embedding[:, offset : offset + 2 * l + 1].detach() ** 2)
+                .sum(axis=1)
+                .sqrt()
+            )
+
+            mag_u = mag.mean(axis=1, keepdim=True)  # mean for this l, across channels
+            mag_var = mag.var(axis=1, keepdim=True)  # var for this l, across channels
+
+            print(
+                f"\tSO2 stats: L{l}\tmag_u:{mag_u.mean().item():0.3e}\tmag_var:{mag_var.mean().item():0.3e}"
+            )
+            offset += 2 * l + 1
+
+        return x
+
+
+class SO2Norm(torch.nn.Module):
+    def __init__(self, lmax, channels, eps=1e-5):
+        super().__init__()
+        self.lmax = lmax
+        self.channels = channels
+        self.gamma = nn.Parameter(torch.ones(lmax, channels) * 1.0)  # 100.0 / channels)
+        self.beta = nn.Parameter(torch.ones(lmax, channels) * 0.1)
+        # self.special = nn.Parameter(torch.ones(lmax, channels) * 0.5)
+        self.eps = eps
+
+    def forward(self, x):
+        x_out_emb = x.embedding.clone()
+        offset = 0
+        for l in range(self.lmax):
+            v_u = x.embedding[:, offset : offset + 2 * l + 1].mean(axis=2, keepdim=True)
+            mag = (
+                (x.embedding[:, offset : offset + 2 * l + 1].detach() ** 2)
+                .sum(axis=1)
+                .sqrt()
+            ) + self.eps
+
+            mag_u = mag.mean(axis=1, keepdim=True)  # mean for this l, across channels
+            mag_var = mag.var(axis=1, keepdim=True)  # mean for this l, across channels
+            # new_mag = mag - mag_u  # / (
+            #     mag_var + self.eps
+            # ).sqrt()  # 1 centered, not 0 centered?
+
+            # this is for target mean
+            new_mag = (
+                self.gamma[[l]] * mag.clamp(min=self.eps) / (mag_u + self.eps)
+                + self.beta[[l]]
+            )
+
+            # this is for target variance
+            # new_mag = self.gamma[[l]] / (mag_var + self.eps).sqrt() + self.beta[[l]]
+
+            rescale_factor = (new_mag / mag).unsqueeze(1)  # .clamp(min=-15, max=15)
+            x_out_emb[:, offset : offset + 2 * l + 1] *= rescale_factor
+
+            if debug:
+                mag_after = (
+                    (x_out_emb[:, offset : offset + 2 * l + 1].detach() ** 2)
+                    .sum(axis=1)
+                    .sqrt()
+                ) + self.eps
+                mag_u_after = mag_after.mean(
+                    axis=1, keepdim=True
+                )  # mean for this l, across channels
+                mag_var_after = mag_after.var(
+                    axis=1, keepdim=True
+                )  # mean for this l, across channels
+
+                print(
+                    l,
+                    mag_u.mean().item(),
+                    mag_var.mean().item(),
+                    "AFTER",
+                    mag_u_after.mean().item(),
+                    mag_var_after.mean().item(),
+                    self.beta[l].abs().max().item(),
+                    self.gamma[l].abs().max().item(),
+                )
+            offset += 2 * l + 1
+
+        x.set_embedding(x_out_emb)
+        return x
 
 
 class SO2Block(torch.nn.Module):
@@ -904,7 +1054,6 @@ class SO2Block(torch.nn.Module):
         mappingReduced,
     ):
         num_edges = len(x_edge)
-
         # Reshape the spherical harmonics based on m (order)
         x._m_primary(mappingReduced)
 
@@ -985,10 +1134,6 @@ class SO2Block_m0(torch.nn.Module):
 
         # SO(2) convolution for m=0
         self.fc1_dist0 = nn.Linear(edge_channels, num_channels_m0)
-        # self.fc1_spread = nn.Linear(num_channels_m0, num_channels_m0, bias=False)
-        # self.fc1_spread.weight.data.fill_(0)
-        # breakpoint()
-        # m0_spread / num_channels_m0)
         self.m0_spread = m0_spread
 
     def forward(
@@ -1112,6 +1257,7 @@ class EdgeBlock(torch.nn.Module):
         distance_expansion,
         max_num_elements,
         act,
+        fc1_dist_bias: bool = True,
     ) -> None:
         super().__init__()
         self.in_channels = distance_expansion.num_output
@@ -1121,7 +1267,9 @@ class EdgeBlock(torch.nn.Module):
         self.max_num_elements = max_num_elements
 
         # Embedding function of the distance
-        self.fc1_dist = nn.Linear(self.in_channels, self.edge_channels)
+        self.fc1_dist = nn.Linear(
+            self.in_channels, self.edge_channels, bias=fc1_dist_bias
+        )
 
         # Embedding function of the atomic numbers
         self.source_embedding = nn.Embedding(self.max_num_elements, self.edge_channels)
@@ -1137,13 +1285,12 @@ class EdgeBlock(torch.nn.Module):
 
     def forward(self, edge_distance, source_element, target_element):
         # Compute distance embedding
-        x_dist = self.distance_expansion(edge_distance)
+        x_dist = self.distance_expansion(edge_distance)  # very sparse encoding
         x_dist = self.fc1_dist(x_dist)
 
         # Compute atomic number embeddings
         source_embedding = self.source_embedding(source_element)
         target_embedding = self.target_embedding(target_element)
-
         # Compute invariant edge embedding
         x_edge = self.act(source_embedding + target_embedding + x_dist)
         return self.act(self.fc1_edge_attr(x_edge))
@@ -1176,11 +1323,16 @@ class EnergyBlock(torch.nn.Module):
 
     def forward(self, x_pt) -> torch.Tensor:
         # x_pt are the values of the channels sampled at different points on the sphere
+        if debug:
+            print(f" Enter energy block, u:{x_pt.mean():0.3e}, o^2:{x_pt.mean():0.3e}")
         x_pt = self.act(self.fc1(x_pt))
         x_pt = self.act(self.fc2(x_pt))
         x_pt = self.fc3(x_pt)
         x_pt = x_pt.view(-1, self.num_sphere_samples, 1)
-        return torch.sum(x_pt, dim=1) / self.num_sphere_samples
+        if debug:
+            print(f" Exit energy block, u:{x_pt.mean():0.3e}, o^2:{x_pt.mean():0.3e}")
+        r = torch.sum(x_pt, dim=1) / self.num_sphere_samples
+        return r
 
 
 class ForceBlock(torch.nn.Module):
@@ -1210,9 +1362,14 @@ class ForceBlock(torch.nn.Module):
 
     def forward(self, x_pt, sphere_points) -> torch.Tensor:
         # x_pt are the values of the channels sampled at different points on the sphere
+        if debug:
+            print(f" Enter force block, u:{x_pt.mean():0.3e}, o^2:{x_pt.mean():0.3e}")
         x_pt = self.act(self.fc1(x_pt))
         x_pt = self.act(self.fc2(x_pt))
         x_pt = self.fc3(x_pt)
         x_pt = x_pt.view(-1, self.num_sphere_samples, 1)
         forces = x_pt * sphere_points.view(1, self.num_sphere_samples, 3)
-        return torch.sum(forces, dim=1) / self.num_sphere_samples
+        r = torch.sum(forces, dim=1) / self.num_sphere_samples
+        if debug:
+            print(f" Exit force block, u:{x_pt.mean():0.3e}, o^2:{x_pt.mean():0.3e}")
+        return r
