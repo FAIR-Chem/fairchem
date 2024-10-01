@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import math
 import time
 import typing
 
@@ -959,7 +960,9 @@ class SO2Norm(torch.nn.Module):
             # new_mag = self.gamma[[l]] / (mag_var + self.eps).sqrt() + self.beta[[l]]
 
             rescale_factor = (new_mag / mag).unsqueeze(1)  # .clamp(min=-15, max=15)
-            x_out_emb[:, offset : offset + 2 * l + 1] *= rescale_factor
+            x_out_emb[:, offset : offset + 2 * l + 1] *= (
+                rescale_factor * 1.0 / math.sqrt(2 * l + 1)
+            )
 
             if debug:
                 mag_after = (
