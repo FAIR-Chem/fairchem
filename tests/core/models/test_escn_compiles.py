@@ -26,7 +26,6 @@ from fairchem.core.common.utils import setup_imports
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.models.escn import escn_exportable
 from fairchem.core.models.escn.so3_exportable import (
-    CoefficientMapping,
     SO3_Grid,
 )
 from fairchem.core.models.scn.smearing import GaussianSmearing
@@ -70,8 +69,8 @@ def load_model(type: str, compile=False, export=False):
             cutoff=CUTOFF,
             max_num_elements=MAX_ELEMENTS,
             num_layers=8,
-            lmax_list=[4],
-            mmax_list=[2],
+            lmax_list=[6],
+            mmax_list=[0],
             sphere_channels=128,
             hidden_channels=256,
             edge_channels=128,
@@ -87,8 +86,8 @@ def load_model(type: str, compile=False, export=False):
             cutoff=CUTOFF,
             max_num_elements=MAX_ELEMENTS,
             num_layers=8,
-            lmax=4,
-            mmax=2,
+            lmax=6,
+            mmax=0,
             sphere_channels=128,
             hidden_channels=256,
             edge_channels=128,
@@ -210,7 +209,6 @@ class TestESCNCompiles:
         }
 
         lmax, mmax = 4, 2
-        mappingReduced = escn_exportable.CoefficientMapping([lmax], [mmax])
         shpere_channels = 128
         edge_channels = 128
         args = (torch.rand(680, 19, shpere_channels), torch.rand(680, edge_channels))
@@ -222,7 +220,6 @@ class TestESCNCompiles:
             lmax=lmax,
             mmax=mmax,
             act=torch.nn.SiLU(),
-            mappingReduced=mappingReduced,
         )
         prog = export(so2, args=args, dynamic_shapes=dynamic_shapes1)
         export_out = prog.module()(*args)
@@ -244,7 +241,6 @@ class TestESCNCompiles:
         SO3_grid = torch.nn.ModuleDict()
         SO3_grid["lmax_lmax"] = SO3_Grid(lmax, lmax)
         SO3_grid["lmax_mmax"] = SO3_Grid(lmax, mmax)
-        mappingReduced = CoefficientMapping([lmax], [mmax])
         message_block = escn_exportable.MessageBlock(
             layer_idx=0,
             sphere_channels=sphere_channels,
@@ -256,7 +252,6 @@ class TestESCNCompiles:
             max_num_elements=90,
             SO3_grid=SO3_grid,
             act=torch.nn.SiLU(),
-            mappingReduced=mappingReduced,
         )
 
         # generate inputs
@@ -297,7 +292,6 @@ class TestESCNCompiles:
         SO3_grid = torch.nn.ModuleDict()
         SO3_grid["lmax_lmax"] = SO3_Grid(lmax, lmax)
         SO3_grid["lmax_mmax"] = SO3_Grid(lmax, mmax)
-        mappingReduced = CoefficientMapping([lmax], [mmax])
         layer_block = escn_exportable.LayerBlock(
             layer_idx=0,
             sphere_channels=sphere_channels,
@@ -309,7 +303,6 @@ class TestESCNCompiles:
             max_num_elements=90,
             SO3_grid=SO3_grid,
             act=torch.nn.SiLU(),
-            mappingReduced=mappingReduced,
         )
 
         # generate inputs

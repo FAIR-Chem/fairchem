@@ -88,6 +88,7 @@ class eSCN(nn.Module, GraphModelMixin):
         distance_resolution: float = 0.02,
         show_timing_info: bool = False,
         resolution: int | None = None,
+        activation_checkpoint: bool | None = False,
     ) -> None:
         if mmax_list is None:
             mmax_list = [2]
@@ -101,6 +102,7 @@ class eSCN(nn.Module, GraphModelMixin):
             logging.error("You need to install the e3nn library to use the SCN model")
             raise ImportError
 
+        self.activation_checkpoint = activation_checkpoint
         self.regress_forces = regress_forces
         self.use_pbc = use_pbc
         self.use_pbc_single = use_pbc_single
@@ -287,7 +289,18 @@ class eSCN(nn.Module, GraphModelMixin):
         ###############################################################
 
         for i in range(self.num_layers):
-            if i > 0:
+            if self.activation_checkpoint:
+                x_message = torch.utils.checkpoint.checkpoint(
+                    self.layer_blocks[i],
+                    x,
+                    atomic_numbers,
+                    graph.edge_distance,
+                    graph.edge_index,
+                    self.SO3_edge_rot,
+                    mappingReduced,
+                    use_reentrant=not self.training,
+                )
+            else:
                 x_message = self.layer_blocks[i](
                     x,
                     atomic_numbers,
@@ -297,19 +310,11 @@ class eSCN(nn.Module, GraphModelMixin):
                     mappingReduced,
                 )
 
+            if i > 0:
                 # Residual layer for all layers past the first
                 x.embedding = x.embedding + x_message.embedding
-
             else:
-                # No residual for the first layer
-                x = self.layer_blocks[i](
-                    x,
-                    atomic_numbers,
-                    graph.edge_distance,
-                    graph.edge_index,
-                    self.SO3_edge_rot,
-                    mappingReduced,
-                )
+                x = x_message
 
         # Sample the spherical channels (node embeddings) at evenly distributed points on the sphere.
         # These values are fed into the output blocks.

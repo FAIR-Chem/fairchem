@@ -280,7 +280,6 @@ class SO3_Embedding(torch.nn.Module):
             from_grid_mat = SO3_grid[self.lmax_list[i]][
                 self.mmax_list[i]
             ].get_from_grid_mat(self.device)
-
             x_grid = torch.einsum("bai,zic->zbac", to_grid_mat, x_res)
             x_grid = act(x_grid)
             x_res = torch.einsum("bai,zbac->zic", from_grid_mat, x_grid)
