@@ -112,7 +112,7 @@ class OCPNEB(DyNEB):
             local_rank=config.get("local_rank", 0),
             is_debug=config.get("is_debug", True),
             cpu=cpu,
-            amp=(amp==None or amp), # AMP on by default
+            amp=(amp is None or amp), # AMP on by default
         )
 
         self.load_checkpoint(checkpoint_path)
