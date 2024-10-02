@@ -600,15 +600,14 @@ class BaseTrainer(ABC):
                 self.optimizer.load_state_dict(checkpoint["optimizer"])
             if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
                 self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
+            if "ema" in checkpoint and checkpoint["ema"] is not None:
+                self.ema.load_state_dict(checkpoint["ema"])
+            else:
+                self.ema = None
         else:
             logging.info(
                 "Loading checkpoint in inference-only mode, not loading keys associated with trainer state!"
             )
-
-        if "ema" in checkpoint and checkpoint["ema"] is not None:
-            self.ema.load_state_dict(checkpoint["ema"])
-        else:
-            self.ema = None
 
         new_dict = match_state_dict(self.model.state_dict(), checkpoint["state_dict"])
         strict = self.config.get("task", {}).get("strict_load", True)
