@@ -214,6 +214,7 @@ class BaseTrainer(ABC):
         self.test_dataset = None
         self.best_val_metric = None
         self.primary_metric = None
+        self.ema = None
 
         self.load(inference_only)
 
