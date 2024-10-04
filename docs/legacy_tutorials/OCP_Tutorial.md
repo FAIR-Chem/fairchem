@@ -1162,7 +1162,6 @@ model = {
     "otf_graph": False,
     "output_init": "HeOrthogonal",
     "activation": "silu",
-    "scale_file": "./gemnet-dT.json",
     "regress_forces": False,
     "direct_forces": False,
 }
