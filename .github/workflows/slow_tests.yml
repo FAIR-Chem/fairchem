@@ -1,21 +1,17 @@
-name: tests
+name: slow tests
 
 on:
   workflow_call:
   workflow_dispatch:
-  pull_request:
-    branches: [main]
   push:
-    branches: [main]
-  merge_group:
-
+  
 jobs:
   test:
     runs-on: ubuntu-latest  # TODO add macos tests too
     strategy:
       max-parallel: 10
       matrix:
-        python_version: ['3.9', '3.12']
+        python_version: ['3.11']
 
     steps:
       - uses: actions/checkout@v4
@@ -43,20 +39,11 @@ jobs:
           pip install -e packages/fairchem-demo-ocpapi[dev]
           pip install -e packages/fairchem-applications-cattsunami
 
-      - name: Install additional dependencies
-        run: |
-          wget https://github.com/m3g/packmol/archive/refs/tags/v20.15.0.tar.gz
-          tar -xzvf v20.15.0.tar.gz
-          cd packmol-20.15.0
-          ./configure
-          make
-          echo "$(readlink -f .)" >> $GITHUB_PATH
-
       - name: Test core with pytest
         run: |
-          pytest tests -x -m "not slow" -vv --ignore=tests/demo/ocpapi/tests/integration/  --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml
+          pytest tests -m "slow" -vv --ignore=tests/demo/ocpapi/tests/integration/  --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml
 
-      - if: ${{ matrix.python_version == '3.12' }}
+      - if: ${{ matrix.python_version == '3.11' }}
         name: codecov-report
         uses: codecov/codecov-action@v4
         with:
