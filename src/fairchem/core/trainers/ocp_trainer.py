@@ -411,9 +411,9 @@ class OCPTrainer(BaseTrainer):
     def predict(
         self,
         data_loader,
-        per_image: bool = False,
+        per_image: bool = True,
         results_file: str | None = None,
-        disable_tqdm: bool = True,
+        disable_tqdm: bool = False,
     ):
         if self.is_debug and per_image:
             raise FileNotFoundError("Predictions require debug mode to be turned off.")

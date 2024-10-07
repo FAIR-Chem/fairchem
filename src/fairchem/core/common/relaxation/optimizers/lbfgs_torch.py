@@ -52,7 +52,6 @@ class LBFGS:
         self.traj_dir = traj_dir
         self.traj_names = traj_names
         self.early_stop_batch = early_stop_batch
-        # self.otf_graph = model.model._unwrapped_model.otf_graph
         self.otf_graph = True
         assert not self.traj_dir or (
             traj_dir and len(traj_names)
@@ -226,7 +225,7 @@ class TorchCalc:
         self.transform = transform
 
     def get_energy_and_forces(self, atoms, apply_constraint: bool = True):
-        predictions = self.model.predict(atoms)
+        predictions = self.model.predict(atoms, per_image=False, disable_tqdm=True)
         energy = predictions["energy"]
         forces = predictions["forces"]
         if apply_constraint:
