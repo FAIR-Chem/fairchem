@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
+from typing import Any
 
 
 class Runner(metaclass=ABCMeta):
@@ -11,7 +12,7 @@ class Runner(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def run(self) -> None:
+    def run(self) -> Any:
         raise NotImplementedError
 
     @abstractmethod
@@ -21,3 +22,21 @@ class Runner(metaclass=ABCMeta):
     @abstractmethod
     def load_state(self) -> None:
         raise NotImplementedError
+
+
+# Used for testing
+class MockRunner(Runner):
+    def __init__(self, x: int, y: int):
+        self.x = x
+        self.y = y
+
+    def run(self) -> Any:
+        if self.x * self.y > 1000:
+            raise ValueError("sum is greater than 1000!")
+        return self.x + self.y
+
+    def save_state(self) -> None:
+        pass
+
+    def load_state(self) -> None:
+        pass
