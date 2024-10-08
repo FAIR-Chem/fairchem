@@ -34,7 +34,13 @@ These should catch errors such as shape mismatches or otherways to code wise bre
 
 class TestSmoke:
     def smoke_test_train(
-        self, input_yaml, tutorial_val_src, world_size, num_workers, otf_norms=False
+        self,
+        input_yaml,
+        tutorial_val_src,
+        world_size,
+        num_workers,
+        otf_norms=False,
+        amp=False,
     ):
         with tempfile.TemporaryDirectory() as tempdirname:
             # first train a very simple model, checkpoint
@@ -62,6 +68,7 @@ class TestSmoke:
                 save_checkpoint_to=checkpoint_path,
                 save_predictions_to=training_predictions_filename,
                 world_size=world_size,
+                amp=amp,
             )
             assert "train/energy_mae" in acc.Tags()["scalars"]
             assert "val/energy_mae" in acc.Tags()["scalars"]
@@ -87,6 +94,7 @@ class TestSmoke:
                     "checkpoint": checkpoint_path,
                 },
                 save_predictions_to=predictions_filename,
+                amp=amp,
             )
 
             if otf_norms is True:
@@ -104,9 +112,14 @@ class TestSmoke:
             # verify predictions from train and predict are identical
             energy_from_train = np.load(training_predictions_filename)["energy"]
             energy_from_checkpoint = np.load(predictions_filename)["energy"]
-            npt.assert_allclose(
-                energy_from_train, energy_from_checkpoint, rtol=1e-6, atol=1e-6
-            )
+            if not amp:
+                npt.assert_allclose(
+                    energy_from_train, energy_from_checkpoint, rtol=1e-6, atol=1e-6
+                )
+            else:
+                npt.assert_allclose(
+                    energy_from_train, energy_from_checkpoint, rtol=2e-2, atol=1e-3
+                )
 
     @pytest.mark.parametrize(
         ("model_name"),
@@ -322,12 +335,23 @@ class TestSmoke:
         configs,
         tutorial_val_src,
     ):
+        # test with amp
+        #self.smoke_test_train(
+        #    input_yaml=configs[model_name],
+        #    tutorial_val_src=tutorial_val_src,
+        #    otf_norms=otf_norms,
+        #    world_size=1,
+        #    num_workers=0,
+        #    amp=True,
+        #)
+        # test without amp
         self.smoke_test_train(
             input_yaml=configs[model_name],
             tutorial_val_src=tutorial_val_src,
             otf_norms=otf_norms,
             world_size=1,
             num_workers=0,
+            amp=False,
         )
 
     # test that both escn and equiv2 run with activation checkpointing
