@@ -54,7 +54,7 @@ jobs:
 
       - name: Test core with pytest
         run: |
-          pytest tests -vv --ignore=tests/demo/ocpapi/tests/integration/  --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml
+          pytest tests --durations=0 -vv --ignore=tests/demo/ocpapi/tests/integration/  --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml
 
       - if: ${{ matrix.python_version == '3.12' }}
         name: codecov-report
