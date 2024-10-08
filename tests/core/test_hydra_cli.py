@@ -10,7 +10,7 @@ from fairchem.core._cli import main
 
 def test_hydra_cli():
     hydra.core.global_hydra.GlobalHydra.instance().clear()
-    sys_args = ["--hydra", "--config-yml", "tests/core/test_hydra_cli.yml"]
+    sys_args = ["--hydra", "--config-yml", "tests/core/test_hydra_cli.yml", "--cpu"]
     sys.argv[1:] = sys_args
     main()
 
@@ -19,6 +19,7 @@ def test_hydra_cli_throws_error():
     hydra.core.global_hydra.GlobalHydra.instance().clear()
     sys_args = [
         "--hydra",
+        "--cpu",
         "--config-yml",
         "tests/core/test_hydra_cli.yml",
         "runner.x=1000",
