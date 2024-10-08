@@ -131,7 +131,8 @@ def setup(config) -> None:
 
 
 def cleanup() -> None:
-    dist.destroy_process_group()
+    if dist.is_initialized():
+        dist.destroy_process_group()
 
 
 def initialized() -> bool:
