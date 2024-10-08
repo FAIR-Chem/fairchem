@@ -4,9 +4,9 @@ import sys
 
 import hydra
 import pytest
-from fairchem.src.fairchem.core.common import distutils
 
 from fairchem.core._cli import main
+from fairchem.core.common import distutils
 
 
 def test_hydra_cli():
