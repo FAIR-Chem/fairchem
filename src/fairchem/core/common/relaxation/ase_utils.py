@@ -237,10 +237,10 @@ class OCPCalculator(Calculator):
         predictions = self.trainer.predict(batch, per_image=False, disable_tqdm=True)
         predictions["energy"] *= len(atoms)
         predictions["free_energy"] = predictions["energy"]
+        if "stress" in predictions:
+            predictions["stress"] = predictions["stress"].view(3, 3)
 
         for key in predictions:
             _pred = predictions[key]
             _pred = _pred.item() if _pred.numel() == 1 else _pred.cpu().numpy()
-            if key == "stress":
-                _pred = _pred.reshape(3, 3)
             self.results[key] = _pred
