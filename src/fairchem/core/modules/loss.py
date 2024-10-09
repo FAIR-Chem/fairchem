@@ -8,14 +8,30 @@ from torch import nn
 from fairchem.core.common import distutils
 
 
+class ClampL1Loss(nn.Module):
+    def __init__(self, clamp=None) -> None:
+        super().__init__()
+        self.l1loss = nn.L1Loss()
+        self.clamp = clamp
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor):
+        loss = self.l1loss(input, target)
+        if not self.clamp is None:
+            return loss.clamp(max=self.clamp)
+        return loss
+
+
 class L2MAELoss(nn.Module):
-    def __init__(self, reduction: str = "mean") -> None:
+    def __init__(self, reduction: str = "mean", clamp=None) -> None:
         super().__init__()
         self.reduction = reduction
+        self.clamp = clamp
         assert reduction in ["mean", "sum"]
 
     def forward(self, input: torch.Tensor, target: torch.Tensor):
         dists = torch.norm(input - target, p=2, dim=-1)
+        if not self.clamp is None:
+            dists = dists.clamp(max=self.clamp)
         if self.reduction == "mean":
             return torch.mean(dists)
         elif self.reduction == "sum":

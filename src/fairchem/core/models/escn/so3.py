@@ -210,6 +210,11 @@ class SO3_Embedding(torch.nn.Module):
             dtype=self.embedding.dtype,
         )
         new_embedding.index_add_(0, edge_index, self.embedding)
+        # breakpoint()
+        # new_embedding /= torch.zeros(
+        #     num_nodes, device=self.embedding.device, dtype=self.embedding.dtype
+        # ).scatter_(0, edge_index, 1, reduce="add")[:, None, None]
+        # breakpoint()
         self.set_embedding(new_embedding)
 
     # Reshape the embedding l-->m

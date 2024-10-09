@@ -193,7 +193,10 @@ class OCPTrainer(BaseTrainer):
                     )
 
                 if checkpoint_every != -1 and self.step % checkpoint_every == 0:
-                    self.save(checkpoint_file="checkpoint.pt", training_state=True)
+                    self.save(
+                        checkpoint_file=f"checkpoint_{self.step}.pt",
+                        training_state=True,
+                    )
 
                 # Evaluate on val set every `eval_every` iterations.
                 if self.step % eval_every == 0:
@@ -666,7 +669,9 @@ class OCPTrainer(BaseTrainer):
                 )
                 gather_results["chunk_idx"] = np.cumsum(
                     [gather_results["chunk_idx"][i] for i in idx]
-                )[:-1]  # np.split does not need last idx, assumes n-1:end
+                )[
+                    :-1
+                ]  # np.split does not need last idx, assumes n-1:end
 
                 full_path = os.path.join(
                     self.config["cmd"]["results_dir"], "relaxed_positions.npz"

@@ -95,6 +95,8 @@ class eSCN(nn.Module, GraphModelMixin):
         m0_bias: bool = False,
         edge_multiply: bool = True,
         so2norm: bool = False,
+        reduce_norm: int = 0,
+        disable_amp: int = 0,
     ) -> None:
         if mmax_list is None:
             mmax_list = [2]
@@ -206,6 +208,8 @@ class eSCN(nn.Module, GraphModelMixin):
                 edge_multiply=edge_multiply,
                 m0_bias=m0_bias,
                 so2norm=so2norm,
+                reduce_norm=reduce_norm,
+                disable_amp=disable_amp,
             )
             self.layer_blocks.append(block)
 
@@ -602,10 +606,10 @@ class eSCNEnergyHead(nn.Module, HeadInterface):
         node_energy = self.energy_block(emb["sphere_values"])
         energy = torch.zeros(len(data.natoms), device=data.pos.device)
         energy.index_add_(0, data.batch, node_energy.view(-1))
-
         if self.reduce == "sum":
             # Scale energy to help balance numerical precision w.r.t. forces
-            r = {"energy": energy * 0.001}
+            # r = {"energy": energy * 0.001}
+            r = {"energy": energy}
 
             return r
         elif self.reduce == "mean":
@@ -664,6 +668,8 @@ class LayerBlock(torch.nn.Module):
         edge_multiply,
         m0_bias,
         so2norm,
+        reduce_norm,
+        disable_amp,
     ) -> None:
         super().__init__()
         self.layer_idx = layer_idx
@@ -674,6 +680,7 @@ class LayerBlock(torch.nn.Module):
         self.sphere_channels = sphere_channels
         self.sphere_channels_all = self.num_resolutions * self.sphere_channels
         self.SO3_grid = SO3_grid
+        self.disable_amp = disable_amp
 
         # Message block
         self.message_block = MessageBlock(
@@ -691,6 +698,7 @@ class LayerBlock(torch.nn.Module):
             edge_multiply=edge_multiply,
             m0_bias=m0_bias,
             so2norm=so2norm,
+            reduce_norm=reduce_norm,
         )
 
         # Non-linear point-wise comvolution for the aggregated messages
@@ -716,14 +724,16 @@ class LayerBlock(torch.nn.Module):
         mappingReduced,
     ):
         # Compute messages by performing message block
-        x_message = self.message_block(
-            x,
-            atomic_numbers,
-            edge_distance,
-            edge_index,
-            SO3_edge_rot,
-            mappingReduced,
-        )
+
+        with torch.cuda.amp.autocast(enabled=self.disable_amp == 1):
+            x_message = self.message_block(
+                x,
+                atomic_numbers,
+                edge_distance,
+                edge_index,
+                SO3_edge_rot,
+                mappingReduced,
+            )
 
         # Compute point-wise spherical non-linearity on aggregated messages
         max_lmax = max(self.lmax_list)
@@ -778,6 +788,7 @@ class MessageBlock(torch.nn.Module):
         edge_multiply,
         m0_bias,
         so2norm,
+        reduce_norm,
     ) -> None:
         super().__init__()
         self.layer_idx = layer_idx
@@ -789,6 +800,7 @@ class MessageBlock(torch.nn.Module):
         self.lmax_list = lmax_list
         self.mmax_list = mmax_list
         self.edge_channels = edge_channels
+        self.reduce_norm = reduce_norm
 
         # Create edge scalar (invariant to rotations) features
         self.edge_block = EdgeBlock(
@@ -854,6 +866,7 @@ class MessageBlock(torch.nn.Module):
         SO3_edge_rot,
         mappingReduced,
     ):
+
         ###############################################################
         # Compute messages
         ###############################################################
@@ -892,6 +905,11 @@ class MessageBlock(torch.nn.Module):
         # Compute the sum of the incoming neighboring messages for each target node
         x_target._reduce_edge(edge_index[1], len(x.embedding))
 
+        if self.reduce_norm == 1:
+            x_target.embedding /= 20
+        if self.reduce_norm == 2:
+            x_target.embedding /= 80
+
         if self.norm is not None:
             x_target = self.norm(x_target)
         # self.so2stats(x_target)
@@ -903,24 +921,32 @@ class SO2Stats(torch.nn.Module):
         super().__init__()
         self.lmax = lmax
 
-    def forward(self, x):
+    def forward_embedding(self, x):
         offset = 0
+        self.mag_u = []
+        self.mag_var = []
         for l in range(self.lmax):
-            mag = (
-                (x.embedding[:, offset : offset + 2 * l + 1].detach() ** 2)
-                .sum(axis=1)
-                .sqrt()
-            )
+            mag = (x[:, offset : offset + 2 * l + 1].detach() ** 2).sum(axis=1).sqrt()
 
-            mag_u = mag.mean(axis=1, keepdim=True)  # mean for this l, across channels
-            mag_var = mag.var(axis=1, keepdim=True)  # var for this l, across channels
+            self.mag_u.append(
+                mag.mean(axis=1, keepdim=True).mean().item()
+            )  # mean for this l, across channels
+            self.mag_var.append(
+                mag.var(axis=1, keepdim=True).mean().item()
+            )  # var for this l, across channels
 
-            print(
-                f"\tSO2 stats: L{l}\tmag_u:{mag_u.mean().item():0.3e}\tmag_var:{mag_var.mean().item():0.3e}"
-            )
             offset += 2 * l + 1
 
         return x
+
+    def forward(self, x):
+        self.forward_embedding(x.embedding)
+
+    def print(self):
+        for l in range(self.lmax):
+            print(
+                f"\tSO2 stats: L{l}\tmag_u:{self.mag_u[l]:0.3e}\tmag_var:{self.mag_var[l]:0.3e}"
+            )
 
 
 class SO2Norm(torch.nn.Module):

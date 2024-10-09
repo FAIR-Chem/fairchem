@@ -40,7 +40,7 @@ from torch_scatter import scatter, segment_coo, segment_csr
 
 import fairchem.core
 from fairchem.core.common.registry import registry
-from fairchem.core.modules.loss import AtomwiseL2Loss, L2MAELoss
+from fairchem.core.modules.loss import AtomwiseL2Loss, L2MAELoss, ClampL1Loss
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -1419,10 +1419,18 @@ def update_config(base_config):
 def get_loss_module(loss_name):
     if loss_name in ["l1", "mae"]:
         loss_fn = nn.L1Loss()
+    elif loss_name in ["l1clamp5"]:
+        loss_fn = ClampL1Loss(5)
+    elif loss_name in ["l1clamp1"]:
+        loss_fn = ClampL1Loss(1)
     elif loss_name == "mse":
         loss_fn = nn.MSELoss()
     elif loss_name == "l2mae":
         loss_fn = L2MAELoss()
+    elif loss_name == "l2maeclamp2":
+        loss_fn = L2MAELoss(clamp=2)
+    elif loss_name == "l2maeclamp0p5":
+        loss_fn = L2MAELoss(clamp=2)
     elif loss_name == "atomwisel2":
         loss_fn = AtomwiseL2Loss()
     else:

@@ -514,15 +514,15 @@ class BaseTrainer(ABC):
                         ][target_name].get("level", "system")
                     if "train_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["train_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("train_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "train_on_free_atoms", True
+                            )
                         )
                     if "eval_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["eval_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("eval_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "eval_on_free_atoms", True
+                            )
                         )
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
@@ -558,7 +558,7 @@ class BaseTrainer(ABC):
             # spews too much data into W&B and makes the UI slow to respond
             if "watch" in self.config["logger"]:
                 self.logger.watch(
-                    self.model, log_freq=int(self.config["logger"]["watch"])
+                    self.model, log_freq=int(self.config["logger"]["watch"], log="all")
                 )
             self.logger.log_summary({"num_params": num_params})
 
