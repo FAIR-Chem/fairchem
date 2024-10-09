@@ -154,6 +154,14 @@ class WandBSingletonLogger:
     """
     Singleton version of wandb logger, this forces a single instance of the logger to be created and used from anywhere in the code (not just from the trainer).
     This will replace the original WandBLogger.
+
+    We initialize wandb instance somewhere in the trainer/runner globally:
+
+    WandBSingletonLogger.init_wandb(...)
+
+    Then from anywhere in the code we can fetch the singleton instance and log to wandb
+
+    WandBSingletonLogger.get_instance().log({"some_value": value}, commit=False)
     """
 
     _instance = None
