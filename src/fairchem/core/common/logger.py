@@ -159,7 +159,9 @@ class WandBSingletonLogger:
 
     WandBSingletonLogger.init_wandb(...)
 
-    Then from anywhere in the code we can fetch the singleton instance and log to wandb
+    Then from anywhere in the code we can fetch the singleton instance and log to wandb,
+    note this allows you to log without knowing explicitly which step you are on
+    see: https://docs.wandb.ai/ref/python/log/#the-wb-step for more details
 
     WandBSingletonLogger.get_instance().log({"some_value": value}, commit=False)
     """
