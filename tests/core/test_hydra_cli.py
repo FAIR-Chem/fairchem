@@ -32,3 +32,19 @@ def test_hydra_cli_throws_error():
     with pytest.raises(ValueError) as error_info:
         main()
     assert "sum is greater than 1000" in str(error_info.value)
+
+
+def test_hydra_cli_throws_error_on_invalid_inputs():
+    distutils.cleanup()
+    hydra.core.global_hydra.GlobalHydra.instance().clear()
+    sys_args = [
+        "--hydra",
+        "--cpu",
+        "--config-yml",
+        "tests/core/test_hydra_cli.yml",
+        "runner.x=1000",
+        "runner.z=5",  # z is not a valid input argument to runner
+    ]
+    sys.argv[1:] = sys_args
+    with pytest.raises(hydra.errors.ConfigCompositionException):
+        main()

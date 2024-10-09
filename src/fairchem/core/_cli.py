@@ -28,8 +28,6 @@ from fairchem.core.common.utils import (
 if TYPE_CHECKING:
     import argparse
 
-logger = logging.getLogger(__name__)
-
 
 class Runner(Checkpointable):
     def __init__(self) -> None:
@@ -86,7 +84,7 @@ def main(
         slurm_add_params = config.get("slurm", None)  # additional slurm arguments
         configs = create_grid(config, args.sweep_yml) if args.sweep_yml else [config]
 
-        logger.info(f"Submitting {len(configs)} jobs")
+        logging.info(f"Submitting {len(configs)} jobs")
         executor = AutoExecutor(folder=args.logdir / "%j", slurm_max_num_timeout=3)
         executor.update_parameters(
             name=args.identifier,
