@@ -1378,6 +1378,7 @@ class GemNetOCBackbone(GemNetOC, BackboneInterface):
         # (nEdges, emb_size_edge)
 
         x_E, x_F = self.out_blocks[0](h, m, basis_output, idx_t)
+        x_E += x_F.mean() * 0.0
         # (nAtoms, emb_size_atom), (nEdges, emb_size_edge)
         xs_E, xs_F = [x_E], [x_F]
 
@@ -1404,7 +1405,7 @@ class GemNetOCBackbone(GemNetOC, BackboneInterface):
 
             x_E, x_F = self.out_blocks[i + 1](h, m, basis_output, idx_t)
             # (nAtoms, emb_size_atom), (nEdges, emb_size_edge)
-            xs_E.append(x_E)
+            xs_E.append(x_E + x_F.mean() * 0)
             xs_F.append(x_F)
 
         return {
