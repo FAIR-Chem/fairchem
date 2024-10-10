@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ast
 import collections
+import functools
 import copy
 import errno
 import importlib
@@ -954,21 +955,33 @@ class SeverityLevelBetween(logging.Filter):
         return self.min_level <= record.levelno < self.max_level
 
 
+def debug_log_entry_exit(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        logging.debug(f"{func.__name__}...")
+        result = func(*args, **kwargs)
+        logging.debug(f"{func.__name__} done")
+        return result
+
+    return wrapper
+
+
 def setup_logging() -> None:
     root = logging.getLogger()
-
     # Perform setup only if logging has not been configured
+    target_logging_level = getattr(logging, os.environ.get("LOGLEVEL", "INFO").upper())
+    root.setLevel(target_logging_level)
     if not root.hasHandlers():
-        root.setLevel(logging.INFO)
-
         log_formatter = logging.Formatter(
             "%(asctime)s (%(levelname)s): %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 
-        # Send INFO to stdout
+        # Send INFO (or target) to stdout
         handler_out = logging.StreamHandler(sys.stdout)
-        handler_out.addFilter(SeverityLevelBetween(logging.INFO, logging.WARNING))
+        handler_out.addFilter(
+            SeverityLevelBetween(target_logging_level, logging.WARNING)
+        )
         handler_out.setFormatter(log_formatter)
         root.addHandler(handler_out)
 
