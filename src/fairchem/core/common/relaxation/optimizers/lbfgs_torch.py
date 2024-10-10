@@ -52,7 +52,7 @@ class LBFGS:
         self.traj_dir = traj_dir
         self.traj_names = traj_names
         self.early_stop_batch = early_stop_batch
-        self.otf_graph = model.model._unwrapped_model.otf_graph
+        self.otf_graph = True
         assert not self.traj_dir or (
             traj_dir and len(traj_names)
         ), "Trajectory names should be specified to save trajectories"

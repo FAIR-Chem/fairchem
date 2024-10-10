@@ -10,6 +10,7 @@ from __future__ import annotations
 import ast
 import collections
 import copy
+import datetime
 import errno
 import importlib
 import itertools
@@ -26,6 +27,7 @@ from functools import wraps
 from itertools import product
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from uuid import uuid4
 
 import numpy as np
 import torch
@@ -1446,3 +1448,7 @@ def load_model_and_weights_from_checkpoint(checkpoint_path: str) -> nn.Module:
     matched_dict = match_state_dict(model.state_dict(), checkpoint["state_dict"])
     load_state_dict(model, matched_dict, strict=True)
     return model
+
+
+def get_timestamp_uid() -> str:
+    return datetime.datetime.now().strftime("%Y%m-%d%H-%M%S-") + str(uuid4())[:4]
