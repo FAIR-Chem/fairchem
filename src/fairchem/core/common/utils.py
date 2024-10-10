@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import ast
 import collections
-import functools
 import copy
 import errno
+import functools
 import importlib
 import itertools
 import json
