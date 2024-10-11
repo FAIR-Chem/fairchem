@@ -121,7 +121,8 @@ def setup(config) -> None:
             ), "Can only setup master address and port at this point for a single rank, otherwise we assume the processes and the comm addr/port have already been setup"
             setup_env_local()
         config["local_rank"] = int(os.environ.get("LOCAL_RANK"))
-        assign_device_for_local_rank(config["cpu"], config["local_rank"])
+        if config.get("use_cuda_visibile_devices"):
+            assign_device_for_local_rank(config["cpu"], config["local_rank"])
         dist.init_process_group(
             backend=config["distributed_backend"],
             rank=int(os.environ.get("RANK")),
