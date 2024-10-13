@@ -37,7 +37,7 @@ class DataTransforms:
 
 def convert_stress(data_object, config) -> Data:
     data_object.stress = torch.unsqueeze(data_object.stress, 0)
-    data_object.stress *= 0.0062415091258833
+    data_object.stress *= - 0.0062415091258833
     return data_object
     
 def shift_energy(data_object, config) -> Data:
