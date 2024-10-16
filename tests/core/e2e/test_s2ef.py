@@ -108,7 +108,15 @@ class TestSmoke:
                 energy_from_train, energy_from_checkpoint, rtol=1e-6, atol=1e-6
             )
 
-    def test_gemnet_fit_scaling(self, configs, tutorial_val_src):
+    @pytest.mark.parametrize(
+        ("model_name"),
+        [
+            ("gemnet_oc"),
+            ("gemnet_oc_hydra"),
+            ("gemnet_oc_hydra_grad"),
+        ],
+    )
+    def test_gemnet_fit_scaling(self, model_name, configs, tutorial_val_src):
 
         with tempfile.TemporaryDirectory() as tempdirname:
             # (1) generate scaling factors for gemnet config
@@ -130,7 +138,7 @@ class TestSmoke:
                 ]
             )
             update_yaml_with_dict(
-                configs["gemnet_oc"],
+                configs[model_name],
                 config_yaml,
                 update_dict_with={
                     "dataset": oc20_lmdb_train_and_val_from_paths(
@@ -143,24 +151,30 @@ class TestSmoke:
             config = build_config(args, override_args)
 
             # (2) if existing scaling factors are present remove them
-            if "scale_file" in config["model"]:
-                config["model"].pop("scale_file")
+            config["model"].pop("scale_file", None)
+            if "backbone" in config["model"]:
+                config["model"]["backbone"].pop("scale_file", None)
 
             compute_scaling_factors(config)
 
+            model_config_change = (
+                {"backbone": {"scale_file": scaling_pt}}
+                if "backbone" in config["model"]
+                else {"scale_file": scaling_pt}
+            )
             # (3) try to run the config with the newly generated scaling factors
             _ = _run_main(
                 rundir=tempdirname,
                 update_dict_with={
                     "optim": {"max_epochs": 1},
-                    "model": {"use_pbc_single": True, "scale_file": scaling_pt},
+                    "model": model_config_change,
                     "dataset": oc20_lmdb_train_and_val_from_paths(
                         train_src=str(tutorial_val_src),
                         val_src=str(tutorial_val_src),
                         test_src=str(tutorial_val_src),
                     ),
                 },
-                input_yaml=configs["gemnet_oc"],
+                input_yaml=configs[model_name],
             )
 
     def test_convert_checkpoint_and_config_to_hydra(self, configs, tutorial_val_src):
@@ -315,6 +329,52 @@ class TestSmoke:
             world_size=1,
             num_workers=0,
         )
+
+    # test that both escn and equiv2 run with activation checkpointing
+    @pytest.mark.parametrize(
+        ("model_name"),
+        [
+            ("escn_hydra"),
+            ("equiformer_v2_hydra"),
+        ],
+    )
+    def test_train_and_predict_with_checkpointing(
+        self,
+        model_name,
+        configs,
+        tutorial_val_src,
+    ):
+        with tempfile.TemporaryDirectory() as tempdirname:
+            # first train a very simple model, checkpoint
+            train_rundir = Path(tempdirname) / "train"
+            train_rundir.mkdir()
+            checkpoint_path = str(train_rundir / "checkpoint.pt")
+            training_predictions_filename = str(train_rundir / "train_predictions.npz")
+            update_dict = {
+                "optim": {
+                    "max_epochs": 2,
+                    "eval_every": 8,
+                    "batch_size": 5,
+                    "num_workers": 1,
+                },
+                "dataset": oc20_lmdb_train_and_val_from_paths(
+                    train_src=str(tutorial_val_src),
+                    val_src=str(tutorial_val_src),
+                    test_src=str(tutorial_val_src),
+                ),
+            }
+            if "hydra" in model_name:
+                update_dict["model"] = {"backbone": {"activation_checkpoint": True}}
+            else:
+                update_dict["model"] = {"activation_checkpoint": True}
+            acc = _run_main(
+                rundir=str(train_rundir),
+                input_yaml=configs[model_name],
+                update_dict_with=update_dict,
+                save_checkpoint_to=checkpoint_path,
+                save_predictions_to=training_predictions_filename,
+                world_size=1,
+            )
 
     def test_use_pbc_single(self, configs, tutorial_val_src, torch_deterministic):
         with tempfile.TemporaryDirectory() as tempdirname:
