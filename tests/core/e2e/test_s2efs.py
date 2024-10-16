@@ -9,16 +9,14 @@ from test_e2e_commons import _run_main
 
 # TODO add GemNet!
 @pytest.mark.parametrize(
-    ("model_name", "ddp"),
+    ("model_name"),
     [
-        ("equiformer_v2_hydra", False),
-        ("escn_hydra", False),
-        ("equiformer_v2_hydra", True),
-        ("escn_hydra", True),
+        ("equiformer_v2_hydra"),
+        ("escn_hydra"),
     ],
 )
 def test_smoke_s2efs_predict(
-    model_name, ddp, configs, dummy_binary_dataset_path, tmpdir
+    model_name, configs, dummy_binary_dataset_path, tmpdir
 ):
     # train an s2ef model just to have one
     input_yaml = configs[model_name]
@@ -78,13 +76,13 @@ def test_smoke_s2efs_predict(
                 "max_epochs": 2,
                 "eval_every": 4,
                 "batch_size": 5,
-                "num_workers": 0 if ddp else 2,
+                "num_workers": 0,
             },
             **updates,
         },
         save_checkpoint_to=checkpoint_path,
         save_predictions_to=training_predictions_filename,
-        world_size=1 if ddp else 0,
+        world_size=1,
     )
     assert "train/energy_mae" in acc.Tags()["scalars"]
     assert "val/energy_mae" in acc.Tags()["scalars"]

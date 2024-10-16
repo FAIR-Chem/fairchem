@@ -6,6 +6,7 @@ VASP_FLAGS = {
     "ibrion": 2,
     "nsw": 2000,
     "isif": 0,
+    "ispin": 1,
     "isym": 0,
     "lreal": "Auto",
     "ediffg": -0.03,
@@ -24,6 +25,7 @@ BULK_VASP_FLAGS = {
     "ibrion": 1,
     "nsw": 100,
     "isif": 7,
+    "ispin": 1,
     "isym": 0,
     "ediffg": 1e-08,
     "encut": 500.0,
@@ -42,21 +44,20 @@ SOLVENT_BASE_FLAGS = {
     "xc": "PBE",
     "ivdw": 11,
     "encut": 400.0,
-    "ediff": 1e-6,
-    "ediffg": -0.05,
+    "ediff": 1e-4,
     "nelm": 100,
     "ismear": 0,
     "sigma": 0.1,
-    "lwave": False,
-    "lcharg": False,
+    "lcharg": True,
+    "lwave": True,
     "isif": 0,
     "ispin": 2,
-    "algo": "Fast",
+    "algo": "All",
     "idipol": 3,
     "ldipol": True,
     "lasph": True,
     "lreal": "Auto",
-    "ncore": 100,
+    "ncore": 100,  # VASP will scale this down to whatever ncores are available.
     "dipol": [0.5, 0.5, 0.5],
 }
 
@@ -82,20 +83,12 @@ SOLVENT_BULK_VASP_FLAGS = {
     "ncore": 4,
 }
 
-RELAX_FLAGS = {"ibrion": 2, "nsw": 500}
+RELAX_FLAGS = {"ibrion": 2, "nsw": 5}
 
 MD_FLAGS = {
     "ibrion": 0,
-    "nsw": 100,
+    "nsw": 10,
     "smass": 0,
-    "tebeg": 600,
-    "potim": 1,
-}
-
-ML_FLAGS = {
-    "ML_LMLFF": True,
-    "ML_ISTART": 0,
-    "ML_EPS_LOW": 1e-7,
-    "NSW": 1000,
-    "ISIF": 2,
+    "tebeg": 1000,
+    "potim": 2,
 }
