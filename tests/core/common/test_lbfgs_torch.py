@@ -48,7 +48,7 @@ def test_lbfgs_write_trajectory(save_full_traj, steps, batch, calculator, tmp_pa
         traj_names=[f"system-{i}" for i in range(len(batch))],
     )
 
-    batch_optimizer.run(0.01, steps=steps)
+    batch_optimizer.run(0.001, steps=steps)
 
     # check that trajectory files where written
     traj_files = list(tmp_path.glob("*.traj"))
