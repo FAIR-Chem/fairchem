@@ -49,7 +49,7 @@ SOLVENT_BASE_FLAGS = {
     "ismear": 0,
     "sigma": 0.1,
     "lcharg": True,
-    "lwave": True,
+    "lwave": False,
     "isif": 0,
     "ispin": 2,
     "algo": "All",
