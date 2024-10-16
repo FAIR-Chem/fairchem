@@ -9,14 +9,13 @@ from __future__ import annotations
 
 import copy
 import logging
-import os
 from typing import TYPE_CHECKING
 
 from submitit import AutoExecutor
 from submitit.helpers import Checkpointable, DelayedSubmission
-from torch.distributed.elastic.utils.distributed import get_free_port
 from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
+from fairchem.core.common import distutils
 from fairchem.core.common.flags import flags
 from fairchem.core.common.utils import (
     build_config,
@@ -68,6 +67,12 @@ def main(
     if args is None:
         parser: argparse.ArgumentParser = flags.get_parser()
         args, override_args = parser.parse_known_args()
+
+    if args.hydra:
+        from fairchem.core._cli_hydra import main
+
+        main(args, override_args)
+        return
 
     # TODO: rename num_gpus -> num_ranks everywhere
     assert (
@@ -126,10 +131,7 @@ def main(
             logging.info(
                 "Running in local mode without elastic launch (single gpu only)"
             )
-            os.environ["MASTER_ADDR"] = "localhost"
-            os.environ["LOCAL_RANK"] = "0"
-            os.environ["RANK"] = "0"
-            os.environ["MASTER_PORT"] = str(get_free_port())
+            distutils.setup_env_local()
             runner_wrapper(config)
 
 
