@@ -11,6 +11,7 @@ import logging
 import os
 from collections import defaultdict
 from itertools import chain
+import time
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -123,7 +124,10 @@ class OCPTrainer(BaseTrainer):
 
     def train(self, disable_eval_tqdm: bool = False) -> None:
         ensure_fitted(self._unwrapped_model, warn=True)
-
+        previous_wall_time = time.time()
+        self.dp_world_size = distutils.get_world_size()
+        self.train_avg_atoms_per_second = None
+        self.val_avg_atoms_per_second = None
         eval_every = self.config["optim"].get("eval_every", len(self.train_loader))
         checkpoint_every = self.config["optim"].get("checkpoint_every", eval_every)
         primary_metric = self.evaluation_metrics.get(
@@ -169,14 +173,42 @@ class OCPTrainer(BaseTrainer):
                 self._backward(loss)
 
                 # Log metrics.
+
+                time_delta = time.time() - previous_wall_time
+                previous_wall_time = time.time()
+                num_atoms = batch.natoms.sum().item()
+                atoms_per_second = (
+                    batch.natoms.sum().item() * self.dp_world_size / float(time_delta)
+                )
+                if self.train_avg_atoms_per_second is None:
+                    self.train_avg_atoms_per_second = atoms_per_second
+                else:
+                    self.train_avg_atoms_per_second = (
+                        0.99 * self.train_avg_atoms_per_second + 0.01 * atoms_per_second
+                    )
                 log_dict = {k: self.metrics[k]["metric"] for k in self.metrics}
                 log_dict.update(
                     {
                         "lr": self.scheduler.get_lr(),
                         "epoch": self.epoch,
                         "step": self.step,
+                        "samples_per_second(approx)": batch.natoms.numel()
+                        * self.dp_world_size
+                        / float(time_delta),
+                        "atoms_per_second(approx)": num_atoms
+                        * self.dp_world_size
+                        / float(time_delta),
+                        "train_avg_atoms_per_second(approx)": self.train_avg_atoms_per_second,
+                        "num_atoms_per_sample_rank0": num_atoms / batch.natoms.numel(),
                     }
                 )
+
+                if self.val_avg_atoms_per_second is not None:
+                    log_dict.update(
+                        {
+                            "val_avg_atoms_per_second(approx)": self.val_avg_atoms_per_second,
+                        }
+                    )
                 if (
                     self.step % self.config["cmd"]["print_every"] == 0
                     and distutils.is_master()
@@ -666,7 +698,9 @@ class OCPTrainer(BaseTrainer):
                 )
                 gather_results["chunk_idx"] = np.cumsum(
                     [gather_results["chunk_idx"][i] for i in idx]
-                )[:-1]  # np.split does not need last idx, assumes n-1:end
+                )[
+                    :-1
+                ]  # np.split does not need last idx, assumes n-1:end
 
                 full_path = os.path.join(
                     self.config["cmd"]["results_dir"], "relaxed_positions.npz"
