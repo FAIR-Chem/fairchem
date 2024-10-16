@@ -80,6 +80,7 @@ class OCPCalculator(Calculator):
         max_neighbors: int = 50,
         cpu: bool = True,
         seed: int | None = None,
+        amp: bool | None = None,
     ) -> None:
         """
         OCP-ASE Calculator
@@ -102,6 +103,10 @@ class OCPCalculator(Calculator):
                 Maximum amount of neighbors to store for a given atom.
             cpu (bool):
                 Whether to load and run the model on CPU. Set `False` for GPU.
+            seed (int):
+                Seed to set for python and pytorch for reproducibility.
+            amp (bool):
+                Whether to use AMP or not.
         """
         setup_imports()
         setup_logging()
@@ -170,6 +175,12 @@ class OCPCalculator(Calculator):
         self.config["checkpoint"] = checkpoint_path
         del config["dataset"]["src"]
 
+        if amp is None:
+            logging.warning(
+                f"AMP option has not been explicitly set in calculator, will use amp from checkpoint, amp:{config.get('amp', False)}"
+            )
+            amp = config.get("amp", False)
+
         self.trainer = registry.get_trainer_class(config["trainer"])(
             task=config.get("task", {}),
             model=config["model"],
@@ -183,7 +194,7 @@ class OCPCalculator(Calculator):
             local_rank=config.get("local_rank", 0),
             is_debug=config.get("is_debug", True),
             cpu=cpu,
-            amp=config.get("amp", False),
+            amp=amp,
             inference_only=True,
         )
 

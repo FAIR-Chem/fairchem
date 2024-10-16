@@ -372,7 +372,9 @@ class SphericalChannelNetwork(nn.Module, GraphModelMixin):
         node_energy = self.act(self.energy_fc2(node_energy))
         node_energy = self.energy_fc3(node_energy)
         node_energy = node_energy.view(-1, self.num_sphere_samples, 1)
-        node_energy = torch.sum(node_energy, dim=1) / self.num_sphere_samples
+        node_energy = (
+            torch.sum(node_energy, dim=1, dtype=torch.float32) / self.num_sphere_samples
+        )  # sum into a float32; CPU and CUDA AMP implementations differ on this default
         energy = torch.zeros(len(data.natoms), device=pos.device)
         energy.index_add_(0, data.batch, node_energy.view(-1))
 

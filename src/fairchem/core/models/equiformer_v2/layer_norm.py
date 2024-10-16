@@ -72,12 +72,12 @@ class EquivariantLayerNormArray(nn.Module):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(lmax={self.lmax}, num_channels={self.num_channels}, eps={self.eps})"
 
-    @torch.cuda.amp.autocast(enabled=False)
+    @torch.autocast(device_type="cuda", enabled=False)
+    @torch.autocast(device_type="cpu", enabled=False)
     def forward(self, node_input):
         """
         Assume input is of shape [N, sphere_basis, C]
         """
-
         out = []
 
         for lval in range(self.lmax + 1):
@@ -172,7 +172,8 @@ class EquivariantLayerNormArraySphericalHarmonics(nn.Module):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(lmax={self.lmax}, num_channels={self.num_channels}, eps={self.eps}, std_balance_degrees={self.std_balance_degrees})"
 
-    @torch.cuda.amp.autocast(enabled=False)
+    @torch.autocast(device_type="cuda", enabled=False)
+    @torch.autocast(device_type="cpu", enabled=False)
     def forward(self, node_input):
         """
         Assume input is of shape [N, sphere_basis, C]
@@ -260,7 +261,8 @@ class EquivariantRMSNormArraySphericalHarmonics(nn.Module):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(lmax={self.lmax}, num_channels={self.num_channels}, eps={self.eps})"
 
-    @torch.cuda.amp.autocast(enabled=False)
+    @torch.autocast(device_type="cuda", enabled=False)
+    @torch.autocast(device_type="cpu", enabled=False)
     def forward(self, node_input):
         """
         Assume input is of shape [N, sphere_basis, C]
@@ -354,7 +356,8 @@ class EquivariantRMSNormArraySphericalHarmonicsV2(nn.Module):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(lmax={self.lmax}, num_channels={self.num_channels}, eps={self.eps}, centering={self.centering}, std_balance_degrees={self.std_balance_degrees})"
 
-    @torch.cuda.amp.autocast(enabled=False)
+    @torch.autocast(device_type="cuda", enabled=False)
+    @torch.autocast(device_type="cpu", enabled=False)
     def forward(self, node_input):
         """
         Assume input is of shape [N, sphere_basis, C]
