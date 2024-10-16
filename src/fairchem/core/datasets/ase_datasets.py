@@ -105,7 +105,7 @@ class AseAtomsDataset(BaseDataset, ABC):
 
         if len(self.ids) == 0:
             raise ValueError(
-                rf"No valid ase data found!"
+                rf"No valid ase data found! \n"
                 f"Double check that the src path and/or glob search pattern gives ASE compatible data: {config['src']}"
             )
 
