@@ -250,6 +250,7 @@ class SO3_Grid(torch.nn.Module):
         mmax: int,
         normalization: str = "integral",
         resolution: int | None = None,
+        rescale: bool = False,
     ):
         super().__init__()
 
@@ -276,7 +277,7 @@ class SO3_Grid(torch.nn.Module):
         )
         to_grid_mat = torch.einsum("mbi, am -> bai", to_grid.shb, to_grid.sha).detach()
         # rescale based on mmax
-        if lmax != mmax:
+        if rescale and lmax != mmax:
             for lval in range(lmax + 1):
                 if lval <= mmax:
                     continue
@@ -300,7 +301,7 @@ class SO3_Grid(torch.nn.Module):
             "am, mbi -> bai", from_grid.sha, from_grid.shb
         ).detach()
         # rescale based on mmax
-        if lmax != mmax:
+        if rescale and lmax != mmax:
             for lval in range(lmax + 1):
                 if lval <= mmax:
                     continue

@@ -15,7 +15,7 @@ jobs:
     strategy:
       max-parallel: 10
       matrix:
-        python_version: ['3.9', '3.11']
+        python_version: ['3.9', '3.12']
 
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +56,7 @@ jobs:
         run: |
           pytest tests -vv --ignore=tests/demo/ocpapi/tests/integration/  --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml
 
-      - if: ${{ matrix.python_version == '3.11' }}
+      - if: ${{ matrix.python_version == '3.12' }}
         name: codecov-report
         uses: codecov/codecov-action@v4
         with:

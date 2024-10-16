@@ -31,6 +31,7 @@ from tqdm import tqdm
 from fairchem.core import __version__
 from fairchem.core.common import distutils, gp_utils
 from fairchem.core.common.data_parallel import BalancedBatchSampler
+from fairchem.core.common.logger import WandBSingletonLogger
 from fairchem.core.common.registry import registry
 from fairchem.core.common.slurm import (
     add_timestamp_id_to_submission_pickle,
@@ -275,7 +276,19 @@ class BaseTrainer(ABC):
             logger_name = logger if isinstance(logger, str) else logger["name"]
             assert logger_name, "Specify logger name"
 
-            self.logger = registry.get_logger_class(logger_name)(self.config)
+            if logger_name == "wandb_singleton":
+                WandBSingletonLogger.init_wandb(
+                    config=self.config,
+                    run_id=self.config["cmd"]["timestamp_id"],
+                    run_name=self.config["cmd"]["identifier"],
+                    log_dir=self.config["cmd"]["logs_dir"],
+                    project=self.config["logger"]["project"],
+                    entity=self.config["logger"]["entity"],
+                    group=self.config["logger"].get("group", ""),
+                )
+                self.logger = WandBSingletonLogger.get_instance()
+            else:
+                self.logger = registry.get_logger_class(logger_name)(self.config)
 
     def get_sampler(
         self, dataset, batch_size: int, shuffle: bool
@@ -578,7 +591,7 @@ class BaseTrainer(ABC):
         self,
         checkpoint_path: str,
         checkpoint: dict | None = None,
-        inference_only: bool | None = None,
+        inference_only: bool = False,
     ) -> None:
         map_location = torch.device("cpu") if self.cpu else self.device
         if checkpoint is None:
@@ -590,7 +603,6 @@ class BaseTrainer(ABC):
             checkpoint = torch.load(checkpoint_path, map_location=map_location)
 
         # attributes that are necessary for training and validation
-        inference_only = self.train_dataset is None or inference_only
         if inference_only is False:
             self.epoch = checkpoint.get("epoch", 0)
             self.step = checkpoint.get("step", 0)
@@ -601,6 +613,10 @@ class BaseTrainer(ABC):
                 self.optimizer.load_state_dict(checkpoint["optimizer"])
             if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
                 self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
+        else:
+            logging.info(
+                "Loading checkpoint in inference-only mode, not loading keys associated with trainer state!"
+            )
 
         if "ema" in checkpoint and checkpoint["ema"] is not None:
             self.ema.load_state_dict(checkpoint["ema"])
