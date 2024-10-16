@@ -215,6 +215,7 @@ class BaseTrainer(ABC):
         self.test_dataset = None
         self.best_val_metric = None
         self.primary_metric = None
+        self.ema = None
 
         self.load(inference_only)
 
@@ -361,7 +362,7 @@ class BaseTrainer(ABC):
             )
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
-                self.config["optim"]["batch_size"],
+                self.config["optim"].get("batch_size", 1),
                 shuffle=True,
             )
             self.train_loader = self.get_dataloader(
@@ -392,7 +393,7 @@ class BaseTrainer(ABC):
             self.val_sampler = self.get_sampler(
                 self.val_dataset,
                 self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
+                    "eval_batch_size", self.config["optim"].get("batch_size", 1)
                 ),
                 shuffle=False,
             )
@@ -414,7 +415,7 @@ class BaseTrainer(ABC):
             self.test_sampler = self.get_sampler(
                 self.test_dataset,
                 self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
+                    "eval_batch_size", self.config["optim"].get("batch_size", 1)
                 ),
                 shuffle=False,
             )
@@ -613,15 +614,14 @@ class BaseTrainer(ABC):
                 self.optimizer.load_state_dict(checkpoint["optimizer"])
             if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
                 self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
+            if "ema" in checkpoint and checkpoint["ema"] is not None:
+                self.ema.load_state_dict(checkpoint["ema"])
+            else:
+                self.ema = None
         else:
             logging.info(
                 "Loading checkpoint in inference-only mode, not loading keys associated with trainer state!"
             )
-
-        if "ema" in checkpoint and checkpoint["ema"] is not None:
-            self.ema.load_state_dict(checkpoint["ema"])
-        else:
-            self.ema = None
 
         new_dict = match_state_dict(self.model.state_dict(), checkpoint["state_dict"])
         strict = self.config.get("task", {}).get("strict_load", True)
