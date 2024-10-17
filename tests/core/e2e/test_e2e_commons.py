@@ -106,7 +106,7 @@ def _run_main(
     save_predictions_to=None,
     world_size=1,
 ):
-    config_yaml = Path(rundir) / "train_and_val_on_val.yml"
+    config_yaml = Path(rundir) / "test_run.yml"
     update_yaml_with_dict(input_yaml, config_yaml, update_dict_with)
     run_args = {
         "run_dir": rundir,
@@ -119,7 +119,17 @@ def _run_main(
     # run
     parser = flags.get_parser()
     args, override_args = parser.parse_known_args(
-        ["--mode", "train", "--seed", "100", "--config-yml", "config.yml", "--cpu", "--num-gpus", str(world_size)]
+        [
+            "--mode",
+            "train",
+            "--seed",
+            "100",
+            "--config-yml",
+            "config.yml",
+            "--cpu",
+            "--num-gpus",
+            str(world_size),
+        ]
     )
     for arg_name, arg_value in run_args.items():
         setattr(args, arg_name, arg_value)
