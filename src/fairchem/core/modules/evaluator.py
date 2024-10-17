@@ -180,7 +180,7 @@ def mse(
 
 
 @metrics_dict
-def mae_density(
+def per_atom_mae(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
     key=NONE_SLICE,
@@ -189,7 +189,7 @@ def mae_density(
 
 
 @metrics_dict
-def mse_density(
+def per_atom_mse(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
     key=NONE_SLICE,
@@ -367,6 +367,7 @@ def min_diff(
     fractional[fractional > 0.5] -= 1
 
     return np.matmul(fractional, cell)
+
 
 def rmse(
     prediction: dict[str, torch.Tensor],

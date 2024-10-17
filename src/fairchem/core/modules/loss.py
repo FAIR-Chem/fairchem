@@ -9,8 +9,11 @@ from torch import nn
 from fairchem.core.common import distutils
 
 
-class LossDensity(nn.Module):
-    """Simply divide a loss by the number of atoms/nodes in the graph."""
+class PerAtomLoss(nn.Module):
+    """
+    Simply divide a loss by the number of atoms/nodes in the graph.
+    Currently this loss is intened to used with scalar values, not vectors, or higher tensors.
+    """
 
     def __init__(self, loss: nn.Module):
         super().__init__()
@@ -19,7 +22,12 @@ class LossDensity(nn.Module):
     def forward(
         self, pred: torch.Tensor, target: torch.Tensor, natoms: torch.Tensor
     ) -> torch.Tensor:
-        return self.loss(pred / natoms, target / natoms)
+        _natoms = torch.reshape(natoms, target.shape)
+        # check if target is a scalar
+        assert target.dim() == 1 or (target.dim() == 2 and target.shape[1] == 1)
+        # check per_atom shape
+        assert (target / _natoms).shape == target.shape
+        return self.loss(pred / _natoms, target / _natoms)
 
 
 class L2MAELoss(nn.Module):
@@ -106,7 +114,7 @@ class DDPLoss(nn.Module):
             logging.warning("Found nans while computing loss")
             input = torch.nan_to_num(input, nan=0.0)
 
-        if any(idn in self.loss_name for idn in ("atomwise", "density")):
+        if any(idn in self.loss_name for idn in ("atomwise", "per_atom")):
             loss = self.loss_fn(input, target, natoms)
         else:
             loss = self.loss_fn(input, target)

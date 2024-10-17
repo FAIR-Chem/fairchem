@@ -260,7 +260,7 @@ class OCPTrainer(BaseTrainer):
                     ), f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
                     prop = self.output_targets[target_key]["property"]
                     pred = out[target_key][prop]
-                    
+
             # TODO clean up this logic to reconstruct a tensor from its predicted decomposition
             elif "decomposition" in self.output_targets[target_key]:
                 _max_rank = 0
@@ -411,7 +411,7 @@ class OCPTrainer(BaseTrainer):
         for key in filter(
             lambda k: k not in [*list(self.output_targets.keys()), "natoms"]
             and isinstance(batch[k], torch.Tensor),
-            batch.keys,
+            batch.keys(),
         ):
             targets[key] = batch[key].to(self.device)
             out[key] = targets[key]
@@ -676,7 +676,9 @@ class OCPTrainer(BaseTrainer):
                 )
                 gather_results["chunk_idx"] = np.cumsum(
                     [gather_results["chunk_idx"][i] for i in idx]
-                )[:-1]  # np.split does not need last idx, assumes n-1:end
+                )[
+                    :-1
+                ]  # np.split does not need last idx, assumes n-1:end
 
                 full_path = os.path.join(
                     self.config["cmd"]["results_dir"], "relaxed_positions.npz"
