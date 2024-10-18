@@ -260,6 +260,7 @@ class OCPTrainer(BaseTrainer):
                     ), f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
                     prop = self.output_targets[target_key]["property"]
                     pred = out[target_key][prop]
+
             # TODO clean up this logic to reconstruct a tensor from its predicted decomposition
             elif "decomposition" in self.output_targets[target_key]:
                 _max_rank = 0
@@ -349,7 +350,7 @@ class OCPTrainer(BaseTrainer):
                 * loss_info["fn"](
                     pred,
                     target,
-                    natoms=natoms,
+                    natoms=batch.natoms,
                     batch_size=batch_size,
                 )
             )
@@ -405,6 +406,15 @@ class OCPTrainer(BaseTrainer):
 
         targets["natoms"] = natoms
         out["natoms"] = natoms
+
+        # add all other tensor properties too, but filter out the ones that are changed above
+        for key in filter(
+            lambda k: k not in [*list(self.output_targets.keys()), "natoms"]
+            and isinstance(batch[k], torch.Tensor),
+            batch.keys(),
+        ):
+            targets[key] = batch[key].to(self.device)
+            out[key] = targets[key]
 
         return evaluator.eval(out, targets, prev_metrics=metrics)
 

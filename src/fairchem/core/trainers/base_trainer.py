@@ -31,6 +31,7 @@ from tqdm import tqdm
 from fairchem.core import __version__
 from fairchem.core.common import distutils, gp_utils
 from fairchem.core.common.data_parallel import BalancedBatchSampler
+from fairchem.core.common.logger import WandBSingletonLogger
 from fairchem.core.common.registry import registry
 from fairchem.core.common.slurm import (
     add_timestamp_id_to_submission_pickle,
@@ -276,7 +277,19 @@ class BaseTrainer(ABC):
             logger_name = logger if isinstance(logger, str) else logger["name"]
             assert logger_name, "Specify logger name"
 
-            self.logger = registry.get_logger_class(logger_name)(self.config)
+            if logger_name == "wandb_singleton":
+                WandBSingletonLogger.init_wandb(
+                    config=self.config,
+                    run_id=self.config["cmd"]["timestamp_id"],
+                    run_name=self.config["cmd"]["identifier"],
+                    log_dir=self.config["cmd"]["logs_dir"],
+                    project=self.config["logger"]["project"],
+                    entity=self.config["logger"]["entity"],
+                    group=self.config["logger"].get("group", ""),
+                )
+                self.logger = WandBSingletonLogger.get_instance()
+            else:
+                self.logger = registry.get_logger_class(logger_name)(self.config)
 
     def get_sampler(
         self, dataset, batch_size: int, shuffle: bool
