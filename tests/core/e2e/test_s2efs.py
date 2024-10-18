@@ -15,9 +15,7 @@ from test_e2e_commons import _run_main
         ("escn_hydra"),
     ],
 )
-def test_smoke_s2efs_predict(
-    model_name, configs, dummy_binary_dataset_path, tmpdir
-):
+def test_smoke_s2efs_predict(model_name, configs, dummy_binary_dataset_path, tmpdir):
     # train an s2ef model just to have one
     input_yaml = configs[model_name]
     train_rundir = tmpdir / "train"
@@ -45,7 +43,7 @@ def test_smoke_s2efs_predict(
         "outputs": {
             "stress": {"level": "system", "irrep_dim": 2, "property": "stress"}
         },
-        "evaluation_metrics": {"metrics": {"stress": ["mae", "mae_density"]}},
+        "evaluation_metrics": {"metrics": {"stress": ["mae", "per_atom_mae"]}},
         "dataset": {
             "train": {
                 "src": str(dummy_binary_dataset_path),
