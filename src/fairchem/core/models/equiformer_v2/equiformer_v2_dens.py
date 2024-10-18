@@ -4,10 +4,13 @@ Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+from __future__ import annotations
 
 import math
-import torch
 from functools import partial
+from typing import TYPE_CHECKING
+
+import torch
 
 from fairchem.core.common import gp_utils
 from fairchem.core.common.registry import registry
@@ -16,23 +19,25 @@ from fairchem.core.common.utils import conditional_grad
 try:
     from e3nn import o3
 except ImportError:
-    pass
+    import contextlib
+    contextlib.suppress(ImportError)
 
-from fairchem.core.models.equiformer_v2.so3 import (
-    SO3_Embedding,
-    SO3_LinearV2
+if TYPE_CHECKING:
+    from torch_geometric.data.batch import Batch
+
+from fairchem.core.models.base import GraphData, HeadInterface
+from fairchem.core.models.equiformer_v2.equiformer_v2 import (
+    EquiformerV2Backbone,
+    eqv2_init_weights,
 )
+from fairchem.core.models.equiformer_v2.prediction_heads.rank2 import (
+    Rank2SymmetricTensorHead,
+)
+from fairchem.core.models.equiformer_v2.so3 import SO3_Embedding, SO3_LinearV2
 from fairchem.core.models.equiformer_v2.transformer_block import (
     FeedForwardNetwork,
     SO2EquivariantGraphAttention,
 )
-
-from fairchem.core.models.equiformer_v2.equiformer_v2 import EquiformerV2Backbone, eqv2_init_weights
-
-from fairchem.core.models.base import HeadInterface
-
-from torch_geometric.data.batch import Batch
-from fairchem.core.models.base import GraphData
 
 _AVG_NUM_NODES = 31.16592360068011
 _AVG_DEGREE = 61.94676351484548
@@ -45,7 +50,7 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
         use_noise_schedule_sigma_encoding (bool):   For ablation study, whether to encode the sigma (sampled std of Gaussian noises) during
                                                     denoising positions when `fixed_noise_std` = False in config files. Default: False.
         use_denoising_energy (bool):                For ablation study, whether to predict the energy of the original structure given
-                                                    a corrupted structure. If `False`, we zero out the energy prediction. Default: True.                                               
+                                                    a corrupted structure. If `False`, we zero out the energy prediction. Default: True.
     """
     def __init__(
         self,
@@ -65,10 +70,10 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
         attn_value_channels=16,
         ffn_hidden_channels=512,
 
-        norm_type='rms_norm_sh',
+        norm_type="rms_norm_sh",
 
-        lmax_list=[6],
-        mmax_list=[2],
+        lmax_list=None,
+        mmax_list=None,
         grid_resolution=None,
 
         num_sphere_samples=128,
@@ -80,10 +85,10 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
         distance_function="gaussian",
         num_distance_basis=512,
 
-        attn_activation='scaled_silu',
+        attn_activation="scaled_silu",
         use_s2_act_attn=False,
         use_attn_renorm=True,
-        ffn_activation='scaled_silu',
+        ffn_activation="scaled_silu",
         use_gate_act=False,
         use_grid_mlp=False,
         use_sep_s2_act=True,
@@ -92,7 +97,7 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
         drop_path_rate=0.05,
         proj_drop=0.0,
 
-        weight_init='normal',
+        weight_init="normal",
 
         enforce_max_neighbors_strictly=True,
 
@@ -108,6 +113,10 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
         load_energy_lin_ref=False,
         activation_checkpoint=False,
     ):
+        if mmax_list is None:
+            mmax_list = [2]
+        if lmax_list is None:
+            lmax_list = [6]
         super().__init__(
             use_pbc,
             use_pbc_single,
@@ -169,7 +178,7 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
         self.use_noise_schedule_sigma_encoding = use_noise_schedule_sigma_encoding
         self.use_denoising_energy = use_denoising_energy
         self.use_denoising_stress = use_denoising_stress
-        
+
         # for denoising position, encode node-wise forces as node features
         self.irreps_sh = o3.Irreps.spherical_harmonics(lmax=max(self.lmax_list), p=1)
         self.force_embedding = SO3_LinearV2(
@@ -183,9 +192,9 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
                 in_features=1,
                 out_features=self.sphere_channels
             )
-            
+
         self.apply(partial(eqv2_init_weights, weight_init=self.weight_init))
-            
+
     @conditional_grad(torch.enable_grad())
     def forward(self, data):
         self.batch_size = len(data.natoms)
@@ -273,7 +282,7 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
         ##################
         ### DeNS Start ###
         ##################
-        
+
         # Node-wise force encoding during denoising positions
         force_embedding = SO3_Embedding(num_atoms, self.lmax_list, 1, self.device, self.dtype)
         if hasattr(data, "denoising_pos_forward") and data.denoising_pos_forward:
@@ -283,7 +292,7 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
                 l=self.irreps_sh,
                 x=force_data,
                 normalize=True,
-                normalization='component'
+                normalization="component"
             )
             force_sh = force_sh.view(num_atoms, (max(self.lmax_list) + 1) ** 2, 1)
             force_norm = force_data.norm(dim=-1, keepdim=True)
@@ -308,8 +317,8 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
 
         # noise schedule sigma encoding
         if self.use_noise_schedule_sigma_encoding:
-            if hasattr(data, 'denoising_pos_forward') and data.denoising_pos_forward:
-                assert hasattr(data, 'sigmas')
+            if hasattr(data, "denoising_pos_forward") and data.denoising_pos_forward:
+                assert hasattr(data, "sigmas")
                 sigmas = data.sigmas
             else:
                 sigmas = torch.zeros((num_atoms, 1), dtype=data.pos.dtype, device=data.pos.device)
@@ -319,7 +328,7 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
         ##################
         ###  DeNS End  ###
         ##################
-        
+
         # Edge encoding (distance and atom edge)
         graph.edge_distance = self.distance_expansion(graph.edge_distance)
         if self.share_atom_edge_embedding and self.use_atom_edge_embedding:
@@ -373,7 +382,7 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
 
         # Final layer norm
         x.embedding = self.norm(x.embedding)
-        
+
         return {"node_embedding": x, "graph": graph}
 
 @registry.register_model("equiformer_v2_dens_energy_head")
@@ -396,7 +405,7 @@ class DeNSEnergyHead(torch.nn.Module, HeadInterface):
         )
         self.apply(partial(eqv2_init_weights, weight_init=backbone.weight_init))
         self.use_denoising_energy = backbone.use_denoising_energy
-        
+
     def forward(self, data: Batch, emb: dict[str, torch.Tensor | GraphData]):
         node_energy = self.energy_block(emb["node_embedding"])
         node_energy = node_energy.embedding.narrow(1, 0, 1)
@@ -409,11 +418,12 @@ class DeNSEnergyHead(torch.nn.Module, HeadInterface):
         )
 
         energy.index_add_(0, data.batch, node_energy.view(-1))
-        
-        if hasattr(data, "denoising_pos_forward") and data.denoising_pos_forward:
-            if not self.use_denoising_energy:
-                energy = energy * 0.0
-                
+
+        if (hasattr(data, "denoising_pos_forward") and
+            data.denoising_pos_forward and
+            not self.use_denoising_energy):
+            energy = energy * 0.0
+
         if self.reduce == "sum":
             return {"energy": energy / self.avg_num_nodes}
         elif self.reduce == "mean":
@@ -453,7 +463,7 @@ class DeNSForceHead(torch.nn.Module, HeadInterface):
             backbone.use_sep_s2_act,
             alpha_drop=0.0,
         )
-        
+
         self.denoising_pos_block = SO2EquivariantGraphAttention(
             backbone.sphere_channels,
             backbone.attn_hidden_channels,
@@ -521,7 +531,7 @@ class DeNSForceHead(torch.nn.Module, HeadInterface):
         if gp_utils.initialized():
             forces = gp_utils.gather_from_model_parallel_region(forces, dim=0)
             denoising_pos_vec = gp_utils.gather_from_model_parallel_region(denoising_pos_vec, dim=0)
-            
+
         if hasattr(data, "denoising_pos_forward") and data.denoising_pos_forward:
             if hasattr(data, "noise_mask"):
                 noise_mask_tensor = data.noise_mask.view(-1, 1)
@@ -530,21 +540,21 @@ class DeNSForceHead(torch.nn.Module, HeadInterface):
                 forces = denoising_pos_vec + 0 * forces
         else:
             forces = 0 * denoising_pos_vec + forces
-            
+
         return {"forces": forces}
 
-from fairchem.core.models.equiformer_v2.prediction_heads.rank2 import Rank2SymmetricTensorHead
 
 @registry.register_model("dens_rank2_symmetric_head")
 class DeNSRank2Head(Rank2SymmetricTensorHead):
     def __init__(self, backbone, *args, **kwargs):
         super().__init__(backbone, *args, **kwargs)
         self.use_denoising_stress = backbone.use_denoising_stress
-    
+
     def forward(self, data: Batch, emb: dict[str, torch.Tensor]):
         output = super().forward(data, emb)
-        if hasattr(data, "denoising_pos_forward") and data.denoising_pos_forward:
-            if not self.use_denoising_stress:
-                for k in output:
-                    output[k] = output[k] * 0.0
+        if (hasattr(data, "denoising_pos_forward") and
+        data.denoising_pos_forward and
+        not self.use_denoising_stress):
+            for k in output:
+                output[k] = output[k] * 0.0
         return output

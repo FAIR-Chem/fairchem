@@ -7,8 +7,8 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from collections import defaultdict
+from dataclasses import dataclass
 
 import numpy as np
 import torch
@@ -17,11 +17,12 @@ from tqdm import tqdm
 
 from fairchem.core.common import distutils
 from fairchem.core.common.registry import registry
+from fairchem.core.modules.evaluator import mae
 from fairchem.core.modules.normalization.normalizer import Normalizer
 from fairchem.core.modules.scaling.util import ensure_fitted
-from fairchem.core.modules.evaluator import mae
 
 from .forces_trainer import EquiformerV2ForcesTrainer
+
 
 @dataclass
 class DenoisingPosParams:
@@ -59,15 +60,15 @@ def add_gaussian_noise_to_position(
         noise_mask = noise_mask < corrupt_ratio
         noise_vec[(~noise_mask)] *= 0
         batch.noise_mask = noise_mask
-    
+
     # Not add noise to structures from MD split
-    if hasattr(batch, 'md'):
+    if hasattr(batch, "md"):
         batch_index = batch.batch
         md_index = batch.md.bool()
         md_index = md_index[batch_index]
         noise_mask = (~md_index)
         noise_vec[(~noise_mask)] *= 0
-        if hasattr(batch, 'noise_mask'):
+        if hasattr(batch, "noise_mask"):
             batch.noise_mask = batch.noise_mask * noise_mask
         else:
             batch.noise_mask = noise_mask
@@ -118,18 +119,18 @@ def add_gaussian_noise_schedule_to_position(
         batch.noise_mask = noise_mask
 
     # Not add noise to structures from MD split
-    if hasattr(batch, 'md'):
+    if hasattr(batch, "md"):
         batch_index = batch.batch
         md_index = batch.md.bool()
         md_index = md_index[batch_index]
         noise_mask = (~md_index)
         #noise_vec[(~noise_mask)] *= 0
-        if hasattr(batch, 'noise_mask'):
+        if hasattr(batch, "noise_mask"):
             batch.noise_mask = batch.noise_mask * noise_mask
         else:
             batch.noise_mask = noise_mask
 
-    if hasattr(batch, 'noise_mask'):
+    if hasattr(batch, "noise_mask"):
         noise_vec[(~batch.noise_mask)] *= 0
 
     # only add noise to free atoms
@@ -148,7 +149,7 @@ def add_gaussian_noise_schedule_to_position(
 
 
 def denoising_pos_eval(
-    evaluator, prediction, target, prev_metrics={}, denoising_pos_forward=False
+    evaluator, prediction, target, prev_metrics=None, denoising_pos_forward=False
 ):
     """
     1.  Overwrite the original Evaluator.eval() here: https://github.com/Open-Catalyst-Project/ocp/blob/5a7738f9aa80b1a9a7e0ca15e33938b4d2557edd/ocpmodels/modules/evaluator.py#L69-L81
@@ -162,17 +163,17 @@ def denoising_pos_eval(
 
     if target.get("noise_mask", None) is None:
         # Only update `denoising_energy_mae` and `denoising_pos_mae` during denoising positions if not using partially corrupted structures
-        res = eval("mae")(prediction, target, "energy")
+        res = mae(prediction, target, "energy")
         metrics = evaluator.update("denoising_energy_mae", res, metrics)
-        res = eval("mae")(prediction, target, "forces")
+        res = mae(prediction, target, "forces")
         metrics = evaluator.update("denoising_pos_mae", res, metrics)
-        res = eval("mae")(prediction, target, "stress")
+        res = mae(prediction, target, "stress")
         metrics = evaluator.update("denoising_stress_mae", res, metrics)
     else:
         # Update `denoising_energy_mae`, `denoising_pos_mae` and `denoising_force_mae` if using partially corrupted structures
-        res = eval("mae")(prediction, target, "energy")
+        res = mae(prediction, target, "energy")
         metrics = evaluator.update("denoising_energy_mae", res, metrics)
-        res = eval("mae")(prediction, target, "stress")
+        res = mae(prediction, target, "stress")
         metrics = evaluator.update("denoising_stress_mae", res, metrics)
         # separate S2EF and denoising positions results based on `noise_mask`
         target_tensor = target["forces"]
@@ -181,7 +182,7 @@ def denoising_pos_eval(
         s2ef_index = torch.where(noise_mask == 0)
         s2ef_prediction = {"forces": prediction_tensor[s2ef_index]}
         s2ef_target = {"forces": target_tensor[s2ef_index]}
-        res = eval("mae")(s2ef_prediction, s2ef_target, "forces")
+        res = mae(s2ef_prediction, s2ef_target, "forces")
         if res["numel"] != 0:
             metrics = evaluator.update("denoising_force_mae", res, metrics)
         denoising_pos_index = torch.where(noise_mask == 1)
@@ -189,7 +190,7 @@ def denoising_pos_eval(
             "forces": prediction_tensor[denoising_pos_index]
         }
         denoising_pos_target = {"forces": target_tensor[denoising_pos_index]}
-        res = eval("mae")(
+        res = mae(
             denoising_pos_prediction, denoising_pos_target, "forces"
         )
         if res["numel"] != 0:
@@ -209,8 +210,7 @@ def compute_atomwise_denoising_pos_and_force_hybrid_loss(
     loss = loss * mult_tensor
     if mask is not None:
         loss = loss[mask]
-    loss = torch.mean(loss)
-    return loss
+    return torch.mean(loss)
 
 
 @registry.register_trainer("equiformerv2_dens")
@@ -224,7 +224,7 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
     3.  This should make models leverage more from training data and enable data augmentation for
         the S2EF task.
     4.  We should only modify the training part.
-    5.  For normalizing the outputs of noise prediction, if we use `fixed_noise_std = True`, we use 
+    5.  For normalizing the outputs of noise prediction, if we use `fixed_noise_std = True`, we use
         `std` for the normalization factor. Otherwise, we use `std_high` when `fixed_noise_std = False`.
 
     Args:
@@ -353,24 +353,23 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
                 batch = next(train_loader_iter)
 
                 # for denoising positions
-                if self.use_denoising_pos:
-                    if np.random.rand() < self.denoising_pos_params.prob:
-                        if self.denoising_pos_params.fixed_noise_std:
-                            batch = add_gaussian_noise_to_position(
-                                batch,
-                                std=self.denoising_pos_params.std,
-                                corrupt_ratio=self.denoising_pos_params.corrupt_ratio,
-                                all_atoms=self.denoising_pos_params.all_atoms,
-                            )
-                        else:
-                            batch = add_gaussian_noise_schedule_to_position(
-                                batch,
-                                std_low=self.denoising_pos_params.std_low,
-                                std_high=self.denoising_pos_params.std_high,
-                                num_steps=self.denoising_pos_params.num_steps,
-                                corrupt_ratio=self.denoising_pos_params.corrupt_ratio,
-                                all_atoms=self.denoising_pos_params.all_atoms,
-                            )
+                if self.use_denoising_pos and np.random.rand() < self.denoising_pos_params.prob:
+                    if self.denoising_pos_params.fixed_noise_std:
+                        batch = add_gaussian_noise_to_position(
+                            batch,
+                            std=self.denoising_pos_params.std,
+                            corrupt_ratio=self.denoising_pos_params.corrupt_ratio,
+                            all_atoms=self.denoising_pos_params.all_atoms,
+                        )
+                    else:
+                        batch = add_gaussian_noise_schedule_to_position(
+                            batch,
+                            std_low=self.denoising_pos_params.std_low,
+                            std_high=self.denoising_pos_params.std_high,
+                            num_steps=self.denoising_pos_params.num_steps,
+                            corrupt_ratio=self.denoising_pos_params.corrupt_ratio,
+                            all_atoms=self.denoising_pos_params.all_atoms,
+                        )
 
                 # Forward, loss, backward.
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
@@ -537,7 +536,7 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
                                 batch_size=batch_size,
                             )
                         )
-                else:                        
+                else:
                     if hasattr(batch, "noise_mask"):
                         # for partially corrupted structures
                         loss.append(
@@ -574,7 +573,7 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
                     target = target[mask]
                     pred = pred[mask]
                     natoms = natoms[mask]
-                
+
                 num_atoms_in_batch = natoms.numel()
 
                 ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
@@ -592,7 +591,7 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
                 target = self.normalizers[target_name].norm(target)
 
             mult = loss_info["coefficient"]
-            
+
             loss.append(
                 mult
                 * loss_info["fn"](
@@ -630,7 +629,7 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
             s_idx += _natoms
         natoms = torch.LongTensor(natoms_free).to(self.device)
 
-        denoising_pos_forward = True if batch.get("denoising_pos_forward", False) else False
+        denoising_pos_forward = bool(batch.get("denoising_pos_forward", False))
 
         targets = {}
         for target_name in self.output_targets:
@@ -707,7 +706,7 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
         targets["natoms"] = natoms
         out["natoms"] = natoms
 
-        metrics = denoising_pos_eval(
+        return denoising_pos_eval(
             evaluator,
             out,
             targets,
@@ -715,7 +714,6 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
             denoising_pos_forward=denoising_pos_forward,
         )
 
-        return metrics
 
     @torch.no_grad()
     def predict(
@@ -761,7 +759,7 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
             with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                 out = self._forward(batch)
 
-            for key in out.keys():
+            for key in out:
                 out[key] = out[key].float()
 
             for target_key in self.config["outputs"]:
