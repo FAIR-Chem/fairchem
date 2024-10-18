@@ -4,6 +4,7 @@ Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
 from __future__ import annotations
 
 import logging
@@ -37,9 +38,7 @@ class DenoisingPosParams:
     denoising_pos_coefficient: float = None
 
 
-def add_gaussian_noise_to_position(
-    batch, std, corrupt_ratio=None, all_atoms=False
-):
+def add_gaussian_noise_to_position(batch, std, corrupt_ratio=None, all_atoms=False):
     """
     1.  Update `pos` in `batch`.
     2.  Add `noise_vec` to `batch`, which will serve as the target for denoising positions.
@@ -66,7 +65,7 @@ def add_gaussian_noise_to_position(
         batch_index = batch.batch
         md_index = batch.md.bool()
         md_index = md_index[batch_index]
-        noise_mask = (~md_index)
+        noise_mask = ~md_index
         noise_vec[(~noise_mask)] *= 0
         if hasattr(batch, "noise_mask"):
             batch.noise_mask = batch.noise_mask * noise_mask
@@ -115,7 +114,7 @@ def add_gaussian_noise_schedule_to_position(
             device=batch.pos.device,
         )
         noise_mask = noise_mask < corrupt_ratio
-        #noise_vec[(~noise_mask)] *= 0
+        # noise_vec[(~noise_mask)] *= 0
         batch.noise_mask = noise_mask
 
     # Not add noise to structures from MD split
@@ -123,8 +122,8 @@ def add_gaussian_noise_schedule_to_position(
         batch_index = batch.batch
         md_index = batch.md.bool()
         md_index = md_index[batch_index]
-        noise_mask = (~md_index)
-        #noise_vec[(~noise_mask)] *= 0
+        noise_mask = ~md_index
+        # noise_vec[(~noise_mask)] *= 0
         if hasattr(batch, "noise_mask"):
             batch.noise_mask = batch.noise_mask * noise_mask
         else:
@@ -186,13 +185,9 @@ def denoising_pos_eval(
         if res["numel"] != 0:
             metrics = evaluator.update("denoising_force_mae", res, metrics)
         denoising_pos_index = torch.where(noise_mask == 1)
-        denoising_pos_prediction = {
-            "forces": prediction_tensor[denoising_pos_index]
-        }
+        denoising_pos_prediction = {"forces": prediction_tensor[denoising_pos_index]}
         denoising_pos_target = {"forces": target_tensor[denoising_pos_index]}
-        res = mae(
-            denoising_pos_prediction, denoising_pos_target, "forces"
-        )
+        res = mae(denoising_pos_prediction, denoising_pos_target, "forces")
         if res["numel"] != 0:
             metrics = evaluator.update("denoising_pos_mae", res, metrics)
     return metrics
@@ -309,13 +304,14 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
         self.denoising_pos_params = DenoisingPosParams(
             **self.config["optim"]["denoising_pos_params"]
         )
-        self.denoising_pos_params.denoising_pos_coefficient = self.config[
-            "optim"
-        ]["denoising_pos_coefficient"]
+        self.denoising_pos_params.denoising_pos_coefficient = self.config["optim"][
+            "denoising_pos_coefficient"
+        ]
         self.normalizers["denoising_pos_target"] = Normalizer(
             mean=0.0,
             rmsd=(
-                self.denoising_pos_params.std if self.denoising_pos_params.fixed_noise_std
+                self.denoising_pos_params.std
+                if self.denoising_pos_params.fixed_noise_std
                 else self.denoising_pos_params.std_high
             ),
         )
@@ -353,7 +349,10 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
                 batch = next(train_loader_iter)
 
                 # for denoising positions
-                if self.use_denoising_pos and np.random.rand() < self.denoising_pos_params.prob:
+                if (
+                    self.use_denoising_pos
+                    and np.random.rand() < self.denoising_pos_params.prob
+                ):
                     if self.denoising_pos_params.fixed_noise_std:
                         batch = add_gaussian_noise_to_position(
                             batch,
@@ -417,9 +416,7 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
                     self.save(checkpoint_file="checkpoint.pt", training_state=True)
 
                 # Evaluate on val set every `eval_every` iterations.
-                if self.step % eval_every == 0 or i == (
-                    len(self.train_loader) - 1
-                ):
+                if self.step % eval_every == 0 or i == (len(self.train_loader) - 1):
                     if self.val_loader is not None:
                         if i == (len(self.train_loader) - 1):
                             self.save(
@@ -470,9 +467,7 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
         for loss_fn in self.loss_functions:
             target_name, loss_info = loss_fn
 
-            if target_name == "forces" and batch.get(
-                "denoising_pos_forward", False
-            ):
+            if target_name == "forces" and batch.get("denoising_pos_forward", False):
                 denoising_pos_target = batch.noise_vec
                 if self.normalizers.get("denoising_pos_target", False):
                     denoising_pos_target = self.normalizers[
@@ -657,14 +652,14 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
                             "denoising_pos_target"
                         ].denorm(out["forces"][denoising_pos_index])
                     else:
-                        out["forces"] = self.normalizers[
-                            "denoising_pos_target"
-                        ].denorm(out["forces"])
+                        out["forces"] = self.normalizers["denoising_pos_target"].denorm(
+                            out["forces"]
+                        )
 
                 if hasattr(batch, "noise_mask"):
-                    out["forces"][s2ef_index] = self.normalizers[
-                        "forces"
-                    ].denorm(out["forces"][s2ef_index])
+                    out["forces"][s2ef_index] = self.normalizers["forces"].denorm(
+                        out["forces"][s2ef_index]
+                    )
 
                 if (
                     self.output_targets[target_name]["level"] == "atom"
@@ -700,7 +695,9 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
                 else:
                     target = target.view(batch_size, -1)
 
-                out[target_name] = self._denorm_preds(target_name, out[target_name], batch)
+                out[target_name] = self._denorm_preds(
+                    target_name, out[target_name], batch
+                )
                 targets[target_name] = target
 
         targets["natoms"] = natoms
@@ -713,7 +710,6 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
             prev_metrics=metrics,
             denoising_pos_forward=denoising_pos_forward,
         )
-
 
     @torch.no_grad()
     def predict(
