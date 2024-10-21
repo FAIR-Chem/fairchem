@@ -15,10 +15,13 @@ from typing import Any, TypeVar
 
 import torch
 import torch.distributed as dist
+from torch.distributed.elastic.utils.distributed import get_free_port
 
 from fairchem.core.common.typing import none_throws
 
 T = TypeVar("T")
+DISTRIBUTED_PORT = 13356
+CURRENT_DEVICE_STR = "CURRRENT_DEVICE"
 
 
 def os_environ_get_or_throw(x: str) -> str:
@@ -40,7 +43,7 @@ def setup(config) -> None:
                 )
                 config["init_method"] = "tcp://{host}:{port}".format(
                     host=hostnames.split()[0].decode("utf-8"),
-                    port=config["distributed_port"],
+                    port=DISTRIBUTED_PORT,
                 )
                 nnodes = int(os_environ_get_or_throw("SLURM_NNODES"))
                 ntasks_per_node = os.environ.get("SLURM_NTASKS_PER_NODE")
@@ -67,10 +70,21 @@ def setup(config) -> None:
                 )
 
                 # ensures GPU0 does not have extra context/higher peak memory
-                torch.cuda.set_device(config["local_rank"])
+                logging.info(
+                    f"local rank: {config['local_rank']}, visible devices: {os.environ['CUDA_VISIBLE_DEVICES']}"
+                )
+
+                # In the new hydra runners, we setup the device for each rank as either cuda:0 or cpu
+                # after this point, the local rank should either be using "cpu" or "cuda"
+                if config.get("use_cuda_visibile_devices"):
+                    assign_device_for_local_rank(config["cpu"], config["local_rank"])
+                else:
+                    # in the old code, all ranks can see all devices but need to be assigned a device equal to their local rank
+                    # this is dangerous and should be deprecated
+                    torch.cuda.set_device(config["local_rank"])
 
                 dist.init_process_group(
-                    backend=config["distributed_backend"],
+                    backend="nccl",
                     init_method=config["init_method"],
                     world_size=config["world_size"],
                     rank=config["rank"],
@@ -101,12 +115,25 @@ def setup(config) -> None:
             timeout=timeout,
         )
     else:
-        config["local_rank"] = int(os.environ.get("LOCAL_RANK", config["local_rank"]))
-        dist.init_process_group(backend=config.get("backend", "nccl"), timeout=timeout)
+        if not os.environ.get("MASTER_ADDR"):
+            assert (
+                config["world_size"] == 1
+            ), "Can only setup master address and port at this point for a single rank, otherwise we assume the processes and the comm addr/port have already been setup"
+            setup_env_local()
+        config["local_rank"] = int(os.environ.get("LOCAL_RANK"))
+        if config.get("use_cuda_visibile_devices"):
+            assign_device_for_local_rank(config["cpu"], config["local_rank"])
+        dist.init_process_group(
+            backend=config["distributed_backend"],
+            rank=int(os.environ.get("RANK")),
+            world_size=config["world_size"],
+            timeout=timeout,
+        )
 
 
 def cleanup() -> None:
-    dist.destroy_process_group()
+    if dist.is_initialized():
+        dist.destroy_process_group()
 
 
 def initialized() -> bool:
@@ -192,3 +219,31 @@ def gather_objects(data: T, group: dist.ProcessGroup = dist.group.WORLD) -> list
     output = [None for _ in range(get_world_size())] if is_master() else None
     dist.gather_object(data, output, group=group, dst=0)
     return output
+
+
+def assign_device_for_local_rank(cpu: bool, local_rank: int):
+    if cpu:
+        os.environ[CURRENT_DEVICE_STR] = "cpu"
+    else:
+        # assert the cuda device to be the local rank
+        os.environ[CURRENT_DEVICE_STR] = "cuda"
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(local_rank)
+
+
+def get_device_for_local_rank():
+    cur_dev_env = os.environ.get(CURRENT_DEVICE_STR)
+    if cur_dev_env is not None:
+        return cur_dev_env
+    else:
+        device = "cuda" if torch.cuda.available() else "cpu"
+        logging.warn(
+            f"{CURRENT_DEVICE_STR} env variable not found, defaulting to {device}"
+        )
+        return device
+
+
+def setup_env_local():
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["LOCAL_RANK"] = "0"
+    os.environ["RANK"] = "0"
+    os.environ["MASTER_PORT"] = str(get_free_port())

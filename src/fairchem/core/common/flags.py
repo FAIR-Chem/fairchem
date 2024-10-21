@@ -27,7 +27,6 @@ class Flags:
         self.parser.add_argument(
             "--mode",
             choices=["train", "predict", "run-relaxations", "validate"],
-            required=True,
             help="Whether to train the model, make predictions, or to run relaxations",
         )
         self.parser.add_argument(
@@ -119,10 +118,12 @@ class Flags:
             "--num-gpus", default=1, type=int, help="Number of GPUs to request"
         )
         self.parser.add_argument(
-            "--distributed", action="store_true", help="Run with DDP"
+            "--cpu", action="store_true", help="Run CPU only training"
         )
         self.parser.add_argument(
-            "--cpu", action="store_true", help="Run CPU only training"
+            "--hydra",
+            action="store_true",
+            help="Use hydra configs instead (in development)",
         )
         self.parser.add_argument(
             "--num-nodes",
@@ -130,20 +131,6 @@ class Flags:
             type=int,
             help="Number of Nodes to request",
         )
-        self.parser.add_argument(
-            "--distributed-port",
-            type=int,
-            default=13356,
-            help="Port on master for DDP",
-        )
-        self.parser.add_argument(
-            "--distributed-backend",
-            type=str,
-            default="nccl",
-            help="Backend for DDP",
-        )
-        self.parser.add_argument("--local-rank", default=0, type=int, help="Local rank")
-        self.parser.add_argument("--no-ddp", action="store_true", help="Do not use DDP")
         self.parser.add_argument(
             "--gp-gpus",
             type=int,

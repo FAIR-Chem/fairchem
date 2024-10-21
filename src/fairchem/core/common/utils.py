@@ -10,6 +10,7 @@ from __future__ import annotations
 import ast
 import collections
 import copy
+import datetime
 import errno
 import importlib
 import itertools
@@ -26,6 +27,7 @@ from functools import wraps
 from itertools import product
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from uuid import uuid4
 
 import numpy as np
 import torch
@@ -505,11 +507,8 @@ def build_config(args, args_override, include_paths=None):
     config["submit"] = args.submit
     config["summit"] = args.summit
     # Distributed
-    config["local_rank"] = args.local_rank
-    config["distributed_port"] = args.distributed_port
     config["world_size"] = args.num_nodes * args.num_gpus
-    config["distributed_backend"] = args.distributed_backend
-    config["noddp"] = args.no_ddp
+    config["distributed_backend"] = "gloo" if args.cpu else "nccl"
     config["gp_gpus"] = args.gp_gpus
 
     # Check for overridden parameters.
@@ -1012,7 +1011,7 @@ def setup_env_vars() -> None:
 
 
 @contextmanager
-def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
+def new_trainer_context(*, config: dict[str, Any]):
     from fairchem.core.common import distutils, gp_utils
     from fairchem.core.common.registry import registry
 
@@ -1031,10 +1030,9 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
     original_config = config
     config = copy.deepcopy(original_config)
 
-    if distributed:
-        distutils.setup(config)
-        if config["gp_gpus"] is not None:
-            gp_utils.setup_gp(config)
+    distutils.setup(config)
+    if config["gp_gpus"] is not None:
+        gp_utils.setup_gp(config)
     try:
         setup_imports(config)
         trainer_name = config.get("trainer", "ocp")
@@ -1065,7 +1063,6 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
             "amp": config.get("amp", False),
             "cpu": config.get("cpu", False),
             "slurm": config.get("slurm", {}),
-            "noddp": config.get("noddp", False),
             "name": task_name,
             "gp_gpus": config.get("gp_gpus"),
         }
@@ -1101,8 +1098,7 @@ def new_trainer_context(*, config: dict[str, Any], distributed: bool = False):
         if distutils.is_master():
             logging.info(f"Total time taken: {time.time() - start_time}")
     finally:
-        if distributed:
-            distutils.cleanup()
+        distutils.cleanup()
 
 
 def _resolve_scale_factor_submodule(model: nn.Module, name: str):
@@ -1452,3 +1448,7 @@ def load_model_and_weights_from_checkpoint(checkpoint_path: str) -> nn.Module:
     matched_dict = match_state_dict(model.state_dict(), checkpoint["state_dict"])
     load_state_dict(model, matched_dict, strict=True)
     return model
+
+
+def get_timestamp_uid() -> str:
+    return datetime.datetime.now().strftime("%Y%m-%d%H-%M%S-") + str(uuid4())[:4]
