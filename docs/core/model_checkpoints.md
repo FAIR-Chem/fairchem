@@ -177,3 +177,41 @@ Please consider citing the following paper in any research manuscript using the 
     journal={arXiv preprint arXiv:2311.00341},
 }
 ```
+
+
+## Open Materials 2024 (OMat24)
+
+* All config files for the OMat24 models are available in the [`configs/odac`](https://github.com/FAIR-Chem/fairchem/tree/main/configs/omat24) directory.
+* All models are equiformerV2 S2EFS models
+
+
+### OMat pretrained models
+
+These checkpoints are trained on OMat24 only. Note that predictions are *not* Materials Project compatible.
+
+| Model Name            | Checkpoint	| Config |
+|-----------------------|--------------| --- |
+| EquiformerV2-31M-OMat | [checkpoint](https://huggingface.co/fairchem/OMAT24) | [config](https://github.com/FAIR-Chem/fairchem/tree/main/configs/) |
+| EquiformerV2-86M-OMat | [checkpoint](https://huggingface.co/fairchem/OMAT24) | [config](https://github.com/FAIR-Chem/fairchem/tree/main/configs/) |
+| EquiformerV2-153M-OMat | [checkpoint](https://huggingface.co/fairchem/OMAT24) | [config](https://github.com/FAIR-Chem/fairchem/tree/main/configs/)|
+
+
+### MPTrj only models
+These models are trained only on the [MPTrj]() dataset.
+
+| Model Name                | Checkpoint	| Config |
+|---------------------------|--------------|---|
+| EquiformerV2-31M-MP       | [checkpoint](https://huggingface.co/fairchem/OMAT24) | [config](https://github.com/FAIR-Chem/fairchem/tree/main/configs/) |
+| EquiformerV2-31M-DeNS-MP  | [checkpoint](https://huggingface.co/fairchem/OMAT24) | [config](https://github.com/FAIR-Chem/fairchem/tree/main/configs/) |
+| EquiformerV2-86M-DeNS-MP  | [checkpoint](https://huggingface.co/fairchem/OMAT24) | [config](https://github.com/FAIR-Chem/fairchem/tree/main/configs/) |
+| EquiformerV2-153M-DeNS-MP | [checkpoint](https://huggingface.co/fairchem/OMAT24) | [config](https://github.com/FAIR-Chem/fairchem/tree/main/configs/)|
+
+
+### Finetuned OMat models
+These models are finetuned from the OMat pretrained checkpoints using MPTrj or MPTrj and sub-sampled trajectories
+from the 3D PBE Alexandria dataset, which we call Alex.
+
+| Model Name                     | Checkpoint	| Config |
+|--------------------------------|--------------|---|
+| EquiformerV2-31M-OMat-Alex-MP  | [checkpoint](https://huggingface.co/fairchem/OMAT24) | [config](https://github.com/FAIR-Chem/fairchem/tree/main/configs/) |
+| EquiformerV2-86M-OMat-Alex-MP  | [checkpoint](https://huggingface.co/fairchem/OMAT24) | [config](https://github.com/FAIR-Chem/fairchem/tree/main/configs/) |
