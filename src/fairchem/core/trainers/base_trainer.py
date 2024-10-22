@@ -44,6 +44,7 @@ from fairchem.core.common.utils import (
     load_state_dict,
     match_state_dict,
     save_checkpoint,
+    tensor_stats,
     update_config,
 )
 from fairchem.core.datasets import data_list_collater
@@ -933,6 +934,21 @@ class BaseTrainer(ABC):
         if self.clip_grad_norm:
             if self.scaler:
                 self.scaler.unscale_(self.optimizer)
+            # log unscaled weights and grads
+            if self.logger is not None and "log_weight_names" in self.config["logger"]:
+                names_to_log = self.config["logger"]["log_weight_names"]
+                for param_name, params in self.model.named_parameters():
+                    if any(x in param_name for x in names_to_log):
+                        self.logger.log(
+                            tensor_stats(f"weights/{param_name}", params),
+                            step=self.step,
+                        )
+                        if params.grad is not None:
+                            self.logger.log(
+                                tensor_stats(f"weights_grad/{param_name}", params.grad),
+                                step=self.step,
+                            )
+
             grad_norm = torch.nn.utils.clip_grad_norm_(
                 self.model.parameters(),
                 max_norm=self.clip_grad_norm,
@@ -940,8 +956,20 @@ class BaseTrainer(ABC):
             if self.logger is not None:
                 self.logger.log({"grad_norm": grad_norm}, step=self.step, split="train")
         if self.scaler:
+            cur_scale = self.scaler.get_scale()
             self.scaler.step(self.optimizer)
             self.scaler.update()
+            new_scale = self.scaler.get_scale()
+            if cur_scale != new_scale:
+                # check if there are any infs or NANs in the weights
+                for param_name, params in self.model.named_parameters():
+                    if params.grad is not None and (
+                        torch.isnan(params.grad).any() or torch.isinf(params.grad).any()
+                    ):
+                        logging.warning(
+                            f"Rank: {distutils.get_rank()}, train_step: {self.step}, new_scale: {new_scale}, Inf/Nan found in {param_name} gradient: {params.grad}, stats: {tensor_stats("grad", params.grad)}"
+                        )
+
         else:
             self.optimizer.step()
         if self.ema:

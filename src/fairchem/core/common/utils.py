@@ -52,6 +52,7 @@ DEFAULT_ENV_VARS = {
     # Expandable segments is a new cuda feature that helps with memory fragmentation during frequent allocations (ie: in the case of variable batch sizes).
     # see https://pytorch.org/docs/stable/notes/cuda.html.
     "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
+    "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
 }
 
 
@@ -1446,3 +1447,14 @@ def load_model_and_weights_from_checkpoint(checkpoint_path: str) -> nn.Module:
     matched_dict = match_state_dict(model.state_dict(), checkpoint["state_dict"])
     load_state_dict(model, matched_dict, strict=True)
     return model
+
+
+@torch.no_grad()
+def tensor_stats(name: str, x: torch.Tensor):
+    return {
+        f"{name}.max": x.max(),
+        f"{name}.min": x.min(),
+        f"{name}.std": x.std(),
+        f"{name}.mean": x.mean(),
+        f"{name}.nonzero_fraction": torch.nonzero(x).shape[0] / float(x.numel()),
+    }
