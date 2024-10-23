@@ -931,24 +931,32 @@ class BaseTrainer(ABC):
                             "Please check if all shared parameters are used "
                             "and point to PyTorch parameters."
                         )
-        if self.clip_grad_norm:
-            if self.scaler:
-                self.scaler.unscale_(self.optimizer)
+        if self.scaler:
+            self.scaler.unscale_(self.optimizer)
             # log unscaled weights and grads
-            if self.logger is not None and "log_weight_names" in self.config["logger"]:
-                names_to_log = self.config["logger"]["log_weight_names"]
+            log_weight_frequency = self.config["logger"].get("log_weights_every", -1)
+            if (
+                self.logger is not None
+                and log_weight_frequency > 0
+                and self.step % log_weight_frequency == 0
+            ):
+                stat_names = list(tensor_stats("", torch.Tensor([1])).keys())
+                columns = ["ParamName"] + stat_names + ["grad_" + n for n in stat_names]
+                data = []
                 for param_name, params in self.model.named_parameters():
-                    if any(x in param_name for x in names_to_log):
-                        self.logger.log(
-                            tensor_stats(f"weights/{param_name}", params),
-                            step=self.step,
+                    row_weight = list(
+                        tensor_stats(f"weights/{param_name}", params).values()
+                    )
+                    if params.grad is not None:
+                        row_grad = list(
+                            tensor_stats(f"grad/{param_name}", params.grad).values()
                         )
-                        if params.grad is not None:
-                            self.logger.log(
-                                tensor_stats(f"weights_grad/{param_name}", params.grad),
-                                step=self.step,
-                            )
+                    else:
+                        row_grad = None * len(row_weight)
+                    data.append(row_weight + row_grad)
+                self.logger.log_table(cols=columns, data=data)
 
+        if self.clip_grad_norm:
             grad_norm = torch.nn.utils.clip_grad_norm_(
                 self.model.parameters(),
                 max_norm=self.clip_grad_norm,
@@ -961,7 +969,7 @@ class BaseTrainer(ABC):
             self.scaler.update()
             new_scale = self.scaler.get_scale()
             if cur_scale != new_scale:
-                # check if there are any infs or NANs in the weights
+                # check if there are any infs or NANs in the weights, this is not very useful actually, delete?
                 for param_name, params in self.model.named_parameters():
                     if params.grad is not None and (
                         torch.isnan(params.grad).any() or torch.isinf(params.grad).any()

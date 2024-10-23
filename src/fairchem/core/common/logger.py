@@ -106,6 +106,14 @@ class WandBLogger(Logger):
         plots = [wandb.Image(x, caption=caption) for x in plots]
         wandb.log({"data": plots})
 
+    def log_table(
+        self, name: str, cols: list, data: list, step: int | None = None, commit=False
+    ) -> None:
+        # cols are 1D list of N elements, data must be NxK where the number of cols must match cols
+        # see https://docs.wandb.ai/guides/tables
+        table = wandb.Table(columns=cols, data=data)
+        wandb.log({name: table}, step=step, commit=commit)
+
     def log_summary(self, summary_dict: dict[str, Any]):
         for k, v in summary_dict.items():
             wandb.run.summary[k] = v
@@ -224,10 +232,13 @@ class WandBSingletonLogger:
         # otherwise the user must increment it manually (not recommended)
         wandb.log(update_dict, step=step, commit=commit)
 
-    def log_plots(self, plots, caption: str = "") -> None:
-        assert isinstance(plots, list)
-        plots = [wandb.Image(x, caption=caption) for x in plots]
-        wandb.log({"data": plots})
+    def log_table(
+        self, name: str, cols: list, data: list, step: int | None = None, commit=False
+    ) -> None:
+        # cols are 1D list of N elements, data must be NxK where the number of cols must match cols
+        # see https://docs.wandb.ai/guides/tables
+        table = wandb.Table(columns=cols, data=data)
+        wandb.log({name: table}, step=step, commit=commit)
 
     def log_summary(self, summary_dict: dict[str, Any]):
         for k, v in summary_dict.items():

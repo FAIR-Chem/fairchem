@@ -1450,7 +1450,7 @@ def load_model_and_weights_from_checkpoint(checkpoint_path: str) -> nn.Module:
 
 
 @torch.no_grad()
-def tensor_stats(name: str, x: torch.Tensor):
+def tensor_stats(name: str, x: torch.Tensor) -> dict:
     return {
         f"{name}.max": x.max(),
         f"{name}.min": x.min(),
