@@ -59,7 +59,8 @@ class EquiformerV2ForcesTrainer(OCPTrainer):
                         ]
             self.scheduler = LRScheduler(self.optimizer, self.config["optim"])
 
-        self.clip_grad_norm = self.config["optim"].get("clip_grad_norm")
+        self.clip_grad_norm = self.config["optim"].get("clip_grad_norm",None)
+        self.clip_grad_value = self.config["optim"].get("clip_grad_value",None)
         self.ema_decay = self.config["optim"].get("ema_decay")
         if self.ema_decay:
             self.ema = ExponentialMovingAverage(
