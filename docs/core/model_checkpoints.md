@@ -184,6 +184,8 @@ Please consider citing the following paper in any research manuscript using the 
 * All config files for the OMat24 models are available in the [`configs/odac`](https://github.com/FAIR-Chem/fairchem/tree/main/configs/omat24) directory.
 * All models are equiformerV2 S2EFS models
 
+**Note** in order to download any of the model checkpoints from the links below, you will need to first request access
+through the [OMMAT24 Hugging Face page](https://huggingface.co/fairchem/OMAT24).
 
 ### OMat pretrained models
 
