@@ -15,7 +15,9 @@ import torch
 import wandb
 from torch.utils.tensorboard import SummaryWriter
 
+from fairchem.core.common import distutils
 from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import tensor_stats
 
 
 class Logger(ABC):
@@ -172,6 +174,10 @@ class WandBSingletonLogger:
         raise RuntimeError("Call get_instance() instead")
 
     @classmethod
+    def initialized(cls) -> bool:
+        return WandBSingletonLogger._instance is not None
+
+    @classmethod
     def init_wandb(
         cls,
         config: dict,
@@ -234,3 +240,12 @@ class WandBSingletonLogger:
         art = wandb.Artifact(name=name, type=type)
         art.add_file(file_location)
         art.save()
+
+
+# convienience function for logging stats with WandBSingletonLogger
+def log_stats(x: torch.Tensor, prefix: str):
+    if distutils.is_master() and WandBSingletonLogger._instance is not None:
+        WandBSingletonLogger.get_instance().log(
+            tensor_stats(prefix, x),
+            commit=False,
+        )

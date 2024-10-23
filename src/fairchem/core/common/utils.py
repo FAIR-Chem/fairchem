@@ -1456,5 +1456,6 @@ def tensor_stats(name: str, x: torch.Tensor):
         f"{name}.min": x.min(),
         f"{name}.std": x.std(),
         f"{name}.mean": x.mean(),
+        f"{name}.norm": torch.norm(x, p=2),
         f"{name}.nonzero_fraction": torch.nonzero(x).shape[0] / float(x.numel()),
     }
