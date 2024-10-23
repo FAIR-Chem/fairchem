@@ -1097,11 +1097,10 @@ def new_trainer_context(*, config: dict[str, Any]):
     distutils.synchronize()
     if distutils.is_master():
         logging.info(f"Total time taken: {time.time() - start_time}")
-    
+
     logging.debug("Task complete. Running disutils cleanup")
     distutils.cleanup()
     logging.debug("Runner() complete")
-        
 
 
 def _resolve_scale_factor_submodule(model: nn.Module, name: str):
