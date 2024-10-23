@@ -77,6 +77,7 @@ Functions
    core.common.utils.update_config
    core.common.utils.get_loss_module
    core.common.utils.load_model_and_weights_from_checkpoint
+   core.common.utils.get_timestamp_uid
 
 
 Module Contents
@@ -296,4 +297,6 @@ Module Contents
 .. py:function:: get_loss_module(loss_name)
 
 .. py:function:: load_model_and_weights_from_checkpoint(checkpoint_path: str) -> torch.nn.Module
+
+.. py:function:: get_timestamp_uid() -> str
 

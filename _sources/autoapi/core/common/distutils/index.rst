@@ -19,6 +19,7 @@ Attributes
 
    core.common.distutils.T
    core.common.distutils.DISTRIBUTED_PORT
+   core.common.distutils.CURRENT_DEVICE_STR
 
 
 Functions
@@ -39,6 +40,9 @@ Functions
    core.common.distutils.all_reduce
    core.common.distutils.all_gather
    core.common.distutils.gather_objects
+   core.common.distutils.assign_device_for_local_rank
+   core.common.distutils.get_device_for_local_rank
+   core.common.distutils.setup_env_local
 
 
 Module Contents
@@ -48,6 +52,10 @@ Module Contents
 
 .. py:data:: DISTRIBUTED_PORT
    :value: 13356
+
+
+.. py:data:: CURRENT_DEVICE_STR
+   :value: 'CURRRENT_DEVICE'
 
 
 .. py:function:: os_environ_get_or_throw(x: str) -> str
@@ -78,4 +86,10 @@ Module Contents
 
    Gather a list of pickleable objects into rank 0
 
+
+.. py:function:: assign_device_for_local_rank(cpu: bool, local_rank: int)
+
+.. py:function:: get_device_for_local_rank()
+
+.. py:function:: setup_env_local()
 

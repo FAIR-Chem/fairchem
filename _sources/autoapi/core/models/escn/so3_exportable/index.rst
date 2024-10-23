@@ -108,7 +108,7 @@ Module Contents
    .. py:method:: __repr__()
 
 
-.. py:class:: SO3_Grid(lmax: int, mmax: int, normalization: str = 'integral', resolution: int | None = None)
+.. py:class:: SO3_Grid(lmax: int, mmax: int, normalization: str = 'integral', resolution: int | None = None, rescale: bool = False)
 
    Bases: :py:obj:`torch.nn.Module`
 

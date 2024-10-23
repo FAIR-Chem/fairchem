@@ -27,6 +27,7 @@ Submodules
 .. toctree::
    :maxdepth: 1
 
+   /autoapi/core/scripts/convert_hydra_to_release/index
    /autoapi/core/scripts/download_data/index
    /autoapi/core/scripts/download_large_files/index
    /autoapi/core/scripts/eqv2_to_hydra_eqv2/index

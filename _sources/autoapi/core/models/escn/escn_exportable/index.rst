@@ -30,7 +30,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: eSCN(max_neighbors: int = 300, cutoff: float = 8.0, max_num_elements: int = 100, num_layers: int = 8, lmax: int = 4, mmax: int = 2, sphere_channels: int = 128, hidden_channels: int = 256, edge_channels: int = 128, num_sphere_samples: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, resolution: int | None = None, compile: bool = False, export: bool = False)
+.. py:class:: eSCN(max_neighbors: int = 300, cutoff: float = 8.0, max_num_elements: int = 100, num_layers: int = 8, lmax: int = 4, mmax: int = 2, sphere_channels: int = 128, hidden_channels: int = 256, edge_channels: int = 128, num_sphere_samples: int = 128, distance_function: str = 'gaussian', basis_width_scalar: float = 1.0, distance_resolution: float = 0.02, resolution: int | None = None, compile: bool = False, export: bool = False, rescale_grid: bool = False)
 
    Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.GraphModelMixin`
 
@@ -123,6 +123,9 @@ Module Contents
    .. py:attribute:: export
 
 
+   .. py:attribute:: rescale_grid
+
+
    .. py:attribute:: act
 
 
@@ -133,9 +136,6 @@ Module Contents
 
 
    .. py:attribute:: SO3_grid
-
-
-   .. py:attribute:: mappingReduced
 
 
    .. py:attribute:: layer_blocks
@@ -187,7 +187,7 @@ Module Contents
 
 
 
-.. py:class:: LayerBlock(layer_idx: int, sphere_channels: int, hidden_channels: int, edge_channels: int, lmax: int, mmax: int, distance_expansion, max_num_elements: int, SO3_grid: fairchem.core.models.escn.so3_exportable.SO3_Grid, act, mappingReduced)
+.. py:class:: LayerBlock(layer_idx: int, sphere_channels: int, hidden_channels: int, edge_channels: int, lmax: int, mmax: int, distance_expansion, max_num_elements: int, SO3_grid: fairchem.core.models.escn.so3_exportable.SO3_Grid, act)
 
    Bases: :py:obj:`torch.nn.Module`
 
@@ -234,9 +234,6 @@ Module Contents
    .. py:attribute:: SO3_grid
 
 
-   .. py:attribute:: mappingReduced
-
-
    .. py:attribute:: message_block
 
 
@@ -252,7 +249,7 @@ Module Contents
    .. py:method:: forward(x: torch.Tensor, atomic_numbers: torch.Tensor, edge_distance: torch.Tensor, edge_index: torch.Tensor, wigner: torch.Tensor) -> torch.Tensor
 
 
-.. py:class:: MessageBlock(layer_idx: int, sphere_channels: int, hidden_channels: int, edge_channels: int, lmax: int, mmax: int, distance_expansion, max_num_elements: int, SO3_grid: fairchem.core.models.escn.so3_exportable.SO3_Grid, act, mappingReduced)
+.. py:class:: MessageBlock(layer_idx: int, sphere_channels: int, hidden_channels: int, edge_channels: int, lmax: int, mmax: int, distance_expansion, max_num_elements: int, SO3_grid: fairchem.core.models.escn.so3_exportable.SO3_Grid, act)
 
    Bases: :py:obj:`torch.nn.Module`
 
@@ -305,9 +302,6 @@ Module Contents
    .. py:attribute:: edge_channels
 
 
-   .. py:attribute:: mappingReduced
-
-
    .. py:attribute:: out_mask
 
 
@@ -323,7 +317,7 @@ Module Contents
    .. py:method:: forward(x: torch.Tensor, atomic_numbers: torch.Tensor, edge_distance: torch.Tensor, edge_index: torch.Tensor, wigner: torch.Tensor) -> torch.Tensor
 
 
-.. py:class:: SO2Block(sphere_channels: int, hidden_channels: int, edge_channels: int, lmax: int, mmax: int, act, mappingReduced)
+.. py:class:: SO2Block(sphere_channels: int, hidden_channels: int, edge_channels: int, lmax: int, mmax: int, act)
 
    Bases: :py:obj:`torch.nn.Module`
 

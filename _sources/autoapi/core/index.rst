@@ -35,5 +35,6 @@ Submodules
    :maxdepth: 1
 
    /autoapi/core/_cli/index
+   /autoapi/core/_cli_hydra/index
 
 

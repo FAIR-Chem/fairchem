@@ -66,6 +66,8 @@ Module Contents
 
 
    .. py:attribute:: otf_graph
+      :value: True
+
 
 
    .. py:method:: get_energy_and_forces(apply_constraint: bool = True)
