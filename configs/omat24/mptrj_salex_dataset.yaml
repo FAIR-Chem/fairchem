@@ -1,0 +1,37 @@
+dataset:
+  train:
+    format: ase_db
+    src:
+      - /dataset/salex/train
+      - /dataset/mptraj/train
+    a2g_args: { r_energy: True, r_forces: True, r_stress: True}
+    transforms:
+      decompose_tensor:
+        tensor: stress
+        rank: 2
+        decomposition:
+          stress_isotropic:
+            irrep_dim: 0
+          stress_anisotropic:
+            irrep_dim: 2
+      normalizer:
+        fit:
+          targets:
+            forces: { mean: 0.0 }
+            stress_isotropic: { }
+            stress_anisotropic: { }
+          batch_size: 64
+          num_batches: 10000
+      element_references:
+        fit:
+          targets:
+            - energy
+          batch_size: 64
+          num_batches: 10000
+
+  val:
+    format: ase_db
+    src:
+      - /dataset/salex/val
+      - /dataset/mptraj/val
+    a2g_args: { r_energy: True, r_forces: True, r_stress: True}

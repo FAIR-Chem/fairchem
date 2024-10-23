@@ -1,0 +1,97 @@
+includes:
+  - ../mptrj_salex_dataset.yml
+
+trainer: equiformerv2_forces
+
+hide_eval_progressbar: False
+
+evaluation_metrics:
+  primary_metric: energy_mae
+  metrics:
+    energy:
+      - mae
+      - per_atom_mae
+    forces:
+      - mae
+      - forcesx_mae
+      - forcesy_mae
+      - forcesz_mae
+      - cosine_similarity
+    stress:
+      - mae
+    stress_isotropic:
+      - mae
+    stress_anisotropic:
+      - mae
+
+outputs:
+  energy:
+    level: system
+    property: energy
+  forces:
+    level: atom
+    property: forces
+    train_on_free_atoms: True
+    eval_on_free_atoms: True
+  stress:
+    level: system
+    property: stress
+    decomposition:
+      stress_isotropic:
+        irrep_dim: 0
+      stress_anisotropic:
+        irrep_dim: 2
+
+loss_functions:
+  - energy:
+      fn: per_atom_mae
+      coefficient: 20
+  - forces:
+      fn: l2mae
+      coefficient: 10
+  - stress_isotropic:
+      fn: mae
+      coefficient: 1
+  - stress_anisotropic:
+      fn: mae
+      reduction: mean_all
+      coefficient: 1
+
+model:
+  name: hydra
+  pass_through_head_outputs: True
+  otf_graph: True
+  finetune_config:
+    starting_checkpoint: eqV2_153M_omat.pt
+  heads:
+    energy:
+      module: equiformer_v2_energy_head
+    forces:
+      module: equiformer_v2_force_head
+    stress:
+      module: rank2_symmetric_head
+      output_name: stress
+      use_source_target_embedding:   True
+      decompose:                     True
+
+optim:
+  batch_size:                   8 # 4 node - Global 256
+  eval_batch_size:              12
+  load_balancing: atoms
+  num_workers: 8
+  lr_initial:                   0.0002
+
+  optimizer: AdamW
+  optimizer_params:
+    weight_decay: 0.001
+  scheduler: LambdaLR
+  scheduler_params:
+    lambda_type: cosine
+    warmup_factor: 0.2
+    warmup_epochs: 0.01
+    lr_min_factor: 0.01
+
+  max_epochs: 16
+  clip_grad_norm: 100
+  ema_decay: 0.999
+  eval_every: 3000
