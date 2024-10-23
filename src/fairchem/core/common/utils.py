@@ -1033,72 +1033,74 @@ def new_trainer_context(*, config: dict[str, Any]):
     distutils.setup(config)
     if config["gp_gpus"] is not None:
         gp_utils.setup_gp(config)
-    try:
-        setup_imports(config)
-        trainer_name = config.get("trainer", "ocp")
-        # backwards compatibility for older configs
-        if trainer_name in ["forces", "equiformerv2_forces"]:
-            task_name = "s2ef"
-        elif trainer_name in ["energy", "equiformerv2_energy"]:
-            task_name = "is2re"
-        elif "multitask" in trainer_name:
-            task_name = "multitask"
-        else:
-            task_name = "ocp"
 
-        trainer_cls = registry.get_trainer_class(trainer_name)
-        assert trainer_cls is not None, "Trainer not found"
+    setup_imports(config)
+    trainer_name = config.get("trainer", "ocp")
+    # backwards compatibility for older configs
+    if trainer_name in ["forces", "equiformerv2_forces"]:
+        task_name = "s2ef"
+    elif trainer_name in ["energy", "equiformerv2_energy"]:
+        task_name = "is2re"
+    elif "multitask" in trainer_name:
+        task_name = "multitask"
+    else:
+        task_name = "ocp"
 
-        trainer_config = {
-            "model": config["model"],
-            "optimizer": config["optim"],
-            "identifier": config["identifier"],
-            "timestamp_id": config.get("timestamp_id", None),
-            "run_dir": config.get("run_dir", "./"),
-            "is_debug": config.get("is_debug", False),
-            "print_every": config.get("print_every", 10),
-            "seed": config.get("seed", 0),
-            "logger": config.get("logger", "wandb"),
-            "local_rank": config["local_rank"],
-            "amp": config.get("amp", False),
-            "cpu": config.get("cpu", False),
-            "slurm": config.get("slurm", {}),
-            "name": task_name,
-            "gp_gpus": config.get("gp_gpus"),
-        }
+    trainer_cls = registry.get_trainer_class(trainer_name)
+    assert trainer_cls is not None, "Trainer not found"
 
-        if task_name == "multitask":
-            trainer_config.update(
-                {
-                    "tasks": config.get("tasks", {}),
-                    "dataset_configs": config["datasets"],
-                    "combined_dataset_config": config.get("combined_dataset", {}),
-                    "evaluations": config.get("evaluations", {}),
-                }
-            )
-        else:
-            trainer_config.update(
-                {
-                    "task": config.get("task", {}),
-                    "outputs": config.get("outputs", {}),
-                    "dataset": config["dataset"],
-                    "loss_functions": config.get("loss_functions", {}),
-                    "evaluation_metrics": config.get("evaluation_metrics", {}),
-                }
-            )
-        trainer = trainer_cls(**trainer_config)
+    trainer_config = {
+        "model": config["model"],
+        "optimizer": config["optim"],
+        "identifier": config["identifier"],
+        "timestamp_id": config.get("timestamp_id", None),
+        "run_dir": config.get("run_dir", "./"),
+        "is_debug": config.get("is_debug", False),
+        "print_every": config.get("print_every", 10),
+        "seed": config.get("seed", 0),
+        "logger": config.get("logger", "wandb"),
+        "local_rank": config["local_rank"],
+        "amp": config.get("amp", False),
+        "cpu": config.get("cpu", False),
+        "slurm": config.get("slurm", {}),
+        "name": task_name,
+        "gp_gpus": config.get("gp_gpus"),
+    }
 
-        task_cls = registry.get_task_class(config["mode"])
-        assert task_cls is not None, "Task not found"
-        task = task_cls(config)
-        start_time = time.time()
-        ctx = _TrainingContext(config=original_config, task=task, trainer=trainer)
-        yield ctx
-        distutils.synchronize()
-        if distutils.is_master():
-            logging.info(f"Total time taken: {time.time() - start_time}")
-    finally:
-        distutils.cleanup()
+    if task_name == "multitask":
+        trainer_config.update(
+            {
+                "tasks": config.get("tasks", {}),
+                "dataset_configs": config["datasets"],
+                "combined_dataset_config": config.get("combined_dataset", {}),
+                "evaluations": config.get("evaluations", {}),
+            }
+        )
+    else:
+        trainer_config.update(
+            {
+                "task": config.get("task", {}),
+                "outputs": config.get("outputs", {}),
+                "dataset": config["dataset"],
+                "loss_functions": config.get("loss_functions", {}),
+                "evaluation_metrics": config.get("evaluation_metrics", {}),
+            }
+        )
+    trainer = trainer_cls(**trainer_config)
+
+    task_cls = registry.get_task_class(config["mode"])
+    assert task_cls is not None, "Task not found"
+    task = task_cls(config)
+    start_time = time.time()
+    ctx = _TrainingContext(config=original_config, task=task, trainer=trainer)
+    yield ctx
+    distutils.synchronize()
+    if distutils.is_master():
+        logging.info(f"Total time taken: {time.time() - start_time}")
+
+    logging.debug("Task complete. Running disutils cleanup")
+    distutils.cleanup()
+    logging.debug("Runner() complete")
 
 
 def _resolve_scale_factor_submodule(model: nn.Module, name: str):
