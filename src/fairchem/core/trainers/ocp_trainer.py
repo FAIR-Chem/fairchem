@@ -350,7 +350,6 @@ class OCPTrainer(BaseTrainer):
                     pred,
                     target,
                     natoms=batch.natoms,
-                    batch_size=batch_size,
                 )
             )
 
@@ -410,7 +409,7 @@ class OCPTrainer(BaseTrainer):
         for key in filter(
             lambda k: k not in [*list(self.output_targets.keys()), "natoms"]
             and isinstance(batch[k], torch.Tensor),
-            batch.keys,
+            batch.keys(),
         ):
             targets[key] = batch[key].to(self.device)
             out[key] = targets[key]
