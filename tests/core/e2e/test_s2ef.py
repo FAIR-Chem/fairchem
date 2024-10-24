@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import numpy.testing as npt
 import pytest
+from fairchem.core.common import distutils
 from test_e2e_commons import (
     _run_main,
     oc20_lmdb_train_and_val_from_paths,
@@ -285,6 +286,7 @@ class TestSmoke:
                     new_yaml_fn=hydra_yaml,
                     new_checkpoint_fn=hydra_checkpoint,
                 )
+            distutils.cleanup()
 
     # not all models are tested with otf normalization estimation
     # only gemnet_oc, escn, equiformer, and their hydra versions
@@ -414,6 +416,8 @@ class TestSmoke:
                     update_run_args_with=extra_args,
                     input_yaml=configs["equiformer_v2_hydra"],
                 )
+
+            distutils.cleanup()
 
     @pytest.mark.parametrize(
         ("world_size"),
