@@ -38,9 +38,6 @@ class Submitit(Checkpointable):
         # TODO: setup_imports is not needed if we stop instantiating models with Registry.
         setup_imports()
         setup_env_vars()
-        import pdb
-
-        pdb.set_trace()
         try:
             distutils.setup(map_cli_args_to_dist_config(dict_config.cli_args))
             # optionally instantiate a singleton wandb logger, intentionally only supporting the new wandb logger
