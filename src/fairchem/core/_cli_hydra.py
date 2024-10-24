@@ -38,32 +38,30 @@ class Submitit(Checkpointable):
         # TODO: setup_imports is not needed if we stop instantiating models with Registry.
         setup_imports()
         setup_env_vars()
-        try:
-            distutils.setup(map_cli_args_to_dist_config(dict_config.cli_args))
-            # optionally instantiate a singleton wandb logger, intentionally only supporting the new wandb logger
-            # don't start logger if in debug mode
-            if (
-                "logger" in dict_config
-                and distutils.is_master()
-                and not dict_config.cli_args.debug
-            ):
-                # get a partial function from the config and instantiate wandb with it
-                logger_initializer = hydra.utils.instantiate(dict_config.logger)
-                simple_config = OmegaConf.to_container(
-                    self.config, resolve=True, throw_on_missing=True
-                )
-                logger_initializer(
-                    config=simple_config,
-                    run_id=self.config.cli_args.timestamp_id,
-                    run_name=self.config.cli_args.identifier,
-                    log_dir=self.config.cli_args.logdir,
-                )
+        distutils.setup(map_cli_args_to_dist_config(dict_config.cli_args))
+        # optionally instantiate a singleton wandb logger, intentionally only supporting the new wandb logger
+        # don't start logger if in debug mode
+        if (
+            "logger" in dict_config
+            and distutils.is_master()
+            and not dict_config.cli_args.debug
+        ):
+            # get a partial function from the config and instantiate wandb with it
+            logger_initializer = hydra.utils.instantiate(dict_config.logger)
+            simple_config = OmegaConf.to_container(
+                self.config, resolve=True, throw_on_missing=True
+            )
+            logger_initializer(
+                config=simple_config,
+                run_id=self.config.cli_args.timestamp_id,
+                run_name=self.config.cli_args.identifier,
+                log_dir=self.config.cli_args.logdir,
+            )
 
-            runner: Runner = hydra.utils.instantiate(dict_config.runner)
-            runner.load_state()
-            runner.run()
-        finally:
-            distutils.cleanup()
+        runner: Runner = hydra.utils.instantiate(dict_config.runner)
+        runner.load_state()
+        runner.run()
+        distutils.cleanup()
 
     def checkpoint(self, *args, **kwargs):
         # TODO: this is yet to be tested properly
