@@ -41,6 +41,7 @@ from fairchem.core.common.typing import none_throws
 from fairchem.core.common.utils import (
     get_commit_hash,
     get_loss_module,
+    get_weight_table,
     load_state_dict,
     match_state_dict,
     save_checkpoint,
@@ -937,24 +938,12 @@ class BaseTrainer(ABC):
             log_weight_frequency = self.config["logger"].get("log_weights_every", -1)
             if (
                 self.logger is not None
+                and distutils.is_master()
                 and log_weight_frequency > 0
-                and self.step % log_weight_frequency == 0
+                and self.step % log_weight_frequency == 1  # log on 1 instead of 0
             ):
-                stat_names = list(tensor_stats("", torch.Tensor([1])).keys())
-                columns = ["ParamName"] + stat_names + ["grad_" + n for n in stat_names]
-                data = []
-                for param_name, params in self.model.named_parameters():
-                    row_weight = list(
-                        tensor_stats(f"weights/{param_name}", params).values()
-                    )
-                    if params.grad is not None:
-                        row_grad = list(
-                            tensor_stats(f"grad/{param_name}", params.grad).values()
-                        )
-                    else:
-                        row_grad = None * len(row_weight)
-                    data.append(row_weight + row_grad)
-                self.logger.log_table(cols=columns, data=data)
+                columns, data = get_weight_table(self.model)
+                self.logger.log_table(name="weights", cols=columns, data=data)
 
         if self.clip_grad_norm:
             grad_norm = torch.nn.utils.clip_grad_norm_(
@@ -967,15 +956,14 @@ class BaseTrainer(ABC):
             cur_scale = self.scaler.get_scale()
             self.scaler.step(self.optimizer)
             self.scaler.update()
-            new_scale = self.scaler.get_scale()
-            if cur_scale != new_scale:
-                # check if there are any infs or NANs in the weights, this is not very useful actually, delete?
+            if cur_scale != self.scaler.get_scale():
+                # check if there are any infs or NANs in the weights
                 for param_name, params in self.model.named_parameters():
                     if params.grad is not None and (
                         torch.isnan(params.grad).any() or torch.isinf(params.grad).any()
                     ):
                         logging.warning(
-                            f"Rank: {distutils.get_rank()}, train_step: {self.step}, new_scale: {new_scale}, Inf/Nan found in {param_name} gradient: {params.grad}, stats: {tensor_stats("grad", params.grad)}"
+                            f"Rank: {distutils.get_rank()}, train_step: {self.step}, new_scale: {self.scaler.get_scale()}, Inf/Nan found in {param_name}, stats: {tensor_stats("grad", params.grad)}"
                         )
 
         else:

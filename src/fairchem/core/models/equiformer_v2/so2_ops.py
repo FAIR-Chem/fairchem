@@ -114,7 +114,7 @@ class SO2_Convolution(torch.nn.Module):
         )
         if self.extra_m0_output_channels is not None:
             m0_output_channels = m0_output_channels + self.extra_m0_output_channels
-        self.fc_m0 = Linear(num_channels_m0, m0_output_channels)
+        self.fc_m0 = Linear(num_channels_m0, m0_output_channels, bias=False)
         num_channels_rad = num_channels_rad + self.fc_m0.in_features
 
         # SO(2) convolution for non-zero m

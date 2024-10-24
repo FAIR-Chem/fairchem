@@ -94,8 +94,8 @@ class WandBLogger(Logger):
             group=group,
         )
 
-    def watch(self, model, log_freq: int = 1000) -> None:
-        wandb.watch(model, log_freq=log_freq)
+    def watch(self, model, log="all", log_freq: int = 1000) -> None:
+        wandb.watch(model, log=log, log_freq=log_freq)
 
     def log(self, update_dict, step: int, split: str = "") -> None:
         update_dict = super().log(update_dict, step, split)
@@ -214,8 +214,8 @@ class WandBSingletonLogger:
             cls._instance = cls.__new__(cls)
         return cls._instance
 
-    def watch(self, model, log_freq: int = 1000) -> None:
-        wandb.watch(model, log_freq=log_freq)
+    def watch(self, model, log="all", log_freq: int = 1000) -> None:
+        wandb.watch(model, log=log, log_freq=log_freq)
 
     def log(
         self, update_dict: dict, step: int | None = None, commit=False, split: str = ""

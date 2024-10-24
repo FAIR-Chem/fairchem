@@ -17,7 +17,7 @@ class RadialFunction(nn.Module):
             if i == 0:
                 continue
 
-            modules.append(nn.Linear(input_channels, channels_list[i], bias=True))
+            modules.append(nn.Linear(input_channels, channels_list[i], bias=False))
             input_channels = channels_list[i]
 
             if i == len(channels_list) - 1:
