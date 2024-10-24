@@ -38,6 +38,9 @@ class Submitit(Checkpointable):
         # TODO: setup_imports is not needed if we stop instantiating models with Registry.
         setup_imports()
         setup_env_vars()
+        import pdb
+
+        pdb.set_trace()
         try:
             distutils.setup(map_cli_args_to_dist_config(dict_config.cli_args))
             # optionally instantiate a singleton wandb logger, intentionally only supporting the new wandb logger
@@ -74,13 +77,13 @@ class Submitit(Checkpointable):
         return DelayedSubmission(new_runner, self.config)
 
 
-def map_cli_args_to_dist_config(cli_args: dict) -> dict:
+def map_cli_args_to_dist_config(cli_args: DictConfig) -> dict:
     return {
-        "world_size": cli_args["num_nodes"] * cli_args["num_gpus"],
-        "distributed_backend": "gloo" if cli_args["cpu"] else "nccl",
-        "submit": cli_args["submit"],
+        "world_size": cli_args.num_nodes * cli_args.num_gpus,
+        "distributed_backend": "gloo" if cli_args.cpu else "nccl",
+        "submit": cli_args.submit,
         "summit": None,
-        "cpu": cli_args["cpu"],
+        "cpu": cli_args.cpu,
         "use_cuda_visibile_devices": True,
     }
 
