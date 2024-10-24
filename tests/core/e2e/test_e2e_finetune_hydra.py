@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from fairchem.core.scripts.convert_hydra_to_release import convert_fine_tune_checkpoint
 import torch
 from test_e2e_commons import _run_main, oc20_lmdb_train_and_val_from_paths
 
@@ -43,12 +44,14 @@ def make_checkpoint(tempdir: str, data_source: Path, seed: int) -> str:
     return ck_path
 
 
-def run_main_with_ft_hydra(tempdir: str,
-                           yaml: str,
-                           data_src: str,
-                           run_args: dict,
-                           model_config: str,
-                           output_checkpoint: str):
+def run_main_with_ft_hydra(
+    tempdir: str,
+    yaml: str,
+    data_src: str,
+    run_args: dict,
+    model_config: str,
+    output_checkpoint: str,
+):
     _run_main(
         tempdir,
         yaml,
@@ -58,7 +61,7 @@ def run_main_with_ft_hydra(tempdir: str,
                 "eval_every": 8,
                 "batch_size": 1,
                 "num_workers": 0,
-                "lr_initial": 0.0 # don't learn anything
+                "lr_initial": 0.0,  # don't learn anything
             },
             "dataset": oc20_lmdb_train_and_val_from_paths(
                 train_src=str(data_src),
@@ -74,6 +77,39 @@ def run_main_with_ft_hydra(tempdir: str,
     )
 
 
+def verify_release_checkpoint(release_yaml_fn, release_checkpoint_fn, ft_state_dict):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # now lets run the new release checkpoint for a few iterations at lr0.0
+        ck_release_ft_afterload_path = os.path.join(
+            temp_dir, "checkpoint_ft_release.pt"
+        )
+        release_ft_temp_dir = os.path.join(temp_dir, "release_ft")
+        os.makedirs(release_ft_temp_dir)
+
+        _run_main(
+            release_ft_temp_dir,
+            release_yaml_fn,
+            update_run_args_with={"seed": 1337, "checkpoint": release_checkpoint_fn},
+            save_checkpoint_to=ck_release_ft_afterload_path,
+            world_size=1,
+            update_dict_with={
+                "optim": {
+                    "max_epochs": 2,
+                }
+            },
+        )
+
+        # make sure the checkpoint after running with lr0.0 is identical
+        # to the previous checkpoint
+        assert os.path.isfile(ck_release_ft_afterload_path)
+        ft_after_state_dict = torch.load(ck_release_ft_afterload_path)["state_dict"]
+        for key in ft_after_state_dict:
+            if key.startswith("module.backbone"):
+                assert torch.allclose(ft_after_state_dict[key], ft_state_dict[key])
+            elif key.startswith("module.output_heads") and key.endswith("weight"):
+                assert torch.allclose(ft_after_state_dict[key], ft_state_dict[key])
+
+
 def test_finetune_hydra_retain_backbone(tutorial_val_src):
     with tempfile.TemporaryDirectory() as orig_ckpt_dir:
         starting_ckpt = make_checkpoint(orig_ckpt_dir, tutorial_val_src, 0)
@@ -83,36 +119,57 @@ def test_finetune_hydra_retain_backbone(tutorial_val_src):
             ft_yml = Path("tests/core/models/test_configs/test_finetune_hydra.yml")
             ck_ft_path = os.path.join(ft_temp_dir, "checkpoint_ft.pt")
             model_config = {
-                "name" : "hydra",
-                "finetune_config": {'starting_checkpoint': starting_ckpt},
+                "name": "hydra",
+                "finetune_config": {"starting_checkpoint": starting_ckpt},
                 "heads": {
-                    "energy": {
-                        "module": "equiformer_v2_energy_head"
-                    },
-                    "forces": {
-                        "module": "equiformer_v2_force_head"
-                    }
-                }
+                    "energy": {"module": "equiformer_v2_energy_head"},
+                    "forces": {"module": "equiformer_v2_force_head"},
+                },
             }
-            run_main_with_ft_hydra(tempdir = ft_temp_dir,
-                                   yaml = ft_yml,
-                                   data_src = tutorial_val_src,
-                                   run_args = {"seed": 1000},
-                                   model_config = model_config,
-                                   output_checkpoint = ck_ft_path)
+            run_main_with_ft_hydra(
+                tempdir=ft_temp_dir,
+                yaml=ft_yml,
+                data_src=tutorial_val_src,
+                run_args={"seed": 1000},
+                model_config=model_config,
+                output_checkpoint=ck_ft_path,
+            )
             assert os.path.isfile(ck_ft_path)
             ft_ckpt = torch.load(ck_ft_path)
             assert "config" in ft_ckpt
             assert ft_ckpt["config"]["model"]["name"] == "hydra"
             # check that the backbone weights are the same, and other weights are not the same
-            new_state_dict = ft_ckpt["state_dict"]
-            for key in new_state_dict:
-                if key.startswith("backbone"):
+            ft_state_dict = ft_ckpt["state_dict"]
+            for key in ft_state_dict:
+                if key.startswith("module.backbone"):
                     # backbone should be identical
-                    assert torch.allclose(new_state_dict[key], old_state_dict[key])
-                elif key.startswith("output_heads") and key.endswith("weight"):
+                    assert torch.allclose(ft_state_dict[key], old_state_dict[key])
+                elif key.startswith("module.output_heads") and key.endswith("weight"):
                     # heads weight should be different because the seeds are different
-                    assert not torch.allclose(new_state_dict[key], old_state_dict[key])
+                    assert not torch.allclose(ft_state_dict[key], old_state_dict[key])
+
+            # Add a test to convert the FT hydra checkpoint to a release checkpoint
+            # This could be a separate test but we would need to generate the FT checkpoint
+            # all over again
+
+            # Convert FT hydra checkpoint to release checkpoint
+            ck_release_ft_path = os.path.join(ft_temp_dir, "checkpoint_ft_release.pt")
+            yml_release_ft_path = os.path.join(ft_temp_dir, "checkpoint_ft_release.yml")
+            # the actual on disk yaml used in the previous run, after argument updates
+            fine_tune_yaml_fn = os.path.join(ft_temp_dir, "test_run.yml")
+            convert_fine_tune_checkpoint(
+                fine_tune_checkpoint_fn=ck_ft_path,
+                fine_tune_yaml_fn=fine_tune_yaml_fn,
+                output_checkpoint_fn=ck_release_ft_path,
+                output_yaml_fn=yml_release_ft_path,
+            )
+
+            # remove starting checkpoint, so that we cant accidentally load it
+            os.remove(ck_ft_path)
+
+            verify_release_checkpoint(
+                yml_release_ft_path, ck_release_ft_path, ft_state_dict
+            )
 
 
 def test_finetune_hydra_data_only(tutorial_val_src):
@@ -124,25 +181,50 @@ def test_finetune_hydra_data_only(tutorial_val_src):
             ft_yml = Path("tests/core/models/test_configs/test_finetune_hydra.yml")
             ck_ft_path = os.path.join(ft_temp_dir, "checkpoint_ft.pt")
             model_config = {
-                "name" : "hydra",
-                "finetune_config": {'starting_checkpoint': starting_ckpt},
+                "name": "hydra",
+                "finetune_config": {"starting_checkpoint": starting_ckpt},
             }
-            run_main_with_ft_hydra(tempdir = ft_temp_dir,
-                                yaml = ft_yml,
-                                data_src = tutorial_val_src,
-                                run_args = {"seed": 1000},
-                                model_config = model_config,
-                                output_checkpoint = ck_ft_path)
+            run_main_with_ft_hydra(
+                tempdir=ft_temp_dir,
+                yaml=ft_yml,
+                data_src=tutorial_val_src,
+                run_args={"seed": 1000},
+                model_config=model_config,
+                output_checkpoint=ck_ft_path,
+            )
             assert os.path.isfile(ck_ft_path)
             ft_ckpt = torch.load(ck_ft_path)
             assert "config" in ft_ckpt
             config_model = ft_ckpt["config"]["model"]
             assert config_model["name"] == "hydra"
             # check that the entire model weights are the same
-            new_state_dict = ft_ckpt["state_dict"]
-            assert len(new_state_dict) == len(old_state_dict)
-            for key in new_state_dict:
-                assert torch.allclose(new_state_dict[key], old_state_dict[key])
+            ft_state_dict = ft_ckpt["state_dict"]
+            assert len(ft_state_dict) == len(old_state_dict)
+            for key in ft_state_dict:
+                assert torch.allclose(ft_state_dict[key], old_state_dict[key])
+
+            # Add a test to convert the FT hydra checkpoint to a release checkpoint
+            # This could be a separate test but we would need to generate the FT checkpoint
+            # all over again
+
+            # Convert FT hydra checkpoint to release checkpoint
+            ck_release_ft_path = os.path.join(ft_temp_dir, "checkpoint_ft_release.pt")
+            yml_release_ft_path = os.path.join(ft_temp_dir, "checkpoint_ft_release.yml")
+            # the actual on disk yaml used in the previous run, after argument updates
+            fine_tune_yaml_fn = os.path.join(ft_temp_dir, "test_run.yml")
+            convert_fine_tune_checkpoint(
+                fine_tune_checkpoint_fn=ck_ft_path,
+                fine_tune_yaml_fn=fine_tune_yaml_fn,
+                output_checkpoint_fn=ck_release_ft_path,
+                output_yaml_fn=yml_release_ft_path,
+            )
+
+            # remove starting checkpoint, so that we cant accidentally load it
+            os.remove(ck_ft_path)
+
+            verify_release_checkpoint(
+                yml_release_ft_path, ck_release_ft_path, ft_state_dict
+            )
 
 
 def test_finetune_from_finetunehydra(tutorial_val_src):
@@ -153,15 +235,17 @@ def test_finetune_from_finetunehydra(tutorial_val_src):
             ft_yml = Path("tests/core/models/test_configs/test_finetune_hydra.yml")
             ck_ft_path = os.path.join(finetune_run1_dir, "checkpoint_ft.pt")
             model_config_1 = {
-                "name" : "hydra",
-                "finetune_config": {'starting_checkpoint': starting_ckpt},
+                "name": "hydra",
+                "finetune_config": {"starting_checkpoint": starting_ckpt},
             }
-            run_main_with_ft_hydra(tempdir = finetune_run1_dir,
-                                yaml = ft_yml,
-                                data_src = tutorial_val_src,
-                                run_args = {"seed": 1000},
-                                model_config = model_config_1,
-                                output_checkpoint = ck_ft_path)
+            run_main_with_ft_hydra(
+                tempdir=finetune_run1_dir,
+                yaml=ft_yml,
+                data_src=tutorial_val_src,
+                run_args={"seed": 1000},
+                model_config=model_config_1,
+                output_checkpoint=ck_ft_path,
+            )
             assert os.path.isfile(ck_ft_path)
 
             # now that we have a second checkpoint, try finetuning again from this checkpoint
@@ -169,15 +253,17 @@ def test_finetune_from_finetunehydra(tutorial_val_src):
             with tempfile.TemporaryDirectory() as finetune_run2_dir:
                 ck_ft2_path = os.path.join(finetune_run2_dir, "checkpoint_ft.pt")
                 model_config_2 = {
-                    "name" : "hydra",
-                    "finetune_config": {'starting_checkpoint': ck_ft_path},
+                    "name": "hydra",
+                    "finetune_config": {"starting_checkpoint": ck_ft_path},
                 }
-                run_main_with_ft_hydra(tempdir = finetune_run2_dir,
-                                    yaml = ft_yml,
-                                    data_src = tutorial_val_src,
-                                    run_args = {"seed": 1000},
-                                    model_config = model_config_2,
-                                    output_checkpoint = ck_ft2_path)
+                run_main_with_ft_hydra(
+                    tempdir=finetune_run2_dir,
+                    yaml=ft_yml,
+                    data_src=tutorial_val_src,
+                    run_args={"seed": 1000},
+                    model_config=model_config_2,
+                    output_checkpoint=ck_ft2_path,
+                )
                 ft_ckpt2 = torch.load(ck_ft2_path)
                 assert "config" in ft_ckpt2
                 config_model = ft_ckpt2["config"]["model"]
