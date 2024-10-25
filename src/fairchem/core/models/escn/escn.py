@@ -16,8 +16,7 @@ import torch
 import torch.nn as nn
 
 from fairchem.core.models.escn.edge_rot_mat import (
-    init_edge_rot_mat_new,
-    init_edge_rot_mat_og,
+    init_edge_rot_mat,
 )
 
 if typing.TYPE_CHECKING:
@@ -131,11 +130,6 @@ class eSCN(nn.Module, GraphModelMixin):
         self.sphere_channels_all: int = self.num_resolutions * self.sphere_channels
         self.basis_width_scalar = basis_width_scalar
         self.distance_function = distance_function
-
-        if edge_rot_mat == "og":
-            self._init_edge_rot_mat = init_edge_rot_mat_og
-        else:
-            self._init_edge_rot_mat = init_edge_rot_mat_new
 
         # variables used for display purposes
         self.counter = 0
@@ -259,9 +253,7 @@ class eSCN(nn.Module, GraphModelMixin):
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(
-            data, graph.edge_index, graph.edge_distance_vec
-        )
+        edge_rot_mat = init_edge_rot_mat(graph.edge_distance_vec)
 
         # Initialize the WignerD matrices and other values for spherical harmonic calculations
         self.SO3_edge_rot = nn.ModuleList()
@@ -399,7 +391,7 @@ class eSCNBackbone(eSCN, BackboneInterface):
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(
+        edge_rot_mat = init_edge_rot_mat(
             data, graph.edge_index, graph.edge_distance_vec
         )
 
