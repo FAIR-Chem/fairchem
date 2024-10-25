@@ -16,8 +16,8 @@ from torch_scatter import scatter
 
 from fairchem.core.common.registry import registry
 from fairchem.core.models.base import BackboneInterface, HeadInterface
-from fairchem.core.models.equiformer_v2.equiformer_v2 import eqv2_init_weights
 from fairchem.core.models.equiformer_v2.layer_norm import get_normalization_layer
+from fairchem.core.models.equiformer_v2.weight_initialization import eqv2_init_weights
 
 
 class Rank2Block(nn.Module):

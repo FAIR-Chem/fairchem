@@ -1,3 +1,10 @@
+"""
+Copyright (c) Meta, Inc. and its affiliates.
+
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.
+"""
+
 from __future__ import annotations
 
 from functools import partial
@@ -9,15 +16,15 @@ from torch import nn
 from fairchem.core.common import gp_utils
 from fairchem.core.common.registry import registry
 from fairchem.core.models.base import GraphData, HeadInterface
-from fairchem.core.models.equiformer_v2.equiformer_v2 import eqv2_init_weights
 from fairchem.core.models.equiformer_v2.transformer_block import FeedForwardNetwork
+from fairchem.core.models.equiformer_v2.weight_initialization import eqv2_init_weights
 
 if TYPE_CHECKING:
     from torch_geometric.data import Batch
 
 
 @registry.register_model("equiformerV2_scalar_head")
-class EqV2ScalarHead(nn.Module, HeadInterface):
+class EquiformerV2EnergyHead(nn.Module, HeadInterface):
     def __init__(self, backbone, reduce: str = "sum"):
         super().__init__()
         self.reduce = reduce
