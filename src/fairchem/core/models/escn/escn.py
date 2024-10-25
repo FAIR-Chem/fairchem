@@ -15,6 +15,11 @@ import typing
 import torch
 import torch.nn as nn
 
+from fairchem.core.models.escn.edge_rot_mat import (
+    init_edge_rot_mat_new,
+    init_edge_rot_mat_og,
+)
+
 if typing.TYPE_CHECKING:
     from torch_geometric.data.batch import Batch
 
@@ -89,6 +94,7 @@ class eSCN(nn.Module, GraphModelMixin):
         show_timing_info: bool = False,
         resolution: int | None = None,
         activation_checkpoint: bool | None = False,
+        edge_rot_mat: str = "og",
     ) -> None:
         if mmax_list is None:
             mmax_list = [2]
@@ -125,6 +131,11 @@ class eSCN(nn.Module, GraphModelMixin):
         self.sphere_channels_all: int = self.num_resolutions * self.sphere_channels
         self.basis_width_scalar = basis_width_scalar
         self.distance_function = distance_function
+
+        if edge_rot_mat == "og":
+            self._init_edge_rot_mat = init_edge_rot_mat_og
+        else:
+            self._init_edge_rot_mat = init_edge_rot_mat_new
 
         # variables used for display purposes
         self.counter = 0
@@ -364,63 +375,6 @@ class eSCN(nn.Module, GraphModelMixin):
         self.counter = self.counter + 1
 
         return outputs
-
-    # Initialize the edge rotation matrics
-    def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
-        edge_vec_0 = edge_distance_vec
-        edge_vec_0_distance = torch.sqrt(torch.sum(edge_vec_0**2, dim=1))
-
-        # Make sure the atoms are far enough apart
-        if torch.min(edge_vec_0_distance) < 0.0001:
-            logging.error(
-                f"Error edge_vec_0_distance: {torch.min(edge_vec_0_distance)}"
-            )
-            (minval, minidx) = torch.min(edge_vec_0_distance, 0)
-            logging.error(
-                f"Error edge_vec_0_distance: {minidx} {edge_index[0, minidx]} {edge_index[1, minidx]} {data.pos[edge_index[0, minidx]]} {data.pos[edge_index[1, minidx]]}"
-            )
-
-        norm_x = edge_vec_0 / (edge_vec_0_distance.view(-1, 1))
-
-        edge_vec_2 = torch.rand_like(edge_vec_0) - 0.5
-        edge_vec_2 = edge_vec_2 / (
-            torch.sqrt(torch.sum(edge_vec_2**2, dim=1)).view(-1, 1)
-        )
-        # Create two rotated copys of the random vectors in case the random vector is aligned with norm_x
-        # With two 90 degree rotated vectors, at least one should not be aligned with norm_x
-        edge_vec_2b = edge_vec_2.clone()
-        edge_vec_2b[:, 0] = -edge_vec_2[:, 1]
-        edge_vec_2b[:, 1] = edge_vec_2[:, 0]
-        edge_vec_2c = edge_vec_2.clone()
-        edge_vec_2c[:, 1] = -edge_vec_2[:, 2]
-        edge_vec_2c[:, 2] = edge_vec_2[:, 1]
-        vec_dot_b = torch.abs(torch.sum(edge_vec_2b * norm_x, dim=1)).view(-1, 1)
-        vec_dot_c = torch.abs(torch.sum(edge_vec_2c * norm_x, dim=1)).view(-1, 1)
-
-        vec_dot = torch.abs(torch.sum(edge_vec_2 * norm_x, dim=1)).view(-1, 1)
-        edge_vec_2 = torch.where(torch.gt(vec_dot, vec_dot_b), edge_vec_2b, edge_vec_2)
-        vec_dot = torch.abs(torch.sum(edge_vec_2 * norm_x, dim=1)).view(-1, 1)
-        edge_vec_2 = torch.where(torch.gt(vec_dot, vec_dot_c), edge_vec_2c, edge_vec_2)
-
-        vec_dot = torch.abs(torch.sum(edge_vec_2 * norm_x, dim=1))
-        # Check the vectors aren't aligned
-        assert torch.max(vec_dot) < 0.99
-
-        norm_z = torch.cross(norm_x, edge_vec_2, dim=1)
-        norm_z = norm_z / (torch.sqrt(torch.sum(norm_z**2, dim=1, keepdim=True)))
-        norm_z = norm_z / (torch.sqrt(torch.sum(norm_z**2, dim=1)).view(-1, 1))
-        norm_y = torch.cross(norm_x, norm_z, dim=1)
-        norm_y = norm_y / (torch.sqrt(torch.sum(norm_y**2, dim=1, keepdim=True)))
-
-        # Construct the 3D rotation matrix
-        norm_x = norm_x.view(-1, 3, 1)
-        norm_y = -norm_y.view(-1, 3, 1)
-        norm_z = norm_z.view(-1, 3, 1)
-
-        edge_rot_mat_inv = torch.cat([norm_z, norm_x, norm_y], dim=2)
-        edge_rot_mat = torch.transpose(edge_rot_mat_inv, 1, 2)
-
-        return edge_rot_mat.detach()
 
     @property
     def num_params(self) -> int:
