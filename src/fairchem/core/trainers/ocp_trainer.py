@@ -531,7 +531,10 @@ class OCPTrainer(BaseTrainer):
         return predictions
 
     @torch.no_grad
-    def run_relaxations(self, split="val"):
+    def run_relaxations(self):
+        """Run relaxations same as fairchem main, but also hijack for FM evals."""
+        from fairchem.core.modules.evaluator import Evaluator
+
         ensure_fitted(self._unwrapped_model)
 
         # When set to true, uses deterministic CUDA scatter ops, if available.
@@ -551,18 +554,29 @@ class OCPTrainer(BaseTrainer):
         evaluator_is2rs, metrics_is2rs = Evaluator(task="is2rs"), {}
         evaluator_is2re, metrics_is2re = Evaluator(task="is2re"), {}
 
-        # Need both `pos_relaxed` and `y_relaxed` to compute val IS2R* metrics.
+        # Need both `pos_relaxed` and `energy_relaxed` to compute val IS2R* metrics.
         # Else just generate predictions.
         if (
             hasattr(self.relax_dataset[0], "pos_relaxed")
             and self.relax_dataset[0].pos_relaxed is not None
         ) and (
-            hasattr(self.relax_dataset[0], "y_relaxed")
-            and self.relax_dataset[0].y_relaxed is not None
+            hasattr(self.relax_dataset[0], "energy_relaxed")
+            and self.relax_dataset[0].energy_relaxed is not None
         ):
             split = "val"
         else:
             split = "test"
+
+        # check if dataset has information to compute stability metrics
+        calc_stability_metrics = False
+        if hasattr(self.relax_dataset[0], "energy_above_hull") and hasattr(self.relax_dataset[0], "formation_energy"):
+            from fairchem.core.common.relaxation.matbench_discovery import (
+                calculate_stability_metrics, classify_stable_from_predicted_energy
+            )
+            calc_stability_metrics = True
+            stability_classification = {"TP": [], "FN": [], "FP": [], "TN": []}
+            stability_ids = []
+
 
         ids = []
         relaxed_positions = []
@@ -587,6 +601,8 @@ class OCPTrainer(BaseTrainer):
                 model=self,
                 steps=self.config["task"].get("relaxation_steps", 300),
                 fmax=self.config["task"].get("relaxation_fmax", 0.02),
+                relax_cell=self.config["task"].get("relax_cell", False),
+                relax_volume=self.config["task"].get("relax_volume", False),
                 relax_opt=self.config["task"]["relax_opt"],
                 save_full_traj=self.config["task"].get("save_full_traj", True),
                 device=self.device,
@@ -617,7 +633,7 @@ class OCPTrainer(BaseTrainer):
                     s_idx += natoms
 
                 target = {
-                    "energy": relaxed_batch.energy,
+                    "energy": relaxed_batch.energy_relaxed,
                     "positions": relaxed_batch.pos_relaxed[mask],
                     "cell": relaxed_batch.cell,
                     "pbc": torch.tensor([True, True, True]),
@@ -642,6 +658,24 @@ class OCPTrainer(BaseTrainer):
                     {"energy": target["energy"]},
                     metrics_is2re,
                 )
+
+            if calc_stability_metrics:
+                sid_list = (
+                    relaxed_batch.sid.tolist()
+                    if isinstance(relaxed_batch.sid, torch.Tensor)
+                    else relaxed_batch.sid
+                )
+                stability_ids += [str(sid) for sid in sid_list]
+                tp, fn, fp, tn = classify_stable_from_predicted_energy(
+                    relaxed_batch.energy,
+                    relaxed_batch.energy_above_hull,
+                    relaxed_batch.formation_energy,
+                    torch.split(batch.atomic_numbers, batch.natoms.tolist())
+                )
+                stability_classification["TP"] += tp.tolist()
+                stability_classification["FN"] += fn.tolist()
+                stability_classification["FP"] += fp.tolist()
+                stability_classification["TN"] += tn.tolist()
 
         if self.config["task"].get("write_pos", False):
             results = distutils.gather_objects(
@@ -673,6 +707,7 @@ class OCPTrainer(BaseTrainer):
                 logging.info(f"Writing results to {full_path}")
                 np.savez_compressed(full_path, **gather_results)
 
+        log_dict = {}
         if split == "val":
             for task in ["is2rs", "is2re"]:
                 metrics = eval(f"metrics_{task}")
@@ -694,18 +729,42 @@ class OCPTrainer(BaseTrainer):
                         aggregated_metrics[k]["total"] / aggregated_metrics[k]["numel"]
                     )
                 metrics = aggregated_metrics
-
-                # Make plots.
                 log_dict = {f"{task}_{k}": metrics[k]["metric"] for k in metrics}
-                if self.logger is not None:
-                    self.logger.log(
-                        log_dict,
-                        step=self.step,
-                        split=split,
-                    )
 
-                if distutils.is_master():
-                    logging.info(metrics)
+        if calc_stability_metrics:
+            results = distutils.gather_objects(
+                {"ids": stability_ids, **stability_classification}
+            )
+            distutils.synchronize()
+            if distutils.is_master():
+                gather_results = {
+                    key: list(chain(*(result[key] for result in results)))
+                    for key in results[0]
+                }
+                # we dont need the ids, so just pop them
+                _, idx = np.unique(gather_results.pop("ids"), return_index=True)
+                # breakpoint()
+                for key in gather_results:
+                    gather_results[key] = torch.cat([torch.tensor(gather_results[key][i]) for i in idx])
+
+                stability_metrics = calculate_stability_metrics(
+                    true_pos=gather_results["TP"],
+                    false_neg=gather_results["FN"],
+                    false_pos=gather_results["FP"],
+                    true_neg=gather_results["TN"],
+                )
+                log_dict.update(stability_metrics)
+                logging.info(stability_metrics)
+
+        # Make plots.
+        if distutils.is_master():
+            if self.logger is not None:
+                self.logger.log(
+                    log_dict,
+                    step=self.step,
+                    split=split,
+                )
+            logging.info(metrics)
 
         if self.ema:
             self.ema.restore()
