@@ -15,6 +15,7 @@ from fairchem.core.models.base import (
     GraphModelMixin,
     HeadInterface,
 )
+from fairchem.core.models.escn.edge_rot_mat import init_edge_rot_mat
 from fairchem.core.models.scn.smearing import GaussianSmearing
 
 with contextlib.suppress(ImportError):
@@ -23,7 +24,6 @@ with contextlib.suppress(ImportError):
 
 import typing
 
-from .edge_rot_mat import init_edge_rot_mat
 from .gaussian_rbf import GaussianRadialBasisLayer
 from .input_block import EdgeDegreeEmbedding
 from .layer_norm import (
@@ -443,9 +443,7 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = self._init_edge_rot_mat(
-            data, graph.edge_index, graph.edge_distance_vec
-        )
+        edge_rot_mat = init_edge_rot_mat(graph.edge_distance_vec)
 
         # Initialize the WignerD matrices and other values for spherical harmonic calculations
         for i in range(self.num_resolutions):
@@ -568,10 +566,6 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
             edge_distance,
             edge_distance_vec,
         )
-
-    # Initialize the edge rotation matrics
-    def _init_edge_rot_mat(self, data, edge_index, edge_distance_vec):
-        return init_edge_rot_mat(edge_distance_vec)
 
     @property
     def num_params(self):
