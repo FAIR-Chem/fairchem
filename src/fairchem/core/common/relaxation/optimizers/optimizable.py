@@ -547,8 +547,5 @@ class OptimizableUnitCellBatch(OptimizableBatch):
         return augmented_forces
 
     def __len__(self):
-<<<<<<< HEAD
         return len(self.batch.pos) + 3 * len(self.batch)
-=======
-        return len(self.batch.pos) + 3 * len(self.batch)
->>>>>>> 5083262a9d5f61e3058f5e210934d0c69df86285
+
