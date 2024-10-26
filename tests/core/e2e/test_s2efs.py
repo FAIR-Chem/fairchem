@@ -43,7 +43,7 @@ def test_smoke_s2efs_predict(model_name, configs, dummy_binary_dataset_path, tmp
         "outputs": {
             "stress": {"level": "system", "irrep_dim": 2, "property": "stress"}
         },
-        "evaluation_metrics": {"metrics": {"stress": ["mae", "mae_density"]}},
+        "evaluation_metrics": {"metrics": {"stress": ["mae", "per_atom_mae"]}},
         "dataset": {
             "train": {
                 "src": str(dummy_binary_dataset_path),
