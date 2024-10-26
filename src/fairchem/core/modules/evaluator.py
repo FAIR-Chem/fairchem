@@ -97,10 +97,9 @@ class Evaluator:
         for target_property in self.target_metrics:
             for fn in self.target_metrics[target_property]:
                 if fn == "per_group_mae":
-                    if mode != "train":
-                        metrics = self.batch_update(
-                            per_group_mae(prediction, target,target_property), metrics
-                        )
+                    metrics = self.batch_update(
+                        per_group_mae(prediction, target,target_property), metrics
+                    )
                 else:
                     metric_name = (
                         f"{target_property}_{fn}"
@@ -383,8 +382,7 @@ def min_diff(
 def rmse(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
-<<<<<<< HEAD
-    key: Hashable = NONE,
+    key: Hashable = None,
 ):
     # cast to float 32 to avoid 0/nan issues in fp16
     # https://github.com/pytorch/pytorch/issues/69512
@@ -398,7 +396,7 @@ def rmse(
 def mae(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
-    key: Hashable = NONE,
+    key: Hashable = None,
 ) -> dict[str, float | int]:
     error = torch.abs(target[key] - prediction[key])
     return {
@@ -410,7 +408,7 @@ def mae(
 def per_group_mae(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
-    key: Hashable = NONE,
+    key: Hashable = None,
 ) -> dict[str, float | int]:
     output = {}
     if key == "forces":
@@ -461,7 +459,7 @@ def per_group_mae(
 def mse(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
-    key: Hashable = NONE,
+    key: Hashable = None,
 ) -> dict[str, float | int]:
     error = (target[key] - prediction[key]) ** 2
     return {
@@ -474,18 +472,13 @@ def mse(
 def magnitude_error(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
-    key: Hashable = NONE,
+    key: Hashable = None,
     p: int = 2,
 ) -> dict[str, float | int]:
     assert prediction[key].shape[1] > 1
     error = torch.abs(
         torch.norm(prediction[key], p=p, dim=-1) - torch.norm(target[key], p=p, dim=-1)
     )
-=======
-    key: Hashable = None,
-) -> dict[str, float | int]:
-    error = torch.sqrt(((target[key] - prediction[key]) ** 2).sum(dim=-1))
->>>>>>> 5083262a9d5f61e3058f5e210934d0c69df86285
     return {
         "metric": torch.mean(error).item(),
         "total": torch.sum(error).item(),
