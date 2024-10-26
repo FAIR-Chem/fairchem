@@ -23,13 +23,12 @@ Configured for local development:
 
 
 ### Validation Dataset
-The validation dataset is comprised of 932 DFT NEB calculations to assess model performance on this important task. There are 3 different reaction classes considered: desorptions, dissociations, and transfers. For more information see the [dataset markdown file](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/applications/cattsunami/DATASET.md).
+The validation dataset is comprised of 932 converged DFT NEB calculations to assess model performance on this important task. There are 3 different reaction classes considered: desorptions, dissociations, and transfers. There were 2827 total DFT NEBS performed including those that failed to converge. Unconverged systems have also been included in ASE All Trajectories below. For more information about the converged dataset see the [dataset markdown file](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/applications/cattsunami/DATASET.md).
 
 |Splits |Size of compressed version (in bytes)  |Size of uncompressed version (in bytes)    | MD5 checksum (download link)   |
 |---    |---    |---    |---    |
-|ASE Trajectories   |1.5G  |6.3G   | [52af34a93758c82fae951e52af445089](https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20neb/oc20neb_dft_trajectories_04_23_24.tar.gz)   |
-
-
+|ASE Converged Trajectories   |1.5G  |6.3G   | [52af34a93758c82fae951e52af445089](https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20neb/oc20neb_dft_trajectories_04_23_24.tar.gz)   |
+|ASE All Trajectories         |6.7G  |30G    | [f5829eeaf7219c5cd3cfb499b8d951da](https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20neb/all_dft_neb_trajs.tar.gz) |
 
 ## Citing this work
 
