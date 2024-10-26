@@ -19,7 +19,7 @@ from pymatgen.analysis.phase_diagram import PDEntry
 # threshold on hull distance for a material to be considered stable
 # set to same as https://github.com/janosh/matbench-discovery/blob/main/matbench_discovery/__init__.py
 STABILITY_THRESHOLD = 0
-MDB_ROOT = Path("/large_experiments/opencatalyst/foundation_models/evaluation/matbench-discovery")
+MDB_ROOT = Path("/data/shared/matbench-discovery/")
 try:
     # try to load them
     mp_elemental_ref_energies = loadfn(MDB_ROOT / "mp_elem_ref_entries.json")
