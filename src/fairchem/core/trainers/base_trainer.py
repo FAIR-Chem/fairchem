@@ -15,9 +15,8 @@ import os
 import random
 import sys
 from abc import ABC, abstractmethod
-from functools import partial
 from itertools import chain
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -30,8 +29,7 @@ from tqdm import tqdm
 
 from fairchem.core import __version__
 from fairchem.core.common import distutils, gp_utils
-from fairchem.core.common.data_parallel import BalancedBatchSampler
-from fairchem.core.common.logger import WandBSingletonLogger
+from fairchem.core.common.data_parallel import BalancedBatchSampler, OCPCollater
 from fairchem.core.common.registry import registry
 from fairchem.core.common.slurm import (
     add_timestamp_id_to_submission_pickle,
@@ -47,19 +45,14 @@ from fairchem.core.common.utils import (
     update_config,
 )
 from fairchem.core.datasets.base_dataset import ConcatDataset, create_dataset
-from fairchem.core.datasets import data_list_collater
-from fairchem.core.datasets.base_dataset import create_dataset
 from fairchem.core.modules.evaluator import Evaluator
 from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.loss import DDPLoss
 from fairchem.core.modules.normalization.element_references import (
-    create_element_references,
+    LinearReferences,
     load_references_from_config,
 )
-from fairchem.core.modules.normalization.normalizer import (
-    create_normalizer,
-    load_normalizers_from_config,
-)
+from fairchem.core.modules.normalization.normalizer import load_normalizers_from_config
 from fairchem.core.modules.scaling.compat import load_scales_compat
 from fairchem.core.modules.scaling.util import ensure_fitted
 from fairchem.core.modules.scheduler import LRScheduler
@@ -72,13 +65,13 @@ if TYPE_CHECKING:
 class BaseTrainer(ABC):
     def __init__(
         self,
-        task: dict[str, str | Any],
-        model: dict[str, Any],
-        outputs: dict[str, str | int],
-        dataset: dict[str, str | float],
-        optimizer: dict[str, str | float],
-        loss_functions: dict[str, str | float],
-        evaluation_metrics: dict[str, str],
+        task,
+        model,
+        outputs,
+        dataset,
+        optimizer,
+        loss_functions,
+        evaluation_metrics,
         identifier: str,
         # TODO: dealing with local rank is dangerous
         # T201111838 remove this and use CUDA_VISIBILE_DEVICES instead so trainers don't need to know about which devie to use
@@ -94,7 +87,6 @@ class BaseTrainer(ABC):
         name: str = "ocp",
         slurm=None,
         gp_gpus: int | None = None,
-        inference_only: bool = False,
     ) -> None:
         if slurm is None:
             slurm = {}
@@ -203,22 +195,17 @@ class BaseTrainer(ABC):
             os.makedirs(self.config["cmd"]["logs_dir"], exist_ok=True)
 
         ### backwards compatability with OCP v<2.0
-        self.config = update_config(self.config)
+        # self.config = update_config(self.config)
 
         if distutils.is_master():
             logging.info(yaml.dump(self.config, default_flow_style=False))
 
-        # define attributes for readability
         self.elementrefs = {}
         self.normalizers = {}
         self.train_dataset = None
         self.val_dataset = None
         self.test_dataset = None
-        self.best_val_metric = None
-        self.primary_metric = None
-        self.ema = None
-
-        self.load(inference_only)
+        self.load()
 
     @abstractmethod
     def train(self, disable_eval_tqdm: bool = False) -> None:
@@ -237,24 +224,20 @@ class BaseTrainer(ABC):
             timestamp_str += "-" + suffix
         return timestamp_str
 
-    def load(self, inference_only: bool) -> None:
+    def load(self) -> None:
         self.load_seed_from_config()
         self.load_logger()
+        self.load_datasets()
+        self.load_references_and_normalizers()
         self.load_task()
         self.load_model()
-
-        if inference_only is False:
-            self.load_datasets()
-            self.load_references_and_normalizers()
-            self.load_loss()
-            self.load_optimizer()
-            self.load_extras()
-
+        self.load_loss()
+        self.load_optimizer()
+        self.load_extras()
         if self.config["optim"].get("load_datasets_and_model_then_exit", False):
             sys.exit(0)
 
-    @staticmethod
-    def set_seed(seed) -> None:
+    def set_seed(self, seed) -> None:
         # https://pytorch.org/docs/stable/notes/randomness.html
         random.seed(seed)
         np.random.seed(seed)
@@ -278,19 +261,7 @@ class BaseTrainer(ABC):
             logger_name = logger if isinstance(logger, str) else logger["name"]
             assert logger_name, "Specify logger name"
 
-            if logger_name == "wandb_singleton":
-                WandBSingletonLogger.init_wandb(
-                    config=self.config,
-                    run_id=self.config["cmd"]["timestamp_id"],
-                    run_name=self.config["cmd"]["identifier"],
-                    log_dir=self.config["cmd"]["logs_dir"],
-                    project=self.config["logger"]["project"],
-                    entity=self.config["logger"]["entity"],
-                    group=self.config["logger"].get("group", ""),
-                )
-                self.logger = WandBSingletonLogger.get_instance()
-            else:
-                self.logger = registry.get_logger_class(logger_name)(self.config)
+            self.logger = registry.get_logger_class(logger_name)(self.config)
 
     def get_sampler(
         self, dataset, batch_size: int, shuffle: bool
@@ -327,16 +298,14 @@ class BaseTrainer(ABC):
     def get_dataloader(self, dataset, sampler) -> DataLoader:
         return DataLoader(
             dataset,
-            collate_fn=self.collater,
+            collate_fn=self.ocp_collater,
             num_workers=self.config["optim"]["num_workers"],
             pin_memory=True,
             batch_sampler=sampler,
         )
 
     def load_datasets(self) -> None:
-        self.collater = partial(
-            data_list_collater, otf_graph=self.config["model"].get("otf_graph", False)
-        )
+        self.ocp_collater = OCPCollater(self.config["model"].get("otf_graph", False))
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
@@ -364,7 +333,7 @@ class BaseTrainer(ABC):
 
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
-                self.config["optim"].get("batch_size", 1),
+                self.config["optim"]["batch_size"],
                 shuffle=True,
             )
             self.train_loader = self.get_dataloader(
@@ -377,7 +346,7 @@ class BaseTrainer(ABC):
             or "sample_n" in self.config["dataset"]
             or "max_atom" in self.config["dataset"]
         ):
-            logging.warning(
+            logging.warn(
                 "Dataset attributes (first_n/sample_n/max_atom) passed to all datasets! Please don't do this, its dangerous!\n"
                 + "Add them under each dataset 'train_split_settings'/'val_split_settings'/'test_split_settings'"
             )
@@ -396,7 +365,7 @@ class BaseTrainer(ABC):
             self.val_sampler = self.get_sampler(
                 self.val_dataset,
                 self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"].get("batch_size", 1)
+                    "eval_batch_size", self.config["optim"]["batch_size"]
                 ),
                 shuffle=False,
             )
@@ -419,7 +388,7 @@ class BaseTrainer(ABC):
             self.test_sampler = self.get_sampler(
                 self.test_dataset,
                 self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"].get("batch_size", 1)
+                    "eval_batch_size", self.config["optim"]["batch_size"]
                 ),
                 shuffle=False,
             )
@@ -618,15 +587,15 @@ class BaseTrainer(ABC):
                         ][target_name].get("level", "system")
                     if "train_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["train_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("train_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "train_on_free_atoms", True
+                            )
                         )
                     if "eval_on_free_atoms" not in self.output_targets[subtarget]:
                         self.output_targets[subtarget]["eval_on_free_atoms"] = (
-                            self.config[
-                                "outputs"
-                            ][target_name].get("eval_on_free_atoms", True)
+                            self.config["outputs"][target_name].get(
+                                "eval_on_free_atoms", True
+                            )
                         )
 
         # TODO: Assert that all targets, loss fn, metrics defined are consistent
@@ -679,10 +648,7 @@ class BaseTrainer(ABC):
         return module
 
     def load_checkpoint(
-        self,
-        checkpoint_path: str,
-        checkpoint: dict | None = None,
-        inference_only: bool = False,
+        self, checkpoint_path: str, checkpoint: dict | None = None
     ) -> None:
         map_location = torch.device("cpu") if self.cpu else self.device
         if checkpoint is None:
@@ -693,29 +659,23 @@ class BaseTrainer(ABC):
             logging.info(f"Loading checkpoint from: {checkpoint_path}")
             checkpoint = torch.load(checkpoint_path, map_location=map_location)
 
-        # attributes that are necessary for training and validation
-        if inference_only is False:
-            self.epoch = checkpoint.get("epoch", 0)
-            self.step = checkpoint.get("step", 0)
-            self.best_val_metric = checkpoint.get("best_val_metric", None)
-            self.primary_metric = checkpoint.get("primary_metric", None)
-
-            if "optimizer" in checkpoint:
-                self.optimizer.load_state_dict(checkpoint["optimizer"])
-            if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
-                self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
-            if "ema" in checkpoint and checkpoint["ema"] is not None:
-                self.ema.load_state_dict(checkpoint["ema"])
-            else:
-                self.ema = None
-        else:
-            logging.info(
-                "Loading checkpoint in inference-only mode, not loading keys associated with trainer state!"
-            )
+        self.epoch = checkpoint.get("epoch", 0)
+        self.step = checkpoint.get("step", 0)
+        self.best_val_metric = checkpoint.get("best_val_metric", None)
+        self.primary_metric = checkpoint.get("primary_metric", None)
 
         new_dict = match_state_dict(self.model.state_dict(), checkpoint["state_dict"])
         strict = self.config.get("task", {}).get("strict_load", True)
         load_state_dict(self.model, new_dict, strict=strict)
+
+        if "optimizer" in checkpoint:
+            self.optimizer.load_state_dict(checkpoint["optimizer"])
+        if "scheduler" in checkpoint and checkpoint["scheduler"] is not None:
+            self.scheduler.scheduler.load_state_dict(checkpoint["scheduler"])
+        if "ema" in checkpoint and checkpoint["ema"] is not None:
+            self.ema.load_state_dict(checkpoint["ema"])
+        else:
+            self.ema = None
 
         scale_dict = checkpoint.get("scale_dict", None)
         if scale_dict:
@@ -726,7 +686,7 @@ class BaseTrainer(ABC):
             )
             load_scales_compat(self._unwrapped_model, scale_dict)
 
-        for key, state_dict in checkpoint["normalizers"].items():
+        for key in checkpoint["normalizers"]:
             ### Convert old normalizer keys to new target keys
             if key == "target":
                 target_key = "energy"
@@ -735,24 +695,22 @@ class BaseTrainer(ABC):
             else:
                 target_key = key
 
-            if target_key not in self.normalizers:
-                self.normalizers[target_key] = create_normalizer(state_dict=state_dict)
-            else:
-                mkeys = self.normalizers[target_key].load_state_dict(state_dict)
+            if target_key in self.normalizers:
+                mkeys = self.normalizers[target_key].load_state_dict(
+                    checkpoint["normalizers"][key]
+                )
+                self.normalizers[target_key].to(map_location)
                 assert len(mkeys.missing_keys) == 0
                 assert len(mkeys.unexpected_keys) == 0
-
-            self.normalizers[target_key].to(map_location)
 
         for key, state_dict in checkpoint.get("elementrefs", {}).items():
-            if key not in self.elementrefs:
-                self.elementrefs[key] = create_element_references(state_dict=state_dict)
-            else:
-                mkeys = self.elementrefs[key].load_state_dict(state_dict)
-                assert len(mkeys.missing_keys) == 0
-                assert len(mkeys.unexpected_keys) == 0
-
-            self.elementrefs[key].to(map_location)
+            elementrefs = LinearReferences(
+                max_num_elements=len(state_dict["element_references"]) - 1
+            ).to(map_location)
+            mkeys = elementrefs.load_state_dict(state_dict)
+            self.elementrefs[key] = elementrefs
+            assert len(mkeys.missing_keys) == 0
+            assert len(mkeys.unexpected_keys) == 0
 
         if self.scaler and checkpoint["amp"]:
             self.scaler.load_state_dict(checkpoint["amp"])

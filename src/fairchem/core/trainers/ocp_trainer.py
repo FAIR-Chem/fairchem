@@ -11,7 +11,7 @@ import logging
 import os
 from collections import defaultdict
 from itertools import chain
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
@@ -71,29 +71,28 @@ class OCPTrainer(BaseTrainer):
 
     def __init__(
         self,
-        task: dict[str, str | Any],
-        model: dict[str, Any],
-        outputs: dict[str, str | int],
-        dataset: dict[str, str | float],
-        optimizer: dict[str, str | float],
-        loss_functions: dict[str, str | float],
-        evaluation_metrics: dict[str, str],
-        identifier: str,
+        task,
+        model,
+        outputs,
+        dataset,
+        optimizer,
+        loss_functions,
+        evaluation_metrics,
+        identifier,
         # TODO: dealing with local rank is dangerous
         # T201111838 remove this and use CUDA_VISIBILE_DEVICES instead so trainers don't need to know about which devie to use
-        local_rank: int,
-        timestamp_id: str | None = None,
-        run_dir: str | None = None,
-        is_debug: bool = False,
-        print_every: int = 100,
-        seed: int | None = None,
-        logger: str = "wandb",
-        amp: bool = False,
-        cpu: bool = False,
-        name: str = "ocp",
+        local_rank,
+        timestamp_id=None,
+        run_dir=None,
+        is_debug=False,
+        print_every=100,
+        seed=None,
+        logger="wandb",
+        amp=False,
+        cpu=False,
         slurm=None,
-        gp_gpus: int | None = None,
-        inference_only: bool = False,
+        name="ocp",
+        gp_gpus=None,
     ):
         if slurm is None:
             slurm = {}
@@ -118,7 +117,6 @@ class OCPTrainer(BaseTrainer):
             slurm=slurm,
             name=name,
             gp_gpus=gp_gpus,
-            inference_only=inference_only,
         )
 
     def train(self, disable_eval_tqdm: bool = False) -> None:
@@ -255,14 +253,14 @@ class OCPTrainer(BaseTrainer):
                 elif isinstance(out[target_key], dict):
                     # if output is a nested dictionary (in the case of hydra models), we attempt to retrieve it using the property name
                     # ie: "output_head_name.property"
-                    assert (
-                        "property" in self.output_targets[target_key]
-                    ), f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
-                    prop = self.output_targets[target_key]["property"]
-                    pred = out[target_key][prop]
+                    assert "property" in self.output_targets[target_key], \
+                        f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
+                    property = self.output_targets[target_key]["property"]
+                    pred = out[target_key][property]
 
-            # TODO clean up this logic to reconstruct a tensor from its predicted decomposition
-            elif "decomposition" in self.output_targets[target_key]:
+            ## TODO: deprecate the following logic?
+            ## Otherwise, assume target property is a derived output of the model. Construct the parent property
+            else:
                 _max_rank = 0
                 for subtarget_key in self.output_targets[target_key]["decomposition"]:
                     _max_rank = max(
@@ -290,10 +288,6 @@ class OCPTrainer(BaseTrainer):
                     cg_change_mat(_max_rank, self.device),
                     pred_irreps,
                 )
-            else:
-                raise AttributeError(
-                    f"Output target: '{target_key}', not found in model outputs: {list(out.keys())}"
-                )
 
             ### not all models are consistent with the output shape
             ### reshape accordingly: num_atoms_in_batch, -1 or num_systems_in_batch, -1
@@ -305,7 +299,7 @@ class OCPTrainer(BaseTrainer):
 
         return outputs
 
-    def _compute_loss(self, out, batch) -> torch.Tensor:
+    def _compute_loss(self, out, batch):
         batch_size = batch.natoms.numel()
         fixed = batch.fixed
         mask = fixed == 0
@@ -350,7 +344,7 @@ class OCPTrainer(BaseTrainer):
                 * loss_info["fn"](
                     pred,
                     target,
-                    natoms=batch.natoms,
+                    natoms=natoms,
                     batch_size=batch_size,
                 )
             )
@@ -409,16 +403,7 @@ class OCPTrainer(BaseTrainer):
         targets["natoms"] = natoms
         out["natoms"] = natoms
 
-        # add all other tensor properties too, but filter out the ones that are changed above
-        for key in filter(
-            lambda k: k not in [*list(self.output_targets.keys()), "natoms"]
-            and isinstance(batch[k], torch.Tensor),
-            batch.keys(),
-        ):
-            targets[key] = batch[key].to(self.device)
-            out[key] = targets[key]
-
-        return evaluator.eval(out, targets, prev_metrics=metrics)
+        return evaluator.eval(out, targets, prev_metrics=metrics, mode=mode)
 
     # Takes in a new data source and generates predictions on it.
     @torch.no_grad
@@ -712,7 +697,9 @@ class OCPTrainer(BaseTrainer):
                 )
                 gather_results["chunk_idx"] = np.cumsum(
                     [gather_results["chunk_idx"][i] for i in idx]
-                )[:-1]  # np.split does not need last idx, assumes n-1:end
+                )[
+                    :-1
+                ]  # np.split does not need last idx, assumes n-1:end
 
                 full_path = os.path.join(
                     self.config["cmd"]["results_dir"], "relaxed_positions.npz"

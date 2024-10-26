@@ -78,7 +78,7 @@ class AseAtomsDataset(BaseDataset, ABC):
     def __init__(
         self,
         config: dict,
-        atoms_transform: Callable[[ase.Atoms, Any, ...], ase.Atoms] = apply_one_tags,
+        atoms_transform: Callable[[ase.Atoms, Any], ase.Atoms] = apply_one_tags,
     ) -> None:
         super().__init__(config)
 
@@ -105,7 +105,7 @@ class AseAtomsDataset(BaseDataset, ABC):
 
         if len(self.ids) == 0:
             raise ValueError(
-                rf"No valid ase data found! \n"
+                rf"No valid ase data found!"
                 f"Double check that the src path and/or glob search pattern gives ASE compatible data: {config['src']}"
             )
 
@@ -142,7 +142,7 @@ class AseAtomsDataset(BaseDataset, ABC):
         data_object = self.transforms(data_object)
 
         if self.config.get("include_relaxed_energy", False):
-            data_object.energy_relaxed = self.get_relaxed_energy(self.ids[idx])
+            data_object.y_relaxed = self.get_relaxed_energy(self.ids[idx])
 
         return data_object
 
@@ -160,12 +160,9 @@ class AseAtomsDataset(BaseDataset, ABC):
             "Every ASE dataset needs to declare a function to load the dataset and return a list of ids."
         )
 
+    @abstractmethod
     def get_relaxed_energy(self, identifier):
-        raise NotImplementedError(
-            "Reading relaxed energy from trajectory or file is not implemented with this dataset. "
-            "If relaxed energies are saved with the atoms info dictionary, they can be used by passing the keys in "
-            "the r_data_keys argument under a2g_args."
-        )
+        raise NotImplementedError("IS2RE-Direct is not implemented with this dataset.")
 
     def sample_property_metadata(self, num_samples: int = 100) -> dict:
         metadata = {}
@@ -571,3 +568,8 @@ class AseDBDataset(AseAtomsDataset):
             return super().sample_property_metadata(num_samples)
 
         return copy.deepcopy(self.dbs[0].metadata)
+
+    def get_relaxed_energy(self, identifier):
+        raise NotImplementedError(
+            "IS2RE-Direct training with an ASE DB is not currently supported."
+        )

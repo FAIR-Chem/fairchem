@@ -36,7 +36,7 @@ logger:
     name: tensorboard
 
 model:
-  name: hydra
+  name: finetune_hydra
   finetune_config: {}
 
 

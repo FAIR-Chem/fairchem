@@ -168,7 +168,7 @@ class OptimizableBatch(Optimizable):
                 self.batch, per_image=False, disable_tqdm=True
             )
             # multiply by size of the system
-            self.torch_results["energy"] *= self.batch.natoms
+            self.torch_results["energy"] *= self.batch.natoms.view(-1, 1)
             # save only subset of props in simple namespace instead of cloning the whole batch to save memory
             changes = ALL_CHANGES - set(self.ignored_changes)
             self._cached_batch = SimpleNamespace(
@@ -548,4 +548,3 @@ class OptimizableUnitCellBatch(OptimizableBatch):
 
     def __len__(self):
         return len(self.batch.pos) + 3 * len(self.batch)
-
