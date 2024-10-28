@@ -391,9 +391,7 @@ class eSCNBackbone(eSCN, BackboneInterface):
         ###############################################################
 
         # Compute 3x3 rotation matrix per edge
-        edge_rot_mat = init_edge_rot_mat(
-            data, graph.edge_index, graph.edge_distance_vec
-        )
+        edge_rot_mat = init_edge_rot_mat(graph.edge_distance_vec)
 
         # Initialize the WignerD matrices and other values for spherical harmonic calculations
         self.SO3_edge_rot = nn.ModuleList()
