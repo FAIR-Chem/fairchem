@@ -13,9 +13,9 @@ from fairchem.core.common.test_utils import (
 )
 from fairchem.core.modules.loss import (
     DDPLoss,
+    L2NormLoss,
     MAELoss,
     MSELoss,
-    P2NormLoss,
     PerAtomMAELoss,
 )
 
@@ -81,8 +81,8 @@ def test_per_atom_mae(energy, natoms):
     )
 
 
-def test_p2norm(forces, natoms):
-    loss = P2NormLoss()
+def test_l2norm(forces, natoms):
+    loss = L2NormLoss()
     pred, target = forces
     ref_norm = torch.linalg.vector_norm(pred - target, ord=2, dim=-1)
     assert torch.allclose(loss(pred, target, natoms), ref_norm)
@@ -114,16 +114,16 @@ def test_stress_mae_reduction(anisotropic_stress, natoms):
     assert torch.allclose(loss(pred, target, natoms), ref_loss(pred, target))
 
 
-def test_p2norm_reduction(forces, natoms):
+def test_l2norm_reduction(forces, natoms):
     # this is testing on a single process i.e. world_size=1
     # mean reduction
-    loss = DDPLoss(loss_name="p2norm", reduction="mean")
+    loss = DDPLoss(loss_name="l2norm", reduction="mean")
     pred, target = forces
     ref_norm = torch.linalg.vector_norm(pred - target, ord=2, dim=-1)
     ref_loss = ref_norm.mean()
     assert torch.allclose(loss(pred, target, natoms), ref_loss)
     # sum reduction
-    loss = DDPLoss(loss_name="p2norm", reduction="sum")
+    loss = DDPLoss(loss_name="l2norm", reduction="sum")
     ref_loss = ref_norm.sum()
     assert torch.allclose(loss(pred, target, natoms), ref_loss)
 
@@ -189,7 +189,7 @@ def test_ddp_mae(energy, natoms, world_size):
     assert torch.allclose(ddp_loss, ref_loss(pred, target))
 
 
-def test_ddp_p2norm(forces, natoms, world_size):
+def test_ddp_l2norm(forces, natoms, world_size):
     pred, target = forces
     ddp_pred, ddp_target = split_batch_for_ddp("forces", pred, target, natoms)
     config = PGConfig(
@@ -202,7 +202,7 @@ def test_ddp_p2norm(forces, natoms, world_size):
         ddp_pred,
         ddp_target,
         natoms,
-        "p2norm",
+        "l2norm",
         "mean",
     )
     # this mocks what ddp does when averaging gradients

@@ -59,9 +59,9 @@ class PerAtomMAELoss(nn.Module):
         return self.loss(pred / _natoms, target / _natoms)
 
 
-@registry.register_loss("p2norm")
+@registry.register_loss("l2norm")
 @registry.register_loss("l2mae")
-class P2NormLoss(nn.Module):
+class L2NormLoss(nn.Module):
     """
     Currently this loss is intened to used with vectors.
     """
