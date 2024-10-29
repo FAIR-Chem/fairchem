@@ -11,11 +11,11 @@ from fairchem.core.common.registry import registry
 
 
 @registry.register_loss("mae")
-@registry.register_loss("l1")
 class MAELoss(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.loss = nn.L1Loss()
+        # reduction should be none as it is handled in DDPLoss
         self.loss.reduction = "none"
 
     def forward(
@@ -25,11 +25,11 @@ class MAELoss(nn.Module):
 
 
 @registry.register_loss("mse")
-@registry.register_loss("l2")
 class MSELoss(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.loss = nn.MSELoss()
+        # reduction should be none as it is handled in DDPLoss
         self.loss.reduction = "none"
 
     def forward(
@@ -38,7 +38,7 @@ class MSELoss(nn.Module):
         return self.loss(pred, target)
 
 
-@registry.register_loss("per_atom_mae_loss")
+@registry.register_loss("per_atom_mae")
 class PerAtomMAELoss(nn.Module):
     """
     Simply divide a loss by the number of atoms/nodes in the graph.
@@ -48,6 +48,7 @@ class PerAtomMAELoss(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.loss = nn.L1Loss()
+        # reduction should be none as it is handled in DDPLoss
         self.loss.reduction = "none"
 
     def forward(

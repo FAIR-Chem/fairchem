@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import os
-
 import pytest
 import torch
 from torch import nn
 
+from fairchem.core.common import distutils
 from fairchem.core.common.test_utils import (
     PGConfig,
     init_pg_and_rank_and_launch_test,
@@ -157,7 +156,7 @@ def split_batch_for_ddp(
 
 def run_ddp_loss(pred, target, natoms, loss_name, reduction):
     loss = DDPLoss(loss_name=loss_name, reduction=reduction)
-    local_rank = os.environ["LOCAL_RANK"]
+    local_rank = distutils.get_rank()
     return loss(pred[int(local_rank)], target[int(local_rank)], natoms)
 
 

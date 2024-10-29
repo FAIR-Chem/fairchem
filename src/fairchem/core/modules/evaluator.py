@@ -183,7 +183,7 @@ def mse(
 def per_atom_mae(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
-    key=NONE_SLICE,
+    key: Hashable = NONE_SLICE,
 ) -> torch.Tensor:
     return torch.abs(target[key] - prediction[key]) / target["natoms"].unsqueeze(1)
 
@@ -192,7 +192,7 @@ def per_atom_mae(
 def per_atom_mse(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
-    key=NONE_SLICE,
+    key: Hashable = NONE_SLICE,
 ) -> torch.Tensor:
     return ((target[key] - prediction[key]) / target["natoms"].unsqueeze(1)) ** 2
 
