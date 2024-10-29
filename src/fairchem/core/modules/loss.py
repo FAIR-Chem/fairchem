@@ -55,7 +55,9 @@ class PerAtomMAELoss(nn.Module):
         self, pred: torch.Tensor, target: torch.Tensor, natoms: torch.Tensor
     ) -> torch.Tensor:
         _natoms = torch.reshape(natoms, target.shape)
+        # check if target is a scalar
         assert target.dim() == 1 or (target.dim() == 2 and target.shape[1] == 1)
+        # check per_atom shape
         assert (target / _natoms).shape == target.shape
         return self.loss(pred / _natoms, target / _natoms)
 
