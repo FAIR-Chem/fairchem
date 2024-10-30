@@ -449,14 +449,10 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
                 else:
                     self.scheduler.step()
 
+            torch.cuda.empty_cache()
+
             if checkpoint_every == -1:
                 self.save(checkpoint_file="checkpoint.pt", training_state=True)
-
-        self.train_dataset.close_db()
-        if self.config.get("val_dataset", False):
-            self.val_dataset.close_db()
-        if self.config.get("test_dataset", False):
-            self.test_dataset.close_db()
 
     def _compute_loss(self, out, batch):
         batch_size = batch.natoms.numel()
