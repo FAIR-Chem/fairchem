@@ -226,14 +226,17 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
     Args:
         task (dict): Task configuration.
         model (dict): Model configuration.
+        outputs (dict): Dictionary of model output configuration.
         dataset (dict): Dataset configuration. The dataset needs to be a SinglePointLMDB dataset.
         optimizer (dict): Optimizer configuration.
+        loss_functions (dict): Loss function configuration.
+        evaluation_metrics (dict): Evaluation metrics configuration.
         identifier (str): Experiment identifier that is appended to log directory.
         run_dir (str, optional): Path to the run directory where logs are to be saved.
             (default: :obj:`None`)
+        timestamp_id (str, optional): timestamp identifier.
+        run_dir (str, optional): Run directory used to save checkpoints and results.
         is_debug (bool, optional): Run in debug mode.
-            (default: :obj:`False`)
-        is_hpo (bool, optional): Run hyperparameter optimization with Ray Tune.
             (default: :obj:`False`)
         print_every (int, optional): Frequency of printing logs.
             (default: :obj:`100`)
@@ -245,8 +248,13 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
             (default: :obj:`0`)
         amp (bool, optional): Run using automatic mixed precision.
             (default: :obj:`False`)
+        cpu (bool): If True will run on CPU. Default is False, will attempt to use cuda.
+        name (str): Trainer name.
         slurm (dict): Slurm configuration. Currently just for keeping track.
             (default: :obj:`{}`)
+        gp_gpus (int, optional): Number of graph parallel GPUs.
+        inference_only (bool): If true trainer will be loaded for inference only.
+            (ie datasets, optimizer, schedular, etc, will not be instantiated)
     """
 
     def __init__(
@@ -271,7 +279,7 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
         amp: bool = False,
         cpu: bool = False,
         name: str = "ocp",
-        slurm=None,
+        slurm: dict | None = None,
         gp_gpus: int | None = None,
         inference_only: bool = False,
     ):
