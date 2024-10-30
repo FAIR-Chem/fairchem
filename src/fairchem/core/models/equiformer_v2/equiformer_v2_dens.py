@@ -173,7 +173,7 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
         self.apply(partial(eqv2_init_weights, weight_init=self.weight_init))
 
     @conditional_grad(torch.enable_grad())
-    def forward(self, data):
+    def forward(self, data) -> dict[str, torch.Tensor]:
         self.batch_size = len(data.natoms)
         self.dtype = data.pos.dtype
         self.device = data.pos.device
@@ -402,7 +402,9 @@ class DeNSEnergyHead(torch.nn.Module, HeadInterface):
         self.apply(partial(eqv2_init_weights, weight_init=backbone.weight_init))
         self.use_denoising_energy = backbone.use_denoising_energy
 
-    def forward(self, data: Batch, emb: dict[str, torch.Tensor | GraphData]):
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor | GraphData]
+    ) -> dict[str, torch.Tensor]:
         node_energy = self.energy_block(emb["node_embedding"])
         node_energy = node_energy.embedding.narrow(1, 0, 1)
         if gp_utils.initialized():
@@ -488,7 +490,9 @@ class DeNSForceHead(torch.nn.Module, HeadInterface):
         )
         self.apply(partial(eqv2_init_weights, weight_init=backbone.weight_init))
 
-    def forward(self, data: Batch, emb: dict[str, torch.Tensor]):
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
         if self.activation_checkpoint:
             forces = torch.utils.checkpoint.checkpoint(
                 self.force_block,
@@ -553,7 +557,9 @@ class DeNSRank2Head(Rank2SymmetricTensorHead):
         super().__init__(backbone, *args, **kwargs)
         self.use_denoising_stress = backbone.use_denoising_stress
 
-    def forward(self, data: Batch, emb: dict[str, torch.Tensor]):
+    def forward(
+        self, data: Batch, emb: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
         output = super().forward(data, emb)
         if (
             hasattr(data, "denoising_pos_forward")
