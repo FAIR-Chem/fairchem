@@ -7,7 +7,8 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar
+from functools import wraps
+from typing import TYPE_CHECKING, Callable, ClassVar
 
 import numpy as np
 import torch
@@ -34,7 +35,7 @@ predictions and another for targets to check against. It returns a dictionary
 with the relevant metrics computed.
 """
 
-NONE = slice(None)
+NONE_SLICE = slice(None)
 
 
 class Evaluator:
@@ -88,10 +89,9 @@ class Evaluator:
         self,
         prediction: dict[str, torch.Tensor],
         target: dict[str, torch.Tensor],
-        prev_metrics=None,
+        prev_metrics: dict | None = None,
     ):
-        if prev_metrics is None:
-            prev_metrics = {}
+        prev_metrics = prev_metrics or {}
         metrics = prev_metrics
 
         for target_property in self.target_metrics:
@@ -130,10 +130,90 @@ class Evaluator:
         return metrics
 
 
+def metrics_dict(metric_fun: Callable) -> Callable:
+    """Wrap up the return of a metrics function"""
+
+    @wraps(metric_fun)
+    def wrapped_metrics(
+        prediction: dict[str, torch.Tensor],
+        target: dict[str, torch.Tensor],
+        key: Hashable = None,
+        **kwargs,
+    ) -> dict[str, torch.Tensor]:
+        error = metric_fun(prediction, target, key, **kwargs)
+        return {
+            "metric": torch.mean(error).item(),
+            "total": torch.sum(error).item(),
+            "numel": error.numel(),
+        }
+
+    return wrapped_metrics
+
+
+@metrics_dict
+def cosine_similarity(
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
+    key: Hashable = NONE_SLICE,
+):
+    # cast to float 32 to avoid 0/nan issues in fp16
+    # https://github.com/pytorch/pytorch/issues/69512
+    return torch.cosine_similarity(prediction[key].float(), target[key].float())
+
+
+@metrics_dict
+def mae(
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
+    key: Hashable = NONE_SLICE,
+) -> torch.Tensor:
+    return torch.abs(target[key] - prediction[key])
+
+
+@metrics_dict
+def mse(
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
+    key: Hashable = NONE_SLICE,
+) -> torch.Tensor:
+    return (target[key] - prediction[key]) ** 2
+
+
+@metrics_dict
+def per_atom_mae(
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
+    key: Hashable = NONE_SLICE,
+) -> torch.Tensor:
+    return torch.abs(target[key] - prediction[key]) / target["natoms"].unsqueeze(1)
+
+
+@metrics_dict
+def per_atom_mse(
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
+    key: Hashable = NONE_SLICE,
+) -> torch.Tensor:
+    return ((target[key] - prediction[key]) / target["natoms"].unsqueeze(1)) ** 2
+
+
+@metrics_dict
+def magnitude_error(
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
+    key: Hashable = NONE_SLICE,
+    p: int = 2,
+) -> torch.Tensor:
+    assert prediction[key].shape[1] > 1
+    return torch.abs(
+        torch.norm(prediction[key], p=p, dim=-1) - torch.norm(target[key], p=p, dim=-1)
+    )
+
+
 def forcesx_mae(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
-    key: Hashable = NONE,
+    key: Hashable = NONE_SLICE,
 ):
     return mae(prediction["forces"][:, 0], target["forces"][:, 0])
 
@@ -141,7 +221,7 @@ def forcesx_mae(
 def forcesx_mse(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
-    key: Hashable = NONE,
+    key: Hashable = NONE_SLICE,
 ):
     return mse(prediction["forces"][:, 0], target["forces"][:, 0])
 
@@ -289,57 +369,12 @@ def min_diff(
     return np.matmul(fractional, cell)
 
 
-def cosine_similarity(
+def rmse(
     prediction: dict[str, torch.Tensor],
     target: dict[str, torch.Tensor],
-    key: Hashable = NONE,
-):
-    # cast to float 32 to avoid 0/nan issues in fp16
-    # https://github.com/pytorch/pytorch/issues/69512
-    error = torch.cosine_similarity(prediction[key].float(), target[key].float())
-    return {
-        "metric": torch.mean(error).item(),
-        "total": torch.sum(error).item(),
-        "numel": error.numel(),
-    }
-
-
-def mae(
-    prediction: dict[str, torch.Tensor],
-    target: dict[str, torch.Tensor],
-    key: Hashable = NONE,
+    key: Hashable = None,
 ) -> dict[str, float | int]:
-    error = torch.abs(target[key] - prediction[key])
-    return {
-        "metric": torch.mean(error).item(),
-        "total": torch.sum(error).item(),
-        "numel": error.numel(),
-    }
-
-
-def mse(
-    prediction: dict[str, torch.Tensor],
-    target: dict[str, torch.Tensor],
-    key: Hashable = NONE,
-) -> dict[str, float | int]:
-    error = (target[key] - prediction[key]) ** 2
-    return {
-        "metric": torch.mean(error).item(),
-        "total": torch.sum(error).item(),
-        "numel": error.numel(),
-    }
-
-
-def magnitude_error(
-    prediction: dict[str, torch.Tensor],
-    target: dict[str, torch.Tensor],
-    key: Hashable = NONE,
-    p: int = 2,
-) -> dict[str, float | int]:
-    assert prediction[key].shape[1] > 1
-    error = torch.abs(
-        torch.norm(prediction[key], p=p, dim=-1) - torch.norm(target[key], p=p, dim=-1)
-    )
+    error = torch.sqrt(((target[key] - prediction[key]) ** 2).sum(dim=-1))
     return {
         "metric": torch.mean(error).item(),
         "total": torch.sum(error).item(),

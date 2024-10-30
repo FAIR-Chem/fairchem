@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import numpy.typing as npt
 import torch
-import torch.nn as nn
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
@@ -40,7 +39,6 @@ from fairchem.core.common.typing import assert_is_instance as aii
 from fairchem.core.common.typing import none_throws
 from fairchem.core.common.utils import (
     get_commit_hash,
-    get_loss_module,
     load_state_dict,
     match_state_dict,
     save_checkpoint,
@@ -671,18 +669,17 @@ class BaseTrainer(ABC):
         self.loss_functions = []
         for _idx, loss in enumerate(self.config["loss_functions"]):
             for target in loss:
-                loss_name = loss[target].get("fn", "mae")
-                coefficient = loss[target].get("coefficient", 1)
-                loss_reduction = loss[target].get("reduction", "mean")
+                assert (
+                    "fn" in loss[target]
+                ), f"'fn' is not defined in the {target} loss config {loss[target]}."
+                loss_name = loss[target].get("fn")
+                assert (
+                    "coefficient" in loss[target]
+                ), f"'coefficient' is not defined in the {target} loss config {loss[target]}."
+                coefficient = loss[target].get("coefficient")
+                loss_reduction = loss[target].get("reduction")
 
-                ### if torch module name provided, use that directly
-                if hasattr(nn, loss_name):
-                    loss_fn = getattr(nn, loss_name)()
-                ### otherwise, retrieve the correct module based off old naming
-                else:
-                    loss_fn = get_loss_module(loss_name)
-
-                loss_fn = DDPLoss(loss_fn, loss_name, loss_reduction)
+                loss_fn = DDPLoss(loss_name, reduction=loss_reduction)
 
                 self.loss_functions.append(
                     (target, {"fn": loss_fn, "coefficient": coefficient})
