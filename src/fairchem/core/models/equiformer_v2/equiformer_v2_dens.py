@@ -24,9 +24,6 @@ except ImportError:
 
     contextlib.suppress(ImportError)
 
-if TYPE_CHECKING:
-    from torch_geometric.data.batch import Batch
-
 from fairchem.core.models.base import GraphData, HeadInterface
 from fairchem.core.models.equiformer_v2.equiformer_v2 import (
     EquiformerV2Backbone,
@@ -41,8 +38,10 @@ from fairchem.core.models.equiformer_v2.transformer_block import (
     SO2EquivariantGraphAttention,
 )
 
-_AVG_NUM_NODES = 31.16592360068011
-_AVG_DEGREE = 61.94676351484548
+if TYPE_CHECKING:
+    from torch_geometric.data.batch import Batch
+
+    from fairchem.core.models.base import BackboneInterface
 
 
 @registry.register_model("equiformer_v2_dens_backbone")
@@ -58,52 +57,52 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
 
     def __init__(
         self,
-        use_pbc=True,
-        use_pbc_single=True,
-        regress_forces=True,
-        otf_graph=True,
-        max_neighbors=500,
-        max_radius=5.0,
-        max_num_elements=90,
-        num_layers=12,
-        sphere_channels=128,
-        attn_hidden_channels=128,
-        num_heads=8,
-        attn_alpha_channels=32,
-        attn_value_channels=16,
-        ffn_hidden_channels=512,
-        norm_type="rms_norm_sh",
-        lmax_list=None,
-        mmax_list=None,
-        grid_resolution=None,
-        num_sphere_samples=128,
-        edge_channels=128,
-        use_atom_edge_embedding=True,
-        share_atom_edge_embedding=False,
-        use_m_share_rad=False,
-        distance_function="gaussian",
-        num_distance_basis=512,
-        attn_activation="scaled_silu",
-        use_s2_act_attn=False,
-        use_attn_renorm=True,
-        ffn_activation="scaled_silu",
-        use_gate_act=False,
-        use_grid_mlp=False,
-        use_sep_s2_act=True,
-        alpha_drop=0.1,
-        drop_path_rate=0.05,
-        proj_drop=0.0,
-        weight_init="normal",
-        enforce_max_neighbors_strictly=True,
-        avg_num_nodes=_AVG_NUM_NODES,
-        avg_degree=_AVG_DEGREE,
+        use_pbc: bool = True,
+        use_pbc_single: bool = False,
+        regress_forces: bool = True,
+        otf_graph: bool = True,
+        max_neighbors: int = 500,
+        max_radius: float = 5.0,
+        max_num_elements: int = 90,
+        num_layers: int = 12,
+        sphere_channels: int = 128,
+        attn_hidden_channels: int = 128,
+        num_heads: int = 8,
+        attn_alpha_channels: int = 32,
+        attn_value_channels: int = 16,
+        ffn_hidden_channels: int = 512,
+        norm_type: str = "rms_norm_sh",
+        lmax_list: list[int] | None = None,
+        mmax_list: list[int] | None = None,
+        grid_resolution: int | None = None,
+        num_sphere_samples: int = 128,
+        edge_channels: int = 128,
+        use_atom_edge_embedding: bool = True,
+        share_atom_edge_embedding: bool = False,
+        use_m_share_rad: bool = False,
+        distance_function: str = "gaussian",
+        num_distance_basis: int = 512,
+        attn_activation: str = "scaled_silu",
+        use_s2_act_attn: bool = False,
+        use_attn_renorm: bool = True,
+        ffn_activation: str = "scaled_silu",
+        use_gate_act: bool = False,
+        use_grid_mlp: bool = False,
+        use_sep_s2_act: bool = True,
+        alpha_drop: float = 0.1,
+        drop_path_rate: float = 0.05,
+        proj_drop: float = 0.0,
+        weight_init: str = "normal",
+        enforce_max_neighbors_strictly: bool = True,
+        avg_num_nodes: float | None = None,
+        avg_degree: float | None = None,
+        use_energy_lin_ref: bool | None = False,
+        load_energy_lin_ref: bool | None = False,
+        activation_checkpoint: bool | None = False,
         use_force_encoding=True,
-        use_noise_schedule_sigma_encoding=False,
-        use_denoising_energy=True,
-        use_denoising_stress=True,
-        use_energy_lin_ref=False,
-        load_energy_lin_ref=False,
-        activation_checkpoint=False,
+        use_noise_schedule_sigma_encoding: bool = False,
+        use_denoising_energy: bool = True,
+        use_denoising_stress: bool = True,  # TODO make this take general head names
     ):
         if mmax_list is None:
             mmax_list = [2]
@@ -384,7 +383,7 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
 
 @registry.register_model("equiformer_v2_dens_energy_head")
 class DeNSEnergyHead(torch.nn.Module, HeadInterface):
-    def __init__(self, backbone, reduce: str = "sum"):
+    def __init__(self, backbone: BackboneInterface, reduce: str = "sum"):
         super().__init__()
         self.reduce = reduce
         self.avg_num_nodes = backbone.avg_num_nodes
@@ -550,7 +549,7 @@ class DeNSForceHead(torch.nn.Module, HeadInterface):
 
 @registry.register_model("dens_rank2_symmetric_head")
 class DeNSRank2Head(Rank2SymmetricTensorHead):
-    def __init__(self, backbone, *args, **kwargs):
+    def __init__(self, backbone: BackboneInterface, *args, **kwargs):
         super().__init__(backbone, *args, **kwargs)
         self.use_denoising_stress = backbone.use_denoising_stress
 
