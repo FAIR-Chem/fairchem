@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import torch
@@ -246,31 +247,32 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
             (default: :obj:`False`)
         slurm (dict): Slurm configuration. Currently just for keeping track.
             (default: :obj:`{}`)
-        noddp (bool, optional): Run model without DDP.
     """
 
     def __init__(
         self,
-        task,
-        model,
-        outputs,
-        dataset,
-        optimizer,
-        loss_functions,
-        evaluation_metrics,
-        identifier,
-        timestamp_id=None,
-        run_dir=None,
-        is_debug=False,
-        print_every=100,
-        seed=None,
-        logger="wandb",
-        local_rank=0,
-        amp=False,
-        cpu=False,
-        name="ocp",
+        task: dict[str, str | Any],
+        model: dict[str, Any],
+        outputs: dict[str, str | int],
+        dataset: dict[str, str | float],
+        optimizer: dict[str, str | float],
+        loss_functions: dict[str, str | float],
+        evaluation_metrics: dict[str, str],
+        identifier: str,
+        # TODO: dealing with local rank is dangerous
+        # T201111838 remove this and use CUDA_VISIBILE_DEVICES instead so trainers don't need to know about which devie to use
+        local_rank: int,
+        timestamp_id: str | None = None,
+        run_dir: str | None = None,
+        is_debug: bool = False,
+        print_every: int = 100,
+        seed: int | None = None,
+        logger: str = "wandb",
+        amp: bool = False,
+        cpu: bool = False,
+        name: str = "ocp",
         slurm=None,
-        gp_gpus=None,
+        gp_gpus: int | None = None,
         inference_only: bool = False,
     ):
         if slurm is None:
