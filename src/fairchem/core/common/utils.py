@@ -1484,7 +1484,7 @@ def tensor_stats(name: str, x: torch.Tensor) -> dict:
 
 def get_weight_table(model: torch.nn.Module) -> tuple[list, list]:
     stat_names = list(tensor_stats("weight", torch.Tensor([1])).keys())
-    columns = ["ParamName"] + stat_names + ["grad." + n for n in stat_names]
+    columns = ["ParamName", "shape"] + stat_names + ["grad." + n for n in stat_names]
     data = []
     for param_name, params in model.named_parameters():
         row_weight = list(tensor_stats(f"weights/{param_name}", params).values())
@@ -1492,5 +1492,5 @@ def get_weight_table(model: torch.nn.Module) -> tuple[list, list]:
             row_grad = list(tensor_stats(f"grad/{param_name}", params.grad).values())
         else:
             row_grad = [None] * len(row_weight)
-        data.append([param_name] + row_weight + row_grad)  # noqa
+        data.append([param_name] + [params.shape] + row_weight + row_grad)  # noqa
     return columns, data
