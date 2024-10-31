@@ -61,6 +61,7 @@ class Registry:
         # Mappings to respective classes.
         "task_name_mapping": {},
         "dataset_name_mapping": {},
+        "loss_name_mapping": {},
         "model_name_mapping": {},
         "logger_name_mapping": {},
         "trainer_name_mapping": {},
@@ -105,6 +106,35 @@ class Registry:
 
         def wrap(func: Callable[..., R]) -> Callable[..., R]:
             cls.mapping["dataset_name_mapping"][name] = func
+            return func
+
+        return wrap
+
+    @classmethod
+    def register_loss(cls, name):
+        r"""Register a loss to registry with key 'name'
+
+        Args:
+            name: Key with which the loss will be registered.
+
+        Usage::
+
+            from fairchem.core.common.registry import registry
+            from torch import nn
+
+            @registry.register_loss("mae")
+            class MAELoss(nn.Module):
+                ...
+
+        """
+
+        def wrap(func):
+            from torch import nn
+
+            assert issubclass(
+                func, nn.Module
+            ), "All loss must inherit torch.nn.Module class"
+            cls.mapping["loss_name_mapping"][name] = func
             return func
 
         return wrap
@@ -254,6 +284,10 @@ class Registry:
     @classmethod
     def get_dataset_class(cls, name: str):
         return cls.get_class(name, "dataset_name_mapping")
+
+    @classmethod
+    def get_loss_class(cls, name):
+        return cls.get_class(name, "loss_name_mapping")
 
     @classmethod
     def get_model_class(cls, name: str):

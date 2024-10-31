@@ -360,7 +360,6 @@ class OCPTrainer(BaseTrainer):
                     pred,
                     target,
                     natoms=batch.natoms,
-                    batch_size=batch_size,
                 )
             )
 
