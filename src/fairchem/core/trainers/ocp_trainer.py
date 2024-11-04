@@ -197,7 +197,6 @@ class OCPTrainer(BaseTrainer):
 
                 # Evaluate on val set every `eval_every` iterations.
                 if self.step % eval_every == 0:
-                    breakpoint()
                     if self.val_loader is not None:
                         val_metrics = self.validate(
                             split="val",
