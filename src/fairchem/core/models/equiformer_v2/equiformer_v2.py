@@ -60,9 +60,9 @@ _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors =
 
 
 @deprecated(
-    "equiformerV2_force_head (EquiformerV2ForceHead) class is deprecated in favor of equiformerV2_rank1_head  (EqV2Rank1Head)"
+    "equiformer_v2_force_head (EquiformerV2ForceHead) class is deprecated in favor of equiformerV2_rank1_head  (EqV2Rank1Head)"
 )
-@registry.register_model("equiformerV2_force_head")
+@registry.register_model("equiformer_v2_force_head")
 class EquiformerV2ForceHead(EqV2VectorHead):
     def __init__(self, backbone):
         logging.warning(
@@ -72,9 +72,9 @@ class EquiformerV2ForceHead(EqV2VectorHead):
 
 
 @deprecated(
-    "equiformerV2_energy_head (EquiformerV2EnergyHead) class is deprecated in favor of equiformerV2_scalar_head  (EqV2ScalarHead)"
+    "equiformer_v2_energy_head (EquiformerV2EnergyHead) class is deprecated in favor of equiformerV2_scalar_head  (EqV2ScalarHead)"
 )
-@registry.register_model("equiformerV2_energy_head")
+@registry.register_model("equiformer_v2_energy_head")
 class EquiformerV2EnergyHead(EqV2ScalarHead):
     def __init__(self, backbone, reduce: str = "sum"):
         logging.warning(
