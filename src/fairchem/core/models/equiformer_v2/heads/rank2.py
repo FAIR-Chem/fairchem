@@ -238,7 +238,7 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
     def __init__(
         self,
         backbone: BackboneInterface,
-        output_name: str,
+        output_name: str = "stress",
         decompose: bool = False,
         edge_level_mlp: bool = False,
         num_mlp_layers: int = 2,
