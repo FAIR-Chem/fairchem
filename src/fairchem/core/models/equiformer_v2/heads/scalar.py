@@ -24,9 +24,10 @@ if TYPE_CHECKING:
 
 
 @registry.register_model("equiformerV2_scalar_head")
-class EquiformerV2EnergyHead(nn.Module, HeadInterface):
-    def __init__(self, backbone, reduce: str = "sum"):
+class EqV2ScalarHead(nn.Module, HeadInterface):
+    def __init__(self, backbone, output_name: str = "energy", reduce: str = "sum"):
         super().__init__()
+        self.output_name = output_name
         self.reduce = reduce
         self.avg_num_nodes = backbone.avg_num_nodes
         self.energy_block = FeedForwardNetwork(
@@ -44,21 +45,21 @@ class EquiformerV2EnergyHead(nn.Module, HeadInterface):
         self.apply(partial(eqv2_init_weights, weight_init=backbone.weight_init))
 
     def forward(self, data: Batch, emb: dict[str, torch.Tensor | GraphData]):
-        node_energy = self.energy_block(emb["node_embedding"])
-        node_energy = node_energy.embedding.narrow(1, 0, 1)
+        node_output = self.energy_block(emb["node_embedding"])
+        node_output = node_output.embedding.narrow(1, 0, 1)
         if gp_utils.initialized():
-            node_energy = gp_utils.gather_from_model_parallel_region(node_energy, dim=0)
-        energy = torch.zeros(
+            node_output = gp_utils.gather_from_model_parallel_region(node_output, dim=0)
+        output = torch.zeros(
             len(data.natoms),
-            device=node_energy.device,
-            dtype=node_energy.dtype,
+            device=node_output.device,
+            dtype=node_output.dtype,
         )
 
-        energy.index_add_(0, data.batch, node_energy.view(-1))
+        output.index_add_(0, data.batch, node_output.view(-1))
         if self.reduce == "sum":
-            return {"energy": energy / self.avg_num_nodes}
+            return {self.output_name: output / self.avg_num_nodes}
         elif self.reduce == "mean":
-            return {"energy": energy / data.natoms}
+            return {self.output_name: output / data.natoms}
         else:
             raise ValueError(
                 f"reduce can only be sum or mean, user provided: {self.reduce}"

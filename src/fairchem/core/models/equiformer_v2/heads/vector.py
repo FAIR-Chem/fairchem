@@ -24,12 +24,14 @@ from fairchem.core.models.equiformer_v2.weight_initialization import eqv2_init_w
 if TYPE_CHECKING:
     from torch_geometric.data import Batch
 
+    from fairchem.core.models.base import BackboneInterface
+
 
 @registry.register_model("equiformerV2_vector_head")
 class EqV2VectorHead(nn.Module, HeadInterface):
-    def __init__(self, backbone):
+    def __init__(self, backbone: BackboneInterface, output_name: str = "forces"):
         super().__init__()
-
+        self.output_name = output_name
         self.activation_checkpoint = backbone.activation_checkpoint
         self.force_block = SO2EquivariantGraphAttention(
             backbone.sphere_channels,
@@ -58,7 +60,7 @@ class EqV2VectorHead(nn.Module, HeadInterface):
 
     def forward(self, data: Batch, emb: dict[str, torch.Tensor]):
         if self.activation_checkpoint:
-            forces = torch.utils.checkpoint.checkpoint(
+            output = torch.utils.checkpoint.checkpoint(
                 self.force_block,
                 emb["node_embedding"],
                 emb["graph"].atomic_numbers_full,
@@ -68,15 +70,15 @@ class EqV2VectorHead(nn.Module, HeadInterface):
                 use_reentrant=not self.training,
             )
         else:
-            forces = self.force_block(
+            output = self.force_block(
                 emb["node_embedding"],
                 emb["graph"].atomic_numbers_full,
                 emb["graph"].edge_distance,
                 emb["graph"].edge_index,
                 node_offset=emb["graph"].node_offset,
             )
-        forces = forces.embedding.narrow(1, 1, 3)
-        forces = forces.view(-1, 3).contiguous()
+        output = output.embedding.narrow(1, 1, 3)
+        output = output.view(-1, 3).contiguous()
         if gp_utils.initialized():
-            forces = gp_utils.gather_from_model_parallel_region(forces, dim=0)
-        return {"forces": forces}
+            output = gp_utils.gather_from_model_parallel_region(output, dim=0)
+        return {self.output_name: output}
