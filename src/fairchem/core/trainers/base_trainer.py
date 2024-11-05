@@ -45,7 +45,6 @@ from fairchem.core.common.utils import (
     load_state_dict,
     match_state_dict,
     save_checkpoint,
-    tensor_stats,
     update_config,
 )
 from fairchem.core.datasets import data_list_collater
@@ -935,7 +934,7 @@ class BaseTrainer(ABC):
         if self.scaler:
             self.scaler.unscale_(self.optimizer)
             # log unscaled weights and grads
-            log_weight_frequency = self.config["logger"].get("log_weights_every", -1)
+            log_weight_frequency = self.config["logger"].get("log_weight_table", -1)
             if (
                 self.logger is not None
                 and distutils.is_master()
@@ -943,7 +942,7 @@ class BaseTrainer(ABC):
                 and self.step % log_weight_frequency == 1  # log on 1 instead of 0
             ):
                 columns, data = get_weight_table(self.model)
-                self.logger.log_table(name="weights", cols=columns, data=data)
+                self.logger.log_table(name="weight_table", cols=columns, data=data)
 
         if self.clip_grad_norm:
             grad_norm = torch.nn.utils.clip_grad_norm_(
@@ -953,19 +952,8 @@ class BaseTrainer(ABC):
             if self.logger is not None:
                 self.logger.log({"grad_norm": grad_norm}, step=self.step, split="train")
         if self.scaler:
-            cur_scale = self.scaler.get_scale()
             self.scaler.step(self.optimizer)
             self.scaler.update()
-            if cur_scale != self.scaler.get_scale():
-                # check if there are any infs or NANs in the weights
-                for param_name, params in self.model.named_parameters():
-                    if params.grad is not None and (
-                        torch.isnan(params.grad).any() or torch.isinf(params.grad).any()
-                    ):
-                        logging.warning(
-                            f"Rank: {distutils.get_rank()}, train_step: {self.step}, new_scale: {self.scaler.get_scale()}, Inf/Nan found in {param_name}, stats: {tensor_stats("grad", params.grad)}"
-                        )
-
         else:
             self.optimizer.step()
         if self.ema:

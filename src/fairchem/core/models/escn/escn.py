@@ -15,10 +15,6 @@ import typing
 import torch
 import torch.nn as nn
 
-from fairchem.core.common import distutils
-from fairchem.core.common.logger import WandBSingletonLogger
-from fairchem.core.common.utils import tensor_stats
-
 if typing.TYPE_CHECKING:
     from torch_geometric.data.batch import Batch
 
@@ -93,7 +89,6 @@ class eSCN(nn.Module, GraphModelMixin):
         show_timing_info: bool = False,
         resolution: int | None = None,
         activation_checkpoint: bool | None = False,
-        grid_norm: bool = False,
     ) -> None:
         if mmax_list is None:
             mmax_list = [2]
@@ -202,7 +197,6 @@ class eSCN(nn.Module, GraphModelMixin):
                 self.max_num_elements,
                 self.SO3_grid,
                 self.act,
-                grid_norm,
             )
             self.layer_blocks.append(block)
 
@@ -618,7 +612,6 @@ class LayerBlock(torch.nn.Module):
         max_num_elements: int,
         SO3_grid: SO3_Grid,
         act,
-        grid_norm: bool = False,
     ) -> None:
         super().__init__()
         self.layer_idx = layer_idx
@@ -629,7 +622,6 @@ class LayerBlock(torch.nn.Module):
         self.sphere_channels = sphere_channels
         self.sphere_channels_all = self.num_resolutions * self.sphere_channels
         self.SO3_grid = SO3_grid
-        self.grid_norm = grid_norm
 
         # Message block
         self.message_block = MessageBlock(
@@ -658,10 +650,6 @@ class LayerBlock(torch.nn.Module):
             self.sphere_channels_all, self.sphere_channels_all, bias=False
         )
 
-        if self.grid_norm:
-            self.gridnorm1 = nn.LayerNorm(2 * self.sphere_channels)
-            self.gridnorm2 = nn.LayerNorm(self.sphere_channels)
-
     def forward(
         self,
         x,
@@ -681,14 +669,6 @@ class LayerBlock(torch.nn.Module):
             mappingReduced,
         )
 
-        if distutils.is_master():
-            WandBSingletonLogger.get_instance().log(
-                tensor_stats(
-                    f"activations/{self.layer_idx}.x_message", x_message.embedding
-                ),
-                commit=False,
-            )
-
         # Compute point-wise spherical non-linearity on aggregated messages
         max_lmax = max(self.lmax_list)
 
@@ -697,47 +677,10 @@ class LayerBlock(torch.nn.Module):
         x_grid = x.to_grid(self.SO3_grid, lmax=max_lmax)
         x_grid = torch.cat([x_grid, x_grid_message], dim=3)
 
-        if self.grid_norm:
-            x_grid = self.gridnorm1(x_grid)
-
-        if distutils.is_master():
-            WandBSingletonLogger.get_instance().log(
-                tensor_stats(f"activations/{self.layer_idx}.x_grid", x_grid),
-                commit=False,
-            )
-
         # Perform point-wise convolution
         x_grid = self.act(self.fc1_sphere(x_grid))
-        x_grid = self.fc2_sphere(x_grid)
-
-        if distutils.is_master():
-            WandBSingletonLogger.get_instance().log(
-                tensor_stats(
-                    f"activations/{self.layer_idx}.x_grid_fc2_pre_act", x_grid
-                ),
-                commit=False,
-            )
-
-        x_grid = self.act(x_grid)
-
-        if distutils.is_master():
-            WandBSingletonLogger.get_instance().log(
-                tensor_stats(
-                    f"activations/{self.layer_idx}.x_grid_fc2_post_act", x_grid
-                ),
-                commit=False,
-            )
-
+        x_grid = self.act(self.fc2_sphere(x_grid))
         x_grid = self.fc3_sphere(x_grid)
-
-        if self.grid_norm:
-            x_grid = self.gridnorm2(x_grid)
-
-        if distutils.is_master():
-            WandBSingletonLogger.get_instance().log(
-                tensor_stats(f"activations/{self.layer_idx}.x_grid_fc3_output", x_grid),
-                commit=False,
-            )
 
         # Project back to spherical harmonic coefficients
         x_message._from_grid(x_grid, self.SO3_grid, lmax=max_lmax)
@@ -1124,12 +1067,7 @@ class EnergyBlock(torch.nn.Module):
         x_pt = self.act(self.fc2(x_pt))
         x_pt = self.fc3(x_pt)
         x_pt = x_pt.view(-1, self.num_sphere_samples, 1)
-        output = torch.sum(x_pt, dim=1) / self.num_sphere_samples
-        if distutils.is_master():
-            WandBSingletonLogger.get_instance().log(
-                tensor_stats("activations/energy_block_output", output), commit=False
-            )
-        return output
+        return torch.sum(x_pt, dim=1) / self.num_sphere_samples
 
 
 class ForceBlock(torch.nn.Module):
@@ -1162,15 +1100,6 @@ class ForceBlock(torch.nn.Module):
         x_pt = self.act(self.fc1(x_pt))
         x_pt = self.act(self.fc2(x_pt))
         x_pt = self.fc3(x_pt)
-        if distutils.is_master():
-            WandBSingletonLogger.get_instance().log(
-                tensor_stats("activations/force_block_l3_x_pt", x_pt), commit=False
-            )
         x_pt = x_pt.view(-1, self.num_sphere_samples, 1)
         forces = x_pt * sphere_points.view(1, self.num_sphere_samples, 3)
-        output = torch.sum(forces, dim=1) / self.num_sphere_samples
-        if distutils.is_master():
-            WandBSingletonLogger.get_instance().log(
-                tensor_stats("activations/force_output", output), commit=False
-            )
-        return output
+        return torch.sum(forces, dim=1) / self.num_sphere_samples
