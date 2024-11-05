@@ -301,7 +301,6 @@ class HydraModel(nn.Module, GraphModelMixin):
                 module_name = head_config.pop("module")
                 self.output_heads[head_name] = registry.get_model_class(module_name)(
                     self.backbone,
-                    head_name=head_name,
                     **head_config,
                 )
 
