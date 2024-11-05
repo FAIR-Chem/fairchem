@@ -43,7 +43,6 @@ from torch_scatter import scatter, segment_coo, segment_csr
 
 import fairchem.core
 from fairchem.core.common.registry import registry
-from fairchem.core.modules.loss import AtomwiseL2Loss, L2MAELoss
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -1431,21 +1430,6 @@ def update_config(base_config):
     config.update({"outputs": _outputs})
 
     return config
-
-
-def get_loss_module(loss_name):
-    if loss_name in ["l1", "mae"]:
-        loss_fn = nn.L1Loss()
-    elif loss_name == "mse":
-        loss_fn = nn.MSELoss()
-    elif loss_name == "l2mae":
-        loss_fn = L2MAELoss()
-    elif loss_name == "atomwisel2":
-        loss_fn = AtomwiseL2Loss()
-    else:
-        raise NotImplementedError(f"Unknown loss function name: {loss_name}")
-
-    return loss_fn
 
 
 def load_model_and_weights_from_checkpoint(checkpoint_path: str) -> nn.Module:
