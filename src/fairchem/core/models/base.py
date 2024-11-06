@@ -244,6 +244,7 @@ class HydraModel(nn.Module, GraphModelMixin):
         finetune_config: dict | None = None,
         otf_graph: bool = True,
         pass_through_head_outputs: bool = False,
+        freeze_backbone: bool = False,
     ):
         super().__init__()
         self.device = None
@@ -283,6 +284,10 @@ class HydraModel(nn.Module, GraphModelMixin):
             raise RuntimeError(
                 "Backbone not specified and not found in the starting checkpoint"
             )
+
+        if freeze_backbone:
+            for param in self.backbone.parameters():
+                param.requires_grad = False
 
         if heads is not None:
             heads = copy.deepcopy(heads)
