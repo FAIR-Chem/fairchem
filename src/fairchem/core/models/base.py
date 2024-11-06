@@ -233,6 +233,8 @@ class BackboneInterface(metaclass=ABCMeta):
         return
 
 
+from torch.profiler import record_function
+
 @registry.register_model("hydra")
 class HydraModel(nn.Module, GraphModelMixin):
     def __init__(
@@ -342,12 +344,13 @@ class HydraModel(nn.Module, GraphModelMixin):
         # Predict all output properties for all structures in the batch for now.
         out = {}
         for k in self.output_heads:
-            with torch.autocast(
-                device_type=self.device, enabled=self.output_heads[k].use_amp
-            ):
-                if self.pass_through_head_outputs:
-                    out.update(self.output_heads[k](data, emb))
-                else:
-                    out[k] = self.output_heads[k](data, emb)
+            with record_function(f"{k} head"):
+                with torch.autocast(
+                    device_type=self.device, enabled=self.output_heads[k].use_amp
+                ):
+                    if self.pass_through_head_outputs:
+                        out.update(self.output_heads[k](data, emb))
+                    else:
+                        out[k] = self.output_heads[k](data, emb)
 
         return out
