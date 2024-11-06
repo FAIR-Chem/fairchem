@@ -112,9 +112,6 @@ Module Contents
    .. py:attribute:: radial_basis
 
 
-   .. py:attribute:: radial_basis_cbf3
-
-
    .. py:attribute:: cbf_basis3
 
 
@@ -137,16 +134,9 @@ Module Contents
 
 
    .. py:attribute:: out_blocks
-      :value: []
-
 
 
    .. py:attribute:: int_blocks
-      :value: []
-
-
-
-   .. py:attribute:: interaction_block
 
 
    .. py:attribute:: shared_parameters

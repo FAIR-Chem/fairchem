@@ -70,9 +70,6 @@ Module Contents
    Identifiers need not be any particular type.
 
 
-   .. py:attribute:: a2g_args
-
-
    .. py:attribute:: a2g
 
 

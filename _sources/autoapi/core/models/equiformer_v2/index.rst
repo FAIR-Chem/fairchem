@@ -4,16 +4,6 @@ core.models.equiformer_v2
 .. py:module:: core.models.equiformer_v2
 
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 1
-
-   /autoapi/core/models/equiformer_v2/prediction_heads/index
-   /autoapi/core/models/equiformer_v2/trainers/index
-
-
 Submodules
 ----------
 
@@ -30,9 +20,11 @@ Submodules
    /autoapi/core/models/equiformer_v2/input_block/index
    /autoapi/core/models/equiformer_v2/layer_norm/index
    /autoapi/core/models/equiformer_v2/module_list/index
+   /autoapi/core/models/equiformer_v2/prediction_heads/index
    /autoapi/core/models/equiformer_v2/radial_function/index
    /autoapi/core/models/equiformer_v2/so2_ops/index
    /autoapi/core/models/equiformer_v2/so3/index
+   /autoapi/core/models/equiformer_v2/trainers/index
    /autoapi/core/models/equiformer_v2/transformer_block/index
    /autoapi/core/models/equiformer_v2/wigner/index
 

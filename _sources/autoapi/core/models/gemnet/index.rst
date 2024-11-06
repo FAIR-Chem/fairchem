@@ -4,15 +4,6 @@ core.models.gemnet
 .. py:module:: core.models.gemnet
 
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 1
-
-   /autoapi/core/models/gemnet/layers/index
-
-
 Submodules
 ----------
 
@@ -21,6 +12,7 @@ Submodules
 
    /autoapi/core/models/gemnet/gemnet/index
    /autoapi/core/models/gemnet/initializers/index
+   /autoapi/core/models/gemnet/layers/index
    /autoapi/core/models/gemnet/utils/index
 
 
@@ -121,9 +113,6 @@ Package Contents
    .. py:attribute:: radial_basis
 
 
-   .. py:attribute:: radial_basis_cbf3
-
-
    .. py:attribute:: cbf_basis3
 
 
@@ -146,16 +135,9 @@ Package Contents
 
 
    .. py:attribute:: out_blocks
-      :value: []
-
 
 
    .. py:attribute:: int_blocks
-      :value: []
-
-
-
-   .. py:attribute:: interaction_block
 
 
    .. py:attribute:: shared_parameters

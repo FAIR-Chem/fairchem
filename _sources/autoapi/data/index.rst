@@ -4,8 +4,8 @@ data
 .. py:module:: data
 
 
-Subpackages
------------
+Submodules
+----------
 
 .. toctree::
    :maxdepth: 1

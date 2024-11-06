@@ -12,24 +12,16 @@ data.oc
 
 
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 1
-
-   /autoapi/data/oc/core/index
-   /autoapi/data/oc/databases/index
-   /autoapi/data/oc/utils/index
-
-
 Submodules
 ----------
 
 .. toctree::
    :maxdepth: 1
 
+   /autoapi/data/oc/core/index
+   /autoapi/data/oc/databases/index
    /autoapi/data/oc/structure_generator/index
+   /autoapi/data/oc/utils/index
 
 
 Attributes

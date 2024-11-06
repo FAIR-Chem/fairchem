@@ -58,9 +58,6 @@ Module Contents
    .. py:attribute:: name
 
 
-   .. py:attribute:: block_nr
-
-
    .. py:attribute:: dense_ca
 
 

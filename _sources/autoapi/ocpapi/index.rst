@@ -12,23 +12,15 @@ ocpapi
 
 
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 1
-
-   /autoapi/ocpapi/client/index
-   /autoapi/ocpapi/workflows/index
-
-
 Submodules
 ----------
 
 .. toctree::
    :maxdepth: 1
 
+   /autoapi/ocpapi/client/index
    /autoapi/ocpapi/version/index
+   /autoapi/ocpapi/workflows/index
 
 
 Attributes
@@ -114,6 +106,7 @@ Package Contents
 
    .. py:property:: host
       :type: str
+
 
       The host being called by this client.
 

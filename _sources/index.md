@@ -38,6 +38,7 @@ tasks, data, and metrics, please read the documentations and respective papers:
  - [ODAC23](core/datasets/odac)
  - [OC20Dense](core/datasets/oc20dense)
  - [OC20NEB](core/datasets/oc20neb)
+ - [OMat24](core/datasets/omat24)
 
 #### Projects and models built on `fairchem`:
 

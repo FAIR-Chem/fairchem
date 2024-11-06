@@ -96,10 +96,12 @@ Module Contents
 
 
    .. py:property:: metadata
+
       Load the metadata from the DB if present
 
 
    .. py:property:: _nextid
+
       Get the id of the next row to be written
 
 

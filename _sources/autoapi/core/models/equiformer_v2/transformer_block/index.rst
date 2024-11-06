@@ -127,11 +127,6 @@ Module Contents
    .. py:attribute:: use_sep_s2_act
 
 
-   .. py:attribute:: extra_m0_output_channels
-      :value: None
-
-
-
    .. py:attribute:: so2_conv_1
 
 
@@ -277,9 +272,6 @@ Module Contents
    :type drop_path_rate: float
    :param proj_drop: Dropout rate for outputs of attention and FFN
    :type proj_drop: float
-
-
-   .. py:attribute:: max_lmax
 
 
    .. py:attribute:: norm_1

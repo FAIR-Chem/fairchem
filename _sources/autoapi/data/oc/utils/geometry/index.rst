@@ -112,15 +112,6 @@ Module Contents
 
 
 
-   .. py:attribute:: a
-
-
-   .. py:attribute:: b
-
-
-   .. py:attribute:: c
-
-
    .. py:attribute:: ur_corner
 
 
@@ -145,9 +136,6 @@ Module Contents
 
 
    Box geometry for orthorhombic cells.
-
-
-   .. py:attribute:: props
 
 
    .. py:attribute:: params

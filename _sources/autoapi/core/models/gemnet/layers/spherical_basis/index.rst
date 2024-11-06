@@ -46,12 +46,6 @@ Module Contents
    .. py:attribute:: efficient
 
 
-   .. py:attribute:: cbf_name
-
-
-   .. py:attribute:: cbf_hparams
-
-
    .. py:method:: forward(D_ca, cosφ_cab, id3_ca)
 
 

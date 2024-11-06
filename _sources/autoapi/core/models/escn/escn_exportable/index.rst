@@ -157,9 +157,6 @@ Module Contents
    .. py:attribute:: sph_feature_size
 
 
-   .. py:attribute:: Jd_list
-
-
    .. py:method:: forward_trainable(data: torch_geometric.data.batch.Batch) -> dict[str, torch.Tensor]
 
 
@@ -356,9 +353,6 @@ Module Contents
    .. py:attribute:: mappingReduced
 
 
-   .. py:attribute:: num_channels_m0
-
-
    .. py:attribute:: fc1_dist0
 
 
@@ -413,14 +407,6 @@ Module Contents
 
 
    .. py:attribute:: act
-
-
-   .. py:attribute:: num_coefficents
-      :value: 0
-
-
-
-   .. py:attribute:: num_channels
 
 
    .. py:attribute:: fc1_dist

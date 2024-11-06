@@ -204,9 +204,6 @@ Module Contents
    .. py:attribute:: normalization
 
 
-   .. py:attribute:: expand_index
-
-
    .. py:method:: __repr__() -> str
 
 
@@ -235,9 +232,6 @@ Module Contents
 
 
    .. py:attribute:: affine_weight
-
-
-   .. py:attribute:: expand_index
 
 
    .. py:method:: __repr__() -> str

@@ -35,9 +35,6 @@ Package Contents
    .. py:attribute:: batch_size
 
 
-   .. py:attribute:: config
-
-
    .. py:attribute:: trainer
 
 
@@ -86,15 +83,6 @@ Package Contents
 
 
    .. py:attribute:: reaction_db_path
-
-
-   .. py:attribute:: reaction_db
-
-
-   .. py:attribute:: adsorbate_db
-
-
-   .. py:attribute:: entry
 
 
    .. py:method:: get_desorption_mapping(reactant)

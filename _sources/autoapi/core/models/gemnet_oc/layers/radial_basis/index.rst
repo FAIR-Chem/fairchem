@@ -107,9 +107,6 @@ Module Contents
    :vartype training: bool
 
 
-   .. py:attribute:: offset
-
-
    .. py:attribute:: coeff
 
 
@@ -156,19 +153,10 @@ Module Contents
    :type pregamma_initial: float
 
 
-   .. py:attribute:: prefactor
-
-
    .. py:attribute:: pregamma
 
 
    .. py:attribute:: softplus
-
-
-   .. py:attribute:: exp1
-
-
-   .. py:attribute:: exp2
 
 
    .. py:method:: forward(d_scaled: torch.Tensor) -> torch.Tensor
@@ -195,18 +183,6 @@ Module Contents
 
 
    .. py:attribute:: scale_basis
-
-
-   .. py:attribute:: env_name
-
-
-   .. py:attribute:: env_hparams
-
-
-   .. py:attribute:: rbf_name
-
-
-   .. py:attribute:: rbf_hparams
 
 
    .. py:method:: forward(d: torch.Tensor) -> torch.Tensor

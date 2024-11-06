@@ -81,15 +81,6 @@ Module Contents
    tensorboard, etc.
 
 
-   .. py:attribute:: project
-
-
-   .. py:attribute:: entity
-
-
-   .. py:attribute:: group
-
-
    .. py:method:: watch(model, log_freq: int = 1000) -> None
 
       Monitor parameters and gradients.

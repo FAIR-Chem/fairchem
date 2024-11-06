@@ -107,6 +107,26 @@ Module Contents
 
 
 
+   .. py:method:: register_loss(name)
+      :classmethod:
+
+
+      Register a loss to registry with key 'name'
+
+      :param name: Key with which the loss will be registered.
+
+      Usage::
+
+          from fairchem.core.common.registry import registry
+          from torch import nn
+
+          @registry.register_loss("mae")
+          class MAELoss(nn.Module):
+              ...
+
+
+
+
    .. py:method:: register_model(name: str)
       :classmethod:
 
@@ -194,6 +214,11 @@ Module Contents
 
 
    .. py:method:: get_dataset_class(name: str)
+      :classmethod:
+
+
+
+   .. py:method:: get_loss_class(name)
       :classmethod:
 
 

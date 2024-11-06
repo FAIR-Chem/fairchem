@@ -387,19 +387,6 @@ Module Contents
    .. py:attribute:: num_channels
 
 
-   .. py:attribute:: num_components
-      :value: 0
-
-
-
-   .. py:attribute:: expand_index
-
-
-   .. py:attribute:: start_idx
-      :value: 0
-
-
-
    .. py:attribute:: scalar_act
 
 

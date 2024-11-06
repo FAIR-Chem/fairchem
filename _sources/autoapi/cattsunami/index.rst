@@ -12,8 +12,8 @@ cattsunami
 
 
 
-Subpackages
------------
+Submodules
+----------
 
 .. toctree::
    :maxdepth: 1

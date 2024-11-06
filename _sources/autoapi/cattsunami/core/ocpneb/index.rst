@@ -23,9 +23,6 @@ Module Contents
    .. py:attribute:: batch_size
 
 
-   .. py:attribute:: config
-
-
    .. py:attribute:: trainer
 
 

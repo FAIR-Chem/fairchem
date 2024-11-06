@@ -12,22 +12,6 @@ core
 
 
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 1
-
-   /autoapi/core/common/index
-   /autoapi/core/datasets/index
-   /autoapi/core/models/index
-   /autoapi/core/modules/index
-   /autoapi/core/preprocessing/index
-   /autoapi/core/scripts/index
-   /autoapi/core/tasks/index
-   /autoapi/core/trainers/index
-
-
 Submodules
 ----------
 
@@ -36,5 +20,13 @@ Submodules
 
    /autoapi/core/_cli/index
    /autoapi/core/_cli_hydra/index
+   /autoapi/core/common/index
+   /autoapi/core/datasets/index
+   /autoapi/core/models/index
+   /autoapi/core/modules/index
+   /autoapi/core/preprocessing/index
+   /autoapi/core/scripts/index
+   /autoapi/core/tasks/index
+   /autoapi/core/trainers/index
 
 

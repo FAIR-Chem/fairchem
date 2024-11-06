@@ -165,9 +165,6 @@ Module Contents
    .. py:attribute:: use_cosine
 
 
-   .. py:attribute:: freq
-
-
    .. py:attribute:: freq_filter
 
 
@@ -214,11 +211,11 @@ Module Contents
    .. py:attribute:: num_freqs
 
 
-   .. py:attribute:: offset
-
-
    .. py:attribute:: coeff
       :type:  float
+
+
+   .. py:attribute:: offset
 
 
    .. py:method:: forward(x: torch.Tensor) -> torch.Tensor
@@ -269,9 +266,6 @@ Module Contents
 
 
    .. py:attribute:: use_cosine
-
-
-   .. py:attribute:: freq
 
 
    .. py:attribute:: freq_filter
@@ -376,18 +370,6 @@ Module Contents
 
 
    .. py:attribute:: max_n
-
-
-   .. py:attribute:: m_list
-      :type:  list[int]
-      :value: []
-
-
-
-   .. py:attribute:: n_list
-      :type:  list[int]
-      :value: []
-
 
 
    .. py:attribute:: out_dim

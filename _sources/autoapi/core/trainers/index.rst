@@ -58,12 +58,6 @@ Package Contents
       :type:  str
 
 
-   .. py:attribute:: commit_hash
-
-
-   .. py:attribute:: logger_name
-
-
    .. py:attribute:: config
 
 

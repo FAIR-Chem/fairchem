@@ -107,13 +107,7 @@ Module Contents
    .. py:attribute:: inv_sqrt_2
 
 
-   .. py:attribute:: num_eint
-
-
    .. py:attribute:: inv_sqrt_num_eint
-
-
-   .. py:attribute:: num_aint
 
 
    .. py:attribute:: inv_sqrt_num_aint

@@ -69,14 +69,6 @@ Module Contents
    .. py:attribute:: res_size
 
 
-   .. py:attribute:: offset
-      :value: 0
-
-
-
-   .. py:attribute:: num_coefficients
-
-
    .. py:attribute:: to_m
 
 
@@ -120,9 +112,6 @@ Module Contents
    .. py:attribute:: num_coefficients
       :value: 0
 
-
-
-   .. py:attribute:: embedding
 
 
    .. py:method:: clone() -> SO3_Embedding

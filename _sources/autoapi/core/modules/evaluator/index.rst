@@ -17,7 +17,7 @@ Attributes
 
 .. autoapisummary::
 
-   core.modules.evaluator.NONE
+   core.modules.evaluator.NONE_SLICE
 
 
 Classes
@@ -33,6 +33,13 @@ Functions
 
 .. autoapisummary::
 
+   core.modules.evaluator.metrics_dict
+   core.modules.evaluator.cosine_similarity
+   core.modules.evaluator.mae
+   core.modules.evaluator.mse
+   core.modules.evaluator.per_atom_mae
+   core.modules.evaluator.per_atom_mse
+   core.modules.evaluator.magnitude_error
    core.modules.evaluator.forcesx_mae
    core.modules.evaluator.forcesx_mse
    core.modules.evaluator.forcesy_mae
@@ -43,16 +50,13 @@ Functions
    core.modules.evaluator.energy_within_threshold
    core.modules.evaluator.average_distance_within_threshold
    core.modules.evaluator.min_diff
-   core.modules.evaluator.cosine_similarity
-   core.modules.evaluator.mae
-   core.modules.evaluator.mse
-   core.modules.evaluator.magnitude_error
+   core.modules.evaluator.rmse
 
 
 Module Contents
 ---------------
 
-.. py:data:: NONE
+.. py:data:: NONE_SLICE
 
 .. py:class:: Evaluator(task: str | None = None, eval_metrics: dict | None = None)
 
@@ -70,15 +74,32 @@ Module Contents
    .. py:attribute:: target_metrics
 
 
-   .. py:method:: eval(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], prev_metrics=None)
+   .. py:method:: eval(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], prev_metrics: dict | None = None)
 
 
    .. py:method:: update(key, stat, metrics)
 
 
-.. py:function:: forcesx_mae(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = NONE)
+.. py:function:: metrics_dict(metric_fun: Callable) -> Callable
 
-.. py:function:: forcesx_mse(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = NONE)
+   Wrap up the return of a metrics function
+
+
+.. py:function:: cosine_similarity(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = NONE_SLICE)
+
+.. py:function:: mae(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = NONE_SLICE) -> torch.Tensor
+
+.. py:function:: mse(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = NONE_SLICE) -> torch.Tensor
+
+.. py:function:: per_atom_mae(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = NONE_SLICE) -> torch.Tensor
+
+.. py:function:: per_atom_mse(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = NONE_SLICE) -> torch.Tensor
+
+.. py:function:: magnitude_error(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = NONE_SLICE, p: int = 2) -> torch.Tensor
+
+.. py:function:: forcesx_mae(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = NONE_SLICE)
+
+.. py:function:: forcesx_mse(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = NONE_SLICE)
 
 .. py:function:: forcesy_mae(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = None)
 
@@ -96,11 +117,5 @@ Module Contents
 
 .. py:function:: min_diff(pred_pos: torch.Tensor, dft_pos: torch.Tensor, cell: torch.Tensor, pbc: torch.Tensor)
 
-.. py:function:: cosine_similarity(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = NONE)
-
-.. py:function:: mae(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = NONE) -> dict[str, float | int]
-
-.. py:function:: mse(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = NONE) -> dict[str, float | int]
-
-.. py:function:: magnitude_error(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = NONE, p: int = 2) -> dict[str, float | int]
+.. py:function:: rmse(prediction: dict[str, torch.Tensor], target: dict[str, torch.Tensor], key: collections.abc.Hashable = None) -> dict[str, float | int]
 

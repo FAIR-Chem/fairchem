@@ -247,9 +247,6 @@ Module Contents
 
 
 
-   .. py:attribute:: act
-
-
    .. py:attribute:: cutoff
 
 

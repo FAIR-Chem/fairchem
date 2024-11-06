@@ -65,9 +65,6 @@ Module Contents
    :type activation: str
 
 
-   .. py:attribute:: in_features
-
-
    .. py:attribute:: dense
 
 

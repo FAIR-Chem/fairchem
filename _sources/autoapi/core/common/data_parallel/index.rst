@@ -107,9 +107,6 @@ Module Contents
    .. py:attribute:: on_error
 
 
-   .. py:attribute:: sampler
-
-
    .. py:attribute:: device
 
 

@@ -63,18 +63,10 @@ Module Contents
       Properties calculator can handle (energy, forces, ...)
 
 
-   .. py:attribute:: checkpoint
-      :value: None
-
-
-
    .. py:attribute:: config
 
 
    .. py:attribute:: trainer
-
-
-   .. py:attribute:: seed
 
 
    .. py:attribute:: a2g

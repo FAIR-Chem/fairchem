@@ -66,9 +66,6 @@ Module Contents
    .. py:attribute:: num_output
 
 
-   .. py:attribute:: offset
-
-
    .. py:attribute:: coeff
 
 
@@ -115,9 +112,6 @@ Module Contents
    .. py:attribute:: num_output
 
 
-   .. py:attribute:: offset
-
-
    .. py:attribute:: coeff
 
 
@@ -162,9 +156,6 @@ Module Contents
 
 
    .. py:attribute:: num_output
-
-
-   .. py:attribute:: offset
 
 
    .. py:attribute:: coeff

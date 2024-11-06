@@ -4,15 +4,6 @@ core.datasets
 .. py:module:: core.datasets
 
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 1
-
-   /autoapi/core/datasets/embeddings/index
-
-
 Submodules
 ----------
 
@@ -22,6 +13,7 @@ Submodules
    /autoapi/core/datasets/_utils/index
    /autoapi/core/datasets/ase_datasets/index
    /autoapi/core/datasets/base_dataset/index
+   /autoapi/core/datasets/embeddings/index
    /autoapi/core/datasets/lmdb_database/index
    /autoapi/core/datasets/lmdb_dataset/index
    /autoapi/core/datasets/oc22_lmdb_dataset/index
@@ -347,10 +339,12 @@ Package Contents
 
 
    .. py:property:: metadata
+
       Load the metadata from the DB if present
 
 
    .. py:property:: _nextid
+
       Get the id of the next row to be written
 
 

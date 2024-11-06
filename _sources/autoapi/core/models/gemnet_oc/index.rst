@@ -4,15 +4,6 @@ core.models.gemnet_oc
 .. py:module:: core.models.gemnet_oc
 
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 1
-
-   /autoapi/core/models/gemnet_oc/layers/index
-
-
 Submodules
 ----------
 
@@ -22,6 +13,7 @@ Submodules
    /autoapi/core/models/gemnet_oc/gemnet_oc/index
    /autoapi/core/models/gemnet_oc/initializers/index
    /autoapi/core/models/gemnet_oc/interaction_indices/index
+   /autoapi/core/models/gemnet_oc/layers/index
    /autoapi/core/models/gemnet_oc/utils/index
 
 
@@ -217,22 +209,15 @@ Package Contents
 
 
    .. py:attribute:: int_blocks
-      :value: []
-
 
 
    .. py:attribute:: out_blocks
-      :value: []
-
 
 
    .. py:attribute:: out_mlp_E
 
 
    .. py:attribute:: out_energy
-
-
-   .. py:attribute:: out_initializer
 
 
    .. py:method:: set_cutoffs(cutoff, cutoff_qint, cutoff_aeaint, cutoff_aint)

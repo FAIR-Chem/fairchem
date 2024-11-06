@@ -206,22 +206,15 @@ Module Contents
 
 
    .. py:attribute:: int_blocks
-      :value: []
-
 
 
    .. py:attribute:: out_blocks
-      :value: []
-
 
 
    .. py:attribute:: out_mlp_E
 
 
    .. py:attribute:: out_energy
-
-
-   .. py:attribute:: out_initializer
 
 
    .. py:method:: set_cutoffs(cutoff, cutoff_qint, cutoff_aeaint, cutoff_aint)
@@ -513,16 +506,9 @@ Module Contents
 
 
    .. py:attribute:: out_mlp_E
-      :value: None
-
 
 
    .. py:attribute:: out_energy
-      :value: None
-
-
-
-   .. py:attribute:: out_initializer
 
 
    .. py:method:: forward(data: torch_geometric.data.batch.Batch, emb: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]
@@ -580,9 +566,6 @@ Module Contents
 
 
    .. py:attribute:: forces_coupled
-
-
-   .. py:attribute:: emb_size_edge
 
 
    .. py:method:: forward(data: torch_geometric.data.batch.Batch, emb: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]

@@ -485,8 +485,6 @@ Module Contents
 
 
    .. py:attribute:: out_energy
-      :value: None
-
 
 
    .. py:method:: forward(data: torch_geometric.data.batch.Batch, emb: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]

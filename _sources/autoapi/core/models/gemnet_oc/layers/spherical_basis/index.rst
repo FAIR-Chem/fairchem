@@ -46,12 +46,6 @@ Module Contents
    .. py:attribute:: scale_basis
 
 
-   .. py:attribute:: cbf_name
-
-
-   .. py:attribute:: cbf_hparams
-
-
    .. py:method:: forward(D_ca, cosφ_cab)
 
 
@@ -79,12 +73,6 @@ Module Contents
 
 
    .. py:attribute:: scale_basis
-
-
-   .. py:attribute:: sbf_name
-
-
-   .. py:attribute:: sbf_hparams
 
 
    .. py:method:: forward(D_ca, cosφ_cab, θ_cabd)

@@ -60,32 +60,6 @@ Module Contents
 
 
 
-   .. py:attribute:: l_harmonic
-
-
-   .. py:attribute:: m_harmonic
-
-
-   .. py:attribute:: m_complex
-
-
-   .. py:attribute:: res_size
-
-
-   .. py:attribute:: offset
-      :value: 0
-
-
-
-   .. py:attribute:: num_coefficients
-
-
-   .. py:attribute:: to_m
-
-
-   .. py:attribute:: m_size
-
-
    .. py:attribute:: mask_indices_cache
       :value: None
 
@@ -140,9 +114,6 @@ Module Contents
    .. py:attribute:: num_coefficients
       :value: 0
 
-
-
-   .. py:attribute:: embedding
 
 
    .. py:method:: clone() -> SO3_Embedding
@@ -237,27 +208,16 @@ Module Contents
    .. py:attribute:: mapping
 
 
-   .. py:attribute:: device
-      :value: 'cpu'
-
-
-
-   .. py:attribute:: to_grid
-
-
-   .. py:attribute:: to_grid_mat
-
-
-   .. py:attribute:: from_grid
-
-
-   .. py:attribute:: from_grid_mat
-
-
    .. py:method:: get_to_grid_mat(device)
 
 
    .. py:method:: get_from_grid_mat(device)
+
+
+   .. py:method:: to_grid(embedding, lmax: int, mmax: int)
+
+
+   .. py:method:: from_grid(grid, lmax: int, mmax: int)
 
 
 .. py:class:: SO3_Linear(in_features: int, out_features: int, lmax: int, bias: bool = True)
@@ -364,13 +324,7 @@ Module Contents
    .. py:attribute:: weight
 
 
-   .. py:attribute:: bound
-
-
    .. py:attribute:: bias
-
-
-   .. py:attribute:: expand_index
 
 
    .. py:method:: forward(input_embedding)

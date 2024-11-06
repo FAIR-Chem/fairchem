@@ -176,9 +176,6 @@ Package Contents
 
 
    .. py:attribute:: sphharm_weights
-      :type:  list[torch.nn.Parameter]
-      :value: []
-
 
 
    .. py:method:: forward(data)

@@ -4,22 +4,6 @@ core.models
 .. py:module:: core.models
 
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 1
-
-   /autoapi/core/models/equiformer_v2/index
-   /autoapi/core/models/escn/index
-   /autoapi/core/models/gemnet/index
-   /autoapi/core/models/gemnet_gp/index
-   /autoapi/core/models/gemnet_oc/index
-   /autoapi/core/models/painn/index
-   /autoapi/core/models/scn/index
-   /autoapi/core/models/utils/index
-
-
 Submodules
 ----------
 
@@ -28,8 +12,16 @@ Submodules
 
    /autoapi/core/models/base/index
    /autoapi/core/models/dimenet_plus_plus/index
+   /autoapi/core/models/equiformer_v2/index
+   /autoapi/core/models/escn/index
+   /autoapi/core/models/gemnet/index
+   /autoapi/core/models/gemnet_gp/index
+   /autoapi/core/models/gemnet_oc/index
    /autoapi/core/models/model_registry/index
+   /autoapi/core/models/painn/index
    /autoapi/core/models/schnet/index
+   /autoapi/core/models/scn/index
+   /autoapi/core/models/utils/index
 
 
 Attributes

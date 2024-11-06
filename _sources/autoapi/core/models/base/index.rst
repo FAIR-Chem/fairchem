@@ -126,7 +126,7 @@ Module Contents
 
 
 
-.. py:class:: HydraModel(backbone: dict | None = None, heads: dict | None = None, finetune_config: dict | None = None, otf_graph: bool = True, pass_through_head_outputs: bool = False)
+.. py:class:: HydraModel(backbone: dict | None = None, heads: dict | None = None, finetune_config: dict | None = None, otf_graph: bool = True, pass_through_head_outputs: bool = False, freeze_backbone: bool = False)
 
    Bases: :py:obj:`torch.nn.Module`, :py:obj:`GraphModelMixin`
 
@@ -172,11 +172,6 @@ Module Contents
 
 
    .. py:attribute:: pass_through_head_outputs
-
-
-   .. py:attribute:: starting_model
-      :value: None
-
 
 
    .. py:method:: forward(data: torch_geometric.data.Batch)

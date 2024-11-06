@@ -39,9 +39,6 @@ Module Contents
       :type:  int | None
 
 
-   .. py:attribute:: parameters
-
-
    .. py:attribute:: shadow_params
 
 

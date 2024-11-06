@@ -61,6 +61,7 @@ Functions
    core.common.utils.get_max_neighbors_mask
    core.common.utils.get_pruned_edge_idx
    core.common.utils.merge_dicts
+   core.common.utils.debug_log_entry_exit
    core.common.utils.setup_logging
    core.common.utils.compute_neighbors
    core.common.utils.check_traj_files
@@ -75,7 +76,6 @@ Functions
    core.common.utils.cg_change_mat
    core.common.utils.irreps_sum
    core.common.utils.update_config
-   core.common.utils.get_loss_module
    core.common.utils.load_model_and_weights_from_checkpoint
    core.common.utils.get_timestamp_uid
 
@@ -257,6 +257,8 @@ Module Contents
 
 
 
+.. py:function:: debug_log_entry_exit(func)
+
 .. py:function:: setup_logging() -> None
 
 .. py:function:: compute_neighbors(data, edge_index)
@@ -293,8 +295,6 @@ Module Contents
    Configs created prior to FAIRChem/OCP 2.0 are organized a little different than they
    are now. Update old configs to fit the new expected structure.
 
-
-.. py:function:: get_loss_module(loss_name)
 
 .. py:function:: load_model_and_weights_from_checkpoint(checkpoint_path: str) -> torch.nn.Module
 

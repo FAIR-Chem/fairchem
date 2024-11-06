@@ -4,15 +4,6 @@ core.models.gemnet_gp
 .. py:module:: core.models.gemnet_gp
 
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 1
-
-   /autoapi/core/models/gemnet_gp/layers/index
-
-
 Submodules
 ----------
 
@@ -21,6 +12,7 @@ Submodules
 
    /autoapi/core/models/gemnet_gp/gemnet/index
    /autoapi/core/models/gemnet_gp/initializers/index
+   /autoapi/core/models/gemnet_gp/layers/index
    /autoapi/core/models/gemnet_gp/utils/index
 
 
@@ -127,9 +119,6 @@ Package Contents
    .. py:attribute:: radial_basis
 
 
-   .. py:attribute:: radial_basis_cbf3
-
-
    .. py:attribute:: cbf_basis3
 
 
@@ -152,16 +141,9 @@ Package Contents
 
 
    .. py:attribute:: out_blocks
-      :value: []
-
 
 
    .. py:attribute:: int_blocks
-      :value: []
-
-
-
-   .. py:attribute:: interaction_block
 
 
    .. py:method:: get_triplets(edge_index, num_atoms)

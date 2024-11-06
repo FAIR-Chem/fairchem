@@ -182,9 +182,6 @@ Module Contents
 
 
    .. py:attribute:: sphharm_weights
-      :type:  list[torch.nn.Parameter]
-      :value: []
-
 
 
    .. py:method:: forward(data)
@@ -294,12 +291,10 @@ Module Contents
    :vartype training: bool
 
 
-   .. py:attribute:: energy_block
-      :value: None
-
-
-
    .. py:attribute:: reduce
+
+
+   .. py:attribute:: energy_block
 
 
    .. py:method:: forward(data: torch_geometric.data.batch.Batch, emb: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]
@@ -354,8 +349,6 @@ Module Contents
 
 
    .. py:attribute:: force_block
-      :value: None
-
 
 
    .. py:method:: forward(data: torch_geometric.data.batch.Batch, emb: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]
@@ -542,11 +535,6 @@ Module Contents
    .. py:attribute:: act
 
 
-   .. py:attribute:: num_channels_m0
-      :value: 0
-
-
-
    .. py:attribute:: fc1_dist0
 
 
@@ -603,11 +591,6 @@ Module Contents
 
 
    .. py:attribute:: act
-
-
-   .. py:attribute:: num_channels
-      :value: 0
-
 
 
    .. py:attribute:: fc1_dist

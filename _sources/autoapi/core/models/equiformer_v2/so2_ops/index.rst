@@ -53,11 +53,6 @@ Module Contents
       :type:  int
 
 
-   .. py:attribute:: num_channels
-      :value: 0
-
-
-
    .. py:attribute:: fc
 
 
@@ -111,19 +106,6 @@ Module Contents
 
 
    .. py:attribute:: extra_m0_output_channels
-
-
-   .. py:attribute:: num_channels_rad
-      :value: 0
-
-
-
-   .. py:attribute:: num_channels_m0
-      :value: 0
-
-
-
-   .. py:attribute:: m0_output_channels
 
 
    .. py:attribute:: fc_m0
@@ -182,16 +164,6 @@ Module Contents
 
 
    .. py:attribute:: num_resolutions
-
-
-   .. py:attribute:: num_channels_rad
-      :value: 0
-
-
-
-   .. py:attribute:: num_channels_m0
-      :value: 0
-
 
 
    .. py:attribute:: fc_m0

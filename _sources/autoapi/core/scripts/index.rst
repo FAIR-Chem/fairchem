@@ -12,15 +12,6 @@ core.scripts
 
 
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 1
-
-   /autoapi/core/scripts/hpo/index
-
-
 Submodules
 ----------
 
@@ -34,6 +25,7 @@ Submodules
    /autoapi/core/scripts/fit_normalizers/index
    /autoapi/core/scripts/fit_references/index
    /autoapi/core/scripts/gif_maker_parallelized/index
+   /autoapi/core/scripts/hpo/index
    /autoapi/core/scripts/make_challenge_submission_file/index
    /autoapi/core/scripts/make_lmdb_sizes/index
    /autoapi/core/scripts/make_submission_file/index
