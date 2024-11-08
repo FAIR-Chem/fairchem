@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import torch
 
@@ -51,8 +51,6 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
         use_force_encoding (bool):                  For ablation study, whether to encode forces during denoising positions. Default: True.
         use_noise_schedule_sigma_encoding (bool):   For ablation study, whether to encode the sigma (sampled std of Gaussian noises) during
                                                     denoising positions when `fixed_noise_std` = False in config files. Default: False.
-        use_denoising_energy (bool):                For ablation study, whether to predict the energy of the original structure given
-                                                    a corrupted structure. If `False`, we zero out the energy prediction. Default: True.
     """
 
     def __init__(
@@ -101,8 +99,6 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
         activation_checkpoint: bool | None = False,
         use_force_encoding=True,
         use_noise_schedule_sigma_encoding: bool = False,
-        use_denoising_energy: bool = True,
-        use_denoising_stress: bool = True,  # TODO make this take general head names
     ):
         if mmax_list is None:
             mmax_list = [2]
@@ -156,8 +152,6 @@ class EqV2DeNSBackbone(EquiformerV2Backbone):
         # for denoising position
         self.use_force_encoding = use_force_encoding
         self.use_noise_schedule_sigma_encoding = use_noise_schedule_sigma_encoding
-        self.use_denoising_energy = use_denoising_energy
-        self.use_denoising_stress = use_denoising_stress
 
         # for denoising position, encode node-wise forces as node features
         self.irreps_sh = o3.Irreps.spherical_harmonics(lmax=max(self.lmax_list), p=1)
@@ -387,8 +381,17 @@ class DeNSScalarHead(torch.nn.Module, HeadInterface):
         self,
         backbone: BackboneInterface,
         output_name: str = "energy",
-        reduce: str = "sum",
+        reduce: Literal["sum", "mean"] = "sum",
+        use_denoising: bool = True,
     ):
+        """
+        Args:
+            backbone: Model backbone
+            output_name: property output name
+            reduce: reduction, mean or sum. Use mean for intensive properties and sum for extensive ones.
+            use_denoising: For ablation study, whether to predict the energy of the original structure given
+                a corrupted structure. If `False`, we zero out the energy prediction. Default: True.
+        """
         super().__init__()
         self.reduce = reduce
         self.avg_num_nodes = backbone.avg_num_nodes
@@ -406,7 +409,7 @@ class DeNSScalarHead(torch.nn.Module, HeadInterface):
         )
         self.output_name = output_name
         self.apply(partial(eqv2_init_weights, weight_init=backbone.weight_init))
-        self.use_denoising_energy = backbone.use_denoising_energy
+        self.use_denoising = use_denoising
 
     def forward(
         self, data: Batch, emb: dict[str, torch.Tensor | GraphData]
@@ -426,7 +429,7 @@ class DeNSScalarHead(torch.nn.Module, HeadInterface):
         if (
             hasattr(data, "denoising_pos_forward")
             and data.denoising_pos_forward
-            and not self.use_denoising_energy
+            and not self.use_denoising
         ):
             output_scalar = output_scalar * 0.0
 
@@ -563,9 +566,11 @@ class DeNSVectorHead(torch.nn.Module, HeadInterface):
 
 @registry.register_model("dens_rank2_symmetric_head")
 class DeNSRank2Head(Rank2SymmetricTensorHead):
-    def __init__(self, backbone: BackboneInterface, *args, **kwargs):
+    def __init__(
+        self, backbone: BackboneInterface, *args, use_denoising: bool = True, **kwargs
+    ):
         super().__init__(backbone, *args, **kwargs)
-        self.use_denoising_stress = backbone.use_denoising_stress
+        self.use_denoising = use_denoising
 
     def forward(
         self, data: Batch, emb: dict[str, torch.Tensor]
@@ -574,7 +579,7 @@ class DeNSRank2Head(Rank2SymmetricTensorHead):
         if (
             hasattr(data, "denoising_pos_forward")
             and data.denoising_pos_forward
-            and not self.use_denoising_stress
+            and not self.use_denoising
         ):
             for k in output:
                 output[k] = output[k] * 0.0
