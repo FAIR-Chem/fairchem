@@ -380,7 +380,7 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
                             all_atoms=self.denoising_pos_params.all_atoms,
                         )
 
-                # Forward, loss, backward.
+                # Forward, loss, backward. #TODO update this with new signatures
                 with torch.cuda.amp.autocast(enabled=self.scaler is not None):
                     out = self._forward(batch)
                     loss = self._compute_loss(out, batch)
