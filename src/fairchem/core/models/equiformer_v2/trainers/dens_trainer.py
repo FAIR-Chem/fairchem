@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
@@ -24,6 +24,9 @@ from fairchem.core.modules.normalization.normalizer import Normalizer
 from fairchem.core.modules.scaling.util import ensure_fitted
 
 from .forces_trainer import EquiformerV2ForcesTrainer
+
+if TYPE_CHECKING:
+    from fairchem.core.modules.evaluator import Evaluator
 
 
 @dataclass
@@ -149,7 +152,12 @@ def add_gaussian_noise_schedule_to_position(
 
 
 def denoising_pos_eval(
-    evaluator, prediction, target, prev_metrics=None, denoising_pos_forward=False
+    evaluator: Evaluator,
+    prediction: dict[str, torch.Tensor],
+    target: dict[str, torch.Tensor],
+    prev_metrics: dict[str, torch.Tensor] | None = None,
+    denoising_pos_forward: bool = False,
+    denoising_targets=tuple[str],
 ):
     """
     1.  Overwrite the original Evaluator.eval() here: https://github.com/Open-Catalyst-Project/ocp/blob/5a7738f9aa80b1a9a7e0ca15e33938b4d2557edd/ocpmodels/modules/evaluator.py#L69-L81
@@ -161,20 +169,15 @@ def denoising_pos_eval(
 
     metrics = prev_metrics
 
+    for target in denoising_targets:
+        res = mae(prediction, target, target)
+        metrics = evaluator.update(f"denoising_{target}_mae", res, metrics)
+
     if target.get("noise_mask", None) is None:
-        # Only update `denoising_energy_mae` and `denoising_pos_mae` during denoising positions if not using partially corrupted structures
-        res = mae(prediction, target, "energy")
-        metrics = evaluator.update("denoising_energy_mae", res, metrics)
+        # Only update`denoising_pos_mae` during denoising positions if not using partially corrupted structures
         res = mae(prediction, target, "forces")
         metrics = evaluator.update("denoising_pos_mae", res, metrics)
-        res = mae(prediction, target, "stress")
-        metrics = evaluator.update("denoising_stress_mae", res, metrics)
-    else:
-        # Update `denoising_energy_mae`, `denoising_pos_mae` and `denoising_force_mae` if using partially corrupted structures
-        res = mae(prediction, target, "energy")
-        metrics = evaluator.update("denoising_energy_mae", res, metrics)
-        res = mae(prediction, target, "stress")
-        metrics = evaluator.update("denoising_stress_mae", res, metrics)
+    else:  # Update `denoising_pos_mae` and `denoising_force_mae` if using partially corrupted structures
         # separate S2EF and denoising positions results based on `noise_mask`
         target_tensor = target["forces"]
         prediction_tensor = prediction["forces"]
@@ -326,6 +329,15 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
             ),
         )
         self.normalizers["denoising_pos_target"].to(self.device)
+        self.denoising_targets = None
+
+    def load_model(self) -> None:
+        super().load_model()
+        self.denoising_targets = tuple(
+            head.output_name
+            for head in self.model.output_heads.values()
+            if getattr(head, "use_denoising", False)
+        )
 
     def train(self, disable_eval_tqdm=False):
         ensure_fitted(self._unwrapped_model, warn=True)
@@ -713,6 +725,7 @@ class DenoisingForcesTrainer(EquiformerV2ForcesTrainer):
             evaluator,
             out,
             targets,
+            denoising_targets=self.denoising_targets,
             prev_metrics=metrics,
             denoising_pos_forward=denoising_pos_forward,
         )
