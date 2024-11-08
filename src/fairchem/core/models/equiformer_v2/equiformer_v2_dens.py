@@ -29,7 +29,7 @@ from fairchem.core.models.equiformer_v2.equiformer_v2 import (
     EquiformerV2Backbone,
     eqv2_init_weights,
 )
-from fairchem.core.models.equiformer_v2.prediction_heads.rank2 import (
+from fairchem.core.models.equiformer_v2.heads.rank2 import (
     Rank2SymmetricTensorHead,
 )
 from fairchem.core.models.equiformer_v2.so3 import SO3_Embedding, SO3_LinearV2
