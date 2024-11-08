@@ -16,8 +16,8 @@ from torch_scatter import scatter
 
 from fairchem.core.common.registry import registry
 from fairchem.core.models.base import BackboneInterface, HeadInterface
-from fairchem.core.models.equiformer_v2.equiformer_v2 import eqv2_init_weights
 from fairchem.core.models.equiformer_v2.layer_norm import get_normalization_layer
+from fairchem.core.models.equiformer_v2.weight_initialization import eqv2_init_weights
 
 
 class Rank2Block(nn.Module):
@@ -238,7 +238,7 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
     def __init__(
         self,
         backbone: BackboneInterface,
-        output_name: str,
+        output_name: str = "stress",
         decompose: bool = False,
         edge_level_mlp: bool = False,
         num_mlp_layers: int = 2,
