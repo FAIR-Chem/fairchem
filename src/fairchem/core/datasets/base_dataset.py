@@ -58,7 +58,7 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
             if isinstance(config["src"], str):
                 self.paths = [Path(self.config["src"])]
             else:
-                self.paths = tuple(Path(path) for path in config["src"])
+                self.paths = tuple(Path(path) for path in sorted(config["src"]))
 
         self.lin_ref = None
         if self.config.get("lin_ref", False):
