@@ -17,15 +17,16 @@ Submodules
    /autoapi/core/models/equiformer_v2/equiformer_v2_deprecated/index
    /autoapi/core/models/equiformer_v2/eqv2_to_eqv2_hydra/index
    /autoapi/core/models/equiformer_v2/gaussian_rbf/index
+   /autoapi/core/models/equiformer_v2/heads/index
    /autoapi/core/models/equiformer_v2/input_block/index
    /autoapi/core/models/equiformer_v2/layer_norm/index
    /autoapi/core/models/equiformer_v2/module_list/index
-   /autoapi/core/models/equiformer_v2/prediction_heads/index
    /autoapi/core/models/equiformer_v2/radial_function/index
    /autoapi/core/models/equiformer_v2/so2_ops/index
    /autoapi/core/models/equiformer_v2/so3/index
    /autoapi/core/models/equiformer_v2/trainers/index
    /autoapi/core/models/equiformer_v2/transformer_block/index
+   /autoapi/core/models/equiformer_v2/weight_initialization/index
    /autoapi/core/models/equiformer_v2/wigner/index
 
 

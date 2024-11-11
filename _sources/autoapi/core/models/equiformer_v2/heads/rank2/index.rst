@@ -1,7 +1,7 @@
-core.models.equiformer_v2.prediction_heads.rank2
-================================================
+core.models.equiformer_v2.heads.rank2
+=====================================
 
-.. py:module:: core.models.equiformer_v2.prediction_heads.rank2
+.. py:module:: core.models.equiformer_v2.heads.rank2
 
 .. autoapi-nested-parse::
 
@@ -17,9 +17,9 @@ Classes
 
 .. autoapisummary::
 
-   core.models.equiformer_v2.prediction_heads.rank2.Rank2Block
-   core.models.equiformer_v2.prediction_heads.rank2.Rank2DecompositionEdgeBlock
-   core.models.equiformer_v2.prediction_heads.rank2.Rank2SymmetricTensorHead
+   core.models.equiformer_v2.heads.rank2.Rank2Block
+   core.models.equiformer_v2.heads.rank2.Rank2DecompositionEdgeBlock
+   core.models.equiformer_v2.heads.rank2.Rank2SymmetricTensorHead
 
 
 Module Contents
@@ -121,7 +121,7 @@ Module Contents
 
 
 
-.. py:class:: Rank2SymmetricTensorHead(backbone: fairchem.core.models.base.BackboneInterface, output_name: str, decompose: bool = False, edge_level_mlp: bool = False, num_mlp_layers: int = 2, use_source_target_embedding: bool = False, extensive: bool = False, avg_num_nodes: int = 1.0, default_norm_type: str = 'layer_norm_sh')
+.. py:class:: Rank2SymmetricTensorHead(backbone: fairchem.core.models.base.BackboneInterface, output_name: str = 'stress', decompose: bool = False, edge_level_mlp: bool = False, num_mlp_layers: int = 2, use_source_target_embedding: bool = False, extensive: bool = False, avg_num_nodes: int = 1.0, default_norm_type: str = 'layer_norm_sh')
 
    Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.HeadInterface`
 

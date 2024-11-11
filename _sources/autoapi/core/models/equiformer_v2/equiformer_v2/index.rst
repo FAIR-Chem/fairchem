@@ -3,6 +3,14 @@ core.models.equiformer_v2.equiformer_v2
 
 .. py:module:: core.models.equiformer_v2.equiformer_v2
 
+.. autoapi-nested-parse::
+
+   Copyright (c) Meta, Inc. and its affiliates.
+
+   This source code is licensed under the MIT license found in the
+   LICENSE file in the root directory of this source tree.
+
+
 
 Attributes
 ----------
@@ -18,18 +26,9 @@ Classes
 
 .. autoapisummary::
 
-   core.models.equiformer_v2.equiformer_v2.EquiformerV2Backbone
-   core.models.equiformer_v2.equiformer_v2.EquiformerV2EnergyHead
    core.models.equiformer_v2.equiformer_v2.EquiformerV2ForceHead
-
-
-Functions
----------
-
-.. autoapisummary::
-
-   core.models.equiformer_v2.equiformer_v2.eqv2_init_weights
-   core.models.equiformer_v2.equiformer_v2.eqv2_uniform_init_linear_weights
+   core.models.equiformer_v2.equiformer_v2.EquiformerV2EnergyHead
+   core.models.equiformer_v2.equiformer_v2.EquiformerV2Backbone
 
 
 Module Contents
@@ -43,9 +42,79 @@ Module Contents
    :value: 23.395238876342773
 
 
-.. py:function:: eqv2_init_weights(m, weight_init)
+.. py:class:: EquiformerV2ForceHead(backbone)
 
-.. py:function:: eqv2_uniform_init_linear_weights(m)
+   Bases: :py:obj:`fairchem.core.models.equiformer_v2.heads.EqV2VectorHead`
+
+
+   Base class for all neural network modules.
+
+   Your models should also subclass this class.
+
+   Modules can also contain other Modules, allowing to nest them in
+   a tree structure. You can assign the submodules as regular attributes::
+
+       import torch.nn as nn
+       import torch.nn.functional as F
+
+       class Model(nn.Module):
+           def __init__(self):
+               super().__init__()
+               self.conv1 = nn.Conv2d(1, 20, 5)
+               self.conv2 = nn.Conv2d(20, 20, 5)
+
+           def forward(self, x):
+               x = F.relu(self.conv1(x))
+               return F.relu(self.conv2(x))
+
+   Submodules assigned in this way will be registered, and will have their
+   parameters converted too when you call :meth:`to`, etc.
+
+   .. note::
+       As per the example above, an ``__init__()`` call to the parent class
+       must be made before assignment on the child.
+
+   :ivar training: Boolean represents whether this module is in training or
+                   evaluation mode.
+   :vartype training: bool
+
+
+.. py:class:: EquiformerV2EnergyHead(backbone, reduce: str = 'sum')
+
+   Bases: :py:obj:`fairchem.core.models.equiformer_v2.heads.EqV2ScalarHead`
+
+
+   Base class for all neural network modules.
+
+   Your models should also subclass this class.
+
+   Modules can also contain other Modules, allowing to nest them in
+   a tree structure. You can assign the submodules as regular attributes::
+
+       import torch.nn as nn
+       import torch.nn.functional as F
+
+       class Model(nn.Module):
+           def __init__(self):
+               super().__init__()
+               self.conv1 = nn.Conv2d(1, 20, 5)
+               self.conv2 = nn.Conv2d(20, 20, 5)
+
+           def forward(self, x):
+               x = F.relu(self.conv1(x))
+               return F.relu(self.conv2(x))
+
+   Submodules assigned in this way will be registered, and will have their
+   parameters converted too when you call :meth:`to`, etc.
+
+   .. note::
+       As per the example above, an ``__init__()`` call to the parent class
+       must be made before assignment on the child.
+
+   :ivar training: Boolean represents whether this module is in training or
+                   evaluation mode.
+   :vartype training: bool
+
 
 .. py:class:: EquiformerV2Backbone(use_pbc: bool = True, use_pbc_single: bool = False, regress_forces: bool = True, otf_graph: bool = True, max_neighbors: int = 500, max_radius: float = 5.0, max_num_elements: int = 90, num_layers: int = 12, sphere_channels: int = 128, attn_hidden_channels: int = 128, num_heads: int = 8, attn_alpha_channels: int = 32, attn_value_channels: int = 16, ffn_hidden_channels: int = 512, norm_type: str = 'rms_norm_sh', lmax_list: list[int] | None = None, mmax_list: list[int] | None = None, grid_resolution: int | None = None, num_sphere_samples: int = 128, edge_channels: int = 128, use_atom_edge_embedding: bool = True, share_atom_edge_embedding: bool = False, use_m_share_rad: bool = False, distance_function: str = 'gaussian', num_distance_basis: int = 512, attn_activation: str = 'scaled_silu', use_s2_act_attn: bool = False, use_attn_renorm: bool = True, ffn_activation: str = 'scaled_silu', use_gate_act: bool = False, use_grid_mlp: bool = False, use_sep_s2_act: bool = True, alpha_drop: float = 0.1, drop_path_rate: float = 0.05, proj_drop: float = 0.0, weight_init: str = 'normal', enforce_max_neighbors_strictly: bool = True, avg_num_nodes: float | None = None, avg_degree: float | None = None, use_energy_lin_ref: bool | None = False, load_energy_lin_ref: bool | None = False, activation_checkpoint: bool | None = False)
 
@@ -331,123 +400,6 @@ Module Contents
    .. py:method:: no_weight_decay() -> set
 
       Returns a list of parameters with no weight decay.
-
-
-
-.. py:class:: EquiformerV2EnergyHead(backbone, reduce: str = 'sum')
-
-   Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.HeadInterface`
-
-
-   Base class for all neural network modules.
-
-   Your models should also subclass this class.
-
-   Modules can also contain other Modules, allowing to nest them in
-   a tree structure. You can assign the submodules as regular attributes::
-
-       import torch.nn as nn
-       import torch.nn.functional as F
-
-       class Model(nn.Module):
-           def __init__(self):
-               super().__init__()
-               self.conv1 = nn.Conv2d(1, 20, 5)
-               self.conv2 = nn.Conv2d(20, 20, 5)
-
-           def forward(self, x):
-               x = F.relu(self.conv1(x))
-               return F.relu(self.conv2(x))
-
-   Submodules assigned in this way will be registered, and will have their
-   parameters converted too when you call :meth:`to`, etc.
-
-   .. note::
-       As per the example above, an ``__init__()`` call to the parent class
-       must be made before assignment on the child.
-
-   :ivar training: Boolean represents whether this module is in training or
-                   evaluation mode.
-   :vartype training: bool
-
-
-   .. py:attribute:: reduce
-
-
-   .. py:attribute:: avg_num_nodes
-
-
-   .. py:attribute:: energy_block
-
-
-   .. py:method:: forward(data: torch_geometric.data.batch.Batch, emb: dict[str, torch.Tensor | fairchem.core.models.base.GraphData])
-
-      Head forward.
-
-      :param data: Atomic systems as input
-      :type data: DataBatch
-      :param emb: Embeddings of the input as generated by the backbone
-      :type emb: dict[str->torch.Tensor]
-
-      :returns: **outputs** -- Return one or more targets generated by this head
-      :rtype: dict[str->torch.Tensor]
-
-
-
-.. py:class:: EquiformerV2ForceHead(backbone)
-
-   Bases: :py:obj:`torch.nn.Module`, :py:obj:`fairchem.core.models.base.HeadInterface`
-
-
-   Base class for all neural network modules.
-
-   Your models should also subclass this class.
-
-   Modules can also contain other Modules, allowing to nest them in
-   a tree structure. You can assign the submodules as regular attributes::
-
-       import torch.nn as nn
-       import torch.nn.functional as F
-
-       class Model(nn.Module):
-           def __init__(self):
-               super().__init__()
-               self.conv1 = nn.Conv2d(1, 20, 5)
-               self.conv2 = nn.Conv2d(20, 20, 5)
-
-           def forward(self, x):
-               x = F.relu(self.conv1(x))
-               return F.relu(self.conv2(x))
-
-   Submodules assigned in this way will be registered, and will have their
-   parameters converted too when you call :meth:`to`, etc.
-
-   .. note::
-       As per the example above, an ``__init__()`` call to the parent class
-       must be made before assignment on the child.
-
-   :ivar training: Boolean represents whether this module is in training or
-                   evaluation mode.
-   :vartype training: bool
-
-
-   .. py:attribute:: activation_checkpoint
-
-
-   .. py:attribute:: force_block
-
-
-   .. py:method:: forward(data: torch_geometric.data.batch.Batch, emb: dict[str, torch.Tensor])
-
-      Head forward.
-
-      :param data: Atomic systems as input
-      :type data: DataBatch
-      :param emb: Embeddings of the input as generated by the backbone
-      :type emb: dict[str->torch.Tensor]
-
-      :returns: **outputs** -- Return one or more targets generated by this head
-      :rtype: dict[str->torch.Tensor]
 
 
 
