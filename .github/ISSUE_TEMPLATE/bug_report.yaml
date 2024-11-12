@@ -12,11 +12,29 @@ body:
       required: true
 
   - type: input
-    id: pmg-version
+    id: fairchem-version
     attributes:
       label: fairchem-core version
       description: Use `pip show fairchem-core | grep Version` to get fairchem-core version
       placeholder: ex. 1.2.1
+    validations:
+      required: true
+
+  - type: input
+    id: torch-version
+    attributes:
+      label: pytorch version
+      description: Use `pip show torch | grep Version` to get pytorch version
+      placeholder: ex. 2.4.0
+    validations:
+      required: true
+
+  - type: input
+    id: cuda-version
+    attributes:
+      label: cuda version
+      description: Use `python -c 'import torch; cuda=torch.cuda.is_available(); print(cuda,torch.version.cuda if cuda else None);'` to get cuda version
+      placeholder: ex. 12.1
     validations:
       required: true
 
@@ -38,18 +56,18 @@ body:
       required: false
 
   - type: textarea
-    id: expected-behavior
-    attributes:
-      label: Expected Behavior
-      description: What did you expect to see?
-    validations:
-      required: true
-
-  - type: textarea
     id: current-behavior
     attributes:
       label: Current behavior
       description: What behavior do you see?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to see?
     validations:
       required: true
 
