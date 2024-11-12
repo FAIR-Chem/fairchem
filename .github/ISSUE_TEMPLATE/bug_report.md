@@ -1,0 +1,62 @@
+name: Report a Bug
+description: FAIR-Chem bug report
+labels: bug
+body:
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      description: Use `python --version` to get Python version
+      placeholder: ex. Python 3.11.5
+    validations:
+      required: true
+
+  - type: input
+    id: pmg-version
+    attributes:
+      label: fairchem-core version
+      description: Use `pip show fairchem-core | grep Version` to get fairchem-core version
+      placeholder: ex. 1.2.1
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system version
+      placeholder: ex. Ubuntu 22.04 LTS
+    validations:
+      required: false
+
+  - type: textarea
+    id: code-snippet
+    attributes:
+      label: Minimal example
+      description: Please provide a minimal code snippet to reproduce this bug.
+      render: Python
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to see?
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current behavior
+      description: What behavior do you see?
+    validations:
+      required: true
+
+  - type: textarea
+    id: files
+    attributes:
+      label: Relevant files to reproduce this bug
+      description: Please upload relevant files to help reproduce this bug, or logs if helpful.
+    validations:
+      required: false
