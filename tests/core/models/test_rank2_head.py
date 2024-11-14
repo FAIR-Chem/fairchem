@@ -9,7 +9,7 @@ from ase.build import bulk
 from fairchem.core.common.utils import cg_change_mat, irreps_sum
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.models.equiformer_v2.equiformer_v2 import EquiformerV2Backbone
-from fairchem.core.models.equiformer_v2.prediction_heads import Rank2SymmetricTensorHead
+from fairchem.core.models.equiformer_v2.heads import Rank2SymmetricTensorHead
 from fairchem.core.preprocessing import AtomsToGraphs
 
 

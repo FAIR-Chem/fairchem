@@ -349,8 +349,7 @@ class OCPTrainer(BaseTrainer):
                 * loss_info["fn"](
                     pred,
                     target,
-                    natoms=natoms,
-                    batch_size=batch_size,
+                    natoms=batch.natoms,
                 )
             )
 
@@ -405,6 +404,15 @@ class OCPTrainer(BaseTrainer):
 
         targets["natoms"] = natoms
         out["natoms"] = natoms
+
+        # add all other tensor properties too, but filter out the ones that are changed above
+        for key in filter(
+            lambda k: k not in [*list(self.output_targets.keys()), "natoms"]
+            and isinstance(batch[k], torch.Tensor),
+            batch.keys(),
+        ):
+            targets[key] = batch[key].to(self.device)
+            out[key] = targets[key]
 
         return evaluator.eval(out, targets, prev_metrics=metrics)
 
