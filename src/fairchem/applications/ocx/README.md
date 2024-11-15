@@ -2,9 +2,25 @@
 ![summary figure](co2rr_summary_figure.png)
 In this work, we seek to directly bridge the gap between computational descriptors and experimental outcomes for heterogeneous catalysis. We consider two important green chemistries: the hydrogen evolution reaction and the electrochemical reduction of carbon dioxide. To do this, we created a curated dataset of experimental results with materials synthesized and tested in a reproducible manner under industrially relevant conditions. We used this data to build models to directly predict experimental outcomes using computational features. For more information, please read the manuscript [paper](???).
 
-### Experimental datasets
-To support this work, we performed X-ray fluorescence (XRF), X-ray diffraction (XRD), and electrochemical testing. Summaries of this data is all publically available in this repository in `fairchem/src/fairchem/applications/ocx/experimental_data/`
+### Datasets
+To support this work, we performed X-ray fluorescence (XRF), X-ray diffraction (XRD), and electrochemical testing. Summaries of this data is all publically available in this repository in `fairchem/src/fairchem/applications/ocx/data/experimental_data/`. The computational data is also publicly available at the following link. For details of the contents of these files, please see the Dataset details section below.
 
+|Splits |Size of uncompressed version (in bytes)    | MD5 checksum (download link)   |
+|---   |---    |---    |
+|Screening data CSV   |1.5G  | [9e75b95bb1a2ae691f07cf630eac3378](https://dl.fbaipublicfiles.com/opencatalystproject/data/ocx24/comp_df_241022.csv)   |
+
+
+### Citing this work
+
+If you use this codebase in your work, please consider citing:
+
+```bibtex
+@article{
+}
+```
+
+### Dataset details
+#### Experimental datasets
 Electrochemical testing data:
 - `sample id`: An identifier for each experiment
 - `source`: The material source. `vsp` = VSParticle spark ablation, `uoft` = University of Toronto chemical reduction
@@ -47,7 +63,7 @@ q-score is a measure of closeness to the best solution. The actual expression is
 - `solutions_target_rankings`: The ranking of the subset of solutions 
 
 
-### Computational Dataset
+#### Computational Dataset
 To build models capable of predicting experimental outcomes, we screened 19,406 materials as potential catalyst candidates by calculating C, H, OH, CO, COH, and COCOH adsorption energies on their surfaces up to Miller index 2. This data is available publicly in the file below.
 
 The file contains the following columns where each row corresponds to a unique surface:
@@ -64,17 +80,3 @@ The file contains the following columns where each row corresponds to a unique s
 - `slab_identifier`:  A combination of the bulk_id and all information to uniquely identify a slab which makes a unique surface identifier.
 - `cleavage_energy`: The energy associated with cleaving the slab from the bulk. We only calculated this for compositions experimentally tested, so most values are nans.
 - `facet_fraction_on_wulff_not_normalized`: Using the cleavage energy, this column contains the proportion of surface area on the Wulff shape for each facet where available. For one material, this may not sum to 1. We calculated cleavage energies up to Miller 3, but only adsorption energies up to 2. There were also instances where the adsorption energy was otherwise incomplete for a given surface. This gives instances where surfaces that may appear on Wulff are not represented.
-
-|Splits |Size of uncompressed version (in bytes)    | MD5 checksum (download link)   |
-|---   |---    |---    |
-|Screening data CSV   |1.5G  | [9e75b95bb1a2ae691f07cf630eac3378](https://dl.fbaipublicfiles.com/opencatalystproject/data/ocx24/comp_df_241022.csv)   |
-
-
-### Citing this work
-
-If you use this codebase in your work, please consider citing:
-
-```bibtex
-@article{
-}
-```

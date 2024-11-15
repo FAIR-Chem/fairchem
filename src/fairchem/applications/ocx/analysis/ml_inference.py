@@ -1,4 +1,4 @@
-from __future__ import annotations
+"""The script used to perform inference for HER"""
 
 import argparse
 import os
@@ -6,15 +6,22 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
-from automated_analysis.core.data_handling import load_and_preprocess_data
-from automated_analysis.core.features import add_el_features
-from automated_analysis.core.voltage import get_she
-from sklearn.decomposition import PCA
+from automated_analysis.core.data_handling import (
+    load_and_preprocess_data,
+)
+from automated_analysis.core.features import (
+    add_el_features,
+)
+
 from sklearn.linear_model import LinearRegression
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+from automated_analysis.core.voltage import get_she
+import seaborn as sns
+from scipy.stats import linregress
+from sklearn.metrics import mean_absolute_error
 
 plt.rc("text", usetex=False)
 plt.rc("font", family="serif", size=10)
@@ -80,22 +87,62 @@ def get_computational_df_to_predict(computational_file: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--expt_csv")
-    parser.add_argument("--comp_csv")
-    parser.add_argument("--output_dir")
     parser.add_argument(
-        "--average_over_replicates_fixed_current_density",
+        "--expt_csv",
+        help="path to the experimental csv. Available in ../data/experimental_data",
+    )
+    parser.add_argument(
+        "--comp_csv",
+        help="path to the computational csv. Available for download, see README",
+    )
+    parser.add_argument(
+        "--output_dir", help="path to the output directory where files will be saved"
+    )
+    parser.add_argument(
+        "--xrd_csv", help="path to the XRD csv. Available in ../data/experimental_data"
+    )
+    parser.add_argument(
+        "--max_rwp",
+        default=40,
+        type=float,
+        help="maximum Rwp value (from Rietveld refinement) to filter XRD data",
+    )
+    parser.add_argument(
+        "--min_q_score",
+        default=70,
+        type=float,
+        help="minimum q score to filter XRD data. For q score definition see the manuscript",
+    )
+    parser.add_argument(
+        "--cod_lookup",
+        default=None,
+        help="path to the COD lookup file which matches COD structures to those contains in the computational workflow",
+    )
+    parser.add_argument(
+        "--source",
+        default="both",
+        help="the experimental synthesis source. Options are `both`, `vsp`, and `uoft`",
+    )
+    parser.add_argument(
+        "--no_energy",
         action="store_true",
         default=False,
+        help="If energies should be used as features",
     )
-    parser.add_argument("--voltage", default=3.3, type=float)
-    parser.add_argument("--xrd_csv", default=None)
-    parser.add_argument("--max_rwp", default=None, type=float)
-    parser.add_argument("--min_q_score", default=None, type=float)
-    parser.add_argument("--cod_lookup", default=None)
-    parser.add_argument("--source", default="both")
-    parser.add_argument("--reaction", default="CO2R")
-    parser.add_argument("--add_features", choices=["matminer", "comp"], default=None)
+    parser.add_argument(
+        "--add_features",
+        action="store_true",
+        default=False,
+        help="If matminer elemental features should be added",
+    )
+    parser.add_argument(
+        "--sigma", default=0.0425858308961896, type=float, help="Used for plotting the "
+    )
+    parser.add_argument(
+        "--cv_results_csv",
+        default=None,
+        help="Path to the results csv for training with cross validation (from ml_train.py).",
+    )
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
@@ -104,81 +151,52 @@ if __name__ == "__main__":
     # process and load data
     df_comp_pred = get_computational_df_to_predict(args.comp_csv)
 
-    comp_df, df_expt, df_raw_expt = load_and_preprocess_data(
-        computational_file=args.comp_csv,
-        experimental_file=args.expt_csv,
+    df, df_expt_const_v, df_raw_expt = load_and_preprocess_data(
+        args.comp_csv,
+        args.expt_csv,
         xrd_data_file=args.xrd_csv,
         max_rwp=args.max_rwp,
         min_q_score=args.min_q_score,
         cod_to_ocp_lookup=args.cod_lookup,
-        interpolate_v=args.voltage,
-        reaction=args.reaction,
-        filter_on_matched=False,
+        reaction="HER",
     )
 
-    # add elemental features from matminer, magpie, etc.
-    if args.add_features:
-        original_columns = df_expt.columns
-        df_expt = add_el_features(
-            df_expt,
-            feature_type=args.add_features,
-            composition_column="xrf comp",
-        )
-
-        df_comp_pred = add_el_features(
-            df_comp_pred,
-            eature_type=args.add_features,
-            composition_column="slab_comp",
-        )
-        addl_features = list(set(df_expt.columns) - set(original_columns))
-
-        feature_strings.append(args.add_features)
+    df_expt = df_expt_const_v
 
     db_metadata = ["composition", "source", "batch number", "matched"]
-    if args.reaction == "CO2R":
-        adsorbate_descriptors = ["C", "CO", "CHO", "COCOH", "H", "OH"]
-    elif args.reaction == "HER":
-        adsorbate_descriptors = ["H", "OH"]
+    adsorbate_descriptors = ["H", "OH"]
 
     energy_descriptors = []
     for ads in adsorbate_descriptors:
         energy_descriptors.append(f"{ads}_mean_energy")
 
-    features = energy_descriptors
+    if not args.no_energy:
+        features = energy_descriptors
+    else:
+        features = []
 
-    if args.add_features == "matminer":
+    if args.add_features:
+        df_expt = add_el_features(
+            df_expt,
+            composition_column="xrf comp",
+        )
+        df_comp_pred = add_el_features(
+            df_comp_pred,
+            composition_column="slab_comp",
+        )
         for ft in [
             "X",
             "row",
             "group",
-            # "block",
             "atomic_mass",
             "atomic_radius",
             "mendeleev_no",
         ]:
             features.append(f"PymatgenData mean {ft}")
-    if args.add_features == "comp":
-        features += addl_features
 
     print(f"There are {len(features)} features: {features}")
 
-    if args.reaction == "CO2R":
-        # predict single products independently
-        # also try predicting all outputs simultaneously
-        products = [
-            "fe_co",
-            "fe_h2",
-            "fe_ch4",
-            "fe_c2h4",
-            "fe_liquid",
-            "H2_pr",
-            "CO_pr",
-            "CH4_pr",
-            "Total_Liquid_pr",
-            "C2H4_pr",
-        ]
-    elif args.reaction == "HER":
-        products = ["voltage"]
+    products = ["voltage"]
 
     df_expt.dropna(subset=features, inplace=True)
     _df = df_expt.copy()
@@ -186,11 +204,11 @@ if __name__ == "__main__":
     x = pd.DataFrame(x)
 
     for col in x:
-        min_ = x[col].min()
-        max_ = x[col].max()
-        x[col] = (x[col] - x[col].min()) / (x[col].max() - x[col].min())
-        df_comp_pred[col] = (df_comp_pred[col] - min_) / (max_ - min_)
-        df_expt[col] = (df_expt[col] - min_) / (max_ - min_)
+        mean_ = x[col].mean()
+        std_ = x[col].max()
+        x[col] = (x[col] - mean_) / std_
+        df_comp_pred[col] = (df_comp_pred[col] - mean_) / std_
+        df_expt[col] = (df_expt[col] - mean_) / std_
 
     inputs = np.stack([df_comp_pred[col].tolist() for col in x.columns], axis=-1)
     x = x.values
@@ -209,49 +227,106 @@ if __name__ == "__main__":
     df_comp_pred.to_pickle(os.path.join(args.output_dir, "full_comp_inference.pkl"))
     df_expt.to_pickle(os.path.join(args.output_dir, "trained_inference.pkl"))
 
-    if args.reaction == "HER":
-        # MAKE VOLCANO FIGURE
-        # Perform PCA on the mean energies
-        model = PCA(n_components=1)
-        x = model.fit_transform(df_comp_pred[["H_mean_energy", "OH_mean_energy"]])
-        ex_var = model.explained_variance_ratio_
+    # MAKE VOLCANO FIGURE
+    os.chdir(args.output_dir)
+    # Perform PCA on the mean energies
+    model = PCA(n_components=1)
+    x = model.fit_transform(df_comp_pred[features])
+    ex_var = model.explained_variance_ratio_[0]
 
-        print(
-            f"{ex_var*100:1.0f} % of the variance is explained by the first principal component"
-        )
+    print(
+        f"{ex_var*100:1.0f} % of the variance is explained by the first principal component"
+    )
 
-        train_x = model.transform(df_expt[["H_mean_energy", "OH_mean_energy"]])
-        df_comp_pred["pc1"] = x
-        df_expt["pc1"] = train_x
+    train_x = model.transform(df_expt[features])
+    df_comp_pred["pc1"] = x
+    df_expt["pc1"] = train_x
 
-        # get the predicted voltage as V v. SHE
-        df_comp_pred["predicted_voltage_she"] = df_comp_pred.predicted_voltage.apply(
-            get_she
-        )
-        df_expt["voltage_she"] = df_expt.voltage.apply(get_she)
-        df_expt["predicted_voltage_she"] = df_expt.predicted_voltage.apply(get_she)
+    # get the predicted voltage as V v. SHE
+    df_comp_pred["predicted_voltage_she"] = df_comp_pred.predicted_voltage.apply(
+        get_she
+    )
+    df_expt["voltage_she"] = df_expt.voltage.apply(get_she)
+    df_expt["predicted_voltage_she"] = df_expt.predicted_voltage.apply(get_she)
 
-        # plot the volcano plot
-        f = sns.displot(
-            df_comp_pred,
-            x="pc1",
-            y="predicted_voltage_she",
-            kind="kde",
-            color=COLORS[0],
-        )
-        sns.scatterplot(df_expt, x="pc1", y="predicted_voltage_she", color="#465A69")
-        sns.scatterplot(
-            df_comp_pred[df_comp_pred.bulk_id == "mp-126"],
-            x="pc1",
-            y="predicted_voltage_she",
-            marker="*",
-            color="#C80A28",
-            s=400,
-        )
+    # plot the volcano plot
+    f = sns.displot(
+        df_comp_pred,
+        x="pc1",
+        y="predicted_voltage_she",
+        kind="kde",
+        color=COLORS[0],
+    )
+    sns.scatterplot(df_expt, x="pc1", y="predicted_voltage_she", color="#465A69")
+    sns.scatterplot(
+        df_comp_pred[df_comp_pred.bulk_id == "mp-126"],
+        x="pc1",
+        y="predicted_voltage_she",
+        marker="*",
+        color="#C80A28",
+        s=400,
+    )
+    if args.add_features:
         f.set(
             xlabel="PC1",
             ylabel="Predicted Voltage v. SHE",
-            xlim=(-1.5, 1.5),
+            xlim=(-1, 1),
+            ylim=(-2.5, 0),
+        )
+    else:
+        f.set(
+            xlabel="PC1",
+            ylabel="Predicted Voltage v. SHE",
+            xlim=(-2.5, 2.5),
             ylim=(-1.8, -0.8),
         )
-        f.savefig("pc1_v_voltage.svg")
+    f.savefig("pc1_v_voltage.svg")
+
+    # MAKE PARITY PLOT
+    if args.cv_results_csv is not None:
+        df_expt = pd.read_csv(args.cv_results_csv)
+        df_expt.dropna(subset=["voltage_she_expt", "voltage_she_pred"], inplace=True)
+        f, ax = plt.subplots(1, 1)
+        x1 = df_expt[df_expt.matched > 0]["voltage_she_expt"].tolist()
+        y1 = df_expt[df_expt.matched > 0]["voltage_she_pred"].tolist()
+
+        x2 = df_expt[df_expt.matched == 0]["voltage_she_expt"].tolist()
+        y2 = df_expt[df_expt.matched == 0]["voltage_she_pred"].tolist()
+
+        ax.scatter(x1, y1, color=COLORS[0], label="Matched")
+        ax.scatter(x2, y2, edgecolor=COLORS[0], facecolor="none", label="Unmatched")
+        slope, intercept, r, p, se = linregress(x1 + x2, y1 + y2)
+        min_ = min(min(x1 + x2), min(y1 + y2))
+        max_ = max(max(x1 + x2), max(y1 + y2))
+        parity_x = np.array([min_, max_])
+        parity_y = np.array(
+            [
+                min_ * slope + intercept,
+                max_ * slope + intercept,
+            ]
+        )
+        ax.plot(
+            parity_x,
+            parity_y,
+            "--",
+            linewidth=2,
+            color="k",
+        )
+        ax.fill_between(
+            parity_x,
+            parity_y - args.sigma * 2,
+            parity_y + args.sigma * 2,
+            color="gray",
+            alpha=0.2,
+        )
+        mae = mean_absolute_error(np.array(y1 + y2), np.array(x1 + x2))
+        ax.set_xlim([min_, max_])
+        ax.set_ylim([min_, max_])
+        ax.set_xlabel("Experimental Voltage v. SHE")
+        ax.set_ylabel("Predicted Voltage v. SHE")
+        plt.grid(linestyle="dotted")
+        ax.annotate(f"R2: {r**2:.2f}", (0.05, 0.95), xycoords="axes fraction")
+        ax.annotate(f"MAE: {mae:.2f} V v. SHE", (0.05, 0.9), xycoords="axes fraction")
+        ax.set_aspect("equal")
+        ax.legend()
+        f.savefig("parity_plot.svg")
