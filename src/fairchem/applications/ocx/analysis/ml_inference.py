@@ -136,7 +136,10 @@ if __name__ == "__main__":
         help="If matminer elemental features should be added",
     )
     parser.add_argument(
-        "--sigma", default=0.0425858308961896, type=float, help="Used for plotting the "
+        "--sigma",
+        default=0.0425858308961896,
+        type=float,
+        help="Used for plotting the sigma values in the parity plot.",
     )
     parser.add_argument(
         "--cv_results_csv",

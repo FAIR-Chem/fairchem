@@ -29,11 +29,7 @@ MODEL_MAP = {
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--processed_df",
-        type=str,
-        help="Path to processed df. If not available, specify other arguments and processed df will be saved at this location",
-    )
+    # Always define these
     parser.add_argument(
         "--source",
         choices=["both", "vsp", "uoft"],
@@ -63,7 +59,11 @@ if __name__ == "__main__":
         default=False,
         help="Only consider XRD matched samples",
     )
-    # If processing from scratch, define the following
+    parser.add_argument(
+        "--output_dir", type=str, help="Directory to save figures + results"
+    )
+
+    # If processing from scratch, these must also be defined
     parser.add_argument("--expt_csv", type=str, help="Path to experimental csv file.")
     parser.add_argument("--comp_csv", type=str, help="Path to computational csv file.")
     parser.add_argument("--xrd_csv", type=str, help="Path to xrd csv file")
@@ -77,13 +77,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--voltage", type=float, default=3.3, help="Voltage to interpolate for CO2R"
     )
-    # Results reporting
+
+    # If processing from a processed dataframe, this must be defined otherwise it is optional and processed dataframe will be saved at this location
     parser.add_argument(
-        "--output_dir", type=str, help="Directory to save figures + results"
+        "--processed_df",
+        type=str,
+        default=None,
+        help="Path to processed df. If not available, specify other arguments and processed df will be saved at this location",
     )
+
     args = parser.parse_args()
 
-    if os.path.isfile(args.processed_df):
+    if type(args.processed_df) == str and os.path.isfile(args.processed_df):
         df_expt = pd.read_csv(args.processed_df)
         logging.info(f"Loading processed data at {args.processed_df}")
     else:
@@ -96,7 +101,7 @@ if __name__ == "__main__":
             cod_to_ocp_lookup=args.cod_lookup,
             interpolate_v=args.voltage,
             reaction=args.reaction,
-            filter_on_matched=args.filter_on_matched,
+            filter_on_matched=False,
         )
         if args.processed_df:
             df_expt.to_csv(args.processed_df)
@@ -110,6 +115,8 @@ if __name__ == "__main__":
             df_expt,
             composition_column="xrf comp",
         )
+    if args.filter_on_matched:
+        df_expt = df_expt[df_expt.matched]
 
     db_metadata = ["composition", "source", "batch number", "matched"]
     if args.reaction == "CO2R":
