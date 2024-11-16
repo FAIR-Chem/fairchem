@@ -1,26 +1,23 @@
 """The script used to perform inference for HER"""
 
+from __future__ import annotations
+
 import argparse
 import os
 import warnings
 
 warnings.filterwarnings("ignore")
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from automated_analysis.core.data_handling import (
-    load_and_preprocess_data,
-)
-from automated_analysis.core.features import (
-    add_el_features,
-)
-
-from sklearn.linear_model import LinearRegression
-from sklearn.decomposition import PCA
-import matplotlib.pyplot as plt
-from automated_analysis.core.voltage import get_she
 import seaborn as sns
+from fairchem.applications.ocx.core.data_handling import load_and_preprocess_data
+from fairchem.applications.ocx.core.features import add_el_features
+from fairchem.applications.ocx.core.voltage import get_she
 from scipy.stats import linregress
+from sklearn.decomposition import PCA
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error
 
 plt.rc("text", usetex=False)

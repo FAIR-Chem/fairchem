@@ -3,11 +3,11 @@
 In this work, we seek to directly bridge the gap between computational descriptors and experimental outcomes for heterogeneous catalysis. We consider two important green chemistries: the hydrogen evolution reaction and the electrochemical reduction of carbon dioxide. To do this, we created a curated dataset of experimental results with materials synthesized and tested in a reproducible manner under industrially relevant conditions. We used this data to build models to directly predict experimental outcomes using computational features. For more information, please read the manuscript [paper](???).
 
 ### Datasets
-To support this work, we performed X-ray fluorescence (XRF), X-ray diffraction (XRD), and electrochemical testing. Summaries of this data is all publically available in this repository in `fairchem/src/fairchem/applications/ocx/data/experimental_data/`. The computational data is also publicly available at the following link. For details of the contents of these files, please see the Dataset details section below. A csv of the full list of HER candidates has also been included in `fairchem/src/fairchem/applications/ocx/data/`.
+To support this work, we performed X-ray fluorescence (XRF), X-ray diffraction (XRD), and electrochemical testing. Summaries of this data is all publically available [here](data/experimental_data). The computational data is also publicly available at the following link. For details of the contents of these files, please see the Dataset details section below. A csv of the full list of HER candidates has also been included [here](data/her_candidates.csv).
 
 |Splits |Size of uncompressed version (in bytes)    | MD5 checksum (download link)   |
 |---   |---    |---    |
-|Screening data CSV   |1.5G  | [9e75b95bb1a2ae691f07cf630eac3378](https://dl.fbaipublicfiles.com/opencatalystproject/data/ocx24/comp_df_241022.csv)   |
+|Computational screening data |1.5G  | [9e75b95bb1a2ae691f07cf630eac3378](https://dl.fbaipublicfiles.com/opencatalystproject/data/ocx24/comp_df_241022.csv)   |
 
 
 ### Citing this work
@@ -60,7 +60,7 @@ q-score is a measure of closeness to the best solution. The actual expression is
 - `solutions_target_formulas`: the compositions of all subset solutions
 - `solutions_target_rwp`: the RWP of all subset solutions
 - `solutions_target_wt`: The weight of the target phase for all subset solutions
-- `solutions_target_rankings`: The ranking of the subset of solutions 
+- `solutions_target_rankings`: The ranking of the subset of solutions
 
 
 #### Computational Dataset
