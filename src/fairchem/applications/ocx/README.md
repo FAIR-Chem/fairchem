@@ -13,6 +13,6 @@ All code related to the training and inference performed in this work can be fou
 If you use this codebase in your work, please consider citing:
 
 ```bibtex
-@article{
+@article{gi
 }
 ```

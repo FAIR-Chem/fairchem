@@ -13,7 +13,11 @@ dependencies = [
     "scikit-learn",
     "pandas",
     "matminer",
-    "plotly"
+    "plotly",
+    "matplotlib",
+    "yellowbrick",
+    "statsmodels",
+    "seaborn",
 ]
 
 [project.urls]

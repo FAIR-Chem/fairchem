@@ -51,6 +51,7 @@ We provide additional metadata corresponding to experimental samples. While this
 
 
 ### Computational dataset
+#### Adsorption energy descriptors
 To build models capable of predicting experimental outcomes, we screened 19,406 materials as potential catalyst candidates by calculating C, H, OH, CO, COH, and COCOH adsorption energies on their surfaces up to Miller index 2. This data is available publicly in the file below.
 
 |Splits |Size of uncompressed version (in bytes)    | MD5 checksum (download link)   |
@@ -71,6 +72,11 @@ The file contains the following columns where each row corresponds to a unique s
 - `slab_identifier`:  A combination of the bulk_id and all information to uniquely identify a slab which makes a unique surface identifier.
 - `cleavage_energy`: The energy associated with cleaving the slab from the bulk. We only calculated this for compositions experimentally tested, so most values are nans.
 - `facet_fraction_on_wulff_not_normalized`: Using the cleavage energy, this column contains the proportion of surface area on the Wulff shape for each facet where available. For one material, this may not sum to 1. We calculated cleavage energies up to Miller 3, but only adsorption energies up to 2. There were also instances where the adsorption energy was otherwise incomplete for a given surface. This gives instances where surfaces that may appear on Wulff are not represented.
+
+#### Other computational data files
+A few miscellanous files can be found in the [computational data folder](computational_data/). Their contents are as follows:
+1. `her_candidates.csv`: a complete list of the potential HER catalysts found in this work
+2. `cod_matches_lookup.pkl`: a lookup dictionary for COD materials. In some cases, the XRD data has matched to structures taken from COD. This file allows the lookup of a corresponding material in the computational pipeline if available.
 
 ### Processed dataset
 
