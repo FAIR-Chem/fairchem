@@ -45,9 +45,10 @@ We include several experimental files relevant for analysis and understanding th
 We provide additional metadata corresponding to experimental samples. While this is not used for the analysis, it does provide more thorough details on the experimental samples.
 |Name | Description |
 |---   |---    |
-|[Batch Info](experimental_data/supporting_data/batches_info.csv)   |  |
-|[Materials ID](experimental_data/supporting_data/materials_id-241113.csv) |  |
-|[Materials Postprocessing ID](experimental_data/supporting_data/materials_postprocessing_id-241113.csv) |  |
+|[Batch Info](experimental_data/supporting_data/batches_info.csv)   | Provides some information about each of the synthesis batches |
+|[Materials ID](experimental_data/supporting_data/materials_id-241113.csv) | Material ids and their important components for all samples |
+|[Materials Postprocessing ID](experimental_data/supporting_data/materials_postprocessing_id-241113.csv) |  Important information about post-synthesis processing|
+|[Synthesis Parameters](experimental_data/supporting_data/vsp_synthesis_params.csv)| Important information about the synthesis parameters used in the VSParticle syntheses |
 
 
 ### Computational dataset
