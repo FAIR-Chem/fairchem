@@ -18,8 +18,8 @@ from torch_geometric.data import Batch
 from fairchem.core.common.typing import assert_is_instance
 from fairchem.core.datasets.lmdb_dataset import data_list_collater
 
+from .optimizable import OptimizableBatch, OptimizableUnitCellBatch
 from .optimizers.lbfgs_torch import LBFGS
-from .optimizers.optimizable import OptimizableBatch, OptimizableUnitCellBatch
 
 if TYPE_CHECKING:
     from fairchem.core.trainers import BaseTrainer
@@ -34,7 +34,6 @@ def ml_relax(
     relax_cell: bool = False,
     relax_volume: bool = False,
     save_full_traj: bool = True,
-    device: str = "cuda:0",
     transform: torch.nn.Module | None = None,
     mask_converged: bool = True,
 ):
@@ -91,7 +90,6 @@ def ml_relax(
 
         optimizer = LBFGS(
             optimizable_batch=optimizable,
-            device=device,
             save_full_traj=save_full_traj,
             traj_names=ids,
             **relax_opt,

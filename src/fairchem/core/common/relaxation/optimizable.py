@@ -126,7 +126,7 @@ class OptimizableBatch(Optimizable):
         self.results = {}
         self._eps = masked_eps
 
-        self.otf_graph = trainer._unwrapped_model.otf_graph
+        self.otf_graph = True  # trainer._unwrapped_model.otf_graph
         if not self.otf_graph and "edge_index" not in self.batch:
             self.update_graph()
 
@@ -505,7 +505,6 @@ class OptimizableUnitCellBatch(OptimizableBatch):
             atom_forces[fixed_idx] = 0.0
 
         volumes = self.get_volumes().view(-1, 1, 1)
-
         virial = -volumes * stress + self.pressure.view(-1, 3, 3)
         cur_deform_grad = self.deform_grad()
         atom_forces = torch.bmm(
