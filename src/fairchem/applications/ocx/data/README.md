@@ -41,6 +41,15 @@ We include several experimental files relevant for analysis and understanding th
 - `allsolutions_rwp`: a list of the goodness of fit RWP from Rietveld refinement for each solution.
 - `total no of solutions`: integer, the length of all of the allsolutions entries
 
+##### Experimental Metadata
+We provide additional metadata corresponding to experimental samples. While this is not used for the analysis, it does provide more thorough details on the experimental samples.
+|Name | Description |
+|---   |---    |
+|[Batch Info](data/experimental_data/supporting_data/batches_info.csv)   |  |
+|[Materials ID](data/experimental_data/supporting_data/materials_id-241113.csv) |  |
+|[Materials Postprocessing ID](data/experimental_data/supporting_data/materials_postprocessing_id-241113.csv) |  |
+
+
 ### Computational dataset
 To build models capable of predicting experimental outcomes, we screened 19,406 materials as potential catalyst candidates by calculating C, H, OH, CO, COH, and COCOH adsorption energies on their surfaces up to Miller index 2. This data is available publicly in the file below.
 
