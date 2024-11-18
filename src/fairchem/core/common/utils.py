@@ -716,7 +716,8 @@ def radius_graph_pbc(
 
     # Tensor of unit cells
     cells_per_dim = [
-        torch.arange(-rep.item(), rep.item() + 1, device=device, dtype=torch.float) for rep in max_rep
+        torch.arange(-rep.item(), rep.item() + 1, device=device, dtype=torch.float)
+        for rep in max_rep
     ]
     unit_cell = torch.cartesian_prod(*cells_per_dim)
     num_cells = len(unit_cell)

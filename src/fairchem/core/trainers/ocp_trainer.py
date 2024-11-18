@@ -306,7 +306,7 @@ class OCPTrainer(BaseTrainer):
 
     def _compute_loss(self, out, batch) -> torch.Tensor:
         batch_size = batch.natoms.numel()
-        fixed = batch.get("fixed", torch.zeros(batch.natoms.sum())).to(batch.natoms.device).long()
+        fixed = batch.fixed
         mask = fixed == 0
 
         loss = []
@@ -370,9 +370,7 @@ class OCPTrainer(BaseTrainer):
         batch_size = natoms.numel()
 
         ### Retrieve free atoms
-        # fixed = batch.fixed
-        fixed = batch.get("fixed", torch.zeros(batch.natoms.sum())).to(batch.natoms.device).long()
-
+        fixed = batch.fixed
         mask = fixed == 0
 
         s_idx = 0
