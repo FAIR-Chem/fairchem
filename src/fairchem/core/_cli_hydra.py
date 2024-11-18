@@ -18,6 +18,9 @@ if TYPE_CHECKING:
 
     from omegaconf import DictConfig
 
+    from fairchem.core.components.runner import Runner
+
+
 from submitit import AutoExecutor
 from submitit.helpers import Checkpointable, DelayedSubmission
 from torch.distributed.launcher.api import LaunchConfig, elastic_launch
@@ -25,7 +28,6 @@ from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 from fairchem.core.common import distutils
 from fairchem.core.common.flags import flags
 from fairchem.core.common.utils import get_timestamp_uid, setup_env_vars, setup_imports
-from fairchem.core.components.runner import Runner
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -121,7 +123,7 @@ def main(
                 logging.info(
                     "WARNING: running in local mode, setting dataloading num_workers to 0, see https://github.com/pytorch/examples/issues/526"
                 )
-                
+
             launch_config = LaunchConfig(
                 min_nodes=1,
                 max_nodes=1,

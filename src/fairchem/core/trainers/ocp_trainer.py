@@ -372,7 +372,7 @@ class OCPTrainer(BaseTrainer):
         ### Retrieve free atoms
         # fixed = batch.fixed
         fixed = batch.get("fixed", torch.zeros(batch.natoms.sum())).to(batch.natoms.device).long()
-        
+
         mask = fixed == 0
 
         s_idx = 0
