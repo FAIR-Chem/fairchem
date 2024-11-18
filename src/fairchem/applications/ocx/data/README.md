@@ -84,3 +84,27 @@ Users are free to explore alternative aggregation beyond what was performed here
 |[Matched CO2RR](data/processed_data/CO2R_40_70_matched.csv)   | CO2RR experimental and computational data corresponding to only XRD matched samples. |
 |[All HER](data/processed_data/HER_40_70_all.csv)   | HER experimental and computational data corresponding to all samples (XRD matched and not matched). |
 |[Matched HER](data/processed_data/HER_40_70_all.csv)   | HER experimental and computational data corresponding to only XRD matched samples. |
+
+### Interactive XRD html files
+|File | Size of compressed version (in bytes) |Size of uncompressed version (in bytes)    | MD5 checksum (download link)   |
+|---   |---    |---    |---   |
+|XRD interactive html files |  19.6G |  64.4G | [fdf37085325d663194a3ffffeb462c36](https://dl.fbaipublicfiles.com/opencatalystproject/data/ocx24/XRDData_241116.tar.gz)   | 
+
+To support community interaction with our XRD data, we have included interactive html files that can help users derive insights about the XRD spectra. The file is a tarred directory where each folder contains subfolders and files related to XRD and XRF analysis. The contents are organized as follows:
+
+Top level per Experimental XRD folder
+* `raw`: contains the original and processed XRD data.
+    * Raw file subfolder: files are in `.xy` format, representing the raw data acquired from XRD equipment
+    * Processed XRD data subfolder: includes snapshots of the data after each processing step: background removal, substrate peak removal, and normalization
+* `analysis`: contains data and files used for further analysis and dashboard creation
+    * HTML file subfolder: contains all HTML files used to create the dashboards
+    * XRF reasurement results: Multiple `xrf-<substrate>.csv` files containing XRF measurement results for samples on different substartes (e.g., wafer or gde).
+    * Composition data: `composition.csv` file that combines XRF and XRD information
+    * XRD data is csv format: `xrd.csv` file containing all XRD data in CSV format.
+    * XRD analysis reports: Contains `xrd_report_raw` and `xrd_report_analysis` which are  XRD analysis results as obtained from the XRD analysis pipeline and XRD matches and evaluation metrics, respectively
+    * Log file: `log.txt` which contains detailed information about the calculations conducted by the XRD analysis pipeline, step by step    
+* `composition_analysis.html`: (VERY USEFUL) A dashboard page providing insights into the composition analysis 
+* `xrd_dashboard.html`: (VERY USEFUL) A dashboard page displaying XRD analysis results and visualizations
+* `xrd_renaming_sheet.csv`: A file used to archive name changes made to XRD files
+ 
+This structure ensures that all raw data, processed data, analysis results, and dashboards are organized and easily accessible for further research and evaluation.
