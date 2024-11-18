@@ -44,7 +44,7 @@ class Submitit(Checkpointable):
             distutils.setup(map_cli_args_to_dist_config(cli_args))
             self.runner: Runner = hydra.utils.instantiate(dict_config.runner)
             self.runner.load_state()
-            self.runner.run(dict_config.eval, cli_args)
+            self.runner.run()
         finally:
             distutils.cleanup()
 
