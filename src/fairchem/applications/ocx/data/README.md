@@ -89,7 +89,7 @@ Users are free to explore alternative aggregation beyond what was performed here
 |[All CO2RR](processed_data/CO2R_40_70_all.csv)   | CO2RR experimental and computational data corresponding to all samples (XRD matched and not matched). |
 |[Matched CO2RR](processed_data/CO2R_40_70_matched.csv)   | CO2RR experimental and computational data corresponding to only XRD matched samples. |
 |[All HER](processed_data/HER_40_70_all.csv)   | HER experimental and computational data corresponding to all samples (XRD matched and not matched). |
-|[Matched HER](processed_data/HER_40_70_all.csv)   | HER experimental and computational data corresponding to only XRD matched samples. |
+|[Matched HER](processed_data/HER_40_70_matched.csv)   | HER experimental and computational data corresponding to only XRD matched samples. |
 
 ### Interactive XRD html files
 |File | Size of compressed version (in bytes) |Size of uncompressed version (in bytes)    | MD5 checksum (download link)   |
