@@ -5,10 +5,10 @@ We include several experimental files relevant for analysis and understanding th
 
 |Name | Description |
 |---   |---    |
-|[Raw Experimental Data](data/experimental_data/ExpDataDump_241113.csv)   | Raw experimental testing data for all samples. |
-|[Clean Experimental Data](data/experimental_data/ExpDataDump_241113_clean.csv) | Experimental testing data excluding problematic samples (missing XRF, missing computational) directly used for downstream predictions. |
-|[XRD Data](data/experimental_data/XRDDataDump-241113.csv) | XRD information for experimental samples. |
-|[XRF Data](data/experimental_data/XRFDataDump-241113.csv) | XRF information for experimental samples. |
+|[Raw Experimental Data](experimental_data/ExpDataDump_241113.csv)   | Raw experimental testing data for all samples. |
+|[Clean Experimental Data](experimental_data/ExpDataDump_241113_clean.csv) | Experimental testing data excluding problematic samples (missing XRF, missing computational) directly used for downstream predictions. |
+|[XRD Data](experimental_data/XRDDataDump-241113.csv) | XRD information for experimental samples. |
+|[XRF Data](experimental_data/XRFDataDump-241113.csv) | XRF information for experimental samples. |
 
 #### Dataset details
 ##### Experimental Data
@@ -45,9 +45,9 @@ We include several experimental files relevant for analysis and understanding th
 We provide additional metadata corresponding to experimental samples. While this is not used for the analysis, it does provide more thorough details on the experimental samples.
 |Name | Description |
 |---   |---    |
-|[Batch Info](data/experimental_data/supporting_data/batches_info.csv)   |  |
-|[Materials ID](data/experimental_data/supporting_data/materials_id-241113.csv) |  |
-|[Materials Postprocessing ID](data/experimental_data/supporting_data/materials_postprocessing_id-241113.csv) |  |
+|[Batch Info](experimental_data/supporting_data/batches_info.csv)   |  |
+|[Materials ID](experimental_data/supporting_data/materials_id-241113.csv) |  |
+|[Materials Postprocessing ID](experimental_data/supporting_data/materials_postprocessing_id-241113.csv) |  |
 
 
 ### Computational dataset
@@ -80,10 +80,10 @@ Users are free to explore alternative aggregation beyond what was performed here
 
 |Name | Description |
 |---   |---    |
-|[All CO2RR](data/processed_data/CO2R_40_70_all.csv)   | CO2RR experimental and computational data corresponding to all samples (XRD matched and not matched). |
-|[Matched CO2RR](data/processed_data/CO2R_40_70_matched.csv)   | CO2RR experimental and computational data corresponding to only XRD matched samples. |
-|[All HER](data/processed_data/HER_40_70_all.csv)   | HER experimental and computational data corresponding to all samples (XRD matched and not matched). |
-|[Matched HER](data/processed_data/HER_40_70_all.csv)   | HER experimental and computational data corresponding to only XRD matched samples. |
+|[All CO2RR](processed_data/CO2R_40_70_all.csv)   | CO2RR experimental and computational data corresponding to all samples (XRD matched and not matched). |
+|[Matched CO2RR](processed_data/CO2R_40_70_matched.csv)   | CO2RR experimental and computational data corresponding to only XRD matched samples. |
+|[All HER](processed_data/HER_40_70_all.csv)   | HER experimental and computational data corresponding to all samples (XRD matched and not matched). |
+|[Matched HER](processed_data/HER_40_70_all.csv)   | HER experimental and computational data corresponding to only XRD matched samples. |
 
 ### Interactive XRD html files
 |File | Size of compressed version (in bytes) |Size of uncompressed version (in bytes)    | MD5 checksum (download link)   |
