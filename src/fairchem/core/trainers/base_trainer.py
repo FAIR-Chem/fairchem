@@ -930,16 +930,16 @@ class BaseTrainer(ABC):
                         )
         if self.scaler:
             self.scaler.unscale_(self.optimizer)
-            # log unscaled weights and grads
-            log_weight_frequency = self.config["logger"].get("log_weight_table", -1)
-            if (
-                self.logger is not None
-                and distutils.is_master()
-                and log_weight_frequency > 0
-                and self.step % log_weight_frequency == 1  # log on 1 instead of 0
-            ):
-                columns, data = get_weight_table(self.model)
-                self.logger.log_table(name="weight_table", cols=columns, data=data)
+        # log unscaled weights and grads
+        log_weight_frequency = self.config["logger"].get("log_weight_table", -1)
+        if (
+            self.logger is not None
+            and distutils.is_master()
+            and log_weight_frequency > 0
+            and self.step % log_weight_frequency == 1  # log on 1 instead of 0
+        ):
+            columns, data = get_weight_table(self.model)
+            self.logger.log_table(name="weight_table", cols=columns, data=data)
 
         if self.clip_grad_norm:
             grad_norm = torch.nn.utils.clip_grad_norm_(
