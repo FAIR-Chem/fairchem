@@ -31,13 +31,13 @@ def add_xrf(row, xrf_mapping):
     return xrf_comp
 
 
-def get_and_apply_xrf_mapping(comp_data, expt_data):
+def get_and_apply_xrf_mapping(xrf_data, expt_data):
     """
-    Given the computational and experimental data, get the XRF mapping
+    Given the xrf and experimental data, get the XRF mapping
     and apply it to the raw experimental data.
 
     Args:
-        comp_data (pd.DataFrame): The computational data
+        xrf_data (pd.DataFrame): The xrf data
         expt_data (pd.DataFrame): The experimental data
 
     Returns:
@@ -45,7 +45,7 @@ def get_and_apply_xrf_mapping(comp_data, expt_data):
     """
 
     xrf_mapping = {}
-    for idx, row in comp_data.iterrows():
+    for idx, row in xrf_data.iterrows():
         source = row["source"]
         sample_id = row["sample id"]
 
