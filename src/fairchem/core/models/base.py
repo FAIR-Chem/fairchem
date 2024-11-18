@@ -233,8 +233,6 @@ class BackboneInterface(metaclass=ABCMeta):
         return
 
 
-from torch.profiler import record_function
-
 @registry.register_model("hydra")
 class HydraModel(nn.Module, GraphModelMixin):
     def __init__(
@@ -321,15 +319,6 @@ class HydraModel(nn.Module, GraphModelMixin):
             raise RuntimeError(
                 "Heads not specified and not found in the starting checkpoint"
             )
-            
-        if hasattr(self.backbone, 'torch_compile') and self.backbone.torch_compile:
-            logging.info("use torch compile")
-            torch._dynamo.config.optimize_ddp = False
-            torch._dynamo.config.assume_static_by_default = False
-            torch._dynamo.config.automatic_dynamic_shapes = True
-            self.backbone = torch.compile(self.backbone, dynamic=True)
-            for k, v in self.output_heads.items():
-                self.output_heads[k] = torch.compile(v, dynamic=True)
 
     def forward(self, data: Batch):
         # lazily get device from input to use with amp, at least one input must be a tensor to figure out it's device
@@ -342,20 +331,16 @@ class HydraModel(nn.Module, GraphModelMixin):
             ), f"all inputs must be on the same device, found the following devices {device_from_tensors}"
             self.device = device_from_tensors.pop()
 
-        if hasattr(self.backbone, 'torch_compile') and self.backbone.torch_compile:
-            data = dict(data)
         emb = self.backbone(data)
-            
         # Predict all output properties for all structures in the batch for now.
         out = {}
         for k in self.output_heads:
-            with record_function(f"{k} head"):
-                with torch.autocast(
-                    device_type=self.device, enabled=self.output_heads[k].use_amp
-                ):
-                    if self.pass_through_head_outputs:
-                        out.update(self.output_heads[k](data, emb))
-                    else:
-                        out[k] = self.output_heads[k](data, emb)
+            with torch.autocast(
+                device_type=self.device, enabled=self.output_heads[k].use_amp
+            ):
+                if self.pass_through_head_outputs:
+                    out.update(self.output_heads[k](data, emb))
+                else:
+                    out[k] = self.output_heads[k](data, emb)
 
         return out
