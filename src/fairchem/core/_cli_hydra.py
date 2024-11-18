@@ -40,18 +40,18 @@ class Submitit(Checkpointable):
         setup_env_vars()
         try:
             distutils.setup(map_cli_args_to_dist_config(cli_args))
-            runner: Runner = hydra.utils.instantiate(dict_config.runner)
-            runner.load_state()
-            runner.run()
+            self.runner: Runner = hydra.utils.instantiate(dict_config.runner)
+            self.runner.load_state()
+            self.runner.run(dict_config.eval, cli_args)
         finally:
             distutils.cleanup()
 
     def checkpoint(self, *args, **kwargs):
         logging.info("Submitit checkpointing callback is triggered")
-        new_runner = Runner()
-        new_runner.save_state()
+        new_runner = Submitit()
+        self.runner.save_state()
         logging.info("Submitit checkpointing callback is completed")
-        return DelayedSubmission(new_runner, self.config)
+        return DelayedSubmission(new_runner, self.config, self.cli_args)
 
 
 def map_cli_args_to_dist_config(cli_args: argparse.Namespace) -> dict:
@@ -111,7 +111,17 @@ def main(
         )
     else:
         if args.num_gpus > 1:
-            logger.info(f"Running in local mode with {args.num_gpus} ranks")
+            logging.info(f"Running in local mode with {args.num_gpus} ranks")
+            # HACK to disable multiprocess dataloading in local mode
+            # there is an open issue where LMDB's environment cannot be pickled and used
+            # during torch multiprocessing https://github.com/pytorch/examples/issues/526
+            # this HACK only works for a training submission where the config is passed in here
+            if "optim" in cfg and "num_workers" in cfg["optim"]:
+                cfg["optim"]["num_workers"] = 0
+                logging.info(
+                    "WARNING: running in local mode, setting dataloading num_workers to 0, see https://github.com/pytorch/examples/issues/526"
+                )
+                
             launch_config = LaunchConfig(
                 min_nodes=1,
                 max_nodes=1,
