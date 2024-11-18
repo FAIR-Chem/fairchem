@@ -112,10 +112,22 @@ The OMat24 dataset is licensed under a [Creative Commons Attribution 4.0 License
 Please consider citing the following paper in any publications that uses this dataset:
 
 
-```bibtex
-
-```
-
-```bibtex
-
+```bib
+@article{barroso_omat24,
+  title={Open Materials 2024 (OMat24) Inorganic Materials Dataset and Models},
+  author={Barroso-Luque, Luis and Muhammed, Shuaibi and Fu, Xiang and Wood, Brandon, Dzamba, Misko, and Gao, Meng and Rizvi, Ammar and  Zitnick, C. Lawrence and Ulissi, Zachary W.},
+  journal={arXiv preprint arXiv:2410.12771},
+  year={2024}
+}
+@article{schmidt_2023_machine,
+  title={Machine-Learning-Assisted Determination of the Global Zero-Temperature Phase Diagram of Materials},
+  author={Schmidt, Jonathan and Hoffmann, Noah and Wang, Hai-Chen and Borlido, Pedro and Carri{\c{c}}o, Pedro JMA and Cerqueira, Tiago FT and Botti, Silvana and Marques, Miguel AL},
+  journal={Advanced Materials},
+  volume={35},
+  number={22},
+  pages={2210788},
+  year={2023},
+  url={https://onlinelibrary.wiley.com/doi/full/10.1002/adma.202210788},
+  publisher={Wiley Online Library}
+}
 ```
