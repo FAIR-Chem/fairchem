@@ -30,7 +30,6 @@ class LBFGS:
         memory: int = 100,
         damping: float = 1.2,
         alpha: float = 100.0,
-        device: str = "cuda:0",
         save_full_traj: bool = True,
         traj_dir: Path | None = None,
         traj_names: list[str] | None = None,
@@ -42,7 +41,6 @@ class LBFGS:
             memory: Number of steps to be stored in memory
             damping: The calculated step is multiplied with this number before added to the positions.
             alpha: Initial guess for the Hessian (curvature of energy surface)
-            device: device to run optimization on
             save_full_traj: wether to save full trajectory
             traj_dir: path to save trajectories in
             traj_names: list of trajectory files names
@@ -53,7 +51,6 @@ class LBFGS:
         self.damping = damping
         self.alpha = alpha
         self.H0 = 1.0 / self.alpha
-        self.device = device
         self.save_full = save_full_traj
         self.traj_dir = traj_dir
         self.traj_names = traj_names
