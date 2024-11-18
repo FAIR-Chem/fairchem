@@ -8,7 +8,7 @@ We include several experimental files relevant for analysis and understanding th
 |[Raw Experimental Data](data/experimental_data/ExpDataDump_241113.csv)   | Raw experimental testing data for all samples. |
 |[Clean Experimental Data](data/experimental_data/ExpDataDump_241113_clean.csv) | Experimental testing data excluding problematic samples (missing XRF, missing computational) directly used for downstream predictions. |
 |[XRD Data](data/experimental_data/XRDDataDump-241113.csv) | XRD information for experimental samples. |
-|[XRF Data](data/experimental_data/XRFDataDump--241113.csv) | XRF information for experimental samples. |
+|[XRF Data](data/experimental_data/XRFDataDump-241113.csv) | XRF information for experimental samples. |
 
 #### Dataset details
 ##### Experimental Data
