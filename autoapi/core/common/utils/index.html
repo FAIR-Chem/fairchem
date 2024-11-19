@@ -199,6 +199,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../../core/datasets/oc20dense.html">Open Catalyst 2020 Dense (OC20Dense)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../core/datasets/oc20neb.html">Open Catalyst 2020 Nudged Elastic Band (OC20NEB)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../core/datasets/omat24.html">Open Materials 2024 (OMat24)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../core/datasets/ocx24.html">Open Catalyst Experiments 2024 (OCx24): Bridging Experiments and Computational Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../core/model_checkpoints.html">Pretrained FAIRChem models</a></li>
 
 
@@ -671,6 +672,8 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.update_config"><code class="docutils literal notranslate"><span class="pre">update_config()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.load_model_and_weights_from_checkpoint"><code class="docutils literal notranslate"><span class="pre">load_model_and_weights_from_checkpoint()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.get_timestamp_uid"><code class="docutils literal notranslate"><span class="pre">get_timestamp_uid()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.tensor_stats"><code class="docutils literal notranslate"><span class="pre">tensor_stats()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.get_weight_table"><code class="docutils literal notranslate"><span class="pre">get_weight_table()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -848,6 +851,12 @@ LICENSE file in the root directory of this source tree.</p>
 <td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.get_timestamp_uid" title="core.common.utils.get_timestamp_uid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_timestamp_uid</span></code></a>(→ str)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.utils.tensor_stats" title="core.common.utils.tensor_stats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tensor_stats</span></code></a>(→ dict)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.get_weight_table" title="core.common.utils.get_weight_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_weight_table</span></code></a>(→ tuple[list, list])</p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -1199,6 +1208,16 @@ are now. Update old configs to fit the new expected structure.</p>
 <span class="sig-prename descclassname"><span class="pre">core.common.utils.</span></span><span class="sig-name descname"><span class="pre">get_timestamp_uid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#core.common.utils.get_timestamp_uid" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="core.common.utils.tensor_stats">
+<span class="sig-prename descclassname"><span class="pre">core.common.utils.</span></span><span class="sig-name descname"><span class="pre">tensor_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#core.common.utils.tensor_stats" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="core.common.utils.get_weight_table">
+<span class="sig-prename descclassname"><span class="pre">core.common.utils.</span></span><span class="sig-name descname"><span class="pre">get_weight_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.nn.Module</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#core.common.utils.get_weight_table" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 </section>
 </section>
 
@@ -1329,6 +1348,8 @@ are now. Update old configs to fit the new expected structure.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.update_config"><code class="docutils literal notranslate"><span class="pre">update_config()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.load_model_and_weights_from_checkpoint"><code class="docutils literal notranslate"><span class="pre">load_model_and_weights_from_checkpoint()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.get_timestamp_uid"><code class="docutils literal notranslate"><span class="pre">get_timestamp_uid()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.tensor_stats"><code class="docutils literal notranslate"><span class="pre">tensor_stats()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.get_weight_table"><code class="docutils literal notranslate"><span class="pre">get_weight_table()</span></code></a></li>
 </ul>
 </li>
 </ul>

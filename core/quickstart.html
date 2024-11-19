@@ -199,6 +199,7 @@
 <li class="toctree-l1"><a class="reference internal" href="datasets/oc20dense.html">Open Catalyst 2020 Dense (OC20Dense)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datasets/oc20neb.html">Open Catalyst 2020 Nudged Elastic Band (OC20NEB)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datasets/omat24.html">Open Materials 2024 (OMat24)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/ocx24.html">Open Catalyst Experiments 2024 (OCx24): Bridging Experiments and Computational Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="model_checkpoints.html">Pretrained FAIRChem models</a></li>
 
 
@@ -701,15 +702,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-11-11-19-54-40
-  commit: 834fbd6
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-11-19-06-24-00
+  commit: aa298ac
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-11-11-19-54-40
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-11-19-06-24-00
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-11-11-19-54-40
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-11-19-06-24-00
   seed: null
-  timestamp_id: 2024-11-11-19-54-40
-  version: 0.1.dev1+g834fbd6
+  timestamp_id: 2024-11-19-06-24-00
+  version: 0.1.dev1+gaa298ac
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -874,66 +875,66 @@ val_dataset: {}
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2795/3462928393.py:13: DeprecationWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2887/3462928393.py:13: DeprecationWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 /home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:461: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
 </pre></div>
 </div>
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>      Step     Time          Energy          fmax
-BFGS:    0 19:55:10     -110.400406        1.627233
+BFGS:    0 06:23:05     -110.400406        1.627233
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/models/gemnet_oc/gemnet_oc.py:1270: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   with torch.cuda.amp.autocast(False):
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    1 19:55:11     -110.542839        0.924819
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    1 06:23:05     -110.542839        0.924819
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    2 19:55:11     -110.626541        0.568005
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    2 06:23:06     -110.626541        0.568005
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    3 19:55:12     -110.605003        0.585444
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    3 06:23:06     -110.605003        0.585444
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    4 19:55:12     -110.652641        0.443063
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    4 06:23:07     -110.652641        0.443063
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    5 19:55:13     -110.698265        0.369424
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    5 06:23:07     -110.698265        0.369424
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    6 19:55:13     -110.729652        0.604163
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    6 06:23:07     -110.729652        0.604163
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    7 19:55:14     -110.766403        0.711393
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    7 06:23:08     -110.766403        0.711393
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    8 19:55:14     -110.869637        0.512456
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    8 06:23:08     -110.869637        0.512456
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    9 19:55:15     -110.945900        0.158336
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    9 06:23:09     -110.945900        0.158336
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   10 19:55:15     -110.976570        0.086625
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   10 06:23:09     -110.976570        0.086625
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   11 19:55:16     -110.992783        0.074964
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   11 06:23:10     -110.992783        0.074964
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   12 19:55:16     -111.000832        0.063625
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   12 06:23:10     -111.000832        0.063625
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   13 19:55:16     -111.000153        0.061604
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   13 06:23:11     -111.000153        0.061604
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   14 19:55:17     -111.009369        0.058362
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   14 06:23:11     -111.009369        0.058362
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   15 19:55:17     -111.015068        0.054439
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   15 06:23:12     -111.015068        0.054439
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   16 19:55:18     -111.019554        0.033223
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   16 06:23:12     -111.019554        0.033223
 </pre></div>
 </div>
 <img alt="../_images/c7a08733db67560974d22b6e0bd9aa7142c8604fa4d168284f4df59a924ad306.png" src="../_images/c7a08733db67560974d22b6e0bd9aa7142c8604fa4d168284f4df59a924ad306.png" />

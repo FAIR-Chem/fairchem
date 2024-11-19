@@ -199,6 +199,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../datasets/oc20dense.html">Open Catalyst 2020 Dense (OC20Dense)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../datasets/oc20neb.html">Open Catalyst 2020 Nudged Elastic Band (OC20NEB)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../datasets/omat24.html">Open Materials 2024 (OMat24)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../datasets/ocx24.html">Open Catalyst Experiments 2024 (OCx24): Bridging Experiments and Computational Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../model_checkpoints.html">Pretrained FAIRChem models</a></li>
 
 
@@ -800,15 +801,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2024-11-11-19-46-08
-  commit: 834fbd6
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2024-11-19-06-15-28
+  commit: aa298ac
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2024-11-11-19-46-08
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2024-11-19-06-15-28
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2024-11-11-19-46-08
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2024-11-19-06-15-28
   seed: null
-  timestamp_id: 2024-11-11-19-46-08
-  version: 0.1.dev1+g834fbd6
+  timestamp_id: 2024-11-19-06-15-28
+  version: 0.1.dev1+gaa298ac
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1021,7 +1022,7 @@ val_dataset: {}
   with torch.cuda.amp.autocast(False):
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time 89.7 seconds.
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time 89.2 seconds.
 </pre></div>
 </div>
 <img alt="../../_images/341531b0218eea408d04046d981d55fe218d43494f1ecf51297aeefb6668761e.png" src="../../_images/341531b0218eea408d04046d981d55fe218d43494f1ecf51297aeefb6668761e.png" />
@@ -1100,7 +1101,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2176/1448814737.py:12: DeprecationWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2271/1448814737.py:12: DeprecationWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
 </pre></div>
 </div>
@@ -1211,15 +1212,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2024-11-11-19-48-16
-  commit: 834fbd6
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2024-11-19-06-15-28
+  commit: aa298ac
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2024-11-11-19-48-16
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2024-11-19-06-15-28
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2024-11-11-19-48-16
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2024-11-19-06-15-28
   seed: null
-  timestamp_id: 2024-11-11-19-48-16
-  version: 0.1.dev1+g834fbd6
+  timestamp_id: 2024-11-19-06-15-28
+  version: 0.1.dev1+gaa298ac
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1561,7 +1562,7 @@ trainer: ocp
 <span class="expanded">Hide code cell output</span>
 </summary>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time = 217.1 seconds
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time = 216.0 seconds
 </pre></div>
 </div>
 </div>
@@ -1577,7 +1578,7 @@ trainer: ocp
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;fine-tuning/checkpoints/2024-11-11-19-48-16-ft-oxides&#39;
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;fine-tuning/checkpoints/2024-11-19-06-15-28-ft-oxides&#39;
 </pre></div>
 </div>
 </div>
@@ -1598,15 +1599,15 @@ trainer: ocp
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: false
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2024-11-11-19-52-32
-  commit: 834fbd6
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2024-11-19-06-19-44
+  commit: aa298ac
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2024-11-11-19-52-32
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2024-11-19-06-19-44
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2024-11-11-19-52-32
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2024-11-19-06-19-44
   seed: null
-  timestamp_id: 2024-11-11-19-52-32
-  version: 0.1.dev1+g834fbd6
+  timestamp_id: 2024-11-19-06-19-44
+  version: 0.1.dev1+gaa298ac
 dataset:
   a2g_args:
     r_energy: true
@@ -1784,7 +1785,7 @@ val_dataset: {}
   with torch.cuda.amp.autocast(False):
 </pre></div>
 </div>
-<img alt="../../_images/7fb24f56e30cf1d47da81887c2974ddcdf98ba9dbf155b527cb516ce186f8c6c.png" src="../../_images/7fb24f56e30cf1d47da81887c2974ddcdf98ba9dbf155b527cb516ce186f8c6c.png" />
+<img alt="../../_images/9251b8fc59f91858e7c2a3fe2d780a17ed5b2b37a91ed13d6b9268de3464c0f1.png" src="../../_images/9251b8fc59f91858e7c2a3fe2d780a17ed5b2b37a91ed13d6b9268de3464c0f1.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -1795,7 +1796,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>New MAE = 0.529 eV/atom
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>New MAE = 0.349 eV/atom
 </pre></div>
 </div>
 </div>
@@ -1814,7 +1815,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/e6e7f9dd35901f35eefa8148b77d1049b4bb8ba9a35f53cb818a2198321ce884.png" src="../../_images/e6e7f9dd35901f35eefa8148b77d1049b4bb8ba9a35f53cb818a2198321ce884.png" />
+<img alt="../../_images/161931fb5ba54cfd4afc6691415a2c2869ff7d628ba5af7f785edb54b3cfa2c0.png" src="../../_images/161931fb5ba54cfd4afc6691415a2c2869ff7d628ba5af7f785edb54b3cfa2c0.png" />
 </div>
 </div>
 <p>It is possible to continue refining the fit. The simple things to do are to use more epochs of training. Eventually the MAE will stabilize, and then it may be necessary to adjust other optimization parameters like the learning rate (usually you decrease it).</p>

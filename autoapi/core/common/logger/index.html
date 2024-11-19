@@ -199,6 +199,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../../core/datasets/oc20dense.html">Open Catalyst 2020 Dense (OC20Dense)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../core/datasets/oc20neb.html">Open Catalyst 2020 Nudged Elastic Band (OC20NEB)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../core/datasets/omat24.html">Open Materials 2024 (OMat24)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../core/datasets/ocx24.html">Open Catalyst Experiments 2024 (OCx24): Bridging Experiments and Computational Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../core/model_checkpoints.html">Pretrained FAIRChem models</a></li>
 
 
@@ -610,6 +611,7 @@
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.Logger"><code class="docutils literal notranslate"><span class="pre">Logger</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.Logger.config"><code class="docutils literal notranslate"><span class="pre">Logger.config</span></code></a></li>
@@ -625,6 +627,7 @@
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBLogger.watch"><code class="docutils literal notranslate"><span class="pre">WandBLogger.watch()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBLogger.log"><code class="docutils literal notranslate"><span class="pre">WandBLogger.log()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBLogger.log_plots"><code class="docutils literal notranslate"><span class="pre">WandBLogger.log_plots()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBLogger.log_table"><code class="docutils literal notranslate"><span class="pre">WandBLogger.log_table()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBLogger.log_summary"><code class="docutils literal notranslate"><span class="pre">WandBLogger.log_summary()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBLogger.mark_preempting"><code class="docutils literal notranslate"><span class="pre">WandBLogger.mark_preempting()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBLogger.log_artifact"><code class="docutils literal notranslate"><span class="pre">WandBLogger.log_artifact()</span></code></a></li>
@@ -642,16 +645,18 @@
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger._instance"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger._instance</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.initialized"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.initialized()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.init_wandb"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.init_wandb()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.get_instance"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.get_instance()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.watch"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.watch()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.log"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.log()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.log_plots"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.log_plots()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.log_table"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.log_table()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.log_summary"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.log_summary()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.mark_preempting"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.mark_preempting()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.log_artifact"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.log_artifact()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.log_stats"><code class="docutils literal notranslate"><span class="pre">log_stats()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -685,6 +690,17 @@ LICENSE file in the root directory of this source tree.</p>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#core.common.logger.WandBSingletonLogger" title="core.common.logger.WandBSingletonLogger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WandBSingletonLogger</span></code></a></p></td>
 <td><p>Singleton version of wandb logger, this forces a single instance of the logger to be created and used from anywhere in the code (not just from the trainer).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.logger.log_stats" title="core.common.logger.log_stats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_stats</span></code></a>(x, prefix)</p></td>
+<td><p></p></td>
 </tr>
 </tbody>
 </table>
@@ -745,7 +761,7 @@ tensorboard, etc.</p>
 tensorboard, etc.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="core.common.logger.WandBLogger.watch">
-<span class="sig-name descname"><span class="pre">watch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.logger.WandBLogger.watch" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">watch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.logger.WandBLogger.watch" title="Link to this definition">#</a></dt>
 <dd><p>Monitor parameters and gradients.</p>
 </dd></dl>
 
@@ -758,6 +774,11 @@ tensorboard, etc.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="core.common.logger.WandBLogger.log_plots">
 <span class="sig-name descname"><span class="pre">log_plots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">caption</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.logger.WandBLogger.log_plots" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.common.logger.WandBLogger.log_table">
+<span class="sig-name descname"><span class="pre">log_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.logger.WandBLogger.log_table" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -839,6 +860,11 @@ see: <a class="reference external" href="https://docs.wandb.ai/ref/python/log/#t
 <dd></dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="core.common.logger.WandBSingletonLogger.initialized">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#core.common.logger.WandBSingletonLogger.initialized" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="core.common.logger.WandBSingletonLogger.init_wandb">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">init_wandb</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.logger.WandBSingletonLogger.init_wandb" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
@@ -850,7 +876,7 @@ see: <a class="reference external" href="https://docs.wandb.ai/ref/python/log/#t
 
 <dl class="py method">
 <dt class="sig sig-object py" id="core.common.logger.WandBSingletonLogger.watch">
-<span class="sig-name descname"><span class="pre">watch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.logger.WandBSingletonLogger.watch" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">watch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.logger.WandBSingletonLogger.watch" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -859,8 +885,8 @@ see: <a class="reference external" href="https://docs.wandb.ai/ref/python/log/#t
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="core.common.logger.WandBSingletonLogger.log_plots">
-<span class="sig-name descname"><span class="pre">log_plots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">caption</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.logger.WandBSingletonLogger.log_plots" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="core.common.logger.WandBSingletonLogger.log_table">
+<span class="sig-name descname"><span class="pre">log_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.logger.WandBSingletonLogger.log_table" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -879,6 +905,11 @@ see: <a class="reference external" href="https://docs.wandb.ai/ref/python/log/#t
 <dd></dd></dl>
 
 </dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="core.common.logger.log_stats">
+<span class="sig-prename descclassname"><span class="pre">core.common.logger.</span></span><span class="sig-name descname"><span class="pre">log_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.common.logger.log_stats" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
 
 </section>
 </section>
@@ -949,6 +980,7 @@ see: <a class="reference external" href="https://docs.wandb.ai/ref/python/log/#t
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.Logger"><code class="docutils literal notranslate"><span class="pre">Logger</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.Logger.config"><code class="docutils literal notranslate"><span class="pre">Logger.config</span></code></a></li>
@@ -964,6 +996,7 @@ see: <a class="reference external" href="https://docs.wandb.ai/ref/python/log/#t
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBLogger.watch"><code class="docutils literal notranslate"><span class="pre">WandBLogger.watch()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBLogger.log"><code class="docutils literal notranslate"><span class="pre">WandBLogger.log()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBLogger.log_plots"><code class="docutils literal notranslate"><span class="pre">WandBLogger.log_plots()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBLogger.log_table"><code class="docutils literal notranslate"><span class="pre">WandBLogger.log_table()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBLogger.log_summary"><code class="docutils literal notranslate"><span class="pre">WandBLogger.log_summary()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBLogger.mark_preempting"><code class="docutils literal notranslate"><span class="pre">WandBLogger.mark_preempting()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBLogger.log_artifact"><code class="docutils literal notranslate"><span class="pre">WandBLogger.log_artifact()</span></code></a></li>
@@ -981,16 +1014,18 @@ see: <a class="reference external" href="https://docs.wandb.ai/ref/python/log/#t
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger._instance"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger._instance</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.initialized"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.initialized()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.init_wandb"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.init_wandb()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.get_instance"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.get_instance()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.watch"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.watch()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.log"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.log()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.log_plots"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.log_plots()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.log_table"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.log_table()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.log_summary"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.log_summary()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.mark_preempting"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.mark_preempting()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.WandBSingletonLogger.log_artifact"><code class="docutils literal notranslate"><span class="pre">WandBSingletonLogger.log_artifact()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.logger.log_stats"><code class="docutils literal notranslate"><span class="pre">log_stats()</span></code></a></li>
 </ul>
 </li>
 </ul>

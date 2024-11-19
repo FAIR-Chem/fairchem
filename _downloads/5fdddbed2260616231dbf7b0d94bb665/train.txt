@@ -1,6 +1,6 @@
-2024-11-11 19:48:05 (INFO): Running in local mode without elastic launch (single gpu only)
-2024-11-11 19:48:05 (INFO): Setting env PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-2024-11-11 19:48:05 (INFO): Project root: /home/runner/work/fairchem/fairchem/src/fairchem
+2024-11-19 06:16:16 (INFO): Running in local mode without elastic launch (single gpu only)
+2024-11-19 06:16:16 (INFO): Setting env PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+2024-11-19 06:16:17 (INFO): Project root: /home/runner/work/fairchem/fairchem/src/fairchem
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/escn/so3.py:23: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), "Jd.pt"))
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/scn/spherical_harmonics.py:23: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
@@ -15,17 +15,17 @@
   @torch.cuda.amp.autocast(enabled=False)
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/equiformer_v2/layer_norm.py:357: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
   @torch.cuda.amp.autocast(enabled=False)
-2024-11-11 19:48:06 (INFO): amp: false
+2024-11-19 06:16:17 (INFO): amp: false
 cmd:
-  checkpoint_dir: fine-tuning/checkpoints/2024-11-11-19-48-16-ft-oxides
-  commit: 834fbd6
+  checkpoint_dir: fine-tuning/checkpoints/2024-11-19-06-15-28-ft-oxides
+  commit: aa298ac
   identifier: ft-oxides
-  logs_dir: fine-tuning/logs/tensorboard/2024-11-11-19-48-16-ft-oxides
+  logs_dir: fine-tuning/logs/tensorboard/2024-11-19-06-15-28-ft-oxides
   print_every: 10
-  results_dir: fine-tuning/results/2024-11-11-19-48-16-ft-oxides
+  results_dir: fine-tuning/results/2024-11-19-06-15-28-ft-oxides
   seed: 0
-  timestamp_id: 2024-11-11-19-48-16-ft-oxides
-  version: 0.1.dev1+g834fbd6
+  timestamp_id: 2024-11-19-06-15-28-ft-oxides
+  version: 0.1.dev1+gaa298ac
 dataset:
   a2g_args:
     r_energy: true
@@ -155,70 +155,70 @@ val_dataset:
   format: ase_db
   src: val.db
 
-2024-11-11 19:48:06 (INFO): Loading model: gemnet_oc
-2024-11-11 19:48:06 (WARNING): Unrecognized arguments: ['symmetric_edge_symmetrization']
-2024-11-11 19:48:08 (INFO): Loaded GemNetOC with 38864438 parameters.
-2024-11-11 19:48:08 (WARNING): log_summary for Tensorboard not supported
-2024-11-11 19:48:08 (INFO): Loading dataset: ase_db
-2024-11-11 19:48:08 (WARNING): Could not find dataset metadata.npz files in '[PosixPath('train.db')]'
-2024-11-11 19:48:08 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
-2024-11-11 19:48:08 (WARNING): Failed to get data sizes, falling back to uniform partitioning. BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms.
-2024-11-11 19:48:08 (INFO): rank: 0: Sampler created...
-2024-11-11 19:48:08 (INFO): Created BalancedBatchSampler with sampler=<fairchem.core.common.data_parallel.StatefulDistributedSampler object at 0x7fe339074a70>, batch_size=4, drop_last=False
-2024-11-11 19:48:08 (WARNING): Could not find dataset metadata.npz files in '[PosixPath('val.db')]'
-2024-11-11 19:48:08 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
-2024-11-11 19:48:08 (WARNING): Failed to get data sizes, falling back to uniform partitioning. BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms.
-2024-11-11 19:48:08 (INFO): rank: 0: Sampler created...
-2024-11-11 19:48:08 (INFO): Created BalancedBatchSampler with sampler=<fairchem.core.common.data_parallel.StatefulDistributedSampler object at 0x7fe339076c60>, batch_size=16, drop_last=False
-2024-11-11 19:48:08 (WARNING): Could not find dataset metadata.npz files in '[PosixPath('test.db')]'
-2024-11-11 19:48:08 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
-2024-11-11 19:48:08 (WARNING): Failed to get data sizes, falling back to uniform partitioning. BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms.
-2024-11-11 19:48:08 (INFO): rank: 0: Sampler created...
-2024-11-11 19:48:08 (INFO): Created BalancedBatchSampler with sampler=<fairchem.core.common.data_parallel.StatefulDistributedSampler object at 0x7fe339076f00>, batch_size=16, drop_last=False
-2024-11-11 19:48:08 (WARNING): Using `weight_decay` from `optim` instead of `optim.optimizer_params`.Please update your config to use `optim.optimizer_params.weight_decay`.`optim.weight_decay` will soon be deprecated.
-2024-11-11 19:48:08 (INFO): Attemping to load user specified checkpoint at /tmp/fairchem_checkpoints/gnoc_oc22_oc20_all_s2ef.pt
-2024-11-11 19:48:08 (INFO): Loading checkpoint from: /tmp/fairchem_checkpoints/gnoc_oc22_oc20_all_s2ef.pt
-/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/base_trainer.py:601: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+2024-11-19 06:16:17 (INFO): Loading model: gemnet_oc
+2024-11-19 06:16:17 (WARNING): Unrecognized arguments: ['symmetric_edge_symmetrization']
+2024-11-19 06:16:20 (INFO): Loaded GemNetOC with 38864438 parameters.
+2024-11-19 06:16:20 (WARNING): log_summary for Tensorboard not supported
+2024-11-19 06:16:20 (INFO): Loading dataset: ase_db
+2024-11-19 06:16:20 (WARNING): Could not find dataset metadata.npz files in '[PosixPath('train.db')]'
+2024-11-19 06:16:20 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
+2024-11-19 06:16:20 (WARNING): Failed to get data sizes, falling back to uniform partitioning. BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms.
+2024-11-19 06:16:20 (INFO): rank: 0: Sampler created...
+2024-11-19 06:16:20 (INFO): Created BalancedBatchSampler with sampler=<fairchem.core.common.data_parallel.StatefulDistributedSampler object at 0x7fee88a09df0>, batch_size=4, drop_last=False
+2024-11-19 06:16:20 (WARNING): Could not find dataset metadata.npz files in '[PosixPath('val.db')]'
+2024-11-19 06:16:20 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
+2024-11-19 06:16:20 (WARNING): Failed to get data sizes, falling back to uniform partitioning. BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms.
+2024-11-19 06:16:20 (INFO): rank: 0: Sampler created...
+2024-11-19 06:16:20 (INFO): Created BalancedBatchSampler with sampler=<fairchem.core.common.data_parallel.StatefulDistributedSampler object at 0x7fee88a09d30>, batch_size=16, drop_last=False
+2024-11-19 06:16:20 (WARNING): Could not find dataset metadata.npz files in '[PosixPath('test.db')]'
+2024-11-19 06:16:20 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
+2024-11-19 06:16:20 (WARNING): Failed to get data sizes, falling back to uniform partitioning. BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms.
+2024-11-19 06:16:20 (INFO): rank: 0: Sampler created...
+2024-11-19 06:16:20 (INFO): Created BalancedBatchSampler with sampler=<fairchem.core.common.data_parallel.StatefulDistributedSampler object at 0x7fee88a09fd0>, batch_size=16, drop_last=False
+2024-11-19 06:16:20 (WARNING): Using `weight_decay` from `optim` instead of `optim.optimizer_params`.Please update your config to use `optim.optimizer_params.weight_decay`.`optim.weight_decay` will soon be deprecated.
+2024-11-19 06:16:20 (INFO): Attemping to load user specified checkpoint at /tmp/fairchem_checkpoints/gnoc_oc22_oc20_all_s2ef.pt
+2024-11-19 06:16:20 (INFO): Loading checkpoint from: /tmp/fairchem_checkpoints/gnoc_oc22_oc20_all_s2ef.pt
+/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/base_trainer.py:602: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=map_location)
-2024-11-11 19:48:08 (INFO): Overwriting scaling factors with those loaded from checkpoint. If you're generating predictions with a pretrained checkpoint, this is the correct behavior. To disable this, delete `scale_dict` from the checkpoint. 
+2024-11-19 06:16:20 (INFO): Overwriting scaling factors with those loaded from checkpoint. If you're generating predictions with a pretrained checkpoint, this is the correct behavior. To disable this, delete `scale_dict` from the checkpoint. 
 /home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:155: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/gemnet_oc/gemnet_oc.py:1270: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
   with torch.cuda.amp.autocast(False):
-2024-11-11 19:48:33 (INFO): energy_mae: 9.48e+00, forcesx_mae: 7.26e-02, forcesy_mae: 3.95e-02, forcesz_mae: 5.74e-02, forces_mae: 5.65e-02, forces_cosine_similarity: 1.12e-01, forces_magnitude_error: 1.11e-01, energy_forces_within_threshold: 0.00e+00, loss: 9.61e+00, lr: 5.00e-04, epoch: 1.69e-01, step: 1.00e+01
-2024-11-11 19:48:34 (INFO): Evaluating on val.
-device 0:   0%|          | 0/2 [00:00<?, ?it/s]/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/base_trainer.py:884: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+2024-11-19 06:16:44 (INFO): energy_mae: 9.48e+00, forcesx_mae: 7.26e-02, forcesy_mae: 3.95e-02, forcesz_mae: 5.74e-02, forces_mae: 5.65e-02, forces_cosine_similarity: 1.12e-01, forces_magnitude_error: 1.11e-01, energy_forces_within_threshold: 0.00e+00, loss: 9.61e+00, lr: 5.00e-04, epoch: 1.69e-01, step: 1.00e+01
+2024-11-19 06:16:45 (INFO): Evaluating on val.
+device 0:   0%|          | 0/2 [00:00<?, ?it/s]/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/base_trainer.py:885: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-device 0:  50%|█████     | 1/2 [00:03<00:03,  3.70s/it]device 0: 100%|██████████| 2/2 [00:06<00:00,  3.36s/it]device 0: 100%|██████████| 2/2 [00:06<00:00,  3.45s/it]
-2024-11-11 19:48:41 (INFO): energy_mae: 19.3119, forcesx_mae: 0.2055, forcesy_mae: 0.1585, forcesz_mae: 0.1641, forces_mae: 0.1760, forces_cosine_similarity: -0.0775, forces_magnitude_error: 0.3616, energy_forces_within_threshold: 0.0000, loss: 19.5684, epoch: 0.1695
-2024-11-11 19:48:41 (INFO): Predicting on test.
+device 0:  50%|█████     | 1/2 [00:03<00:03,  3.82s/it]device 0: 100%|██████████| 2/2 [00:06<00:00,  3.42s/it]device 0: 100%|██████████| 2/2 [00:07<00:00,  3.53s/it]
+2024-11-19 06:16:53 (INFO): energy_mae: 19.3107, forcesx_mae: 0.2055, forcesy_mae: 0.1585, forcesz_mae: 0.1641, forces_mae: 0.1760, forces_cosine_similarity: -0.0774, forces_magnitude_error: 0.3616, energy_forces_within_threshold: 0.0000, loss: 19.5672, epoch: 0.1695
+2024-11-19 06:16:53 (INFO): Predicting on test.
 device 0:   0%|          | 0/2 [00:00<?, ?it/s]/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:461: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-device 0:  50%|█████     | 1/2 [00:03<00:03,  3.41s/it]device 0: 100%|██████████| 2/2 [00:05<00:00,  2.76s/it]device 0: 100%|██████████| 2/2 [00:05<00:00,  2.91s/it]
-2024-11-11 19:48:47 (INFO): Writing results to fine-tuning/results/2024-11-11-19-48-16-ft-oxides/ocp_predictions.npz
-2024-11-11 19:49:08 (INFO): energy_mae: 7.51e+00, forcesx_mae: 5.95e-02, forcesy_mae: 5.59e-02, forcesz_mae: 4.46e-02, forces_mae: 5.33e-02, forces_cosine_similarity: -5.98e-03, forces_magnitude_error: 1.04e-01, energy_forces_within_threshold: 0.00e+00, loss: 7.64e+00, lr: 5.00e-04, epoch: 3.39e-01, step: 2.00e+01
-2024-11-11 19:49:10 (INFO): Evaluating on val.
-device 0:   0%|          | 0/2 [00:00<?, ?it/s]device 0:  50%|█████     | 1/2 [00:03<00:03,  3.80s/it]device 0: 100%|██████████| 2/2 [00:07<00:00,  3.50s/it]device 0: 100%|██████████| 2/2 [00:07<00:00,  3.60s/it]
-2024-11-11 19:49:17 (INFO): energy_mae: 6.5932, forcesx_mae: 0.0251, forcesy_mae: 0.0256, forcesz_mae: 0.0186, forces_mae: 0.0231, forces_cosine_similarity: -0.0869, forces_magnitude_error: 0.0280, energy_forces_within_threshold: 0.0000, loss: 6.6148, epoch: 0.3390
-2024-11-11 19:49:18 (INFO): Predicting on test.
-device 0:   0%|          | 0/2 [00:00<?, ?it/s]device 0:  50%|█████     | 1/2 [00:03<00:03,  3.44s/it]device 0: 100%|██████████| 2/2 [00:05<00:00,  2.70s/it]device 0: 100%|██████████| 2/2 [00:05<00:00,  2.87s/it]
-2024-11-11 19:49:24 (INFO): Writing results to fine-tuning/results/2024-11-11-19-48-16-ft-oxides/ocp_predictions.npz
-2024-11-11 19:49:49 (INFO): energy_mae: 9.39e+00, forcesx_mae: 3.97e-02, forcesy_mae: 3.02e-02, forcesz_mae: 3.55e-02, forces_mae: 3.52e-02, forces_cosine_similarity: -1.15e-01, forces_magnitude_error: 4.90e-02, energy_forces_within_threshold: 2.50e-02, loss: 9.45e+00, lr: 5.00e-04, epoch: 5.08e-01, step: 3.00e+01
-2024-11-11 19:49:50 (INFO): Evaluating on val.
-device 0:   0%|          | 0/2 [00:00<?, ?it/s]device 0:  50%|█████     | 1/2 [00:03<00:03,  3.67s/it]device 0: 100%|██████████| 2/2 [00:06<00:00,  3.38s/it]device 0: 100%|██████████| 2/2 [00:06<00:00,  3.49s/it]
-2024-11-11 19:49:57 (INFO): energy_mae: 5.1143, forcesx_mae: 0.0176, forcesy_mae: 0.0215, forcesz_mae: 0.0139, forces_mae: 0.0176, forces_cosine_similarity: 0.0447, forces_magnitude_error: 0.0280, energy_forces_within_threshold: 0.0000, loss: 5.2341, epoch: 0.5085
-2024-11-11 19:49:58 (INFO): Predicting on test.
-device 0:   0%|          | 0/2 [00:00<?, ?it/s]device 0:  50%|█████     | 1/2 [00:03<00:03,  3.45s/it]device 0: 100%|██████████| 2/2 [00:05<00:00,  2.74s/it]device 0: 100%|██████████| 2/2 [00:05<00:00,  2.93s/it]
-2024-11-11 19:50:04 (INFO): Writing results to fine-tuning/results/2024-11-11-19-48-16-ft-oxides/ocp_predictions.npz
-2024-11-11 19:50:29 (INFO): energy_mae: 4.85e+00, forcesx_mae: 2.30e-02, forcesy_mae: 1.91e-02, forcesz_mae: 1.99e-02, forces_mae: 2.07e-02, forces_cosine_similarity: 4.34e-02, forces_magnitude_error: 2.42e-02, energy_forces_within_threshold: 0.00e+00, loss: 4.89e+00, lr: 5.00e-04, epoch: 6.78e-01, step: 4.00e+01
-2024-11-11 19:50:30 (INFO): Evaluating on val.
-device 0:   0%|          | 0/2 [00:00<?, ?it/s]device 0:  50%|█████     | 1/2 [00:03<00:03,  3.81s/it]device 0: 100%|██████████| 2/2 [00:07<00:00,  3.45s/it]device 0: 100%|██████████| 2/2 [00:07<00:00,  3.58s/it]
-2024-11-11 19:50:38 (INFO): energy_mae: 5.3839, forcesx_mae: 0.0189, forcesy_mae: 0.0176, forcesz_mae: 0.0103, forces_mae: 0.0156, forces_cosine_similarity: 0.0186, forces_magnitude_error: 0.0200, energy_forces_within_threshold: 0.0000, loss: 5.4875, epoch: 0.6780
-2024-11-11 19:50:38 (INFO): Predicting on test.
-device 0:   0%|          | 0/2 [00:00<?, ?it/s]device 0:  50%|█████     | 1/2 [00:03<00:03,  3.65s/it]device 0: 100%|██████████| 2/2 [00:05<00:00,  2.82s/it]device 0: 100%|██████████| 2/2 [00:06<00:00,  3.02s/it]
-2024-11-11 19:50:44 (INFO): Writing results to fine-tuning/results/2024-11-11-19-48-16-ft-oxides/ocp_predictions.npz
-2024-11-11 19:51:06 (INFO): energy_mae: 5.10e+00, forcesx_mae: 2.11e-02, forcesy_mae: 1.70e-02, forcesz_mae: 2.37e-02, forces_mae: 2.06e-02, forces_cosine_similarity: -2.73e-03, forces_magnitude_error: 2.78e-02, energy_forces_within_threshold: 0.00e+00, loss: 5.14e+00, lr: 5.00e-04, epoch: 8.47e-01, step: 5.00e+01
-2024-11-11 19:51:08 (INFO): Evaluating on val.
-device 0:   0%|          | 0/2 [00:00<?, ?it/s]device 0:  50%|█████     | 1/2 [00:03<00:03,  3.82s/it]device 0: 100%|██████████| 2/2 [00:06<00:00,  3.36s/it]device 0: 100%|██████████| 2/2 [00:07<00:00,  3.51s/it]
-2024-11-11 19:51:15 (INFO): energy_mae: 4.5573, forcesx_mae: 0.0340, forcesy_mae: 0.0269, forcesz_mae: 0.0322, forces_mae: 0.0310, forces_cosine_similarity: -0.0614, forces_magnitude_error: 0.0529, energy_forces_within_threshold: 0.0000, loss: 4.6758, epoch: 0.8475
-2024-11-11 19:51:37 (INFO): Total time taken: 208.61528825759888
+device 0:  50%|█████     | 1/2 [00:03<00:03,  3.39s/it]device 0: 100%|██████████| 2/2 [00:05<00:00,  2.69s/it]device 0: 100%|██████████| 2/2 [00:05<00:00,  2.87s/it]
+2024-11-19 06:16:59 (INFO): Writing results to fine-tuning/results/2024-11-19-06-15-28-ft-oxides/ocp_predictions.npz
+2024-11-19 06:17:20 (INFO): energy_mae: 7.51e+00, forcesx_mae: 5.95e-02, forcesy_mae: 5.59e-02, forcesz_mae: 4.45e-02, forces_mae: 5.33e-02, forces_cosine_similarity: -6.11e-03, forces_magnitude_error: 1.04e-01, energy_forces_within_threshold: 0.00e+00, loss: 7.63e+00, lr: 5.00e-04, epoch: 3.39e-01, step: 2.00e+01
+2024-11-19 06:17:22 (INFO): Evaluating on val.
+device 0:   0%|          | 0/2 [00:00<?, ?it/s]device 0:  50%|█████     | 1/2 [00:03<00:03,  3.83s/it]device 0: 100%|██████████| 2/2 [00:07<00:00,  3.48s/it]device 0: 100%|██████████| 2/2 [00:07<00:00,  3.61s/it]
+2024-11-19 06:17:29 (INFO): energy_mae: 6.5958, forcesx_mae: 0.0250, forcesy_mae: 0.0256, forcesz_mae: 0.0186, forces_mae: 0.0231, forces_cosine_similarity: -0.0892, forces_magnitude_error: 0.0279, energy_forces_within_threshold: 0.0000, loss: 6.6177, epoch: 0.3390
+2024-11-19 06:17:29 (INFO): Predicting on test.
+device 0:   0%|          | 0/2 [00:00<?, ?it/s]device 0:  50%|█████     | 1/2 [00:03<00:03,  3.44s/it]device 0: 100%|██████████| 2/2 [00:05<00:00,  2.73s/it]device 0: 100%|██████████| 2/2 [00:05<00:00,  2.93s/it]
+2024-11-19 06:17:35 (INFO): Writing results to fine-tuning/results/2024-11-19-06-15-28-ft-oxides/ocp_predictions.npz
+2024-11-19 06:18:00 (INFO): energy_mae: 9.36e+00, forcesx_mae: 3.97e-02, forcesy_mae: 3.02e-02, forcesz_mae: 3.54e-02, forces_mae: 3.51e-02, forces_cosine_similarity: -1.17e-01, forces_magnitude_error: 4.89e-02, energy_forces_within_threshold: 0.00e+00, loss: 9.42e+00, lr: 5.00e-04, epoch: 5.08e-01, step: 3.00e+01
+2024-11-19 06:18:02 (INFO): Evaluating on val.
+device 0:   0%|          | 0/2 [00:00<?, ?it/s]device 0:  50%|█████     | 1/2 [00:03<00:03,  3.82s/it]device 0: 100%|██████████| 2/2 [00:06<00:00,  3.44s/it]device 0: 100%|██████████| 2/2 [00:07<00:00,  3.57s/it]
+2024-11-19 06:18:10 (INFO): energy_mae: 5.0703, forcesx_mae: 0.0174, forcesy_mae: 0.0211, forcesz_mae: 0.0134, forces_mae: 0.0173, forces_cosine_similarity: 0.0477, forces_magnitude_error: 0.0272, energy_forces_within_threshold: 0.0000, loss: 5.1882, epoch: 0.5085
+2024-11-19 06:18:10 (INFO): Predicting on test.
+device 0:   0%|          | 0/2 [00:00<?, ?it/s]device 0:  50%|█████     | 1/2 [00:03<00:03,  3.70s/it]device 0: 100%|██████████| 2/2 [00:05<00:00,  2.80s/it]device 0: 100%|██████████| 2/2 [00:06<00:00,  3.02s/it]
+2024-11-19 06:18:16 (INFO): Writing results to fine-tuning/results/2024-11-19-06-15-28-ft-oxides/ocp_predictions.npz
+2024-11-19 06:18:40 (INFO): energy_mae: 4.89e+00, forcesx_mae: 2.31e-02, forcesy_mae: 1.94e-02, forcesz_mae: 1.98e-02, forces_mae: 2.08e-02, forces_cosine_similarity: 3.41e-02, forces_magnitude_error: 2.42e-02, energy_forces_within_threshold: 0.00e+00, loss: 4.93e+00, lr: 5.00e-04, epoch: 6.78e-01, step: 4.00e+01
+2024-11-19 06:18:42 (INFO): Evaluating on val.
+device 0:   0%|          | 0/2 [00:00<?, ?it/s]device 0:  50%|█████     | 1/2 [00:03<00:03,  3.73s/it]device 0: 100%|██████████| 2/2 [00:06<00:00,  3.33s/it]device 0: 100%|██████████| 2/2 [00:06<00:00,  3.47s/it]
+2024-11-19 06:18:49 (INFO): energy_mae: 5.3481, forcesx_mae: 0.0198, forcesy_mae: 0.0176, forcesz_mae: 0.0115, forces_mae: 0.0163, forces_cosine_similarity: 0.0245, forces_magnitude_error: 0.0210, energy_forces_within_threshold: 0.0333, loss: 5.4456, epoch: 0.6780
+2024-11-19 06:18:50 (INFO): Predicting on test.
+device 0:   0%|          | 0/2 [00:00<?, ?it/s]device 0:  50%|█████     | 1/2 [00:03<00:03,  3.58s/it]device 0: 100%|██████████| 2/2 [00:05<00:00,  2.80s/it]device 0: 100%|██████████| 2/2 [00:06<00:00,  3.02s/it]
+2024-11-19 06:18:56 (INFO): Writing results to fine-tuning/results/2024-11-19-06-15-28-ft-oxides/ocp_predictions.npz
+2024-11-19 06:19:17 (INFO): energy_mae: 3.34e+00, forcesx_mae: 1.98e-02, forcesy_mae: 1.56e-02, forcesz_mae: 1.81e-02, forces_mae: 1.79e-02, forces_cosine_similarity: 4.65e-02, forces_magnitude_error: 2.35e-02, energy_forces_within_threshold: 0.00e+00, loss: 3.38e+00, lr: 5.00e-04, epoch: 8.47e-01, step: 5.00e+01
+2024-11-19 06:19:19 (INFO): Evaluating on val.
+device 0:   0%|          | 0/2 [00:00<?, ?it/s]device 0:  50%|█████     | 1/2 [00:03<00:03,  3.62s/it]device 0: 100%|██████████| 2/2 [00:06<00:00,  3.32s/it]device 0: 100%|██████████| 2/2 [00:06<00:00,  3.44s/it]
+2024-11-19 06:19:26 (INFO): energy_mae: 2.9162, forcesx_mae: 0.0269, forcesy_mae: 0.0237, forcesz_mae: 0.0214, forces_mae: 0.0240, forces_cosine_similarity: 0.0123, forces_magnitude_error: 0.0349, energy_forces_within_threshold: 0.0000, loss: 2.9965, epoch: 0.8475
+2024-11-19 06:19:48 (INFO): Total time taken: 207.43261218070984
