@@ -181,7 +181,7 @@ Please consider citing the following paper in any research manuscript using the 
 
 ## Open Materials 2024 (OMat24)
 
-* All config files for the OMat24 models are available in the [`configs/odac`](https://github.com/FAIR-Chem/fairchem/tree/main/configs/omat24) directory.
+* All config files for the OMat24 models are available in the [`configs/omat24`](https://github.com/FAIR-Chem/fairchem/tree/main/configs/omat24) directory.
 * All models are equiformerV2 S2EFS models
 
 **Note** in order to download any of the model checkpoints from the links below, you will need to first request access

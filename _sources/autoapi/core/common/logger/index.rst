@@ -23,6 +23,14 @@ Classes
    core.common.logger.WandBSingletonLogger
 
 
+Functions
+---------
+
+.. autoapisummary::
+
+   core.common.logger.log_stats
+
+
 Module Contents
 ---------------
 
@@ -81,7 +89,7 @@ Module Contents
    tensorboard, etc.
 
 
-   .. py:method:: watch(model, log_freq: int = 1000) -> None
+   .. py:method:: watch(model, log='all', log_freq: int = 1000) -> None
 
       Monitor parameters and gradients.
 
@@ -94,6 +102,9 @@ Module Contents
 
 
    .. py:method:: log_plots(plots, caption: str = '') -> None
+
+
+   .. py:method:: log_table(name: str, cols: list, data: list, step: int | None = None, commit=False) -> None
 
 
    .. py:method:: log_summary(summary_dict: dict[str, Any])
@@ -162,6 +173,11 @@ Module Contents
 
 
 
+   .. py:method:: initialized() -> bool
+      :classmethod:
+
+
+
    .. py:method:: init_wandb(config: dict, run_id: str, run_name: str, log_dir: str, project: str, entity: str, group: str | None = None) -> None
       :classmethod:
 
@@ -172,13 +188,13 @@ Module Contents
 
 
 
-   .. py:method:: watch(model, log_freq: int = 1000) -> None
+   .. py:method:: watch(model, log='all', log_freq: int = 1000) -> None
 
 
    .. py:method:: log(update_dict: dict, step: int | None = None, commit=False, split: str = '') -> None
 
 
-   .. py:method:: log_plots(plots, caption: str = '') -> None
+   .. py:method:: log_table(name: str, cols: list, data: list, step: int | None = None, commit=False) -> None
 
 
    .. py:method:: log_summary(summary_dict: dict[str, Any])
@@ -189,4 +205,6 @@ Module Contents
 
    .. py:method:: log_artifact(name: str, type: str, file_location: str) -> None
 
+
+.. py:function:: log_stats(x: torch.Tensor, prefix: str)
 
