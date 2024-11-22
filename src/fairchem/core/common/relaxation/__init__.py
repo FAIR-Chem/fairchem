@@ -8,6 +8,6 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 from .ml_relaxation import ml_relax
-from .optimizers.optimizable import OptimizableBatch, OptimizableUnitCellBatch
+from .optimizable import OptimizableBatch, OptimizableUnitCellBatch
 
 __all__ = ["ml_relax", "OptimizableBatch", "OptimizableUnitCellBatch"]
