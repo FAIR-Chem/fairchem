@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import numpy.typing as npt
 import torch
-import torch.nn as nn
 import yaml
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.utils.data import DataLoader
@@ -40,7 +39,7 @@ from fairchem.core.common.typing import assert_is_instance as aii
 from fairchem.core.common.typing import none_throws
 from fairchem.core.common.utils import (
     get_commit_hash,
-    get_loss_module,
+    get_weight_table,
     load_state_dict,
     match_state_dict,
     save_checkpoint,
@@ -102,6 +101,7 @@ class BaseTrainer(ABC):
         self.cpu = cpu
         self.epoch = 0
         self.step = 0
+        self.ema = None
 
         if torch.cuda.is_available() and not self.cpu:
             logging.info(f"local rank base: {local_rank}")
@@ -618,7 +618,7 @@ class BaseTrainer(ABC):
                 "Loading checkpoint in inference-only mode, not loading keys associated with trainer state!"
             )
 
-        if "ema" in checkpoint and checkpoint["ema"] is not None:
+        if "ema" in checkpoint and checkpoint["ema"] is not None and self.ema:
             self.ema.load_state_dict(checkpoint["ema"])
         else:
             self.ema = None
@@ -671,18 +671,17 @@ class BaseTrainer(ABC):
         self.loss_functions = []
         for _idx, loss in enumerate(self.config["loss_functions"]):
             for target in loss:
-                loss_name = loss[target].get("fn", "mae")
-                coefficient = loss[target].get("coefficient", 1)
-                loss_reduction = loss[target].get("reduction", "mean")
+                assert (
+                    "fn" in loss[target]
+                ), f"'fn' is not defined in the {target} loss config {loss[target]}."
+                loss_name = loss[target].get("fn")
+                assert (
+                    "coefficient" in loss[target]
+                ), f"'coefficient' is not defined in the {target} loss config {loss[target]}."
+                coefficient = loss[target].get("coefficient")
+                loss_reduction = loss[target].get("reduction")
 
-                ### if torch module name provided, use that directly
-                if hasattr(nn, loss_name):
-                    loss_fn = getattr(nn, loss_name)()
-                ### otherwise, retrieve the correct module based off old naming
-                else:
-                    loss_fn = get_loss_module(loss_name)
-
-                loss_fn = DDPLoss(loss_fn, loss_name, loss_reduction)
+                loss_fn = DDPLoss(loss_name, reduction=loss_reduction)
 
                 self.loss_functions.append(
                     (target, {"fn": loss_fn, "coefficient": coefficient})
@@ -930,9 +929,20 @@ class BaseTrainer(ABC):
                             "Please check if all shared parameters are used "
                             "and point to PyTorch parameters."
                         )
+        if self.scaler:
+            self.scaler.unscale_(self.optimizer)
+            # log unscaled weights and grads
+            log_weight_frequency = self.config["logger"].get("log_weight_table", -1)
+            if (
+                self.logger is not None
+                and distutils.is_master()
+                and log_weight_frequency > 0
+                and self.step % log_weight_frequency == 1  # log on 1 instead of 0
+            ):
+                columns, data = get_weight_table(self.model)
+                self.logger.log_table(name="weight_table", cols=columns, data=data)
+
         if self.clip_grad_norm:
-            if self.scaler:
-                self.scaler.unscale_(self.optimizer)
             grad_norm = torch.nn.utils.clip_grad_norm_(
                 self.model.parameters(),
                 max_norm=self.clip_grad_norm,
