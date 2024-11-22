@@ -27,6 +27,8 @@ parts:
   - file: core/datasets/odac
   - file: core/datasets/oc20dense
   - file: core/datasets/oc20neb
+  - file: core/datasets/omat24
+  - file: core/datasets/ocx24
   - file: core/model_checkpoints
 - caption: Making your own datasets
   chapters:

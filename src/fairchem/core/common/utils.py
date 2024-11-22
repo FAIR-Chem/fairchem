@@ -10,7 +10,9 @@ from __future__ import annotations
 import ast
 import collections
 import copy
+import datetime
 import errno
+import functools
 import importlib
 import itertools
 import json
@@ -26,6 +28,7 @@ from functools import wraps
 from itertools import product
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from uuid import uuid4
 
 import numpy as np
 import torch
@@ -40,7 +43,6 @@ from torch_scatter import scatter, segment_coo, segment_csr
 
 import fairchem.core
 from fairchem.core.common.registry import registry
-from fairchem.core.modules.loss import AtomwiseL2Loss, L2MAELoss
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -714,7 +716,8 @@ def radius_graph_pbc(
 
     # Tensor of unit cells
     cells_per_dim = [
-        torch.arange(-rep, rep + 1, device=device, dtype=torch.float) for rep in max_rep
+        torch.arange(-rep.item(), rep.item() + 1, device=device, dtype=torch.float)
+        for rep in max_rep
     ]
     unit_cell = torch.cartesian_prod(*cells_per_dim)
     num_cells = len(unit_cell)
@@ -954,21 +957,33 @@ class SeverityLevelBetween(logging.Filter):
         return self.min_level <= record.levelno < self.max_level
 
 
+def debug_log_entry_exit(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        logging.debug(f"{func.__name__}...")
+        result = func(*args, **kwargs)
+        logging.debug(f"{func.__name__} done")
+        return result
+
+    return wrapper
+
+
 def setup_logging() -> None:
     root = logging.getLogger()
-
     # Perform setup only if logging has not been configured
+    target_logging_level = getattr(logging, os.environ.get("LOGLEVEL", "INFO").upper())
+    root.setLevel(target_logging_level)
     if not root.hasHandlers():
-        root.setLevel(logging.INFO)
-
         log_formatter = logging.Formatter(
             "%(asctime)s (%(levelname)s): %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 
-        # Send INFO to stdout
+        # Send INFO (or target) to stdout
         handler_out = logging.StreamHandler(sys.stdout)
-        handler_out.addFilter(SeverityLevelBetween(logging.INFO, logging.WARNING))
+        handler_out.addFilter(
+            SeverityLevelBetween(target_logging_level, logging.WARNING)
+        )
         handler_out.setFormatter(log_formatter)
         root.addHandler(handler_out)
 
@@ -1031,72 +1046,74 @@ def new_trainer_context(*, config: dict[str, Any]):
     distutils.setup(config)
     if config["gp_gpus"] is not None:
         gp_utils.setup_gp(config)
-    try:
-        setup_imports(config)
-        trainer_name = config.get("trainer", "ocp")
-        # backwards compatibility for older configs
-        if trainer_name in ["forces", "equiformerv2_forces"]:
-            task_name = "s2ef"
-        elif trainer_name in ["energy", "equiformerv2_energy"]:
-            task_name = "is2re"
-        elif "multitask" in trainer_name:
-            task_name = "multitask"
-        else:
-            task_name = "ocp"
 
-        trainer_cls = registry.get_trainer_class(trainer_name)
-        assert trainer_cls is not None, "Trainer not found"
+    setup_imports(config)
+    trainer_name = config.get("trainer", "ocp")
+    # backwards compatibility for older configs
+    if trainer_name in ["forces", "equiformerv2_forces"]:
+        task_name = "s2ef"
+    elif trainer_name in ["energy", "equiformerv2_energy"]:
+        task_name = "is2re"
+    elif "multitask" in trainer_name:
+        task_name = "multitask"
+    else:
+        task_name = "ocp"
 
-        trainer_config = {
-            "model": config["model"],
-            "optimizer": config["optim"],
-            "identifier": config["identifier"],
-            "timestamp_id": config.get("timestamp_id", None),
-            "run_dir": config.get("run_dir", "./"),
-            "is_debug": config.get("is_debug", False),
-            "print_every": config.get("print_every", 10),
-            "seed": config.get("seed", 0),
-            "logger": config.get("logger", "wandb"),
-            "local_rank": config["local_rank"],
-            "amp": config.get("amp", False),
-            "cpu": config.get("cpu", False),
-            "slurm": config.get("slurm", {}),
-            "name": task_name,
-            "gp_gpus": config.get("gp_gpus"),
-        }
+    trainer_cls = registry.get_trainer_class(trainer_name)
+    assert trainer_cls is not None, "Trainer not found"
 
-        if task_name == "multitask":
-            trainer_config.update(
-                {
-                    "tasks": config.get("tasks", {}),
-                    "dataset_configs": config["datasets"],
-                    "combined_dataset_config": config.get("combined_dataset", {}),
-                    "evaluations": config.get("evaluations", {}),
-                }
-            )
-        else:
-            trainer_config.update(
-                {
-                    "task": config.get("task", {}),
-                    "outputs": config.get("outputs", {}),
-                    "dataset": config["dataset"],
-                    "loss_functions": config.get("loss_functions", {}),
-                    "evaluation_metrics": config.get("evaluation_metrics", {}),
-                }
-            )
-        trainer = trainer_cls(**trainer_config)
+    trainer_config = {
+        "model": config["model"],
+        "optimizer": config["optim"],
+        "identifier": config["identifier"],
+        "timestamp_id": config.get("timestamp_id", None),
+        "run_dir": config.get("run_dir", "./"),
+        "is_debug": config.get("is_debug", False),
+        "print_every": config.get("print_every", 10),
+        "seed": config.get("seed", 0),
+        "logger": config.get("logger", "wandb"),
+        "local_rank": config["local_rank"],
+        "amp": config.get("amp", False),
+        "cpu": config.get("cpu", False),
+        "slurm": config.get("slurm", {}),
+        "name": task_name,
+        "gp_gpus": config.get("gp_gpus"),
+    }
 
-        task_cls = registry.get_task_class(config["mode"])
-        assert task_cls is not None, "Task not found"
-        task = task_cls(config)
-        start_time = time.time()
-        ctx = _TrainingContext(config=original_config, task=task, trainer=trainer)
-        yield ctx
-        distutils.synchronize()
-        if distutils.is_master():
-            logging.info(f"Total time taken: {time.time() - start_time}")
-    finally:
-        distutils.cleanup()
+    if task_name == "multitask":
+        trainer_config.update(
+            {
+                "tasks": config.get("tasks", {}),
+                "dataset_configs": config["datasets"],
+                "combined_dataset_config": config.get("combined_dataset", {}),
+                "evaluations": config.get("evaluations", {}),
+            }
+        )
+    else:
+        trainer_config.update(
+            {
+                "task": config.get("task", {}),
+                "outputs": config.get("outputs", {}),
+                "dataset": config["dataset"],
+                "loss_functions": config.get("loss_functions", {}),
+                "evaluation_metrics": config.get("evaluation_metrics", {}),
+            }
+        )
+    trainer = trainer_cls(**trainer_config)
+
+    task_cls = registry.get_task_class(config["mode"])
+    assert task_cls is not None, "Task not found"
+    task = task_cls(config)
+    start_time = time.time()
+    ctx = _TrainingContext(config=original_config, task=task, trainer=trainer)
+    yield ctx
+    distutils.synchronize()
+    if distutils.is_master():
+        logging.info(f"Total time taken: {time.time() - start_time}")
+
+    logging.debug("Task complete. Running disutils cleanup")
+    distutils.cleanup()
+    logging.debug("Runner() complete")
 
 
 def _resolve_scale_factor_submodule(model: nn.Module, name: str):
@@ -1416,21 +1433,6 @@ def update_config(base_config):
     return config
 
 
-def get_loss_module(loss_name):
-    if loss_name in ["l1", "mae"]:
-        loss_fn = nn.L1Loss()
-    elif loss_name == "mse":
-        loss_fn = nn.MSELoss()
-    elif loss_name == "l2mae":
-        loss_fn = L2MAELoss()
-    elif loss_name == "atomwisel2":
-        loss_fn = AtomwiseL2Loss()
-    else:
-        raise NotImplementedError(f"Unknown loss function name: {loss_name}")
-
-    return loss_fn
-
-
 def load_model_and_weights_from_checkpoint(checkpoint_path: str) -> nn.Module:
     if not os.path.isfile(checkpoint_path):
         raise FileNotFoundError(
@@ -1446,3 +1448,33 @@ def load_model_and_weights_from_checkpoint(checkpoint_path: str) -> nn.Module:
     matched_dict = match_state_dict(model.state_dict(), checkpoint["state_dict"])
     load_state_dict(model, matched_dict, strict=True)
     return model
+
+
+def get_timestamp_uid() -> str:
+    return datetime.datetime.now().strftime("%Y%m-%d%H-%M%S-") + str(uuid4())[:4]
+
+
+@torch.no_grad()
+def tensor_stats(name: str, x: torch.Tensor) -> dict:
+    return {
+        f"{name}.max": x.max(),
+        f"{name}.min": x.min(),
+        f"{name}.std": x.std(),
+        f"{name}.mean": x.mean(),
+        f"{name}.norm": torch.norm(x, p=2),
+        f"{name}.nonzero_fraction": torch.nonzero(x).shape[0] / float(x.numel()),
+    }
+
+
+def get_weight_table(model: torch.nn.Module) -> tuple[list, list]:
+    stat_names = list(tensor_stats("weight", torch.Tensor([1])).keys())
+    columns = ["ParamName", "shape"] + stat_names + ["grad." + n for n in stat_names]
+    data = []
+    for param_name, params in model.named_parameters():
+        row_weight = list(tensor_stats(f"weights/{param_name}", params).values())
+        if params.grad is not None:
+            row_grad = list(tensor_stats(f"grad/{param_name}", params.grad).values())
+        else:
+            row_grad = [None] * len(row_weight)
+        data.append([param_name] + [params.shape] + row_weight + row_grad)  # noqa
+    return columns, data
