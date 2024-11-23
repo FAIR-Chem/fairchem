@@ -153,26 +153,28 @@ class InterfaceConfig(MultipleAdsorbateSlabConfig):
                 geometry = PlaneBoundTriclinicGeometry(cell, pbc=self.pbc_shift)
 
             solvent_ions_atoms = self.create_packmol_atoms(geometry, n_solvent_mols)
-            solvent_ions_atoms.set_cell(cell)
+            solvent_ions_atoms.set_cell(atoms.cell)
 
             # Place the solvent+ion environment at the interface with the
             # adsorbate-slab envrionment. Iteratively tile the solvated atoms
             # to ensure no atomic overlap with the adsorbate+slab.
-            # Take max slab height as starting point
+            # TODO: It would be nice to incorporate the adsorbate directly in
+            # packmol to allow for closer adsorbate-solvent-slab interaction.
             max_slab_z = atoms[atoms.get_tags() == 1].positions[:, 2].max()
-            translation_vec = cell[2] / np.linalg.norm(cell[2])
+            max_solvent_z = solvent_ions_atoms.positions[:, 2].max()
+            translation_vec = unit_normal * (
+                max_slab_z - max_solvent_z + self.solvent_depth
+            )
+            solvent_ions_atoms.translate(translation_vec)
+
             overlap = True
             while overlap:
-                _tv = translation_vec.copy()
-                _tv *= max_slab_z
-
                 _solvent_ions_atoms = solvent_ions_atoms.copy()
-                _solvent_ions_atoms.translate(_tv)
 
                 adslab = atoms.copy()
                 interface_atoms = adslab + _solvent_ions_atoms
                 overlap = there_is_overlap(interface_atoms, overlap_tag=3)
-                max_slab_z += 0.5  # iteratively tile cell
+                solvent_ions_atoms.translate(unit_normal)
 
             interface_atoms.center(vacuum=self.vacuum_size, axis=2)
             interface_atoms.wrap()
