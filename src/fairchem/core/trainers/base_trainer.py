@@ -78,9 +78,7 @@ class BaseTrainer(ABC):
         loss_functions: dict[str, str | float],
         evaluation_metrics: dict[str, str],
         identifier: str,
-        # TODO: dealing with local rank is dangerous
-        # T201111838 remove this and use CUDA_VISIBILE_DEVICES instead so trainers don't need to know about which devie to use
-        local_rank: int,
+        local_rank: int,  # DEPRECATED, DO NOT USE
         timestamp_id: str | None = None,
         run_dir: str | None = None,
         is_debug: bool = False,
@@ -104,8 +102,7 @@ class BaseTrainer(ABC):
         self.ema = None
 
         if torch.cuda.is_available() and not self.cpu:
-            logging.info(f"local rank base: {local_rank}")
-            self.device = torch.device(f"cuda:{local_rank}")
+            self.device = torch.device("cuda")
         else:
             self.device = torch.device("cpu")
             self.cpu = True  # handle case when `--cpu` isn't specified

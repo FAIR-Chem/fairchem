@@ -79,9 +79,7 @@ class OCPTrainer(BaseTrainer):
         loss_functions: dict[str, str | float],
         evaluation_metrics: dict[str, str],
         identifier: str,
-        # TODO: dealing with local rank is dangerous
-        # T201111838 remove this and use CUDA_VISIBILE_DEVICES instead so trainers don't need to know about which devie to use
-        local_rank: int,
+        local_rank: int,  # DEPRECATED, DO NOT USE
         timestamp_id: str | None = None,
         run_dir: str | None = None,
         is_debug: bool = False,
