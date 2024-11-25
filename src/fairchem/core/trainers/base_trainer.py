@@ -101,6 +101,7 @@ class BaseTrainer(ABC):
         self.cpu = cpu
         self.epoch = 0
         self.step = 0
+        self.ema = None
 
         if torch.cuda.is_available() and not self.cpu:
             logging.info(f"local rank base: {local_rank}")
@@ -617,7 +618,7 @@ class BaseTrainer(ABC):
                 "Loading checkpoint in inference-only mode, not loading keys associated with trainer state!"
             )
 
-        if "ema" in checkpoint and checkpoint["ema"] is not None:
+        if "ema" in checkpoint and checkpoint["ema"] is not None and self.ema:
             self.ema.load_state_dict(checkpoint["ema"])
         else:
             self.ema = None
