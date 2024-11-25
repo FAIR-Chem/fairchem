@@ -43,7 +43,7 @@ outputs:
 loss_functions:
   - energy:
       fn: per_atom_mae
-      coefficient: 20
+      coefficient: 2.5
   - forces:
       fn: l2mae
       coefficient: 20
@@ -56,7 +56,7 @@ loss_functions:
       coefficient: 5
 
 optim:
-  batch_size:                   2.5 # 8 node - Global 512
+  batch_size:                   8 # 8 node - Global 512
   eval_batch_size:              12
   num_workers:                  8
   lr_initial:                   0.0004
