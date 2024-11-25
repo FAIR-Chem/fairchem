@@ -15,7 +15,9 @@ import torch
 import wandb
 from torch.utils.tensorboard import SummaryWriter
 
+from fairchem.core.common import distutils
 from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import tensor_stats
 
 
 class Logger(ABC):
@@ -92,8 +94,8 @@ class WandBLogger(Logger):
             group=group,
         )
 
-    def watch(self, model, log_freq: int = 1000) -> None:
-        wandb.watch(model, log_freq=log_freq)
+    def watch(self, model, log="all", log_freq: int = 1000) -> None:
+        wandb.watch(model, log=log, log_freq=log_freq)
 
     def log(self, update_dict, step: int, split: str = "") -> None:
         update_dict = super().log(update_dict, step, split)
@@ -103,6 +105,14 @@ class WandBLogger(Logger):
         assert isinstance(plots, list)
         plots = [wandb.Image(x, caption=caption) for x in plots]
         wandb.log({"data": plots})
+
+    def log_table(
+        self, name: str, cols: list, data: list, step: int | None = None, commit=False
+    ) -> None:
+        # cols are 1D list of N elements, data must be NxK where the number of cols must match cols
+        # see https://docs.wandb.ai/guides/tables
+        table = wandb.Table(columns=cols, data=data)
+        wandb.log({name: table}, step=step, commit=commit)
 
     def log_summary(self, summary_dict: dict[str, Any]):
         for k, v in summary_dict.items():
@@ -172,6 +182,10 @@ class WandBSingletonLogger:
         raise RuntimeError("Call get_instance() instead")
 
     @classmethod
+    def initialized(cls) -> bool:
+        return WandBSingletonLogger._instance is not None
+
+    @classmethod
     def init_wandb(
         cls,
         config: dict,
@@ -200,8 +214,8 @@ class WandBSingletonLogger:
             cls._instance = cls.__new__(cls)
         return cls._instance
 
-    def watch(self, model, log_freq: int = 1000) -> None:
-        wandb.watch(model, log_freq=log_freq)
+    def watch(self, model, log="all", log_freq: int = 1000) -> None:
+        wandb.watch(model, log=log, log_freq=log_freq)
 
     def log(
         self, update_dict: dict, step: int | None = None, commit=False, split: str = ""
@@ -218,10 +232,13 @@ class WandBSingletonLogger:
         # otherwise the user must increment it manually (not recommended)
         wandb.log(update_dict, step=step, commit=commit)
 
-    def log_plots(self, plots, caption: str = "") -> None:
-        assert isinstance(plots, list)
-        plots = [wandb.Image(x, caption=caption) for x in plots]
-        wandb.log({"data": plots})
+    def log_table(
+        self, name: str, cols: list, data: list, step: int | None = None, commit=False
+    ) -> None:
+        # cols are 1D list of N elements, data must be NxK where the number of cols must match cols
+        # see https://docs.wandb.ai/guides/tables
+        table = wandb.Table(columns=cols, data=data)
+        wandb.log({name: table}, step=step, commit=commit)
 
     def log_summary(self, summary_dict: dict[str, Any]):
         for k, v in summary_dict.items():
@@ -234,3 +251,12 @@ class WandBSingletonLogger:
         art = wandb.Artifact(name=name, type=type)
         art.add_file(file_location)
         art.save()
+
+
+# convienience function for logging stats with WandBSingletonLogger
+def log_stats(x: torch.Tensor, prefix: str):
+    if distutils.is_master() and WandBSingletonLogger._instance is not None:
+        WandBSingletonLogger.get_instance().log(
+            tensor_stats(prefix, x),
+            commit=False,
+        )
