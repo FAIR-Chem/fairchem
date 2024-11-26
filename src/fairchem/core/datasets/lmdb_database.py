@@ -10,6 +10,7 @@ https://gitlab.com/ase/ase/-/blob/master/LICENSE
 
 from __future__ import annotations
 
+import logging
 import os
 import typing
 import zlib
@@ -54,6 +55,7 @@ class LMDBDatabase(Database):
             *args,
             **kwargs,
         )
+        self.filename = filename
 
         # Add a readonly mode for when we're only training
         # to make sure there's no parallel locks
@@ -353,5 +355,12 @@ class LMDBDatabase(Database):
         if deleted_ids_data is not None:
             self.deleted_ids = orjson.loads(zlib.decompress(deleted_ids_data))
 
-        # Reconstruct the full id list
-        self.ids = [i for i in range(1, self._nextid) if i not in set(self.deleted_ids)]
+        self.ids = set(range(1, self.env.stat()["entries"]))
+
+        if deleted_ids_data is not None:
+            logging.warning(
+                f"Found: {len(deleted_ids_data)} deleted indices from {self.filename}, removing them!"
+            )
+            self.ids.difference_update(deleted_ids_data)
+
+        self.ids = list(self.ids)
