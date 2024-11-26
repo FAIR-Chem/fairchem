@@ -69,12 +69,11 @@ def setup(config) -> None:
                     f"Init: {config['init_method']}, {config['world_size']}, {config['rank']}"
                 )
 
-                # ensures GPU0 does not have extra context/higher peak memory
-                logging.info(
-                    f"local rank: {config['local_rank']}, visible devices: {os.environ['CUDA_VISIBLE_DEVICES']}"
-                )
-
                 assign_device_for_local_rank(config["cpu"], config["local_rank"])
+
+                logging.info(
+                    f"local rank: {config['local_rank']}, rank: {config['rank']}, visible devices: {os.environ['CUDA_VISIBLE_DEVICES']}"
+                )
 
                 dist.init_process_group(
                     backend="nccl",
