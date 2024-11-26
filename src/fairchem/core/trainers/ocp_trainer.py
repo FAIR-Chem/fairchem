@@ -47,7 +47,7 @@ class OCPTrainer(BaseTrainer):
     Args:
         task (dict): Task configuration.
         model (dict): Model configuration.
-        outputs (dict): Output property configuration.
+        outputs (dict): Dictionary of model output configuration.
         dataset (dict): Dataset configuration. The dataset needs to be a SinglePointLMDB dataset.
         optimizer (dict): Optimizer configuration.
         loss_functions (dict): Loss function configuration.
@@ -55,6 +55,8 @@ class OCPTrainer(BaseTrainer):
         identifier (str): Experiment identifier that is appended to log directory.
         run_dir (str, optional): Path to the run directory where logs are to be saved.
             (default: :obj:`None`)
+        timestamp_id (str, optional): timestamp identifier.
+        run_dir (str, optional): Run directory used to save checkpoints and results.
         is_debug (bool, optional): Run in debug mode.
             (default: :obj:`False`)
         print_every (int, optional): Frequency of printing logs.
@@ -63,10 +65,17 @@ class OCPTrainer(BaseTrainer):
             (default: :obj:`None`)
         logger (str, optional): Type of logger to be used.
             (default: :obj:`wandb`)
+        local_rank (int, optional): Local rank of the process, only applicable for distributed training.
+            (default: :obj:`0`)
         amp (bool, optional): Run using automatic mixed precision.
             (default: :obj:`False`)
+        cpu (bool): If True will run on CPU. Default is False, will attempt to use cuda.
+        name (str): Trainer name.
         slurm (dict): Slurm configuration. Currently just for keeping track.
             (default: :obj:`{}`)
+        gp_gpus (int, optional): Number of graph parallel GPUs.
+        inference_only (bool): If true trainer will be loaded for inference only.
+            (ie datasets, optimizer, schedular, etc, will not be instantiated)
     """
 
     def __init__(
@@ -91,7 +100,7 @@ class OCPTrainer(BaseTrainer):
         amp: bool = False,
         cpu: bool = False,
         name: str = "ocp",
-        slurm=None,
+        slurm: dict | None = None,
         gp_gpus: int | None = None,
         inference_only: bool = False,
     ):
@@ -260,6 +269,7 @@ class OCPTrainer(BaseTrainer):
                     ), f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
                     prop = self.output_targets[target_key]["property"]
                     pred = out[target_key][prop]
+
             # TODO clean up this logic to reconstruct a tensor from its predicted decomposition
             elif "decomposition" in self.output_targets[target_key]:
                 _max_rank = 0
