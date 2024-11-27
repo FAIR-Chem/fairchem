@@ -497,6 +497,7 @@ class AseDBDataset(AseAtomsDataset):
         self.dbs = []
 
         for path in sorted(filepaths):
+            logging.info(f"OPEN {path} {time.time()}")
             try:
                 self.dbs.append(self.connect_db(path, config.get("connect_args", {})))
             except ValueError:
@@ -515,12 +516,14 @@ class AseDBDataset(AseAtomsDataset):
         # a lot of time!
         self.db_ids = []
         for db in self.dbs:
+            logging.info(f"GET DB IDS {path} {time.time()}")
             if hasattr(db, "ids") and self.select_args == {}:
                 self.db_ids.append(db.ids)
             else:
                 # this is the slow alternative
                 self.db_ids.append([row.id for row in db.select(**self.select_args)])
 
+        logging.info(f"CUMULATIVE SUM {path} {time.time()}")
         idlens = [len(ids) for ids in self.db_ids]
         self._idlen_cumulative = np.cumsum(idlens).tolist()
 
