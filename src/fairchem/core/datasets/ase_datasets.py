@@ -11,6 +11,7 @@ import bisect
 import copy
 import logging
 import os
+import time
 import warnings
 from abc import ABC, abstractmethod
 from functools import cache
@@ -80,6 +81,7 @@ class AseAtomsDataset(BaseDataset, ABC):
         config: dict,
         atoms_transform: Callable[[ase.Atoms, Any, ...], ase.Atoms] = apply_one_tags,
     ) -> None:
+        logging.info(f"ASE {time.time()}")
         super().__init__(config)
 
         a2g_args = config.get("a2g_args", {}) or {}
@@ -88,6 +90,7 @@ class AseAtomsDataset(BaseDataset, ABC):
         if "r_edges" not in a2g_args:
             a2g_args["r_edges"] = False
 
+        logging.info(f"ASE {time.time()}")
         # Make sure we always include PBC info in the resulting atoms objects
         a2g_args["r_pbc"] = True
         self.a2g = AtomsToGraphs(**a2g_args)
@@ -95,14 +98,17 @@ class AseAtomsDataset(BaseDataset, ABC):
         self.key_mapping = self.config.get("key_mapping", None)
         self.transforms = DataTransforms(self.config.get("transforms", {}))
 
+        logging.info(f"ASE {time.time()}")
         self.atoms_transform = atoms_transform
 
         if self.config.get("keep_in_memory", False):
             self.__getitem__ = cache(self.__getitem__)
 
+        logging.info(f"ASE {time.time()}")
         self.ids = self._load_dataset_get_ids(config)
         self.num_samples = len(self.ids)
 
+        logging.info(f"ASE {time.time()}")
         if len(self.ids) == 0:
             raise ValueError(
                 rf"No valid ase data found!"
@@ -167,6 +173,7 @@ class AseAtomsDataset(BaseDataset, ABC):
     def sample_property_metadata(self, num_samples: int = 100) -> dict:
         metadata = {}
 
+        logging.info(f"Sample metaadata  {time.time()}")
         if num_samples < len(self):
             metadata["targets"] = guess_property_metadata(
                 [
@@ -181,10 +188,12 @@ class AseAtomsDataset(BaseDataset, ABC):
                 [self.get_atoms(self.ids[idx]) for idx in range(len(self))]
             )
 
+        logging.info(f"Sample metaadata X {time.time()}")
         return metadata
 
     def get_metadata(self, attr, idx):
         # try the parent method
+        logging.info(f"Get metaadata  {time.time()}")
         metadata = super().get_metadata(attr, idx)
         if metadata is not None:
             return metadata
@@ -193,7 +202,10 @@ class AseAtomsDataset(BaseDataset, ABC):
             return None
         if isinstance(idx, (list, np.ndarray)):
             return np.array([self.get_metadata(attr, i) for i in idx])
-        return len(self.get_atoms(idx))
+        logging.info(f"Get metaadata  {time.time()}")
+        r = len(self.get_atoms(idx))
+        logging.info(f"Get metaadata X {time.time()}")
+        return r
 
 
 @registry.register_dataset("ase_read")

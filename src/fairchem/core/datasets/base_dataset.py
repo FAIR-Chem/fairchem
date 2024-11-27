@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import logging
+import time
 from abc import ABCMeta
 from functools import cached_property
 from pathlib import Path
@@ -168,6 +169,7 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
 
     # remove information about other splits, only keep specified split
     # this may only work with the mt config not main config
+    logging.info(f"create dataset {time.time()}")
     current_split_config = config.copy()
     if "splits" in current_split_config:
         current_split_config.pop("splits")
@@ -179,18 +181,22 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
             1  # if we use same dataset for train / val , make sure its diff sampling
         )
 
+    logging.info(f"create dataset {time.time()}")
     g = torch.Generator()
     g.manual_seed(seed)
 
+    logging.info(f"create dataset {time.time()}")
     dataset = dataset_cls(current_split_config)
     # Get indices of the dataset
     indices = dataset.indices
+    logging.info(f"create dataset {time.time()}")
     max_atoms = current_split_config.get("max_atoms", None)
     if max_atoms is not None:
         if not dataset.metadata_hasattr("natoms"):
             raise ValueError("Cannot use max_atoms without dataset metadata")
         indices = indices[dataset.get_metadata("natoms", indices) <= max_atoms]
 
+    logging.info(f"create dataset {time.time()}")
     # Apply dataset level transforms
     # TODO is no_shuffle mutually exclusive though? or what is the purpose of no_shuffle?
     first_n = current_split_config.get("first_n")
@@ -201,6 +207,7 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
         raise ValueError(
             "sample_n, first_n, no_shuffle are mutually exclusive arguments. Only one can be provided."
         )
+    logging.info(f"create dataset X {time.time()}")
     if first_n is not None:
         max_index = first_n
     elif sample_n is not None:
@@ -215,6 +222,7 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
             indices if no_shuffle else indices[randperm(len(indices), generator=g)]
         )
 
+    logging.info(f"create dataset Y {time.time()}")
     if max_index > len(indices):
         msg = (
             f"Cannot take {max_index} data points from a dataset of only length {len(indices)}.\n"
@@ -226,4 +234,5 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
 
     indices = indices[:max_index]
 
+    logging.info(f"create dataset END then metadata {time.time()}")
     return Subset(dataset, indices, metadata=dataset._metadata)
