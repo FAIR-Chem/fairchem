@@ -64,12 +64,9 @@ class GraphModelMixin:
         otf_graph = otf_graph or self.otf_graph
 
         if enforce_max_neighbors_strictly is None:
-            if hasattr(self, "enforce_max_neighbors_strictly"):
-                # Not all models will have this attribute
-                enforce_max_neighbors_strictly = self.enforce_max_neighbors_strictly
-            else:
-                # Default to old behavior
-                enforce_max_neighbors_strictly = True
+            enforce_max_neighbors_strictly = getattr(
+                self, "enforce_max_neighbors_strictly", True
+            )
 
         if not otf_graph:
             try:
