@@ -602,7 +602,6 @@ class OCPTrainer(BaseTrainer):
                 relax_volume=self.config["task"].get("relax_volume", False),
                 relax_opt=self.config["task"]["relax_opt"],
                 save_full_traj=self.config["task"].get("save_full_traj", True),
-                device=self.device,
                 transform=None,
             )
 
