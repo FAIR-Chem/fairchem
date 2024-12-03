@@ -1,0 +1,10 @@
+name: Other
+description: A report is not a bug exactly
+
+body:
+  - type: textarea
+    attributes:
+      label: What would you like to report?
+      description: A clear and concise description of what you would like to report.
+    validations:
+      required: true
