@@ -42,7 +42,7 @@ class Submitit(Checkpointable):
         setup_env_vars()
         try:
             distutils.setup(map_cli_args_to_dist_config(cli_args))
-            self.runner: Runner = hydra.utils.instantiate(dict_config.runner)
+            self.runner: Runner = hydra.utils.instantiate(dict_config.runner, _recursive_=False)
             self.runner.load_state()
             self.runner.run()
         finally:
