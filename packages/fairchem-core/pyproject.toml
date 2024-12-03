@@ -28,7 +28,7 @@ dependencies = [
 
 [project.optional-dependencies]  # add optional dependencies to be installed as pip install fairchem.core[dev]
 dev = ["pre-commit", "pytest", "pytest-cov", "coverage", "syrupy", "ruff==0.5.1"]
-docs = ["jupyter-book", "jupytext", "sphinx","sphinx-autoapi", "umap-learn", "vdict"]
+docs = ["jupyter-book", "jupytext", "sphinx","sphinx-autoapi==3.3.3", "umap-learn", "vdict"]
 adsorbml = ["dscribe","x3dase","scikit-image"]
 
 [project.scripts]
