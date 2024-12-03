@@ -63,14 +63,10 @@ class GraphModelMixin:
         use_pbc_single = use_pbc_single or self.use_pbc_single
         otf_graph = otf_graph or self.otf_graph
 
-        if enforce_max_neighbors_strictly is not None:
-            pass
-        elif hasattr(self, "enforce_max_neighbors_strictly"):
-            # Not all models will have this attribute
-            enforce_max_neighbors_strictly = self.enforce_max_neighbors_strictly
-        else:
-            # Default to old behavior
-            enforce_max_neighbors_strictly = True
+        if enforce_max_neighbors_strictly is None:
+            enforce_max_neighbors_strictly = getattr(
+                self, "enforce_max_neighbors_strictly", True
+            )
 
         if not otf_graph:
             try:
