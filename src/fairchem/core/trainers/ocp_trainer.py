@@ -552,7 +552,7 @@ class OCPTrainer(BaseTrainer):
         return predictions
 
     @torch.no_grad
-    def run_relaxations(self, split="val"):
+    def run_relaxations(self):
         ensure_fitted(self._unwrapped_model)
 
         # When set to true, uses deterministic CUDA scatter ops, if available.
@@ -572,14 +572,14 @@ class OCPTrainer(BaseTrainer):
         evaluator_is2rs, metrics_is2rs = Evaluator(task="is2rs"), {}
         evaluator_is2re, metrics_is2re = Evaluator(task="is2re"), {}
 
-        # Need both `pos_relaxed` and `y_relaxed` to compute val IS2R* metrics.
+        # Need both `pos_relaxed` and `energy_relaxed` to compute val IS2R* metrics.
         # Else just generate predictions.
         if (
             hasattr(self.relax_dataset[0], "pos_relaxed")
             and self.relax_dataset[0].pos_relaxed is not None
         ) and (
-            hasattr(self.relax_dataset[0], "y_relaxed")
-            and self.relax_dataset[0].y_relaxed is not None
+            hasattr(self.relax_dataset[0], "energy_relaxed")
+            and self.relax_dataset[0].energy_relaxed is not None
         ):
             split = "val"
         else:
@@ -608,9 +608,10 @@ class OCPTrainer(BaseTrainer):
                 model=self,
                 steps=self.config["task"].get("relaxation_steps", 300),
                 fmax=self.config["task"].get("relaxation_fmax", 0.02),
+                relax_cell=self.config["task"].get("relax_cell", False),
+                relax_volume=self.config["task"].get("relax_volume", False),
                 relax_opt=self.config["task"]["relax_opt"],
                 save_full_traj=self.config["task"].get("save_full_traj", True),
-                device=self.device,
                 transform=None,
             )
 
@@ -638,7 +639,7 @@ class OCPTrainer(BaseTrainer):
                     s_idx += natoms
 
                 target = {
-                    "energy": relaxed_batch.energy,
+                    "energy": relaxed_batch.energy_relaxed,
                     "positions": relaxed_batch.pos_relaxed[mask],
                     "cell": relaxed_batch.cell,
                     "pbc": torch.tensor([True, True, True]),
