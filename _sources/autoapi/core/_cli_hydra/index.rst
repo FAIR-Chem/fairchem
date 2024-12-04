@@ -62,20 +62,23 @@ Module Contents
       the state so that not to pickle it) and change/remove the initial parameters.
 
 
-   .. py:method:: __call__(dict_config: omegaconf.DictConfig, cli_args: argparse.Namespace) -> None
+   .. py:method:: __call__(dict_config: omegaconf.DictConfig) -> None
 
 
-   .. py:method:: checkpoint(*args, **kwargs)
+   .. py:method:: _init_logger() -> None
+
+
+   .. py:method:: checkpoint(*args, **kwargs) -> submitit.helpers.DelayedSubmission
 
       Resubmits the same callable with the same arguments
 
 
 
-.. py:function:: map_cli_args_to_dist_config(cli_args: argparse.Namespace) -> dict
+.. py:function:: map_cli_args_to_dist_config(cli_args: omegaconf.DictConfig) -> dict
 
 .. py:function:: get_hydra_config_from_yaml(config_yml: str, overrides_args: list[str]) -> omegaconf.DictConfig
 
-.. py:function:: runner_wrapper(config: omegaconf.DictConfig, cli_args: argparse.Namespace)
+.. py:function:: runner_wrapper(config: omegaconf.DictConfig)
 
 .. py:function:: main(args: argparse.Namespace | None = None, override_args: list[str] | None = None)
 

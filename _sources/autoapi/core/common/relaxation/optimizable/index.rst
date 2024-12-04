@@ -1,7 +1,7 @@
-core.common.relaxation
-======================
+core.common.relaxation.optimizable
+==================================
 
-.. py:module:: core.common.relaxation
+.. py:module:: core.common.relaxation.optimizable
 
 .. autoapi-nested-parse::
 
@@ -10,18 +10,16 @@ core.common.relaxation
    This source code is licensed under the MIT license found in the
    LICENSE file in the root directory of this source tree.
 
+   Code based on ase.optimize
 
 
-Submodules
+
+Attributes
 ----------
 
-.. toctree::
-   :maxdepth: 1
+.. autoapisummary::
 
-   /autoapi/core/common/relaxation/ase_utils/index
-   /autoapi/core/common/relaxation/ml_relaxation/index
-   /autoapi/core/common/relaxation/optimizable/index
-   /autoapi/core/common/relaxation/optimizers/index
+   core.common.relaxation.optimizable.ALL_CHANGES
 
 
 Classes
@@ -29,8 +27,9 @@ Classes
 
 .. autoapisummary::
 
-   core.common.relaxation.OptimizableBatch
-   core.common.relaxation.OptimizableUnitCellBatch
+   core.common.relaxation.optimizable.Optimizable
+   core.common.relaxation.optimizable.OptimizableBatch
+   core.common.relaxation.optimizable.OptimizableUnitCellBatch
 
 
 Functions
@@ -38,29 +37,27 @@ Functions
 
 .. autoapisummary::
 
-   core.common.relaxation.ml_relax
+   core.common.relaxation.optimizable.compare_batches
 
 
-Package Contents
-----------------
+Module Contents
+---------------
 
-.. py:function:: ml_relax(batch: torch_geometric.data.Batch, model: fairchem.core.trainers.BaseTrainer, steps: int, fmax: float, relax_opt: dict[str] | None = None, relax_cell: bool = False, relax_volume: bool = False, save_full_traj: bool = True, transform: torch.nn.Module | None = None, mask_converged: bool = True)
+.. py:class:: Optimizable
 
-   Runs ML-based relaxations.
+.. py:data:: ALL_CHANGES
+   :type:  set[str]
 
-   :param batch: a data batch object.
-   :param model: a trainer object with model.
-   :param steps: Max number of steps in the structure relaxation.
-   :param fmax: Structure relaxation terminates when the max force of the system is no bigger than fmax.
-   :param relax_opt: Optimizer parameters to be used for structure relaxations.
-   :param relax_cell: if true will use stress predictions to relax crystallographic cell.
-                      The model given must predict stress
-   :param relax_volume: if true will relax the cell isotropically. the given model must predict stress.
-   :param save_full_traj: Whether to save out the full ASE trajectory. If False, only save out initial and final frames.
-   :param mask_converged: whether to mask batches where all atoms are below convergence threshold
-   :param cumulative_mask: if true, once system is masked then it remains masked even if new predictions give forces
-                           above threshold, ie. once masked always masked. Note if this is used make sure to check convergence with
-                           the same fmax always
+.. py:function:: compare_batches(batch1: torch_geometric.data.Batch | None, batch2: torch_geometric.data.Batch, tol: float = 1e-06, excluded_properties: set[str] | None = None) -> list[str]
+
+   Compare properties between two batches
+
+   :param batch1: atoms batch
+   :param batch2: atoms batch
+   :param tol: tolerance used to compare equility of floating point properties
+   :param excluded_properties: list of properties to exclude from comparison
+
+   :returns: list of system changes, property names that are differente between batch1 and batch2
 
 
 .. py:class:: OptimizableBatch(batch: torch_geometric.data.Batch, trainer: fairchem.core.trainers.BaseTrainer, transform: torch.nn.Module | None = None, mask_converged: bool = True, numpy: bool = False, masked_eps: float = 1e-08)

@@ -51,6 +51,11 @@ Module Contents
 
 
 
+   .. py:attribute:: ema
+      :value: None
+
+
+
    .. py:attribute:: timestamp_id
       :type:  str
 

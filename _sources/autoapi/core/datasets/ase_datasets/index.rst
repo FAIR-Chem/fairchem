@@ -331,8 +331,3 @@ Module Contents
    .. py:method:: sample_property_metadata(num_samples: int = 100) -> dict
 
 
-   .. py:method:: get_relaxed_energy(identifier)
-      :abstractmethod:
-
-
-
