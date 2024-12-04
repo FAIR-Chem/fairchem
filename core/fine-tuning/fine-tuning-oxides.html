@@ -794,22 +794,22 @@ Mehta, P., Salvador, P. A., &amp; Kitchin, J. R. (2015). Identifying potential B
   @torch.cuda.amp.autocast(enabled=False)
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/equiformer_v2/layer_norm.py:357: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   @torch.cuda.amp.autocast(enabled=False)
-/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:150: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:190: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2024-11-19-06-15-28
-  commit: aa298ac
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2024-12-04-00-08-32
+  commit: 3f695ef
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2024-11-19-06-15-28
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2024-12-04-00-08-32
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2024-11-19-06-15-28
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2024-12-04-00-08-32
   seed: null
-  timestamp_id: 2024-11-19-06-15-28
-  version: 0.1.dev1+gaa298ac
+  timestamp_id: 2024-12-04-00-08-32
+  version: 1.3.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1014,7 +1014,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:461: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:471: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
 </pre></div>
 </div>
@@ -1022,10 +1022,10 @@ val_dataset: {}
   with torch.cuda.amp.autocast(False):
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time 89.2 seconds.
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time 89.9 seconds.
 </pre></div>
 </div>
-<img alt="../../_images/341531b0218eea408d04046d981d55fe218d43494f1ecf51297aeefb6668761e.png" src="../../_images/341531b0218eea408d04046d981d55fe218d43494f1ecf51297aeefb6668761e.png" />
+<img alt="../../_images/e8b1d247c178461a2ca1908c4da52a4ccd23948dd28e9e4e9817741a414f13d1.png" src="../../_images/e8b1d247c178461a2ca1908c4da52a4ccd23948dd28e9e4e9817741a414f13d1.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -1056,7 +1056,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/06bfbae8ad0fd185eb61fd56188dac1591ce89e9e71d245404f81779a21d57fd.png" src="../../_images/06bfbae8ad0fd185eb61fd56188dac1591ce89e9e71d245404f81779a21d57fd.png" />
+<img alt="../../_images/d5ec3f7ddd10fa759848739020c71304176d11ec18b12d77b51baa14a90d4b54.png" src="../../_images/d5ec3f7ddd10fa759848739020c71304176d11ec18b12d77b51baa14a90d4b54.png" />
 </div>
 </div>
 <p>We can improve this by fine-tuning the model.</p>
@@ -1101,7 +1101,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2271/1448814737.py:12: DeprecationWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2181/1448814737.py:12: DeprecationWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
 </pre></div>
 </div>
@@ -1205,22 +1205,22 @@ Rows: 295 (showing first 20)
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:150: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:190: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2024-11-19-06-15-28
-  commit: aa298ac
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2024-12-04-00-10-40
+  commit: 3f695ef
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2024-11-19-06-15-28
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2024-12-04-00-10-40
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2024-11-19-06-15-28
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2024-12-04-00-10-40
   seed: null
-  timestamp_id: 2024-11-19-06-15-28
-  version: 0.1.dev1+gaa298ac
+  timestamp_id: 2024-12-04-00-10-40
+  version: 1.3.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1562,7 +1562,7 @@ trainer: ocp
 <span class="expanded">Hide code cell output</span>
 </summary>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time = 216.0 seconds
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time = 217.7 seconds
 </pre></div>
 </div>
 </div>
@@ -1578,7 +1578,7 @@ trainer: ocp
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;fine-tuning/checkpoints/2024-11-19-06-15-28-ft-oxides&#39;
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;fine-tuning/checkpoints/2024-12-04-00-10-40-ft-oxides&#39;
 </pre></div>
 </div>
 </div>
@@ -1593,21 +1593,21 @@ trainer: ocp
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:150: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:190: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: false
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2024-11-19-06-19-44
-  commit: aa298ac
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2024-12-04-00-14-56
+  commit: 3f695ef
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2024-11-19-06-19-44
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2024-12-04-00-14-56
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2024-11-19-06-19-44
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2024-12-04-00-14-56
   seed: null
-  timestamp_id: 2024-11-19-06-19-44
-  version: 0.1.dev1+gaa298ac
+  timestamp_id: 2024-12-04-00-14-56
+  version: 1.3.0
 dataset:
   a2g_args:
     r_energy: true
@@ -1777,7 +1777,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:461: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:471: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
 </pre></div>
 </div>
@@ -1785,7 +1785,7 @@ val_dataset: {}
   with torch.cuda.amp.autocast(False):
 </pre></div>
 </div>
-<img alt="../../_images/9251b8fc59f91858e7c2a3fe2d780a17ed5b2b37a91ed13d6b9268de3464c0f1.png" src="../../_images/9251b8fc59f91858e7c2a3fe2d780a17ed5b2b37a91ed13d6b9268de3464c0f1.png" />
+<img alt="../../_images/9af064292a8858b39c66da77f164b7ae2a791a83c509db59ed1f3b9474fc85c5.png" src="../../_images/9af064292a8858b39c66da77f164b7ae2a791a83c509db59ed1f3b9474fc85c5.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -1796,7 +1796,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>New MAE = 0.349 eV/atom
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>New MAE = 0.523 eV/atom
 </pre></div>
 </div>
 </div>
@@ -1815,7 +1815,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/161931fb5ba54cfd4afc6691415a2c2869ff7d628ba5af7f785edb54b3cfa2c0.png" src="../../_images/161931fb5ba54cfd4afc6691415a2c2869ff7d628ba5af7f785edb54b3cfa2c0.png" />
+<img alt="../../_images/2b88aa1806ff13f1cc2b69b5d30a3452a29fe95a39bc804c45e40a051966642f.png" src="../../_images/2b88aa1806ff13f1cc2b69b5d30a3452a29fe95a39bc804c45e40a051966642f.png" />
 </div>
 </div>
 <p>It is possible to continue refining the fit. The simple things to do are to use more epochs of training. Eventually the MAE will stabilize, and then it may be necessary to adjust other optimization parameters like the learning rate (usually you decrease it).</p>

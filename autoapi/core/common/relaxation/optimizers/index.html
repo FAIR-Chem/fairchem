@@ -65,7 +65,7 @@
     <link rel="index" title="Index" href="../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../search.html" />
     <link rel="next" title="core.common.relaxation.optimizers.lbfgs_torch" href="lbfgs_torch/index.html" />
-    <link rel="prev" title="core.common.relaxation.ml_relaxation" href="../ml_relaxation/index.html" />
+    <link rel="prev" title="core.common.relaxation.optimizable" href="../optimizable/index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -611,6 +611,35 @@
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#submodules">Submodules</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#package-contents">Package Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS"><code class="docutils literal notranslate"><span class="pre">LBFGS</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.optimizable"><code class="docutils literal notranslate"><span class="pre">LBFGS.optimizable</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.maxstep"><code class="docutils literal notranslate"><span class="pre">LBFGS.maxstep</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.memory"><code class="docutils literal notranslate"><span class="pre">LBFGS.memory</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.damping"><code class="docutils literal notranslate"><span class="pre">LBFGS.damping</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.alpha"><code class="docutils literal notranslate"><span class="pre">LBFGS.alpha</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.H0"><code class="docutils literal notranslate"><span class="pre">LBFGS.H0</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.save_full"><code class="docutils literal notranslate"><span class="pre">LBFGS.save_full</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.traj_dir"><code class="docutils literal notranslate"><span class="pre">LBFGS.traj_dir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.traj_names"><code class="docutils literal notranslate"><span class="pre">LBFGS.traj_names</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.trajectories"><code class="docutils literal notranslate"><span class="pre">LBFGS.trajectories</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.fmax"><code class="docutils literal notranslate"><span class="pre">LBFGS.fmax</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.steps"><code class="docutils literal notranslate"><span class="pre">LBFGS.steps</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.s"><code class="docutils literal notranslate"><span class="pre">LBFGS.s</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.y"><code class="docutils literal notranslate"><span class="pre">LBFGS.y</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.rho"><code class="docutils literal notranslate"><span class="pre">LBFGS.rho</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.r0"><code class="docutils literal notranslate"><span class="pre">LBFGS.r0</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.f0"><code class="docutils literal notranslate"><span class="pre">LBFGS.f0</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.run"><code class="docutils literal notranslate"><span class="pre">LBFGS.run()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.determine_step"><code class="docutils literal notranslate"><span class="pre">LBFGS.determine_step()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS._batched_dot"><code class="docutils literal notranslate"><span class="pre">LBFGS._batched_dot()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.step"><code class="docutils literal notranslate"><span class="pre">LBFGS.step()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.write"><code class="docutils literal notranslate"><span class="pre">LBFGS.write()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
             </nav>
         </div>
@@ -624,6 +653,9 @@
                   
   <section id="module-core.common.relaxation.optimizers">
 <span id="core-common-relaxation-optimizers"></span><h1>core.common.relaxation.optimizers<a class="headerlink" href="#module-core.common.relaxation.optimizers" title="Link to this heading">#</a></h1>
+<p>Copyright (c) Meta, Inc. and its affiliates.</p>
+<p>This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.</p>
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">#</a></h2>
 <div class="toctree-wrapper compound">
@@ -631,6 +663,136 @@
 <li class="toctree-l1"><a class="reference internal" href="lbfgs_torch/index.html">core.common.relaxation.optimizers.lbfgs_torch</a></li>
 </ul>
 </div>
+</section>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.relaxation.optimizers.LBFGS" title="core.common.relaxation.optimizers.LBFGS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LBFGS</span></code></a></p></td>
+<td><p>Limited memory BFGS optimizer for batch ML relaxations.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="package-contents">
+<h2>Package Contents<a class="headerlink" href="#package-contents" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.common.relaxation.optimizers.</span></span><span class="sig-name descname"><span class="pre">LBFGS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizable_batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">core.common.relaxation.optimizers.optimizable.OptimizableBatch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxstep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">damping</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_full_traj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">traj_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">traj_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS" title="Link to this definition">#</a></dt>
+<dd><p>Limited memory BFGS optimizer for batch ML relaxations.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.optimizable">
+<span class="sig-name descname"><span class="pre">optimizable</span></span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.optimizable" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.maxstep">
+<span class="sig-name descname"><span class="pre">maxstep</span></span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.maxstep" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.memory">
+<span class="sig-name descname"><span class="pre">memory</span></span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.memory" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.damping">
+<span class="sig-name descname"><span class="pre">damping</span></span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.damping" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.alpha">
+<span class="sig-name descname"><span class="pre">alpha</span></span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.alpha" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.H0">
+<span class="sig-name descname"><span class="pre">H0</span></span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.H0" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.save_full">
+<span class="sig-name descname"><span class="pre">save_full</span></span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.save_full" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.traj_dir">
+<span class="sig-name descname"><span class="pre">traj_dir</span></span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.traj_dir" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.traj_names">
+<span class="sig-name descname"><span class="pre">traj_names</span></span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.traj_names" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.trajectories">
+<span class="sig-name descname"><span class="pre">trajectories</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.trajectories" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.fmax">
+<span class="sig-name descname"><span class="pre">fmax</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.fmax" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.steps">
+<span class="sig-name descname"><span class="pre">steps</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.steps" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.s">
+<span class="sig-name descname"><span class="pre">s</span></span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.s" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.y">
+<span class="sig-name descname"><span class="pre">y</span></span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.y" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.rho">
+<span class="sig-name descname"><span class="pre">rho</span></span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.rho" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.r0">
+<span class="sig-name descname"><span class="pre">r0</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.r0" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.f0">
+<span class="sig-name descname"><span class="pre">f0</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.f0" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fmax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.run" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.determine_step">
+<span class="sig-name descname"><span class="pre">determine_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.determine_step" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS._batched_dot">
+<span class="sig-name descname"><span class="pre">_batched_dot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS._batched_dot" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iteration</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.step" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.common.relaxation.optimizers.LBFGS.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.relaxation.optimizers.LBFGS.write" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </section>
 </section>
 
@@ -665,12 +827,12 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../ml_relaxation/index.html"
+       href="../optimizable/index.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">core.common.relaxation.ml_relaxation</p>
+        <p class="prev-next-title">core.common.relaxation.optimizable</p>
       </div>
     </a>
     <a class="right-next"
@@ -700,6 +862,35 @@
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#submodules">Submodules</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#package-contents">Package Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS"><code class="docutils literal notranslate"><span class="pre">LBFGS</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.optimizable"><code class="docutils literal notranslate"><span class="pre">LBFGS.optimizable</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.maxstep"><code class="docutils literal notranslate"><span class="pre">LBFGS.maxstep</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.memory"><code class="docutils literal notranslate"><span class="pre">LBFGS.memory</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.damping"><code class="docutils literal notranslate"><span class="pre">LBFGS.damping</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.alpha"><code class="docutils literal notranslate"><span class="pre">LBFGS.alpha</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.H0"><code class="docutils literal notranslate"><span class="pre">LBFGS.H0</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.save_full"><code class="docutils literal notranslate"><span class="pre">LBFGS.save_full</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.traj_dir"><code class="docutils literal notranslate"><span class="pre">LBFGS.traj_dir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.traj_names"><code class="docutils literal notranslate"><span class="pre">LBFGS.traj_names</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.trajectories"><code class="docutils literal notranslate"><span class="pre">LBFGS.trajectories</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.fmax"><code class="docutils literal notranslate"><span class="pre">LBFGS.fmax</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.steps"><code class="docutils literal notranslate"><span class="pre">LBFGS.steps</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.s"><code class="docutils literal notranslate"><span class="pre">LBFGS.s</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.y"><code class="docutils literal notranslate"><span class="pre">LBFGS.y</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.rho"><code class="docutils literal notranslate"><span class="pre">LBFGS.rho</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.r0"><code class="docutils literal notranslate"><span class="pre">LBFGS.r0</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.f0"><code class="docutils literal notranslate"><span class="pre">LBFGS.f0</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.run"><code class="docutils literal notranslate"><span class="pre">LBFGS.run()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.determine_step"><code class="docutils literal notranslate"><span class="pre">LBFGS.determine_step()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS._batched_dot"><code class="docutils literal notranslate"><span class="pre">LBFGS._batched_dot()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.step"><code class="docutils literal notranslate"><span class="pre">LBFGS.step()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.optimizers.LBFGS.write"><code class="docutils literal notranslate"><span class="pre">LBFGS.write()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
   </nav></div>
 

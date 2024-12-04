@@ -64,7 +64,7 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/core/common/relaxation/ml_relaxation/index';</script>
     <link rel="index" title="Index" href="../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../search.html" />
-    <link rel="next" title="core.common.relaxation.optimizers" href="../optimizers/index.html" />
+    <link rel="next" title="core.common.relaxation.optimizable" href="../optimizable/index.html" />
     <link rel="prev" title="core.common.relaxation.ase_utils" href="../ase_utils/index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -635,7 +635,7 @@ LICENSE file in the root directory of this source tree.</p>
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.relaxation.ml_relaxation.ml_relax" title="core.common.relaxation.ml_relaxation.ml_relax"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ml_relax</span></code></a>(batch, model, steps, fmax, relax_opt, ...[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.relaxation.ml_relaxation.ml_relax" title="core.common.relaxation.ml_relaxation.ml_relax"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ml_relax</span></code></a>(batch, model, steps, fmax[, relax_opt, ...])</p></td>
 <td><p>Runs ML-based relaxations.</p></td>
 </tr>
 </tbody>
@@ -646,24 +646,24 @@ LICENSE file in the root directory of this source tree.</p>
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="core.common.relaxation.ml_relaxation.ml_relax">
-<span class="sig-prename descclassname"><span class="pre">core.common.relaxation.ml_relaxation.</span></span><span class="sig-name descname"><span class="pre">ml_relax</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relax_opt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_full_traj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'cuda:0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">early_stop_batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.common.relaxation.ml_relaxation.ml_relax" title="Link to this definition">#</a></dt>
-<dd><p>Runs ML-based relaxations.
-:param batch: object
-:param model: object
-:param steps: int</p>
-<blockquote>
-<div><p>Max number of steps in the structure relaxation.</p>
-</div></blockquote>
+<span class="sig-prename descclassname"><span class="pre">core.common.relaxation.ml_relaxation.</span></span><span class="sig-name descname"><span class="pre">ml_relax</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch_geometric.data.Batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">fairchem.core.trainers.BaseTrainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relax_opt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relax_cell</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relax_volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_full_traj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.nn.Module</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_converged</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.common.relaxation.ml_relaxation.ml_relax" title="Link to this definition">#</a></dt>
+<dd><p>Runs ML-based relaxations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>fmax</strong> – float
-Structure relaxation terminates when the max force
-of the system is no bigger than fmax.</p></li>
-<li><p><strong>relax_opt</strong> – str
-Optimizer and corresponding parameters to be used for structure relaxations.</p></li>
-<li><p><strong>save_full_traj</strong> – bool
-Whether to save out the full ASE trajectory. If False, only save out initial and final frames.</p></li>
+<li><p><strong>batch</strong> – a data batch object.</p></li>
+<li><p><strong>model</strong> – a trainer object with model.</p></li>
+<li><p><strong>steps</strong> – Max number of steps in the structure relaxation.</p></li>
+<li><p><strong>fmax</strong> – Structure relaxation terminates when the max force of the system is no bigger than fmax.</p></li>
+<li><p><strong>relax_opt</strong> – Optimizer parameters to be used for structure relaxations.</p></li>
+<li><p><strong>relax_cell</strong> – if true will use stress predictions to relax crystallographic cell.
+The model given must predict stress</p></li>
+<li><p><strong>relax_volume</strong> – if true will relax the cell isotropically. the given model must predict stress.</p></li>
+<li><p><strong>save_full_traj</strong> – Whether to save out the full ASE trajectory. If False, only save out initial and final frames.</p></li>
+<li><p><strong>mask_converged</strong> – whether to mask batches where all atoms are below convergence threshold</p></li>
+<li><p><strong>cumulative_mask</strong> – if true, once system is masked then it remains masked even if new predictions give forces
+above threshold, ie. once masked always masked. Note if this is used make sure to check convergence with
+the same fmax always</p></li>
 </ul>
 </dd>
 </dl>
@@ -712,11 +712,11 @@ Whether to save out the full ASE trajectory. If False, only save out initial and
       </div>
     </a>
     <a class="right-next"
-       href="../optimizers/index.html"
+       href="../optimizable/index.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">core.common.relaxation.optimizers</p>
+        <p class="prev-next-title">core.common.relaxation.optimizable</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

@@ -714,9 +714,9 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_4534/147314410.py:15: DeprecationWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_4545/147314410.py:15: DeprecationWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
-/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:461: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:471: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
 </pre></div>
 </div>
@@ -724,7 +724,7 @@
   with torch.cuda.amp.autocast(False):
 </pre></div>
 </div>
-<img alt="../../_images/d95f1e9e1a2053f463c216a6c931977c945f1e8bd8c2b6bf59be64da41ae3a66.png" src="../../_images/d95f1e9e1a2053f463c216a6c931977c945f1e8bd8c2b6bf59be64da41ae3a66.png" />
+<img alt="../../_images/0b3958286e89b6775a989bba9b1875e127fdba431157646f3cfeeb5e7bc72c63.png" src="../../_images/0b3958286e89b6775a989bba9b1875e127fdba431157646f3cfeeb5e7bc72c63.png" />
 </div>
 </div>
 <p>Something is a little off in this equation of state, there is an unphysical bump in it. We now rerun this and get the embeddings. You simply call the <code class="docutils literal notranslate"><span class="pre">calc.embed</span></code> method. We need a reference configuration to compare too. We choose a lattice constant of 3.63 angstroms and compute three different embeddings.</p>
@@ -803,13 +803,7 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;&gt;:12: SyntaxWarning: invalid escape sequence &#39;\A&#39;
-&lt;&gt;:12: SyntaxWarning: invalid escape sequence &#39;\A&#39;
-/tmp/ipykernel_4534/397872676.py:12: SyntaxWarning: invalid escape sequence &#39;\A&#39;
-  plt.xlabel(&#39;Lattice constant ($\AA$)&#39;)
-</pre></div>
-</div>
-<img alt="../../_images/b618a440ac6e28c1074cbc44d70c947600061410b1bf9e4328b62a023dee925a.png" src="../../_images/b618a440ac6e28c1074cbc44d70c947600061410b1bf9e4328b62a023dee925a.png" />
+<img alt="../../_images/637c5cb7c81319ee5a25671cc27ae4ac565350725615c81c8d9b057f41f05297.png" src="../../_images/637c5cb7c81319ee5a25671cc27ae4ac565350725615c81c8d9b057f41f05297.png" />
 </div>
 </div>
 <p>We can see that near the minimum the different embeddings are all quite similar. But, near the unphysical peak, the x_E embedding shows a significant deviation. The atomic energy is linear in this embedding, which is why we see the peak. This means the embedding is not sufficiently trained in this region, and fine-tuning should be considered with data in that region.</p>
@@ -894,7 +888,7 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/d982e7c75bb1e2e9a6a00e0c24272235031961a6cf30714b1b908a7a0e19e9f1.png" src="../../_images/d982e7c75bb1e2e9a6a00e0c24272235031961a6cf30714b1b908a7a0e19e9f1.png" />
+<img alt="../../_images/aec7184c8419821ab7ec94acf29ef6ae453e0537801bb1ad7ea982720fd85b48.png" src="../../_images/aec7184c8419821ab7ec94acf29ef6ae453e0537801bb1ad7ea982720fd85b48.png" />
 </div>
 </div>
 <section id="clustering-individual-atoms">
@@ -948,7 +942,7 @@
   warn(
 </pre></div>
 </div>
-<img alt="../../_images/d475a1416484b908ccfd6089b54db40c8252ab89de9535b6a5d10b33c02dfa05.png" src="../../_images/d475a1416484b908ccfd6089b54db40c8252ab89de9535b6a5d10b33c02dfa05.png" />
+<img alt="../../_images/cd2f754e728ef30e0a1356e5458cddc5e18367cca66e341dbabcea2dd846dad6.png" src="../../_images/cd2f754e728ef30e0a1356e5458cddc5e18367cca66e341dbabcea2dd846dad6.png" />
 </div>
 </div>
 <p>You can see from this there are roughly three kinds of atoms. One is bulk like, with the lowest energy (the dark red points), the second is also lower in energy (the reddish-orange points), and the others are surface atoms, with higher energies (the bluish points).</p>
@@ -1076,7 +1070,7 @@
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: &gt;
 </pre></div>
 </div>
-<img alt="../../_images/8f4b96a1fa7c2b561281842fe2ac549124fff2cce7a0746b6d3a762b322e60a1.png" src="../../_images/8f4b96a1fa7c2b561281842fe2ac549124fff2cce7a0746b6d3a762b322e60a1.png" />
+<img alt="../../_images/456e121530c4caa347faeecfb82e9833197942355727c6ab0044304bf65dc3e7.png" src="../../_images/456e121530c4caa347faeecfb82e9833197942355727c6ab0044304bf65dc3e7.png" />
 </div>
 </div>
 </section>

@@ -18,18 +18,17 @@ Classes
 .. autoapisummary::
 
    core.common.relaxation.optimizers.lbfgs_torch.LBFGS
-   core.common.relaxation.optimizers.lbfgs_torch.TorchCalc
 
 
 Module Contents
 ---------------
 
-.. py:class:: LBFGS(batch: torch_geometric.data.Batch, model: TorchCalc, maxstep: float = 0.01, memory: int = 100, damping: float = 0.25, alpha: float = 100.0, force_consistent=None, device: str = 'cuda:0', save_full_traj: bool = True, traj_dir: pathlib.Path | None = None, traj_names=None, early_stop_batch: bool = False)
+.. py:class:: LBFGS(optimizable_batch: core.common.relaxation.optimizers.optimizable.OptimizableBatch, maxstep: float = 0.02, memory: int = 100, damping: float = 1.2, alpha: float = 100.0, save_full_traj: bool = True, traj_dir: pathlib.Path | None = None, traj_names: list[str] | None = None)
 
-   .. py:attribute:: batch
+   Limited memory BFGS optimizer for batch ML relaxations.
 
 
-   .. py:attribute:: model
+   .. py:attribute:: optimizable
 
 
    .. py:attribute:: maxstep
@@ -47,12 +46,6 @@ Module Contents
    .. py:attribute:: H0
 
 
-   .. py:attribute:: force_consistent
-
-
-   .. py:attribute:: device
-
-
    .. py:attribute:: save_full
 
 
@@ -62,43 +55,52 @@ Module Contents
    .. py:attribute:: traj_names
 
 
-   .. py:attribute:: early_stop_batch
-
-
-   .. py:attribute:: otf_graph
-      :value: True
+   .. py:attribute:: trajectories
+      :value: None
 
 
 
-   .. py:method:: get_energy_and_forces(apply_constraint: bool = True)
+   .. py:attribute:: fmax
+      :value: None
 
 
-   .. py:method:: set_positions(update, update_mask) -> None
+
+   .. py:attribute:: steps
+      :value: None
 
 
-   .. py:method:: check_convergence(iteration, forces=None, energy=None)
+
+   .. py:attribute:: s
+
+
+   .. py:attribute:: y
+
+
+   .. py:attribute:: rho
+
+
+   .. py:attribute:: r0
+      :value: None
+
+
+
+   .. py:attribute:: f0
+      :value: None
+
 
 
    .. py:method:: run(fmax, steps)
 
 
-   .. py:method:: step(iteration: int, forces: torch.Tensor | None, update_mask: torch.Tensor) -> None
+   .. py:method:: determine_step(dr)
 
 
-   .. py:method:: write(energy, forces, update_mask) -> None
+   .. py:method:: _batched_dot(x: torch.Tensor, y: torch.Tensor)
 
 
-.. py:class:: TorchCalc(model, transform=None)
-
-   .. py:attribute:: model
+   .. py:method:: step(iteration: int) -> None
 
 
-   .. py:attribute:: transform
-
-
-   .. py:method:: get_energy_and_forces(atoms, apply_constraint: bool = True)
-
-
-   .. py:method:: update_graph(atoms)
+   .. py:method:: write() -> None
 
 

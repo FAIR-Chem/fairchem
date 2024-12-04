@@ -14,6 +14,7 @@ Submodules
    /autoapi/core/models/equiformer_v2/drop/index
    /autoapi/core/models/equiformer_v2/edge_rot_mat/index
    /autoapi/core/models/equiformer_v2/equiformer_v2/index
+   /autoapi/core/models/equiformer_v2/equiformer_v2_dens/index
    /autoapi/core/models/equiformer_v2/equiformer_v2_deprecated/index
    /autoapi/core/models/equiformer_v2/eqv2_to_eqv2_hydra/index
    /autoapi/core/models/equiformer_v2/gaussian_rbf/index

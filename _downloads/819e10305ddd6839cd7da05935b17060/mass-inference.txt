@@ -1,6 +1,6 @@
-2024-11-19 06:22:11 (INFO): Running in local mode without elastic launch (single gpu only)
-2024-11-19 06:22:11 (INFO): Setting env PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-2024-11-19 06:22:11 (INFO): Project root: /home/runner/work/fairchem/fairchem/src/fairchem
+2024-12-04 00:17:00 (INFO): Running in local mode without elastic launch (single gpu only)
+2024-12-04 00:17:00 (INFO): Setting env PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+2024-12-04 00:17:00 (INFO): Project root: /home/runner/work/fairchem/fairchem/src/fairchem
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/escn/so3.py:23: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), "Jd.pt"))
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/scn/spherical_harmonics.py:23: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
@@ -15,17 +15,17 @@
   @torch.cuda.amp.autocast(enabled=False)
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/equiformer_v2/layer_norm.py:357: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
   @torch.cuda.amp.autocast(enabled=False)
-2024-11-19 06:22:12 (INFO): amp: false
+2024-12-04 00:17:01 (INFO): amp: false
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-11-19-06-21-52
-  commit: aa298ac
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-04-00-17-04
+  commit: 3f695ef
   identifier: ''
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/tensorboard/2024-11-19-06-21-52
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/tensorboard/2024-12-04-00-17-04
   print_every: 10
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-11-19-06-21-52
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-04-00-17-04
   seed: 0
-  timestamp_id: 2024-11-19-06-21-52
-  version: 0.1.dev1+gaa298ac
+  timestamp_id: 2024-12-04-00-17-04
+  version: 1.3.0
 dataset: {}
 evaluation_metrics:
   metrics:
@@ -127,24 +127,24 @@ test_dataset:
 trainer: ocp
 val_dataset: {}
 
-2024-11-19 06:22:12 (INFO): Loading model: gemnet_t
-2024-11-19 06:22:13 (INFO): Loaded GemNetT with 31671825 parameters.
-2024-11-19 06:22:13 (WARNING): log_summary for Tensorboard not supported
-2024-11-19 06:22:13 (WARNING): Could not find dataset metadata.npz files in '[PosixPath('data.db')]'
-2024-11-19 06:22:13 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
-2024-11-19 06:22:13 (WARNING): Failed to get data sizes, falling back to uniform partitioning. BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms.
-2024-11-19 06:22:13 (INFO): rank: 0: Sampler created...
-2024-11-19 06:22:13 (INFO): Created BalancedBatchSampler with sampler=<fairchem.core.common.data_parallel.StatefulDistributedSampler object at 0x7f0541247e30>, batch_size=16, drop_last=False
-2024-11-19 06:22:13 (INFO): Attemping to load user specified checkpoint at /tmp/fairchem_checkpoints/gndt_oc22_all_s2ef.pt
-2024-11-19 06:22:13 (INFO): Loading checkpoint from: /tmp/fairchem_checkpoints/gndt_oc22_all_s2ef.pt
-/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/base_trainer.py:602: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+2024-12-04 00:17:01 (INFO): Loading model: gemnet_t
+2024-12-04 00:17:02 (INFO): Loaded GemNetT with 31671825 parameters.
+2024-12-04 00:17:02 (WARNING): log_summary for Tensorboard not supported
+2024-12-04 00:17:02 (WARNING): Could not find dataset metadata.npz files in '[PosixPath('data.db')]'
+2024-12-04 00:17:02 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
+2024-12-04 00:17:02 (WARNING): Failed to get data sizes, falling back to uniform partitioning. BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms.
+2024-12-04 00:17:02 (INFO): rank: 0: Sampler created...
+2024-12-04 00:17:02 (INFO): Created BalancedBatchSampler with sampler=<fairchem.core.common.data_parallel.StatefulDistributedSampler object at 0x7fb19944d6d0>, batch_size=16, drop_last=False
+2024-12-04 00:17:03 (INFO): Attemping to load user specified checkpoint at /tmp/fairchem_checkpoints/gndt_oc22_all_s2ef.pt
+2024-12-04 00:17:03 (INFO): Loading checkpoint from: /tmp/fairchem_checkpoints/gndt_oc22_all_s2ef.pt
+/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/base_trainer.py:604: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=map_location)
-2024-11-19 06:22:14 (INFO): Overwriting scaling factors with those loaded from checkpoint. If you're generating predictions with a pretrained checkpoint, this is the correct behavior. To disable this, delete `scale_dict` from the checkpoint. 
-2024-11-19 06:22:14 (WARNING): Scale factor comment not found in model
-2024-11-19 06:22:14 (INFO): Predicting on test.
-device 0:   0%|                                           | 0/3 [00:00<?, ?it/s]/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:461: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+2024-12-04 00:17:03 (INFO): Overwriting scaling factors with those loaded from checkpoint. If you're generating predictions with a pretrained checkpoint, this is the correct behavior. To disable this, delete `scale_dict` from the checkpoint. 
+2024-12-04 00:17:03 (WARNING): Scale factor comment not found in model
+2024-12-04 00:17:03 (INFO): Predicting on test.
+device 0:   0%|                                           | 0/3 [00:00<?, ?it/s]/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:471: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
-device 0:  33%|███████████▋                       | 1/3 [00:02<00:05,  2.99s/it]device 0:  67%|███████████████████████▎           | 2/3 [00:06<00:03,  3.32s/it]device 0: 100%|███████████████████████████████████| 3/3 [00:08<00:00,  2.60s/it]device 0: 100%|███████████████████████████████████| 3/3 [00:08<00:00,  2.77s/it]
-2024-11-19 06:22:22 (INFO): Writing results to /home/runner/work/fairchem/fairchem/docs/core/results/2024-11-19-06-21-52/ocp_predictions.npz
-2024-11-19 06:22:22 (INFO): Total time taken: 8.455804347991943
-Elapsed time = 15.8 seconds
+device 0:  33%|███████████▋                       | 1/3 [00:03<00:06,  3.47s/it]device 0:  67%|███████████████████████▎           | 2/3 [00:06<00:03,  3.35s/it]device 0: 100%|███████████████████████████████████| 3/3 [00:08<00:00,  2.56s/it]device 0: 100%|███████████████████████████████████| 3/3 [00:08<00:00,  2.79s/it]
+2024-12-04 00:17:11 (INFO): Writing results to /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-04-00-17-04/ocp_predictions.npz
+2024-12-04 00:17:11 (INFO): Total time taken: 8.537037134170532
+Elapsed time = 15.7 seconds

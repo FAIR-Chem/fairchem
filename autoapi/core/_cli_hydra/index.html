@@ -617,6 +617,7 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.logger"><code class="docutils literal notranslate"><span class="pre">logger</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit"><code class="docutils literal notranslate"><span class="pre">Submitit</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.__call__"><code class="docutils literal notranslate"><span class="pre">Submitit.__call__()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit._init_logger"><code class="docutils literal notranslate"><span class="pre">Submitit._init_logger()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.checkpoint"><code class="docutils literal notranslate"><span class="pre">Submitit.checkpoint()</span></code></a></li>
 </ul>
 </li>
@@ -674,7 +675,7 @@ LICENSE file in the root directory of this source tree.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.get_hydra_config_from_yaml" title="core._cli_hydra.get_hydra_config_from_yaml"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_hydra_config_from_yaml</span></code></a>(→ omegaconf.DictConfig)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.runner_wrapper" title="core._cli_hydra.runner_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">runner_wrapper</span></code></a>(config, cli_args)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.runner_wrapper" title="core._cli_hydra.runner_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">runner_wrapper</span></code></a>(config)</p></td>
 <td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.main" title="core._cli_hydra.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>([args, override_args])</p></td>
@@ -707,12 +708,17 @@ the state so that not to pickle it) and change/remove the initial parameters.</p
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="core._cli_hydra.Submitit.__call__">
-<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">omegaconf.DictConfig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cli_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">argparse.Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core._cli_hydra.Submitit.__call__" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">omegaconf.DictConfig</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core._cli_hydra.Submitit.__call__" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core._cli_hydra.Submitit._init_logger">
+<span class="sig-name descname"><span class="pre">_init_logger</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core._cli_hydra.Submitit._init_logger" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="core._cli_hydra.Submitit.checkpoint">
-<span class="sig-name descname"><span class="pre">checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core._cli_hydra.Submitit.checkpoint" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">submitit.helpers.DelayedSubmission</span></span></span><a class="headerlink" href="#core._cli_hydra.Submitit.checkpoint" title="Link to this definition">#</a></dt>
 <dd><p>Resubmits the same callable with the same arguments</p>
 </dd></dl>
 
@@ -720,7 +726,7 @@ the state so that not to pickle it) and change/remove the initial parameters.</p
 
 <dl class="py function">
 <dt class="sig sig-object py" id="core._cli_hydra.map_cli_args_to_dist_config">
-<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">map_cli_args_to_dist_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cli_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">argparse.Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#core._cli_hydra.map_cli_args_to_dist_config" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">map_cli_args_to_dist_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cli_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">omegaconf.DictConfig</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#core._cli_hydra.map_cli_args_to_dist_config" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
@@ -730,7 +736,7 @@ the state so that not to pickle it) and change/remove the initial parameters.</p
 
 <dl class="py function">
 <dt class="sig sig-object py" id="core._cli_hydra.runner_wrapper">
-<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">runner_wrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">omegaconf.DictConfig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cli_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">argparse.Namespace</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core._cli_hydra.runner_wrapper" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">runner_wrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">omegaconf.DictConfig</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core._cli_hydra.runner_wrapper" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
@@ -813,6 +819,7 @@ the state so that not to pickle it) and change/remove the initial parameters.</p
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.logger"><code class="docutils literal notranslate"><span class="pre">logger</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit"><code class="docutils literal notranslate"><span class="pre">Submitit</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.__call__"><code class="docutils literal notranslate"><span class="pre">Submitit.__call__()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit._init_logger"><code class="docutils literal notranslate"><span class="pre">Submitit._init_logger()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.checkpoint"><code class="docutils literal notranslate"><span class="pre">Submitit.checkpoint()</span></code></a></li>
 </ul>
 </li>

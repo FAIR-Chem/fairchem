@@ -23,7 +23,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: EquiformerV2EnergyTrainer(task: dict[str, str | Any], model: dict[str, Any], outputs: dict[str, str | int], dataset: dict[str, str | float], optimizer: dict[str, str | float], loss_functions: dict[str, str | float], evaluation_metrics: dict[str, str], identifier: str, local_rank: int, timestamp_id: str | None = None, run_dir: str | None = None, is_debug: bool = False, print_every: int = 100, seed: int | None = None, logger: str = 'wandb', amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm=None, gp_gpus: int | None = None, inference_only: bool = False)
+.. py:class:: EquiformerV2EnergyTrainer(task: dict[str, str | Any], model: dict[str, Any], outputs: dict[str, str | int], dataset: dict[str, str | float], optimizer: dict[str, str | float], loss_functions: dict[str, str | float], evaluation_metrics: dict[str, str], identifier: str, local_rank: int, timestamp_id: str | None = None, run_dir: str | None = None, is_debug: bool = False, print_every: int = 100, seed: int | None = None, logger: str = 'wandb', amp: bool = False, cpu: bool = False, name: str = 'ocp', slurm: dict | None = None, gp_gpus: int | None = None, inference_only: bool = False)
 
    Bases: :py:obj:`fairchem.core.trainers.OCPTrainer`
 
@@ -41,7 +41,7 @@ Module Contents
    :type task: dict
    :param model: Model configuration.
    :type model: dict
-   :param outputs: Output property configuration.
+   :param outputs: Dictionary of model output configuration.
    :type outputs: dict
    :param dataset: Dataset configuration. The dataset needs to be a SinglePointLMDB dataset.
    :type dataset: dict
@@ -56,6 +56,10 @@ Module Contents
    :param run_dir: Path to the run directory where logs are to be saved.
                    (default: :obj:`None`)
    :type run_dir: str, optional
+   :param timestamp_id: timestamp identifier.
+   :type timestamp_id: str, optional
+   :param run_dir: Run directory used to save checkpoints and results.
+   :type run_dir: str, optional
    :param is_debug: Run in debug mode.
                     (default: :obj:`False`)
    :type is_debug: bool, optional
@@ -68,12 +72,24 @@ Module Contents
    :param logger: Type of logger to be used.
                   (default: :obj:`wandb`)
    :type logger: str, optional
+   :param local_rank: Local rank of the process, only applicable for distributed training.
+                      (default: :obj:`0`)
+   :type local_rank: int, optional
    :param amp: Run using automatic mixed precision.
                (default: :obj:`False`)
    :type amp: bool, optional
+   :param cpu: If True will run on CPU. Default is False, will attempt to use cuda.
+   :type cpu: bool
+   :param name: Trainer name.
+   :type name: str
    :param slurm: Slurm configuration. Currently just for keeping track.
                  (default: :obj:`{}`)
    :type slurm: dict
+   :param gp_gpus: Number of graph parallel GPUs.
+   :type gp_gpus: int, optional
+   :param inference_only: If true trainer will be loaded for inference only.
+                          (ie datasets, optimizer, schedular, etc, will not be instantiated)
+   :type inference_only: bool
 
 
    .. py:method:: load_extras()

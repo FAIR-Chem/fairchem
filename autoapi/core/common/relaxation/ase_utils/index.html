@@ -610,15 +610,18 @@
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attributes">Attributes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.ASE_PROP_RESHAPE"><code class="docutils literal notranslate"><span class="pre">ASE_PROP_RESHAPE</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.batch_to_atoms"><code class="docutils literal notranslate"><span class="pre">batch_to_atoms()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator"><code class="docutils literal notranslate"><span class="pre">OCPCalculator</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator.implemented_properties"><code class="docutils literal notranslate"><span class="pre">OCPCalculator.implemented_properties</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator._reshaped_props"><code class="docutils literal notranslate"><span class="pre">OCPCalculator._reshaped_props</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator.config"><code class="docutils literal notranslate"><span class="pre">OCPCalculator.config</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator.trainer"><code class="docutils literal notranslate"><span class="pre">OCPCalculator.trainer</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator.a2g"><code class="docutils literal notranslate"><span class="pre">OCPCalculator.a2g</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator.implemented_properties"><code class="docutils literal notranslate"><span class="pre">OCPCalculator.implemented_properties</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator.load_checkpoint"><code class="docutils literal notranslate"><span class="pre">OCPCalculator.load_checkpoint()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator.calculate"><code class="docutils literal notranslate"><span class="pre">OCPCalculator.calculate()</span></code></a></li>
 </ul>
@@ -643,12 +646,23 @@
 LICENSE file in the root directory of this source tree.</p>
 <p>Utilities to interface OCP models/trainers with the Atomic Simulation
 Environment (ASE)</p>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.relaxation.ase_utils.ASE_PROP_RESHAPE" title="core.common.relaxation.ase_utils.ASE_PROP_RESHAPE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ASE_PROP_RESHAPE</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#core.common.relaxation.ase_utils.OCPCalculator" title="core.common.relaxation.ase_utils.OCPCalculator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OCPCalculator</span></code></a></p></td>
-<td><p>Base-class for all ASE calculators.</p></td>
+<td><p>ASE based calculator using an OCP model</p></td>
 </tr>
 </tbody>
 </table>
@@ -658,8 +672,8 @@ Environment (ASE)</p>
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.relaxation.ase_utils.batch_to_atoms" title="core.common.relaxation.ase_utils.batch_to_atoms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">batch_to_atoms</span></code></a>(batch)</p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.relaxation.ase_utils.batch_to_atoms" title="core.common.relaxation.ase_utils.batch_to_atoms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">batch_to_atoms</span></code></a>(→ list[ase.Atoms])</p></td>
+<td><p>Convert a data batch to ase Atoms</p></td>
 </tr>
 </tbody>
 </table>
@@ -667,29 +681,40 @@ Environment (ASE)</p>
 </section>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="core.common.relaxation.ase_utils.ASE_PROP_RESHAPE">
+<span class="sig-prename descclassname"><span class="pre">core.common.relaxation.ase_utils.</span></span><span class="sig-name descname"><span class="pre">ASE_PROP_RESHAPE</span></span><a class="headerlink" href="#core.common.relaxation.ase_utils.ASE_PROP_RESHAPE" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="core.common.relaxation.ase_utils.batch_to_atoms">
-<span class="sig-prename descclassname"><span class="pre">core.common.relaxation.ase_utils.</span></span><span class="sig-name descname"><span class="pre">batch_to_atoms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.common.relaxation.ase_utils.batch_to_atoms" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-prename descclassname"><span class="pre">core.common.relaxation.ase_utils.</span></span><span class="sig-name descname"><span class="pre">batch_to_atoms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch_geometric.data.Batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrap_pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-07</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ase.Atoms</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#core.common.relaxation.ase_utils.batch_to_atoms" title="Link to this definition">#</a></dt>
+<dd><p>Convert a data batch to ase Atoms</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> – data batch</p></li>
+<li><p><strong>results</strong> – dictionary with predicted result tensors that will be added to a SinglePointCalculator. If no results
+are given no calculator will be added to the atoms objects.</p></li>
+<li><p><strong>wrap_pos</strong> – wrap positions back into the cell.</p></li>
+<li><p><strong>eps</strong> – Small number to prevent slightly negative coordinates from being wrapped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of Atoms</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="core.common.relaxation.ase_utils.OCPCalculator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.common.relaxation.ase_utils.</span></span><span class="sig-name descname"><span class="pre">OCPCalculator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_yml</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpu</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.common.relaxation.ase_utils.OCPCalculator" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.common.relaxation.ase_utils.</span></span><span class="sig-name descname"><span class="pre">OCPCalculator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_yml</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">pathlib.Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpu</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.common.relaxation.ase_utils.OCPCalculator" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">ase.calculators.calculator.Calculator</span></code></p>
-<p>Base-class for all ASE calculators.</p>
-<p>A calculator must raise PropertyNotImplementedError if asked for a
-property that it can’t calculate.  So, if calculation of the
-stress tensor has not been implemented, get_stress(atoms) should
-raise PropertyNotImplementedError.  This can be achieved simply by not
-including the string ‘stress’ in the list implemented_properties
-which is a class member.  These are the names of the standard
-properties: ‘energy’, ‘forces’, ‘stress’, ‘dipole’, ‘charges’,
-‘magmom’ and ‘magmoms’.</p>
+<p>ASE based calculator using an OCP model</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="core.common.relaxation.ase_utils.OCPCalculator.implemented_properties">
-<span class="sig-name descname"><span class="pre">implemented_properties</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['energy',</span> <span class="pre">'forces']</span></em><a class="headerlink" href="#core.common.relaxation.ase_utils.OCPCalculator.implemented_properties" title="Link to this definition">#</a></dt>
-<dd><p>Properties calculator can handle (energy, forces, …)</p>
-</dd></dl>
+<dt class="sig sig-object py" id="core.common.relaxation.ase_utils.OCPCalculator._reshaped_props">
+<span class="sig-name descname"><span class="pre">_reshaped_props</span></span><a class="headerlink" href="#core.common.relaxation.ase_utils.OCPCalculator._reshaped_props" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="core.common.relaxation.ase_utils.OCPCalculator.config">
@@ -706,48 +731,32 @@ properties: ‘energy’, ‘forces’, ‘stress’, ‘dipole’, ‘charges�
 <span class="sig-name descname"><span class="pre">a2g</span></span><a class="headerlink" href="#core.common.relaxation.ase_utils.OCPCalculator.a2g" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.common.relaxation.ase_utils.OCPCalculator.implemented_properties">
+<span class="sig-name descname"><span class="pre">implemented_properties</span></span><a class="headerlink" href="#core.common.relaxation.ase_utils.OCPCalculator.implemented_properties" title="Link to this definition">#</a></dt>
+<dd><p>Properties calculator can handle (energy, forces, …)</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="core.common.relaxation.ase_utils.OCPCalculator.load_checkpoint">
 <span class="sig-name descname"><span class="pre">load_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.relaxation.ase_utils.OCPCalculator.load_checkpoint" title="Link to this definition">#</a></dt>
 <dd><p>Load existing trained model</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>checkpoint_path</strong> – string
-Path to trained model</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>checkpoint_path</strong> – string
+Path to trained model</p></li>
+<li><p><strong>checkpoint</strong> – dict
+A pretrained checkpoint dict</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="core.common.relaxation.ase_utils.OCPCalculator.calculate">
-<span class="sig-name descname"><span class="pre">calculate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atoms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ase.Atoms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">system_changes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.relaxation.ase_utils.OCPCalculator.calculate" title="Link to this definition">#</a></dt>
-<dd><p>Do the calculation.</p>
-<dl class="simple">
-<dt>properties: list of str</dt><dd><p>List of what needs to be calculated.  Can be any combination
-of ‘energy’, ‘forces’, ‘stress’, ‘dipole’, ‘charges’, ‘magmom’
-and ‘magmoms’.</p>
-</dd>
-<dt>system_changes: list of str</dt><dd><p>List of what has changed since last calculation.  Can be
-any combination of these six: ‘positions’, ‘numbers’, ‘cell’,
-‘pbc’, ‘initial_charges’ and ‘initial_magmoms’.</p>
-</dd>
-</dl>
-<p>Subclasses need to implement this, but can ignore properties
-and system_changes if they want.  Calculated properties should
-be inserted into results dictionary like shown in this dummy
-example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;energy&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
-                <span class="s1">&#39;forces&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">),</span> <span class="mi">3</span><span class="p">)),</span>
-                <span class="s1">&#39;stress&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">6</span><span class="p">),</span>
-                <span class="s1">&#39;dipole&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
-                <span class="s1">&#39;charges&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">)),</span>
-                <span class="s1">&#39;magmom&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
-                <span class="s1">&#39;magmoms&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">))}</span>
-</pre></div>
-</div>
-<p>The subclass implementation should first call this
-implementation to set the atoms attribute and create any missing
-directories.</p>
+<span class="sig-name descname"><span class="pre">calculate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atoms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ase.Atoms</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">torch_geometric.data.Batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">system_changes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.relaxation.ase_utils.OCPCalculator.calculate" title="Link to this definition">#</a></dt>
+<dd><p>Calculate implemented properties for a single Atoms object or a Batch of them.</p>
 </dd></dl>
 
 </dd></dl>
@@ -820,15 +829,18 @@ directories.</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attributes">Attributes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.ASE_PROP_RESHAPE"><code class="docutils literal notranslate"><span class="pre">ASE_PROP_RESHAPE</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.batch_to_atoms"><code class="docutils literal notranslate"><span class="pre">batch_to_atoms()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator"><code class="docutils literal notranslate"><span class="pre">OCPCalculator</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator.implemented_properties"><code class="docutils literal notranslate"><span class="pre">OCPCalculator.implemented_properties</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator._reshaped_props"><code class="docutils literal notranslate"><span class="pre">OCPCalculator._reshaped_props</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator.config"><code class="docutils literal notranslate"><span class="pre">OCPCalculator.config</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator.trainer"><code class="docutils literal notranslate"><span class="pre">OCPCalculator.trainer</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator.a2g"><code class="docutils literal notranslate"><span class="pre">OCPCalculator.a2g</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator.implemented_properties"><code class="docutils literal notranslate"><span class="pre">OCPCalculator.implemented_properties</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator.load_checkpoint"><code class="docutils literal notranslate"><span class="pre">OCPCalculator.load_checkpoint()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.relaxation.ase_utils.OCPCalculator.calculate"><code class="docutils literal notranslate"><span class="pre">OCPCalculator.calculate()</span></code></a></li>
 </ul>
