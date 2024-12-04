@@ -83,7 +83,6 @@ def map_cli_args_to_dist_config(cli_args: DictConfig) -> dict:
         "submit": cli_args.submit,
         "summit": None,
         "cpu": cli_args.cpu,
-        "use_cuda_visibile_devices": True,
     }
 
 

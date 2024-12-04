@@ -69,19 +69,11 @@ def setup(config) -> None:
                     f"Init: {config['init_method']}, {config['world_size']}, {config['rank']}"
                 )
 
-                # ensures GPU0 does not have extra context/higher peak memory
-                logging.info(
-                    f"local rank: {config['local_rank']}, visible devices: {os.environ['CUDA_VISIBLE_DEVICES']}"
-                )
+                assign_device_for_local_rank(config["cpu"], config["local_rank"])
 
-                # In the new hydra runners, we setup the device for each rank as either cuda:0 or cpu
-                # after this point, the local rank should either be using "cpu" or "cuda"
-                if config.get("use_cuda_visibile_devices"):
-                    assign_device_for_local_rank(config["cpu"], config["local_rank"])
-                else:
-                    # in the old code, all ranks can see all devices but need to be assigned a device equal to their local rank
-                    # this is dangerous and should be deprecated
-                    torch.cuda.set_device(config["local_rank"])
+                logging.info(
+                    f"local rank: {config['local_rank']}, rank: {config['rank']}, visible devices: {os.environ['CUDA_VISIBLE_DEVICES']}"
+                )
 
                 dist.init_process_group(
                     backend="nccl",
@@ -121,8 +113,7 @@ def setup(config) -> None:
             ), "Can only setup master address and port at this point for a single rank, otherwise we assume the processes and the comm addr/port have already been setup"
             setup_env_local()
         config["local_rank"] = int(os.environ.get("LOCAL_RANK"))
-        if config.get("use_cuda_visibile_devices"):
-            assign_device_for_local_rank(config["cpu"], config["local_rank"])
+        assign_device_for_local_rank(config["cpu"], config["local_rank"])
         dist.init_process_group(
             backend=config["distributed_backend"],
             rank=int(os.environ.get("RANK")),
