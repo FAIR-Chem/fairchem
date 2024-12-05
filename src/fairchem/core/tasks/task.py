@@ -36,7 +36,7 @@ class BaseTask:
         # if the supplied checkpoint doesn't exist and there exists a previous checkpoint in the checkpoint path, this
         # means that the previous job didn't terminate "nicely" (due to node failures, crashes etc), then attempt
         # to load the last found checkpoint
-        elif os.path.exists(self.chkpt_path):
+        elif len(os.listdir(self.chkpt_path)) > 0:
             logging.info(
                 f"Previous checkpoint found at {self.chkpt_path}, resuming job from this checkecpoint"
             )
