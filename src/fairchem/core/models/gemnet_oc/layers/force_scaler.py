@@ -15,7 +15,7 @@ class ForceScaler:
     """
     Scales up the energy and then scales down the forces
     to prevent NaNs and infs in calculations using AMP.
-    Inspired by torch.cuda.amp.GradScaler.
+    Inspired by torch.GradScaler("cuda", args...).
     """
 
     def __init__(
