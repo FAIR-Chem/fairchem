@@ -22,9 +22,7 @@ class BaseTask:
         self.trainer = trainer
 
         # TODO: make checkpoint.pt a constant so we don't pass this string around everywhere
-        self.chkpt_path = os.path.join(
-            self.trainer.config["cmd"]["checkpoint_dir"], "checkpoint.pt"
-        )
+        self.chkpt_path = os.path.join(self.trainer.config["cmd"]["checkpoint_dir"])
 
         # if the supplied checkpoint exists, then load that, ie: when user specifies the --checkpoint option
         # OR if the a job was preempted correctly and the submitit checkpoint function was called
