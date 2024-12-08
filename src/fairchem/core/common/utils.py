@@ -1452,3 +1452,29 @@ def load_model_and_weights_from_checkpoint(checkpoint_path: str) -> nn.Module:
 
 def get_timestamp_uid() -> str:
     return datetime.datetime.now().strftime("%Y%m-%d%H-%M%S-") + str(uuid4())[:4]
+
+
+@torch.no_grad()
+def tensor_stats(name: str, x: torch.Tensor) -> dict:
+    return {
+        f"{name}.max": x.max(),
+        f"{name}.min": x.min(),
+        f"{name}.std": x.std(),
+        f"{name}.mean": x.mean(),
+        f"{name}.norm": torch.norm(x, p=2),
+        f"{name}.nonzero_fraction": torch.nonzero(x).shape[0] / float(x.numel()),
+    }
+
+
+def get_weight_table(model: torch.nn.Module) -> tuple[list, list]:
+    stat_names = list(tensor_stats("weight", torch.Tensor([1])).keys())
+    columns = ["ParamName", "shape"] + stat_names + ["grad." + n for n in stat_names]
+    data = []
+    for param_name, params in model.named_parameters():
+        row_weight = list(tensor_stats(f"weights/{param_name}", params).values())
+        if params.grad is not None:
+            row_grad = list(tensor_stats(f"grad/{param_name}", params.grad).values())
+        else:
+            row_grad = [None] * len(row_weight)
+        data.append([param_name] + [params.shape] + row_weight + row_grad)  # noqa
+    return columns, data
