@@ -39,6 +39,7 @@ from fairchem.core.common.typing import assert_is_instance as aii
 from fairchem.core.common.typing import none_throws
 from fairchem.core.common.utils import (
     get_commit_hash,
+    get_weight_table,
     load_state_dict,
     match_state_dict,
     save_checkpoint,
@@ -100,6 +101,7 @@ class BaseTrainer(ABC):
         self.cpu = cpu
         self.epoch = 0
         self.step = 0
+        self.ema = None
 
         if torch.cuda.is_available() and not self.cpu:
             logging.info(f"local rank base: {local_rank}")
@@ -213,6 +215,7 @@ class BaseTrainer(ABC):
         self.test_dataset = None
         self.best_val_metric = None
         self.primary_metric = None
+        self.ema = None
 
         self.load(inference_only)
 
@@ -359,7 +362,7 @@ class BaseTrainer(ABC):
             )
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
-                self.config["optim"]["batch_size"],
+                self.config["optim"].get("batch_size", 1),
                 shuffle=True,
             )
             self.train_loader = self.get_dataloader(
@@ -390,7 +393,7 @@ class BaseTrainer(ABC):
             self.val_sampler = self.get_sampler(
                 self.val_dataset,
                 self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
+                    "eval_batch_size", self.config["optim"].get("batch_size", 1)
                 ),
                 shuffle=False,
             )
@@ -412,7 +415,7 @@ class BaseTrainer(ABC):
             self.test_sampler = self.get_sampler(
                 self.test_dataset,
                 self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
+                    "eval_batch_size", self.config["optim"].get("batch_size", 1)
                 ),
                 shuffle=False,
             )
@@ -616,7 +619,7 @@ class BaseTrainer(ABC):
                 "Loading checkpoint in inference-only mode, not loading keys associated with trainer state!"
             )
 
-        if "ema" in checkpoint and checkpoint["ema"] is not None:
+        if "ema" in checkpoint and checkpoint["ema"] is not None and self.ema:
             self.ema.load_state_dict(checkpoint["ema"])
         else:
             self.ema = None
@@ -927,9 +930,20 @@ class BaseTrainer(ABC):
                             "Please check if all shared parameters are used "
                             "and point to PyTorch parameters."
                         )
+        if self.scaler:
+            self.scaler.unscale_(self.optimizer)
+            # log unscaled weights and grads
+            log_weight_frequency = self.config["logger"].get("log_weight_table", -1)
+            if (
+                self.logger is not None
+                and distutils.is_master()
+                and log_weight_frequency > 0
+                and self.step % log_weight_frequency == 1  # log on 1 instead of 0
+            ):
+                columns, data = get_weight_table(self.model)
+                self.logger.log_table(name="weight_table", cols=columns, data=data)
+
         if self.clip_grad_norm:
-            if self.scaler:
-                self.scaler.unscale_(self.optimizer)
             grad_norm = torch.nn.utils.clip_grad_norm_(
                 self.model.parameters(),
                 max_norm=self.clip_grad_norm,

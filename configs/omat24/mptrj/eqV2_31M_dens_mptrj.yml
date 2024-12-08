@@ -45,7 +45,7 @@ outputs:
 loss_functions:
   - energy:
       fn: per_atom_mae
-      coefficient: 20
+      coefficient: 5
   - forces:
       fn: l2mae
       coefficient: 20
@@ -148,17 +148,16 @@ model:
 
     use_force_encoding:                   True
     use_noise_schedule_sigma_encoding:    False
-    use_denoising_energy:                 True
-    use_denoising_stress:                 False
-
 
   heads:
     energy:
-      module: fairchem.core.models.equiformer_v2.equiformer_v2_dens.DeNSEnergyHead
+      module: fairchem.core.models.equiformer_v2.equiformer_v2_dens.DeNSScalarHead
+      use_denoising:                True
     forces:
-      module: fairchem.core.models.equiformer_v2.equiformer_v2_dens.DeNSForceHead
+      module: fairchem.core.models.equiformer_v2.equiformer_v2_dens.DeNSVectorHead
     stress:
       module: fairchem.core.models.equiformer_v2.equiformer_v2_dens.DeNSRank2Head
       output_name: stress
       use_source_target_embedding:   True
       decompose:                     True
+      use_denoising:                 False

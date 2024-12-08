@@ -80,7 +80,8 @@ def setup(config) -> None:
                     assign_device_for_local_rank(config["cpu"], config["local_rank"])
                 else:
                     # in the old code, all ranks can see all devices but need to be assigned a device equal to their local rank
-                    # this is dangerous and should be deprecated
+                    # this is dangerous and should be deprecated, however, FSDP still requires backwards compatibility with
+                    # initializing this way for now so we need to keep it
                     torch.cuda.set_device(config["local_rank"])
 
                 dist.init_process_group(
@@ -123,6 +124,11 @@ def setup(config) -> None:
         config["local_rank"] = int(os.environ.get("LOCAL_RANK"))
         if config.get("use_cuda_visibile_devices"):
             assign_device_for_local_rank(config["cpu"], config["local_rank"])
+        elif torch.cuda.is_available():
+            # in the old code, all ranks can see all devices but need to be assigned a device equal to their local rank
+            # this is dangerous and should be deprecated, however, FSDP still requires backwards compatibility with
+            # initializing this way for now so we need to keep it
+            torch.cuda.set_device(config["local_rank"])
         dist.init_process_group(
             backend=config["distributed_backend"],
             rank=int(os.environ.get("RANK")),

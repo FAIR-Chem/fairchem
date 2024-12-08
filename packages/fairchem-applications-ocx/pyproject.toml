@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs", "hatch-fancy-pypi-readme>=24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fairchem-applications-ocx"
+dynamic = ["version", "readme"]
+description = "Bridging Experiments to Computational Models"
+license = {text = "MIT License"}
+dependencies = [
+    "scipy",
+    "numpy",
+    "scikit-learn",
+    "pandas",
+    "matminer",
+    "plotly",
+    "matplotlib",
+    "yellowbrick",
+    "statsmodels",
+    "seaborn",
+]
+
+[project.urls]
+repository = "http://github.com/Fair-Chem/src/fairchem/applications/ocx"
+documentation = "https://fair-chem.github.io/"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+root = "../../"
+git_describe_command = 'git describe --tags --match fairchem_applications_ocx-*'
+
+[tool.hatch.build]
+directory = "../../dist-applications-ocx"
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src/fairchem/applications/ocx"]
+
+[tool.hatch.build.targets.wheel]
+sources = ["src"]
+only-include = ["src/fairchem/applications/ocx"]
+
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+fragments = [
+  { path = "src/fairchem/applications/ocx/README.md" },
+]

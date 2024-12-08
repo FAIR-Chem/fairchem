@@ -250,7 +250,7 @@ class AtomsToGraphs:
             for data_key in self.r_data_keys:
                 data[data_key] = (
                     atoms.info[data_key]
-                    if isinstance(atoms.info[data_key], (int, float))
+                    if isinstance(atoms.info[data_key], (int, float, str))
                     else torch.Tensor(atoms.info[data_key])
                 )
 

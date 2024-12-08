@@ -228,9 +228,9 @@ def test_ase_multiread_dataset(tmp_path):
 
     assert len(dataset) == len(atoms_objects)
 
-    assert hasattr(dataset[0], "y_relaxed")
-    assert dataset[0].y_relaxed != dataset[0].energy
-    assert dataset[-1].y_relaxed == dataset[-1].energy
+    assert hasattr(dataset[0], "energy_relaxed")
+    assert dataset[0].energy_relaxed != dataset[0].energy
+    assert dataset[-1].energy_relaxed == dataset[-1].energy
 
     dataset = AseReadDataset(
         config={
@@ -247,8 +247,8 @@ def test_ase_multiread_dataset(tmp_path):
         }
     )
 
-    assert hasattr(dataset[0], "y_relaxed")
-    assert dataset[0].y_relaxed != dataset[0].energy
+    assert hasattr(dataset[0], "energy_relaxed")
+    assert dataset[0].energy_relaxed != dataset[0].energy
 
 
 def test_empty_dataset(tmp_path):
