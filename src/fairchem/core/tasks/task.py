@@ -11,6 +11,7 @@ import logging
 import os
 
 from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import get_checkpoint_format
 from fairchem.core.trainers import OCPTrainer
 
 
@@ -21,10 +22,13 @@ class BaseTask:
     def setup(self, trainer) -> None:
         self.trainer = trainer
 
-        # TODO: make checkpoint.pt a constant so we don't pass this string around everywhere
-        self.chkpt_path = os.path.join(
-            self.trainer.config["cmd"]["checkpoint_dir"], "checkpoint.pt"
-        )
+        format = get_checkpoint_format(self.config)
+        if format == "pt":
+            self.chkpt_path = os.path.join(
+                self.trainer.config["cmd"]["checkpoint_dir"], "checkpoint.pt"
+            )
+        else:
+            self.chkpt_path = self.trainer.config["cmd"]["checkpoint_dir"]
 
         # if the supplied checkpoint exists, then load that, ie: when user specifies the --checkpoint option
         # OR if the a job was preempted correctly and the submitit checkpoint function was called
@@ -38,7 +42,10 @@ class BaseTask:
         # if the supplied checkpoint doesn't exist and there exists a previous checkpoint in the checkpoint path, this
         # means that the previous job didn't terminate "nicely" (due to node failures, crashes etc), then attempt
         # to load the last found checkpoint
-        elif os.path.exists(self.chkpt_path):
+        elif (
+            os.path.isfile(self.chkpt_path)
+            or (os.path.isdir(self.chkpt_path) and len(os.listdir(self.chkpt_path))) > 0
+        ):
             logging.info(
                 f"Previous checkpoint found at {self.chkpt_path}, resuming job from this checkecpoint"
             )

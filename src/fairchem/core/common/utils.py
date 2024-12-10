@@ -1478,3 +1478,13 @@ def get_weight_table(model: torch.nn.Module) -> tuple[list, list]:
             row_grad = [None] * len(row_weight)
         data.append([param_name] + [params.shape] + row_weight + row_grad)  # noqa
     return columns, data
+
+
+def get_checkpoint_format(config: dict) -> str:
+    # a temporary function to retrieve the checkpoint format from old configs
+    format = config.get("optim", {}).get("checkpoint_format", "pt")
+    assert format in (
+        "pt",
+        "dcp",
+    ), f"checkpoint format can only be pt or dcp, found {format}"
+    return format
