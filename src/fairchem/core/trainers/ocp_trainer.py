@@ -301,7 +301,8 @@ class OCPTrainer(BaseTrainer):
                 )
             else:
                 raise AttributeError(
-                    f"Output target: '{target_key}', not found in model outputs: {list(out.keys())}"
+                    f"Output target: '{target_key}', not found in model outputs: {list(out.keys())}\n"
+                    + "If this is being called from OCPCalculator consider using only_output=[..]"
                 )
 
             ### not all models are consistent with the output shape
