@@ -124,6 +124,7 @@ class OCPCalculator(Calculator):
         trainer: str | None = None,
         cpu: bool = True,
         seed: int | None = None,
+        only_output: list[str] | None = None,
     ) -> None:
         """
         OCP-ASE Calculator
@@ -208,6 +209,20 @@ class OCPCalculator(Calculator):
         self.config = copy.deepcopy(config)
         self.config["checkpoint"] = str(checkpoint_path)
         del config["dataset"]["src"]
+
+        # some models that are published have configs that include tasks
+        # which are not output by the model
+        if only_output is not None:
+            assert isinstance(
+                only_output, list
+            ), "only output must be a list of targets to output"
+            for key in only_output:
+                assert (
+                    key in config["outputs"]
+                ), f"{key} listed in only_outputs is not present in current model outputs {config['outputs'].keys()}"
+            remove_outputs = set(config["outputs"].keys()) - set(only_output)
+            for key in remove_outputs:
+                config["outputs"].pop(key)
 
         self.trainer = registry.get_trainer_class(config["trainer"])(
             task=config.get("task", {}),

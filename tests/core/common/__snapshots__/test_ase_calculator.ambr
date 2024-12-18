@@ -1,4 +1,7 @@
 # serializer version: 1
+# name: test_energy_with_is2re_model
+  1.09
+# ---
 # name: test_relaxation_final_energy
   0.92
 # ---
