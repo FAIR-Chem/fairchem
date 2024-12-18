@@ -34,8 +34,11 @@ if TYPE_CHECKING:
 T_co = TypeVar("T_co", covariant=True)
 
 
-class DatasetMetadata(NamedTuple):
-    natoms: ArrayLike | None = None
+class DatasetMetadata:
+    def __init__(self, natoms: ArrayLike | None = None, **kwargs):
+        self.natoms = natoms
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
 
 class UnsupportedDatasetError(ValueError):
@@ -106,9 +109,10 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
         metadata = DatasetMetadata(
             **{
                 field: np.concatenate([metadata[field] for metadata in metadata_npzs])
-                for field in DatasetMetadata._fields
+                for field in metadata_npzs[0].keys()
             }
         )
+
         assert np.issubdtype(
             metadata.natoms.dtype, np.integer
         ), f"Metadata natoms must be an integer type! not {metadata.natoms.dtype}"
