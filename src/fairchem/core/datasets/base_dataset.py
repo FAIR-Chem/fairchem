@@ -183,6 +183,7 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
     g.manual_seed(seed)
 
     dataset = dataset_cls(current_split_config)
+
     # Get indices of the dataset
     indices = dataset.indices
     max_atoms = current_split_config.get("max_atoms", None)
@@ -190,6 +191,24 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
         if not dataset.metadata_hasattr("natoms"):
             raise ValueError("Cannot use max_atoms without dataset metadata")
         indices = indices[dataset.get_metadata("natoms", indices) <= max_atoms]
+
+    for subset_to in current_split_config.get("subset_to", []):
+        if not dataset.metadata_hasattr(subset_to["metadata_key"]):
+            raise ValueError(
+                f"Cannot use {subset_to} without dataset metadata key {subset_to['metadata_key']}"
+            )
+        if subset_to["op"] == "abs_le":
+            indices = indices[
+                np.abs(dataset.get_metadata(subset_to["metadata_key"], indices))
+                <= subset_to["rhv"]
+            ]
+        elif subset_to["op"] == "in":
+            indices = indices[
+                np.isin(
+                    dataset.get_metadata(subset_to["metadata_key"], indices),
+                    subset_to["rhv"],
+                )
+            ]
 
     # Apply dataset level transforms
     # TODO is no_shuffle mutually exclusive though? or what is the purpose of no_shuffle?

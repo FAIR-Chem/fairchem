@@ -103,6 +103,8 @@ class AseAtomsDataset(BaseDataset, ABC):
         self.ids = self._load_dataset_get_ids(config)
         self.num_samples = len(self.ids)
 
+        self.info_fields = config.get("info_fields", [])
+
         if len(self.ids) == 0:
             raise ValueError(
                 rf"No valid ase data found! \n"
@@ -130,6 +132,10 @@ class AseAtomsDataset(BaseDataset, ABC):
         data_object = self.a2g.convert(atoms, sid)
         data_object.fid = fid
         data_object.natoms = len(atoms)
+
+        # load additional info from dataset
+        for info_field in self.info_fields:
+            setattr(data_object, info_field, atoms.info.get(info_field))
 
         # apply linear reference
         if self.a2g.r_energy is True and self.lin_ref is not None:
