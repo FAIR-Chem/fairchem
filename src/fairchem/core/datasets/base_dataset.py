@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    NamedTuple,
     TypeVar,
 )
 
@@ -109,7 +108,7 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
         metadata = DatasetMetadata(
             **{
                 field: np.concatenate([metadata[field] for metadata in metadata_npzs])
-                for field in metadata_npzs[0].keys()
+                for field in metadata_npzs[0]
             }
         )
 
