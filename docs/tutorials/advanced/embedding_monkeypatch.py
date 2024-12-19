@@ -93,7 +93,7 @@ def newforward(self, data):
     x_E = self.out_mlp_E(torch.cat(xs_E, dim=-1))
     if self.direct_forces:
         x_F = self.out_mlp_F(torch.cat(xs_F, dim=-1))
-    with torch.cuda.amp.autocast(False):
+    with torch.autocast("cuda", enabled=False):
         E_t = self.out_energy(x_E.float())
         if self.direct_forces:
             F_st = self.out_forces(x_F.float())
@@ -185,7 +185,7 @@ def embed(self, atoms):
         self.trainer.ema.copy_to()
 
     with (
-        torch.cuda.amp.autocast(enabled=self.trainer.scaler is not None),
+        torch.autocast("cuda", enabled=self.trainer.scaler is not None),
         torch.no_grad(),
     ):
         out = self.trainer.model(batch_list)
