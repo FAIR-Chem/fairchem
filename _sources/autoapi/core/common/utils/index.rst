@@ -80,6 +80,7 @@ Functions
    core.common.utils.get_timestamp_uid
    core.common.utils.tensor_stats
    core.common.utils.get_weight_table
+   core.common.utils.get_checkpoint_format
 
 
 Module Contents
@@ -305,4 +306,6 @@ Module Contents
 .. py:function:: tensor_stats(name: str, x: torch.Tensor) -> dict
 
 .. py:function:: get_weight_table(model: torch.nn.Module) -> tuple[list, list]
+
+.. py:function:: get_checkpoint_format(config: dict) -> str
 
