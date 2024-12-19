@@ -59,7 +59,7 @@ Module Contents
    :returns: list of Atoms
 
 
-.. py:class:: OCPCalculator(config_yml: str | None = None, checkpoint_path: str | pathlib.Path | None = None, model_name: str | None = None, local_cache: str | None = None, trainer: str | None = None, cpu: bool = True, seed: int | None = None)
+.. py:class:: OCPCalculator(config_yml: str | None = None, checkpoint_path: str | pathlib.Path | None = None, model_name: str | None = None, local_cache: str | None = None, trainer: str | None = None, cpu: bool = True, seed: int | None = None, only_output: list[str] | None = None)
 
    Bases: :py:obj:`ase.calculators.calculator.Calculator`
 

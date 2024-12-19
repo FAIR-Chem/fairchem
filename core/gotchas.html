@@ -16,8 +16,8 @@
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
   </script>
-  <!-- 
-    this give us a css class that will be invisible only if js is disabled 
+  <!--
+    this give us a css class that will be invisible only if js is disabled
   -->
   <noscript>
     <style>
@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=a3416100" />
@@ -40,10 +40,10 @@
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
-  <script src="../_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
     <script src="../_static/documentation_options.js?v=9eb32ce0"></script>
     <script src="../_static/doctools.js?v=9a2dae69"></script>
@@ -431,9 +431,14 @@
   
   
   <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
   </div>
-  
-  <div id="rtd-footer-container"></div>
 
 
       </div>
@@ -681,22 +686,22 @@
   @torch.cuda.amp.autocast(enabled=False)
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/equiformer_v2/layer_norm.py:357: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   @torch.cuda.amp.autocast(enabled=False)
-/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:190: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-04-00-17-04
-  commit: 3f695ef
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-19-04-01-04
+  commit: 83e1a53
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-04-00-17-04
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-19-04-01-04
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-04-00-17-04
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-19-04-01-04
   seed: null
-  timestamp_id: 2024-12-04-00-17-04
-  version: 1.3.0
+  timestamp_id: 2024-12-19-04-01-04
+  version: 1.4.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -881,7 +886,7 @@ val_dataset: {}
 <span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="n">atoms</span><span class="o">.</span><span class="n">set_calculator</span><span class="p">(</span><span class="n">calc</span><span class="p">)</span>
 <span class="ne">----&gt; </span><span class="mi">4</span> <span class="n">atoms</span><span class="o">.</span><span class="n">get_potential_energy</span><span class="p">()</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/ase/atoms.py:755,</span> in <span class="ni">Atoms.get_potential_energy</span><span class="nt">(self, force_consistent, apply_constraint)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/ase/atoms.py:755,</span> in <span class="ni">Atoms.get_potential_energy</span><span class="nt">(self, force_consistent, apply_constraint)</span>
 <span class="g g-Whitespace">    </span><span class="mi">752</span>     <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calc</span><span class="o">.</span><span class="n">get_potential_energy</span><span class="p">(</span>
 <span class="g g-Whitespace">    </span><span class="mi">753</span>         <span class="bp">self</span><span class="p">,</span> <span class="n">force_consistent</span><span class="o">=</span><span class="n">force_consistent</span><span class="p">)</span>
 <span class="g g-Whitespace">    </span><span class="mi">754</span> <span class="k">else</span><span class="p">:</span>
@@ -889,12 +894,12 @@ val_dataset: {}
 <span class="g g-Whitespace">    </span><span class="mi">756</span> <span class="k">if</span> <span class="n">apply_constraint</span><span class="p">:</span>
 <span class="g g-Whitespace">    </span><span class="mi">757</span>     <span class="k">for</span> <span class="n">constraint</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">:</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/ase/calculators/abc.py:24,</span> in <span class="ni">GetPropertiesMixin.get_potential_energy</span><span class="nt">(self, atoms, force_consistent)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/ase/calculators/abc.py:24,</span> in <span class="ni">GetPropertiesMixin.get_potential_energy</span><span class="nt">(self, atoms, force_consistent)</span>
 <span class="g g-Whitespace">     </span><span class="mi">22</span> <span class="k">else</span><span class="p">:</span>
 <span class="g g-Whitespace">     </span><span class="mi">23</span>     <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;energy&#39;</span>
 <span class="ne">---&gt; </span><span class="mi">24</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">atoms</span><span class="p">)</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/ase/calculators/calculator.py:538,</span> in <span class="ni">BaseCalculator.get_property</span><span class="nt">(self, name, atoms, allow_calculation)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/ase/calculators/calculator.py:538,</span> in <span class="ni">BaseCalculator.get_property</span><span class="nt">(self, name, atoms, allow_calculation)</span>
 <span class="g g-Whitespace">    </span><span class="mi">535</span>     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_cache</span><span class="p">:</span>
 <span class="g g-Whitespace">    </span><span class="mi">536</span>         <span class="bp">self</span><span class="o">.</span><span class="n">atoms</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 <span class="ne">--&gt; </span><span class="mi">538</span>     <span class="bp">self</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">system_changes</span><span class="p">)</span>
@@ -905,30 +910,30 @@ val_dataset: {}
 <span class="nn">    544         &#39;{} not present</span> in <span class="ni">this &#39; &#39;calculation&#39;.format</span><span class="nt">(name)</span>
 <span class="g g-Whitespace">    </span><span class="mi">545</span>     <span class="p">)</span>
 
-<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:277,</span> in <span class="ni">OCPCalculator.calculate</span><span class="nt">(self, atoms, properties, system_changes)</span>
-<span class="g g-Whitespace">    </span><span class="mi">274</span> <span class="k">else</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">275</span>     <span class="n">batch</span> <span class="o">=</span> <span class="n">atoms</span>
-<span class="ne">--&gt; </span><span class="mi">277</span> <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">per_image</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">disable_tqdm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">279</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">280</span>     <span class="n">_pred</span> <span class="o">=</span> <span class="n">predictions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:292,</span> in <span class="ni">OCPCalculator.calculate</span><span class="nt">(self, atoms, properties, system_changes)</span>
+<span class="g g-Whitespace">    </span><span class="mi">289</span> <span class="k">else</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">290</span>     <span class="n">batch</span> <span class="o">=</span> <span class="n">atoms</span>
+<span class="ne">--&gt; </span><span class="mi">292</span> <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">per_image</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">disable_tqdm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">294</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">295</span>     <span class="n">_pred</span> <span class="o">=</span> <span class="n">predictions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/utils/_contextlib.py:116,</span> in <span class="ni">context_decorator.&lt;locals&gt;.decorate_context</span><span class="nt">(*args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/utils/_contextlib.py:116,</span> in <span class="ni">context_decorator.&lt;locals&gt;.decorate_context</span><span class="nt">(*args, **kwargs)</span>
 <span class="g g-Whitespace">    </span><span class="mi">113</span> <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
 <span class="g g-Whitespace">    </span><span class="mi">114</span> <span class="k">def</span> <span class="nf">decorate_context</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="g g-Whitespace">    </span><span class="mi">115</span>     <span class="k">with</span> <span class="n">ctx_factory</span><span class="p">():</span>
 <span class="ne">--&gt; </span><span class="mi">116</span>         <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:472,</span> in <span class="ni">OCPTrainer.predict</span><span class="nt">(self, data_loader, per_image, results_file, disable_tqdm)</span>
-<span class="g g-Whitespace">    </span><span class="mi">464</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
-<span class="g g-Whitespace">    </span><span class="mi">465</span>     <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
-<span class="g g-Whitespace">    </span><span class="mi">466</span>     <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
+<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:473,</span> in <span class="ni">OCPTrainer.predict</span><span class="nt">(self, data_loader, per_image, results_file, disable_tqdm)</span>
+<span class="g g-Whitespace">    </span><span class="mi">465</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
+<span class="g g-Whitespace">    </span><span class="mi">466</span>     <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
+<span class="g g-Whitespace">    </span><span class="mi">467</span>     <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
    <span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">469</span>     <span class="n">disable</span><span class="o">=</span><span class="n">disable_tqdm</span><span class="p">,</span>
-<span class="g g-Whitespace">    </span><span class="mi">470</span> <span class="p">):</span>
-<span class="g g-Whitespace">    </span><span class="mi">471</span>     <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">amp</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scaler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
-<span class="ne">--&gt; </span><span class="mi">472</span>         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">474</span>     <span class="k">for</span> <span class="n">target_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;outputs&quot;</span><span class="p">]:</span>
-<span class="g g-Whitespace">    </span><span class="mi">475</span>         <span class="n">pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_denorm_preds</span><span class="p">(</span><span class="n">target_key</span><span class="p">,</span> <span class="n">out</span><span class="p">[</span><span class="n">target_key</span><span class="p">],</span> <span class="n">batch</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">470</span>     <span class="n">disable</span><span class="o">=</span><span class="n">disable_tqdm</span><span class="p">,</span>
+<span class="g g-Whitespace">    </span><span class="mi">471</span> <span class="p">):</span>
+<span class="g g-Whitespace">    </span><span class="mi">472</span>     <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">amp</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scaler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+<span class="ne">--&gt; </span><span class="mi">473</span>         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">475</span>     <span class="k">for</span> <span class="n">target_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;outputs&quot;</span><span class="p">]:</span>
+<span class="g g-Whitespace">    </span><span class="mi">476</span>         <span class="n">pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_denorm_preds</span><span class="p">(</span><span class="n">target_key</span><span class="p">,</span> <span class="n">out</span><span class="p">[</span><span class="n">target_key</span><span class="p">],</span> <span class="n">batch</span><span class="p">)</span>
 
 <span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:254,</span> in <span class="ni">OCPTrainer._forward</span><span class="nt">(self, batch)</span>
 <span class="g g-Whitespace">    </span><span class="mi">253</span> <span class="k">def</span> <span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
@@ -936,12 +941,12 @@ val_dataset: {}
 <span class="g g-Whitespace">    </span><span class="mi">256</span>     <span class="n">outputs</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="g g-Whitespace">    </span><span class="mi">257</span>     <span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">natoms</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1553,</span> in <span class="ni">Module._wrapped_call_impl</span><span class="nt">(self, *args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1553,</span> in <span class="ni">Module._wrapped_call_impl</span><span class="nt">(self, *args, **kwargs)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1551</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compiled_call_impl</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore[misc]</span>
 <span class="g g-Whitespace">   </span><span class="mi">1552</span> <span class="k">else</span><span class="p">:</span>
 <span class="ne">-&gt; </span><span class="mi">1553</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_impl</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1562,</span> in <span class="ni">Module._call_impl</span><span class="nt">(self, *args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1562,</span> in <span class="ni">Module._call_impl</span><span class="nt">(self, *args, **kwargs)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1557</span> <span class="c1"># If we don&#39;t have any hooks, we want to skip the rest of the logic in</span>
 <span class="g g-Whitespace">   </span><span class="mi">1558</span> <span class="c1"># this function, and just call forward.</span>
 <span class="g g-Whitespace">   </span><span class="mi">1559</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_backward_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backward_pre_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_pre_hooks</span>
@@ -1004,12 +1009,12 @@ val_dataset: {}
 <span class="g g-Whitespace">   </span><span class="mi">1096</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">atom_edge_interaction</span><span class="p">:</span>
 <span class="g g-Whitespace">   </span><span class="mi">1097</span>     <span class="n">basis_rad_a2ee2a_raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radial_basis_aeaint</span><span class="p">(</span><span class="n">a2ee2a_graph</span><span class="p">[</span><span class="s2">&quot;distance&quot;</span><span class="p">])</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1553,</span> in <span class="ni">Module._wrapped_call_impl</span><span class="nt">(self, *args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1553,</span> in <span class="ni">Module._wrapped_call_impl</span><span class="nt">(self, *args, **kwargs)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1551</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compiled_call_impl</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore[misc]</span>
 <span class="g g-Whitespace">   </span><span class="mi">1552</span> <span class="k">else</span><span class="p">:</span>
 <span class="ne">-&gt; </span><span class="mi">1553</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_impl</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1562,</span> in <span class="ni">Module._call_impl</span><span class="nt">(self, *args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1562,</span> in <span class="ni">Module._call_impl</span><span class="nt">(self, *args, **kwargs)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1557</span> <span class="c1"># If we don&#39;t have any hooks, we want to skip the rest of the logic in</span>
 <span class="g g-Whitespace">   </span><span class="mi">1558</span> <span class="c1"># this function, and just call forward.</span>
 <span class="g g-Whitespace">   </span><span class="mi">1559</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_backward_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backward_pre_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_pre_hooks</span>
@@ -1087,22 +1092,22 @@ val_dataset: {}
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Checking local cache: /tmp/fairchem_checkpoints/ for model GemNet-OC-S2EF-OC20-All
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:190: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-04-00-17-04
-  commit: 3f695ef
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-19-04-01-04
+  commit: 83e1a53
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-04-00-17-04
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-19-04-01-04
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-04-00-17-04
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-19-04-01-04
   seed: null
-  timestamp_id: 2024-12-04-00-17-04
-  version: 1.3.0
+  timestamp_id: 2024-12-19-04-01-04
+  version: 1.4.0
 dataset:
   format: trajectory_lmdb
   grad_target_mean: 0.0
@@ -1279,9 +1284,9 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2633/2356712572.py:11: DeprecationWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2669/2356712572.py:11: DeprecationWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
-/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:471: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:472: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
 </pre></div>
 </div>
@@ -1313,22 +1318,22 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Checking local cache: /tmp/fairchem_checkpoints/ for model GemNet-OC-S2EFS-OC20+OC22
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:190: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-04-00-17-04
-  commit: 3f695ef
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-19-04-01-04
+  commit: 83e1a53
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-04-00-17-04
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-19-04-01-04
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-04-00-17-04
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-19-04-01-04
   seed: null
-  timestamp_id: 2024-12-04-00-17-04
-  version: 1.3.0
+  timestamp_id: 2024-12-19-04-01-04
+  version: 1.4.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1493,9 +1498,9 @@ val_dataset: {}
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2633/2054440827.py:9: DeprecationWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2669/2054440827.py:9: DeprecationWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
-/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:471: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:472: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
 </pre></div>
 </div>
@@ -1525,22 +1530,22 @@ val_dataset: {}
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Checking local cache: /tmp/fairchem_checkpoints/ for model eSCN-L4-M2-Lay12-S2EF-OC20-2M
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:190: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-04-00-17-04
-  commit: 3f695ef
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-19-04-01-04
+  commit: 83e1a53
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-04-00-17-04
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-19-04-01-04
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-04-00-17-04
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-19-04-01-04
   seed: null
-  timestamp_id: 2024-12-04-00-17-04
-  version: 1.3.0
+  timestamp_id: 2024-12-19-04-01-04
+  version: 1.4.0
 dataset:
   format: trajectory_lmdb
   grad_target_mean: 0.0
@@ -1683,13 +1688,13 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2633/1817216860.py:7: DeprecationWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2669/1817216860.py:7: DeprecationWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
-/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:471: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:472: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
 </pre></div>
 </div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.6912057399749756
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.6843576431274414
 </pre></div>
 </div>
 </div>
@@ -1745,15 +1750,15 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-04-00-17-04
-  commit: 3f695ef
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-19-04-01-04
+  commit: 83e1a53
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-04-00-17-04
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-19-04-01-04
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-04-00-17-04
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-19-04-01-04
   seed: null
-  timestamp_id: 2024-12-04-00-17-04
-  version: 1.3.0
+  timestamp_id: 2024-12-19-04-01-04
+  version: 1.4.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1941,7 +1946,7 @@ val_dataset: {}
 <span class="g g-Whitespace">      </span><span class="mi">6</span> <span class="n">atoms</span><span class="o">.</span><span class="n">set_calculator</span><span class="p">(</span><span class="n">calc</span><span class="p">)</span>
 <span class="ne">----&gt; </span><span class="mi">7</span> <span class="n">atoms</span><span class="o">.</span><span class="n">get_potential_energy</span><span class="p">()</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/ase/atoms.py:755,</span> in <span class="ni">Atoms.get_potential_energy</span><span class="nt">(self, force_consistent, apply_constraint)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/ase/atoms.py:755,</span> in <span class="ni">Atoms.get_potential_energy</span><span class="nt">(self, force_consistent, apply_constraint)</span>
 <span class="g g-Whitespace">    </span><span class="mi">752</span>     <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calc</span><span class="o">.</span><span class="n">get_potential_energy</span><span class="p">(</span>
 <span class="g g-Whitespace">    </span><span class="mi">753</span>         <span class="bp">self</span><span class="p">,</span> <span class="n">force_consistent</span><span class="o">=</span><span class="n">force_consistent</span><span class="p">)</span>
 <span class="g g-Whitespace">    </span><span class="mi">754</span> <span class="k">else</span><span class="p">:</span>
@@ -1949,12 +1954,12 @@ val_dataset: {}
 <span class="g g-Whitespace">    </span><span class="mi">756</span> <span class="k">if</span> <span class="n">apply_constraint</span><span class="p">:</span>
 <span class="g g-Whitespace">    </span><span class="mi">757</span>     <span class="k">for</span> <span class="n">constraint</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">:</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/ase/calculators/abc.py:24,</span> in <span class="ni">GetPropertiesMixin.get_potential_energy</span><span class="nt">(self, atoms, force_consistent)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/ase/calculators/abc.py:24,</span> in <span class="ni">GetPropertiesMixin.get_potential_energy</span><span class="nt">(self, atoms, force_consistent)</span>
 <span class="g g-Whitespace">     </span><span class="mi">22</span> <span class="k">else</span><span class="p">:</span>
 <span class="g g-Whitespace">     </span><span class="mi">23</span>     <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;energy&#39;</span>
 <span class="ne">---&gt; </span><span class="mi">24</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">atoms</span><span class="p">)</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/ase/calculators/calculator.py:538,</span> in <span class="ni">BaseCalculator.get_property</span><span class="nt">(self, name, atoms, allow_calculation)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/ase/calculators/calculator.py:538,</span> in <span class="ni">BaseCalculator.get_property</span><span class="nt">(self, name, atoms, allow_calculation)</span>
 <span class="g g-Whitespace">    </span><span class="mi">535</span>     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_cache</span><span class="p">:</span>
 <span class="g g-Whitespace">    </span><span class="mi">536</span>         <span class="bp">self</span><span class="o">.</span><span class="n">atoms</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 <span class="ne">--&gt; </span><span class="mi">538</span>     <span class="bp">self</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">system_changes</span><span class="p">)</span>
@@ -1965,30 +1970,30 @@ val_dataset: {}
 <span class="nn">    544         &#39;{} not present</span> in <span class="ni">this &#39; &#39;calculation&#39;.format</span><span class="nt">(name)</span>
 <span class="g g-Whitespace">    </span><span class="mi">545</span>     <span class="p">)</span>
 
-<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:277,</span> in <span class="ni">OCPCalculator.calculate</span><span class="nt">(self, atoms, properties, system_changes)</span>
-<span class="g g-Whitespace">    </span><span class="mi">274</span> <span class="k">else</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">275</span>     <span class="n">batch</span> <span class="o">=</span> <span class="n">atoms</span>
-<span class="ne">--&gt; </span><span class="mi">277</span> <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">per_image</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">disable_tqdm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">279</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">280</span>     <span class="n">_pred</span> <span class="o">=</span> <span class="n">predictions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:292,</span> in <span class="ni">OCPCalculator.calculate</span><span class="nt">(self, atoms, properties, system_changes)</span>
+<span class="g g-Whitespace">    </span><span class="mi">289</span> <span class="k">else</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">290</span>     <span class="n">batch</span> <span class="o">=</span> <span class="n">atoms</span>
+<span class="ne">--&gt; </span><span class="mi">292</span> <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">per_image</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">disable_tqdm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">294</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">295</span>     <span class="n">_pred</span> <span class="o">=</span> <span class="n">predictions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/utils/_contextlib.py:116,</span> in <span class="ni">context_decorator.&lt;locals&gt;.decorate_context</span><span class="nt">(*args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/utils/_contextlib.py:116,</span> in <span class="ni">context_decorator.&lt;locals&gt;.decorate_context</span><span class="nt">(*args, **kwargs)</span>
 <span class="g g-Whitespace">    </span><span class="mi">113</span> <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
 <span class="g g-Whitespace">    </span><span class="mi">114</span> <span class="k">def</span> <span class="nf">decorate_context</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="g g-Whitespace">    </span><span class="mi">115</span>     <span class="k">with</span> <span class="n">ctx_factory</span><span class="p">():</span>
 <span class="ne">--&gt; </span><span class="mi">116</span>         <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:472,</span> in <span class="ni">OCPTrainer.predict</span><span class="nt">(self, data_loader, per_image, results_file, disable_tqdm)</span>
-<span class="g g-Whitespace">    </span><span class="mi">464</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
-<span class="g g-Whitespace">    </span><span class="mi">465</span>     <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
-<span class="g g-Whitespace">    </span><span class="mi">466</span>     <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
+<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:473,</span> in <span class="ni">OCPTrainer.predict</span><span class="nt">(self, data_loader, per_image, results_file, disable_tqdm)</span>
+<span class="g g-Whitespace">    </span><span class="mi">465</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
+<span class="g g-Whitespace">    </span><span class="mi">466</span>     <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
+<span class="g g-Whitespace">    </span><span class="mi">467</span>     <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
    <span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">469</span>     <span class="n">disable</span><span class="o">=</span><span class="n">disable_tqdm</span><span class="p">,</span>
-<span class="g g-Whitespace">    </span><span class="mi">470</span> <span class="p">):</span>
-<span class="g g-Whitespace">    </span><span class="mi">471</span>     <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">amp</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scaler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
-<span class="ne">--&gt; </span><span class="mi">472</span>         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">474</span>     <span class="k">for</span> <span class="n">target_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;outputs&quot;</span><span class="p">]:</span>
-<span class="g g-Whitespace">    </span><span class="mi">475</span>         <span class="n">pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_denorm_preds</span><span class="p">(</span><span class="n">target_key</span><span class="p">,</span> <span class="n">out</span><span class="p">[</span><span class="n">target_key</span><span class="p">],</span> <span class="n">batch</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">470</span>     <span class="n">disable</span><span class="o">=</span><span class="n">disable_tqdm</span><span class="p">,</span>
+<span class="g g-Whitespace">    </span><span class="mi">471</span> <span class="p">):</span>
+<span class="g g-Whitespace">    </span><span class="mi">472</span>     <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">amp</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scaler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+<span class="ne">--&gt; </span><span class="mi">473</span>         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">475</span>     <span class="k">for</span> <span class="n">target_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;outputs&quot;</span><span class="p">]:</span>
+<span class="g g-Whitespace">    </span><span class="mi">476</span>         <span class="n">pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_denorm_preds</span><span class="p">(</span><span class="n">target_key</span><span class="p">,</span> <span class="n">out</span><span class="p">[</span><span class="n">target_key</span><span class="p">],</span> <span class="n">batch</span><span class="p">)</span>
 
 <span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:254,</span> in <span class="ni">OCPTrainer._forward</span><span class="nt">(self, batch)</span>
 <span class="g g-Whitespace">    </span><span class="mi">253</span> <span class="k">def</span> <span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
@@ -1996,12 +2001,12 @@ val_dataset: {}
 <span class="g g-Whitespace">    </span><span class="mi">256</span>     <span class="n">outputs</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="g g-Whitespace">    </span><span class="mi">257</span>     <span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">natoms</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1553,</span> in <span class="ni">Module._wrapped_call_impl</span><span class="nt">(self, *args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1553,</span> in <span class="ni">Module._wrapped_call_impl</span><span class="nt">(self, *args, **kwargs)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1551</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compiled_call_impl</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore[misc]</span>
 <span class="g g-Whitespace">   </span><span class="mi">1552</span> <span class="k">else</span><span class="p">:</span>
 <span class="ne">-&gt; </span><span class="mi">1553</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_impl</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1562,</span> in <span class="ni">Module._call_impl</span><span class="nt">(self, *args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1562,</span> in <span class="ni">Module._call_impl</span><span class="nt">(self, *args, **kwargs)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1557</span> <span class="c1"># If we don&#39;t have any hooks, we want to skip the rest of the logic in</span>
 <span class="g g-Whitespace">   </span><span class="mi">1558</span> <span class="c1"># this function, and just call forward.</span>
 <span class="g g-Whitespace">   </span><span class="mi">1559</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_backward_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backward_pre_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_pre_hooks</span>
@@ -2064,12 +2069,12 @@ val_dataset: {}
 <span class="g g-Whitespace">   </span><span class="mi">1096</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">atom_edge_interaction</span><span class="p">:</span>
 <span class="g g-Whitespace">   </span><span class="mi">1097</span>     <span class="n">basis_rad_a2ee2a_raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radial_basis_aeaint</span><span class="p">(</span><span class="n">a2ee2a_graph</span><span class="p">[</span><span class="s2">&quot;distance&quot;</span><span class="p">])</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1553,</span> in <span class="ni">Module._wrapped_call_impl</span><span class="nt">(self, *args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1553,</span> in <span class="ni">Module._wrapped_call_impl</span><span class="nt">(self, *args, **kwargs)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1551</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compiled_call_impl</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore[misc]</span>
 <span class="g g-Whitespace">   </span><span class="mi">1552</span> <span class="k">else</span><span class="p">:</span>
 <span class="ne">-&gt; </span><span class="mi">1553</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_impl</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1562,</span> in <span class="ni">Module._call_impl</span><span class="nt">(self, *args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1562,</span> in <span class="ni">Module._call_impl</span><span class="nt">(self, *args, **kwargs)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1557</span> <span class="c1"># If we don&#39;t have any hooks, we want to skip the rest of the logic in</span>
 <span class="g g-Whitespace">   </span><span class="mi">1558</span> <span class="c1"># this function, and just call forward.</span>
 <span class="g g-Whitespace">   </span><span class="mi">1559</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_backward_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backward_pre_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_pre_hooks</span>
@@ -2128,15 +2133,15 @@ val_dataset: {}
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-04-00-17-04
-  commit: 3f695ef
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-19-04-01-04
+  commit: 83e1a53
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-04-00-17-04
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-19-04-01-04
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-04-00-17-04
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-19-04-01-04
   seed: null
-  timestamp_id: 2024-12-04-00-17-04
-  version: 1.3.0
+  timestamp_id: 2024-12-19-04-01-04
+  version: 1.4.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -2320,7 +2325,7 @@ val_dataset: {}
 <span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="n">atoms</span><span class="o">.</span><span class="n">set_calculator</span><span class="p">(</span><span class="n">calc</span><span class="p">)</span>
 <span class="ne">----&gt; </span><span class="mi">3</span> <span class="n">atoms</span><span class="o">.</span><span class="n">get_potential_energy</span><span class="p">()</span>  <span class="c1"># error</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/ase/atoms.py:755,</span> in <span class="ni">Atoms.get_potential_energy</span><span class="nt">(self, force_consistent, apply_constraint)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/ase/atoms.py:755,</span> in <span class="ni">Atoms.get_potential_energy</span><span class="nt">(self, force_consistent, apply_constraint)</span>
 <span class="g g-Whitespace">    </span><span class="mi">752</span>     <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calc</span><span class="o">.</span><span class="n">get_potential_energy</span><span class="p">(</span>
 <span class="g g-Whitespace">    </span><span class="mi">753</span>         <span class="bp">self</span><span class="p">,</span> <span class="n">force_consistent</span><span class="o">=</span><span class="n">force_consistent</span><span class="p">)</span>
 <span class="g g-Whitespace">    </span><span class="mi">754</span> <span class="k">else</span><span class="p">:</span>
@@ -2328,12 +2333,12 @@ val_dataset: {}
 <span class="g g-Whitespace">    </span><span class="mi">756</span> <span class="k">if</span> <span class="n">apply_constraint</span><span class="p">:</span>
 <span class="g g-Whitespace">    </span><span class="mi">757</span>     <span class="k">for</span> <span class="n">constraint</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">:</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/ase/calculators/abc.py:24,</span> in <span class="ni">GetPropertiesMixin.get_potential_energy</span><span class="nt">(self, atoms, force_consistent)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/ase/calculators/abc.py:24,</span> in <span class="ni">GetPropertiesMixin.get_potential_energy</span><span class="nt">(self, atoms, force_consistent)</span>
 <span class="g g-Whitespace">     </span><span class="mi">22</span> <span class="k">else</span><span class="p">:</span>
 <span class="g g-Whitespace">     </span><span class="mi">23</span>     <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;energy&#39;</span>
 <span class="ne">---&gt; </span><span class="mi">24</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_property</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">atoms</span><span class="p">)</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/ase/calculators/calculator.py:538,</span> in <span class="ni">BaseCalculator.get_property</span><span class="nt">(self, name, atoms, allow_calculation)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/ase/calculators/calculator.py:538,</span> in <span class="ni">BaseCalculator.get_property</span><span class="nt">(self, name, atoms, allow_calculation)</span>
 <span class="g g-Whitespace">    </span><span class="mi">535</span>     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_cache</span><span class="p">:</span>
 <span class="g g-Whitespace">    </span><span class="mi">536</span>         <span class="bp">self</span><span class="o">.</span><span class="n">atoms</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 <span class="ne">--&gt; </span><span class="mi">538</span>     <span class="bp">self</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">system_changes</span><span class="p">)</span>
@@ -2344,30 +2349,30 @@ val_dataset: {}
 <span class="nn">    544         &#39;{} not present</span> in <span class="ni">this &#39; &#39;calculation&#39;.format</span><span class="nt">(name)</span>
 <span class="g g-Whitespace">    </span><span class="mi">545</span>     <span class="p">)</span>
 
-<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:277,</span> in <span class="ni">OCPCalculator.calculate</span><span class="nt">(self, atoms, properties, system_changes)</span>
-<span class="g g-Whitespace">    </span><span class="mi">274</span> <span class="k">else</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">275</span>     <span class="n">batch</span> <span class="o">=</span> <span class="n">atoms</span>
-<span class="ne">--&gt; </span><span class="mi">277</span> <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">per_image</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">disable_tqdm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">279</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">280</span>     <span class="n">_pred</span> <span class="o">=</span> <span class="n">predictions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:292,</span> in <span class="ni">OCPCalculator.calculate</span><span class="nt">(self, atoms, properties, system_changes)</span>
+<span class="g g-Whitespace">    </span><span class="mi">289</span> <span class="k">else</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">290</span>     <span class="n">batch</span> <span class="o">=</span> <span class="n">atoms</span>
+<span class="ne">--&gt; </span><span class="mi">292</span> <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">per_image</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">disable_tqdm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">294</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">295</span>     <span class="n">_pred</span> <span class="o">=</span> <span class="n">predictions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/utils/_contextlib.py:116,</span> in <span class="ni">context_decorator.&lt;locals&gt;.decorate_context</span><span class="nt">(*args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/utils/_contextlib.py:116,</span> in <span class="ni">context_decorator.&lt;locals&gt;.decorate_context</span><span class="nt">(*args, **kwargs)</span>
 <span class="g g-Whitespace">    </span><span class="mi">113</span> <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
 <span class="g g-Whitespace">    </span><span class="mi">114</span> <span class="k">def</span> <span class="nf">decorate_context</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="g g-Whitespace">    </span><span class="mi">115</span>     <span class="k">with</span> <span class="n">ctx_factory</span><span class="p">():</span>
 <span class="ne">--&gt; </span><span class="mi">116</span>         <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:472,</span> in <span class="ni">OCPTrainer.predict</span><span class="nt">(self, data_loader, per_image, results_file, disable_tqdm)</span>
-<span class="g g-Whitespace">    </span><span class="mi">464</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
-<span class="g g-Whitespace">    </span><span class="mi">465</span>     <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
-<span class="g g-Whitespace">    </span><span class="mi">466</span>     <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
+<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:473,</span> in <span class="ni">OCPTrainer.predict</span><span class="nt">(self, data_loader, per_image, results_file, disable_tqdm)</span>
+<span class="g g-Whitespace">    </span><span class="mi">465</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
+<span class="g g-Whitespace">    </span><span class="mi">466</span>     <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
+<span class="g g-Whitespace">    </span><span class="mi">467</span>     <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
    <span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">469</span>     <span class="n">disable</span><span class="o">=</span><span class="n">disable_tqdm</span><span class="p">,</span>
-<span class="g g-Whitespace">    </span><span class="mi">470</span> <span class="p">):</span>
-<span class="g g-Whitespace">    </span><span class="mi">471</span>     <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">amp</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scaler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
-<span class="ne">--&gt; </span><span class="mi">472</span>         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">474</span>     <span class="k">for</span> <span class="n">target_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;outputs&quot;</span><span class="p">]:</span>
-<span class="g g-Whitespace">    </span><span class="mi">475</span>         <span class="n">pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_denorm_preds</span><span class="p">(</span><span class="n">target_key</span><span class="p">,</span> <span class="n">out</span><span class="p">[</span><span class="n">target_key</span><span class="p">],</span> <span class="n">batch</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">470</span>     <span class="n">disable</span><span class="o">=</span><span class="n">disable_tqdm</span><span class="p">,</span>
+<span class="g g-Whitespace">    </span><span class="mi">471</span> <span class="p">):</span>
+<span class="g g-Whitespace">    </span><span class="mi">472</span>     <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">amp</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scaler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+<span class="ne">--&gt; </span><span class="mi">473</span>         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">475</span>     <span class="k">for</span> <span class="n">target_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;outputs&quot;</span><span class="p">]:</span>
+<span class="g g-Whitespace">    </span><span class="mi">476</span>         <span class="n">pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_denorm_preds</span><span class="p">(</span><span class="n">target_key</span><span class="p">,</span> <span class="n">out</span><span class="p">[</span><span class="n">target_key</span><span class="p">],</span> <span class="n">batch</span><span class="p">)</span>
 
 <span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:254,</span> in <span class="ni">OCPTrainer._forward</span><span class="nt">(self, batch)</span>
 <span class="g g-Whitespace">    </span><span class="mi">253</span> <span class="k">def</span> <span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
@@ -2375,12 +2380,12 @@ val_dataset: {}
 <span class="g g-Whitespace">    </span><span class="mi">256</span>     <span class="n">outputs</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="g g-Whitespace">    </span><span class="mi">257</span>     <span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">natoms</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1553,</span> in <span class="ni">Module._wrapped_call_impl</span><span class="nt">(self, *args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1553,</span> in <span class="ni">Module._wrapped_call_impl</span><span class="nt">(self, *args, **kwargs)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1551</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compiled_call_impl</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore[misc]</span>
 <span class="g g-Whitespace">   </span><span class="mi">1552</span> <span class="k">else</span><span class="p">:</span>
 <span class="ne">-&gt; </span><span class="mi">1553</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_impl</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1562,</span> in <span class="ni">Module._call_impl</span><span class="nt">(self, *args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1562,</span> in <span class="ni">Module._call_impl</span><span class="nt">(self, *args, **kwargs)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1557</span> <span class="c1"># If we don&#39;t have any hooks, we want to skip the rest of the logic in</span>
 <span class="g g-Whitespace">   </span><span class="mi">1558</span> <span class="c1"># this function, and just call forward.</span>
 <span class="g g-Whitespace">   </span><span class="mi">1559</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_backward_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backward_pre_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_pre_hooks</span>
@@ -2443,12 +2448,12 @@ val_dataset: {}
 <span class="g g-Whitespace">   </span><span class="mi">1096</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">atom_edge_interaction</span><span class="p">:</span>
 <span class="g g-Whitespace">   </span><span class="mi">1097</span>     <span class="n">basis_rad_a2ee2a_raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radial_basis_aeaint</span><span class="p">(</span><span class="n">a2ee2a_graph</span><span class="p">[</span><span class="s2">&quot;distance&quot;</span><span class="p">])</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1553,</span> in <span class="ni">Module._wrapped_call_impl</span><span class="nt">(self, *args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1553,</span> in <span class="ni">Module._wrapped_call_impl</span><span class="nt">(self, *args, **kwargs)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1551</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compiled_call_impl</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore[misc]</span>
 <span class="g g-Whitespace">   </span><span class="mi">1552</span> <span class="k">else</span><span class="p">:</span>
 <span class="ne">-&gt; </span><span class="mi">1553</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_impl</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<span class="nn">File /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1562,</span> in <span class="ni">Module._call_impl</span><span class="nt">(self, *args, **kwargs)</span>
+<span class="nn">File /opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/torch/nn/modules/module.py:1562,</span> in <span class="ni">Module._call_impl</span><span class="nt">(self, *args, **kwargs)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1557</span> <span class="c1"># If we don&#39;t have any hooks, we want to skip the rest of the logic in</span>
 <span class="g g-Whitespace">   </span><span class="mi">1558</span> <span class="c1"># this function, and just call forward.</span>
 <span class="g g-Whitespace">   </span><span class="mi">1559</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_backward_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backward_pre_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_hooks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward_pre_hooks</span>
@@ -2492,7 +2497,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2633/3906293788.py:3: DeprecationWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2669/3906293788.py:3: DeprecationWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/gemnet_oc/gemnet_oc.py:1270: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   with torch.cuda.amp.autocast(False):
@@ -2520,24 +2525,22 @@ val_dataset: {}
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Checking local cache: /tmp/fairchem_checkpoints/ for model EquiformerV2-31M-S2EF-OC20-All+MD
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:190: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
+WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-04-00-17-04
-  commit: 3f695ef
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-19-04-01-04
+  commit: 83e1a53
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-04-00-17-04
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-19-04-01-04
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-04-00-17-04
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-19-04-01-04
   seed: null
-  timestamp_id: 2024-12-04-00-17-04
-  version: 1.3.0
+  timestamp_id: 2024-12-19-04-01-04
+  version: 1.4.0
 dataset:
   format: trajectory_lmdb_v2
   grad_target_mean: 0.0
@@ -2704,13 +2707,13 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2633/4094489779.py:3: DeprecationWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2669/4094489779.py:3: DeprecationWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
-/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:471: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:472: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
 </pre></div>
 </div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>-0.4297371208667755
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>-0.42973706126213074
 </pre></div>
 </div>
 </div>
@@ -2751,24 +2754,22 @@ This happens because a random selection of is made to sample edges, and a differ
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Checking local cache: /tmp/fairchem_checkpoints/ for model EquiformerV2-31M-S2EF-OC20-All+MD
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:190: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
+WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-04-00-17-04
-  commit: 3f695ef
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-19-04-01-04
+  commit: 83e1a53
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-04-00-17-04
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-19-04-01-04
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-04-00-17-04
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-19-04-01-04
   seed: null
-  timestamp_id: 2024-12-04-00-17-04
-  version: 1.3.0
+  timestamp_id: 2024-12-19-04-01-04
+  version: 1.4.0
 dataset:
   format: trajectory_lmdb_v2
   grad_target_mean: 0.0
@@ -2923,23 +2924,23 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2633/3396863997.py:11: DeprecationWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2669/3396863997.py:11: DeprecationWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
-/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:471: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:472: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.2127605438232423 1.703316793393302e-06
-1.2127599716186523
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.2127598762512206 1.2072552586719669e-06
+1.2127611637115479
+1.2127580642700195
+1.2127602100372314
+1.2127587795257568
 1.212759256362915
-1.2127623558044434
+1.212759017944336
+1.2127611637115479
 1.2127604484558105
-1.2127609252929688
-1.2127606868743896
-1.2127571105957031
-1.2127621173858643
-1.212759256362915
-1.2127633094787598
+1.2127618789672852
+1.2127587795257568
 </pre></div>
 </div>
 </div>
@@ -2971,22 +2972,22 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Checking local cache: /tmp/fairchem_checkpoints/ for model EquiformerV2-31M-S2EF-OC20-All+MD
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:190: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-04-00-17-04
-  commit: 3f695ef
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2024-12-19-04-01-04
+  commit: 83e1a53
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-04-00-17-04
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2024-12-19-04-01-04
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-04-00-17-04
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2024-12-19-04-01-04
   seed: null
-  timestamp_id: 2024-12-04-00-17-04
-  version: 1.3.0
+  timestamp_id: 2024-12-19-04-01-04
+  version: 1.4.0
 dataset:
   format: trajectory_lmdb_v2
   grad_target_mean: 0.0
@@ -3141,13 +3142,13 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2633/4037009387.py:11: DeprecationWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2669/4037009387.py:11: DeprecationWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
-/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:471: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:472: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
 </pre></div>
 </div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([ 0.01599049,  0.00170633, -0.07197893], dtype=float32)
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([ 0.01598842,  0.00170618, -0.07197857], dtype=float32)
 </pre></div>
 </div>
 </div>
@@ -3160,7 +3161,7 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([-6.9907401e-08, -5.4598786e-08,  2.3841858e-07], dtype=float32)
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([-5.9488229e-08, -7.1711838e-08,  2.3841858e-07], dtype=float32)
 </pre></div>
 </div>
 </div>
@@ -3295,8 +3296,8 @@ By FAIR Chemistry & Collaborators
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
 
   <footer class="bd-footer">
   </footer>

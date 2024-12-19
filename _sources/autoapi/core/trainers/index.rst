@@ -130,7 +130,7 @@ Package Contents
    .. py:method:: get_sampler(dataset, batch_size: int, shuffle: bool) -> fairchem.core.common.data_parallel.BalancedBatchSampler
 
 
-   .. py:method:: get_dataloader(dataset, sampler) -> torch.utils.data.DataLoader
+   .. py:method:: get_dataloader(dataset, sampler, workers=None) -> torch.utils.data.DataLoader
 
 
    .. py:method:: load_datasets() -> None

@@ -16,8 +16,8 @@
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
   </script>
-  <!-- 
-    this give us a css class that will be invisible only if js is disabled 
+  <!--
+    this give us a css class that will be invisible only if js is disabled
   -->
   <noscript>
     <style>
@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../_static/styles/theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
-<link href="../../_static/styles/pydata-sphinx-theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=a3416100" />
@@ -40,10 +40,10 @@
     <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
-  <script src="../../_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
-<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
     <script src="../../_static/documentation_options.js?v=9eb32ce0"></script>
     <script src="../../_static/doctools.js?v=9a2dae69"></script>
@@ -431,9 +431,14 @@
   
   
   <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
   </div>
-  
-  <div id="rtd-footer-container"></div>
 
 
       </div>
@@ -714,9 +719,9 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_4545/147314410.py:15: DeprecationWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_4857/147314410.py:15: DeprecationWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
-/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:471: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/trainers/ocp_trainer.py:472: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   with torch.cuda.amp.autocast(enabled=self.scaler is not None):
 </pre></div>
 </div>
@@ -724,7 +729,7 @@
   with torch.cuda.amp.autocast(False):
 </pre></div>
 </div>
-<img alt="../../_images/0b3958286e89b6775a989bba9b1875e127fdba431157646f3cfeeb5e7bc72c63.png" src="../../_images/0b3958286e89b6775a989bba9b1875e127fdba431157646f3cfeeb5e7bc72c63.png" />
+<img alt="../../_images/c8f2809e3879797510f9370dd08bfcdec3870051d28f2940fc0284a0ad7ee453.png" src="../../_images/c8f2809e3879797510f9370dd08bfcdec3870051d28f2940fc0284a0ad7ee453.png" />
 </div>
 </div>
 <p>Something is a little off in this equation of state, there is an unphysical bump in it. We now rerun this and get the embeddings. You simply call the <code class="docutils literal notranslate"><span class="pre">calc.embed</span></code> method. We need a reference configuration to compare too. We choose a lattice constant of 3.63 angstroms and compute three different embeddings.</p>
@@ -803,7 +808,7 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/637c5cb7c81319ee5a25671cc27ae4ac565350725615c81c8d9b057f41f05297.png" src="../../_images/637c5cb7c81319ee5a25671cc27ae4ac565350725615c81c8d9b057f41f05297.png" />
+<img alt="../../_images/3b69a3734c5e11e6ad6e54fb4c3a5966ff0e8c0909ef58d4d33ed2f9982b2637.png" src="../../_images/3b69a3734c5e11e6ad6e54fb4c3a5966ff0e8c0909ef58d4d33ed2f9982b2637.png" />
 </div>
 </div>
 <p>We can see that near the minimum the different embeddings are all quite similar. But, near the unphysical peak, the x_E embedding shows a significant deviation. The atomic energy is linear in this embedding, which is why we see the peak. This means the embedding is not sufficiently trained in this region, and fine-tuning should be considered with data in that region.</p>
@@ -870,11 +875,13 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
   from .autonotebook import tqdm as notebook_tqdm
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/umap/umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/sklearn/utils/deprecation.py:151: FutureWarning: &#39;force_all_finite&#39; was renamed to &#39;ensure_all_finite&#39; in 1.6 and will be removed in 1.8.
+  warnings.warn(
+/opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/umap/umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
   warn(
 </pre></div>
 </div>
@@ -888,7 +895,7 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/aec7184c8419821ab7ec94acf29ef6ae453e0537801bb1ad7ea982720fd85b48.png" src="../../_images/aec7184c8419821ab7ec94acf29ef6ae453e0537801bb1ad7ea982720fd85b48.png" />
+<img alt="../../_images/3323cbf02d21d7eee5e73912f34f9a645f3138072ac6f3fea61c0a1427bd0d52.png" src="../../_images/3323cbf02d21d7eee5e73912f34f9a645f3138072ac6f3fea61c0a1427bd0d52.png" />
 </div>
 </div>
 <section id="clustering-individual-atoms">
@@ -938,11 +945,13 @@
   with torch.cuda.amp.autocast(False):
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/umap/umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/sklearn/utils/deprecation.py:151: FutureWarning: &#39;force_all_finite&#39; was renamed to &#39;ensure_all_finite&#39; in 1.6 and will be removed in 1.8.
+  warnings.warn(
+/opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/site-packages/umap/umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
   warn(
 </pre></div>
 </div>
-<img alt="../../_images/cd2f754e728ef30e0a1356e5458cddc5e18367cca66e341dbabcea2dd846dad6.png" src="../../_images/cd2f754e728ef30e0a1356e5458cddc5e18367cca66e341dbabcea2dd846dad6.png" />
+<img alt="../../_images/89125fe4375c2b60b34f4ea6cafc0628965811e7c3618bff209d2a4b34ade52a.png" src="../../_images/89125fe4375c2b60b34f4ea6cafc0628965811e7c3618bff209d2a4b34ade52a.png" />
 </div>
 </div>
 <p>You can see from this there are roughly three kinds of atoms. One is bulk like, with the lowest energy (the dark red points), the second is also lower in energy (the reddish-orange points), and the others are surface atoms, with higher energies (the bluish points).</p>
@@ -981,7 +990,9 @@
 <div class="cell_output docutils container">
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/docs/tutorials/advanced/embedding_monkeypatch.py:188: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   torch.cuda.amp.autocast(enabled=self.trainer.scaler is not None),
-/home/runner/work/fairchem/fairchem/docs/tutorials/advanced/embedding_monkeypatch.py:96: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/docs/tutorials/advanced/embedding_monkeypatch.py:96: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast(&#39;cuda&#39;, args...)` instead.
   with torch.cuda.amp.autocast(False):
 </pre></div>
 </div>
@@ -1070,7 +1081,7 @@
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: &gt;
 </pre></div>
 </div>
-<img alt="../../_images/456e121530c4caa347faeecfb82e9833197942355727c6ab0044304bf65dc3e7.png" src="../../_images/456e121530c4caa347faeecfb82e9833197942355727c6ab0044304bf65dc3e7.png" />
+<img alt="../../_images/dad6b1e058610539c708b092cf6a57965e13e28b8c6dbdabe62cfaed96091314.png" src="../../_images/dad6b1e058610539c708b092cf6a57965e13e28b8c6dbdabe62cfaed96091314.png" />
 </div>
 </div>
 </section>
@@ -1199,8 +1210,8 @@ By FAIR Chemistry & Collaborators
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549"></script>
-<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549"></script>
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
 
   <footer class="bd-footer">
   </footer>
