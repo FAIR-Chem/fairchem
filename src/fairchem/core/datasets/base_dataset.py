@@ -94,7 +94,7 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
             logging.warning(
                 f"Could not find dataset metadata.npz files in '{self.paths}'"
             )
-            return None
+            return {}
 
         metadata = {
             field: np.concatenate([metadata[field] for metadata in metadata_npzs])
@@ -111,7 +111,7 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
         return metadata
 
     def get_metadata(self, attr, idx):
-        if self._metadata is not None:
+        if attr in self._metadata:
             metadata_attr = self._metadata[attr]
             if isinstance(idx, list):
                 return [metadata_attr[_idx] for _idx in idx]
