@@ -66,8 +66,6 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
         return self.num_samples
 
     def metadata_hasattr(self, attr) -> bool:
-        if self._metadata is None:
-            return False
         return attr in self._metadata
 
     @cached_property
@@ -128,7 +126,7 @@ class Subset(Subset_, BaseDataset):
         self,
         dataset: BaseDataset,
         indices: Sequence[int],
-        metadata: DatasetMetadata | None = None,
+        metadata: dict[str, ArrayLike],
     ) -> None:
         super().__init__(dataset, indices)
         self.metadata = metadata
@@ -137,7 +135,7 @@ class Subset(Subset_, BaseDataset):
         self.config = dataset.config
 
     @cached_property
-    def _metadata(self) -> DatasetMetadata:
+    def _metadata(self) -> dict[str, ArrayLike]:
         return self.dataset._metadata
 
     def get_metadata(self, attr, idx):
