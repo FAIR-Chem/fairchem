@@ -33,13 +33,6 @@ if TYPE_CHECKING:
 T_co = TypeVar("T_co", covariant=True)
 
 
-class DatasetMetadata:
-    def __init__(self, natoms: ArrayLike | None = None, **kwargs):
-        self.natoms = natoms
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-
 class UnsupportedDatasetError(ValueError):
     pass
 
@@ -75,14 +68,14 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
     def metadata_hasattr(self, attr) -> bool:
         if self._metadata is None:
             return False
-        return hasattr(self._metadata, attr)
+        return attr in self._metadata
 
     @cached_property
     def indices(self):
         return np.arange(self.num_samples, dtype=int)
 
     @cached_property
-    def _metadata(self) -> DatasetMetadata:
+    def _metadata(self) -> dict[str, ArrayLike]:
         # logic to read metadata file here
         metadata_npzs = []
         if self.config.get("metadata_path", None) is not None:
@@ -105,17 +98,15 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
             )
             return None
 
-        metadata = DatasetMetadata(
-            **{
-                field: np.concatenate([metadata[field] for metadata in metadata_npzs])
-                for field in metadata_npzs[0]
-            }
-        )
+        metadata = {
+            field: np.concatenate([metadata[field] for metadata in metadata_npzs])
+            for field in metadata_npzs[0]
+        }
 
         assert np.issubdtype(
-            metadata.natoms.dtype, np.integer
-        ), f"Metadata natoms must be an integer type! not {metadata.natoms.dtype}"
-        assert metadata.natoms.shape[0] == len(
+            metadata["natoms"].dtype, np.integer
+        ), f"Metadata natoms must be an integer type! not {metadata['natoms'].dtype}"
+        assert metadata["natoms"].shape[0] == len(
             self
         ), "Loaded metadata and dataset size mismatch."
 
@@ -123,7 +114,7 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
 
     def get_metadata(self, attr, idx):
         if self._metadata is not None:
-            metadata_attr = getattr(self._metadata, attr)
+            metadata_attr = self._metadata[attr]
             if isinstance(idx, list):
                 return [metadata_attr[_idx] for _idx in idx]
             return metadata_attr[idx]
