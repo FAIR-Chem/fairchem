@@ -9,6 +9,7 @@
 
 ![tests](https://github.com/FAIR-Chem/fairchem/actions/workflows/test.yml/badge.svg?branch=main)
 ![documentation](https://github.com/FAIR-Chem/fairchem/actions/workflows/deploy_docs.yml/badge.svg?branch=main)
+![PyPI - Version](https://img.shields.io/pypi/v/fairchem-core)
 ![Static Badge](https://img.shields.io/badge/python-3.9%2B-blue)
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new/FAIR-Chem/fairchem?quickstart=1)
