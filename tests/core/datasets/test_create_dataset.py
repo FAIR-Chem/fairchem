@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import os
+import tempfile
+
 import numpy as np
 import pytest
 
 from fairchem.core.datasets import LMDBDatabase, create_dataset
 from fairchem.core.datasets.base_dataset import BaseDataset
-import tempfile
 from fairchem.core.trainers.base_trainer import BaseTrainer
 
 
@@ -12,12 +15,21 @@ from fairchem.core.trainers.base_trainer import BaseTrainer
 def lmdb_database(structures):
     with tempfile.TemporaryDirectory() as tmpdirname:
         num_atoms = []
+        mod2 = []
+        mod3 = []
         asedb_fn = f"{tmpdirname}/asedb.lmdb"
         with LMDBDatabase(asedb_fn) as database:
             for i, atoms in enumerate(structures):
                 database.write(atoms, data=atoms.info)
                 num_atoms.append(len(atoms))
-        np.savez(f"{tmpdirname}/metadata.npz", natoms=num_atoms)
+                mod2.append(len(atoms) % 2)
+                mod3.append(len(atoms) % 3)
+        np.savez(
+            f"{tmpdirname}/metadata.npz",
+            natoms=num_atoms,
+            mod2=mod2,
+            mod3=mod3,
+        )
         yield asedb_fn
 
 
@@ -76,6 +88,40 @@ def test_real_dataset_config(lmdb_database):
     assert len(t.val_dataset) == 3
 
 
+def test_subset_to(structures, lmdb_database):
+    config = {
+        "format": "ase_db",
+        "src": str(lmdb_database),
+        "subset_to": [{"op": "abs_le", "metadata_key": "mod2", "rhv": 10}],
+    }
+
+    assert len(create_dataset(config, split="train")) == len(structures)
+
+    # only select those that have mod2==0
+    config = {
+        "format": "ase_db",
+        "src": str(lmdb_database),
+        "subset_to": [{"op": "abs_le", "metadata_key": "mod2", "rhv": 0}],
+    }
+    assert len(create_dataset(config, split="train")) == len(
+        [s for s in structures if len(s) % 2 == 0]
+    )
+
+    # only select those that have mod2==0 and mod3==0
+    config = {
+        "format": "ase_db",
+        "src": str(lmdb_database),
+        "subset_to": [
+            {"op": "abs_le", "metadata_key": "mod2", "rhv": 0},
+            {"op": "abs_le", "metadata_key": "mod2", "rhv": 0},
+        ],
+    }
+    assert len(create_dataset(config, split="train")) == len(
+        [s for s in structures if len(s) % 2 == 0]
+    )
+    assert len([s for s in structures if len(s) % 2 == 0]) > 0
+
+
 @pytest.mark.parametrize("max_atoms", [3, None])
 @pytest.mark.parametrize(
     "key, value", [("first_n", 2), ("sample_n", 2), ("no_shuffle", True)]
@@ -94,7 +140,7 @@ def test_create_dataset(key, value, max_atoms, structures, lmdb_database):
         structures = [s for s in structures if len(s) <= max_atoms]
         assert all(
             natoms <= max_atoms
-            for natoms in dataset.metadata.natoms[range(len(dataset))]
+            for natoms in dataset.metadata["natoms"][range(len(dataset))]
         )
     if key == "first_n":  # this assumes first_n are not shuffled
         assert all(
