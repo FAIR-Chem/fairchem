@@ -230,11 +230,17 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
         # shuffle all datasets by default to avoid biasing the sampling in concat dataset
         # TODO only shuffle if split is train
         max_index = sample_n
-        indices = indices[randperm(len(indices), generator=g)]
+        indices = (
+            indices
+            if len(indices) == 1
+            else indices[randperm(len(indices), generator=g)]
+        )
     else:
         max_index = len(indices)
         indices = (
-            indices if no_shuffle else indices[randperm(len(indices), generator=g)]
+            indices
+            if (no_shuffle or len(indices) == 1)
+            else indices[randperm(len(indices), generator=g)]
         )
 
     if max_index > len(indices):
