@@ -323,11 +323,14 @@ class BaseTrainer(ABC):
             seed=self.config["cmd"]["seed"],
         )
 
-    def get_dataloader(self, dataset, sampler) -> DataLoader:
+    def get_dataloader(self, dataset, sampler, workers=None) -> DataLoader:
+        num_workers = (
+            self.config["optim"]["num_workers"] if workers is None else workers
+        )
         return DataLoader(
             dataset,
             collate_fn=self.collater,
-            num_workers=self.config["optim"]["num_workers"],
+            num_workers=num_workers,
             pin_memory=True,
             batch_sampler=sampler,
         )
