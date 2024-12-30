@@ -7,11 +7,15 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from contextlib import contextmanager
-from pathlib import Path
 import functools
 import tempfile
-from typing import TypeVar
+from contextlib import contextmanager
+from pathlib import Path
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    TypeVar,
+)
 
 import numpy as np
 import pytest
@@ -23,7 +27,10 @@ from fairchem.core.common.data_parallel import (
     UnsupportedDatasetError,
     _balanced_partition,
 )
-from fairchem.core.datasets.base_dataset import BaseDataset, DatasetMetadata
+
+if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
+from fairchem.core.datasets.base_dataset import BaseDataset
 
 DATA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 SIZE_ATOMS = [2, 20, 3, 51, 10, 11, 41, 31, 13, 14]
@@ -41,8 +48,8 @@ def _temp_file(name: str):
 def valid_dataset():
     class _Dataset(BaseDataset):
         @functools.cached_property
-        def _metadata(self) -> DatasetMetadata:
-            return DatasetMetadata(natoms=np.array(SIZE_ATOMS))
+        def _metadata(self) -> dict[str, ArrayLike]:
+            return {"natoms": np.array(SIZE_ATOMS)}
 
         def __init__(self, data) -> None:
             super().__init__(config={})
@@ -56,7 +63,7 @@ def valid_dataset():
 
         def get_metadata(self, attr, idx):
             assert attr == "natoms"
-            metadata_attr = getattr(self._metadata, attr)
+            metadata_attr = self._metadata[attr]
             if isinstance(idx, list):
                 return [metadata_attr[_idx] for _idx in idx]
             return metadata_attr[idx]
@@ -68,19 +75,19 @@ def valid_dataset():
 def valid_path_dataset():
     class _Dataset(BaseDataset):
         @functools.cached_property
-        def _metadata(self) -> DatasetMetadata:
+        def _metadata(self) -> dict[str, ArrayLike]:
             return self.metadata
 
         def __init__(self, data, fpath: Path) -> None:
             super().__init__(config={})
             self.data = data
-            self.metadata = DatasetMetadata(natoms=np.load(fpath)["natoms"])
+            self.metadata = {"natoms": np.load(fpath)["natoms"]}
 
         def __len__(self):
             return len(self.data)
 
         def __getitem__(self, idx):
-            metadata_attr = getattr(self._metadata, "natoms")
+            metadata_attr = self._metadata["natoms"]
             if isinstance(idx, list):
                 return [metadata_attr[_idx] for _idx in idx]
             return metadata_attr[idx]
@@ -96,7 +103,6 @@ def valid_path_dataset():
 @pytest.fixture()
 def invalid_path_dataset():
     class _Dataset(BaseDataset):
-
         def __init__(self, data) -> None:
             super().__init__(config={})
             self.data = data
@@ -114,7 +120,6 @@ def invalid_path_dataset():
 @pytest.fixture()
 def invalid_dataset():
     class _Dataset(BaseDataset):
-
         def __init__(self, data) -> None:
             super().__init__(config={})
             self.data = data
