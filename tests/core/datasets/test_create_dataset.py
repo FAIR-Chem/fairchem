@@ -89,6 +89,7 @@ def test_real_dataset_config(lmdb_database):
 
 
 def test_subset_to(structures, lmdb_database):
+    # select all
     config = {
         "format": "ase_db",
         "src": str(lmdb_database),
@@ -96,6 +97,16 @@ def test_subset_to(structures, lmdb_database):
     }
 
     assert len(create_dataset(config, split="train")) == len(structures)
+
+    # select a subset of indices
+    indices = [1, 2]
+    config = {
+        "format": "ase_db",
+        "src": str(lmdb_database),
+        "subset_to": [{"op": "in", "metadata_key": "mod2", "rhv": indices}],
+    }
+
+    assert len(create_dataset(config, split="train")) == len(indices)
 
     # only select those that have mod2==0
     config = {
