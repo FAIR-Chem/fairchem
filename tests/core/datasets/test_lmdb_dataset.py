@@ -9,7 +9,7 @@ from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lm
 
 @pytest.fixture()
 def config(tutorial_dataset_path):
-    lmdb_path = str(tutorial_dataset_path / "s2ef/train_100")
+    lmdb_path = str(tutorial_dataset_path / "s2ef/val_20")
 
     # make dataset metadata
     parser = get_lmdb_sizes_parser()
