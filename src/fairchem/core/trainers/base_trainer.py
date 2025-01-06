@@ -710,6 +710,7 @@ class BaseTrainer(ABC):
                 self.model_params_no_wd = self._unwrapped_model.no_weight_decay()
 
             params_decay, params_no_decay, name_no_decay = [], [], []
+            moe_linear_weights = []
             for name, param in self.model.named_parameters():
                 if not param.requires_grad:
                     continue
@@ -720,18 +721,30 @@ class BaseTrainer(ABC):
                     params_no_decay.append(param)
                     name_no_decay.append(name)
                 else:
-                    params_decay.append(param)
+                    if "moe_linear" in name:
+                        moe_linear_weights.append(param)
+                    else:
+                        params_decay.append(param)
 
             if distutils.is_master():
                 logging.info("Parameters without weight decay:")
                 logging.info(name_no_decay)
+                logging.info(f"Found {len(moe_linear_weights)} Moe params")
 
+            lr_global = float(self.config["optim"]["lr_initial"])
+            lr_moe_factor = float(self.config["optim"].get("lr_moe_factor", 1.0))
+            logging.info(f"Using lr_moe_factor {lr_moe_factor}")
             self.optimizer = optimizer(
                 params=[
                     {"params": params_no_decay, "weight_decay": 0},
                     {"params": params_decay, "weight_decay": weight_decay},
+                    {
+                        "params": moe_linear_weights,
+                        "weight_decay": weight_decay,
+                        "lr": lr_global * lr_moe_factor,
+                    },
                 ],
-                lr=self.config["optim"]["lr_initial"],
+                lr=lr_global,
                 **optimizer_params,
             )
         else:
