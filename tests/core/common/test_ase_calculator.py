@@ -38,6 +38,7 @@ def atoms() -> Atoms:
         "PaiNN-S2EF-OC20-All",
         "GemNet-OC-Large-S2EF-OC20-All+MD",
         "SCN-S2EF-OC20-All+MD",
+        "PaiNN-IS2RE-OC20-All",
         # Equiformer v2  # already tested in test_relaxation_final_energy
         # "EquiformerV2-153M-S2EF-OC20-All+MD"
         # eSCNm # already tested in test_random_seed_final_energy
@@ -54,6 +55,27 @@ def test_calculator_setup(checkpoint_path):
     _ = OCPCalculator(checkpoint_path=checkpoint_path, cpu=True)
 
 
+def test_energy_with_is2re_model(atoms, tmp_path, snapshot):
+    random.seed(1)
+    torch.manual_seed(1)
+
+    with pytest.raises(AttributeError):  # noqa
+        calc = OCPCalculator(
+            checkpoint_path=model_name_to_local_file("PaiNN-IS2RE-OC20-All", tmp_path),
+            cpu=True,
+        )
+        atoms.set_calculator(calc)
+        atoms.get_potential_energy()
+
+    calc = OCPCalculator(
+        checkpoint_path=model_name_to_local_file("PaiNN-IS2RE-OC20-All", tmp_path),
+        cpu=True,
+        only_output=["energy"],
+    )
+    atoms.set_calculator(calc)
+    assert snapshot == round(atoms.get_potential_energy(), 2)
+
+
 # test relaxation with EqV2
 def test_relaxation_final_energy(atoms, tmp_path, snapshot) -> None:
     random.seed(1)
@@ -64,6 +86,9 @@ def test_relaxation_final_energy(atoms, tmp_path, snapshot) -> None:
         ),
         cpu=True,
     )
+
+    assert "energy" in calc.implemented_properties
+    assert "forces" in calc.implemented_properties
 
     atoms.set_calculator(calc)
     opt = BFGS(atoms)

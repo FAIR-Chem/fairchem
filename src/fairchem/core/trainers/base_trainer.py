@@ -215,6 +215,7 @@ class BaseTrainer(ABC):
         self.test_dataset = None
         self.best_val_metric = None
         self.primary_metric = None
+        self.ema = None
 
         self.load(inference_only)
 
@@ -322,11 +323,14 @@ class BaseTrainer(ABC):
             seed=self.config["cmd"]["seed"],
         )
 
-    def get_dataloader(self, dataset, sampler) -> DataLoader:
+    def get_dataloader(self, dataset, sampler, workers=None) -> DataLoader:
+        num_workers = (
+            self.config["optim"]["num_workers"] if workers is None else workers
+        )
         return DataLoader(
             dataset,
             collate_fn=self.collater,
-            num_workers=self.config["optim"]["num_workers"],
+            num_workers=num_workers,
             pin_memory=True,
             batch_sampler=sampler,
         )
@@ -361,7 +365,7 @@ class BaseTrainer(ABC):
             )
             self.train_sampler = self.get_sampler(
                 self.train_dataset,
-                self.config["optim"]["batch_size"],
+                self.config["optim"].get("batch_size", 1),
                 shuffle=True,
             )
             self.train_loader = self.get_dataloader(
@@ -392,7 +396,7 @@ class BaseTrainer(ABC):
             self.val_sampler = self.get_sampler(
                 self.val_dataset,
                 self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
+                    "eval_batch_size", self.config["optim"].get("batch_size", 1)
                 ),
                 shuffle=False,
             )
@@ -414,7 +418,7 @@ class BaseTrainer(ABC):
             self.test_sampler = self.get_sampler(
                 self.test_dataset,
                 self.config["optim"].get(
-                    "eval_batch_size", self.config["optim"]["batch_size"]
+                    "eval_batch_size", self.config["optim"].get("batch_size", 1)
                 ),
                 shuffle=False,
             )

@@ -47,7 +47,7 @@ class OCPTrainer(BaseTrainer):
     Args:
         task (dict): Task configuration.
         model (dict): Model configuration.
-        outputs (dict): Output property configuration.
+        outputs (dict): Dictionary of model output configuration.
         dataset (dict): Dataset configuration. The dataset needs to be a SinglePointLMDB dataset.
         optimizer (dict): Optimizer configuration.
         loss_functions (dict): Loss function configuration.
@@ -55,6 +55,8 @@ class OCPTrainer(BaseTrainer):
         identifier (str): Experiment identifier that is appended to log directory.
         run_dir (str, optional): Path to the run directory where logs are to be saved.
             (default: :obj:`None`)
+        timestamp_id (str, optional): timestamp identifier.
+        run_dir (str, optional): Run directory used to save checkpoints and results.
         is_debug (bool, optional): Run in debug mode.
             (default: :obj:`False`)
         print_every (int, optional): Frequency of printing logs.
@@ -63,10 +65,17 @@ class OCPTrainer(BaseTrainer):
             (default: :obj:`None`)
         logger (str, optional): Type of logger to be used.
             (default: :obj:`wandb`)
+        local_rank (int, optional): Local rank of the process, only applicable for distributed training.
+            (default: :obj:`0`)
         amp (bool, optional): Run using automatic mixed precision.
             (default: :obj:`False`)
+        cpu (bool): If True will run on CPU. Default is False, will attempt to use cuda.
+        name (str): Trainer name.
         slurm (dict): Slurm configuration. Currently just for keeping track.
             (default: :obj:`{}`)
+        gp_gpus (int, optional): Number of graph parallel GPUs.
+        inference_only (bool): If true trainer will be loaded for inference only.
+            (ie datasets, optimizer, schedular, etc, will not be instantiated)
     """
 
     def __init__(
@@ -91,7 +100,7 @@ class OCPTrainer(BaseTrainer):
         amp: bool = False,
         cpu: bool = False,
         name: str = "ocp",
-        slurm=None,
+        slurm: dict | None = None,
         gp_gpus: int | None = None,
         inference_only: bool = False,
     ):
@@ -260,6 +269,7 @@ class OCPTrainer(BaseTrainer):
                     ), f"we need to know which property to match the target to, please specify the property field in the task config, current config: {self.output_targets[target_key]}"
                     prop = self.output_targets[target_key]["property"]
                     pred = out[target_key][prop]
+
             # TODO clean up this logic to reconstruct a tensor from its predicted decomposition
             elif "decomposition" in self.output_targets[target_key]:
                 _max_rank = 0
@@ -291,7 +301,8 @@ class OCPTrainer(BaseTrainer):
                 )
             else:
                 raise AttributeError(
-                    f"Output target: '{target_key}', not found in model outputs: {list(out.keys())}"
+                    f"Output target: '{target_key}', not found in model outputs: {list(out.keys())}\n"
+                    + "If this is being called from OCPCalculator consider using only_output=[..]"
                 )
 
             ### not all models are consistent with the output shape
@@ -542,7 +553,7 @@ class OCPTrainer(BaseTrainer):
         return predictions
 
     @torch.no_grad
-    def run_relaxations(self, split="val"):
+    def run_relaxations(self):
         ensure_fitted(self._unwrapped_model)
 
         # When set to true, uses deterministic CUDA scatter ops, if available.
@@ -562,14 +573,14 @@ class OCPTrainer(BaseTrainer):
         evaluator_is2rs, metrics_is2rs = Evaluator(task="is2rs"), {}
         evaluator_is2re, metrics_is2re = Evaluator(task="is2re"), {}
 
-        # Need both `pos_relaxed` and `y_relaxed` to compute val IS2R* metrics.
+        # Need both `pos_relaxed` and `energy_relaxed` to compute val IS2R* metrics.
         # Else just generate predictions.
         if (
             hasattr(self.relax_dataset[0], "pos_relaxed")
             and self.relax_dataset[0].pos_relaxed is not None
         ) and (
-            hasattr(self.relax_dataset[0], "y_relaxed")
-            and self.relax_dataset[0].y_relaxed is not None
+            hasattr(self.relax_dataset[0], "energy_relaxed")
+            and self.relax_dataset[0].energy_relaxed is not None
         ):
             split = "val"
         else:
@@ -598,9 +609,10 @@ class OCPTrainer(BaseTrainer):
                 model=self,
                 steps=self.config["task"].get("relaxation_steps", 300),
                 fmax=self.config["task"].get("relaxation_fmax", 0.02),
+                relax_cell=self.config["task"].get("relax_cell", False),
+                relax_volume=self.config["task"].get("relax_volume", False),
                 relax_opt=self.config["task"]["relax_opt"],
                 save_full_traj=self.config["task"].get("save_full_traj", True),
-                device=self.device,
                 transform=None,
             )
 
@@ -628,7 +640,7 @@ class OCPTrainer(BaseTrainer):
                     s_idx += natoms
 
                 target = {
-                    "energy": relaxed_batch.energy,
+                    "energy": relaxed_batch.energy_relaxed,
                     "positions": relaxed_batch.pos_relaxed[mask],
                     "cell": relaxed_batch.cell,
                     "pbc": torch.tensor([True, True, True]),
