@@ -30,35 +30,37 @@ same procedure as described in our manuscript.
 ### OMat24 train split
 |       Sub-dataset        | No. structures | File size |                                                                   Download                                                                   |
 |:------------------------:|:--------------:|:---------:|:--------------------------------------------------------------------------------------------------------------------------------------------:|
-|      rattled-1000        |    122,937     |   21 GB   |           [rattled-1000.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/rattled-1000.tar.gz)            |
-| rattled-1000-subsampled  |     41,786     |  7.1 GB   |[rattled-1000-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/rattled-1000-subsampled.tar.gz) |
-|       rattled-500        |     75,167     |   13 GB   |            [rattled-500.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/rattled-500.tar.gz)             |
-|  rattled-500-subsampled  |     43,068     |  7.3 GB   | [rattled-500-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/rattled-500-subsampled.tar.gz)  |
-|       rattled-300        |     68,593     |   12 GB   |            [rattled-300.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/rattled-300.tar.gz)             |
-|  rattled-300-subsampled  |     37,393     |  6.4 GB   | [rattled-300-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/rattled-300-subsampled.tar.gz)  |
-|  aimd-from-PBE-1000-npt  |    223,574     |   26 GB   | [aimd-from-PBE-1000-npt.tar.gz](hhtps://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/aimd-from-PBE-1000-npt.tar.gz)  |
-|  aimd-from-PBE-1000-nvt  |    215,589     |   24 GB   | [aimd-from-PBE-1000-nvt.tar.gz](hhtps://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/aimd-from-PBE-1000-nvt.tar.gz)  |
-|  aimd-from-PBE-3000-npt  |     65,244     |   25 GB   | [aimd-from-PBE-3000-npt.tar.gz](hhtps://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/aimd-from-PBE-3000-npt.tar.gz)  |
-|  aimd-from-PBE-3000-nvt  |     84,063     |   32 GB   | [aimd-from-PBE-3000-npt.tar.gz](hhtps://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/aimd-from-PBE-3000-npt.tar.gz)  |
-|      rattled-relax       |     99,968     |   12 GB   |            [rattled-relax.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/rattled-relax.tar.gz)         |
+|      rattled-1000        |    122,937     |   21 GB   |           [rattled-1000.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-1000.tar.gz)            |
+| rattled-1000-subsampled  |     41,786     |  7.1 GB   |[rattled-1000-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-1000-subsampled.tar.gz) |
+|       rattled-500        |     75,167     |   13 GB   |            [rattled-500.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-500.tar.gz)             |
+|  rattled-500-subsampled  |     43,068     |  7.3 GB   | [rattled-500-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-500-subsampled.tar.gz)  |
+|       rattled-300        |     68,593     |   12 GB   |            [rattled-300.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-300.tar.gz)             |
+|  rattled-300-subsampled  |     37,393     |  6.4 GB   | [rattled-300-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-300-subsampled.tar.gz)  |
+|  aimd-from-PBE-1000-npt  |    223,574     |   26 GB   | [aimd-from-PBE-1000-npt.tar.gz](hhtps://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/aimd-from-PBE-1000-npt.tar.gz)  |
+|  aimd-from-PBE-1000-nvt  |    215,589     |   24 GB   | [aimd-from-PBE-1000-nvt.tar.gz](hhtps://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/aimd-from-PBE-1000-nvt.tar.gz)  |
+|  aimd-from-PBE-3000-npt  |     65,244     |   25 GB   | [aimd-from-PBE-3000-npt.tar.gz](hhtps://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/aimd-from-PBE-3000-npt.tar.gz)  |
+|  aimd-from-PBE-3000-nvt  |     84,063     |   32 GB   | [aimd-from-PBE-3000-npt.tar.gz](hhtps://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/aimd-from-PBE-3000-npt.tar.gz)  |
+|      rattled-relax       |     99,968     |   12 GB   |            [rattled-relax.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-relax.tar.gz)         |
 |          Total           |   1,077,382    | 185.8 GB  |
 
 ### OMat24 val split (this is a 1M subset used to train eqV2 models from the 5M val split)
+**_NOTE:_** The original validation sets contained a duplicated structures. Corrected validation sets were uploaded on 20/12/24. Please see this [issue](https://github.com/FAIR-Chem/fairchem/issues/942)
+for more details, an re-download the correct version of the validation sets if needed.
 
 |       Sub-dataset       |   Size    | File Size |                                                                                                                                      Download |
 |:-----------------------:|:---------:|:---------:|----------------------------------------------------------------------------------------------------------------------------------------------:|
-|      rattled-1000       |  122,937  |  229 MB   |                       [rattled-1000.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/rattled-1000.tar.gz) |
-| rattled-1000-subsampled |  41,786   |   80 MB   | [rattled-1000-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/rattled-1000-subsampled.tar.gz) |
-|       rattled-500       |  75,167   |  142 MB   |                         [rattled-500.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/rattled-500.tar.gz) |
-| rattled-500-subsampled  |  43,068   |   82 MB   |   [rattled-500-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/rattled-500-subsampled.tar.gz) |
-|       rattled-300       |  68,593   |  128 MB   |                         [rattled-300.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/rattled-300.tar.gz) |
-| rattled-300-subsampled  |  37,393   |   72 MB   |   [rattled-300-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/rattled-300-subsampled.tar.gz) |
-| aimd-from-PBE-1000-npt  |  223,574  |  274 MB   |   [aimd-from-PBE-1000-npt.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/aimd-from-PBE-1000-npt.tar.gz) |
-| aimd-from-PBE-1000-nvt  |  215,589  |  254 MB   |   [aimd-from-PBE-1000-nvt.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/aimd-from-PBE-1000-nvt.tar.gz) |
-| aimd-from-PBE-3000-npt  |  65,244   |  296 MB   |   [aimd-from-PBE-3000-npt.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/aimd-from-PBE-3000-npt.tar.gz) |
-| aimd-from-PBE-3000-nvt  |  84,063   |  382 MB   |   [aimd-from-PBE-3000-nvt.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/aimd-from-PBE-3000-nvt.tar.gz) |
-|      rattled-relax      |  99,968   |  124 MB   |                     [rattled-relax.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/val/rattled-relax.tar.gz) |
-|          Total          | 1,077,382 |  2.1 GB   |
+|      rattled-1000       |  117,004  |  218 MB   |                       [rattled-1000.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241220/omat/val/rattled-1000.tar.gz) |
+| rattled-1000-subsampled |  39,785   |   77 MB   | [rattled-1000-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241220/omat/val/rattled-1000-subsampled.tar.gz) |
+|       rattled-500       |  71,522   |  135 MB   |                         [rattled-500.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241220/omat/val/rattled-500.tar.gz) |
+| rattled-500-subsampled  |  41,021   |   79 MB   |   [rattled-500-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241220/omat/val/rattled-500-subsampled.tar.gz) |
+|       rattled-300       |  65,235   |  122 MB   |                         [rattled-300.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241220/omat/val/rattled-300.tar.gz) |
+| rattled-300-subsampled  |  35,579   |   69 MB   |   [rattled-300-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241220/omat/val/rattled-300-subsampled.tar.gz) |
+| aimd-from-PBE-1000-npt  |  212,737  |  261 MB   |   [aimd-from-PBE-1000-npt.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241220/omat/val/aimd-from-PBE-1000-npt.tar.gz) |
+| aimd-from-PBE-1000-nvt  |  205,165  |  251 MB   |   [aimd-from-PBE-1000-nvt.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241220/omat/val/aimd-from-PBE-1000-nvt.tar.gz) |
+| aimd-from-PBE-3000-npt  |  62,130   |  282 MB   |   [aimd-from-PBE-3000-npt.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241220/omat/val/aimd-from-PBE-3000-npt.tar.gz) |
+| aimd-from-PBE-3000-nvt  |  79,977   |  364 MB   |   [aimd-from-PBE-3000-nvt.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241220/omat/val/aimd-from-PBE-3000-nvt.tar.gz) |
+|      rattled-relax      |  95,206   |  118 MB   |                     [rattled-relax.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241220/omat/val/rattled-relax.tar.gz) |
+|          Total          | 1,025,361 |  1.98 GB  |
 
 
 ### sAlex Dataset
