@@ -1,12 +1,14 @@
-from fairchem.core.datasets.base_dataset import create_dataset
-
 import numpy as np
+import pytest
 
+from fairchem.core.datasets.base_dataset import create_dataset
+from fairchem.core.datasets.ase_datasets import AseAtomsDataset
+from fairchem.core.datasets.lmdb_dataset import LmdbDataset
 from fairchem.core.scripts.make_lmdb_sizes import get_lmdb_sizes_parser, make_lmdb_sizes
 
 
-def test_load_lmdb_dataset(tutorial_dataset_path):
-
+@pytest.fixture()
+def config(tutorial_dataset_path):
     lmdb_path = str(tutorial_dataset_path / "s2ef/val_20")
 
     # make dataset metadata
@@ -18,7 +20,10 @@ def test_load_lmdb_dataset(tutorial_dataset_path):
         "format": "lmdb",
         "src": lmdb_path,
     }
+    return config
 
+
+def test_load_lmdb_dataset(config):
     dataset = create_dataset(config, split="val")
 
     assert dataset.get_metadata("natoms", 0) == dataset[0].natoms
