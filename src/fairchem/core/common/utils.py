@@ -975,7 +975,7 @@ def setup_logging() -> None:
     root.setLevel(target_logging_level)
     if not root.hasHandlers():
         log_formatter = logging.Formatter(
-            "%(asctime)s (%(levelname)s): %(message)s",
+            "%(asctime)s %(pathname)s:%(lineno)d: (%(levelname)s): %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 
