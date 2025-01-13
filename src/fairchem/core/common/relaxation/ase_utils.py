@@ -224,6 +224,8 @@ class OCPCalculator(Calculator):
             for key in remove_outputs:
                 config["outputs"].pop(key)
 
+        if config["trainer"] == "s2ef":
+            config["trainer"] = "equiformerv2_forces"
         self.trainer = registry.get_trainer_class(config["trainer"])(
             task=config.get("task", {}),
             model=config["model"],
