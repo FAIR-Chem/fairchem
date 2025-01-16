@@ -28,19 +28,19 @@ same procedure as described in our manuscript.
 ## File contents and downloads
 
 ### OMat24 train split
-|       Sub-dataset        | No. structures | File size |                                                                   Download                                                                   |
-|:------------------------:|:--------------:|:---------:|:--------------------------------------------------------------------------------------------------------------------------------------------:|
-|      rattled-1000        |    122,937     |   21 GB   |           [rattled-1000.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-1000.tar.gz)            |
-| rattled-1000-subsampled  |     41,786     |  7.1 GB   |[rattled-1000-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-1000-subsampled.tar.gz) |
-|       rattled-500        |     75,167     |   13 GB   |            [rattled-500.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-500.tar.gz)             |
-|  rattled-500-subsampled  |     43,068     |  7.3 GB   | [rattled-500-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-500-subsampled.tar.gz)  |
-|       rattled-300        |     68,593     |   12 GB   |            [rattled-300.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-300.tar.gz)             |
-|  rattled-300-subsampled  |     37,393     |  6.4 GB   | [rattled-300-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-300-subsampled.tar.gz)  |
-|  aimd-from-PBE-1000-npt  |    223,574     |   26 GB   | [aimd-from-PBE-1000-npt.tar.gz](hhtps://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/aimd-from-PBE-1000-npt.tar.gz)  |
-|  aimd-from-PBE-1000-nvt  |    215,589     |   24 GB   | [aimd-from-PBE-1000-nvt.tar.gz](hhtps://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/aimd-from-PBE-1000-nvt.tar.gz)  |
-|  aimd-from-PBE-3000-npt  |     65,244     |   25 GB   | [aimd-from-PBE-3000-npt.tar.gz](hhtps://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/aimd-from-PBE-3000-npt.tar.gz)  |
-|  aimd-from-PBE-3000-nvt  |     84,063     |   32 GB   | [aimd-from-PBE-3000-npt.tar.gz](hhtps://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/aimd-from-PBE-3000-npt.tar.gz)  |
-|      rattled-relax       |     99,968     |   12 GB   |            [rattled-relax.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-relax.tar.gz)         |
+|       Sub-dataset        | No. structures | File size |                                                                    Download                                                                     |
+|:------------------------:|:--------------:|:---------:|:-----------------------------------------------------------------------------------------------------------------------------------------------:|
+|      rattled-1000        |    122,937     |   21 GB   |            [rattled-1000.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-1000.tar.gz)            |
+| rattled-1000-subsampled  |     41,786     |  7.1 GB   | [rattled-1000-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-1000-subsampled.tar.gz) |
+|       rattled-500        |     75,167     |   13 GB   |             [rattled-500.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-500.tar.gz)             |
+|  rattled-500-subsampled  |     43,068     |  7.3 GB   |  [rattled-500-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-500-subsampled.tar.gz)  |
+|       rattled-300        |     68,593     |   12 GB   |             [rattled-300.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-300.tar.gz)             |
+|  rattled-300-subsampled  |     37,393     |  6.4 GB   |  [rattled-300-subsampled.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-300-subsampled.tar.gz)  |
+|  aimd-from-PBE-1000-npt  |    223,574     |   26 GB   |  [aimd-from-PBE-1000-npt.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/aimd-from-PBE-1000-npt.tar.gz)  |
+|  aimd-from-PBE-1000-nvt  |    215,589     |   24 GB   |  [aimd-from-PBE-1000-nvt.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/aimd-from-PBE-1000-nvt.tar.gz)  |
+|  aimd-from-PBE-3000-npt  |     65,244     |   25 GB   |  [aimd-from-PBE-3000-npt.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/aimd-from-PBE-3000-npt.tar.gz)  |
+|  aimd-from-PBE-3000-nvt  |     84,063     |   32 GB   |  [aimd-from-PBE-3000-nvt.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/aimd-from-PBE-3000-nvt.tar.gz)  |
+|      rattled-relax       |     99,968     |   12 GB   |           [rattled-relax.tar.gz](https://dl.fbaipublicfiles.com/opencatalystproject/data/omat/241018/omat/train/rattled-relax.tar.gz)           |
 |          Total           |   1,077,382    | 185.8 GB  |
 
 ### OMat24 val split (this is a 1M subset used to train eqV2 models from the 5M val split)
