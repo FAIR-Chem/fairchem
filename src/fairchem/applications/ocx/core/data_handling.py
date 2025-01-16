@@ -113,6 +113,9 @@ def load_and_preprocess_data(
     df["elements"] = df.slab_comp.apply(lambda x: "".join(x.split("-")[::2]))
 
     df_expt.voltage = abs(df_expt.voltage)
+    # to ensure consistent aggregation across HER+CO2R, sort the df to ensure
+    # HER samples show up alongside their CO2R samples.
+    df_expt = df_expt.sort_values(by="sample id").reset_index(drop=True)
     df_expt = df_expt[df_expt.reaction == reaction]
 
     # Load XRD data and make a lookup dictionary
@@ -138,16 +141,16 @@ def load_and_preprocess_data(
     df_expt["sid"] = df_expt["sample id"].replace(r"_rep\d+", "", regex=True)
 
     agg_fns = {
-        "sample id": "first",
+        "sample id": lambda x: list(x),
+        "composition": lambda x: list(x),
+        "sid": lambda x: list(x),
+        "rep": lambda x: list(x),
         "source": "first",
-        "composition": "first",
-        "post processing id": "first",
-        "rep": "first",
+        # "post processing id": "first", #TODO: @Jehad needs to add this back into the data files
         "reaction": "first",
         "xrf comp": "first",
         "bulk_id": "first",
         "computational_comp_nearest_xrf": "first",
-        "sid": "first",
     }
     df_expt = df_expt.groupby(
         by=["computational_comp_nearest_xrf", "source", "current density"],
@@ -163,6 +166,10 @@ def load_and_preprocess_data(
     df_expt["bulk_id"] = df_expt.bulk_id.fillna(value=np.nan)
     # if any of the aggregated samples were a match, consider a match
     df_expt["matched"] = df_expt.matched > 0
+
+    df_expt["comp_identifier"] = df_expt.apply(
+        lambda row: f"{row['source']}-{row['computational_comp_nearest_xrf']}", axis=1
+    )
 
     if pick_best_match:
         df_expt = get_best_match(df_expt, df)
@@ -190,6 +197,7 @@ def load_and_preprocess_data(
 
     # Organize final df
     columns = [
+        "sid",
         "sample id",
         "source",
         "batch number",
@@ -206,8 +214,8 @@ def load_and_preprocess_data(
 
     # Interpolate CO2RR data to a constant potential
     constant_v_entries = []
-    for sample_id in df_expt["sample id"].unique():
-        df_temp = df_expt[(df_expt["sample id"] == sample_id)].copy()
+    for identifier in df_expt["comp_identifier"].unique():
+        df_temp = df_expt[(df_expt["comp_identifier"] == identifier)].copy()
         constant_v_entries.append(
             get_constant_V(
                 interpolate_v,
@@ -597,7 +605,7 @@ def get_constant_V(
         "reaction": sample_entry["reaction"],
         "source": sample_entry["source"],
         "batch date": sample_entry["batch date"],
-        "post processing id": sample_entry["post processing id"],
+        # "post processing id": sample_entry["post processing id"], #TODO: @Jehad needs to add this back into the data files
         "rep": sample_entry["rep"],
         "voltage": V,
         "sample id": sample_entry["sample id"],
