@@ -296,18 +296,19 @@ class AtomsToGraphs:
         else:
             raise NotImplementedError
 
-        for atoms in tqdm(
+        for atoms_or_row in tqdm(
             atoms_iter,
             desc="converting ASE atoms collection to graphs",
             total=len(atoms_collection),
             unit=" systems",
             disable=disable_tqdm,
         ):
-            # check if atoms is an ASE Atoms object this for the ase.db case
-            data = self.convert(
-                atoms if isinstance(atoms, ase.atoms.Atoms) else atoms.toatoms()
-            )
-            data_list.append(data)
+            if isinstance(atoms_or_row, ase.db.row.AtomsRow):
+                atoms = atoms_or_row.toatoms(add_additional_information=True)
+                atoms.info = atoms.info["data"]
+                data_list.append(self.convert(atoms))
+            else:
+                data_list.append(self.convert(atoms_or_row))
 
         if collate_and_save:
             data, slices = collate(data_list)
