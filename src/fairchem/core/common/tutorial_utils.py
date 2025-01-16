@@ -115,15 +115,18 @@ def train_test_val_split(
 
     for _id in ids[0:train_end]:
         row = src.get(id=int(_id))
-        train.write(row.toatoms())
+        # set add_additional_information to ensure row.data is added to atoms.info
+        train.write(row.toatoms(add_additional_information=True))
 
     for _id in ids[train_end:test_end]:
         row = src.get(id=int(_id))
-        test.write(row.toatoms())
+        # set add_additional_information to ensure row.data is added to atoms.info
+        test.write(row.toatoms(add_additional_information=True))
 
     for _id in ids[test_end:]:
         row = src.get(id=int(_id))
-        val.write(row.toatoms())
+        # set add_additional_information to ensure row.data is added to atoms.info
+        val.write(row.toatoms(add_additional_information=True))
 
     return [Path(f).absolute() for f in files]
 
