@@ -591,7 +591,7 @@ class EquiformerV2(nn.Module, GraphModelMixin):
             # We can also write this as
             # \hat{E_DFT} = E_std * (\hat{E} + E_ref / E_std) + E_mean,
             # which is why we save E_ref / E_std as the linear reference.
-            with torch.cuda.amp.autocast(False):
+            with torch.autocast("cuda", enabled=False):
                 energy = energy.to(self.energy_lin_ref.dtype).index_add(
                     0,
                     graph.batch_full,
