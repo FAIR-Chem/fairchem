@@ -153,7 +153,7 @@ class BaseTrainer(ABC):
             "gp_gpus": gp_gpus,
         }
         # AMP Scaler
-        self.scaler = torch.cuda.amp.GradScaler() if amp and not self.cpu else None
+        self.scaler = torch.GradScaler("cuda") if amp and not self.cpu else None
 
         # Fill in SLURM information in config, if applicable
         if "SLURM_JOB_ID" in os.environ and "folder" in self.config["slurm"]:
@@ -887,7 +887,7 @@ class BaseTrainer(ABC):
             disable=disable_tqdm,
         ):
             # Forward.
-            with torch.cuda.amp.autocast(enabled=self.scaler is not None):
+            with torch.autocast("cuda", enabled=self.scaler is not None):
                 batch.to(self.device)
                 out = self._forward(batch)
             loss = self._compute_loss(out, batch)

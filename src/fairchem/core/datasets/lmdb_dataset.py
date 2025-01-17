@@ -21,7 +21,6 @@ from fairchem.core.common.typing import assert_is_instance
 from fairchem.core.common.utils import pyg2_data_transform
 from fairchem.core.datasets._utils import rename_data_object_keys
 from fairchem.core.datasets.base_dataset import BaseDataset
-from fairchem.core.datasets.target_metadata_guesser import guess_property_metadata
 from fairchem.core.modules.transforms import DataTransforms
 
 if TYPE_CHECKING:
@@ -168,47 +167,6 @@ class LmdbDataset(BaseDataset):
                 env.close()
         else:
             self.env.close()
-
-    def sample_property_metadata(self, num_samples: int = 100):
-        # This will interogate the classic OCP LMDB format to determine
-        # which properties are present and attempt to guess their shapes
-        # and whether they are intensive or extensive.
-
-        # Grab an example data point
-        example_pyg_data = self.__getitem__(0)
-
-        # Check for all properties we've used for OCP datasets in the past
-        props = [
-            potential_prop
-            for potential_prop in (
-                "y",
-                "y_relaxed",
-                "stress",
-                "stresses",
-                "force",
-                "forces",
-            )
-            if hasattr(example_pyg_data, potential_prop)
-        ]
-
-        # Get a bunch of random data samples and the number of atoms
-        sample_pyg = [
-            self[i]
-            for i in np.random.choice(
-                self.__len__(), size=(num_samples,), replace=False
-            )
-        ]
-        atoms_lens = [data.natoms for data in sample_pyg]
-
-        # Guess the metadata for targets for each found property
-        return {
-            "targets": {
-                prop: guess_property_metadata(
-                    atoms_lens, [getattr(data, prop) for data in sample_pyg]
-                )
-                for prop in props
-            }
-        }
 
 
 def data_list_collater(
