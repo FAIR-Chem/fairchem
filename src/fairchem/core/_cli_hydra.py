@@ -84,7 +84,7 @@ class Submitit(Checkpointable):
         self._init_logger()
         runner: Runner = hydra.utils.instantiate(dict_config.runner)
         runner.load_state()
-        runner.run()
+        runner.run(self.config)
         distutils.cleanup()
 
     def _init_logger(self) -> None:
