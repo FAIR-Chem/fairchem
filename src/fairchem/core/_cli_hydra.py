@@ -12,6 +12,7 @@ import logging
 import os
 import tempfile
 import uuid
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -45,14 +46,13 @@ class DeviceType(str, Enum):
     CUDA = "cuda"
 
 
+@dataclass
 class SchedulerConfig:
     scheduler_type: SchedulerType = SchedulerType.LOCAL
     ranks_per_node: int = 1
     num_nodes: int = 1
-    slurm: dict = None
-
-    def __post_init__(self):
-        defaults = {
+    slurm: dict = field(
+        default_factory=lambda: {
             "slurm_mem": 80,  # slurm mem in GB
             "timeout_min": 4320,  # slurm timeout in mins, default to 7 days
             "slurm_partition": None,
@@ -60,28 +60,18 @@ class SchedulerConfig:
             "slurm_qos": None,
             "slurm_account": None,
         }
-        # fuse defaults with user inputs
-        self.slurm = defaults.update(self.slurm)
+    )
 
 
+@dataclass
 class FairchemJobConfig:
-    def __init__(
-        self,
-        run_name: str | None = None,
-        timestamp_id: str | None = None,
-        run_dir: str | None = None,
-        log_dir: str | None = None,
-        device_type: DeviceType = DeviceType.CUDA,
-    ):
-        self.run_name = run_name or uuid.uuid4().hex.upper()[0:8]
-        self.timestamp_id = timestamp_id or get_timestamp_uid()
-        self.device_type = device_type
-        if not run_dir:
-            self.run_dir = tempfile.TemporaryDirectory().name
-        if not log_dir:
-            self.log_dir = os.path.join(self.run_dir, self.timestamp_id, "logs")
-        os.makedirs(self.run_dir, exist_ok=True)
-        os.makedirs(self.log_dir, exist_ok=True)
+    run_name: str = field(default_factory=lambda: uuid.uuid4().hex.upper()[0:8])
+    timestamp_id: str = field(default_factory=lambda: get_timestamp_uid())
+    run_dir: str = field(default_factory=lambda: tempfile.TemporaryDirectory().name)
+    log_dir: str = "logs"
+    device_type: DeviceType = DeviceType.CUDA
+    debug: bool = False
+    scheduler: SchedulerConfig = field(default_factory=lambda: SchedulerConfig)
 
 
 class Submitit(Checkpointable):
@@ -90,7 +80,7 @@ class Submitit(Checkpointable):
         # TODO: setup_imports is not needed if we stop instantiating models with Registry.
         setup_imports()
         setup_env_vars()
-        distutils.setup(map_cli_args_to_dist_config(dict_config.cli_args))
+        distutils.setup(map_job_config_to_dist_config(dict_config.job))
         self._init_logger()
         runner: Runner = hydra.utils.instantiate(dict_config.runner)
         runner.load_state()
@@ -103,7 +93,7 @@ class Submitit(Checkpointable):
         if (
             "logger" in self.config
             and distutils.is_master()
-            and not self.config.cli_args.debug
+            and not self.config.job.debug
         ):
             # get a partial function from the config and instantiate wandb with it
             logger_initializer = hydra.utils.instantiate(self.config.logger)
@@ -126,13 +116,16 @@ class Submitit(Checkpointable):
         return DelayedSubmission(new_runner, self.config, self.cli_args)
 
 
-def map_cli_args_to_dist_config(cli_args: DictConfig) -> dict:
+def map_job_config_to_dist_config(job_cfg: DictConfig) -> dict:
+    scheduler_config = job_cfg.scheduler
     return {
-        "world_size": cli_args.num_nodes * cli_args.num_gpus,
-        "distributed_backend": "gloo" if cli_args.cpu else "nccl",
-        "submit": cli_args.submit,
+        "world_size": scheduler_config.num_nodes * scheduler_config.ranks_per_node,
+        "distributed_backend": "gloo"
+        if job_cfg.device_type == DeviceType.CPU
+        else "nccl",
+        "submit": scheduler_config.scheduler_type == SchedulerType.SLURM,
         "summit": None,
-        "cpu": cli_args.cpu,
+        "cpu": job_cfg.device_type == DeviceType.CPU,
         "use_cuda_visibile_devices": True,
     }
 
@@ -161,35 +154,42 @@ def main(
         args, override_args = parser.parse_known_args()
 
     cfg = get_hydra_config_from_yaml(args.config_yml, override_args)
-    job_cfg: FairchemJobConfig = hydra.utils.instantiate(cfg.job)
-    scheduler: SchedulerConfig = hydra.utils.instantiate(cfg.scheduler)
-    logging.info(f"Running fairchemv2 cli with {job_cfg}, {scheduler}")
+    # merge default structured config with job
+    cfg = OmegaConf.merge({"job": OmegaConf.structured(FairchemJobConfig)}, cfg)
 
-    if job_cfg.scheduler_type == SchedulerType.SLURM:  # Run on cluster
-        executor = AutoExecutor(folder=job_cfg.log_dir, slurm_max_num_timeout=3)
+    log_dir = os.path.join(cfg.job.run_dir, cfg.job.timestamp_id, cfg.job.log_dir)
+    os.makedirs(cfg.job.run_dir, exist_ok=True)
+    os.makedirs(log_dir, exist_ok=True)
+
+    job_cfg = cfg.job
+    scheduler_cfg = cfg.job.scheduler
+
+    logging.info(f"Running fairchemv2 cli with {cfg}")
+    if scheduler_cfg.scheduler_type == SchedulerType.SLURM:  # Run on cluster
+        executor = AutoExecutor(folder=log_dir, slurm_max_num_timeout=3)
         executor.update_parameters(
             name=job_cfg.run_name,
-            mem_gb=scheduler.slurm.slurm_mem,
-            timeout_min=scheduler.slurm.slurm_timeout * 60,
-            slurm_partition=scheduler.slurm.slurm_partition,
-            gpus_per_node=scheduler.num_gpus,
-            cpus_per_task=scheduler.slurm.cpus_per_task,
-            tasks_per_node=scheduler.num_gpus,
-            nodes=scheduler.num_nodes,
-            slurm_qos=scheduler.slurm.slurm_qos,
-            slurm_account=scheduler.slurm.slurm_account,
+            mem_gb=scheduler_cfg.slurm.slurm_mem,
+            timeout_min=scheduler_cfg.slurm.slurm_timeout * 60,
+            slurm_partition=scheduler_cfg.slurm.slurm_partition,
+            gpus_per_node=scheduler_cfg.ranks_per_node,
+            cpus_per_task=scheduler_cfg.slurm.cpus_per_task,
+            tasks_per_node=scheduler_cfg.ranks_per_node,
+            nodes=scheduler_cfg.num_nodes,
+            slurm_qos=scheduler_cfg.slurm.slurm_qos,
+            slurm_account=scheduler_cfg.slurm.slurm_account,
         )
         job = executor.submit(runner_wrapper, cfg)
         logging.info(
             f"Submitted job id: {job_cfg.timestamp_id}, slurm id: {job.job_id}, logs: {job_cfg.log_dir}"
         )
     else:
-        if scheduler.num_gpus > 1:
-            logging.info(f"Running in local mode with {job_cfg.num_gpus} ranks")
+        if scheduler_cfg.ranks_per_node > 1:
+            logging.info(f"Running in local mode with {job_cfg.ranks_per_node} ranks")
             launch_config = LaunchConfig(
                 min_nodes=1,
                 max_nodes=1,
-                nproc_per_node=scheduler.num_gpus,
+                nproc_per_node=scheduler_cfg.ranks_per_node,
                 rdzv_backend="c10d",
                 max_restarts=0,
             )
