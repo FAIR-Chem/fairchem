@@ -80,11 +80,11 @@ class Submitit(Checkpointable):
         # TODO: setup_imports is not needed if we stop instantiating models with Registry.
         setup_imports()
         setup_env_vars()
-        distutils.setup(map_job_config_to_dist_config(dict_config.job))
+        distutils.setup(map_job_config_to_dist_config(self.config.job))
         self._init_logger()
         runner: Runner = hydra.utils.instantiate(dict_config.runner)
         runner.load_state()
-        runner.run(self.config)
+        runner.run(self.config.job)
         distutils.cleanup()
 
     def _init_logger(self) -> None:
