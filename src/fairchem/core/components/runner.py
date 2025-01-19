@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from omegaconf import DictConfig
 
 
 class Runner(metaclass=ABCMeta):
@@ -12,7 +15,7 @@ class Runner(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def run(self) -> Any:
+    def run(self, cfg: DictConfig = None) -> Any:
         raise NotImplementedError
 
     @abstractmethod
@@ -30,7 +33,7 @@ class MockRunner(Runner):
         self.x = x
         self.y = y
 
-    def run(self) -> Any:
+    def run(self, cfg: DictConfig = None) -> Any:
         if self.x * self.y > 1000:
             raise ValueError("sum is greater than 1000!")
         return self.x + self.y

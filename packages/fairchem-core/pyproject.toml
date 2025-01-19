@@ -33,6 +33,7 @@ adsorbml = ["dscribe","x3dase","scikit-image"]
 
 [project.scripts]
 fairchem = "fairchem.core._cli:main"
+fairchemv2 = "fairchem.core._cli_hydra:main"
 
 [project.urls]
 repository = "https://github.com/FAIR-Chem/fairchem"
