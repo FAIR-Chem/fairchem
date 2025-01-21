@@ -32,7 +32,6 @@ Classes
 
 .. autoapisummary::
 
-   core.datasets.base_dataset.DatasetMetadata
    core.datasets.base_dataset.BaseDataset
    core.datasets.base_dataset.Subset
 
@@ -49,17 +48,6 @@ Module Contents
 ---------------
 
 .. py:data:: T_co
-
-.. py:class:: DatasetMetadata
-
-   Bases: :py:obj:`NamedTuple`
-
-
-   .. py:attribute:: natoms
-      :type:  numpy.typing.ArrayLike | None
-      :value: None
-
-
 
 .. py:exception:: UnsupportedDatasetError
 
@@ -100,14 +88,14 @@ Module Contents
 
 
    .. py:property:: _metadata
-      :type: DatasetMetadata
+      :type: dict[str, numpy.typing.ArrayLike]
 
 
 
    .. py:method:: get_metadata(attr, idx)
 
 
-.. py:class:: Subset(dataset: BaseDataset, indices: collections.abc.Sequence[int], metadata: DatasetMetadata | None = None)
+.. py:class:: Subset(dataset: BaseDataset, indices: collections.abc.Sequence[int], metadata: dict[str, numpy.typing.ArrayLike])
 
    Bases: :py:obj:`torch.utils.data.Subset`, :py:obj:`BaseDataset`
 
@@ -128,7 +116,7 @@ Module Contents
 
 
    .. py:property:: _metadata
-      :type: DatasetMetadata
+      :type: dict[str, numpy.typing.ArrayLike]
 
 
 

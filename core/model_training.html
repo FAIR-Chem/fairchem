@@ -1,0 +1,1155 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Training and evaluating custom models on OCP datasets</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=a3416100" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'core/model_training';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Fast batched inference" href="inference.html" />
+    <link rel="prev" title="Making LMDB Datasets (original format, deprecated for ASE LMDBs)" href="lmdb_dataset_creation.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title"></p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../index.html">
+                    FAIR-Chem overview
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Quickstart &amp; Installation</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Using pre-trained models in ASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gotchas.html">Common gotchas with fairchem</a></li>
+
+
+
+
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Learn More</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="intro_series.html">Why model atoms for climate?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../videos/technical_talks.html">Technical presentations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="papers_using_models.html">Studies leveraging pre-trained or fine-tuned FAIR-Chem models</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">OCP API &amp; Demo</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://open-catalyst.metademolab.com/">OCP Demo (no install required!)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ocpapi.html">ocpapi</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Released Datasets &amp; Models</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="datasets/oc20.html">Open Catalyst 2020 (OC20)</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="datasets/oc22.html">Open Catalyst 2022 (OC22)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/odac.html">Open Direct Air Capture 2023 (ODAC23)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/oc20dense.html">Open Catalyst 2020 Dense (OC20Dense)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/oc20neb.html">Open Catalyst 2020 Nudged Elastic Band (OC20NEB)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/omat24.html">Open Materials 2024 (OMat24)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/ocx24.html">Open Catalyst Experiments 2024 (OCx24): Bridging Experiments and Computational Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_checkpoints.html">Pretrained FAIRChem models</a></li>
+
+
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Making your own datasets</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ase_dataset_creation.html">Making and using ASE datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lmdb_dataset_creation.html">Making LMDB Datasets (original format, deprecated for ASE LMDBs)</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Model development, training, inference, finetuning</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Training and evaluating custom models on OCP datasets</a></li>
+
+
+<li class="toctree-l1"><a class="reference internal" href="inference.html">Fast batched inference</a></li>
+
+
+<li class="toctree-l1"><a class="reference internal" href="fine-tuning/fine-tuning-oxides.html">Fine tuning a model</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="model_faq.html">Model FAQ</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Catalysis Case Studies &amp; Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/intro.html">Intro and background on OCP and DFT</a></li>
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/OCP-introduction.html">Simple simulations using the OCP ASE calculator</a></li>
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/adsorbml_walkthrough.html">AdsorbML tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/cattsunami_tutorial.html">CatTSunami Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/fairchem_models_for_nebs.html">Tutorial for using Fair Chemistry models to relax NEBs</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tutorials/NRR/NRR_toc.html">Screening catalysts with OCP</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/NRR/NRR_example.html">Using OCP to enumerate adsorbates on alloy catalyst surfaces</a></li>
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tutorials/advanced/advanced_toc.html">Advanced OCP usage</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/advanced/fine-tuning-in-python.html">Fine-tuning with Python</a></li>
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/advanced/embeddings.html">Working with embeddings</a></li>
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../legacy_tutorials/legacy_tutorials.html">Legacy [deprecated] Tutorials</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../legacy_tutorials/OCP_Tutorial.html">Open Catalyst Project Tutorial Notebook</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="../legacy_tutorials/data_preprocessing.html">OCP Data Preprocessing Tutorial</a></li>
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="../legacy_tutorials/data_visualization.html">OCP Data Visualization</a></li>
+
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">fairchem documentation</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../autoapi/index.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/core/index.html">core</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/core/_cli/index.html">core._cli</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/core/_cli_hydra/index.html">core._cli_hydra</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/common/index.html">core.common</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/data_parallel/index.html">core.common.data_parallel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/distutils/index.html">core.common.distutils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/flags/index.html">core.common.flags</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/gp_utils/index.html">core.common.gp_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/hpo_utils/index.html">core.common.hpo_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/logger/index.html">core.common.logger</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/profiler_utils/index.html">core.common.profiler_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/registry/index.html">core.common.registry</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/relaxation/index.html">core.common.relaxation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/slurm/index.html">core.common.slurm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/test_utils/index.html">core.common.test_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/transforms/index.html">core.common.transforms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/tutorial_utils/index.html">core.common.tutorial_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/typing/index.html">core.common.typing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/utils/index.html">core.common.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/datasets/index.html">core.datasets</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/_utils/index.html">core.datasets._utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/ase_datasets/index.html">core.datasets.ase_datasets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/base_dataset/index.html">core.datasets.base_dataset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/embeddings/index.html">core.datasets.embeddings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/lmdb_database/index.html">core.datasets.lmdb_database</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/lmdb_dataset/index.html">core.datasets.lmdb_dataset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/oc22_lmdb_dataset/index.html">core.datasets.oc22_lmdb_dataset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/target_metadata_guesser/index.html">core.datasets.target_metadata_guesser</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/models/index.html">core.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/base/index.html">core.models.base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/dimenet_plus_plus/index.html">core.models.dimenet_plus_plus</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/equiformer_v2/index.html">core.models.equiformer_v2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/escn/index.html">core.models.escn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/gemnet/index.html">core.models.gemnet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/gemnet_gp/index.html">core.models.gemnet_gp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/gemnet_oc/index.html">core.models.gemnet_oc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/model_registry/index.html">core.models.model_registry</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/painn/index.html">core.models.painn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/schnet/index.html">core.models.schnet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/scn/index.html">core.models.scn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/utils/index.html">core.models.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/modules/index.html">core.modules</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/modules/evaluator/index.html">core.modules.evaluator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/modules/exponential_moving_average/index.html">core.modules.exponential_moving_average</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/modules/loss/index.html">core.modules.loss</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/modules/normalization/index.html">core.modules.normalization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/modules/scaling/index.html">core.modules.scaling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/modules/scheduler/index.html">core.modules.scheduler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/modules/transforms/index.html">core.modules.transforms</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/preprocessing/index.html">core.preprocessing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/preprocessing/atoms_to_graphs/index.html">core.preprocessing.atoms_to_graphs</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/scripts/index.html">core.scripts</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/convert_hydra_to_release/index.html">core.scripts.convert_hydra_to_release</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/download_data/index.html">core.scripts.download_data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/download_large_files/index.html">core.scripts.download_large_files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/eqv2_to_hydra_eqv2/index.html">core.scripts.eqv2_to_hydra_eqv2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/fit_normalizers/index.html">core.scripts.fit_normalizers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/fit_references/index.html">core.scripts.fit_references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/gif_maker_parallelized/index.html">core.scripts.gif_maker_parallelized</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/hpo/index.html">core.scripts.hpo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/make_challenge_submission_file/index.html">core.scripts.make_challenge_submission_file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/make_lmdb_sizes/index.html">core.scripts.make_lmdb_sizes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/make_submission_file/index.html">core.scripts.make_submission_file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/preprocess_ef/index.html">core.scripts.preprocess_ef</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/preprocess_relaxed/index.html">core.scripts.preprocess_relaxed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/uncompress/index.html">core.scripts.uncompress</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/tasks/index.html">core.tasks</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/tasks/task/index.html">core.tasks.task</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/trainers/index.html">core.trainers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/trainers/base_trainer/index.html">core.trainers.base_trainer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/trainers/ocp_trainer/index.html">core.trainers.ocp_trainer</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/data/index.html">data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/data/oc/index.html">data.oc</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/data/oc/core/index.html">data.oc.core</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/data/oc/databases/index.html">data.oc.databases</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/data/oc/structure_generator/index.html">data.oc.structure_generator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/data/oc/utils/index.html">data.oc.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/data/odac/index.html">data.odac</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/data/odac/setup_vasp/index.html">data.odac.setup_vasp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/data/om/index.html">data.om</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/ocpapi/index.html">ocpapi</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/ocpapi/client/index.html">ocpapi.client</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/client/client/index.html">ocpapi.client.client</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/client/models/index.html">ocpapi.client.models</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/client/ui/index.html">ocpapi.client.ui</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/ocpapi/version/index.html">ocpapi.version</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/ocpapi/workflows/index.html">ocpapi.workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/workflows/adsorbates/index.html">ocpapi.workflows.adsorbates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/workflows/context/index.html">ocpapi.workflows.context</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/workflows/filter/index.html">ocpapi.workflows.filter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/workflows/log/index.html">ocpapi.workflows.log</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/workflows/retry/index.html">ocpapi.workflows.retry</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/cattsunami/index.html">cattsunami</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/cattsunami/core/index.html">cattsunami.core</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/cattsunami/core/autoframe/index.html">cattsunami.core.autoframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/cattsunami/core/ocpneb/index.html">cattsunami.core.ocpneb</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/cattsunami/core/reaction/index.html">cattsunami.core.reaction</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/cattsunami/databases/index.html">cattsunami.databases</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Notebook execution times</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../execution_time.html">Notebook execution times</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/FAIR-Chem/fairchem" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/FAIR-Chem/fairchem/issues/new?title=Issue%20on%20page%20%2Fcore/model_training.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/core/model_training.md" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.md</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button>
+
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Training and evaluating custom models on OCP datasets</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Training and evaluating custom models on OCP datasets</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#getting-started">Getting Started</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#oc20">OC20</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#initial-structure-to-relaxed-energy-prediction-is2re">Initial Structure to Relaxed Energy prediction (IS2RE)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#is2re-relaxations">IS2RE Relaxations</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#structure-to-energy-and-forces-s2ef">Structure to Energy and Forces (S2EF)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#training-oc20-models-with-total-energies-is2re-s2ef">Training OC20 models with total energies (IS2RE/S2EF)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overriding-yaml-config-parameters-from-the-command-line">Overriding YAML config parameters from the command line</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#initial-structure-to-relaxed-structure-is2rs">Initial Structure to Relaxed Structure (IS2RS)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#create-evalai-oc20-submission-files">Create EvalAI OC20 submission files</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#s2ef-is2re">S2EF/IS2RE:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#is2rs">IS2RS:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#oc22">OC22</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#initial-structure-to-total-relaxed-energy-is2re-total">Initial Structure to Total Relaxed Energy (IS2RE-Total)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#structure-to-total-energy-and-forces-s2ef-total">Structure to Total Energy and Forces (S2EF-Total)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#joint-training">Joint Training</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#create-evalai-oc22-submission-files">Create EvalAI OC22 submission files</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#s2ef-total-is2re-total">S2EF-Total/IS2RE-Total:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="training-and-evaluating-custom-models-on-ocp-datasets">
+<h1>Training and evaluating custom models on OCP datasets<a class="headerlink" href="#training-and-evaluating-custom-models-on-ocp-datasets" title="Link to this heading">#</a></h1>
+<section id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading">#</a></h2>
+<p>The <a class="reference external" href="https://opencatalystproject.org/">Open Catalyst Project</a> consists of three distinct tasks:</p>
+<ul class="simple">
+<li><p>Initial Structure to Relaxed Energy prediction (IS2RE)</p></li>
+<li><p>Structure to Energy and Forces (S2EF)</p></li>
+<li><p>Initial Structure to Relaxed Structure (IS2RS)</p></li>
+</ul>
+<p>This document is a tutorial for training and evaluating models
+for each of these tasks as well as generating submission files for the
+<a class="reference external" href="https://eval.ai/web/challenges/challenge-page/712/overview">evaluation server hosted on EvalAI</a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">main.py</span></code> serves as the entry point to run any task. This script requires two command line
+arguments at a minimum:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--mode</span> <span class="pre">MODE</span></code>: MODE can be <code class="docutils literal notranslate"><span class="pre">train</span></code>, <code class="docutils literal notranslate"><span class="pre">predict</span></code> or <code class="docutils literal notranslate"><span class="pre">run-relaxations</span></code> to train a model, make predictions
+using an existing model, or run machine learning based relaxations using an existing model, respectively.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--config-yml</span> <span class="pre">PATH</span></code>: PATH is the path to a YAML configuration file. We use YAML files to supply all
+parameters to the script. The <code class="docutils literal notranslate"><span class="pre">configs</span></code> directory contains a number of example config files.</p></li>
+</ul>
+<p>Running <code class="docutils literal notranslate"><span class="pre">main.py</span></code> directly runs the model on a single CPU or GPU if one is available:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">mode</span> <span class="n">train</span> <span class="o">--</span><span class="n">config</span><span class="o">-</span><span class="n">yml</span> <span class="n">configs</span><span class="o">/</span><span class="n">TASK</span><span class="o">/</span><span class="n">SIZE</span><span class="o">/</span><span class="n">MODEL</span><span class="o">/</span><span class="n">MODEL</span><span class="o">.</span><span class="n">yml</span>
+</pre></div>
+</div>
+<p>If you have multiple
+GPUs, you can use distributed data parallel training by running:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">torchrun</span> <span class="o">--</span><span class="n">standalone</span> <span class="o">--</span><span class="n">nproc_per_node</span><span class="o">=</span><span class="mi">8</span> <span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">distributed</span> <span class="o">--</span><span class="n">num</span><span class="o">-</span><span class="n">gpus</span> <span class="mi">8</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">torchrun</span></code> launches multiple processes for distributed training. For more details, refer to the
+<a class="reference external" href="https://pytorch.org/docs/stable/elastic/run.html">official documentation</a></p>
+<p>If training with multiple GPUs, GPU load balancing may be used to evenly distribute a batch of variable system sizes across GPUs. Load balancing may either balance by number of atoms or number of neighbors. A <code class="docutils literal notranslate"><span class="pre">metadata.npz</span></code> file must be available in the dataset directory to take advantage of this feature. The following command will generate a  <code class="docutils literal notranslate"><span class="pre">metadata.npz</span></code> file and place it in the corresponding directory.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">scripts</span><span class="o">/</span><span class="n">make_lmdb_sizes</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">data</span><span class="o">-</span><span class="n">path</span> <span class="n">data</span><span class="o">/</span><span class="n">s2ef</span><span class="o">/</span><span class="n">train</span><span class="o">/</span><span class="mi">2</span><span class="n">M</span> <span class="o">--</span><span class="n">num</span><span class="o">-</span><span class="n">workers</span> <span class="mi">8</span>
+</pre></div>
+</div>
+<p>Load balancing is activated by default (in atoms mode). To change modes you can specify the following in your config:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">optim</span><span class="p">:</span>
+  <span class="n">load_balancing</span><span class="p">:</span> <span class="n">neighbors</span>
+</pre></div>
+</div>
+<p>For more details, refer to <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/pull/267">PR 267</a>.</p>
+<p>If you have access to a slurm cluster, we use the <a class="reference external" href="https://github.com/facebookincubator/submitit">submitit</a> package to simplify multi-node distributed training:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">distributed</span> <span class="o">--</span><span class="n">num</span><span class="o">-</span><span class="n">gpus</span> <span class="mi">8</span> <span class="o">--</span><span class="n">num</span><span class="o">-</span><span class="n">nodes</span> <span class="mi">6</span> <span class="o">--</span><span class="n">submit</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>In the rest of this tutorial, we explain how to train models for each task.</p>
+</section>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="oc20">
+<h1>OC20<a class="headerlink" href="#oc20" title="Link to this heading">#</a></h1>
+<section id="initial-structure-to-relaxed-energy-prediction-is2re">
+<h2>Initial Structure to Relaxed Energy prediction (IS2RE)<a class="headerlink" href="#initial-structure-to-relaxed-energy-prediction-is2re" title="Link to this heading">#</a></h2>
+<p>In the IS2RE tasks, the model takes the initial structure as an input and predicts the structure’s adsorption energy
+in the relaxed state. To train a model for the IS2RE task, you can use the following in your configuration file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">trainer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ocp</span>
+
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Train data</span>
+<span class="w">  </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">src</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">Path to training data</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">normalize_labels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">    </span><span class="c1"># Mean and standard deviation of energies</span>
+<span class="w">    </span><span class="nt">target_mean</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-0.969171404838562</span>
+<span class="w">    </span><span class="nt">target_std</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.3671793937683105</span>
+<span class="w">  </span><span class="c1"># Val data (optional)</span>
+<span class="w">  </span><span class="nt">val</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">src</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">Path to validation data</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="c1"># Test data (optional)</span>
+<span class="w">  </span><span class="nt">test</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">src</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">Path to test data</span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+<p>You can find examples configuration files in <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/core/configs/is2re"><code class="docutils literal notranslate"><span class="pre">configs/is2re</span></code></a>.</p>
+<p>To train a SchNet model for the IS2RE task on the 10k split, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--mode<span class="w"> </span>train<span class="w"> </span>--config-yml<span class="w"> </span>configs/is2re/10k/schnet/schnet.yml
+</pre></div>
+</div>
+<p>Training logs are stored in <code class="docutils literal notranslate"><span class="pre">logs/tensorboard/[TIMESTAMP]</span></code> where <code class="docutils literal notranslate"><span class="pre">[TIMESTAMP]</span></code> is
+the starting time-stamp of the run. You can monitor the training process by running:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>tensorboard<span class="w"> </span>--logdir<span class="w"> </span>logs/tensorboard/<span class="o">[</span>TIMESTAMP<span class="o">]</span>
+</pre></div>
+</div>
+<p>At the end of training, the model checkpoint is stored in <code class="docutils literal notranslate"><span class="pre">checkpoints/[TIMESTAMP]/checkpoint.pt</span></code>.</p>
+<p>Next, run this model on the test data:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--mode<span class="w"> </span>predict<span class="w"> </span>--config-yml<span class="w"> </span>configs/is2re/10k/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--checkpoint<span class="w"> </span>checkpoints/<span class="o">[</span>TIMESTAMP<span class="o">]</span>/checkpoint.pt
+</pre></div>
+</div>
+<p>The predictions are stored in <code class="docutils literal notranslate"><span class="pre">[RESULTS_DIR]/is2re_predictions.npz</span></code> and later used to create a submission file to be uploaded to EvalAI.</p>
+<section id="is2re-relaxations">
+<h3>IS2RE Relaxations<a class="headerlink" href="#is2re-relaxations" title="Link to this heading">#</a></h3>
+<p>Alternatively, the IS2RE task may be approached by 2 methods as described in our paper:</p>
+<ul>
+<li><p>Single Model: Relaxed energy predictions are extracted from relaxed structures generated via ML relaxations from a single model.</p>
+<ol class="arabic">
+<li><p>Train a S2EF model on both energy and forces as described <a class="reference internal" href="#"><span class="std std-doc">here</span></a></p></li>
+<li><p>Using the trained S2EF model, run ML relaxations as described <a class="reference internal" href="#"><span class="std std-doc">here</span></a>. Ensure <code class="docutils literal notranslate"><span class="pre">traj_dir</span></code> is uniquely specified in the config as to save out the full trajectory. A sample config can be found <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/2M/dimenet_plus_plus/dpp_relax.yml">here</a>. ** Note ** Relaxations on the complete val/test set may take upwards of 8hrs depending on your available hardware.</p></li>
+<li><p>Prepare a submission file by running the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">scripts</span><span class="o">/</span><span class="n">make_submission_file</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="nb">id</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="nb">id</span><span class="o">/</span><span class="n">traj_dir</span> \
+        <span class="o">--</span><span class="n">ood</span><span class="o">-</span><span class="n">ads</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">ood_ads</span><span class="o">/</span><span class="n">traj_dir</span> <span class="o">--</span><span class="n">ood</span><span class="o">-</span><span class="n">cat</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">ood_cat</span><span class="o">/</span><span class="n">traj_dir</span> \
+        <span class="o">--</span><span class="n">ood</span><span class="o">-</span><span class="n">both</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">ood_both</span><span class="o">/</span><span class="n">traj_dir</span> <span class="o">--</span><span class="n">out</span><span class="o">-</span><span class="n">path</span> <span class="n">submission_file</span><span class="o">.</span><span class="n">npz</span> <span class="o">--</span><span class="n">is2re</span><span class="o">-</span><span class="n">relaxations</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</li>
+<li><p>Dual Model: Relaxed energy predictions are extracted from relaxed structures generated via ML relaxations from two models - one for running relaxations and one for making energy predictions.</p>
+<ol class="arabic">
+<li><p>Train two S2EF models, energy-only and force-only.</p></li>
+<li><p>Using the trained force-only S2EF model, run ML relaxations as described previously. Ensure <code class="docutils literal notranslate"><span class="pre">traj_dir</span></code> is uniquely specified in the config as to save out the full trajectory. <strong>Note</strong> Relaxations on the complete val/test set may take upwards of 8hrs depending on your available hardware.</p></li>
+<li><p>In order to make predictions via the energy-only model on the generated trajectories, LMDBs must be constructed via the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>python scripts/preprocess_relaxed.py --id path/to/id/traj_dir \
+      --ood-ads path/to/ood_ads/traj_dir --ood-cat path/to/ood_cat/traj_dir \
+      --ood-both path/to/ood_both/traj_dir --out-path $DIR --num-workers $NUM_WORKERS
+</pre></div>
+</div>
+<p>Where <code class="docutils literal notranslate"><span class="pre">$DIR</span></code> specifies the directory to save generated LMDBs. A sub-directory will be created for each of the 4 splits in <code class="docutils literal notranslate"><span class="pre">$DIR</span></code>. <code class="docutils literal notranslate"><span class="pre">$NUM_WORKERS</span></code> is the number of data preprocessing cpu workers to be used.</p>
+</li>
+<li><p>Update your energy-only config to point the test set to the newly generated LMDBs. Using the trained energy-only S2EF model, generate predictions via <code class="docutils literal notranslate"><span class="pre">--mode</span> <span class="pre">predict</span></code> (as you would do for the general IS2RE/S2EF case).</p></li>
+<li><p>Prepare a submission file by running the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">scripts</span><span class="o">/</span><span class="n">make_submission_file</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="nb">id</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="nb">id</span><span class="o">/</span><span class="n">s2ef_predictions</span><span class="o">.</span><span class="n">npz</span> \
+        <span class="o">--</span><span class="n">ood</span><span class="o">-</span><span class="n">ads</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">ood_ads</span><span class="o">/</span><span class="n">s2ef_predictions</span><span class="o">.</span><span class="n">npz</span> <span class="o">--</span><span class="n">ood</span><span class="o">-</span><span class="n">cat</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">ood_cat</span><span class="o">/</span><span class="n">s2ef_predictions</span><span class="o">.</span><span class="n">npz</span> \
+        <span class="o">--</span><span class="n">ood</span><span class="o">-</span><span class="n">both</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">ood_both</span><span class="o">/</span><span class="n">s2ef_predictions</span><span class="o">.</span><span class="n">npz</span> <span class="o">--</span><span class="n">out</span><span class="o">-</span><span class="n">path</span> <span class="n">submission_file</span><span class="o">.</span><span class="n">npz</span> \
+        <span class="o">--</span><span class="n">is2re</span><span class="o">-</span><span class="n">relaxations</span> <span class="o">--</span><span class="n">hybrid</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</li>
+</ul>
+</section>
+</section>
+<section id="structure-to-energy-and-forces-s2ef">
+<h2>Structure to Energy and Forces (S2EF)<a class="headerlink" href="#structure-to-energy-and-forces-s2ef" title="Link to this heading">#</a></h2>
+<p>In the S2EF task, the model takes the positions of the atoms as input and predicts the adsorption energy and per-atom
+forces as calculated by DFT. To train a model for the S2EF task, you can use the <code class="docutils literal notranslate"><span class="pre">OCPTrainer</span></code>
+and <code class="docutils literal notranslate"><span class="pre">TrajectoryLmdb</span></code> dataset by specifying the following in your configuration file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">trainer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ocp</span>
+
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Training data</span>
+<span class="w">  </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">src</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">Path to training data</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">normalize_labels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">    </span><span class="c1"># Mean and standard deviation of energies</span>
+<span class="w">    </span><span class="nt">target_mean</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-0.7586356401443481</span>
+<span class="w">    </span><span class="nt">target_std</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.981738567352295</span>
+<span class="w">    </span><span class="c1"># Mean and standard deviation of forces</span>
+<span class="w">    </span><span class="nt">grad_target_mean</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<span class="w">    </span><span class="nt">grad_target_std</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.981738567352295</span>
+<span class="w">  </span><span class="c1"># Val data (optional)</span>
+<span class="w">  </span><span class="nt">val</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">src</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">Path to validation data</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="c1"># Test data (optional)</span>
+<span class="w">  </span><span class="nt">test</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">src</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">Path to test data</span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+<p>You can find examples configuration files in <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/core/configs/s2ef"><code class="docutils literal notranslate"><span class="pre">configs/s2ef</span></code></a>.</p>
+<p>To train a SchNet model for the S2EF task on the 2M split using 2 GPUs, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>torchrun<span class="w"> </span>--standalone<span class="w"> </span>--nproc_per_node<span class="o">=</span><span class="m">2</span><span class="w"> </span>main.py<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--mode<span class="w"> </span>train<span class="w"> </span>--config-yml<span class="w"> </span>configs/s2ef/2M/schnet/schnet.yml<span class="w"> </span>--num-gpus<span class="w"> </span><span class="m">2</span><span class="w"> </span>--distributed
+</pre></div>
+</div>
+<p>Similar to the IS2RE task, tensorboard logs are stored in <code class="docutils literal notranslate"><span class="pre">logs/tensorboard/[TIMESTAMP]</span></code> and the
+checkpoint is stored in <code class="docutils literal notranslate"><span class="pre">checkpoints/[TIMESTAMP]/checkpoint.pt</span></code>.</p>
+<p>Next, run this model on the test data:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--mode<span class="w"> </span>predict<span class="w"> </span>--config-yml<span class="w"> </span>configs/s2ef/2M/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--checkpoint<span class="w"> </span>checkpoints/<span class="o">[</span>TIMESTAMP<span class="o">]</span>/checkpoint.pt
+</pre></div>
+</div>
+<p>The predictions are stored in <code class="docutils literal notranslate"><span class="pre">[RESULTS_DIR]/ocp_predictions.npz</span></code> and later used to create a submission file to be uploaded to EvalAI.</p>
+</section>
+<section id="training-oc20-models-with-total-energies-is2re-s2ef">
+<h2>Training OC20 models with total energies (IS2RE/S2EF)<a class="headerlink" href="#training-oc20-models-with-total-energies-is2re-s2ef" title="Link to this heading">#</a></h2>
+<p>To train and validate an OC20 IS2RE/S2EF model on total energies instead of adsorption energies there are a number of
+required changes to the config. They include setting: <code class="docutils literal notranslate"><span class="pre">dataset:</span> <span class="pre">oc22_lmdb</span></code>, <code class="docutils literal notranslate"><span class="pre">prediction_dtype:</span> <span class="pre">float32</span></code>,
+<code class="docutils literal notranslate"><span class="pre">train_on_oc20_total_energies:</span> <span class="pre">True</span></code>, and <code class="docutils literal notranslate"><span class="pre">oc20_ref:</span> <span class="pre">path/to/oc20_ref.pkl</span></code> (see example below).
+Also, please note that our evaluation server does not currently support OC20 total energy models.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">task</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">prediction_dtype</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float32</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oc22_lmdb</span>
+<span class="w">  </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">src</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/oc20/s2ef/train</span>
+<span class="w">    </span><span class="nt">normalize_labels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="w">    </span><span class="nt">train_on_oc20_total_energies</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">    </span><span class="c1"># download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl</span>
+<span class="w">    </span><span class="nt">oc20_ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/oc20_ref.pkl</span>
+<span class="w">  </span><span class="nt">val</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">src</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/oc20/s2ef/val_id</span>
+<span class="w">    </span><span class="nt">train_on_oc20_total_energies</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">    </span><span class="nt">oc20_ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/oc20_ref.pkl</span>
+</pre></div>
+</div>
+</section>
+<section id="overriding-yaml-config-parameters-from-the-command-line">
+<h2>Overriding YAML config parameters from the command line<a class="headerlink" href="#overriding-yaml-config-parameters-from-the-command-line" title="Link to this heading">#</a></h2>
+<p>There is some support for specifying arguments from the command line, such that
+they would override any parameter from the YAML configuration file. The parser
+for this relies on the <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/common/utils.py#L357">nesting level being correctly specified using a <code class="docutils literal notranslate"><span class="pre">.</span></code>
+separator</a>.</p>
+<p>For example, to override the training dataset path via a command line argument:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--mode<span class="w"> </span>train
+<span class="w">    </span>--config-yml<span class="w"> </span>configs/s2ef/2M/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset.train.src<span class="o">=</span>path/to/my/dataset/
+</pre></div>
+</div>
+<p>Or to update the initial learning rate:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--mode<span class="w"> </span>train
+<span class="w">    </span>--config-yml<span class="w"> </span>configs/s2ef/2M/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--optim.lr_initial<span class="o">=</span>3e-4
+</pre></div>
+</div>
+</section>
+<section id="initial-structure-to-relaxed-structure-is2rs">
+<h2>Initial Structure to Relaxed Structure (IS2RS)<a class="headerlink" href="#initial-structure-to-relaxed-structure-is2rs" title="Link to this heading">#</a></h2>
+<p>In the IS2RS task the model takes as input an initial structure and predicts the atomic positions in their
+final, relaxed state. This can be done by training a model to predict per-atom forces similar to the S2EF
+task and then running an iterative relaxation. Although we present an iterative approach, models that directly predict relaxed states are also possible. The iterative approach IS2RS task uses the same configuration files as the S2EF task <code class="docutils literal notranslate"><span class="pre">configs/s2ef</span></code> and follows the same training scheme above.</p>
+<p>To perform an iterative relaxation, ensure the following is added to the configuration files of the models you wish to run relaxations on:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Relaxation options</span>
+<span class="nt">relax_dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">src</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/is2re/all/val_id/data.lmdb</span><span class="w"> </span><span class="c1"># path to lmdb of systems to be relaxed (uses same lmdbs as is2re)</span>
+<span class="nt">write_pos</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">relaxation_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="nt">relax_opt</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">maxstep</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.04</span>
+<span class="w">  </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+<span class="w">  </span><span class="nt">damping</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">  </span><span class="nt">alpha</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">70.0</span>
+<span class="w">  </span><span class="nt">traj_dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;trajectories&quot;</span><span class="w"> </span><span class="c1"># specify directory you wish to log the entire relaxations, suppress otherwise</span>
+</pre></div>
+</div>
+<p>After training, relaxations can be run by:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--mode<span class="w"> </span>run-relaxations<span class="w"> </span>--config-yml<span class="w"> </span>configs/s2ef/2M/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--checkpoint<span class="w"> </span>checkpoints/<span class="o">[</span>TIMESTAMP<span class="o">]</span>/checkpoint.pt
+</pre></div>
+</div>
+<p>The relaxed structure positions are stored in <code class="docutils literal notranslate"><span class="pre">[RESULTS_DIR]/relaxed_positions.npz</span></code> and later used to create a submission file to be uploaded to EvalAI. Predicted trajectories are stored in <code class="docutils literal notranslate"><span class="pre">trajectories</span></code> directory for those interested in analyzing the complete relaxation trajectory.</p>
+</section>
+<section id="create-evalai-oc20-submission-files">
+<h2>Create EvalAI OC20 submission files<a class="headerlink" href="#create-evalai-oc20-submission-files" title="Link to this heading">#</a></h2>
+<p>EvalAI expects results to be structured in a specific format for a submission to be successful. A submission must contain results from the 4 different splits - in distribution (id), out of distribution adsorbate (ood ads), out of distribution catalyst (ood cat), and out of distribution adsorbate and catalyst (ood both). Constructing the submission file for each of the above tasks is as follows:</p>
+<section id="s2ef-is2re">
+<h3>S2EF/IS2RE:<a class="headerlink" href="#s2ef-is2re" title="Link to this heading">#</a></h3>
+<ol class="arabic">
+<li><p>Run predictions <code class="docutils literal notranslate"><span class="pre">--mode</span> <span class="pre">predict</span></code> on all 4 splits, generating <code class="docutils literal notranslate"><span class="pre">[s2ef/is2re]_predictions.npz</span></code> files for each split.</p></li>
+<li><p>Run the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>make_submission_file.py<span class="w"> </span>--id<span class="w"> </span>path/to/id/file.npz<span class="w"> </span>--ood-ads<span class="w"> </span>path/to/ood_ads/file.npz<span class="w"> </span><span class="se">\</span>
+--ood-cat<span class="w"> </span>path/to/ood_cat/file.npz<span class="w"> </span>--ood-both<span class="w"> </span>path/to/ood_both/file.npz<span class="w"> </span>--out-path<span class="w"> </span>submission_file.npz
+</pre></div>
+</div>
+<p>Where <code class="docutils literal notranslate"><span class="pre">file.npz</span></code> corresponds to the respective <code class="docutils literal notranslate"><span class="pre">[s2ef/is2re]_predictions.npz</span></code> files generated for the corresponding task. The final submission file will be written to <code class="docutils literal notranslate"><span class="pre">submission_file.npz</span></code> (rename accordingly).</p>
+</li>
+<li><p>Upload <code class="docutils literal notranslate"><span class="pre">submission_file.npz</span></code> to EvalAI.</p></li>
+</ol>
+</section>
+<section id="is2rs">
+<h3>IS2RS:<a class="headerlink" href="#is2rs" title="Link to this heading">#</a></h3>
+<ol class="arabic">
+<li><p>Ensure <code class="docutils literal notranslate"><span class="pre">write_pos:</span> <span class="pre">True</span></code> is included in your configuration file. Run relaxations <code class="docutils literal notranslate"><span class="pre">--mode</span> <span class="pre">run-relaxations</span></code> on all 4 splits, generating <code class="docutils literal notranslate"><span class="pre">relaxed_positions.npz</span></code> files for each split.</p></li>
+<li><p>Run the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>make_submission_file.py<span class="w"> </span>--id<span class="w"> </span>path/to/id/relaxed_positions.npz<span class="w"> </span>--ood-ads<span class="w"> </span>path/to/ood_ads/relaxed_positions.npz<span class="w"> </span><span class="se">\</span>
+--ood-cat<span class="w"> </span>path/to/ood_cat/relaxed_positions.npz<span class="w"> </span>--ood-both<span class="w"> </span>path/to/ood_both/relaxed_positions.npz<span class="w"> </span>--out-path<span class="w"> </span>is2rs_submission.npz
+</pre></div>
+</div>
+<p>The final submission file will be written to <code class="docutils literal notranslate"><span class="pre">is2rs_submission.npz</span></code> (rename accordingly).</p>
+</li>
+<li><p>Upload <code class="docutils literal notranslate"><span class="pre">is2rs_submission.npz</span></code> to EvalAI.</p></li>
+</ol>
+</section>
+</section>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="oc22">
+<h1>OC22<a class="headerlink" href="#oc22" title="Link to this heading">#</a></h1>
+<section id="initial-structure-to-total-relaxed-energy-is2re-total">
+<h2>Initial Structure to Total Relaxed Energy (IS2RE-Total)<a class="headerlink" href="#initial-structure-to-total-relaxed-energy-is2re-total" title="Link to this heading">#</a></h2>
+<p>For the IS2RE-Total task, the model takes the initial structure as input and predicts the total DFT energy of the relaxed structure. This task is more general and more challenging than the original OC20 IS2RE task that predicts adsorption energy.
+To train an OC22 IS2RE-Total model use the <code class="docutils literal notranslate"><span class="pre">OC22LmdbDataset</span></code> by including these lines in your configuration file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oc22_lmdb</span><span class="w"> </span><span class="c1"># Use the OC22LmdbDataset</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+</pre></div>
+</div>
+<p>You can find examples configuration files in <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/core/configs/oc22/is2re"><code class="docutils literal notranslate"><span class="pre">configs/oc22/is2re</span></code></a>.</p>
+</section>
+<section id="structure-to-total-energy-and-forces-s2ef-total">
+<h2>Structure to Total Energy and Forces (S2EF-Total)<a class="headerlink" href="#structure-to-total-energy-and-forces-s2ef-total" title="Link to this heading">#</a></h2>
+<p>The S2EF-Total task takes a structure and predicts the total DFT energy and per-atom forces. This differs from the
+original OC20 S2EF task because it predicts total energy instead of adsorption energy.
+To train an OC22 S2EF-Total model the OC22LmdbDataset by including these lines in your configuration file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oc22_lmdb</span><span class="w"> </span><span class="c1"># Use the OC22LmdbDataset</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+</pre></div>
+</div>
+<p>You can find examples configuration files in <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/core/configs/oc22/s2ef"><code class="docutils literal notranslate"><span class="pre">configs/oc22/s2ef</span></code></a>.</p>
+</section>
+<section id="joint-training">
+<h2>Joint Training<a class="headerlink" href="#joint-training" title="Link to this heading">#</a></h2>
+<p>Training on OC20 total energies whether independently or jointly with OC22 requires a path to the <code class="docutils literal notranslate"><span class="pre">oc20_ref</span></code> (download link provided below) to be specified in the configuration file. These are necessary to convert OC20 adsorption energies into their corresponding total energies. The following changes in the configuration file capture these changes:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oc22_lmdb</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">src</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/oc20+oc22/s2ef/train</span>
+<span class="w">    </span><span class="nt">normalize_labels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="w">    </span><span class="nt">train_on_oc20_total_energies</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">    </span><span class="c1">#download at https://dl.fbaipublicfiles.com/opencatalystproject/data/oc22/oc20_ref.pkl</span>
+<span class="w">    </span><span class="nt">oc20_ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/oc20_ref.pkl</span>
+<span class="w">  </span><span class="nt">val</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">src</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/oc22/s2ef/val_id</span>
+<span class="w">    </span><span class="nt">train_on_oc20_total_energies</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">    </span><span class="nt">oc20_ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/oc20_ref.pkl</span>
+</pre></div>
+</div>
+<p>You can find an example configuration file at <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/oc22/s2ef/base_joint.yml">configs/oc22/s2ef/base_joint.yml</a></p>
+</section>
+<section id="create-evalai-oc22-submission-files">
+<h2>Create EvalAI OC22 submission files<a class="headerlink" href="#create-evalai-oc22-submission-files" title="Link to this heading">#</a></h2>
+<p>EvalAI expects results to be structured in a specific format for a submission to be successful. A submission must contain results from the 2 different splits - in distribution (id) and out of distribution (ood). Construct submission files for the OC22 S2EF-Total/IS2RE-Total tasks as follows:</p>
+<section id="s2ef-total-is2re-total">
+<h3>S2EF-Total/IS2RE-Total:<a class="headerlink" href="#s2ef-total-is2re-total" title="Link to this heading">#</a></h3>
+<ol class="arabic">
+<li><p>Run predictions <code class="docutils literal notranslate"><span class="pre">--mode</span> <span class="pre">predict</span></code> on both the id and ood splits, generating <code class="docutils literal notranslate"><span class="pre">[s2ef/is2re]_predictions.npz</span></code> files for each split.</p></li>
+<li><p>Run the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>make_submission_file.py<span class="w"> </span>--dataset<span class="w"> </span>OC22<span class="w"> </span>--id<span class="w"> </span>path/to/id/file.npz<span class="w"> </span>--ood<span class="w"> </span>path/to/ood_ads/file.npz<span class="w"> </span>--out-path<span class="w"> </span>submission_file.npz
+</pre></div>
+</div>
+<p>Where <code class="docutils literal notranslate"><span class="pre">file.npz</span></code> corresponds to the respective <code class="docutils literal notranslate"><span class="pre">[s2ef/is2re]_predictions.npz</span></code> files generated for the corresponding task. The final submission file will be written to <code class="docutils literal notranslate"><span class="pre">submission_file.npz</span></code> (rename accordingly). The <code class="docutils literal notranslate"><span class="pre">dataset</span></code> argument specifies which dataset is being considered — this only needs to be set for OC22 predictions because OC20 is the default.</p>
+</li>
+<li><p>Upload <code class="docutils literal notranslate"><span class="pre">submission_file.npz</span></code> to EvalAI.</p></li>
+</ol>
+</section>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./core"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="lmdb_dataset_creation.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Making LMDB Datasets (original format, deprecated for ASE LMDBs)</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="inference.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Fast batched inference</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Training and evaluating custom models on OCP datasets</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#getting-started">Getting Started</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#oc20">OC20</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#initial-structure-to-relaxed-energy-prediction-is2re">Initial Structure to Relaxed Energy prediction (IS2RE)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#is2re-relaxations">IS2RE Relaxations</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#structure-to-energy-and-forces-s2ef">Structure to Energy and Forces (S2EF)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#training-oc20-models-with-total-energies-is2re-s2ef">Training OC20 models with total energies (IS2RE/S2EF)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overriding-yaml-config-parameters-from-the-command-line">Overriding YAML config parameters from the command line</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#initial-structure-to-relaxed-structure-is2rs">Initial Structure to Relaxed Structure (IS2RS)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#create-evalai-oc20-submission-files">Create EvalAI OC20 submission files</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#s2ef-is2re">S2EF/IS2RE:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#is2rs">IS2RS:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#oc22">OC22</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#initial-structure-to-total-relaxed-energy-is2re-total">Initial Structure to Total Relaxed Energy (IS2RE-Total)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#structure-to-total-energy-and-forces-s2ef-total">Structure to Total Energy and Forces (S2EF-Total)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#joint-training">Joint Training</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#create-evalai-oc22-submission-files">Create EvalAI OC22 submission files</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#s2ef-total-is2re-total">S2EF-Total/IS2RE-Total:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By FAIR Chemistry & Collaborators
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2024.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

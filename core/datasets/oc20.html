@@ -1,0 +1,1993 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Open Catalyst 2020 (OC20)</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=a3416100" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=fd3f3429" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../../_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'core/datasets/oc20';</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Open Catalyst 2022 (OC22)" href="oc22.html" />
+    <link rel="prev" title="ocpapi" href="../ocpapi.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title"></p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../../index.html">
+                    FAIR-Chem overview
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Quickstart &amp; Installation</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Using pre-trained models in ASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gotchas.html">Common gotchas with fairchem</a></li>
+
+
+
+
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Learn More</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../intro_series.html">Why model atoms for climate?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../videos/technical_talks.html">Technical presentations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../papers_using_models.html">Studies leveraging pre-trained or fine-tuned FAIR-Chem models</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">OCP API &amp; Demo</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://open-catalyst.metademolab.com/">OCP Demo (no install required!)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ocpapi.html">ocpapi</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Released Datasets &amp; Models</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Open Catalyst 2020 (OC20)</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="oc22.html">Open Catalyst 2022 (OC22)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odac.html">Open Direct Air Capture 2023 (ODAC23)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="oc20dense.html">Open Catalyst 2020 Dense (OC20Dense)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="oc20neb.html">Open Catalyst 2020 Nudged Elastic Band (OC20NEB)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="omat24.html">Open Materials 2024 (OMat24)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ocx24.html">Open Catalyst Experiments 2024 (OCx24): Bridging Experiments and Computational Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../model_checkpoints.html">Pretrained FAIRChem models</a></li>
+
+
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Making your own datasets</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../ase_dataset_creation.html">Making and using ASE datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../lmdb_dataset_creation.html">Making LMDB Datasets (original format, deprecated for ASE LMDBs)</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Model development, training, inference, finetuning</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../model_training.html">Training and evaluating custom models on OCP datasets</a></li>
+
+
+<li class="toctree-l1"><a class="reference internal" href="../inference.html">Fast batched inference</a></li>
+
+
+<li class="toctree-l1"><a class="reference internal" href="../fine-tuning/fine-tuning-oxides.html">Fine tuning a model</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="../model_faq.html">Model FAQ</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Catalysis Case Studies &amp; Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/intro.html">Intro and background on OCP and DFT</a></li>
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/OCP-introduction.html">Simple simulations using the OCP ASE calculator</a></li>
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/adsorbml_walkthrough.html">AdsorbML tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/cattsunami_tutorial.html">CatTSunami Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/fairchem_models_for_nebs.html">Tutorial for using Fair Chemistry models to relax NEBs</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../tutorials/NRR/NRR_toc.html">Screening catalysts with OCP</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/NRR/NRR_example.html">Using OCP to enumerate adsorbates on alloy catalyst surfaces</a></li>
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../tutorials/advanced/advanced_toc.html">Advanced OCP usage</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/advanced/fine-tuning-in-python.html">Fine-tuning with Python</a></li>
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/advanced/embeddings.html">Working with embeddings</a></li>
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../legacy_tutorials/legacy_tutorials.html">Legacy [deprecated] Tutorials</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../legacy_tutorials/OCP_Tutorial.html">Open Catalyst Project Tutorial Notebook</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="../../legacy_tutorials/data_preprocessing.html">OCP Data Preprocessing Tutorial</a></li>
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="../../legacy_tutorials/data_visualization.html">OCP Data Visualization</a></li>
+
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">fairchem documentation</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../autoapi/index.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../autoapi/core/index.html">core</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../autoapi/core/_cli/index.html">core._cli</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../autoapi/core/_cli_hydra/index.html">core._cli_hydra</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../autoapi/core/common/index.html">core.common</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/data_parallel/index.html">core.common.data_parallel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/distutils/index.html">core.common.distutils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/flags/index.html">core.common.flags</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/gp_utils/index.html">core.common.gp_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/hpo_utils/index.html">core.common.hpo_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/logger/index.html">core.common.logger</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/profiler_utils/index.html">core.common.profiler_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/registry/index.html">core.common.registry</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/relaxation/index.html">core.common.relaxation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/slurm/index.html">core.common.slurm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/test_utils/index.html">core.common.test_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/transforms/index.html">core.common.transforms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/tutorial_utils/index.html">core.common.tutorial_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/typing/index.html">core.common.typing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/common/utils/index.html">core.common.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../autoapi/core/datasets/index.html">core.datasets</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/datasets/_utils/index.html">core.datasets._utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/datasets/ase_datasets/index.html">core.datasets.ase_datasets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/datasets/base_dataset/index.html">core.datasets.base_dataset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/datasets/embeddings/index.html">core.datasets.embeddings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/datasets/lmdb_database/index.html">core.datasets.lmdb_database</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/datasets/lmdb_dataset/index.html">core.datasets.lmdb_dataset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/datasets/oc22_lmdb_dataset/index.html">core.datasets.oc22_lmdb_dataset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/datasets/target_metadata_guesser/index.html">core.datasets.target_metadata_guesser</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../autoapi/core/models/index.html">core.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/models/base/index.html">core.models.base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/models/dimenet_plus_plus/index.html">core.models.dimenet_plus_plus</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/models/equiformer_v2/index.html">core.models.equiformer_v2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/models/escn/index.html">core.models.escn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/models/gemnet/index.html">core.models.gemnet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/models/gemnet_gp/index.html">core.models.gemnet_gp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/models/gemnet_oc/index.html">core.models.gemnet_oc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/models/model_registry/index.html">core.models.model_registry</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/models/painn/index.html">core.models.painn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/models/schnet/index.html">core.models.schnet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/models/scn/index.html">core.models.scn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/models/utils/index.html">core.models.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../autoapi/core/modules/index.html">core.modules</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/modules/evaluator/index.html">core.modules.evaluator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/modules/exponential_moving_average/index.html">core.modules.exponential_moving_average</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/modules/loss/index.html">core.modules.loss</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/modules/normalization/index.html">core.modules.normalization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/modules/scaling/index.html">core.modules.scaling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/modules/scheduler/index.html">core.modules.scheduler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/modules/transforms/index.html">core.modules.transforms</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../autoapi/core/preprocessing/index.html">core.preprocessing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/preprocessing/atoms_to_graphs/index.html">core.preprocessing.atoms_to_graphs</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../autoapi/core/scripts/index.html">core.scripts</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/scripts/convert_hydra_to_release/index.html">core.scripts.convert_hydra_to_release</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/scripts/download_data/index.html">core.scripts.download_data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/scripts/download_large_files/index.html">core.scripts.download_large_files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/scripts/eqv2_to_hydra_eqv2/index.html">core.scripts.eqv2_to_hydra_eqv2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/scripts/fit_normalizers/index.html">core.scripts.fit_normalizers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/scripts/fit_references/index.html">core.scripts.fit_references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/scripts/gif_maker_parallelized/index.html">core.scripts.gif_maker_parallelized</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/scripts/hpo/index.html">core.scripts.hpo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/scripts/make_challenge_submission_file/index.html">core.scripts.make_challenge_submission_file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/scripts/make_lmdb_sizes/index.html">core.scripts.make_lmdb_sizes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/scripts/make_submission_file/index.html">core.scripts.make_submission_file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/scripts/preprocess_ef/index.html">core.scripts.preprocess_ef</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/scripts/preprocess_relaxed/index.html">core.scripts.preprocess_relaxed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/scripts/uncompress/index.html">core.scripts.uncompress</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../autoapi/core/tasks/index.html">core.tasks</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/tasks/task/index.html">core.tasks.task</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../autoapi/core/trainers/index.html">core.trainers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/trainers/base_trainer/index.html">core.trainers.base_trainer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/core/trainers/ocp_trainer/index.html">core.trainers.ocp_trainer</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../autoapi/data/index.html">data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../autoapi/data/oc/index.html">data.oc</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/data/oc/core/index.html">data.oc.core</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/data/oc/databases/index.html">data.oc.databases</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/data/oc/structure_generator/index.html">data.oc.structure_generator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/data/oc/utils/index.html">data.oc.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../autoapi/data/odac/index.html">data.odac</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/data/odac/setup_vasp/index.html">data.odac.setup_vasp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../autoapi/data/om/index.html">data.om</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../autoapi/ocpapi/index.html">ocpapi</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../autoapi/ocpapi/client/index.html">ocpapi.client</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/ocpapi/client/client/index.html">ocpapi.client.client</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/ocpapi/client/models/index.html">ocpapi.client.models</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/ocpapi/client/ui/index.html">ocpapi.client.ui</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../autoapi/ocpapi/version/index.html">ocpapi.version</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../autoapi/ocpapi/workflows/index.html">ocpapi.workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/ocpapi/workflows/adsorbates/index.html">ocpapi.workflows.adsorbates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/ocpapi/workflows/context/index.html">ocpapi.workflows.context</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/ocpapi/workflows/filter/index.html">ocpapi.workflows.filter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/ocpapi/workflows/log/index.html">ocpapi.workflows.log</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/ocpapi/workflows/retry/index.html">ocpapi.workflows.retry</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../autoapi/cattsunami/index.html">cattsunami</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../autoapi/cattsunami/core/index.html">cattsunami.core</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/cattsunami/core/autoframe/index.html">cattsunami.core.autoframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/cattsunami/core/ocpneb/index.html">cattsunami.core.ocpneb</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../autoapi/cattsunami/core/reaction/index.html">cattsunami.core.reaction</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../autoapi/cattsunami/databases/index.html">cattsunami.databases</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Notebook execution times</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../execution_time.html">Notebook execution times</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/FAIR-Chem/fairchem" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/FAIR-Chem/fairchem/issues/new?title=Issue%20on%20page%20%2Fcore/datasets/oc20.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../../_sources/core/datasets/oc20.md" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.md</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button>
+
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Open Catalyst 2020 (OC20)</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Open Catalyst 2020 (OC20)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#download-and-preprocess-the-dataset">Download and preprocess the dataset</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#structure-to-energy-and-forces-s2ef-task">Structure to Energy and Forces (S2EF) task</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#initial-structure-to-relaxed-structure-is2rs-and-initial-structure-to-relaxed-energy-is2re-tasks">Initial Structure to Relaxed Structure (IS2RS) and Initial Structure to Relaxed Energy (IS2RE) tasks</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#relaxation-trajectories">Relaxation Trajectories</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#adsorbate-catalyst-system-trajectories-optional-download">Adsorbate+catalyst system trajectories (optional download)</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#per-adsorbate-trajectories-optional-download">Per-adsorbate trajectories (optional download)</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#catalyst-system-trajectories-optional-download">Catalyst system trajectories (optional download)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bader-charge-data">Bader charge data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#oc20-mappings">OC20 mappings</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data-mapping-information">Data mapping information</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#adsorbate-catalyst-system-to-catalyst-system-mapping-information">Adsorbate-catalyst system to catalyst system mapping information</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dataset-changelog">Dataset changelog</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#september-2021">September 2021</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#march-2021">March 2021</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#version-2-feb-2021">Version 2, Feb 2021</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#version-1-oct-2020">Version 1, Oct 2020</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#citing-oc20">Citing OC20</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#per-adsorbate-trajectories">Per-adsorbate trajectories</a></li>
+</ul>
+
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="open-catalyst-2020-oc20">
+<h1>Open Catalyst 2020 (OC20)<a class="headerlink" href="#open-catalyst-2020-oc20" title="Link to this heading">#</a></h1>
+<p><em>NOTE: Data files for all tasks / splits were updated on Feb 10, 2021 due to minor bugs (affecting &lt; 1% of the data) in earlier versions. If you downloaded data before Feb 10, 2021, please re-download the data.</em></p>
+<section id="download-and-preprocess-the-dataset">
+<h2>Download and preprocess the dataset<a class="headerlink" href="#download-and-preprocess-the-dataset" title="Link to this heading">#</a></h2>
+<p>IS2* datasets are stored as LMDB files and are ready to be used upon download.
+S2EF train+val datasets require an additional preprocessing step.</p>
+<p>For convenience, a self-contained script can be found <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/scripts/download_data.py">here</a> to download, preprocess, and organize the data directories to be readily usable by the existing <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/core/configs">configs</a>.</p>
+<p>For IS2*, run the script as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">scripts</span><span class="o">/</span><span class="n">download_data</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">task</span> <span class="n">is2re</span>
+</pre></div>
+</div>
+<p>For S2EF train/val, run the script as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">scripts</span><span class="o">/</span><span class="n">download_data</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">task</span> <span class="n">s2ef</span> <span class="o">--</span><span class="n">split</span> <span class="n">SPLIT_SIZE</span> <span class="o">--</span><span class="n">get</span><span class="o">-</span><span class="n">edges</span> <span class="o">--</span><span class="n">num</span><span class="o">-</span><span class="n">workers</span> <span class="n">WORKERS</span> <span class="o">--</span><span class="n">ref</span><span class="o">-</span><span class="n">energy</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--split</span></code>: split size to download: <code class="docutils literal notranslate"><span class="pre">&quot;200k&quot;,</span> <span class="pre">&quot;2M&quot;,</span> <span class="pre">&quot;20M&quot;,</span> <span class="pre">&quot;all&quot;,</span> <span class="pre">&quot;val_id&quot;,</span> <span class="pre">&quot;val_ood_ads&quot;,</span> <span class="pre">&quot;val_ood_cat&quot;,</span> <span class="pre">or</span> <span class="pre">&quot;val_ood_both&quot;</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--get-edges</span></code>: includes edge information in LMDBs (~10x storage requirement, ~3-5x slowdown), otherwise, compute edges on the fly (larger GPU memory requirement).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--num-workers</span></code>: number of workers to parallelize preprocessing across.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--ref-energy</span></code>: uses referenced energies instead of raw energies.</p></li>
+</ul>
+<p>For S2EF test, run the script as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">scripts</span><span class="o">/</span><span class="n">download_data</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">task</span> <span class="n">s2ef</span> <span class="o">--</span><span class="n">split</span> <span class="n">test</span>
+</pre></div>
+</div>
+<p>To download and process the dataset in a directory other than your local <code class="docutils literal notranslate"><span class="pre">fairchem/data</span></code> folder, add the following command line argument <code class="docutils literal notranslate"><span class="pre">--data-path</span></code>.</p>
+<p>Note that the baseline <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/core/configs">configs</a>
+expect the data to be found in <code class="docutils literal notranslate"><span class="pre">fairchem/data</span></code>, make sure you symlink your directory or
+modify the paths in the configs accordingly.</p>
+<p>The following sections list dataset download links and sizes for various S2EF
+and IS2RE/IS2RS task splits. If you used the above <code class="docutils literal notranslate"><span class="pre">download_data.py</span></code> script to
+download and preprocess the data, you are good to go and can stop reading here!</p>
+</section>
+<section id="structure-to-energy-and-forces-s2ef-task">
+<h2>Structure to Energy and Forces (S2EF) task<a class="headerlink" href="#structure-to-energy-and-forces-s2ef-task" title="Link to this heading">#</a></h2>
+<p>For this task’s train and validation sets, we provide compressed trajectory files with the input structures and output energies and forces.  We provide precomputed LMDBs for the test sets. To use the train and validation datasets, first download the files and uncompress them. The uncompressed files are used to generate LMDBs, which are in turn used by the dataloaders to train the ML models. Code for the dataloaders and generating the LMDBs may be found in the Github repository.</p>
+<p>Four training datasets are provided with different sizes. Each is a subset of the other, i.e., the 2M dataset is contained in the 20M and all datasets.</p>
+<p>Four datasets are provided for validation set. Each dataset corresponds to a subsplit used to evaluate different types of extrapolation, in domain (id, same distribution as the training dataset), out of domain adsorbate (ood_ads, unseen adsorbate), out of domain catalyst (ood_cat, unseen catalyst composition), and out of domain both (ood_both, unseen adsorbate and catalyst composition).</p>
+<p>For the test sets, we provide precomputed LMDBs for each of the 4 subsplits (In Domain, OOD Adsorbate, OOD Catalyst, OOD Both).</p>
+<p>Each tarball has a README file containing details about file formats, number of structures / trajectories, etc.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Splits</p></th>
+<th class="head"><p>Size of compressed version (in bytes)</p></th>
+<th class="head"><p>Size of uncompressed version (in bytes)</p></th>
+<th class="head"><p>MD5 checksum (download link)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Train</p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>all</p></td>
+<td><p>225G</p></td>
+<td><p>1.1T</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_all.tar">12a7087bfd189a06ccbec9bc7add2bcd</a></p></td>
+</tr>
+<tr class="row-even"><td><p>20M</p></td>
+<td><p>34G</p></td>
+<td><p>165G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_20M.tar">863bc983245ffc0285305a1850e19cf7</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>2M</p></td>
+<td><p>3.4G</p></td>
+<td><p>17G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_2M.tar">953474cb93f0b08cdc523399f03f7c36</a></p></td>
+</tr>
+<tr class="row-even"><td><p>200K</p></td>
+<td><p>344M</p></td>
+<td><p>1.7G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_train_200K.tar">f8d0909c2623a393148435dede7d3a46</a></p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>Validation</p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>val_id</p></td>
+<td><p>1.7G</p></td>
+<td><p>8.3G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_id.tar">f57f7f5c1302637940f2cc858e789410</a></p></td>
+</tr>
+<tr class="row-even"><td><p>val_ood_ads</p></td>
+<td><p>1.7G</p></td>
+<td><p>8.2G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_ads.tar">431ab0d7557a4639605ba8b67793f053</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>val_ood_cat</p></td>
+<td><p>1.7G</p></td>
+<td><p>8.3G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_cat.tar">532d6cd1fe541a0ddb0aa0f99962b7db</a></p></td>
+</tr>
+<tr class="row-even"><td><p>val_ood_both</p></td>
+<td><p>1.9G</p></td>
+<td><p>9.5G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_val_ood_both.tar">5731862978d80502bbf7017d68c2c729</a></p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>Test (LMDBs for all splits)</p></td>
+<td><p>30G</p></td>
+<td><p>415G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_test_lmdbs.tar.gz">bcada432482f6e87b24e14b6b744992a</a></p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>Rattled data</p></td>
+<td><p>29G</p></td>
+<td><p>136G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_rattled.tar">40431149b27b64ce1fb40cac4e2e064b</a></p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>MD data</p></td>
+<td><p>42G</p></td>
+<td><p>306G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/s2ef_md.tar">9fed845aaab8fb4bf85e3a8db57796e0</a></p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="initial-structure-to-relaxed-structure-is2rs-and-initial-structure-to-relaxed-energy-is2re-tasks">
+<h2>Initial Structure to Relaxed Structure (IS2RS) and Initial Structure to Relaxed Energy (IS2RE) tasks<a class="headerlink" href="#initial-structure-to-relaxed-structure-is2rs-and-initial-structure-to-relaxed-energy-is2re-tasks" title="Link to this heading">#</a></h2>
+<p>For the IS2RS and IS2RE tasks, we are providing:</p>
+<ul class="simple">
+<li><p>One <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> file with precomputed LMDBs which once downloaded and uncompressed, can be used directly to train ML models. The LMDBs contain the input initial structures and the output relaxed structures and energies. Training datasets are split by size, with each being a subset of the larger splits, similar to S2EF. The validation and test datasets are broken into subsplits based on different extrapolation evaluations (In Domain, OOD Adsorbate, OOD Catalyst, OOD Both).</p></li>
+<li><p>underlying ASE relaxation trajectories for the adsorbate+catalyst in the entire training and validation sets for the IS2RE and IS2RS tasks. These are <strong>not</strong> required to download for training ML models, but are available for interested users.</p></li>
+</ul>
+<p>Each tarball has README file containing details about file formats, number of structures / trajectories, etc.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Splits</p></th>
+<th class="head"><p>Size of compressed version (in bytes)</p></th>
+<th class="head"><p>Size of uncompressed version (in bytes)</p></th>
+<th class="head"><p>MD5 checksum (download link)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Train (all splits) + Validation (all splits) + test (all splits)</p></td>
+<td><p>8.1G</p></td>
+<td><p>97G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_val_test_lmdbs.tar.gz">cfc04dd2f87b4102ab2f607240d25fb1</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>Test-challenge 2021 (<a class="reference external" href="https://opencatalystproject.org/challenge.html">challenge details</a>)</p></td>
+<td><p>1.3G</p></td>
+<td><p>17G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/is2re_test_challenge_2021.tar.gz">aed414cdd240fbb5670b5de6887a138b</a></p></td>
+</tr>
+<tr class="row-even"><td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="relaxation-trajectories">
+<h2>Relaxation Trajectories<a class="headerlink" href="#relaxation-trajectories" title="Link to this heading">#</a></h2>
+<section id="adsorbate-catalyst-system-trajectories-optional-download">
+<h3>Adsorbate+catalyst system trajectories (optional download)<a class="headerlink" href="#adsorbate-catalyst-system-trajectories-optional-download" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Split</p></th>
+<th class="head"><p>Size of compressed version (in bytes)</p></th>
+<th class="head"><p>Size of uncompressed version (in bytes)</p></th>
+<th class="head"><p>MD5 checksum (download link)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>All IS2RE/S training (~466k trajectories)</p></td>
+<td><p>109G</p></td>
+<td><p>841G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_train_trajectories.tar">9e3ed4d1e497bfdce4472ee70455edef</a></p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>IS2RE/S Validation</p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>val_id (~25K trajectories)</p></td>
+<td><p>5.9G</p></td>
+<td><p>46G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_id_trajectories.tar">fcb71363018fb1e7127db2500e39e11a</a></p></td>
+</tr>
+<tr class="row-even"><td><p>val_ood_ads (~25K trajectories)</p></td>
+<td><p>5.7G</p></td>
+<td><p>44G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_ads_trajectories.tar">5ced8ea84584aa229d31e693e0fb090f</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>val_ood_cat (~25K trajectories)</p></td>
+<td><p>6.0G</p></td>
+<td><p>46G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_cat_trajectories.tar">88dcc02fd8c174a72d2c416878fc44ff</a></p></td>
+</tr>
+<tr class="row-even"><td><p>val_ood_both (~25K trajectories)</p></td>
+<td><p>4.4G</p></td>
+<td><p>35G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/is2res_val_ood_both_trajectories.tar">bc74b6474a13542cc56eaa97bd51adfc</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="per-adsorbate-trajectories-optional-download">
+<h4>Per-adsorbate trajectories (optional download)<a class="headerlink" href="#per-adsorbate-trajectories-optional-download" title="Link to this heading">#</a></h4>
+<p>Download links are in the table below:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Adsorbate symbol</p></th>
+<th class="head"><p>Downloadable path</p></th>
+<th class="head"><p>size</p></th>
+<th class="head"><p>MD5 checksum</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>*O</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/0.tar</p></td>
+<td><p>1006M</p></td>
+<td><p>d4151542856b4b6405f276808f75358a</p></td>
+</tr>
+<tr class="row-odd"><td><p>*H</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/1.tar</p></td>
+<td><p>850M</p></td>
+<td><p>3697f04faf04251a23da8b88a78209f7</p></td>
+</tr>
+<tr class="row-even"><td><p>*OH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/2.tar</p></td>
+<td><p>1.6G</p></td>
+<td><p>a21081f3f55eb0c98a91021bbe3dac44</p></td>
+</tr>
+<tr class="row-odd"><td><p>*OH2</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/3.tar</p></td>
+<td><p>1.8G</p></td>
+<td><p>b12b706854f5d899e02a9ae6578b5d45</p></td>
+</tr>
+<tr class="row-even"><td><p>*C</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/4.tar</p></td>
+<td><p>1.1G</p></td>
+<td><p>e4fe9890764fcf59e01e3ceab089b978</p></td>
+</tr>
+<tr class="row-odd"><td><p>*CH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/6.tar</p></td>
+<td><p>1.4G</p></td>
+<td><p>ec9aa2c4c4bd4419359438ba7fbb881d</p></td>
+</tr>
+<tr class="row-even"><td><p>*CHO</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/7.tar</p></td>
+<td><p>1.4G</p></td>
+<td><p>d32200f74ad5c3bfd42e8835f36d57ab</p></td>
+</tr>
+<tr class="row-odd"><td><p>*COH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/8.tar</p></td>
+<td><p>1.6G</p></td>
+<td><p>5418a1b331f6c7689a5405cca4cc8d15</p></td>
+</tr>
+<tr class="row-even"><td><p>*CH2</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/9.tar</p></td>
+<td><p>1.6G</p></td>
+<td><p>8ee1066149c305d7c17c219b369c5a73</p></td>
+</tr>
+<tr class="row-odd"><td><p><em>CH2</em>O</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/10.tar</p></td>
+<td><p>1.7G</p></td>
+<td><p>960c2450814024b66f3c79121179ac60</p></td>
+</tr>
+<tr class="row-even"><td><p>*CHOH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/11.tar</p></td>
+<td><p>1.8G</p></td>
+<td><p>60ac9f965f9589a3389483e3d1e58144</p></td>
+</tr>
+<tr class="row-odd"><td><p>*CH3</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/12.tar</p></td>
+<td><p>1.7G</p></td>
+<td><p>7e123e6f4fb10d6897be3f47721dfd4a</p></td>
+</tr>
+<tr class="row-even"><td><p>*OCH3</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/13.tar</p></td>
+<td><p>1.8G</p></td>
+<td><p>0823047bbbe05fa0e63f9d83ec601487</p></td>
+</tr>
+<tr class="row-odd"><td><p>*CH2OH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/14.tar</p></td>
+<td><p>1.9G</p></td>
+<td><p>9ac71e198d75b1427182cd34abb73e4d</p></td>
+</tr>
+<tr class="row-even"><td><p>*CH4</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/15.tar</p></td>
+<td><p>1.9G</p></td>
+<td><p>a405ce403018bf8afbd4425d5c0b34d5</p></td>
+</tr>
+<tr class="row-odd"><td><p>*OHCH3</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/16.tar</p></td>
+<td><p>2.1G</p></td>
+<td><p>d3c829f1952db6e4f428273ee05f59b1</p></td>
+</tr>
+<tr class="row-even"><td><p><em>C</em>C</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/17.tar</p></td>
+<td><p>1.5G</p></td>
+<td><p>d687a151345305897b9245af4b0f9967</p></td>
+</tr>
+<tr class="row-odd"><td><p>*CCO</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/18.tar</p></td>
+<td><p>1.7G</p></td>
+<td><p>214ca96e620c5ec6e8a6ff8144a22a04</p></td>
+</tr>
+<tr class="row-even"><td><p>*CCH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/19.tar</p></td>
+<td><p>1.6G</p></td>
+<td><p>da2268545e80ca1664026449dd2fdd24</p></td>
+</tr>
+<tr class="row-odd"><td><p>*CHCO</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/20.tar</p></td>
+<td><p>1.7G</p></td>
+<td><p>386c99407fe63080d26cda525dfdd8cd</p></td>
+</tr>
+<tr class="row-even"><td><p>*CCHO</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/21.tar</p></td>
+<td><p>1.8G</p></td>
+<td><p>918b20960438494ab160a9dbd9668157</p></td>
+</tr>
+<tr class="row-odd"><td><p>*COCHO</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/22.tar</p></td>
+<td><p>1.8G</p></td>
+<td><p>84424aa2ad30301e23ece1438ea39923</p></td>
+</tr>
+<tr class="row-even"><td><p>*CCHOH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/23.tar</p></td>
+<td><p>2.0G</p></td>
+<td><p>3cc90425ec042a70085ba7eb2916a79a</p></td>
+</tr>
+<tr class="row-odd"><td><p>*CCH2</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/24.tar</p></td>
+<td><p>1.8G</p></td>
+<td><p>9dbcf7566e40965dd7f8a186a75a718e</p></td>
+</tr>
+<tr class="row-even"><td><p><em>CH</em>CH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/25.tar</p></td>
+<td><p>1.7G</p></td>
+<td><p>a193b4c72f915ba0b21a41790696b23c</p></td>
+</tr>
+<tr class="row-odd"><td><p>CH2*CO</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/26.tar</p></td>
+<td><p>1.8G</p></td>
+<td><p>de83cf50247f5556fa4f9f64beff1eeb</p></td>
+</tr>
+<tr class="row-even"><td><p>*CHCHO</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/27.tar</p></td>
+<td><p>1.9G</p></td>
+<td><p>1d140aaa2e7b287124ab38911a711d70</p></td>
+</tr>
+<tr class="row-odd"><td><p><em>CH</em>COH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/28.tar</p></td>
+<td><p>1.3G</p></td>
+<td><p>682d8a6b05ca5948b34dc5e5f6bbcd61</p></td>
+</tr>
+<tr class="row-even"><td><p>*COCH2O</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/29.tar</p></td>
+<td><p>1.9G</p></td>
+<td><p>c8742faa8ca40e8edb4110069817fa70</p></td>
+</tr>
+<tr class="row-odd"><td><p><em>CHO</em>CHO</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/30.tar</p></td>
+<td><p>2.0G</p></td>
+<td><p>8cfbb67beb312b98c40fcb891dfa480a</p></td>
+</tr>
+<tr class="row-even"><td><p>*COHCHO</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/31.tar</p></td>
+<td><p>1.9G</p></td>
+<td><p>6ffa903a62d8ec3319ecec6a03b06276</p></td>
+</tr>
+<tr class="row-odd"><td><p>*COHCOH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/32.tar</p></td>
+<td><p>2.0G</p></td>
+<td><p>caca0058b641bfdc9f8de4527e60feb7</p></td>
+</tr>
+<tr class="row-even"><td><p>*CCH3</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/33.tar</p></td>
+<td><p>1.8G</p></td>
+<td><p>906543aaefc171edab388ff4f0fe8a20</p></td>
+</tr>
+<tr class="row-odd"><td><p>*CHCH2</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/34.tar</p></td>
+<td><p>1.8G</p></td>
+<td><p>4dfab479495f76179749c1956046fbd8</p></td>
+</tr>
+<tr class="row-even"><td><p>*COCH3</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/35.tar</p></td>
+<td><p>1.9G</p></td>
+<td><p>29d1b992715054e920e8bb2afe97b393</p></td>
+</tr>
+<tr class="row-odd"><td><p>*CHCHOH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/38.tar</p></td>
+<td><p>2.0G</p></td>
+<td><p>9e5912df6f7b11706d1046cdb9e3087e</p></td>
+</tr>
+<tr class="row-even"><td><p>*CCH2OH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/39.tar</p></td>
+<td><p>2.1G</p></td>
+<td><p>7bcae43cee451306e34ec416588a7f09</p></td>
+</tr>
+<tr class="row-odd"><td><p>*CHOCHOH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/40.tar</p></td>
+<td><p>2.0G</p></td>
+<td><p>f98866d08fe3451ae7ebc47bb51599aa</p></td>
+</tr>
+<tr class="row-even"><td><p>*COCH2OH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/41.tar</p></td>
+<td><p>1.4G</p></td>
+<td><p>bfaf689e5827fcf26c51e567bb8dd1be</p></td>
+</tr>
+<tr class="row-odd"><td><p>*COHCHOH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/42.tar</p></td>
+<td><p>2.0G</p></td>
+<td><p>236fe4e950aa2fbdde94ef2821fb48d2</p></td>
+</tr>
+<tr class="row-even"><td><p>*OCHCH3</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/44.tar</p></td>
+<td><p>2.1G</p></td>
+<td><p>66acc5460a999625c3364f0f3bcca871</p></td>
+</tr>
+<tr class="row-odd"><td><p>*COHCH3</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/45.tar</p></td>
+<td><p>2.1G</p></td>
+<td><p>bb4a01956736399c8cee5e219f8c1229</p></td>
+</tr>
+<tr class="row-even"><td><p>*CHOHCH2</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/46.tar</p></td>
+<td><p>2.1G</p></td>
+<td><p>e836de4ec146b1b611533f1ef682cace</p></td>
+</tr>
+<tr class="row-odd"><td><p>*CHCH2OH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/47.tar</p></td>
+<td><p>2.0G</p></td>
+<td><p>66df44121806debef6dc038df7115d1d</p></td>
+</tr>
+<tr class="row-even"><td><p>*OCH2CHOH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/48.tar</p></td>
+<td><p>2.2G</p></td>
+<td><p>ff6981fdbcd2e65d351505c15d218d76</p></td>
+</tr>
+<tr class="row-odd"><td><p>*CHOCH2OH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/49.tar</p></td>
+<td><p>2.1G</p></td>
+<td><p>448f7d352ab6e32f754e24de64ca302a</p></td>
+</tr>
+<tr class="row-even"><td><p>*COHCH2OH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/50.tar</p></td>
+<td><p>2.1G</p></td>
+<td><p>8bff6bf3e10cc84acc4a283a375fcc23</p></td>
+</tr>
+<tr class="row-odd"><td><p>*CHOHCHOH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/51.tar</p></td>
+<td><p>2.0G</p></td>
+<td><p>9c9e4d617d306751760a80f1453e71f1</p></td>
+</tr>
+<tr class="row-even"><td><p>*CH2CH3</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/52.tar</p></td>
+<td><p>2.0G</p></td>
+<td><p>ec1e964d2ee6f468fa5773743e3994a4</p></td>
+</tr>
+<tr class="row-odd"><td><p>*OCH2CH3</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/53.tar</p></td>
+<td><p>2.1G</p></td>
+<td><p>d297b27b02822f9b6af80bdb64aee819</p></td>
+</tr>
+<tr class="row-even"><td><p>*CHOHCH3</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/54.tar</p></td>
+<td><p>2.1G</p></td>
+<td><p>368de083dafdc3bbdb560d35e2a102c0</p></td>
+</tr>
+<tr class="row-odd"><td><p>*CH2CH2OH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/55.tar</p></td>
+<td><p>2.1G</p></td>
+<td><p>3c1aaf790659f7ff89bf1eed8b396b63</p></td>
+</tr>
+<tr class="row-even"><td><p>*CHOHCH2OH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/56.tar</p></td>
+<td><p>2.2G</p></td>
+<td><p>2d71adb9e305e6f3bca49e5df9b5a86a</p></td>
+</tr>
+<tr class="row-odd"><td><p>*OHCH2CH3</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/57.tar</p></td>
+<td><p>2.3G</p></td>
+<td><p>cf51128f8522b7b66fc68d79980d6def</p></td>
+</tr>
+<tr class="row-even"><td><p>*NH2N(CH3)2</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/58.tar</p></td>
+<td><p>1.6G</p></td>
+<td><p>36ba974d80c20ff636431f7c0ad225da</p></td>
+</tr>
+<tr class="row-odd"><td><p>*ONN(CH3)2</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/59.tar</p></td>
+<td><p>2.3G</p></td>
+<td><p>fdc4cd19977496909d61be4aee61c4f1</p></td>
+</tr>
+<tr class="row-even"><td><p>*OHNNCH3</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/60.tar</p></td>
+<td><p>2.1G</p></td>
+<td><p>50a6ff098f9ba7adbba9ac115726cc5a</p></td>
+</tr>
+<tr class="row-odd"><td><p>*ONH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/62.tar</p></td>
+<td><p>1.8G</p></td>
+<td><p>47573199c545afe46c554ff756c3e38f</p></td>
+</tr>
+<tr class="row-even"><td><p>*NHNH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/63.tar</p></td>
+<td><p>1.7G</p></td>
+<td><p>dd456b7e19ef592d9f0308d911b91d7c</p></td>
+</tr>
+<tr class="row-odd"><td><p><em>N</em>NH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/65.tar</p></td>
+<td><p>1.6G</p></td>
+<td><p>c05289fd56d64c74306ebf57f1061318</p></td>
+</tr>
+<tr class="row-even"><td><p>*NO2NO2</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/67.tar</p></td>
+<td><p>2.1G</p></td>
+<td><p>4822a06f6c5f41bdefd3cbbd8856c11f</p></td>
+</tr>
+<tr class="row-odd"><td><p><em>N</em>NO</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/68.tar</p></td>
+<td><p>1.6G</p></td>
+<td><p>2a27de122d32917cc5b6ac0a21c63c1c</p></td>
+</tr>
+<tr class="row-even"><td><p>*N2</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/69.tar</p></td>
+<td><p>1.5G</p></td>
+<td><p>cc668fecf679b6edaac8fd8fb9cdd404</p></td>
+</tr>
+<tr class="row-odd"><td><p>*ONNH2</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/70.tar</p></td>
+<td><p>2.1G</p></td>
+<td><p>dff880f1a5baa7f67b52fd3ed745443d</p></td>
+</tr>
+<tr class="row-even"><td><p>*NH2</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/71.tar</p></td>
+<td><p>1.6G</p></td>
+<td><p>c7f383b50faa6244e265c9611466cb8f</p></td>
+</tr>
+<tr class="row-odd"><td><p>*NH3</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/72.tar</p></td>
+<td><p>1.9G</p></td>
+<td><p>2b355741f9300445703270e0e4b8c01c</p></td>
+</tr>
+<tr class="row-even"><td><p>*NONH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/73.tar</p></td>
+<td><p>1.8G</p></td>
+<td><p>48877a0c6f2994baac82cb722711aaa2</p></td>
+</tr>
+<tr class="row-odd"><td><p>*NH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/74.tar</p></td>
+<td><p>1.4G</p></td>
+<td><p>7979b9e7ab557d6979b33e352486f0ef</p></td>
+</tr>
+<tr class="row-even"><td><p>*NO2</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/75.tar</p></td>
+<td><p>1.7G</p></td>
+<td><p>9f352fbc32bb2b8caf4788aba28b2eb7</p></td>
+</tr>
+<tr class="row-odd"><td><p>*NO</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/76.tar</p></td>
+<td><p>1.4G</p></td>
+<td><p>482ee306a5ae2eee78cac40d10059ebc</p></td>
+</tr>
+<tr class="row-even"><td><p>*N</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/77.tar</p></td>
+<td><p>1.1G</p></td>
+<td><p>bfb6e03d4a687987ff68976f0793cc46</p></td>
+</tr>
+<tr class="row-odd"><td><p>*NO3</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/78.tar</p></td>
+<td><p>1.8G</p></td>
+<td><p>700834326e789a6e38bf3922d9fcb792</p></td>
+</tr>
+<tr class="row-even"><td><p>*OHNH2</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/79.tar</p></td>
+<td><p>2.1G</p></td>
+<td><p>fa24472e0c02c34d91f3ffe6b77bfb11</p></td>
+</tr>
+<tr class="row-odd"><td><p>*ONOH</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/80.tar</p></td>
+<td><p>1.4G</p></td>
+<td><p>4ddcccd62a834a76fe6167461f512529</p></td>
+</tr>
+<tr class="row-even"><td><p>*CN</p></td>
+<td><p>https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/81.tar</p></td>
+<td><p>1.5G</p></td>
+<td><p>bc7c55330ece006d09496a5ff01d5d50</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Note - A few adsorbates are intentionally left out for the test splits.</p>
+<p>Downloading any of the above and extracting will result in a folder :</p>
+<p><code class="docutils literal notranslate"><span class="pre">&lt;index&gt;/</span></code></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">system.txt</span></code> Text file containing information about the different adsorbate+catalyst system names. In total there are N systems. More details described below.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;index&gt;/</span></code></p>
+<ul>
+<li><p>This contains N compressed trajectory files of the format <code class="docutils literal notranslate"><span class="pre">.extxyz.xz</span></code>.</p></li>
+<li><p>Files are named as  <code class="docutils literal notranslate"><span class="pre">&lt;system_id&gt;.extxyz.xz</span></code> (where <code class="docutils literal notranslate"><span class="pre">system_id</span></code> is defined below).</p></li>
+</ul>
+</li>
+</ul>
+<p>where, <code class="docutils literal notranslate"><span class="pre">&lt;index&gt;</span></code> can be 0 to 81. N is dependent on which adsorbate index is chosen.</p>
+<p>The file  <code class="docutils literal notranslate"><span class="pre">system.txt</span></code>  has information in the following format:
+<code class="docutils literal notranslate"><span class="pre">system_id,reference_energy</span></code></p>
+<p>where:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">system_id</span> </code>- Internal random ID corresponding to an adsorbate+catalyst system.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reference_energy</span></code> - Energy used to reference system energies to bare catalyst+gas reference energies. Used for adsorption energy calculations.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">.extxyz.xz</span></code> files are LZMA compressed <code class="docutils literal notranslate"><span class="pre">.extxyz</span></code> trajectory files. Each trajectory corresponds to a relaxation trajectory of a different adsorbate+catalyst system. Information about the <code class="docutils literal notranslate"><span class="pre">.extxyz</span></code> trajectory file format may be found at https://wiki.fysik.dtu.dk/ase/dev/ase/io/formatoptions.html#extxyz .</p>
+<p>In order to uncompress the files, <code class="docutils literal notranslate"><span class="pre">uncompress.py</span></code> provides a multi-core implementation which could be used.</p>
+</section>
+</section>
+<section id="catalyst-system-trajectories-optional-download">
+<h3>Catalyst system trajectories (optional download)<a class="headerlink" href="#catalyst-system-trajectories-optional-download" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Number</p></th>
+<th class="head"><p>Size of compressed version (in bytes)</p></th>
+<th class="head"><p>Size of uncompressed version (in bytes)</p></th>
+<th class="head"><p>MD5 checksum (download link)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>294k systems</p></td>
+<td><p>20G</p></td>
+<td><p>151G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/slab_trajectories.tar">347f4183465810e9b384e7a033baefc7</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+<section id="bader-charge-data">
+<h2>Bader charge data<a class="headerlink" href="#bader-charge-data" title="Link to this heading">#</a></h2>
+<p>We provide Bader charge data for all final frames of our train + validation systems in OC20 (for both S2EF and IS2RE/RS tasks). A <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> file, when downloaded and uncompressed will contain several directories with unique system-ids (of the format <code class="docutils literal notranslate"><span class="pre">random&lt;XYZ&gt;</span></code> where <code class="docutils literal notranslate"><span class="pre">XYZ</span></code> is an integer). Each directory will contain raw Bader charge analysis outputs. For more details on the Bader charge analysis, see https://theory.cm.utexas.edu/henkelman/research/bader/.</p>
+<p>Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_bader_data.tar (MD5 checksum: <code class="docutils literal notranslate"><span class="pre">aecc5e23542de49beceb4b7e44c153b9</span></code>)</p>
+</section>
+<section id="oc20-mappings">
+<h2>OC20 mappings<a class="headerlink" href="#oc20-mappings" title="Link to this heading">#</a></h2>
+<section id="data-mapping-information">
+<h3>Data mapping information<a class="headerlink" href="#data-mapping-information" title="Link to this heading">#</a></h3>
+<p>We provide a Python pickle file containing information about the slab and adsorbates for each of the systems in OC20 dataset. Loading the pickle file will load a Python dictionary. The keys of this dictionary are the adsorbate+catalyst system-ids (of the format <code class="docutils literal notranslate"><span class="pre">random&lt;XYZ&gt;</span></code>  where <code class="docutils literal notranslate"><span class="pre">XYZ</span></code> is an integer), and the corresponding value of each key is a dictionary with information about:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">bulk_mpid</span></code> : Materials Project ID of the bulk system used corresponding the the catalyst surface</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bulk_symbols</span></code>  Chemical composition of the bulk counterpart</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ads_symbols</span></code>  Chemical composition of the adsorbate counterpart</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ads_id</span></code> : internal unique identifier, one for each of the 82 adsorbates used in the dataset</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bulk_id</span></code> : internal unique identifier one for each of the 11500 bulks used in the dataset</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">miller_index</span></code>: 3-tuple of integers indicating the Miller indices of the surface</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">shift</span></code>: c-direction shift used to determine cutoff for the surface (c-direction is following the nomenclature from Pymatgen)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">top</span></code>: boolean indicating whether the chosen surface was at the top or bottom of the originally enumerated surface</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">adsorption_site</span></code>: A tuple of 3-tuples containing the Cartesian coordinates of each binding adsorbate atom</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">class</span></code>: integer indicating the class of materials the system’s slab is part of, where:</p></li>
+<li><p>0 - intermetallics</p></li>
+<li><p>1 - metalloids</p></li>
+<li><p>2 - non-metals</p></li>
+<li><p>3 - halides</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">anomaly</span></code>: integer indicating possible anomalies (based off general heuristics, not to be taken as perfect classifications), where:</p></li>
+<li><p>0 - no anomaly</p></li>
+<li><p>1 - adsorbate dissociation</p></li>
+<li><p>2 - adsorbate desorption</p></li>
+<li><p>3 - surface reconstruction</p></li>
+<li><p>4 - incorrect CHCOH placement, appears to be CHCO with a lone, uninteracting, H far off in the unit cell</p></li>
+</ul>
+<p>Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl (MD5 checksum: <code class="docutils literal notranslate"><span class="pre">01c879067a05b4288055a1fdf821e068</span></code>)</p>
+<p>An example entry is</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;random2181546&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;bulk_id&#39;</span><span class="p">:</span> <span class="mi">6510</span><span class="p">,</span>
+  <span class="s1">&#39;ads_id&#39;</span><span class="p">:</span> <span class="mi">69</span><span class="p">,</span>
+  <span class="s1">&#39;bulk_mpid&#39;</span><span class="p">:</span> <span class="s1">&#39;mp-22179&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;bulk_symbols&#39;</span><span class="p">:</span> <span class="s1">&#39;Si2Ti2Y2&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;ads_symbols&#39;</span><span class="p">:</span> <span class="s1">&#39;*N2&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;miller_index&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+  <span class="s1">&#39;shift&#39;</span><span class="p">:</span> <span class="mf">0.145</span><span class="p">,</span>
+  <span class="s1">&#39;top&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+  <span class="s1">&#39;adsorption_site&#39;</span><span class="p">:</span> <span class="p">((</span><span class="mf">4.5</span><span class="p">,</span> <span class="mf">12.85</span><span class="p">,</span> <span class="mf">16.13</span><span class="p">),),</span>
+  <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="s1">&#39;anomaly&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="adsorbate-catalyst-system-to-catalyst-system-mapping-information">
+<h2>Adsorbate-catalyst system to catalyst system mapping information<a class="headerlink" href="#adsorbate-catalyst-system-to-catalyst-system-mapping-information" title="Link to this heading">#</a></h2>
+<p>We provide a Python pickle file containing information about the mapping from adsorbate-catalyst systems to their corresponding catalyst systems. Loading the pickle file will load a Python dictionary. The keys of this dictionary are the adsorbate+catalyst system-ids (of the format <code class="docutils literal notranslate"><span class="pre">random&lt;XYZ&gt;</span></code>  where <code class="docutils literal notranslate"><span class="pre">XYZ</span></code> is an integer), and values will be the catalyst system-ids (of the format <code class="docutils literal notranslate"><span class="pre">random&lt;PQR&gt;</span></code> where <code class="docutils literal notranslate"><span class="pre">PQR</span></code> is an integer).</p>
+<p>Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/mapping_adslab_slab.pkl (MD5 checksum: <code class="docutils literal notranslate"><span class="pre">079041076c3f15d18ecb5d17c509cdfe</span></code>)</p>
+<p>An example entry is</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;random1981709&#39;</span><span class="p">:</span> <span class="s1">&#39;random533137&#39;</span>
+</pre></div>
+</div>
+</section>
+<section id="dataset-changelog">
+<h2>Dataset changelog<a class="headerlink" href="#dataset-changelog" title="Link to this heading">#</a></h2>
+<section id="september-2021">
+<h3>September 2021<a class="headerlink" href="#september-2021" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Released IS2RE <code class="docutils literal notranslate"><span class="pre">test-challenge</span></code> data for the <a class="reference external" href="https://opencatalystproject.org/challenge.html">Open Catalyst Challenge 2021</a></p></li>
+</ul>
+</section>
+<section id="march-2021">
+<h3>March 2021<a class="headerlink" href="#march-2021" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Modified the pickle corresponding to data mapping information. Now the pickle includes extra information about <code class="docutils literal notranslate"><span class="pre">miller_index</span></code>, <code class="docutils literal notranslate"><span class="pre">shift</span></code>, <code class="docutils literal notranslate"><span class="pre">top</span></code> and <code class="docutils literal notranslate"><span class="pre">adsorption_site</span></code>.</p></li>
+<li><p>Added Molecular Dynamics (MD) and rattled data for S2EF task.</p></li>
+</ul>
+</section>
+<section id="version-2-feb-2021">
+<h3>Version 2, Feb 2021<a class="headerlink" href="#version-2-feb-2021" title="Link to this heading">#</a></h3>
+<p>Modifications:</p>
+<ul class="simple">
+<li><p>Removed slab systems which had single frame checkpoints, this led to modifications of reference frame energies of 350k frames out of 130M.</p></li>
+<li><p>Fixed stitching of checkpoints in adsorbate+catalyst trajectories.</p></li>
+<li><p>Added release of slab trajectories.</p></li>
+</ul>
+<p>Below are actual updates numbers, of the form <code class="docutils literal notranslate"><span class="pre">old</span></code> → <code class="docutils literal notranslate"><span class="pre">new</span></code></p>
+<p>Total S2EF frames:</p>
+<ul class="simple">
+<li><p>train: 133953162 → 133934018</p></li>
+<li><p>validation:</p>
+<ul>
+<li><p>val_id : 1000000 → 999866</p></li>
+<li><p>val_ood_ads: 1000000 → 999838</p></li>
+<li><p>val_ood_cat: 1000000 → 999809</p></li>
+<li><p>val_ood_both: 1000000 →  999944</p></li>
+</ul>
+</li>
+<li><p>test:</p>
+<ul>
+<li><p>test_id: 1000000 → 999736</p></li>
+<li><p>test_ood_ads: 1000000 → 999859</p></li>
+<li><p>test_ood_cat: 1000000 → 999826</p></li>
+<li><p>test_ood_both: 1000000 → 999973</p></li>
+</ul>
+</li>
+</ul>
+<p>Total IS2RE and IS2RS systems:</p>
+<ul class="simple">
+<li><p>train: 461313 → 460328</p></li>
+<li><p>validation:</p>
+<ul>
+<li><p>val_id : 24946 → 24943</p></li>
+<li><p>val_ood_ads: 24966 → 24961</p></li>
+<li><p>val_ood_cat: 24988 → 24963</p></li>
+<li><p>val_ood_both: 24963 → 24987</p></li>
+</ul>
+</li>
+<li><p>test:</p>
+<ul>
+<li><p>test_id: 24951 → 24948</p></li>
+<li><p>test_ood_ads: 24931 → 24930</p></li>
+<li><p>test_ood_cat: 24967 → 24965</p></li>
+<li><p>test_ood_both: 24986 → 24985</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="version-1-oct-2020">
+<h3>Version 1, Oct 2020<a class="headerlink" href="#version-1-oct-2020" title="Link to this heading">#</a></h3>
+<p>Total S2EF frames:</p>
+<ul class="simple">
+<li><p>train: 133953162</p></li>
+<li><p>validation:</p>
+<ul>
+<li><p>val_id : 1000000</p></li>
+<li><p>val_ood_ads: 1000000</p></li>
+<li><p>val_ood_cat: 1000000</p></li>
+<li><p>val_ood_both: 1000000</p></li>
+</ul>
+</li>
+<li><p>test:</p>
+<ul>
+<li><p>test_id: 1000000</p></li>
+<li><p>test_ood_ads: 1000000</p></li>
+<li><p>test_ood_cat: 1000000</p></li>
+<li><p>test_ood_both: 1000000</p></li>
+</ul>
+</li>
+</ul>
+<p>Total IS2RE and IS2RS systems:</p>
+<ul class="simple">
+<li><p>train: 461313</p></li>
+<li><p>validation:</p>
+<ul>
+<li><p>val_id : 24936</p></li>
+<li><p>val_ood_ads: 24966</p></li>
+<li><p>val_ood_cat: 24988</p></li>
+<li><p>val_ood_both: 24963</p></li>
+</ul>
+</li>
+<li><p>test:</p>
+<ul>
+<li><p>test_id: 24951</p></li>
+<li><p>test_ood_ads: 24931</p></li>
+<li><p>test_ood_cat: 24967</p></li>
+<li><p>test_ood_both: 24986</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="citing-oc20">
+<h2>Citing OC20<a class="headerlink" href="#citing-oc20" title="Link to this heading">#</a></h2>
+<p>The Open Catalyst 2020 (OC20) dataset is licensed under a <a class="reference external" href="https://creativecommons.org/licenses/by/4.0/legalcode">Creative Commons Attribution 4.0 License</a>.</p>
+<p>Please consider citing the following paper in any research manuscript using the OC20 dataset:</p>
+<div class="highlight-bibtex notranslate"><div class="highlight"><pre><span></span><span class="nc">@article</span><span class="p">{</span><span class="nl">ocp_dataset</span><span class="p">,</span>
+<span class="w">    </span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Chanussot*, Lowik and Das*, Abhishek and Goyal*, Siddharth and Lavril*, Thibaut and Shuaibi*, Muhammed and Riviere, Morgane and Tran, Kevin and Heras-Domingo, Javier and Ho, Caleb and Hu, Weihua and Palizhati, Aini and Sriram, Anuroop and Wood, Brandon and Yoon, Junwoong and Parikh, Devi and Zitnick, C. Lawrence and Ulissi, Zachary}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Open Catalyst 2020 (OC20) Dataset and Community Challenges}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">journal</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{ACS Catalysis}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">year</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2021}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.1021/acscatal.0c04525}</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="per-adsorbate-trajectories">
+<h1>Per-adsorbate trajectories<a class="headerlink" href="#per-adsorbate-trajectories" title="Link to this heading">#</a></h1>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Adsorbate symbol</p></th>
+<th class="head"><p>Size</p></th>
+<th class="head"><p>MD5 checksum (download link)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>*O</p></td>
+<td><p>1006M</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/0.tar">d4151542856b4b6405f276808f75358a</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*H</p></td>
+<td><p>850M</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/1.tar">3697f04faf04251a23da8b88a78209f7</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*OH</p></td>
+<td><p>1.6G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/2.tar">a21081f3f55eb0c98a91021bbe3dac44</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*OH2</p></td>
+<td><p>1.8G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/3.tar">b12b706854f5d899e02a9ae6578b5d45</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*C</p></td>
+<td><p>1.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/4.tar">e4fe9890764fcf59e01e3ceab089b978</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*CH</p></td>
+<td><p>1.4G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/6.tar">ec9aa2c4c4bd4419359438ba7fbb881d</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CHO</p></td>
+<td><p>1.4G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/7.tar">d32200f74ad5c3bfd42e8835f36d57ab</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*COH</p></td>
+<td><p>1.6G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/8.tar">5418a1b331f6c7689a5405cca4cc8d15</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CH2</p></td>
+<td><p>1.6G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/9.tar">8ee1066149c305d7c17c219b369c5a73</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><em>CH2</em>O</p></td>
+<td><p>1.7G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/10.tar">960c2450814024b66f3c79121179ac60</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CHOH</p></td>
+<td><p>1.8G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/11.tar">60ac9f965f9589a3389483e3d1e58144</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*CH3</p></td>
+<td><p>1.7G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/12.tar">7e123e6f4fb10d6897be3f47721dfd4a</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*OCH3</p></td>
+<td><p>1.8G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/13.tar">0823047bbbe05fa0e63f9d83ec601487</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*CH2OH</p></td>
+<td><p>1.9G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/14.tar">9ac71e198d75b1427182cd34abb73e4d</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CH4</p></td>
+<td><p>1.9G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/15.tar">a405ce403018bf8afbd4425d5c0b34d5</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*OHCH3</p></td>
+<td><p>2.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/16.tar">d3c829f1952db6e4f428273ee05f59b1</a></p></td>
+</tr>
+<tr class="row-even"><td><p><em>C</em>C</p></td>
+<td><p>1.5G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/17.tar">d687a151345305897b9245af4b0f9967</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*CCO</p></td>
+<td><p>1.7G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/18.tar">214ca96e620c5ec6e8a6ff8144a22a04</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CCH</p></td>
+<td><p>1.6G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/19.tar">da2268545e80ca1664026449dd2fdd24</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*CHCO</p></td>
+<td><p>1.7G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/20.tar">386c99407fe63080d26cda525dfdd8cd</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CCHO</p></td>
+<td><p>1.8G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/21.tar">918b20960438494ab160a9dbd9668157</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*COCHO</p></td>
+<td><p>1.8G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/22.tar">84424aa2ad30301e23ece1438ea39923</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CCHOH</p></td>
+<td><p>2.0G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/23.tar">3cc90425ec042a70085ba7eb2916a79a</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*CCH2</p></td>
+<td><p>1.8G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/24.tar">9dbcf7566e40965dd7f8a186a75a718e</a></p></td>
+</tr>
+<tr class="row-even"><td><p><em>CH</em>CH</p></td>
+<td><p>1.7G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/25.tar">a193b4c72f915ba0b21a41790696b23c</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>CH2*CO</p></td>
+<td><p>1.8G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/26.tar">de83cf50247f5556fa4f9f64beff1eeb</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CHCHO</p></td>
+<td><p>1.9G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/27.tar">1d140aaa2e7b287124ab38911a711d70</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><em>CH</em>COH</p></td>
+<td><p>1.3G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/28.tar">682d8a6b05ca5948b34dc5e5f6bbcd61</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*COCH2O</p></td>
+<td><p>1.9G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/29.tar">c8742faa8ca40e8edb4110069817fa70</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><em>CHO</em>CHO</p></td>
+<td><p>2.0G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/30.tar">8cfbb67beb312b98c40fcb891dfa480a</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*COHCHO</p></td>
+<td><p>1.9G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/31.tar">6ffa903a62d8ec3319ecec6a03b06276</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*COHCOH</p></td>
+<td><p>2.0G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/32.tar">caca0058b641bfdc9f8de4527e60feb7</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CCH3</p></td>
+<td><p>1.8G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/33.tar">906543aaefc171edab388ff4f0fe8a20</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*CHCH2</p></td>
+<td><p>1.8G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/34.tar">4dfab479495f76179749c1956046fbd8</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*COCH3</p></td>
+<td><p>1.9G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/35.tar">29d1b992715054e920e8bb2afe97b393</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*CHCHOH</p></td>
+<td><p>2.0G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/38.tar">9e5912df6f7b11706d1046cdb9e3087e</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CCH2OH</p></td>
+<td><p>2.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/38.tar">7bcae43cee451306e34ec416588a7f09</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*CHOCHOH</p></td>
+<td><p>2.0G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/40.tar">f98866d08fe3451ae7ebc47bb51599aa</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*COCH2OH</p></td>
+<td><p>1.4G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/41.tar">bfaf689e5827fcf26c51e567bb8dd1be</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*COHCHOH</p></td>
+<td><p>2.0G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/42.tar">236fe4e950aa2fbdde94ef2821fb48d2</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*OCHCH3</p></td>
+<td><p>2.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/44.tar">66acc5460a999625c3364f0f3bcca871</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*COHCH3</p></td>
+<td><p>2.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/45.tar">bb4a01956736399c8cee5e219f8c1229</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CHOHCH2</p></td>
+<td><p>2.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/46.tar">e836de4ec146b1b611533f1ef682cace</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*CHCH2OH</p></td>
+<td><p>2.0G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/47.tar">66df44121806debef6dc038df7115d1d</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*OCH2CHOH</p></td>
+<td><p>2.2G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/48.tar">ff6981fdbcd2e65d351505c15d218d76</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*CHOCH2OH</p></td>
+<td><p>2.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/49.tar">448f7d352ab6e32f754e24de64ca302a</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*COHCH2OH</p></td>
+<td><p>2.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/50.tar">8bff6bf3e10cc84acc4a283a375fcc23</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*CHOHCHOH</p></td>
+<td><p>2.0G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/51.tar">9c9e4d617d306751760a80f1453e71f1</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CH2CH3</p></td>
+<td><p>2.0G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/52.tar">ec1e964d2ee6f468fa5773743e3994a4</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*OCH2CH3</p></td>
+<td><p>2.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/53.tar">d297b27b02822f9b6af80bdb64aee819</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CHOHCH3</p></td>
+<td><p>2.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/54.tar">368de083dafdc3bbdb560d35e2a102c0</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*CH2CH2OH</p></td>
+<td><p>2.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/55.tar">3c1aaf790659f7ff89bf1eed8b396b63</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CHOHCH2OH</p></td>
+<td><p>2.2G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/56.tar">2d71adb9e305e6f3bca49e5df9b5a86a</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*OHCH2CH3</p></td>
+<td><p>2.3G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/57.tar">cf51128f8522b7b66fc68d79980d6def</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*NH2N(CH3)2</p></td>
+<td><p>1.6G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/58.tar">36ba974d80c20ff636431f7c0ad225da</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*ONN(CH3)2</p></td>
+<td><p>2.3G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/59.tar">fdc4cd19977496909d61be4aee61c4f1</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*OHNNCH3</p></td>
+<td><p>2.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/60.tar">50a6ff098f9ba7adbba9ac115726cc5a</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*ONH</p></td>
+<td><p>1.8G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/62.tar">47573199c545afe46c554ff756c3e38f</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*NHNH</p></td>
+<td><p>1.7G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/63.tar">dd456b7e19ef592d9f0308d911b91d7c</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><em>N</em>NH</p></td>
+<td><p>1.6G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/65.tar">c05289fd56d64c74306ebf57f1061318</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*NO2NO2</p></td>
+<td><p>2.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/67.tar">4822a06f6c5f41bdefd3cbbd8856c11f</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><em>N</em>NO</p></td>
+<td><p>1.6G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/68.tar">2a27de122d32917cc5b6ac0a21c63c1c</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*N2</p></td>
+<td><p>1.5G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/69.tar">cc668fecf679b6edaac8fd8fb9cdd404</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*ONNH2</p></td>
+<td><p>2.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/70.tar">dff880f1a5baa7f67b52fd3ed745443d</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*NH2</p></td>
+<td><p>1.6G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/71.tar">c7f383b50faa6244e265c9611466cb8f</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*NH3</p></td>
+<td><p>1.9G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/72.tar">2b355741f9300445703270e0e4b8c01c</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*NONH</p></td>
+<td><p>1.8G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/73.tar">48877a0c6f2994baac82cb722711aaa2</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*NH</p></td>
+<td><p>1.4G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/74.tar">7979b9e7ab557d6979b33e352486f0ef</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*NO2</p></td>
+<td><p>1.7G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/75.tar">9f352fbc32bb2b8caf4788aba28b2eb7</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*NO</p></td>
+<td><p>1.4G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/76.tar">482ee306a5ae2eee78cac40d10059ebc</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*N</p></td>
+<td><p>1.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/77.tar">bfb6e03d4a687987ff68976f0793cc46</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*NO3</p></td>
+<td><p>1.8G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/78.tar">700834326e789a6e38bf3922d9fcb792</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*OHNH2</p></td>
+<td><p>2.1G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/79.tar">fa24472e0c02c34d91f3ffe6b77bfb11</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>*ONOH</p></td>
+<td><p>1.4G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/80.tar">4ddcccd62a834a76fe6167461f512529</a></p></td>
+</tr>
+<tr class="row-even"><td><p>*CN</p></td>
+<td><p>1.5G</p></td>
+<td><p><a class="reference external" href="https://dl.fbaipublicfiles.com/opencatalystproject/data/per_adsorbate_is2res/81.tar">bc7c55330ece006d09496a5ff01d5d50</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Note - A few adsorbates are intentionally left out for the test splits.</p>
+<p>Downloading any of the above and extracting will result in a folder:</p>
+<p><code class="docutils literal notranslate"><span class="pre">&lt;index&gt;/</span></code></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">system.txt</span></code> Text file containing information about the different adsorbate+catalyst system names. In total there are N systems. More details described below.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;index&gt;/</span></code></p>
+<ul>
+<li><p>This contains N compressed trajectory files of the format <code class="docutils literal notranslate"><span class="pre">.extxyz.xz</span></code>.</p></li>
+<li><p>Files are named as  <code class="docutils literal notranslate"><span class="pre">&lt;system_id&gt;.extxyz.xz</span></code> (where <code class="docutils literal notranslate"><span class="pre">system_id</span></code> is defined below).</p></li>
+</ul>
+</li>
+</ul>
+<p>where, <code class="docutils literal notranslate"><span class="pre">&lt;index&gt;</span></code> can be 0 to 81. N is dependent on which adsorbate index is chosen.</p>
+<p>The file  <code class="docutils literal notranslate"><span class="pre">system.txt</span></code>  has information in the following format:
+<code class="docutils literal notranslate"><span class="pre">system_id,reference_energy</span></code></p>
+<p>where:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">system_id</span> </code>- Internal random ID corresponding to an adsorbate+catalyst system.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reference_energy</span></code> - Energy used to reference system energies to bare catalyst+gas reference energies. Used for adsorption energy calculations.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">.extxyz.xz</span></code> files are LZMA compressed <code class="docutils literal notranslate"><span class="pre">.extxyz</span></code> trajectory files. Each trajectory corresponds to a relaxation trajectory of a different adsorbate+catalyst system. Information about the <code class="docutils literal notranslate"><span class="pre">.extxyz</span></code> trajectory file format may be found at https://wiki.fysik.dtu.dk/ase/ase/io/formatoptions.html#extxyz.</p>
+<p>In order to uncompress the files, <code class="docutils literal notranslate"><span class="pre">uncompress.py</span></code> provides a multi-core implementation which could be used.</p>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./core/datasets"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../ocpapi.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">ocpapi</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="oc22.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Open Catalyst 2022 (OC22)</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Open Catalyst 2020 (OC20)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#download-and-preprocess-the-dataset">Download and preprocess the dataset</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#structure-to-energy-and-forces-s2ef-task">Structure to Energy and Forces (S2EF) task</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#initial-structure-to-relaxed-structure-is2rs-and-initial-structure-to-relaxed-energy-is2re-tasks">Initial Structure to Relaxed Structure (IS2RS) and Initial Structure to Relaxed Energy (IS2RE) tasks</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#relaxation-trajectories">Relaxation Trajectories</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#adsorbate-catalyst-system-trajectories-optional-download">Adsorbate+catalyst system trajectories (optional download)</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#per-adsorbate-trajectories-optional-download">Per-adsorbate trajectories (optional download)</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#catalyst-system-trajectories-optional-download">Catalyst system trajectories (optional download)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bader-charge-data">Bader charge data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#oc20-mappings">OC20 mappings</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data-mapping-information">Data mapping information</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#adsorbate-catalyst-system-to-catalyst-system-mapping-information">Adsorbate-catalyst system to catalyst system mapping information</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dataset-changelog">Dataset changelog</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#september-2021">September 2021</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#march-2021">March 2021</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#version-2-feb-2021">Version 2, Feb 2021</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#version-1-oct-2020">Version 1, Oct 2020</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#citing-oc20">Citing OC20</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#per-adsorbate-trajectories">Per-adsorbate trajectories</a></li>
+</ul>
+
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By FAIR Chemistry & Collaborators
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2024.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

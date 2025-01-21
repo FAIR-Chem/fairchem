@@ -1,0 +1,1467 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>core.models.gemnet_oc.gemnet_oc</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/styles/sphinx-book-theme.css?v=a3416100" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=fd3f3429" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../../../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../../../../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../../../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../../../../../_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'autoapi/core/models/gemnet_oc/gemnet_oc/index';</script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+    <link rel="next" title="core.models.gemnet_oc.initializers" href="../initializers/index.html" />
+    <link rel="prev" title="core.models.gemnet_oc" href="../index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title"></p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../../../../../index.html">
+                    FAIR-Chem overview
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Quickstart &amp; Installation</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/quickstart.html">Using pre-trained models in ASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/gotchas.html">Common gotchas with fairchem</a></li>
+
+
+
+
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/license.html">License</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Learn More</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/intro_series.html">Why model atoms for climate?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../videos/technical_talks.html">Technical presentations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/papers_using_models.html">Studies leveraging pre-trained or fine-tuned FAIR-Chem models</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">OCP API &amp; Demo</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://open-catalyst.metademolab.com/">OCP Demo (no install required!)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/ocpapi.html">ocpapi</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Released Datasets &amp; Models</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/datasets/oc20.html">Open Catalyst 2020 (OC20)</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/datasets/oc22.html">Open Catalyst 2022 (OC22)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/datasets/odac.html">Open Direct Air Capture 2023 (ODAC23)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/datasets/oc20dense.html">Open Catalyst 2020 Dense (OC20Dense)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/datasets/oc20neb.html">Open Catalyst 2020 Nudged Elastic Band (OC20NEB)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/datasets/omat24.html">Open Materials 2024 (OMat24)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/datasets/ocx24.html">Open Catalyst Experiments 2024 (OCx24): Bridging Experiments and Computational Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/model_checkpoints.html">Pretrained FAIRChem models</a></li>
+
+
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Making your own datasets</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/ase_dataset_creation.html">Making and using ASE datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/lmdb_dataset_creation.html">Making LMDB Datasets (original format, deprecated for ASE LMDBs)</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Model development, training, inference, finetuning</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/model_training.html">Training and evaluating custom models on OCP datasets</a></li>
+
+
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/inference.html">Fast batched inference</a></li>
+
+
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/fine-tuning/fine-tuning-oxides.html">Fine tuning a model</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/model_faq.html">Model FAQ</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Catalysis Case Studies &amp; Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../tutorials/intro.html">Intro and background on OCP and DFT</a></li>
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="../../../../../tutorials/OCP-introduction.html">Simple simulations using the OCP ASE calculator</a></li>
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="../../../../../tutorials/adsorbml_walkthrough.html">AdsorbML tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../tutorials/cattsunami_tutorial.html">CatTSunami Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../tutorials/fairchem_models_for_nebs.html">Tutorial for using Fair Chemistry models to relax NEBs</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../tutorials/NRR/NRR_toc.html">Screening catalysts with OCP</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../tutorials/NRR/NRR_example.html">Using OCP to enumerate adsorbates on alloy catalyst surfaces</a></li>
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../tutorials/advanced/advanced_toc.html">Advanced OCP usage</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../tutorials/advanced/fine-tuning-in-python.html">Fine-tuning with Python</a></li>
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="../../../../../tutorials/advanced/embeddings.html">Working with embeddings</a></li>
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../legacy_tutorials/legacy_tutorials.html">Legacy [deprecated] Tutorials</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../legacy_tutorials/OCP_Tutorial.html">Open Catalyst Project Tutorial Notebook</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="../../../../../legacy_tutorials/data_preprocessing.html">OCP Data Preprocessing Tutorial</a></li>
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="../../../../../legacy_tutorials/data_visualization.html">OCP Data Visualization</a></li>
+
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">fairchem documentation</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../../../index.html">API Reference</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../../../index.html">core</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../../_cli/index.html">core._cli</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_cli_hydra/index.html">core._cli_hydra</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../common/index.html">core.common</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/data_parallel/index.html">core.common.data_parallel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/distutils/index.html">core.common.distutils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/flags/index.html">core.common.flags</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/gp_utils/index.html">core.common.gp_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/hpo_utils/index.html">core.common.hpo_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/logger/index.html">core.common.logger</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/profiler_utils/index.html">core.common.profiler_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/registry/index.html">core.common.registry</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/relaxation/index.html">core.common.relaxation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/slurm/index.html">core.common.slurm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/test_utils/index.html">core.common.test_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/transforms/index.html">core.common.transforms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/tutorial_utils/index.html">core.common.tutorial_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/typing/index.html">core.common.typing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../common/utils/index.html">core.common.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../datasets/index.html">core.datasets</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../datasets/_utils/index.html">core.datasets._utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../datasets/ase_datasets/index.html">core.datasets.ase_datasets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../datasets/base_dataset/index.html">core.datasets.base_dataset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../datasets/embeddings/index.html">core.datasets.embeddings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../datasets/lmdb_database/index.html">core.datasets.lmdb_database</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../datasets/lmdb_dataset/index.html">core.datasets.lmdb_dataset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../datasets/oc22_lmdb_dataset/index.html">core.datasets.oc22_lmdb_dataset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../datasets/target_metadata_guesser/index.html">core.datasets.target_metadata_guesser</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 current active has-children"><a class="reference internal" href="../../index.html">core.models</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../../base/index.html">core.models.base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../dimenet_plus_plus/index.html">core.models.dimenet_plus_plus</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../equiformer_v2/index.html">core.models.equiformer_v2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../escn/index.html">core.models.escn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../gemnet/index.html">core.models.gemnet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../gemnet_gp/index.html">core.models.gemnet_gp</a></li>
+<li class="toctree-l4 current active"><a class="reference internal" href="../index.html">core.models.gemnet_oc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../model_registry/index.html">core.models.model_registry</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../painn/index.html">core.models.painn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../schnet/index.html">core.models.schnet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../scn/index.html">core.models.scn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../utils/index.html">core.models.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../modules/index.html">core.modules</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../modules/evaluator/index.html">core.modules.evaluator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../modules/exponential_moving_average/index.html">core.modules.exponential_moving_average</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../modules/loss/index.html">core.modules.loss</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../modules/normalization/index.html">core.modules.normalization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../modules/scaling/index.html">core.modules.scaling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../modules/scheduler/index.html">core.modules.scheduler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../modules/transforms/index.html">core.modules.transforms</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../preprocessing/index.html">core.preprocessing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../preprocessing/atoms_to_graphs/index.html">core.preprocessing.atoms_to_graphs</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../scripts/index.html">core.scripts</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../scripts/convert_hydra_to_release/index.html">core.scripts.convert_hydra_to_release</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../scripts/download_data/index.html">core.scripts.download_data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../scripts/download_large_files/index.html">core.scripts.download_large_files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../scripts/eqv2_to_hydra_eqv2/index.html">core.scripts.eqv2_to_hydra_eqv2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../scripts/fit_normalizers/index.html">core.scripts.fit_normalizers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../scripts/fit_references/index.html">core.scripts.fit_references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../scripts/gif_maker_parallelized/index.html">core.scripts.gif_maker_parallelized</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../scripts/hpo/index.html">core.scripts.hpo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../scripts/make_challenge_submission_file/index.html">core.scripts.make_challenge_submission_file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../scripts/make_lmdb_sizes/index.html">core.scripts.make_lmdb_sizes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../scripts/make_submission_file/index.html">core.scripts.make_submission_file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../scripts/preprocess_ef/index.html">core.scripts.preprocess_ef</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../scripts/preprocess_relaxed/index.html">core.scripts.preprocess_relaxed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../scripts/uncompress/index.html">core.scripts.uncompress</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../tasks/index.html">core.tasks</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../tasks/task/index.html">core.tasks.task</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../trainers/index.html">core.trainers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../trainers/base_trainer/index.html">core.trainers.base_trainer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../trainers/ocp_trainer/index.html">core.trainers.ocp_trainer</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../data/index.html">data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../data/oc/index.html">data.oc</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../data/oc/core/index.html">data.oc.core</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../data/oc/databases/index.html">data.oc.databases</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../data/oc/structure_generator/index.html">data.oc.structure_generator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../data/oc/utils/index.html">data.oc.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../data/odac/index.html">data.odac</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../data/odac/setup_vasp/index.html">data.odac.setup_vasp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../data/om/index.html">data.om</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../ocpapi/index.html">ocpapi</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../ocpapi/client/index.html">ocpapi.client</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../ocpapi/client/client/index.html">ocpapi.client.client</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../ocpapi/client/models/index.html">ocpapi.client.models</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../ocpapi/client/ui/index.html">ocpapi.client.ui</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../ocpapi/version/index.html">ocpapi.version</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../ocpapi/workflows/index.html">ocpapi.workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../ocpapi/workflows/adsorbates/index.html">ocpapi.workflows.adsorbates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../ocpapi/workflows/context/index.html">ocpapi.workflows.context</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../ocpapi/workflows/filter/index.html">ocpapi.workflows.filter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../ocpapi/workflows/log/index.html">ocpapi.workflows.log</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../ocpapi/workflows/retry/index.html">ocpapi.workflows.retry</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../cattsunami/index.html">cattsunami</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../cattsunami/core/index.html">cattsunami.core</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../cattsunami/core/autoframe/index.html">cattsunami.core.autoframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../cattsunami/core/ocpneb/index.html">cattsunami.core.ocpneb</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../cattsunami/core/reaction/index.html">cattsunami.core.reaction</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../cattsunami/databases/index.html">cattsunami.databases</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Notebook execution times</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../execution_time.html">Notebook execution times</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/FAIR-Chem/fairchem" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/FAIR-Chem/fairchem/issues/new?title=Issue%20on%20page%20%2Fautoapi/core/models/gemnet_oc/gemnet_oc/index.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../../../../../_sources/autoapi/core/models/gemnet_oc/gemnet_oc/index.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button>
+
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>core.models.gemnet_oc.gemnet_oc</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC"><code class="docutils literal notranslate"><span class="pre">GemNetOC</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.num_blocks"><code class="docutils literal notranslate"><span class="pre">GemNetOC.num_blocks</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.extensive"><code class="docutils literal notranslate"><span class="pre">GemNetOC.extensive</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.activation"><code class="docutils literal notranslate"><span class="pre">GemNetOC.activation</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.atom_edge_interaction"><code class="docutils literal notranslate"><span class="pre">GemNetOC.atom_edge_interaction</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.edge_atom_interaction"><code class="docutils literal notranslate"><span class="pre">GemNetOC.edge_atom_interaction</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.atom_interaction"><code class="docutils literal notranslate"><span class="pre">GemNetOC.atom_interaction</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.quad_interaction"><code class="docutils literal notranslate"><span class="pre">GemNetOC.quad_interaction</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.qint_tags"><code class="docutils literal notranslate"><span class="pre">GemNetOC.qint_tags</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.otf_graph"><code class="docutils literal notranslate"><span class="pre">GemNetOC.otf_graph</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.enforce_max_neighbors_strictly"><code class="docutils literal notranslate"><span class="pre">GemNetOC.enforce_max_neighbors_strictly</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.use_pbc"><code class="docutils literal notranslate"><span class="pre">GemNetOC.use_pbc</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.use_pbc_single"><code class="docutils literal notranslate"><span class="pre">GemNetOC.use_pbc_single</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.direct_forces"><code class="docutils literal notranslate"><span class="pre">GemNetOC.direct_forces</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.forces_coupled"><code class="docutils literal notranslate"><span class="pre">GemNetOC.forces_coupled</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.regress_forces"><code class="docutils literal notranslate"><span class="pre">GemNetOC.regress_forces</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.force_scaler"><code class="docutils literal notranslate"><span class="pre">GemNetOC.force_scaler</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.atom_emb"><code class="docutils literal notranslate"><span class="pre">GemNetOC.atom_emb</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.edge_emb"><code class="docutils literal notranslate"><span class="pre">GemNetOC.edge_emb</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.int_blocks"><code class="docutils literal notranslate"><span class="pre">GemNetOC.int_blocks</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.out_blocks"><code class="docutils literal notranslate"><span class="pre">GemNetOC.out_blocks</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.out_mlp_E"><code class="docutils literal notranslate"><span class="pre">GemNetOC.out_mlp_E</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.out_energy"><code class="docutils literal notranslate"><span class="pre">GemNetOC.out_energy</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.set_cutoffs"><code class="docutils literal notranslate"><span class="pre">GemNetOC.set_cutoffs()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.set_max_neighbors"><code class="docutils literal notranslate"><span class="pre">GemNetOC.set_max_neighbors()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.init_basis_functions"><code class="docutils literal notranslate"><span class="pre">GemNetOC.init_basis_functions()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.init_shared_basis_layers"><code class="docutils literal notranslate"><span class="pre">GemNetOC.init_shared_basis_layers()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.calculate_quad_angles"><code class="docutils literal notranslate"><span class="pre">GemNetOC.calculate_quad_angles()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.select_symmetric_edges"><code class="docutils literal notranslate"><span class="pre">GemNetOC.select_symmetric_edges()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.symmetrize_edges"><code class="docutils literal notranslate"><span class="pre">GemNetOC.symmetrize_edges()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.subselect_edges"><code class="docutils literal notranslate"><span class="pre">GemNetOC.subselect_edges()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.generate_graph_dict"><code class="docutils literal notranslate"><span class="pre">GemNetOC.generate_graph_dict()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.subselect_graph"><code class="docutils literal notranslate"><span class="pre">GemNetOC.subselect_graph()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.get_graphs_and_indices"><code class="docutils literal notranslate"><span class="pre">GemNetOC.get_graphs_and_indices()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.get_bases"><code class="docutils literal notranslate"><span class="pre">GemNetOC.get_bases()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.forward"><code class="docutils literal notranslate"><span class="pre">GemNetOC.forward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.num_params"><code class="docutils literal notranslate"><span class="pre">GemNetOC.num_params</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCBackbone"><code class="docutils literal notranslate"><span class="pre">GemNetOCBackbone</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCBackbone.forward"><code class="docutils literal notranslate"><span class="pre">GemNetOCBackbone.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.extensive"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead.extensive</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.regress_forces"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead.regress_forces</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.direct_forces"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead.direct_forces</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.force_scaler"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead.force_scaler</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.out_mlp_E"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead.out_mlp_E</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.out_energy"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead.out_energy</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.forward"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead"><code class="docutils literal notranslate"><span class="pre">GemNetOCForceHead</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead.direct_forces"><code class="docutils literal notranslate"><span class="pre">GemNetOCForceHead.direct_forces</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead.forces_coupled"><code class="docutils literal notranslate"><span class="pre">GemNetOCForceHead.forces_coupled</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead.forward"><code class="docutils literal notranslate"><span class="pre">GemNetOCForceHead.forward()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-core.models.gemnet_oc.gemnet_oc">
+<span id="core-models-gemnet-oc-gemnet-oc"></span><h1>core.models.gemnet_oc.gemnet_oc<a class="headerlink" href="#module-core.models.gemnet_oc.gemnet_oc" title="Link to this heading">#</a></h1>
+<p>Copyright (c) Meta, Inc. and its affiliates.
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.</p>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC" title="core.models.gemnet_oc.gemnet_oc.GemNetOC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GemNetOC</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCBackbone" title="core.models.gemnet_oc.gemnet_oc.GemNetOCBackbone"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GemNetOCBackbone</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead" title="core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead</span></code></a></p></td>
+<td><p>Base class for all neural network modules.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead" title="core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GemNetOCForceHead</span></code></a></p></td>
+<td><p>Base class for all neural network modules.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.models.gemnet_oc.gemnet_oc.</span></span><span class="sig-name descname"><span class="pre">GemNetOC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_spherical</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_radial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_blocks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_atom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_edge</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_trip_in</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_trip_out</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_quad_in</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_quad_out</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_aint_in</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_aint_out</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_rbf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_cbf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_sbf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_before_skip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_after_skip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_concat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_atom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_output_afteratom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_atom_emb_layers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_global_out_layers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regress_forces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">direct_forces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_pbc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_pbc_single</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_backprop_forces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff_qint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff_aeaint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff_aint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors_qint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors_aeaint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors_aint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enforce_max_neighbors_strictly</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rbf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rbf_spherical</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">envelope</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cbf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sbf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extensive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forces_coupled</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_init</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'HeOrthogonal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'silu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quad_interaction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atom_edge_interaction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_atom_interaction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atom_interaction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_basis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qint_tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">83</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">otf_graph</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">fairchem.core.models.base.GraphModelMixin</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_spherical</strong> (<em>int</em>) – Controls maximum frequency.</p></li>
+<li><p><strong>num_radial</strong> (<em>int</em>) – Controls maximum frequency.</p></li>
+<li><p><strong>num_blocks</strong> (<em>int</em>) – Number of building blocks to be stacked.</p></li>
+<li><p><strong>emb_size_atom</strong> (<em>int</em>) – Embedding size of the atoms.</p></li>
+<li><p><strong>emb_size_edge</strong> (<em>int</em>) – Embedding size of the edges.</p></li>
+<li><p><strong>emb_size_trip_in</strong> (<em>int</em>) – (Down-projected) embedding size of the quadruplet edge embeddings
+before the bilinear layer.</p></li>
+<li><p><strong>emb_size_trip_out</strong> (<em>int</em>) – (Down-projected) embedding size of the quadruplet edge embeddings
+after the bilinear layer.</p></li>
+<li><p><strong>emb_size_quad_in</strong> (<em>int</em>) – (Down-projected) embedding size of the quadruplet edge embeddings
+before the bilinear layer.</p></li>
+<li><p><strong>emb_size_quad_out</strong> (<em>int</em>) – (Down-projected) embedding size of the quadruplet edge embeddings
+after the bilinear layer.</p></li>
+<li><p><strong>emb_size_aint_in</strong> (<em>int</em>) – Embedding size in the atom interaction before the bilinear layer.</p></li>
+<li><p><strong>emb_size_aint_out</strong> (<em>int</em>) – Embedding size in the atom interaction after the bilinear layer.</p></li>
+<li><p><strong>emb_size_rbf</strong> (<em>int</em>) – Embedding size of the radial basis transformation.</p></li>
+<li><p><strong>emb_size_cbf</strong> (<em>int</em>) – Embedding size of the circular basis transformation (one angle).</p></li>
+<li><p><strong>emb_size_sbf</strong> (<em>int</em>) – Embedding size of the spherical basis transformation (two angles).</p></li>
+<li><p><strong>num_before_skip</strong> (<em>int</em>) – Number of residual blocks before the first skip connection.</p></li>
+<li><p><strong>num_after_skip</strong> (<em>int</em>) – Number of residual blocks after the first skip connection.</p></li>
+<li><p><strong>num_concat</strong> (<em>int</em>) – Number of residual blocks after the concatenation.</p></li>
+<li><p><strong>num_atom</strong> (<em>int</em>) – Number of residual blocks in the atom embedding blocks.</p></li>
+<li><p><strong>num_output_afteratom</strong> (<em>int</em>) – Number of residual blocks in the output blocks
+after adding the atom embedding.</p></li>
+<li><p><strong>num_atom_emb_layers</strong> (<em>int</em>) – Number of residual blocks for transforming atom embeddings.</p></li>
+<li><p><strong>num_global_out_layers</strong> (<em>int</em>) – Number of final residual blocks before the output.</p></li>
+<li><p><strong>regress_forces</strong> (<em>bool</em>) – Whether to predict forces. Default: True</p></li>
+<li><p><strong>direct_forces</strong> (<em>bool</em>) – If True predict forces based on aggregation of interatomic directions.
+If False predict forces based on negative gradient of energy potential.</p></li>
+<li><p><strong>use_pbc</strong> (<em>bool</em>) – Whether to use periodic boundary conditions.</p></li>
+<li><p><strong>use_pbc_single</strong> – Process batch PBC graphs one at a time</p></li>
+<li><p><strong>scale_backprop_forces</strong> (<em>bool</em>) – Whether to scale up the energy and then scales down the forces
+to prevent NaNs and infs in backpropagated forces.</p></li>
+<li><p><strong>cutoff</strong> (<em>float</em>) – Embedding cutoff for interatomic connections and embeddings in Angstrom.</p></li>
+<li><p><strong>cutoff_qint</strong> (<em>float</em>) – Quadruplet interaction cutoff in Angstrom.
+Optional. Uses cutoff per default.</p></li>
+<li><p><strong>cutoff_aeaint</strong> (<em>float</em>) – Edge-to-atom and atom-to-edge interaction cutoff in Angstrom.
+Optional. Uses cutoff per default.</p></li>
+<li><p><strong>cutoff_aint</strong> (<em>float</em>) – Atom-to-atom interaction cutoff in Angstrom.
+Optional. Uses maximum of all other cutoffs per default.</p></li>
+<li><p><strong>max_neighbors</strong> (<em>int</em>) – Maximum number of neighbors for interatomic connections and embeddings.</p></li>
+<li><p><strong>max_neighbors_qint</strong> (<em>int</em>) – Maximum number of quadruplet interactions per embedding.
+Optional. Uses max_neighbors per default.</p></li>
+<li><p><strong>max_neighbors_aeaint</strong> (<em>int</em>) – Maximum number of edge-to-atom and atom-to-edge interactions per embedding.
+Optional. Uses max_neighbors per default.</p></li>
+<li><p><strong>max_neighbors_aint</strong> (<em>int</em>) – Maximum number of atom-to-atom interactions per atom.
+Optional. Uses maximum of all other neighbors per default.</p></li>
+<li><p><strong>enforce_max_neighbors_strictly</strong> (<em>bool</em>) – When subselected edges based on max_neighbors args, arbitrarily
+select amongst degenerate edges to have exactly the correct number.</p></li>
+<li><p><strong>rbf</strong> (<em>dict</em>) – Name and hyperparameters of the radial basis function.</p></li>
+<li><p><strong>rbf_spherical</strong> (<em>dict</em>) – Name and hyperparameters of the radial basis function used as part of the
+circular and spherical bases.
+Optional. Uses rbf per default.</p></li>
+<li><p><strong>envelope</strong> (<em>dict</em>) – Name and hyperparameters of the envelope function.</p></li>
+<li><p><strong>cbf</strong> (<em>dict</em>) – Name and hyperparameters of the circular basis function.</p></li>
+<li><p><strong>sbf</strong> (<em>dict</em>) – Name and hyperparameters of the spherical basis function.</p></li>
+<li><p><strong>extensive</strong> (<em>bool</em>) – Whether the output should be extensive (proportional to the number of atoms)</p></li>
+<li><p><strong>forces_coupled</strong> (<em>bool</em>) – If True, enforce that <a href="#id1"><span class="problematic" id="id2">|F_st|</span></a> = <a href="#id3"><span class="problematic" id="id4">|F_ts|</span></a>. No effect if direct_forces is False.</p></li>
+<li><p><strong>output_init</strong> (<em>str</em>) – Initialization method for the final dense layer.</p></li>
+<li><p><strong>activation</strong> (<em>str</em>) – Name of the activation function.</p></li>
+<li><p><strong>scale_file</strong> (<em>str</em>) – Path to the pytorch file containing the scaling factors.</p></li>
+<li><p><strong>quad_interaction</strong> (<em>bool</em>) – Whether to use quadruplet interactions (with dihedral angles)</p></li>
+<li><p><strong>atom_edge_interaction</strong> (<em>bool</em>) – Whether to use atom-to-edge interactions</p></li>
+<li><p><strong>edge_atom_interaction</strong> (<em>bool</em>) – Whether to use edge-to-atom interactions</p></li>
+<li><p><strong>atom_interaction</strong> (<em>bool</em>) – Whether to use atom-to-atom interactions</p></li>
+<li><p><strong>scale_basis</strong> (<em>bool</em>) – Whether to use a scaling layer in the raw basis function for better
+numerical stability.</p></li>
+<li><p><strong>qint_tags</strong> (<em>list</em>) – Which atom tags to use quadruplet interactions for.
+0=sub-surface bulk, 1=surface, 2=adsorbate atoms.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.num_blocks">
+<span class="sig-name descname"><span class="pre">num_blocks</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.num_blocks" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.extensive">
+<span class="sig-name descname"><span class="pre">extensive</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.extensive" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.activation">
+<span class="sig-name descname"><span class="pre">activation</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.activation" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.atom_edge_interaction">
+<span class="sig-name descname"><span class="pre">atom_edge_interaction</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.atom_edge_interaction" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.edge_atom_interaction">
+<span class="sig-name descname"><span class="pre">edge_atom_interaction</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.edge_atom_interaction" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.atom_interaction">
+<span class="sig-name descname"><span class="pre">atom_interaction</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.atom_interaction" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.quad_interaction">
+<span class="sig-name descname"><span class="pre">quad_interaction</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.quad_interaction" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.qint_tags">
+<span class="sig-name descname"><span class="pre">qint_tags</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.qint_tags" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.otf_graph">
+<span class="sig-name descname"><span class="pre">otf_graph</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.otf_graph" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.enforce_max_neighbors_strictly">
+<span class="sig-name descname"><span class="pre">enforce_max_neighbors_strictly</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.enforce_max_neighbors_strictly" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.use_pbc">
+<span class="sig-name descname"><span class="pre">use_pbc</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.use_pbc" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.use_pbc_single">
+<span class="sig-name descname"><span class="pre">use_pbc_single</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.use_pbc_single" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.direct_forces">
+<span class="sig-name descname"><span class="pre">direct_forces</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.direct_forces" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.forces_coupled">
+<span class="sig-name descname"><span class="pre">forces_coupled</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.forces_coupled" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.regress_forces">
+<span class="sig-name descname"><span class="pre">regress_forces</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.regress_forces" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.force_scaler">
+<span class="sig-name descname"><span class="pre">force_scaler</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.force_scaler" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.atom_emb">
+<span class="sig-name descname"><span class="pre">atom_emb</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.atom_emb" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.edge_emb">
+<span class="sig-name descname"><span class="pre">edge_emb</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.edge_emb" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.int_blocks">
+<span class="sig-name descname"><span class="pre">int_blocks</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.int_blocks" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.out_blocks">
+<span class="sig-name descname"><span class="pre">out_blocks</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.out_blocks" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.out_mlp_E">
+<span class="sig-name descname"><span class="pre">out_mlp_E</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.out_mlp_E" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.out_energy">
+<span class="sig-name descname"><span class="pre">out_energy</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.out_energy" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.set_cutoffs">
+<span class="sig-name descname"><span class="pre">set_cutoffs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cutoff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff_qint</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff_aeaint</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff_aint</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.set_cutoffs" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.set_max_neighbors">
+<span class="sig-name descname"><span class="pre">set_max_neighbors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_neighbors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors_qint</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors_aeaint</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors_aint</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.set_max_neighbors" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.init_basis_functions">
+<span class="sig-name descname"><span class="pre">init_basis_functions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_radial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_spherical</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rbf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rbf_spherical</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">envelope</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cbf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sbf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_basis</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.init_basis_functions" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.init_shared_basis_layers">
+<span class="sig-name descname"><span class="pre">init_shared_basis_layers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_radial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_spherical</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_rbf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_cbf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_sbf</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.init_shared_basis_layers" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.calculate_quad_angles">
+<span class="sig-name descname"><span class="pre">calculate_quad_angles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">V_st</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V_qint_st</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quad_idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.calculate_quad_angles" title="Link to this definition">#</a></dt>
+<dd><p>Calculate angles for quadruplet-based message passing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>V_st</strong> (<em>Tensor</em><em>, </em><em>shape =</em><em> (</em><em>nAtoms</em><em>, </em><em>3</em><em>)</em>) – Normalized directions from s to t</p></li>
+<li><p><strong>V_qint_st</strong> (<em>Tensor</em><em>, </em><em>shape =</em><em> (</em><em>nAtoms</em><em>, </em><em>3</em><em>)</em>) – Normalized directions from s to t for the quadruplet
+interaction graph</p></li>
+<li><p><strong>quad_idx</strong> (<em>dict</em><em> of </em><em>torch.Tensor</em>) – Indices relevant for quadruplet interactions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>cosφ_cab</strong> (<em>Tensor, shape = (num_triplets_inint,)</em>) – Cosine of angle between atoms c -&gt; a &lt;- b.</p></li>
+<li><p><strong>cosφ_abd</strong> (<em>Tensor, shape = (num_triplets_qint,)</em>) – Cosine of angle between atoms a -&gt; b -&gt; d.</p></li>
+<li><p><strong>angle_cabd</strong> (<em>Tensor, shape = (num_quadruplets,)</em>) – Dihedral angle between atoms c &lt;- a-b -&gt; d.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.select_symmetric_edges">
+<span class="sig-name descname"><span class="pre">select_symmetric_edges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reorder_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opposite_neg</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.select_symmetric_edges" title="Link to this definition">#</a></dt>
+<dd><p>Use a mask to remove values of removed edges and then
+duplicate the values for the correct edge direction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tensor</strong> (<em>torch.Tensor</em>) – Values to symmetrize for the new tensor.</p></li>
+<li><p><strong>mask</strong> (<em>torch.Tensor</em>) – Mask defining which edges go in the correct direction.</p></li>
+<li><p><strong>reorder_idx</strong> (<em>torch.Tensor</em>) – Indices defining how to reorder the tensor values after
+concatenating the edge values of both directions.</p></li>
+<li><p><strong>opposite_neg</strong> (<em>bool</em>) – Whether the edge in the opposite direction should use the
+negative tensor value.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>tensor_ordered</strong> – A tensor with symmetrized values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.symmetrize_edges">
+<span class="sig-name descname"><span class="pre">symmetrize_edges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.symmetrize_edges" title="Link to this definition">#</a></dt>
+<dd><p>Symmetrize edges to ensure existence of counter-directional edges.</p>
+<p>Some edges are only present in one direction in the data,
+since every atom has a maximum number of neighbors.
+We only use i-&gt;j edges here. So we lose some j-&gt;i edges
+and add others by making it symmetric.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.subselect_edges">
+<span class="sig-name descname"><span class="pre">subselect_edges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.subselect_edges" title="Link to this definition">#</a></dt>
+<dd><p>Subselect edges using a stricter cutoff and max_neighbors.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.generate_graph_dict">
+<span class="sig-name descname"><span class="pre">generate_graph_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.generate_graph_dict" title="Link to this definition">#</a></dt>
+<dd><p>Generate a radius/nearest neighbor graph.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.subselect_graph">
+<span class="sig-name descname"><span class="pre">subselect_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff_orig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors_orig</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.subselect_graph" title="Link to this definition">#</a></dt>
+<dd><p>If the new cutoff and max_neighbors is different from the original,
+subselect the edges of a given graph.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.get_graphs_and_indices">
+<span class="sig-name descname"><span class="pre">get_graphs_and_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.get_graphs_and_indices" title="Link to this definition">#</a></dt>
+<dd><p>“Generate embedding and interaction graphs and indices.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.get_bases">
+<span class="sig-name descname"><span class="pre">get_bases</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">main_graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a2a_graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a2ee2a_graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qint_graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trip_idx_e2e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trip_idx_a2e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trip_idx_e2a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quad_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_atoms</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.get_bases" title="Link to this definition">#</a></dt>
+<dd><p>Calculate and transform basis functions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.forward" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOC.num_params">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.num_params" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOCBackbone">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.models.gemnet_oc.gemnet_oc.</span></span><span class="sig-name descname"><span class="pre">GemNetOCBackbone</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_spherical</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_radial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_blocks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_atom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_edge</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_trip_in</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_trip_out</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_quad_in</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_quad_out</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_aint_in</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_aint_out</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_rbf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_cbf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb_size_sbf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_before_skip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_after_skip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_concat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_atom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_output_afteratom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_atom_emb_layers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_global_out_layers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regress_forces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">direct_forces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_pbc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_pbc_single</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_backprop_forces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff_qint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff_aeaint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff_aint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors_qint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors_aeaint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_neighbors_aint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enforce_max_neighbors_strictly</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rbf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rbf_spherical</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">envelope</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cbf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sbf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extensive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forces_coupled</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_init</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'HeOrthogonal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'silu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quad_interaction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atom_edge_interaction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_atom_interaction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atom_interaction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_basis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qint_tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">83</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">otf_graph</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCBackbone" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC" title="core.models.gemnet_oc.gemnet_oc.GemNetOC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GemNetOC</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">fairchem.core.models.base.BackboneInterface</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_spherical</strong> (<em>int</em>) – Controls maximum frequency.</p></li>
+<li><p><strong>num_radial</strong> (<em>int</em>) – Controls maximum frequency.</p></li>
+<li><p><strong>num_blocks</strong> (<em>int</em>) – Number of building blocks to be stacked.</p></li>
+<li><p><strong>emb_size_atom</strong> (<em>int</em>) – Embedding size of the atoms.</p></li>
+<li><p><strong>emb_size_edge</strong> (<em>int</em>) – Embedding size of the edges.</p></li>
+<li><p><strong>emb_size_trip_in</strong> (<em>int</em>) – (Down-projected) embedding size of the quadruplet edge embeddings
+before the bilinear layer.</p></li>
+<li><p><strong>emb_size_trip_out</strong> (<em>int</em>) – (Down-projected) embedding size of the quadruplet edge embeddings
+after the bilinear layer.</p></li>
+<li><p><strong>emb_size_quad_in</strong> (<em>int</em>) – (Down-projected) embedding size of the quadruplet edge embeddings
+before the bilinear layer.</p></li>
+<li><p><strong>emb_size_quad_out</strong> (<em>int</em>) – (Down-projected) embedding size of the quadruplet edge embeddings
+after the bilinear layer.</p></li>
+<li><p><strong>emb_size_aint_in</strong> (<em>int</em>) – Embedding size in the atom interaction before the bilinear layer.</p></li>
+<li><p><strong>emb_size_aint_out</strong> (<em>int</em>) – Embedding size in the atom interaction after the bilinear layer.</p></li>
+<li><p><strong>emb_size_rbf</strong> (<em>int</em>) – Embedding size of the radial basis transformation.</p></li>
+<li><p><strong>emb_size_cbf</strong> (<em>int</em>) – Embedding size of the circular basis transformation (one angle).</p></li>
+<li><p><strong>emb_size_sbf</strong> (<em>int</em>) – Embedding size of the spherical basis transformation (two angles).</p></li>
+<li><p><strong>num_before_skip</strong> (<em>int</em>) – Number of residual blocks before the first skip connection.</p></li>
+<li><p><strong>num_after_skip</strong> (<em>int</em>) – Number of residual blocks after the first skip connection.</p></li>
+<li><p><strong>num_concat</strong> (<em>int</em>) – Number of residual blocks after the concatenation.</p></li>
+<li><p><strong>num_atom</strong> (<em>int</em>) – Number of residual blocks in the atom embedding blocks.</p></li>
+<li><p><strong>num_output_afteratom</strong> (<em>int</em>) – Number of residual blocks in the output blocks
+after adding the atom embedding.</p></li>
+<li><p><strong>num_atom_emb_layers</strong> (<em>int</em>) – Number of residual blocks for transforming atom embeddings.</p></li>
+<li><p><strong>num_global_out_layers</strong> (<em>int</em>) – Number of final residual blocks before the output.</p></li>
+<li><p><strong>regress_forces</strong> (<em>bool</em>) – Whether to predict forces. Default: True</p></li>
+<li><p><strong>direct_forces</strong> (<em>bool</em>) – If True predict forces based on aggregation of interatomic directions.
+If False predict forces based on negative gradient of energy potential.</p></li>
+<li><p><strong>use_pbc</strong> (<em>bool</em>) – Whether to use periodic boundary conditions.</p></li>
+<li><p><strong>use_pbc_single</strong> – Process batch PBC graphs one at a time</p></li>
+<li><p><strong>scale_backprop_forces</strong> (<em>bool</em>) – Whether to scale up the energy and then scales down the forces
+to prevent NaNs and infs in backpropagated forces.</p></li>
+<li><p><strong>cutoff</strong> (<em>float</em>) – Embedding cutoff for interatomic connections and embeddings in Angstrom.</p></li>
+<li><p><strong>cutoff_qint</strong> (<em>float</em>) – Quadruplet interaction cutoff in Angstrom.
+Optional. Uses cutoff per default.</p></li>
+<li><p><strong>cutoff_aeaint</strong> (<em>float</em>) – Edge-to-atom and atom-to-edge interaction cutoff in Angstrom.
+Optional. Uses cutoff per default.</p></li>
+<li><p><strong>cutoff_aint</strong> (<em>float</em>) – Atom-to-atom interaction cutoff in Angstrom.
+Optional. Uses maximum of all other cutoffs per default.</p></li>
+<li><p><strong>max_neighbors</strong> (<em>int</em>) – Maximum number of neighbors for interatomic connections and embeddings.</p></li>
+<li><p><strong>max_neighbors_qint</strong> (<em>int</em>) – Maximum number of quadruplet interactions per embedding.
+Optional. Uses max_neighbors per default.</p></li>
+<li><p><strong>max_neighbors_aeaint</strong> (<em>int</em>) – Maximum number of edge-to-atom and atom-to-edge interactions per embedding.
+Optional. Uses max_neighbors per default.</p></li>
+<li><p><strong>max_neighbors_aint</strong> (<em>int</em>) – Maximum number of atom-to-atom interactions per atom.
+Optional. Uses maximum of all other neighbors per default.</p></li>
+<li><p><strong>enforce_max_neighbors_strictly</strong> (<em>bool</em>) – When subselected edges based on max_neighbors args, arbitrarily
+select amongst degenerate edges to have exactly the correct number.</p></li>
+<li><p><strong>rbf</strong> (<em>dict</em>) – Name and hyperparameters of the radial basis function.</p></li>
+<li><p><strong>rbf_spherical</strong> (<em>dict</em>) – Name and hyperparameters of the radial basis function used as part of the
+circular and spherical bases.
+Optional. Uses rbf per default.</p></li>
+<li><p><strong>envelope</strong> (<em>dict</em>) – Name and hyperparameters of the envelope function.</p></li>
+<li><p><strong>cbf</strong> (<em>dict</em>) – Name and hyperparameters of the circular basis function.</p></li>
+<li><p><strong>sbf</strong> (<em>dict</em>) – Name and hyperparameters of the spherical basis function.</p></li>
+<li><p><strong>extensive</strong> (<em>bool</em>) – Whether the output should be extensive (proportional to the number of atoms)</p></li>
+<li><p><strong>forces_coupled</strong> (<em>bool</em>) – If True, enforce that <a href="#id5"><span class="problematic" id="id6">|F_st|</span></a> = <a href="#id7"><span class="problematic" id="id8">|F_ts|</span></a>. No effect if direct_forces is False.</p></li>
+<li><p><strong>output_init</strong> (<em>str</em>) – Initialization method for the final dense layer.</p></li>
+<li><p><strong>activation</strong> (<em>str</em>) – Name of the activation function.</p></li>
+<li><p><strong>scale_file</strong> (<em>str</em>) – Path to the pytorch file containing the scaling factors.</p></li>
+<li><p><strong>quad_interaction</strong> (<em>bool</em>) – Whether to use quadruplet interactions (with dihedral angles)</p></li>
+<li><p><strong>atom_edge_interaction</strong> (<em>bool</em>) – Whether to use atom-to-edge interactions</p></li>
+<li><p><strong>edge_atom_interaction</strong> (<em>bool</em>) – Whether to use edge-to-atom interactions</p></li>
+<li><p><strong>atom_interaction</strong> (<em>bool</em>) – Whether to use atom-to-atom interactions</p></li>
+<li><p><strong>scale_basis</strong> (<em>bool</em>) – Whether to use a scaling layer in the raw basis function for better
+numerical stability.</p></li>
+<li><p><strong>qint_tags</strong> (<em>list</em>) – Which atom tags to use quadruplet interactions for.
+0=sub-surface bulk, 1=surface, 2=adsorbate atoms.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOCBackbone.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch_geometric.data.batch.Batch</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCBackbone.forward" title="Link to this definition">#</a></dt>
+<dd><p>Backbone forward.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>DataBatch</em>) – Atomic systems as input</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>embedding</strong> – Return backbone embeddings for the given input</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str-&gt;torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.models.gemnet_oc.gemnet_oc.</span></span><span class="sig-name descname"><span class="pre">GemNetOCEnergyAndGradForceHead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">backbone</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">fairchem.core.models.base.BackboneInterface</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_global_out_layers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_init</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'HeOrthogonal'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">fairchem.core.models.base.HeadInterface</span></code></p>
+<p>Base class for all neural network modules.</p>
+<p>Your models should also subclass this class.</p>
+<p>Modules can also contain other Modules, allowing to nest them in
+a tree structure. You can assign the submodules as regular attributes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Model</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conv1</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conv2</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Submodules assigned in this way will be registered, and will have their
+parameters converted too when you call <code class="xref py py-meth docutils literal notranslate"><span class="pre">to()</span></code>, etc.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>As per the example above, an <code class="docutils literal notranslate"><span class="pre">__init__()</span></code> call to the parent class
+must be made before assignment on the child.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>training</strong> (<em>bool</em>) – Boolean represents whether this module is in training or
+evaluation mode.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.extensive">
+<span class="sig-name descname"><span class="pre">extensive</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.extensive" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.regress_forces">
+<span class="sig-name descname"><span class="pre">regress_forces</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.regress_forces" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.direct_forces">
+<span class="sig-name descname"><span class="pre">direct_forces</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.direct_forces" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.force_scaler">
+<span class="sig-name descname"><span class="pre">force_scaler</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.force_scaler" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.out_mlp_E">
+<span class="sig-name descname"><span class="pre">out_mlp_E</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.out_mlp_E" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.out_energy">
+<span class="sig-name descname"><span class="pre">out_energy</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.out_energy" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch_geometric.data.batch.Batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.forward" title="Link to this definition">#</a></dt>
+<dd><p>Head forward.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>DataBatch</em>) – Atomic systems as input</p></li>
+<li><p><strong>emb</strong> (<em>dict</em><em>[</em><em>str-&gt;torch.Tensor</em><em>]</em>) – Embeddings of the input as generated by the backbone</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>outputs</strong> – Return one or more targets generated by this head</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str-&gt;torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.models.gemnet_oc.gemnet_oc.</span></span><span class="sig-name descname"><span class="pre">GemNetOCForceHead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">backbone</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_global_out_layers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_init</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'HeOrthogonal'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">fairchem.core.models.base.HeadInterface</span></code></p>
+<p>Base class for all neural network modules.</p>
+<p>Your models should also subclass this class.</p>
+<p>Modules can also contain other Modules, allowing to nest them in
+a tree structure. You can assign the submodules as regular attributes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Model</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conv1</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conv2</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Submodules assigned in this way will be registered, and will have their
+parameters converted too when you call <code class="xref py py-meth docutils literal notranslate"><span class="pre">to()</span></code>, etc.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>As per the example above, an <code class="docutils literal notranslate"><span class="pre">__init__()</span></code> call to the parent class
+must be made before assignment on the child.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>training</strong> (<em>bool</em>) – Boolean represents whether this module is in training or
+evaluation mode.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead.direct_forces">
+<span class="sig-name descname"><span class="pre">direct_forces</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead.direct_forces" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead.forces_coupled">
+<span class="sig-name descname"><span class="pre">forces_coupled</span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead.forces_coupled" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch_geometric.data.batch.Batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead.forward" title="Link to this definition">#</a></dt>
+<dd><p>Head forward.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>DataBatch</em>) – Atomic systems as input</p></li>
+<li><p><strong>emb</strong> (<em>dict</em><em>[</em><em>str-&gt;torch.Tensor</em><em>]</em>) – Embeddings of the input as generated by the backbone</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>outputs</strong> – Return one or more targets generated by this head</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str-&gt;torch.Tensor]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./autoapi/core/models/gemnet_oc/gemnet_oc"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">core.models.gemnet_oc</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../initializers/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">core.models.gemnet_oc.initializers</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC"><code class="docutils literal notranslate"><span class="pre">GemNetOC</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.num_blocks"><code class="docutils literal notranslate"><span class="pre">GemNetOC.num_blocks</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.extensive"><code class="docutils literal notranslate"><span class="pre">GemNetOC.extensive</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.activation"><code class="docutils literal notranslate"><span class="pre">GemNetOC.activation</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.atom_edge_interaction"><code class="docutils literal notranslate"><span class="pre">GemNetOC.atom_edge_interaction</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.edge_atom_interaction"><code class="docutils literal notranslate"><span class="pre">GemNetOC.edge_atom_interaction</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.atom_interaction"><code class="docutils literal notranslate"><span class="pre">GemNetOC.atom_interaction</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.quad_interaction"><code class="docutils literal notranslate"><span class="pre">GemNetOC.quad_interaction</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.qint_tags"><code class="docutils literal notranslate"><span class="pre">GemNetOC.qint_tags</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.otf_graph"><code class="docutils literal notranslate"><span class="pre">GemNetOC.otf_graph</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.enforce_max_neighbors_strictly"><code class="docutils literal notranslate"><span class="pre">GemNetOC.enforce_max_neighbors_strictly</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.use_pbc"><code class="docutils literal notranslate"><span class="pre">GemNetOC.use_pbc</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.use_pbc_single"><code class="docutils literal notranslate"><span class="pre">GemNetOC.use_pbc_single</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.direct_forces"><code class="docutils literal notranslate"><span class="pre">GemNetOC.direct_forces</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.forces_coupled"><code class="docutils literal notranslate"><span class="pre">GemNetOC.forces_coupled</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.regress_forces"><code class="docutils literal notranslate"><span class="pre">GemNetOC.regress_forces</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.force_scaler"><code class="docutils literal notranslate"><span class="pre">GemNetOC.force_scaler</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.atom_emb"><code class="docutils literal notranslate"><span class="pre">GemNetOC.atom_emb</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.edge_emb"><code class="docutils literal notranslate"><span class="pre">GemNetOC.edge_emb</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.int_blocks"><code class="docutils literal notranslate"><span class="pre">GemNetOC.int_blocks</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.out_blocks"><code class="docutils literal notranslate"><span class="pre">GemNetOC.out_blocks</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.out_mlp_E"><code class="docutils literal notranslate"><span class="pre">GemNetOC.out_mlp_E</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.out_energy"><code class="docutils literal notranslate"><span class="pre">GemNetOC.out_energy</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.set_cutoffs"><code class="docutils literal notranslate"><span class="pre">GemNetOC.set_cutoffs()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.set_max_neighbors"><code class="docutils literal notranslate"><span class="pre">GemNetOC.set_max_neighbors()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.init_basis_functions"><code class="docutils literal notranslate"><span class="pre">GemNetOC.init_basis_functions()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.init_shared_basis_layers"><code class="docutils literal notranslate"><span class="pre">GemNetOC.init_shared_basis_layers()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.calculate_quad_angles"><code class="docutils literal notranslate"><span class="pre">GemNetOC.calculate_quad_angles()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.select_symmetric_edges"><code class="docutils literal notranslate"><span class="pre">GemNetOC.select_symmetric_edges()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.symmetrize_edges"><code class="docutils literal notranslate"><span class="pre">GemNetOC.symmetrize_edges()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.subselect_edges"><code class="docutils literal notranslate"><span class="pre">GemNetOC.subselect_edges()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.generate_graph_dict"><code class="docutils literal notranslate"><span class="pre">GemNetOC.generate_graph_dict()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.subselect_graph"><code class="docutils literal notranslate"><span class="pre">GemNetOC.subselect_graph()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.get_graphs_and_indices"><code class="docutils literal notranslate"><span class="pre">GemNetOC.get_graphs_and_indices()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.get_bases"><code class="docutils literal notranslate"><span class="pre">GemNetOC.get_bases()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.forward"><code class="docutils literal notranslate"><span class="pre">GemNetOC.forward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOC.num_params"><code class="docutils literal notranslate"><span class="pre">GemNetOC.num_params</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCBackbone"><code class="docutils literal notranslate"><span class="pre">GemNetOCBackbone</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCBackbone.forward"><code class="docutils literal notranslate"><span class="pre">GemNetOCBackbone.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.extensive"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead.extensive</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.regress_forces"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead.regress_forces</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.direct_forces"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead.direct_forces</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.force_scaler"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead.force_scaler</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.out_mlp_E"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead.out_mlp_E</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.out_energy"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead.out_energy</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCEnergyAndGradForceHead.forward"><code class="docutils literal notranslate"><span class="pre">GemNetOCEnergyAndGradForceHead.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead"><code class="docutils literal notranslate"><span class="pre">GemNetOCForceHead</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead.direct_forces"><code class="docutils literal notranslate"><span class="pre">GemNetOCForceHead.direct_forces</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead.forces_coupled"><code class="docutils literal notranslate"><span class="pre">GemNetOCForceHead.forces_coupled</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.gemnet_oc.gemnet_oc.GemNetOCForceHead.forward"><code class="docutils literal notranslate"><span class="pre">GemNetOCForceHead.forward()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By FAIR Chemistry & Collaborators
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2024.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
