@@ -48,17 +48,17 @@ class DeviceType(str, Enum):
 
 @dataclass
 class SchedulerConfig:
-    scheduler_type: SchedulerType = SchedulerType.LOCAL
+    mode: SchedulerType = SchedulerType.LOCAL
     ranks_per_node: int = 1
     num_nodes: int = 1
     slurm: dict = field(
         default_factory=lambda: {
-            "slurm_mem": 80,  # slurm mem in GB
-            "timeout_min": 4320,  # slurm timeout in mins, default to 7 days
-            "slurm_partition": None,
+            "mem_gb": 80,  # slurm mem in GB
+            "timeout_hr": 72,  # slurm timeout in hours, default to 7 days
+            "partition": None,
             "cpus_per_task": 8,
-            "slurm_qos": None,
-            "slurm_account": None,
+            "qos": None,
+            "account": None,
         }
     )
 
@@ -123,7 +123,7 @@ def map_job_config_to_dist_config(job_cfg: DictConfig) -> dict:
         "distributed_backend": "gloo"
         if job_cfg.device_type == DeviceType.CPU
         else "nccl",
-        "submit": scheduler_config.scheduler_type == SchedulerType.SLURM,
+        "submit": scheduler_config.mode == SchedulerType.SLURM,
         "summit": None,
         "cpu": job_cfg.device_type == DeviceType.CPU,
         "use_cuda_visibile_devices": True,
@@ -165,19 +165,19 @@ def main(
     scheduler_cfg = cfg.job.scheduler
 
     logging.info(f"Running fairchemv2 cli with {cfg}")
-    if scheduler_cfg.scheduler_type == SchedulerType.SLURM:  # Run on cluster
+    if scheduler_cfg.mode == SchedulerType.SLURM:  # Run on cluster
         executor = AutoExecutor(folder=log_dir, slurm_max_num_timeout=3)
         executor.update_parameters(
             name=job_cfg.run_name,
-            mem_gb=scheduler_cfg.slurm.slurm_mem,
-            timeout_min=scheduler_cfg.slurm.slurm_timeout * 60,
-            slurm_partition=scheduler_cfg.slurm.slurm_partition,
+            mem_gb=scheduler_cfg.slurm.mem_gb,
+            timeout_min=scheduler_cfg.slurm.timeout_hr * 60,
+            slurm_partition=scheduler_cfg.slurm.partition,
             gpus_per_node=scheduler_cfg.ranks_per_node,
             cpus_per_task=scheduler_cfg.slurm.cpus_per_task,
             tasks_per_node=scheduler_cfg.ranks_per_node,
             nodes=scheduler_cfg.num_nodes,
-            slurm_qos=scheduler_cfg.slurm.slurm_qos,
-            slurm_account=scheduler_cfg.slurm.slurm_account,
+            slurm_qos=scheduler_cfg.slurm.qos,
+            slurm_account=scheduler_cfg.slurm.account,
         )
         job = executor.submit(runner_wrapper, cfg)
         logging.info(

@@ -5,14 +5,14 @@ import sys
 import hydra
 import pytest
 
-from fairchem.core._cli import main
+from fairchem.core._cli_hydra import main
 from fairchem.core.common import distutils
 
 
 def test_hydra_cli():
     distutils.cleanup()
     hydra.core.global_hydra.GlobalHydra.instance().clear()
-    sys_args = ["--hydra", "--config-yml", "tests/core/test_hydra_cli.yml", "--cpu"]
+    sys_args = ["--config-yml", "tests/core/test_hydra_cli.yml"]
     sys.argv[1:] = sys_args
     main()
 
@@ -21,8 +21,6 @@ def test_hydra_cli_throws_error():
     distutils.cleanup()
     hydra.core.global_hydra.GlobalHydra.instance().clear()
     sys_args = [
-        "--hydra",
-        "--cpu",
         "--config-yml",
         "tests/core/test_hydra_cli.yml",
         "runner.x=1000",
@@ -38,8 +36,6 @@ def test_hydra_cli_throws_error_on_invalid_inputs():
     distutils.cleanup()
     hydra.core.global_hydra.GlobalHydra.instance().clear()
     sys_args = [
-        "--hydra",
-        "--cpu",
         "--config-yml",
         "tests/core/test_hydra_cli.yml",
         "runner.x=1000",
