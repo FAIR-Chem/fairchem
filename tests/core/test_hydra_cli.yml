@@ -1,3 +1,8 @@
+job:
+  device_type: CPU
+  scheduler:
+    mode: LOCAL
+
 runner:
   _target_: fairchem.core.components.runner.MockRunner
   x: 10

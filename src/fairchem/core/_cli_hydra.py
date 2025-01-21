@@ -27,7 +27,6 @@ if TYPE_CHECKING:
 
 from submitit import AutoExecutor
 from submitit.helpers import Checkpointable, DelayedSubmission
-from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
 from fairchem.core.common import distutils
 from fairchem.core.common.utils import get_timestamp_uid, setup_env_vars, setup_imports
@@ -184,6 +183,8 @@ def main(
             f"Submitted job id: {job_cfg.timestamp_id}, slurm id: {job.job_id}, logs: {job_cfg.log_dir}"
         )
     else:
+        from torch.distributed.launcher.api import LaunchConfig, elastic_launch
+
         if scheduler_cfg.ranks_per_node > 1:
             logging.info(f"Running in local mode with {job_cfg.ranks_per_node} ranks")
             launch_config = LaunchConfig(
