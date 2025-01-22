@@ -76,14 +76,16 @@ class FairchemJobConfig:
 class Submitit(Checkpointable):
     def __call__(self, dict_config: DictConfig) -> None:
         self.config = dict_config
+        job_config: FairchemJobConfig = OmegaConf.to_object(dict_config.job)
         # TODO: setup_imports is not needed if we stop instantiating models with Registry.
         setup_imports()
         setup_env_vars()
-        distutils.setup(map_job_config_to_dist_config(self.config.job))
+        distutils.setup(map_job_config_to_dist_config(job_config))
         self._init_logger()
         runner: Runner = hydra.utils.instantiate(dict_config.runner)
         runner.load_state()
-        runner.run(self.config.job)
+        runner.fairchem_config = job_config
+        runner.run()
         distutils.cleanup()
 
     def _init_logger(self) -> None:
@@ -115,7 +117,7 @@ class Submitit(Checkpointable):
         return DelayedSubmission(new_runner, self.config, self.cli_args)
 
 
-def map_job_config_to_dist_config(job_cfg: DictConfig) -> dict:
+def map_job_config_to_dist_config(job_cfg: FairchemJobConfig) -> dict:
     scheduler_config = job_cfg.scheduler
     return {
         "world_size": scheduler_config.num_nodes * scheduler_config.ranks_per_node,

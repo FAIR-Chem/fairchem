@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
+    from fairchem.core._cli_hydra import FairchemJobConfig
+
 
 class Runner(metaclass=ABCMeta):
     """
@@ -14,8 +16,16 @@ class Runner(metaclass=ABCMeta):
     This allows us to decouple away from a monolithic trainer class
     """
 
+    @property
+    def fairchem_config(self) -> FairchemJobConfig:
+        return self._fairchem_config
+
+    @fairchem_config.setter
+    def fairchem_config(self, cfg: DictConfig):
+        self._fairchem_config = cfg
+
     @abstractmethod
-    def run(self, cfg: DictConfig = None) -> Any:
+    def run(self) -> Any:
         raise NotImplementedError
 
     @abstractmethod
