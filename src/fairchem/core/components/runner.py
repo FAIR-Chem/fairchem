@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
-    from fairchem.core._cli_hydra import FairchemJobConfig
+    from fairchem.core._cli_hydra import JobConfig
 
 
 class Runner(metaclass=ABCMeta):
@@ -17,12 +17,12 @@ class Runner(metaclass=ABCMeta):
     """
 
     @property
-    def fairchem_config(self) -> FairchemJobConfig:
-        return self._fairchem_config
+    def job_config(self) -> JobConfig:
+        return self._job_config
 
-    @fairchem_config.setter
-    def fairchem_config(self, cfg: DictConfig):
-        self._fairchem_config = cfg
+    @job_config.setter
+    def job_config(self, cfg: DictConfig):
+        self._job_config = cfg
 
     @abstractmethod
     def run(self) -> Any:
