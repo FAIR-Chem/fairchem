@@ -43,7 +43,8 @@ class MockRunner(Runner):
         self.x = x
         self.y = y
 
-    def run(self, cfg: DictConfig = None) -> Any:
+    def run(self) -> Any:
+        assert hasattr(self, "fairchem_config")
         if self.x * self.y > 1000:
             raise ValueError("sum is greater than 1000!")
         return self.x + self.y
