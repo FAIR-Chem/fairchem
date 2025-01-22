@@ -53,7 +53,7 @@ class SchedulerConfig:
     slurm: dict = field(
         default_factory=lambda: {
             "mem_gb": 80,  # slurm mem in GB
-            "timeout_hr": 72,  # slurm timeout in hours, default to 7 days
+            "timeout_hr": 168,  # slurm timeout in hours, default to 7 days
             "partition": None,
             "cpus_per_task": 8,
             "qos": None,
@@ -67,10 +67,19 @@ class FairchemJobConfig:
     run_name: str = field(default_factory=lambda: uuid.uuid4().hex.upper()[0:8])
     timestamp_id: str = field(default_factory=lambda: get_timestamp_uid())
     run_dir: str = field(default_factory=lambda: tempfile.TemporaryDirectory().name)
-    log_dir: str = "logs"
     device_type: DeviceType = DeviceType.CUDA
     debug: bool = False
     scheduler: SchedulerConfig = field(default_factory=lambda: SchedulerConfig)
+    log_dir_name: str = "logs"
+    checkpoint_dir_name: str = "checkpoint"
+
+    @property
+    def log_dir(self) -> str:
+        return os.path.join(self.run_dir, self.timestamp_id, self.log_dir_name)
+
+    @property
+    def checkpoint_dir(self) -> str:
+        return os.path.join(self.run_dir, self.timestamp_id, self.checkpoint_dir_name)
 
 
 class Submitit(Checkpointable):
@@ -83,8 +92,8 @@ class Submitit(Checkpointable):
         distutils.setup(map_job_config_to_dist_config(job_config))
         self._init_logger()
         runner: Runner = hydra.utils.instantiate(dict_config.runner)
-        runner.load_state()
         runner.fairchem_config = job_config
+        runner.load_state()
         runner.run()
         distutils.cleanup()
 
@@ -157,8 +166,7 @@ def main(
     cfg = get_hydra_config_from_yaml(args.config_yml, override_args)
     # merge default structured config with job
     cfg = OmegaConf.merge({"job": OmegaConf.structured(FairchemJobConfig)}, cfg)
-
-    log_dir = os.path.join(cfg.job.run_dir, cfg.job.timestamp_id, cfg.job.log_dir)
+    log_dir = OmegaConf.to_object(cfg.job).log_dir
     os.makedirs(cfg.job.run_dir, exist_ok=True)
     os.makedirs(log_dir, exist_ok=True)
 
