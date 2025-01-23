@@ -121,11 +121,6 @@ class Flags:
             "--cpu", action="store_true", help="Run CPU only training"
         )
         self.parser.add_argument(
-            "--hydra",
-            action="store_true",
-            help="Use hydra configs instead (in development)",
-        )
-        self.parser.add_argument(
             "--num-nodes",
             default=1,
             type=int,

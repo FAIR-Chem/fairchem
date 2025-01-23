@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from omegaconf import DictConfig
+
+    from fairchem.core._cli_hydra import JobConfig
 
 
 class Runner(metaclass=ABCMeta):
@@ -10,6 +15,14 @@ class Runner(metaclass=ABCMeta):
     ie: Trainers, Validators, Relaxation all fall in this category.
     This allows us to decouple away from a monolithic trainer class
     """
+
+    @property
+    def job_config(self) -> JobConfig:
+        return self._job_config
+
+    @job_config.setter
+    def job_config(self, cfg: DictConfig):
+        self._job_config = cfg
 
     @abstractmethod
     def run(self) -> Any:
