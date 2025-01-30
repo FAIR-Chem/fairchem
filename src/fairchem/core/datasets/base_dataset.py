@@ -195,7 +195,9 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
                 rhv = f.read().splitlines()
                 rhv = [int(x) for x in rhv]
         if subset_to["op"] == "abs_le":
-            indices = indices[np.rhv <= rhv]
+            indices = indices[
+                np.abs(dataset.get_metadata(subset_to["metadata_key"], indices)) <= rhv
+            ]
         elif subset_to["op"] == "in":
             indices = indices[
                 np.isin(dataset.get_metadata(subset_to["metadata_key"], indices), rhv)
