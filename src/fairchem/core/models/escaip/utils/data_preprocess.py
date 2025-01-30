@@ -7,14 +7,14 @@ import torch
 import torch_geometric
 
 if TYPE_CHECKING:
-    from fairchem.core.escaip.configs import (
+    from fairchem.core.models.escaip.configs import (
         GlobalConfigs,
         GraphNeuralNetworksConfigs,
         MolecularGraphConfigs,
     )
 
-from fairchem.core.escaip.custom_types import GraphAttentionData
-from fairchem.core.escaip.utils.graph_utils import (
+from fairchem.core.models.escaip.custom_types import GraphAttentionData
+from fairchem.core.models.escaip.utils.graph_utils import (
     convert_neighbor_list,
     get_attn_mask,
     get_node_direction_expansion,

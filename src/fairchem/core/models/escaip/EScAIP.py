@@ -9,23 +9,29 @@ from e3nn import o3
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
-from fairchem.core.escaip.configs import EScAIPConfigs, init_configs
-from fairchem.core.escaip.modules import (
+from fairchem.core.models.base import GraphModelMixin, HeadInterface
+from fairchem.core.models.escaip.configs import EScAIPConfigs, init_configs
+from fairchem.core.models.escaip.modules import (
     EfficientGraphAttentionBlock,
     InputBlock,
     OutputLayer,
     OutputProjection,
     ReadoutBlock,
 )
-from fairchem.core.escaip.utils.data_preprocess import data_preprocess
-from fairchem.core.escaip.utils.graph_utils import compilable_scatter, unpad_results
-from fairchem.core.escaip.utils.nn_utils import init_linear_weights, no_weight_decay
-from fairchem.core.models.base import GraphModelMixin, HeadInterface
+from fairchem.core.models.escaip.utils.data_preprocess import data_preprocess
+from fairchem.core.models.escaip.utils.graph_utils import (
+    compilable_scatter,
+    unpad_results,
+)
+from fairchem.core.models.escaip.utils.nn_utils import (
+    init_linear_weights,
+    no_weight_decay,
+)
 
 if TYPE_CHECKING:
     import torch_geometric
 
-    from fairchem.core.escaip.custom_types import GraphAttentionData
+    from fairchem.core.models.escaip.custom_types import GraphAttentionData
 
 
 @registry.register_model("EScAIP_backbone")

@@ -6,13 +6,13 @@ import torch
 import torch.nn as nn
 
 if TYPE_CHECKING:
-    from fairchem.core.escaip.configs import (
+    from fairchem.core.models.escaip.configs import (
         GlobalConfigs,
         GraphNeuralNetworksConfigs,
         RegularizationConfigs,
     )
 
-from fairchem.core.escaip.utils.nn_utils import (
+from fairchem.core.models.escaip.utils.nn_utils import (
     get_feedforward,
     get_linear,
     get_normalization_layer,

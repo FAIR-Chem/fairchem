@@ -5,16 +5,19 @@ from typing import TYPE_CHECKING
 import torch.nn as nn
 
 if TYPE_CHECKING:
-    from fairchem.core.escaip.configs import (
+    from fairchem.core.models.escaip.configs import (
         GlobalConfigs,
         GraphNeuralNetworksConfigs,
         MolecularGraphConfigs,
         RegularizationConfigs,
     )
-    from fairchem.core.escaip.custom_types import GraphAttentionData
+    from fairchem.core.models.escaip.custom_types import GraphAttentionData
 
-from fairchem.core.escaip.modules.base_block import BaseGraphNeuralNetworkLayer
-from fairchem.core.escaip.utils.nn_utils import get_feedforward, get_normalization_layer
+from fairchem.core.models.escaip.modules.base_block import BaseGraphNeuralNetworkLayer
+from fairchem.core.models.escaip.utils.nn_utils import (
+    get_feedforward,
+    get_normalization_layer,
+)
 
 
 class InputBlock(nn.Module):

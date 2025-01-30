@@ -5,12 +5,15 @@ from typing import TYPE_CHECKING
 from torch import nn
 
 if TYPE_CHECKING:
-    from fairchem.core.escaip.configs import (
+    from fairchem.core.models.escaip.configs import (
         GlobalConfigs,
         GraphNeuralNetworksConfigs,
         RegularizationConfigs,
     )
-from fairchem.core.escaip.utils.nn_utils import get_feedforward, get_normalization_layer
+from fairchem.core.models.escaip.utils.nn_utils import (
+    get_feedforward,
+    get_normalization_layer,
+)
 
 
 class ReadoutBlock(nn.Module):

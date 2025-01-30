@@ -6,16 +6,16 @@ import torch
 from torch import nn
 
 if TYPE_CHECKING:
-    from fairchem.core.escaip.configs import (
+    from fairchem.core.models.escaip.configs import (
         GlobalConfigs,
         GraphNeuralNetworksConfigs,
         MolecularGraphConfigs,
         RegularizationConfigs,
     )
-    from fairchem.core.escaip.custom_types import GraphAttentionData
+    from fairchem.core.models.escaip.custom_types import GraphAttentionData
 
-from fairchem.core.escaip.utils.graph_utils import map_sender_receiver_feature
-from fairchem.core.escaip.utils.nn_utils import get_linear
+from fairchem.core.models.escaip.utils.graph_utils import map_sender_receiver_feature
+from fairchem.core.models.escaip.utils.nn_utils import get_linear
 
 
 class BaseGraphNeuralNetworkLayer(nn.Module):
