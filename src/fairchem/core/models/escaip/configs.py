@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, fields, is_dataclass
-from typing import Any, Literal
+from dataclasses import MISSING, dataclass, fields, is_dataclass
+from typing import Literal
 
 
 @dataclass
@@ -68,21 +68,36 @@ class EScAIPConfigs:
     reg_cfg: RegularizationConfigs
 
 
-def init_configs(cls: type[EScAIPConfigs], kwargs: dict[str, Any]) -> EScAIPConfigs:
+def resolve_type_hint(cls, field):
+    """Resolves forward reference type hints from string to actual class objects."""
+    if isinstance(field.type, str):
+        resolved_type = getattr(cls, field.type, None)
+        if resolved_type is None:
+            resolved_type = globals().get(field.type, None)  # Try global scope
+        if resolved_type is None:
+            return field.type  # Fallback to string if not found
+        return resolved_type
+    return field.type
+
+
+def init_configs(cls, kwargs):
     """
     Initialize a dataclass with the given kwargs.
     """
     init_kwargs = {}
     for field in fields(cls):
-        if is_dataclass(field.type):
-            init_kwargs[field.name] = init_configs(field.type, kwargs)
-        elif field.name in kwargs:
-            init_kwargs[field.name] = kwargs[field.name]
-        elif field.default is not None:
-            init_kwargs[field.name] = field.default
+        field_name = field.name
+        field_type = resolve_type_hint(cls, field)  # Resolve type
+
+        if is_dataclass(field_type):  # Handle nested dataclass
+            init_kwargs[field.name] = init_configs(field_type, kwargs)
+        elif field_name in kwargs:  # Direct assignment
+            init_kwargs[field_name] = kwargs[field_name]
+        elif field.default is not MISSING:  # Assign default if available
+            init_kwargs[field_name] = field.default
         else:
             raise ValueError(
-                f"Missing required configuration parameter: '{field.name}'"
+                f"Missing required configuration parameter: '{field_name}' in '{cls.__name__}'"
             )
 
     return cls(**init_kwargs)
