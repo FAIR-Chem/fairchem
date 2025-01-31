@@ -1057,7 +1057,7 @@ def new_trainer_context(*, config: dict[str, Any]):
     elif "multitask" in trainer_name:
         task_name = "multitask"
     else:
-        task_name = "ocp"
+        task_name = trainer_name
 
     trainer_cls = registry.get_trainer_class(trainer_name)
     assert trainer_cls is not None, "Trainer not found"
