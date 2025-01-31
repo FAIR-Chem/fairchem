@@ -1076,7 +1076,7 @@ def new_trainer_context(*, config: dict[str, Any]):
         "amp": config.get("amp", False),
         "cpu": config.get("cpu", False),
         "slurm": config.get("slurm", {}),
-        "name": task_name,
+        "name": trainer_name,
         "gp_gpus": config.get("gp_gpus"),
     }
 
