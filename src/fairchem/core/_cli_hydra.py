@@ -160,10 +160,10 @@ def main(
 ):
     if args is None:
         parser = argparse.ArgumentParser()
-        parser.add_argument("--config-yml", type=str, required=True)
+        parser.add_argument("-c", "--config", type=str, required=True)
         args, override_args = parser.parse_known_args()
 
-    cfg = get_hydra_config_from_yaml(args.config_yml, override_args)
+    cfg = get_hydra_config_from_yaml(args.config, override_args)
     # merge default structured config with job
     cfg = OmegaConf.merge({"job": OmegaConf.structured(JobConfig)}, cfg)
     log_dir = OmegaConf.to_object(cfg.job).log_dir
