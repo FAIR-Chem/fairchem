@@ -5,18 +5,23 @@ import math
 
 import torch.optim.lr_scheduler as lr_scheduler
 
-from fairchem.core.common.typing import assert_is_instance as aii
 from fairchem.core.common.utils import warmup_lr_lambda
 
 
 class CosineLRLambda:
-    def __init__(self, scheduler_params: dict) -> None:
-        self.warmup_epochs = aii(scheduler_params["warmup_epochs"], int)
-        self.lr_warmup_factor = aii(scheduler_params["warmup_factor"], float)
-        self.max_epochs = aii(scheduler_params["epochs"], int)
-        self.lr_min_factor = aii(scheduler_params["lr_min_factor"], float)
+    def __init__(
+        self,
+        warmup_epochs: int,
+        warmup_factor: float,
+        epochs: int,
+        lr_min_factor: float,
+    ) -> None:
+        self.warmup_epochs = warmup_epochs
+        self.lr_warmup_factor = warmup_factor
+        self.max_epochs = epochs
+        self.lr_min_factor = lr_min_factor
 
-    def __call__(self, current_step: int):
+    def __call__(self, current_step: int) -> float:
         # `warmup_epochs` is already multiplied with the num of iterations
         if current_step <= self.warmup_epochs:
             alpha = current_step / float(self.warmup_epochs)
