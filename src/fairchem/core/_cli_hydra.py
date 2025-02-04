@@ -14,7 +14,7 @@ import tempfile
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import hydra
 from omegaconf import OmegaConf
@@ -74,7 +74,7 @@ class JobConfig:
     scheduler: SchedulerConfig = field(default_factory=lambda: SchedulerConfig)
     log_dir_name: str = "logs"
     checkpoint_dir_name: str = "checkpoint"
-    logger: dict | None = None
+    logger: Optional[dict] = None  # noqa: UP007 python 3.9 requires Optional still
 
     @property
     def log_dir(self) -> str:
