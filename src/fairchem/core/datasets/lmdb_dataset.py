@@ -145,10 +145,12 @@ class LmdbDataset(BaseDataset):
             )
             data_object = pyg2_data_transform(pickle.loads(datapoint_pickled))
 
+        data_object = self.transforms(data_object)
+
         if self.key_mapping is not None:
             data_object = rename_data_object_keys(data_object, self.key_mapping)
 
-        return self.transforms(data_object)
+        return data_object
 
     def connect_db(self, lmdb_path: Path | None = None) -> lmdb.Environment:
         return lmdb.open(
