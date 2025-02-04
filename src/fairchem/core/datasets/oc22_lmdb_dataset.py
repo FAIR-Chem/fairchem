@@ -202,7 +202,7 @@ class OC22LmdbDataset(BaseDataset):
             del data_object.distances
 
         data_object = self.transforms(data_object)
-        
+
         if self.key_mapping is not None:
             data_object = rename_data_object_keys(data_object, self.key_mapping)
 
