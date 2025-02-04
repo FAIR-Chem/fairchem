@@ -12,7 +12,7 @@ from fairchem.core.common import distutils
 def test_hydra_cli():
     distutils.cleanup()
     hydra.core.global_hydra.GlobalHydra.instance().clear()
-    sys_args = ["--config-yml", "tests/core/test_hydra_cli.yml"]
+    sys_args = ["--config", "tests/core/test_hydra_cli.yml"]
     sys.argv[1:] = sys_args
     main()
 
@@ -21,7 +21,7 @@ def test_hydra_cli_throws_error():
     distutils.cleanup()
     hydra.core.global_hydra.GlobalHydra.instance().clear()
     sys_args = [
-        "--config-yml",
+        "--config",
         "tests/core/test_hydra_cli.yml",
         "runner.x=1000",
         "runner.y=5",
@@ -36,7 +36,7 @@ def test_hydra_cli_throws_error_on_invalid_inputs():
     distutils.cleanup()
     hydra.core.global_hydra.GlobalHydra.instance().clear()
     sys_args = [
-        "--config-yml",
+        "-c",
         "tests/core/test_hydra_cli.yml",
         "runner.x=1000",
         "runner.z=5",  # z is not a valid input argument to runner

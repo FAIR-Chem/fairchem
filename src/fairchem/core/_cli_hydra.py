@@ -14,7 +14,7 @@ import tempfile
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import hydra
 from omegaconf import OmegaConf
@@ -64,7 +64,9 @@ class SchedulerConfig:
 
 @dataclass
 class JobConfig:
-    run_name: str = field(default_factory=lambda: uuid.uuid4().hex.upper()[0:8])
+    run_name: str = field(
+        default_factory=lambda: get_timestamp_uid() + uuid.uuid4().hex.upper()[0:4]
+    )
     timestamp_id: str = field(default_factory=lambda: get_timestamp_uid())
     run_dir: str = field(default_factory=lambda: tempfile.TemporaryDirectory().name)
     device_type: DeviceType = DeviceType.CUDA
@@ -72,6 +74,7 @@ class JobConfig:
     scheduler: SchedulerConfig = field(default_factory=lambda: SchedulerConfig)
     log_dir_name: str = "logs"
     checkpoint_dir_name: str = "checkpoint"
+    logger: Optional[dict] = None  # noqa: UP007 python 3.9 requires Optional still
 
     @property
     def log_dir(self) -> str:
@@ -85,36 +88,35 @@ class JobConfig:
 class Submitit(Checkpointable):
     def __call__(self, dict_config: DictConfig) -> None:
         self.config = dict_config
-        job_config: JobConfig = OmegaConf.to_object(dict_config.job)
+        self.job_config: JobConfig = OmegaConf.to_object(dict_config.job)
         # TODO: setup_imports is not needed if we stop instantiating models with Registry.
         setup_imports()
         setup_env_vars()
-        distutils.setup(map_job_config_to_dist_config(job_config))
+        distutils.setup(map_job_config_to_dist_config(self.job_config))
         self._init_logger()
         runner: Runner = hydra.utils.instantiate(dict_config.runner)
-        runner.job_config = job_config
+        runner.job_config = self.job_config
         runner.load_state()
         runner.run()
         distutils.cleanup()
 
     def _init_logger(self) -> None:
-        # optionally instantiate a singleton wandb logger, intentionally only supporting the new wandb logger
-        # don't start logger if in debug mode
         if (
-            "logger" in self.config
+            self.job_config.logger
             and distutils.is_master()
-            and not self.config.job.debug
+            and not self.job_config.debug
         ):
             # get a partial function from the config and instantiate wandb with it
-            logger_initializer = hydra.utils.instantiate(self.config.logger)
+            # currently this assume we use a wandb logger
+            logger_initializer = hydra.utils.instantiate(self.job_config.logger)
             simple_config = OmegaConf.to_container(
                 self.config, resolve=True, throw_on_missing=True
             )
             logger_initializer(
                 config=simple_config,
-                run_id=self.config.cli_args.timestamp_id,
-                run_name=self.config.cli_args.identifier,
-                log_dir=self.config.cli_args.logdir,
+                run_id=self.job_config.timestamp_id,
+                run_name=self.job_config.run_name,
+                log_dir=self.job_config.log_dir,
             )
 
     def checkpoint(self, *args, **kwargs) -> DelayedSubmission:
@@ -130,9 +132,9 @@ def map_job_config_to_dist_config(job_cfg: JobConfig) -> dict:
     scheduler_config = job_cfg.scheduler
     return {
         "world_size": scheduler_config.num_nodes * scheduler_config.ranks_per_node,
-        "distributed_backend": "gloo"
-        if job_cfg.device_type == DeviceType.CPU
-        else "nccl",
+        "distributed_backend": (
+            "gloo" if job_cfg.device_type == DeviceType.CPU else "nccl"
+        ),
         "submit": scheduler_config.mode == SchedulerType.SLURM,
         "summit": None,
         "cpu": job_cfg.device_type == DeviceType.CPU,
@@ -160,10 +162,10 @@ def main(
 ):
     if args is None:
         parser = argparse.ArgumentParser()
-        parser.add_argument("--config-yml", type=str, required=True)
+        parser.add_argument("-c", "--config", type=str, required=True)
         args, override_args = parser.parse_known_args()
 
-    cfg = get_hydra_config_from_yaml(args.config_yml, override_args)
+    cfg = get_hydra_config_from_yaml(args.config, override_args)
     # merge default structured config with job
     cfg = OmegaConf.merge({"job": OmegaConf.structured(JobConfig)}, cfg)
     log_dir = OmegaConf.to_object(cfg.job).log_dir
