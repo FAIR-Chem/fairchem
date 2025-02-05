@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Optional
 
 import hydra
 from omegaconf import OmegaConf
+from omegaconf.errors import InterpolationKeyError
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
@@ -33,6 +34,9 @@ from fairchem.core.common.utils import get_timestamp_uid, setup_env_vars, setup_
 
 # this effects the cli only since the actual job will be run in subprocesses or remoe
 logging.basicConfig(level=logging.INFO)
+
+
+ALLOWED_TOP_LEVEL_KEYS = {"job", "runner"}
 
 
 class SchedulerType(str, Enum):
@@ -74,6 +78,7 @@ class JobConfig:
     scheduler: SchedulerConfig = field(default_factory=lambda: SchedulerConfig)
     log_dir_name: str = "logs"
     checkpoint_dir_name: str = "checkpoint"
+    config_file_name: str = "canonical_config.yaml"
     logger: Optional[dict] = None  # noqa: UP007 python 3.9 requires Optional still
 
     @property
@@ -83,6 +88,10 @@ class JobConfig:
     @property
     def checkpoint_dir(self) -> str:
         return os.path.join(self.run_dir, self.timestamp_id, self.checkpoint_dir_name)
+
+    @property
+    def config_path(self) -> str:
+        return os.path.join(self.run_dir, self.timestamp_id, self.config_file_name)
 
 
 class Submitit(Checkpointable):
@@ -142,6 +151,33 @@ def map_job_config_to_dist_config(job_cfg: JobConfig) -> dict:
     }
 
 
+def get_canonical_config(config: DictConfig) -> DictConfig:
+    # check that each key other than the allowed top level keys are used in config
+    # find all top level keys are not in the allowed set
+    all_keys = set(config.keys()).difference(ALLOWED_TOP_LEVEL_KEYS)
+    used_keys = set()
+    for key in all_keys:
+        # make a copy of all keys except the key in question
+        copy_cfg = OmegaConf.create({k: v for k, v in config.items() if k != key})
+        try:
+            OmegaConf.resolve(copy_cfg)
+        except InterpolationKeyError:
+            # if this error is thrown, this means the key was actually required
+            used_keys.add(key)
+
+    unused_keys = all_keys.difference(used_keys)
+    if unused_keys != set():
+        raise ValueError(
+            f"Found unused keys in the config: {unused_keys}, please remove them!, only keys other than {ALLOWED_TOP_LEVEL_KEYS} or ones that are used as variables are allowed."
+        )
+
+    # resolve the config to fully replace the variables and delete all top level keys except for the ALLOWED_TOP_LEVEL_KEYS
+    OmegaConf.resolve(config)
+    return OmegaConf.create(
+        {k: v for k, v in config.items() if k in ALLOWED_TOP_LEVEL_KEYS}
+    )
+
+
 def get_hydra_config_from_yaml(
     config_yml: str, overrides_args: list[str]
 ) -> DictConfig:
@@ -166,20 +202,24 @@ def main(
         args, override_args = parser.parse_known_args()
 
     cfg = get_hydra_config_from_yaml(args.config, override_args)
-    # merge default structured config with job
+    # merge default structured config with initialized job object
     cfg = OmegaConf.merge({"job": OmegaConf.structured(JobConfig)}, cfg)
-    log_dir = OmegaConf.to_object(cfg.job).log_dir
-    os.makedirs(cfg.job.run_dir, exist_ok=True)
+    # canonicalize config (remove top level keys that just used replacing variables)
+    cfg = get_canonical_config(cfg)
+    job_obj = OmegaConf.to_object(cfg.job)
+    log_dir = job_obj.log_dir
+    os.makedirs(job_obj.run_dir, exist_ok=True)
     os.makedirs(log_dir, exist_ok=True)
 
-    job_cfg = cfg.job
-    scheduler_cfg = cfg.job.scheduler
+    OmegaConf.save(cfg, job_obj.config_path)
+    logging.info(f"saved canonical config to {job_obj.config_path}")
 
+    scheduler_cfg = job_obj.scheduler
     logging.info(f"Running fairchemv2 cli with {cfg}")
     if scheduler_cfg.mode == SchedulerType.SLURM:  # Run on cluster
         executor = AutoExecutor(folder=log_dir, slurm_max_num_timeout=3)
         executor.update_parameters(
-            name=job_cfg.run_name,
+            name=job_obj.run_name,
             mem_gb=scheduler_cfg.slurm.mem_gb,
             timeout_min=scheduler_cfg.slurm.timeout_hr * 60,
             slurm_partition=scheduler_cfg.slurm.partition,
@@ -192,13 +232,13 @@ def main(
         )
         job = executor.submit(runner_wrapper, cfg)
         logging.info(
-            f"Submitted job id: {job_cfg.timestamp_id}, slurm id: {job.job_id}, logs: {job_cfg.log_dir}"
+            f"Submitted job id: {job_obj.timestamp_id}, slurm id: {job.job_id}, logs: {job_obj.log_dir}"
         )
     else:
         from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
         if scheduler_cfg.ranks_per_node > 1:
-            logging.info(f"Running in local mode with {job_cfg.ranks_per_node} ranks")
+            logging.info(f"Running in local mode with {job_obj.ranks_per_node} ranks")
             launch_config = LaunchConfig(
                 min_nodes=1,
                 max_nodes=1,
