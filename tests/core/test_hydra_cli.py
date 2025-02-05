@@ -5,7 +5,7 @@ import sys
 import hydra
 import pytest
 
-from fairchem.core._cli_hydra import main
+from fairchem.core._cli_hydra import ALLOWED_TOP_LEVEL_KEYS, main
 from fairchem.core.common import distutils
 
 
@@ -39,8 +39,22 @@ def test_hydra_cli_throws_error_on_invalid_inputs():
         "-c",
         "tests/core/test_hydra_cli.yml",
         "runner.x=1000",
-        "runner.z=5",  # z is not a valid input argument to runner
+        "runner.a=5",  # a is not a valid input argument to runner
     ]
     sys.argv[1:] = sys_args
     with pytest.raises(hydra.errors.ConfigCompositionException):
+        main()
+
+
+def test_hydra_cli_throws_error_on_disallowed_top_level_keys():
+    distutils.cleanup()
+    hydra.core.global_hydra.GlobalHydra.instance().clear()
+    assert "x" not in ALLOWED_TOP_LEVEL_KEYS
+    sys_args = [
+        "-c",
+        "tests/core/test_hydra_cli.yml",
+        "+x=1000",  # this is not allowed because we are adding a key that is not in ALLOWED_TOP_LEVEL_KEYS
+    ]
+    sys.argv[1:] = sys_args
+    with pytest.raises(ValueError):
         main()
