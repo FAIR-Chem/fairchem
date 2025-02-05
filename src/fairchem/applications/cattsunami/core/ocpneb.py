@@ -105,7 +105,7 @@ class OCPNEB(DyNEB):
             task=config.get("task", {}),
             model=config["model"],
             outputs={},
-            loss_functions=config["loss_functions"],
+            loss_functions=config.get("loss_functions", {}),
             evaluation_metrics={},
             dataset=[config["dataset"]],
             optimizer=config["optim"],
