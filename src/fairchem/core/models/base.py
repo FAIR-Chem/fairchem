@@ -260,6 +260,10 @@ class HydraModel(nn.Module, GraphModelMixin):
             assert isinstance(
                 starting_model, HydraModel
             ), "Can only finetune starting from other hydra models!"
+            # TODO this is a bit hacky to overrride attrs in the backbone
+            if "overrride" in finetune_config:
+                for key, value in finetune_config:
+                    setattr(starting_model.backbone, key, value)
 
         if backbone is not None:
             backbone = copy.deepcopy(backbone)
