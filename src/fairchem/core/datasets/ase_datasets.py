@@ -490,7 +490,8 @@ class AseDBDataset(AseAtomsDataset):
             try:
                 self.dbs.append(
                     self.connect_db(
-                        path, config.get("connect_args", {"use_lock_file": False})
+                        path,
+                        config.get("connect_args", {}),
                     )
                 )
             except ValueError:
@@ -552,6 +553,11 @@ class AseDBDataset(AseAtomsDataset):
     ) -> ase.db.core.Database:
         if connect_args is None:
             connect_args = {}
+
+        # If we're using an aselmdb, let's set readonly=True to be safe!
+        if "aselmdb" in address:
+            connect_args["readonly"] = True
+            connect_args["use_lock_file"] = False
 
         return ase.db.connect(address, **connect_args)
 
