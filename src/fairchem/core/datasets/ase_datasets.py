@@ -488,7 +488,11 @@ class AseDBDataset(AseAtomsDataset):
 
         for path in sorted(filepaths):
             try:
-                self.dbs.append(self.connect_db(path, config.get("connect_args", {})))
+                self.dbs.append(
+                    self.connect_db(
+                        path, config.get("connect_args", {"use_lock_file": False})
+                    )
+                )
             except ValueError:
                 logging.debug(
                     f"Tried to connect to {path} but it's not an ASE database!"

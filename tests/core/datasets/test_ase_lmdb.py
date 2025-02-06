@@ -68,13 +68,13 @@ def ase_lmbd_path(tmp_path_factory):
 
 
 def test_aselmdb_write(ase_lmbd_path) -> None:
-    with connect(ase_lmbd_path, readonly=True) as db:
+    with connect(ase_lmbd_path, readonly=True, use_lock_file=False) as db:
         for i, structure in enumerate(test_structures):
             assert str(structure) == str(db._get_row_by_index(i).toatoms())
 
 
 def test_aselmdb_count(ase_lmbd_path) -> None:
-    with connect(ase_lmbd_path, readonly=True) as db:
+    with connect(ase_lmbd_path, readonly=True, use_lock_file=False) as db:
         assert db.count() == N_WRITES + len(test_structures)
 
 
@@ -88,7 +88,7 @@ def test_aselmdb_delete(ase_lmbd_path) -> None:
 
 
 def test_aselmdb_randomreads(ase_lmbd_path) -> None:
-    with connect(ase_lmbd_path, readonly=True) as db:
+    with connect(ase_lmbd_path, readonly=True, use_lock_file=False) as db:
         for _ in range(N_READS):
             total_size = db.count()
             assert isinstance(
@@ -97,7 +97,7 @@ def test_aselmdb_randomreads(ase_lmbd_path) -> None:
 
 
 def test_aselmdb_constraintread(ase_lmbd_path) -> None:
-    with connect(ase_lmbd_path, readonly=True) as db:
+    with connect(ase_lmbd_path, readonly=True, use_lock_file=False) as db:
         atoms = db._get_row_by_index(2).toatoms()
 
     assert isinstance(atoms.constraints[0], FixAtoms)
@@ -125,5 +125,5 @@ def test_metadata(ase_lmbd_path) -> None:
     with connect(ase_lmbd_path) as db:
         db.metadata = {"test": True}
 
-    with connect(ase_lmbd_path, readonly=True) as db:
+    with connect(ase_lmbd_path, readonly=True, use_lock_file=False) as db:
         assert db.metadata["test"] is True
