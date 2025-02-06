@@ -135,11 +135,11 @@ class AseAtomsDataset(BaseDataset, ABC):
         if self.a2g.r_energy is True and self.lin_ref is not None:
             data_object.energy -= sum(self.lin_ref[data_object.atomic_numbers.long()])
 
-        if self.key_mapping is not None:
-            data_object = rename_data_object_keys(data_object, self.key_mapping)
-
         # Transform data object
         data_object = self.transforms(data_object)
+
+        if self.key_mapping is not None:
+            data_object = rename_data_object_keys(data_object, self.key_mapping)
 
         if self.config.get("include_relaxed_energy", False):
             data_object.energy_relaxed = self.get_relaxed_energy(self.ids[idx])
