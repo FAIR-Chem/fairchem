@@ -35,6 +35,9 @@ from fairchem.core.common.utils import get_timestamp_uid, setup_env_vars, setup_
 # this effects the cli only since the actual job will be run in subprocesses or remoe
 logging.basicConfig(level=logging.INFO)
 
+import random
+import numpy as np
+import torch
 
 ALLOWED_TOP_LEVEL_KEYS = {"job", "runner"}
 
@@ -80,6 +83,8 @@ class JobConfig:
     checkpoint_dir_name: str = "checkpoint"
     config_file_name: str = "canonical_config.yaml"
     logger: Optional[dict] = None  # noqa: UP007 python 3.9 requires Optional still
+    seed: int = 0
+    deterministic: bool = False
 
     @property
     def log_dir(self) -> str:
@@ -94,15 +99,33 @@ class JobConfig:
         return os.path.join(self.run_dir, self.timestamp_id, self.config_file_name)
 
 
+def _set_seeds(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+
+def _set_deterministic_mode() -> None:
+    # this is required for full cuda deterministic mode
+    logging.info("Setting deterministic mode!")
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.use_deterministic_algorithms(True)
+
+
 class Submitit(Checkpointable):
     def __call__(self, dict_config: DictConfig) -> None:
         self.config = dict_config
         self.job_config: JobConfig = OmegaConf.to_object(dict_config.job)
-        # TODO: setup_imports is not needed if we stop instantiating models with Registry.
-        setup_imports()
         setup_env_vars()
         distutils.setup(map_job_config_to_dist_config(self.job_config))
         self._init_logger()
+        _set_seeds(self.job_config.seed)
+        if self.job_config.deterministic:
+            _set_deterministic_mode()
+
         runner: Runner = hydra.utils.instantiate(dict_config.runner)
         runner.job_config = self.job_config
         runner.load_state()
