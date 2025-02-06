@@ -26,7 +26,6 @@ from tqdm import tqdm
 from fairchem.core.common.registry import registry
 from fairchem.core.datasets._utils import rename_data_object_keys
 from fairchem.core.datasets.base_dataset import BaseDataset
-from fairchem.core.datasets.lmdb_database import LMDBDatabase
 from fairchem.core.datasets.target_metadata_guesser import guess_property_metadata
 from fairchem.core.modules.transforms import DataTransforms
 from fairchem.core.preprocessing import AtomsToGraphs
@@ -549,12 +548,6 @@ class AseDBDataset(AseAtomsDataset):
     ) -> ase.db.core.Database:
         if connect_args is None:
             connect_args = {}
-        db_type = connect_args.get("type", "extract_from_name")
-        if db_type in ("lmdb", "aselmdb") or (
-            db_type == "extract_from_name"
-            and str(address).rsplit(".", maxsplit=1)[-1] in ("lmdb", "aselmdb")
-        ):
-            return LMDBDatabase(address, readonly=True, **connect_args)
 
         return ase.db.connect(address, **connect_args)
 
