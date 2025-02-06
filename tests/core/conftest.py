@@ -197,7 +197,7 @@ def dummy_binary_dataset_path(tmpdir_factory, dummy_element_refs):
     rng = np.random.default_rng(seed=0)
 
     tmpdir = tmpdir_factory.mktemp("dataset")
-    with connect(tmpdir / "dummy.aselmdb") as db:
+    with connect(str(tmpdir / "dummy.aselmdb")) as db:
         for _ in range(1000):
             elements = choice(all_binaries)
             structure = Structure.from_prototype("cscl", species=elements, a=2.0)
@@ -214,6 +214,7 @@ def dummy_binary_dataset_path(tmpdir_factory, dummy_element_refs):
                     "stress": rng.random((3, 3)),
                 },
             )
+            print("writing!")
 
     return tmpdir / "dummy.aselmdb"
 
