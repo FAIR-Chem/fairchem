@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import random
 import tempfile
 import uuid
 from dataclasses import dataclass, field
@@ -17,6 +18,8 @@ from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
 import hydra
+import numpy as np
+import torch
 from omegaconf import OmegaConf
 from omegaconf.errors import InterpolationKeyError
 
@@ -25,19 +28,15 @@ if TYPE_CHECKING:
 
     from fairchem.core.components.runner import Runner
 
-
 from submitit import AutoExecutor
 from submitit.helpers import Checkpointable, DelayedSubmission
 
 from fairchem.core.common import distutils
-from fairchem.core.common.utils import get_timestamp_uid, setup_env_vars, setup_imports
+from fairchem.core.common.utils import get_timestamp_uid, setup_env_vars
 
 # this effects the cli only since the actual job will be run in subprocesses or remoe
 logging.basicConfig(level=logging.INFO)
 
-import random
-import numpy as np
-import torch
 
 ALLOWED_TOP_LEVEL_KEYS = {"job", "runner"}
 
