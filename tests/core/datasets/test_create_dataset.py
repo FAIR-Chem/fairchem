@@ -98,7 +98,7 @@ def test_subset_to(structures, lmdb_database):
 
     assert len(create_dataset(config, split="train")) == len(structures)
 
-    # select a subset of indices
+    # select a subset of indices fed as list
     indices = [1, 2]
     config = {
         "format": "ase_db",
@@ -107,6 +107,22 @@ def test_subset_to(structures, lmdb_database):
     }
 
     assert len(create_dataset(config, split="train")) == len(indices)
+
+    # select a subset of indices fed as path
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        indices_path = f"{tmpdirname}/indices.txt"
+        indices = [1, 2]
+        with open(indices_path, "w") as f:
+            for idx in indices:
+                f.write(f"{idx}\n")
+
+        config = {
+            "format": "ase_db",
+            "src": str(lmdb_database),
+            "subset_to": [{"op": "in", "metadata_key": "mod2", "rhv": indices_path}],
+        }
+
+        assert len(create_dataset(config, split="train")) == len(indices)
 
     # only select those that have mod2==0
     config = {
