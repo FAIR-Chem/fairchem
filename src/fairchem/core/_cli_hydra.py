@@ -260,7 +260,9 @@ def main(
         from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
         if scheduler_cfg.ranks_per_node > 1:
-            logging.info(f"Running in local mode with {job_obj.ranks_per_node} ranks")
+            logging.info(
+                f"Running in local mode with {scheduler_cfg.ranks_per_node} ranks"
+            )
             launch_config = LaunchConfig(
                 min_nodes=1,
                 max_nodes=1,
