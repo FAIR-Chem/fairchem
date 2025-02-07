@@ -56,9 +56,9 @@ class SlurmConfig:
     mem_gb: int = 80
     timeout_hr: int = 168
     cpus_per_task: int = 8
-    partition: str | None = None
-    qos: str | None = None
-    account: str | None = None
+    partition: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
+    qos: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
+    account: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
 
 
 @dataclass
