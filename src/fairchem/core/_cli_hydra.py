@@ -52,20 +52,21 @@ class DeviceType(str, Enum):
 
 
 @dataclass
+class SlurmConfig:
+    mem_gb: int = 80
+    timeout_hr: int = 168
+    cpus_per_task: int = 8
+    partition: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
+    qos: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
+    account: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
+
+
+@dataclass
 class SchedulerConfig:
     mode: SchedulerType = SchedulerType.LOCAL
     ranks_per_node: int = 1
     num_nodes: int = 1
-    slurm: dict = field(
-        default_factory=lambda: {
-            "mem_gb": 80,  # slurm mem in GB
-            "timeout_hr": 168,  # slurm timeout in hours, default to 7 days
-            "partition": None,
-            "cpus_per_task": 8,
-            "qos": None,
-            "account": None,
-        }
-    )
+    slurm: SlurmConfig = field(default_factory=lambda: SlurmConfig)
 
 
 @dataclass
