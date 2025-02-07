@@ -23,7 +23,7 @@ dependencies = [
     "orjson",
     "tqdm",
     "submitit",
-    "hydra-core"
+    "hydra-core",
     "torchtnt"
 ]
 
