@@ -192,9 +192,6 @@ class OC22LmdbDataset(BaseDataset):
             lin_energy = sum(self.lin_ref[data_object.atomic_numbers.long()])
             data_object[attr] -= lin_energy
 
-        if self.key_mapping is not None:
-            data_object = rename_data_object_keys(data_object, self.key_mapping)
-
         # to jointly train on oc22+oc20, need to delete these oc20-only attributes
         # ensure otf_graph=1 in your model configuration
         if "edge_index" in data_object:
@@ -204,7 +201,12 @@ class OC22LmdbDataset(BaseDataset):
         if "distances" in data_object:
             del data_object.distances
 
-        return self.transforms(data_object)
+        data_object = self.transforms(data_object)
+
+        if self.key_mapping is not None:
+            data_object = rename_data_object_keys(data_object, self.key_mapping)
+
+        return data_object
 
     def connect_db(self, lmdb_path=None):
         return lmdb.open(

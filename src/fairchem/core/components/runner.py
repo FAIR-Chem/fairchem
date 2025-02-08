@@ -39,9 +39,10 @@ class Runner(metaclass=ABCMeta):
 
 # Used for testing
 class MockRunner(Runner):
-    def __init__(self, x: int, y: int):
+    def __init__(self, x: int, y: int, z: int):
         self.x = x
         self.y = y
+        self.z = z
 
     def run(self) -> Any:
         if self.x * self.y > 1000:

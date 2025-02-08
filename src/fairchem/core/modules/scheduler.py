@@ -1,10 +1,37 @@
 from __future__ import annotations
 
 import inspect
+import math
 
 import torch.optim.lr_scheduler as lr_scheduler
 
 from fairchem.core.common.utils import warmup_lr_lambda
+
+
+class CosineLRLambda:
+    def __init__(
+        self,
+        warmup_epochs: int,
+        warmup_factor: float,
+        epochs: int,
+        lr_min_factor: float,
+    ) -> None:
+        self.warmup_epochs = warmup_epochs
+        self.lr_warmup_factor = warmup_factor
+        self.max_epochs = epochs
+        self.lr_min_factor = lr_min_factor
+
+    def __call__(self, current_step: int) -> float:
+        # `warmup_epochs` is already multiplied with the num of iterations
+        if current_step <= self.warmup_epochs:
+            alpha = current_step / float(self.warmup_epochs)
+            return self.lr_warmup_factor * (1.0 - alpha) + alpha
+        else:
+            if current_step >= self.max_epochs:
+                return self.lr_min_factor
+            return self.lr_min_factor + 0.5 * (1 - self.lr_min_factor) * (
+                1 + math.cos(math.pi * (current_step / self.max_epochs))
+            )
 
 
 class LRScheduler:
@@ -34,7 +61,6 @@ class LRScheduler:
                 return warmup_lr_lambda(x, self.config)
 
             self.config["lr_lambda"] = scheduler_lambda_fn
-
         if self.scheduler_type != "Null":
             self.scheduler = getattr(lr_scheduler, self.scheduler_type)
             scheduler_args = self.filter_kwargs(config)

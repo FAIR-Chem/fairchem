@@ -189,17 +189,18 @@ def create_dataset(config: dict[str, Any], split: str) -> Subset:
             raise ValueError(
                 f"Cannot use {subset_to} without dataset metadata key {subset_to['metadata_key']}"
             )
+        rhv = subset_to["rhv"]
+        if isinstance(rhv, str):
+            with open(rhv) as f:
+                rhv = f.read().splitlines()
+                rhv = [int(x) for x in rhv]
         if subset_to["op"] == "abs_le":
             indices = indices[
-                np.abs(dataset.get_metadata(subset_to["metadata_key"], indices))
-                <= subset_to["rhv"]
+                np.abs(dataset.get_metadata(subset_to["metadata_key"], indices)) <= rhv
             ]
         elif subset_to["op"] == "in":
             indices = indices[
-                np.isin(
-                    dataset.get_metadata(subset_to["metadata_key"], indices),
-                    subset_to["rhv"],
-                )
+                np.isin(dataset.get_metadata(subset_to["metadata_key"], indices), rhv)
             ]
 
     # Apply dataset level transforms
