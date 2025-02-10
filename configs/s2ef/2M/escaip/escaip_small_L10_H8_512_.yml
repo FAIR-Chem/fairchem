@@ -13,7 +13,7 @@ model:
 
     # Global Configs
     activation: gelu
-    direct_force: true
+    direct_forces: true
     hidden_size: 512
     regress_forces: true
     use_fp16_backbone: false
