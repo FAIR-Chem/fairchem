@@ -7,7 +7,7 @@ from typing import Literal
 @dataclass
 class GlobalConfigs:
     regress_forces: bool
-    direct_force: bool
+    direct_forces: bool
     hidden_size: int  # divisible by 2 and num_heads
     batch_size: int
     activation: Literal[

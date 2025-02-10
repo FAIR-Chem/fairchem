@@ -45,7 +45,7 @@ model:
 
     # Global Configs
     activation: gelu
-    direct_forces: true
+    direct_forces: false
     hidden_size: 4
     regress_forces: true
     use_fp16_backbone: false
@@ -74,7 +74,7 @@ model:
     edge_distance_expansion_size: 4
     node_direction_embedding_size: 4
     node_direction_expansion_size: 10
-    num_layers: 1
+    num_layers: 2
     output_hidden_layer_multiplier: 1
     readout_hidden_layer_multiplier: 1
     ffn_hidden_layer_multiplier: 1
@@ -89,10 +89,8 @@ model:
     stochastic_depth_prob: 0.0
 
   heads:
-    forces:
-      module: EScAIP_direct_force_head
     energy:
-      module: EScAIP_energy_head
+      module: EScAIP_grad_energy_force_head
 
 optim:
   batch_size: 5

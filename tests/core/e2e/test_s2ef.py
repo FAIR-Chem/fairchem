@@ -315,6 +315,7 @@ class TestSmoke:
             ("equiformer_v2_hydra", True),
             ("escaip_hydra", False),
             ("escaip_hydra", True),
+            ("escaip_hydra_grad", False),
         ],
     )
     def test_train_and_predict(

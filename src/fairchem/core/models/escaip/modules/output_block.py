@@ -34,18 +34,24 @@ class OutputProjection(nn.Module):
             activation=global_cfg.activation,
             bias=True,
         )
-        self.edge_projection = get_linear(
-            in_features=global_cfg.hidden_size * (gnn_cfg.num_layers + 1),
-            out_features=global_cfg.hidden_size,
-            activation=global_cfg.activation,
-            bias=True,
-        )
+        if global_cfg.direct_forces:
+            self.edge_projection = get_linear(
+                in_features=global_cfg.hidden_size * (gnn_cfg.num_layers + 1),
+                out_features=global_cfg.hidden_size,
+                activation=global_cfg.activation,
+                bias=True,
+            )
+        else:
+            self.edge_projection = nn.Identity()
         self.readout_norm = get_normalization_layer(
             reg_cfg.normalization, is_graph=True
-        )(global_cfg.hidden_size * (gnn_cfg.num_layers + 1))
+        )(
+            global_cfg.hidden_size * (gnn_cfg.num_layers + 1),
+            skip_edge=not global_cfg.direct_forces,
+        )
         self.output_norm = get_normalization_layer(
             reg_cfg.normalization, is_graph=True
-        )(global_cfg.hidden_size)
+        )(global_cfg.hidden_size, skip_edge=not global_cfg.direct_forces)
 
     def forward(self, node_readouts, edge_readouts):
         node_readouts, edge_readouts = self.readout_norm(node_readouts, edge_readouts)

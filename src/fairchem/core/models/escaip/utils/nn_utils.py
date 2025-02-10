@@ -172,10 +172,13 @@ class LayerNormGraph(nn.Module):
 
 
 class RMSNormGraph(nn.Module):
-    def __init__(self, hidden_size: int, **kwargs):
+    def __init__(self, hidden_size: int, skip_edge=False, **kwargs):
         super().__init__()
         self.node_norm = nn.RMSNorm(hidden_size, **kwargs)
-        self.edge_norm = nn.RMSNorm(hidden_size, **kwargs)
+        if skip_edge:
+            self.edge_norm = nn.Identity()
+        else:
+            self.edge_norm = nn.RMSNorm(hidden_size, **kwargs)
 
     def forward(self, node_features, edge_features):
         node_features = self.node_norm(node_features)

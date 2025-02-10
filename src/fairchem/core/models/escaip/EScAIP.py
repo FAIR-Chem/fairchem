@@ -55,6 +55,7 @@ class EScAIPBackbone(nn.Module, GraphModelMixin):
 
         # for trainer
         self.regress_forces = cfg.global_cfg.regress_forces
+        self.direct_forces = cfg.global_cfg.direct_forces
         self.use_pbc = cfg.molecular_graph_cfg.use_pbc
 
         # graph generation
@@ -169,7 +170,7 @@ class EScAIPBackbone(nn.Module, GraphModelMixin):
     @conditional_grad(torch.enable_grad())
     def forward(self, data: torch_geometric.data.Batch):
         # gradient force
-        if self.regress_forces and not self.global_cfg.direct_force:
+        if self.regress_forces and not self.global_cfg.direct_forces:
             data.pos.requires_grad_(True)
 
         # preprocess data
@@ -189,6 +190,9 @@ class EScAIPHeadBase(nn.Module, HeadInterface):
         self.molecular_graph_cfg = backbone.molecular_graph_cfg
         self.gnn_cfg = backbone.gnn_cfg
         self.reg_cfg = backbone.reg_cfg
+
+        self.regress_forces = backbone.regress_forces
+        self.direct_forces = backbone.direct_forces
 
     def post_init(self, gain=1.0):
         # init weights
@@ -240,6 +244,7 @@ class EScAIPDirectForceHead(EScAIPHeadBase):
         # get output force
         return force_direction * force_magnitude  # (num_nodes, 3)
 
+    @conditional_grad(torch.enable_grad())
     def forward(self, data, emb: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         force_output = self.forward_fn(
             edge_features=emb["edge_features"],
@@ -282,6 +287,7 @@ class EScAIPEnergyHead(EScAIPHeadBase):
             reduce=self.energy_reduce,
         )
 
+    @conditional_grad(torch.enable_grad())
     def forward(self, data, emb: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         energy_output = self.forward_fn(
             node_features=emb["node_features"],
@@ -303,6 +309,7 @@ class EScAIPGradientEnergyForceHead(EScAIPEnergyHead):
     def __init__(self, backbone: EScAIPBackbone):
         super().__init__(backbone)
 
+    @conditional_grad(torch.enable_grad())
     def forward(self, data, emb: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         energy_output = self.energy_layer(emb["node_features"])
 
@@ -396,6 +403,7 @@ class EScAIPRank2Head(EScAIPHeadBase):
         )
         return irrep2_output, scalar_output.view(-1)
 
+    @conditional_grad(torch.enable_grad())
     def forward(self, data, emb: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         irrep2_output, scalar_output = self.forward_fn(
             node_features=emb["node_features"],

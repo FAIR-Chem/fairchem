@@ -62,7 +62,9 @@ class EfficientGraphAttentionBlock(nn.Module):
         self.norm_attn = get_normalization_layer(normalization, is_graph=False)(
             global_cfg.hidden_size
         )
-        self.norm_ffn = get_normalization_layer(normalization)(global_cfg.hidden_size)
+        self.norm_ffn = get_normalization_layer(normalization)(
+            global_cfg.hidden_size, skip_edge=not global_cfg.direct_forces
+        )
 
         # Stochastic depth
         self.stochastic_depth_attn = (
@@ -209,13 +211,17 @@ class FeedForwardNetwork(nn.Module):
             bias=True,
             dropout=reg_cfg.mlp_dropout,
         )
-        self.mlp_edge = get_feedforward(
-            hidden_dim=global_cfg.hidden_size,
-            activation=global_cfg.activation,
-            hidden_layer_multiplier=gnn_cfg.ffn_hidden_layer_multiplier,
-            bias=True,
-            dropout=reg_cfg.mlp_dropout,
-        )
+
+        if global_cfg.direct_forces:
+            self.mlp_edge = get_feedforward(
+                hidden_dim=global_cfg.hidden_size,
+                activation=global_cfg.activation,
+                hidden_layer_multiplier=gnn_cfg.ffn_hidden_layer_multiplier,
+                bias=True,
+                dropout=reg_cfg.mlp_dropout,
+            )
+        else:
+            self.mlp_edge = nn.Identity()
 
     def forward(self, node_features: torch.Tensor, edge_features: torch.Tensor):
         return self.mlp_node(node_features), self.mlp_edge(edge_features)

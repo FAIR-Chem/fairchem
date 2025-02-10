@@ -37,7 +37,7 @@ class InputBlock(nn.Module):
         self.input_layer = InputLayer(global_cfg, molecular_graph_cfg, gnn_cfg, reg_cfg)
 
         self.norm = get_normalization_layer(reg_cfg.normalization)(
-            global_cfg.hidden_size
+            global_cfg.hidden_size, skip_edge=not global_cfg.direct_forces
         )
 
     def forward(self, inputs: GraphAttentionData):

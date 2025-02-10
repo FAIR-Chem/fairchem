@@ -30,7 +30,7 @@ class ReadoutBlock(nn.Module):
         super().__init__()
 
         self.regress_forces = global_cfg.regress_forces
-        self.direct_force = global_cfg.direct_force
+        self.direct_forces = global_cfg.direct_forces
 
         # energy read out
         self.energy_ffn = get_feedforward(
@@ -45,7 +45,7 @@ class ReadoutBlock(nn.Module):
         )(global_cfg.hidden_size)
 
         # forces read out
-        if self.regress_forces and self.direct_force:
+        if self.regress_forces and self.direct_forces:
             self.force_ffn = get_feedforward(
                 hidden_dim=global_cfg.hidden_size,
                 activation=global_cfg.activation,

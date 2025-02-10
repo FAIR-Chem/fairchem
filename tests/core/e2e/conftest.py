@@ -35,6 +35,9 @@ def configs():
             "tests/core/models/test_configs/test_equiformerv2_hydra.yml"
         ),
         "escaip_hydra": Path("tests/core/models/test_configs/test_escaip_hydra.yml"),
+        "escaip_hydra_grad": Path(
+            "tests/core/models/test_configs/test_escaip_hydra_grad.yml"
+        ),
     }
 
 
