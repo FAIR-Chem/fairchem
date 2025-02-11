@@ -79,6 +79,16 @@ class SchedulerConfig:
 
 
 @dataclass
+class Metadata:
+    # read-only metadata about the job, not user inputs
+    commit: str
+    log_dir: str
+    checkpoint_dir: str
+    config_path: str
+    preemption_checkpoint_dir: str
+
+
+@dataclass
 class JobConfig:
     run_name: str = field(
         default_factory=lambda: get_timestamp_uid() + uuid.uuid4().hex.upper()[0:4]
@@ -92,26 +102,24 @@ class JobConfig:
     seed: int = 0
     deterministic: bool = False
     runner_state_path: Optional[str] = None  # noqa: UP007
-    # read-only metadata about the job, not for user use
-    metadata: Optional[dict] = None  # noqa: UP007
+    # read-only metadata about the job, not user inputs
+    metadata: Optional[Metadata] = None  # noqa: UP007
 
     def __post_init__(self) -> None:
-        self.metadata = {
-            "commit": get_commit_hash(),
-            "log_dir": os.path.join(self.run_dir, self.timestamp_id, LOG_DIR_NAME),
-            "checkpoint_dir": os.path.join(
+        self.metadata = Metadata(
+            commit=get_commit_hash(),
+            log_dir=os.path.join(self.run_dir, self.timestamp_id, LOG_DIR_NAME),
+            checkpoint_dir=os.path.join(
                 self.run_dir, self.timestamp_id, CHECKPOINT_DIR_NAME
             ),
-            "config_path": os.path.join(
-                self.run_dir, self.timestamp_id, CONFIG_FILE_NAME
-            ),
-            "preemption_checkpoint_dir": os.path.join(
+            config_path=os.path.join(self.run_dir, self.timestamp_id, CONFIG_FILE_NAME),
+            preemption_checkpoint_dir=os.path.join(
                 self.run_dir,
                 self.timestamp_id,
                 CHECKPOINT_DIR_NAME,
                 PREEMPTION_STATE_DIR_NAME,
             ),
-        }
+        )
 
 
 def _set_seeds(seed: int) -> None:
