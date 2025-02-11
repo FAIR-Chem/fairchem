@@ -280,7 +280,7 @@ def main(
         )
         job = executor.submit(runner_wrapper, cfg)
         logging.info(
-            f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.log_dir}"
+            f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
         )
     else:
         from torch.distributed.launcher.api import LaunchConfig, elastic_launch
