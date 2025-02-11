@@ -268,7 +268,7 @@ def main(
                         num_jobs=scheduler_cfg.num_jobs,
                     )
                     jobs.append(job)
-            logging.info(f"Submitted {len(jobs)} jobs: {jobs[0].job_id.split("_")[0]}")
+            logging.info(f"Submitted {len(jobs)} jobs: {jobs[0].job_id.split('_')[0]}")
     else:
         from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
