@@ -87,7 +87,7 @@ class JobConfig:
     logger: Optional[dict] = None  # noqa: UP007 python 3.9 requires Optional still
     seed: int = 0
     deterministic: bool = False
-    runner_state: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
+    runner_state_path: Optional[str] = None  # noqa: UP007
 
     @property
     def log_dir(self) -> str:
@@ -131,6 +131,7 @@ class Submitit(Checkpointable):
     def __call__(self, dict_config: DictConfig) -> None:
         self.config = dict_config
         self.job_config: JobConfig = OmegaConf.to_object(dict_config.job)
+        # TODO also load job config here
         setup_env_vars()
         distutils.setup(map_job_config_to_dist_config(self.job_config))
         self._init_logger()
@@ -141,8 +142,8 @@ class Submitit(Checkpointable):
         runner: Runner = hydra.utils.instantiate(dict_config.runner)
         runner.config = self.config
         # must call resume state AFTER the runner has been initialized
-        if self.job_config.runner_state:
-            runner.load_state(self.job_config.runner_state)
+        if self.job_config.runner_state_path:
+            runner.load_state(self.job_config.runner_state_path)
         runner.run()
         distutils.cleanup()
 
@@ -172,7 +173,9 @@ class Submitit(Checkpointable):
         self.runner.save_state(self.job_config.preemption_checkpoint_dir)
         logging.info("Submitit checkpointing callback is completed")
         cfg_copy = self.config.copy()
-        cfg_copy.job_config.runner_state = self.job_config.preemption_checkpoint_dir
+        cfg_copy.job_config.runner_state_path = (
+            self.job_config.preemption_checkpoint_dir
+        )
         return DelayedSubmission(new_runner, cfg_copy, self.cli_args)
 
 
