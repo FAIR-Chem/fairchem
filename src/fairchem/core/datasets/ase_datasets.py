@@ -535,6 +535,7 @@ class AseDBDataset(AseAtomsDataset):
         assert el_idx >= 0
 
         atoms_row = self.dbs[db_idx]._get_row(self.db_ids[db_idx][el_idx])
+        return atoms_row
         atoms = atoms_row.toatoms()
 
         # put data back into atoms info

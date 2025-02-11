@@ -10,7 +10,6 @@ https://gitlab.com/ase/ase/-/blob/master/LICENSE
 
 from __future__ import annotations
 
-import os
 import typing
 import zlib
 from pathlib import Path
@@ -108,37 +107,37 @@ class LMDBDatabase(Database):
         data: dict | None,
         idx: int | None = None,
     ) -> None:
-        Database._write(self, atoms, key_value_pairs, data)
+        # Database._write(self, atoms, key_value_pairs, data)
 
         mtime = now()
 
-        if isinstance(atoms, AtomsRow):
-            row = atoms
-        else:
-            row = AtomsRow(atoms)
-            row.ctime = mtime
-            row.user = os.getenv("USER")
+        # if isinstance(atoms, AtomsRow):
+        # row = atoms
+        # else:
+        # row = AtomsRow(atoms)
+        # row.ctime = mtime
+        # row.user = os.getenv("USER")
 
-        dct = {}
-        for key in row.__dict__:
-            if key[0] == "_" or key in row._keys or key == "id":
-                continue
-            dct[key] = row[key]
+        # dct = {}
+        # for key in row.__dict__:
+        # if key[0] == "_" or key in row._keys or key == "id":
+        # continue
+        # dct[key] = row[key]
 
-        dct["mtime"] = mtime
+        # dct["mtime"] = mtime
 
-        if key_value_pairs:
-            dct["key_value_pairs"] = key_value_pairs
+        # if key_value_pairs:
+        # dct["key_value_pairs"] = key_value_pairs
 
-        if data:
-            dct["data"] = data
+        # if data:
+        # dct["data"] = data
 
-        constraints = row.get("constraints")
-        if constraints:
-            dct["constraints"] = [constraint.todict() for constraint in constraints]
+        # constraints = row.get("constraints")
+        # if constraints:
+        # dct["constraints"] = [constraint.todict() for constraint in constraints]
 
         # json doesn't like Cell objects, so make it an array
-        dct["cell"] = np.asarray(dct["cell"])
+        # dct["cell"] = np.asarray(dct["cell"])
 
         if idx is None:
             idx = self._nextid
@@ -150,7 +149,8 @@ class LMDBDatabase(Database):
         # Add the new entry
         self.txn.put(
             f"{idx}".encode("ascii"),
-            zlib.compress(orjson.dumps(dct, option=orjson.OPT_SERIALIZE_NUMPY)),
+            atoms,
+            # zlib.compress(orjson.dumps(dct, option=orjson.OPT_SERIALIZE_NUMPY)),
         )
         # only append if idx is not in ids
         if idx not in self.ids:
@@ -198,6 +198,7 @@ class LMDBDatabase(Database):
             assert len(self.ids) == 1
             idx = self.ids[0]
         data = self.txn.get(f"{idx}".encode("ascii"))
+        return data
 
         if data is not None:
             dct = orjson.loads(zlib.decompress(data))
