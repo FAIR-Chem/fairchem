@@ -40,6 +40,11 @@ logging.basicConfig(level=logging.INFO)
 
 ALLOWED_TOP_LEVEL_KEYS = {"job", "runner"}
 
+LOG_DIR_NAME = "logs"
+CHECKPOINT_DIR_NAME = "checkpoints"
+CONFIG_FILE_NAME = "canonical_config.yaml"
+PREEMPTION_STATE_DIR_NAME = "preemption_state"
+
 
 class SchedulerType(str, Enum):
     LOCAL = "local"
@@ -79,24 +84,31 @@ class JobConfig:
     device_type: DeviceType = DeviceType.CUDA
     debug: bool = False
     scheduler: SchedulerConfig = field(default_factory=lambda: SchedulerConfig)
-    log_dir_name: str = "logs"
-    checkpoint_dir_name: str = "checkpoint"
-    config_file_name: str = "canonical_config.yaml"
     logger: Optional[dict] = None  # noqa: UP007 python 3.9 requires Optional still
     seed: int = 0
     deterministic: bool = False
+    runner_state: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
 
     @property
     def log_dir(self) -> str:
-        return os.path.join(self.run_dir, self.timestamp_id, self.log_dir_name)
+        return os.path.join(self.run_dir, self.timestamp_id, LOG_DIR_NAME)
 
     @property
     def checkpoint_dir(self) -> str:
-        return os.path.join(self.run_dir, self.timestamp_id, self.checkpoint_dir_name)
+        return os.path.join(self.run_dir, self.timestamp_id, CHECKPOINT_DIR_NAME)
+
+    @property
+    def preemption_checkpoint_dir(self) -> str:
+        return os.path.join(
+            self.run_dir,
+            self.timestamp_id,
+            self.checkpoint_dir_name,
+            PREEMPTION_STATE_DIR_NAME,
+        )
 
     @property
     def config_path(self) -> str:
-        return os.path.join(self.run_dir, self.timestamp_id, self.config_file_name)
+        return os.path.join(self.run_dir, self.timestamp_id, CONFIG_FILE_NAME)
 
 
 def _set_seeds(seed: int) -> None:
@@ -127,8 +139,10 @@ class Submitit(Checkpointable):
             _set_deterministic_mode()
 
         runner: Runner = hydra.utils.instantiate(dict_config.runner)
-        runner.job_config = self.job_config
-        runner.load_state()
+        runner.config = self.config
+        # must call resume state AFTER the runner has been initialized
+        if self.job_config.runner_state:
+            runner.load_state(self.job_config.runner_state)
         runner.run()
         distutils.cleanup()
 
@@ -155,9 +169,11 @@ class Submitit(Checkpointable):
         # TODO: this is yet to be tested properly
         logging.info("Submitit checkpointing callback is triggered")
         new_runner = Submitit()
-        self.runner.save_state()
+        self.runner.save_state(self.job_config.preemption_checkpoint_dir)
         logging.info("Submitit checkpointing callback is completed")
-        return DelayedSubmission(new_runner, self.config, self.cli_args)
+        cfg_copy = self.config.copy()
+        cfg_copy.job_config.runner_state = self.job_config.preemption_checkpoint_dir
+        return DelayedSubmission(new_runner, cfg_copy, self.cli_args)
 
 
 def map_job_config_to_dist_config(job_cfg: JobConfig) -> dict:

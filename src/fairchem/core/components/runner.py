@@ -6,8 +6,6 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
-    from fairchem.core._cli_hydra import JobConfig
-
 
 class Runner(metaclass=ABCMeta):
     """
@@ -17,23 +15,23 @@ class Runner(metaclass=ABCMeta):
     """
 
     @property
-    def job_config(self) -> JobConfig:
-        return self._job_config
+    def config(self) -> DictConfig:
+        return self._config
 
-    @job_config.setter
-    def job_config(self, cfg: DictConfig):
-        self._job_config = cfg
+    @config.setter
+    def config(self, cfg: DictConfig):
+        self._config = cfg
 
     @abstractmethod
     def run(self) -> Any:
         raise NotImplementedError
 
     @abstractmethod
-    def save_state(self) -> None:
+    def save_state(self, checkpoint_location: str) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def load_state(self) -> None:
+    def load_state(self, checkpoint_location: str) -> None:
         raise NotImplementedError
 
 
