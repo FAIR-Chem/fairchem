@@ -184,9 +184,6 @@ class Submitit(Checkpointable):
         logging.info("Submitit checkpointing callback is completed")
         cfg_copy = self.config.copy()
         cfg_copy.job.runner_state_path = save_path
-        OmegaConf.save(
-            self.config, os.path.join(save_path, PREEMPTION_STATE_DIR_NAME + ".yaml")
-        )
         return DelayedSubmission(Submitit(), cfg_copy)
 
 
