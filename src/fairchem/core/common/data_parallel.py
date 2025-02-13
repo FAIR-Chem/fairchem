@@ -126,7 +126,9 @@ class BalancedBatchSampler(BatchSampler):
         batch_size: int,
         num_replicas: int,
         rank: int,
-        device: torch.device,
+        device: (
+            torch.device | None
+        ) = None,  # deprecated, unused variable for backwards compat
         seed: int,
         mode: bool | Literal["atoms"] = "atoms",
         shuffle: bool = True,
@@ -191,7 +193,9 @@ class BalancedBatchSampler(BatchSampler):
         )
 
         super().__init__(sampler, batch_size=batch_size, drop_last=drop_last)
-        self.device = device
+        self.device = (
+            device if device is not None else distutils.get_device_for_local_rank()
+        )
 
         logging.info(
             f"Created BalancedBatchSampler with {sampler=}, {batch_size=}, {drop_last=}"
