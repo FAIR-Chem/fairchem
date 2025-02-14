@@ -36,6 +36,7 @@ from fairchem.core.common.utils import (
     get_commit_hash,
     get_timestamp_uid,
     setup_env_vars,
+    setup_logging,
 )
 
 # this effects the cli only since the actual job will be run in subprocesses or remoe
@@ -139,22 +140,26 @@ def _set_deterministic_mode() -> None:
 
 
 class Submitit(Checkpointable):
+    def __init__(self) -> None:
+        self.config = None
+
     def __call__(self, dict_config: DictConfig) -> None:
         self.config = dict_config
         # TODO also load job config here
         setup_env_vars()
+        setup_logging()
         distutils.setup(map_job_config_to_dist_config(self.config.job))
         self._init_logger()
         _set_seeds(self.config.job.seed)
         if self.config.job.deterministic:
             _set_deterministic_mode()
 
-        runner: Runner = hydra.utils.instantiate(dict_config.runner)
-        runner.config = self.config
+        self.runner: Runner = hydra.utils.instantiate(dict_config.runner)
+        self.runner.config = self.config
         # must call resume state AFTER the runner has been initialized
         if self.config.job.runner_state_path:
-            runner.load_state(self.config.job.runner_state_path)
-        runner.run()
+            self.runner.load_state(self.config.job.runner_state_path)
+        self.runner.run()
         distutils.cleanup()
 
     def _init_logger(self) -> None:
@@ -240,7 +245,11 @@ def get_hydra_config_from_yaml(
     config_directory = os.path.dirname(os.path.abspath(config_yml))
     config_name = os.path.basename(config_yml)
     hydra.initialize_config_dir(config_directory, version_base="1.1")
-    return hydra.compose(config_name=config_name, overrides=overrides_args)
+    cfg = hydra.compose(config_name=config_name, overrides=overrides_args)
+    # merge default structured config with initialized job object
+    cfg = OmegaConf.merge({"job": OmegaConf.structured(JobConfig)}, cfg)
+    # canonicalize config (remove top level keys that just used replacing variables)
+    return get_canonical_config(cfg)
 
 
 def runner_wrapper(config: DictConfig):
@@ -256,10 +265,6 @@ def main(
         args, override_args = parser.parse_known_args()
 
     cfg = get_hydra_config_from_yaml(args.config, override_args)
-    # merge default structured config with initialized job object
-    cfg = OmegaConf.merge({"job": OmegaConf.structured(JobConfig)}, cfg)
-    # canonicalize config (remove top level keys that just used replacing variables)
-    cfg = get_canonical_config(cfg)
     log_dir = cfg.job.metadata.log_dir
     os.makedirs(cfg.job.run_dir, exist_ok=True)
     os.makedirs(log_dir, exist_ok=True)
@@ -283,7 +288,9 @@ def main(
             slurm_qos=scheduler_cfg.slurm.qos,
             slurm_account=scheduler_cfg.slurm.account,
         )
-        job = executor.submit(runner_wrapper, cfg)
+        jobs = executor.map_array(runner_wrapper, [cfg])
+        job = jobs[0]
+        # job = executor.submit(runner_wrapper, cfg)
         logging.info(
             f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
         )
