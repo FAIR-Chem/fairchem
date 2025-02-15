@@ -32,6 +32,7 @@ from submitit import AutoExecutor
 from submitit.helpers import Checkpointable, DelayedSubmission
 
 from fairchem.core.common import distutils
+from fairchem.core.common.logger import WandBSingletonLogger
 from fairchem.core.common.utils import (
     get_commit_hash,
     get_timestamp_uid,
@@ -169,7 +170,7 @@ class Submitit(Checkpointable):
             and not self.config.job.debug
         ):
             # get a partial function from the config and instantiate wandb with it
-            # currently this assume we use a wandb logger
+            # currently code assumes that we only use the WandBSingletonLogger
             logger_initializer = hydra.utils.instantiate(self.config.job.logger)
             simple_config = OmegaConf.to_container(
                 self.config, resolve=True, throw_on_missing=True
@@ -182,13 +183,14 @@ class Submitit(Checkpointable):
             )
 
     def checkpoint(self, *args, **kwargs) -> DelayedSubmission:
-        # TODO: this is yet to be tested properly
-        logging.info("Submitit checkpointing callback is triggered")
+        logging.error("Submitit checkpointing callback is triggered")
         save_path = self.config.job.metadata.preemption_checkpoint_dir
         self.runner.save_state(save_path)
-        logging.info("Submitit checkpointing callback is completed")
         cfg_copy = self.config.copy()
         cfg_copy.job.runner_state_path = save_path
+        if WandBSingletonLogger.initialized():
+            WandBSingletonLogger.get_instance().mark_preempting()
+        logging.info("Submitit checkpointing callback is completed")
         return DelayedSubmission(Submitit(), cfg_copy)
 
 
@@ -288,9 +290,7 @@ def main(
             slurm_qos=scheduler_cfg.slurm.qos,
             slurm_account=scheduler_cfg.slurm.account,
         )
-        jobs = executor.map_array(runner_wrapper, [cfg])
-        job = jobs[0]
-        # job = executor.submit(runner_wrapper, cfg)
+        job = executor.submit(Submitit(), cfg)
         logging.info(
             f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
         )
