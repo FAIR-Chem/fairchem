@@ -143,6 +143,7 @@ def _set_deterministic_mode() -> None:
 class Submitit(Checkpointable):
     def __init__(self) -> None:
         self.config = None
+        self.runner = None
 
     def __call__(self, dict_config: DictConfig) -> None:
         self.config = dict_config
