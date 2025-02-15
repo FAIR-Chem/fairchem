@@ -1435,8 +1435,8 @@ def update_config(base_config):
 
 
 def load_model_and_weights_from_checkpoint(
-    checkpoint_path: str, overrides : dict|None = None) -> nn.Module:
-
+    checkpoint_path: str, overrides: dict | None = None
+) -> nn.Module:
     if not os.path.isfile(checkpoint_path):
         raise FileNotFoundError(
             errno.ENOENT, "Checkpoint file not found", checkpoint_path
