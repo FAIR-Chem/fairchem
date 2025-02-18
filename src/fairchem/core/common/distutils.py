@@ -241,8 +241,8 @@ def get_device_for_local_rank():
     if cur_dev_env is not None:
         return cur_dev_env
     else:
-        device = "cuda" if torch.cuda.available() else "cpu"
-        logging.warn(
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        logging.warning(
             f"{CURRENT_DEVICE_STR} env variable not found, defaulting to {device}"
         )
         return device
