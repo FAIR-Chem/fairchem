@@ -91,7 +91,7 @@ class AtomsToGraphs:
         r_pbc: bool = False,
         r_stress: bool = False,
         r_data_keys: Sequence[str] | None = None,
-        molecular_cell_size: float = 120.0,
+        molecule_cell_size: float = 0.0,
     ) -> None:
         self.max_neigh = max_neigh
         self.radius = radius
@@ -103,7 +103,7 @@ class AtomsToGraphs:
         self.r_edges = r_edges
         self.r_pbc = r_pbc
         self.r_data_keys = r_data_keys
-        self.molecular_cell_size = molecular_cell_size
+        self.molecule_cell_size = molecule_cell_size
 
     def _get_neighbors_pymatgen(self, atoms: ase.Atoms):
         """Preforms nearest neighbor search and returns edge index, distances,
@@ -182,9 +182,16 @@ class AtomsToGraphs:
         """
 
         # set the atomic numbers, positions, and cell
-        positions = np.array(atoms.get_positions(), copy=True)
-        pbc = np.array(atoms.pbc, copy=True)
-        cell = np.array(atoms.get_cell(complete=True), copy=True)
+        atoms_copy = atoms.copy()
+        if atoms.cell.volume == 0.0 and self.molecule_cell_size > 0.0:
+            # create a molecule box with the molecule centered on it if specified
+            atoms_copy.center(vacuum=(self.molecule_cell_size))
+            cell = np.array(atoms_copy.get_cell(), copy=True)
+            pbc = np.array([True, True, True])
+        else:
+            cell = np.array(atoms_copy.get_cell(complete=True), copy=True)
+            pbc = np.array(atoms_copy.pbc, copy=True)
+        positions = np.array(atoms_copy.get_positions(), copy=True)
         positions = wrap_positions(positions, cell, pbc=pbc, eps=0)
 
         atomic_numbers = torch.tensor(atoms.get_atomic_numbers(), dtype=torch.uint8)
@@ -212,14 +219,8 @@ class AtomsToGraphs:
         # optionally include other properties
         if self.r_edges:
             # run internal functions to get padded indices and distances
-            atoms_copy = atoms.copy()
+            atoms_copy = atoms_copy.copy()
             atoms_copy.set_positions(positions)
-            # if the atom object doesn't have a cell (ie: its volume is 0),
-            # then create a large padded molecular cell
-            # TODO: make this more generic
-            if atoms.cell.volume == 0.0:
-                atoms_copy.center(vacuum=(self.molecular_cell_size))
-                atoms_copy.pbc = [True, True, True]
             split_idx_dist = self._get_neighbors_pymatgen(atoms_copy)
             edge_index, edge_distances, cell_offsets = self._reshape_features(
                 *split_idx_dist
