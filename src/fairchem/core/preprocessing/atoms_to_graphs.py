@@ -91,6 +91,7 @@ class AtomsToGraphs:
         r_pbc: bool = False,
         r_stress: bool = False,
         r_data_keys: Sequence[str] | None = None,
+        molecular_cell_size: float = 120.0,
     ) -> None:
         self.max_neigh = max_neigh
         self.radius = radius
@@ -102,6 +103,7 @@ class AtomsToGraphs:
         self.r_edges = r_edges
         self.r_pbc = r_pbc
         self.r_data_keys = r_data_keys
+        self.molecular_cell_size = molecular_cell_size
 
     def _get_neighbors_pymatgen(self, atoms: ase.Atoms):
         """Preforms nearest neighbor search and returns edge index, distances,
@@ -212,6 +214,12 @@ class AtomsToGraphs:
             # run internal functions to get padded indices and distances
             atoms_copy = atoms.copy()
             atoms_copy.set_positions(positions)
+            # if the atom object doesn't have a cell (ie: its volume is 0),
+            # then create a large padded molecular cell
+            # TODO: make this more generic
+            if atoms.cell.volume == 0.0:
+                atoms_copy.center(vacuum=(self.molecular_cell_size))
+                atoms_copy.pbc = [True, True, True]
             split_idx_dist = self._get_neighbors_pymatgen(atoms_copy)
             edge_index, edge_distances, cell_offsets = self._reshape_features(
                 *split_idx_dist
