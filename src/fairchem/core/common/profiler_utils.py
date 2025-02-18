@@ -70,7 +70,7 @@ class ProfilerCallback(Callback):
         job_config: DictConfig,
         wait_steps: int = 5,
         warmup_steps: int = 5,
-        active_steps: int = 5,
+        active_steps: int = 2,
         all_ranks: bool = False,
         activities: tuple = (ProfilerActivity.CPU, ProfilerActivity.CUDA),
     ) -> None:
