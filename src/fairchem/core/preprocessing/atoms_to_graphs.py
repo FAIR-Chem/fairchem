@@ -77,6 +77,8 @@ class AtomsToGraphs:
         Default is False, so the periodic boundary conditions will not be returned.
         r_data_keys (sequence of str, optional): Return values corresponding to given keys in atoms.info data with other
         properties. Default is None, so no data will be returned as properties.
+        molecule_cell_size: create a large molecular box with the atoms centered in the middle, units are Angstroms. This should be very large to make sure no atoms fall
+        outside the box, otherwise it will lead to errors. There is no computational penalty for making this box super large.
     """
 
     def __init__(
@@ -91,6 +93,7 @@ class AtomsToGraphs:
         r_pbc: bool = False,
         r_stress: bool = False,
         r_data_keys: Sequence[str] | None = None,
+        molecule_cell_size: float | None = None,
     ) -> None:
         self.max_neigh = max_neigh
         self.radius = radius
@@ -102,6 +105,7 @@ class AtomsToGraphs:
         self.r_edges = r_edges
         self.r_pbc = r_pbc
         self.r_data_keys = r_data_keys
+        self.molecule_cell_size = molecule_cell_size
 
     def _get_neighbors_pymatgen(self, atoms: ase.Atoms):
         """Preforms nearest neighbor search and returns edge index, distances,
@@ -180,10 +184,23 @@ class AtomsToGraphs:
         """
 
         # set the atomic numbers, positions, and cell
-        positions = np.array(atoms.get_positions(), copy=True)
-        pbc = np.array(atoms.pbc, copy=True)
-        cell = np.array(atoms.get_cell(complete=True), copy=True)
-        positions = wrap_positions(positions, cell, pbc=pbc, eps=0)
+        atoms_copy = atoms.copy()
+        # for molecules
+        if self.molecule_cell_size is not None:
+            assert (
+                atoms_copy.cell.volume == 0.0
+            ), "atoms must not have a unit cell to begin with to create a molecule cell"
+            # create a molecule box with the molecule centered on it if specified
+            atoms_copy.center(vacuum=(self.molecule_cell_size))
+            cell = np.array(atoms_copy.get_cell(), copy=True)
+            pbc = np.array([True, True, True])
+            positions = np.array(atoms_copy.get_positions(), copy=True)
+        else:  # for materials
+            cell = np.array(atoms_copy.get_cell(complete=True), copy=True)
+            pbc = np.array(atoms_copy.pbc, copy=True)
+            positions = np.array(atoms_copy.get_positions(), copy=True)
+            positions = wrap_positions(positions, cell, pbc=pbc, eps=0)
+            atoms_copy.set_positions(positions)
 
         atomic_numbers = torch.tensor(atoms.get_atomic_numbers(), dtype=torch.uint8)
         positions = torch.from_numpy(positions).float()
@@ -210,8 +227,6 @@ class AtomsToGraphs:
         # optionally include other properties
         if self.r_edges:
             # run internal functions to get padded indices and distances
-            atoms_copy = atoms.copy()
-            atoms_copy.set_positions(positions)
             split_idx_dist = self._get_neighbors_pymatgen(atoms_copy)
             edge_index, edge_distances, cell_offsets = self._reshape_features(
                 *split_idx_dist
