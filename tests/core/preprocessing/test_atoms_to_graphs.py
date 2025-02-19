@@ -230,3 +230,4 @@ class TestAtomsToGraphs:
         assert torch.allclose(
             converted_mol.pos[1], torch.tensor([cell_size, cell_size, cell_size + 1])
         )
+        assert torch.allclose(converted_mol.edge_index, torch.tensor([[1, 0], [0, 1]]))
