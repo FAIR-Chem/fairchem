@@ -186,13 +186,14 @@ class AtomsToGraphs:
 
         # set the atomic numbers, positions, and cell
         atoms_copy = atoms.copy()
+        # for molecules
         if atoms.cell.volume == 0.0 and self.molecule_cell_size is not None:
             # create a molecule box with the molecule centered on it if specified
             atoms_copy.center(vacuum=(self.molecule_cell_size))
             cell = np.array(atoms_copy.get_cell(), copy=True)
             pbc = np.array([True, True, True])
             positions = np.array(atoms_copy.get_positions(), copy=True)
-        else:
+        else:  # for materials
             cell = np.array(atoms_copy.get_cell(complete=True), copy=True)
             pbc = np.array(atoms_copy.pbc, copy=True)
             positions = np.array(atoms_copy.get_positions(), copy=True)
