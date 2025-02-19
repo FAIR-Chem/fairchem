@@ -238,8 +238,7 @@ class ReduceFromModelParallelRegion(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor) -> torch.Tensor:
-        world_size = 1
-        return grad_output.mul_(world_size)
+        return grad_output
 
 
 class ScatterToModelParallelRegion(torch.autograd.Function):
@@ -269,8 +268,7 @@ class GatherFromModelParallelRegion(torch.autograd.Function):
     def backward(ctx, grad_output: torch.Tensor):
         (dim,) = ctx.saved_tensors
         result = _split(grad_output, dim.item())
-        world_size = 1
-        return result.mul_(world_size), None
+        return result, None
 
 
 def copy_to_model_parallel_region(input: torch.Tensor) -> torch.Tensor:
