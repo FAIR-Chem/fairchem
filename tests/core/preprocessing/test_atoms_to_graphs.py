@@ -11,7 +11,8 @@ import os
 
 import numpy as np
 import pytest
-from ase import db
+import torch
+from ase import Atoms, db
 from ase.io import read
 from ase.neighborlist import NeighborList, NewPrimitiveNeighborList
 
@@ -195,3 +196,47 @@ class TestAtomsToGraphs:
         np.testing.assert_allclose(
             self.atoms.info["stiffness_tensor"], stiffness_tensor
         )
+
+    def test_convert_molecule(self) -> None:
+        # test converting a molecule with no unit cell
+        molecule = Atoms("2N", [(0.0, 0.0, 0.0), (0.0, 0.0, 1.0)])
+        a2g = AtomsToGraphs(
+            max_neigh=200,
+            radius=6,
+            r_edges=True,
+            r_distances=True,
+        )
+        # this will raise an Singlular Matrix Error because the cell doesn't exist
+        with pytest.raises(np.linalg.LinAlgError):
+            a2g.convert(molecule)
+        # now add a molecular box
+        cell_size = 120.0
+        a2g = AtomsToGraphs(
+            max_neigh=200,
+            radius=6,
+            r_edges=True,
+            r_distances=True,
+            molecule_cell_size=cell_size,
+        )
+        converted_mol = a2g.convert(molecule)
+        assert torch.allclose(
+            converted_mol.cell[0],
+            torch.diag(torch.tensor([cell_size * 2, cell_size * 2, cell_size * 2 + 1])),
+        )
+        assert converted_mol.natoms == 2
+        assert torch.allclose(
+            converted_mol.pos[0], torch.tensor([cell_size, cell_size, cell_size])
+        )
+        assert torch.allclose(
+            converted_mol.pos[1], torch.tensor([cell_size, cell_size, cell_size + 1])
+        )
+        assert torch.allclose(converted_mol.edge_index, torch.tensor([[1, 0], [0, 1]]))
+
+    def test_convert_molecule_raises_assertion_with_cell(self) -> None:
+        molecule = Atoms("2N", [(0.0, 0.0, 0.0), (0.0, 0.0, 1.0)], cell=[1, 1, 1])
+        a2g = AtomsToGraphs(
+            molecule_cell_size=120.0,
+            r_distances=True,
+        )
+        with pytest.raises(AssertionError):
+            a2g.convert(molecule)
