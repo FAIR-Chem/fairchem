@@ -78,7 +78,8 @@ class AtomsToGraphs:
         r_data_keys (sequence of str, optional): Return values corresponding to given keys in atoms.info data with other
         properties. Default is None, so no data will be returned as properties.
         molecule_cell_size: if the atom object doesn't have a cell (its volume is 0.0), then create a large molecular box
-        and the center the atoms in the middle, units are Angstroms
+        and the center the atoms in the middle, units are Angstroms. This should be very large to make sure no atoms fall
+        outside the box, otherwise it will lead to errors. There is no computational penalty for making this box super large
     """
 
     def __init__(
@@ -190,11 +191,12 @@ class AtomsToGraphs:
             atoms_copy.center(vacuum=(self.molecule_cell_size))
             cell = np.array(atoms_copy.get_cell(), copy=True)
             pbc = np.array([True, True, True])
+            positions = np.array(atoms_copy.get_positions(), copy=True)
         else:
             cell = np.array(atoms_copy.get_cell(complete=True), copy=True)
             pbc = np.array(atoms_copy.pbc, copy=True)
-        positions = np.array(atoms_copy.get_positions(), copy=True)
-        positions = wrap_positions(positions, cell, pbc=pbc, eps=0)
+            positions = np.array(atoms_copy.get_positions(), copy=True)
+            positions = wrap_positions(positions, cell, pbc=pbc, eps=0)
 
         atomic_numbers = torch.tensor(atoms.get_atomic_numbers(), dtype=torch.uint8)
         positions = torch.from_numpy(positions).float()
