@@ -197,6 +197,7 @@ class AtomsToGraphs:
             pbc = np.array(atoms_copy.pbc, copy=True)
             positions = np.array(atoms_copy.get_positions(), copy=True)
             positions = wrap_positions(positions, cell, pbc=pbc, eps=0)
+            atoms_copy.set_positions(positions)
 
         atomic_numbers = torch.tensor(atoms.get_atomic_numbers(), dtype=torch.uint8)
         positions = torch.from_numpy(positions).float()
@@ -223,8 +224,6 @@ class AtomsToGraphs:
         # optionally include other properties
         if self.r_edges:
             # run internal functions to get padded indices and distances
-            atoms_copy = atoms_copy.copy()
-            atoms_copy.set_positions(positions)
             split_idx_dist = self._get_neighbors_pymatgen(atoms_copy)
             edge_index, edge_distances, cell_offsets = self._reshape_features(
                 *split_idx_dist
