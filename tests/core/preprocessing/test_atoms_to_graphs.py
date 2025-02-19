@@ -231,3 +231,12 @@ class TestAtomsToGraphs:
             converted_mol.pos[1], torch.tensor([cell_size, cell_size, cell_size + 1])
         )
         assert torch.allclose(converted_mol.edge_index, torch.tensor([[1, 0], [0, 1]]))
+
+    def test_convert_molecule_raises_assertion_with_cell(self) -> None:
+        molecule = Atoms("2N", [(0.0, 0.0, 0.0), (0.0, 0.0, 1.0)], cell=[1, 1, 1])
+        a2g = AtomsToGraphs(
+            molecule_cell_size=120.0,
+            r_distances=True,
+        )
+        with pytest.raises(AssertionError):
+            a2g.convert(molecule)
