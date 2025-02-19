@@ -8,6 +8,7 @@ import pytest
 import torch
 from test_e2e_commons import _run_main, oc20_lmdb_train_and_val_from_paths
 
+from fairchem.core.common import distutils
 from fairchem.core.scripts.convert_hydra_to_release import convert_fine_tune_checkpoint
 
 
@@ -313,6 +314,7 @@ def test_finetune_hydra_override(tutorial_val_src):
                     model_config=model_config,
                     output_checkpoint=ck_ft_path,
                 )
+            distutils.cleanup()
 
 
 def test_finetune_hydra_data_only(tutorial_val_src):
