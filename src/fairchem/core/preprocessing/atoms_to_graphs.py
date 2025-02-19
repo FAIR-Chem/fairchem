@@ -77,6 +77,8 @@ class AtomsToGraphs:
         Default is False, so the periodic boundary conditions will not be returned.
         r_data_keys (sequence of str, optional): Return values corresponding to given keys in atoms.info data with other
         properties. Default is None, so no data will be returned as properties.
+        molecule_cell_size: if the atom object doesn't have a cell (its volume is 0.0), then create a large molecular box
+        and the center the atoms in the middle, units are Angstroms
     """
 
     def __init__(
@@ -91,7 +93,7 @@ class AtomsToGraphs:
         r_pbc: bool = False,
         r_stress: bool = False,
         r_data_keys: Sequence[str] | None = None,
-        molecule_cell_size: float = 0.0,
+        molecule_cell_size: float | None = None,
     ) -> None:
         self.max_neigh = max_neigh
         self.radius = radius
@@ -183,7 +185,7 @@ class AtomsToGraphs:
 
         # set the atomic numbers, positions, and cell
         atoms_copy = atoms.copy()
-        if atoms.cell.volume == 0.0 and self.molecule_cell_size > 0.0:
+        if atoms.cell.volume == 0.0 and self.molecule_cell_size is not None:
             # create a molecule box with the molecule centered on it if specified
             atoms_copy.center(vacuum=(self.molecule_cell_size))
             cell = np.array(atoms_copy.get_cell(), copy=True)
