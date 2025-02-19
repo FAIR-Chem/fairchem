@@ -8,6 +8,7 @@ import pytest
 import torch
 from test_e2e_commons import _run_main, oc20_lmdb_train_and_val_from_paths
 
+from fairchem.core.common import distutils
 from fairchem.core.scripts.convert_hydra_to_release import convert_fine_tune_checkpoint
 
 
@@ -281,6 +282,39 @@ def test_finetune_hydra_retain_backbone(tutorial_val_src):
             verify_release_checkpoint(
                 yml_release_ft_path, ck_release_ft_path, ft_state_dict
             )
+
+
+def test_finetune_hydra_override(tutorial_val_src):
+    with tempfile.TemporaryDirectory() as orig_ckpt_dir:
+        starting_ckpt = make_checkpoint(orig_ckpt_dir, tutorial_val_src, 0)
+        # now finetune a the model with the checkpoint from the first job
+        with tempfile.TemporaryDirectory() as ft_temp_dir:
+            ft_yml = Path("tests/core/models/test_configs/test_finetune_hydra.yml")
+            ck_ft_path = os.path.join(ft_temp_dir, "checkpoint_ft.pt")
+            model_config = {
+                "name": "hydra",
+                "finetune_config": {
+                    "starting_checkpoint": starting_ckpt,
+                    "override": {"forward": None},
+                },
+                "heads": {
+                    "energy": {"module": "equiformer_v2_energy_head"},
+                    "forces": {"module": "equiformer_v2_force_head"},
+                },
+            }
+
+            # TODO add a better test for override when we get there
+            # for now just override .forward() with None
+            with pytest.raises(TypeError):
+                run_main_with_ft_hydra(
+                    tempdir=ft_temp_dir,
+                    yaml=ft_yml,
+                    data_src=tutorial_val_src,
+                    run_args={"seed": 1000},
+                    model_config=model_config,
+                    output_checkpoint=ck_ft_path,
+                )
+            distutils.cleanup()
 
 
 def test_finetune_hydra_data_only(tutorial_val_src):
