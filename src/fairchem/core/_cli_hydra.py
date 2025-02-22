@@ -304,7 +304,6 @@ def main(
             slurm_account=scheduler_cfg.slurm.account,
         )
         job = executor.submit(Submitit(), cfg)
-        breakpoint()
         logging.info(
             f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
         )
