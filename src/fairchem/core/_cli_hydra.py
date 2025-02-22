@@ -198,6 +198,9 @@ class Submitit(Checkpointable):
         if len(ckpt_dirs_time) > 0:
             # pick the lastest one
             cfg_copy.job.runner_state_path = ckpt_dirs_time[-1][0]
+            logging.info(
+                f"Job will resume using the state found at: {cfg_copy.job.runner_state_path}"
+            )
         if WandBSingletonLogger.initialized():
             WandBSingletonLogger.get_instance().mark_preempting()
         logging.info("Submitit checkpointing callback is completed")
