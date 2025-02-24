@@ -35,6 +35,7 @@ from fairchem.core.common import distutils
 from fairchem.core.common.logger import WandBSingletonLogger
 from fairchem.core.common.utils import (
     get_commit_hash,
+    get_subdirectories_sorted_by_time,
     get_timestamp_uid,
     setup_env_vars,
     setup_logging,
@@ -185,10 +186,21 @@ class Submitit(Checkpointable):
 
     def checkpoint(self, *args, **kwargs) -> DelayedSubmission:
         logging.error("Submitit checkpointing callback is triggered")
-        save_path = self.config.job.metadata.preemption_checkpoint_dir
-        self.runner.save_state(save_path)
+        # TODO: preemption state saving doesn't work with DCP because submitit only calls checkpoint
+        # on rank0, which will cause the system to deadlock.
+        # save_path = self.config.job.metadata.preemption_checkpoint_dir
+        # self.runner.save_state(save_path)
+        # For now, use the last found checkpoint
         cfg_copy = self.config.copy()
-        cfg_copy.job.runner_state_path = save_path
+        ckpt_dirs_time = get_subdirectories_sorted_by_time(
+            self.config.job.metadata.checkpoint_dir
+        )
+        if len(ckpt_dirs_time) > 0:
+            # pick the lastest one
+            cfg_copy.job.runner_state_path = ckpt_dirs_time[-1][0]
+            logging.info(
+                f"Job will resume using the state found at: {cfg_copy.job.runner_state_path}"
+            )
         if WandBSingletonLogger.initialized():
             WandBSingletonLogger.get_instance().mark_preempting()
         logging.info("Submitit checkpointing callback is completed")
