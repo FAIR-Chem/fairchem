@@ -18,6 +18,7 @@ import itertools
 import json
 import logging
 import os
+import pathlib
 import subprocess
 import sys
 import time
@@ -1498,4 +1499,19 @@ def get_deep(dictionary: dict, keys: str, default: str | None = None):
         lambda d, key: d.get(key, default) if isinstance(d, dict) else default,
         keys.split("."),
         dictionary,
+    )
+
+
+def get_subdirectories_sorted_by_time(directory: str) -> str:
+    """
+    Get all subdirectories in a directory sorted by their last modification time.
+    Args:
+        directory (str): The path to the directory to search.
+    Returns:
+        list: A list of tuples containing the subdirectory path and its last modification time.
+    """
+    directory = pathlib.Path(directory)
+    return sorted(
+        ((str(d), d.stat().st_mtime) for d in directory.iterdir() if d.is_dir()),
+        key=lambda x: x[1],
     )
