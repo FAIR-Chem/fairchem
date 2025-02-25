@@ -108,8 +108,7 @@ class AtomsToGraphs:
         self.molecule_cell_size = molecule_cell_size
 
     def _get_neighbors_pymatgen(self, atoms: ase.Atoms):
-        """Preforms nearest neighbor search and returns edge index, distances,
-        and cell offsets"""
+        """Preforms nearest neighbor search and returns edge index, distances, and cell offsets"""
         if AseAtomsAdaptor is None:
             raise RuntimeError(
                 "Unable to import pymatgen.io.ase.AseAtomsAdaptor. Make sure pymatgen is properly installed."
@@ -264,8 +263,8 @@ class AtomsToGraphs:
                     if isinstance(constraint, FixAtoms):
                         fixed_idx[constraint.index] = 1
             data.fixed = fixed_idx
-        if self.r_pbc:
-            data.pbc = torch.tensor(atoms.pbc, dtype=torch.bool)
+        if self.r_pbc:  # TODO do not add this to data object anymore
+            data.pbc = torch.tensor(pbc, dtype=torch.bool)
         if self.r_data_keys is not None:
             for data_key in self.r_data_keys:
                 data[data_key] = (

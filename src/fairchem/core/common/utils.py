@@ -620,11 +620,14 @@ def radius_graph_pbc(
     radius,
     max_num_neighbors_threshold,
     enforce_max_neighbors_strictly: bool = False,
+    pbc: list[bool, bool, bool] | None = None,
+    pbc_cell_threshold: float = 1.0,  # minimum volume of periodic box
 ):
-    pbc = [True, True, True]
+    pbc = [True, True, True] if pbc is None else pbc
     device = data.pos.device
     batch_size = len(data.natoms)
 
+    # TODO remove/deprecate this and also remove from a2g_args
     if hasattr(data, "pbc"):
         data.pbc = torch.atleast_2d(data.pbc)
         for i in range(3):
@@ -685,6 +688,15 @@ def radius_graph_pbc(
 
     cross_a2a3 = torch.cross(data.cell[:, 1], data.cell[:, 2], dim=-1)
     cell_vol = torch.sum(data.cell[:, 0] * cross_a2a3, dim=-1, keepdim=True)
+
+    # protect against a faulty box + system, ie molecules with zero volume cells
+    # if PBC in any direction the cell_vol must be above pbc_cell_threshold, otherwise the number of repeats
+    # will be too large
+    if any(pbc) and (cell_vol < pbc_cell_threshold).any():
+        raise RuntimeError(
+            "Cell volume in batch is too small to generate periodic graph. Check that your data has"
+            f"cells with finite volume larger than {pbc_cell_threshold}."
+        )
 
     if pbc[0]:
         inv_min_dist_a1 = torch.norm(cross_a2a3 / cell_vol, p=2, dim=-1)
