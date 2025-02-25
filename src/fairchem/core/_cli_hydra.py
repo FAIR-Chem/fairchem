@@ -109,7 +109,7 @@ class JobConfig:
     runner_state_path: Optional[str] = None  # noqa: UP007
     # read-only metadata about the job, not user inputs
     metadata: Optional[Metadata] = None  # noqa: UP007
-    graph_parallel_group_size: Optional[int] = None
+    graph_parallel_group_size: int | None = None
 
     def __post_init__(self) -> None:
         self.metadata = Metadata(
