@@ -23,6 +23,10 @@ class Runner(metaclass=ABCMeta):
         self._config = cfg
 
     @abstractmethod
+    def initialize(self, job_config: DictConfig):
+        raise NotImplementedError
+
+    @abstractmethod
     def run(self, **kwargs) -> Any:
         raise NotImplementedError
 
