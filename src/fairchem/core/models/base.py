@@ -76,14 +76,13 @@ class GraphModelMixin:
                     cell_offsets = data.cell_offsets
                     neighbors = data.neighbors
 
-            except AttributeError:
-                logging.warning(
-                    "Turning otf_graph=True as required attributes not present in data object"
-                )
-                otf_graph = True
-
-        if use_pbc:
-            if otf_graph:
+            except AttributeError as err:
+                raise AttributeError(
+                    "Graph data (edge_index, cell_offsets, neighbors) is not present in data-object "
+                    "You must set otf_graph=True to generate graph on the fly."
+                ) from err
+        else:
+            if use_pbc:
                 if use_pbc_single:
                     (
                         edge_index_per_system,
@@ -126,22 +125,21 @@ class GraphModelMixin:
                         enforce_max_neighbors_strictly,
                     )
 
-            out = get_pbc_distances(
-                data.pos,
-                edge_index,
-                data.cell,
-                cell_offsets,
-                neighbors,
-                return_offsets=True,
-                return_distance_vec=True,
-            )
+                out = get_pbc_distances(
+                    data.pos,
+                    edge_index,
+                    data.cell,
+                    cell_offsets,
+                    neighbors,
+                    return_offsets=True,
+                    return_distance_vec=True,
+                )
 
-            edge_index = out["edge_index"]
-            edge_dist = out["distances"]
-            cell_offset_distances = out["offsets"]
-            distance_vec = out["distance_vec"]
-        else:
-            if otf_graph:
+                edge_index = out["edge_index"]
+                edge_dist = out["distances"]
+                cell_offset_distances = out["offsets"]
+                distance_vec = out["distance_vec"]
+            else:
                 edge_index = radius_graph(
                     data.pos,
                     r=cutoff,
@@ -149,15 +147,17 @@ class GraphModelMixin:
                     max_num_neighbors=max_neighbors,
                 )
 
-            j, i = edge_index
-            distance_vec = data.pos[j] - data.pos[i]
+                j, i = edge_index
+                distance_vec = data.pos[j] - data.pos[i]
 
-            edge_dist = distance_vec.norm(dim=-1)
-            cell_offsets = torch.zeros(edge_index.shape[1], 3, device=data.pos.device)
-            cell_offset_distances = torch.zeros_like(
-                cell_offsets, device=data.pos.device
-            )
-            neighbors = compute_neighbors(data, edge_index)
+                edge_dist = distance_vec.norm(dim=-1)
+                cell_offsets = torch.zeros(
+                    edge_index.shape[1], 3, device=data.pos.device
+                )
+                cell_offset_distances = torch.zeros_like(
+                    cell_offsets, device=data.pos.device
+                )
+                neighbors = compute_neighbors(data, edge_index)
 
         return GraphData(
             edge_index=edge_index,
