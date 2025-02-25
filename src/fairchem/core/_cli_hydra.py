@@ -23,6 +23,8 @@ import torch
 from omegaconf import OmegaConf
 from omegaconf.errors import InterpolationKeyError
 
+from fairchem.core.common import gp_utils
+
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
@@ -107,6 +109,7 @@ class JobConfig:
     runner_state_path: Optional[str] = None  # noqa: UP007
     # read-only metadata about the job, not user inputs
     metadata: Optional[Metadata] = None  # noqa: UP007
+    graph_parallel_group_size: int = 0
 
     def __post_init__(self) -> None:
         self.metadata = Metadata(
@@ -151,7 +154,15 @@ class Submitit(Checkpointable):
         # TODO also load job config here
         setup_env_vars()
         setup_logging()
-        distutils.setup(map_job_config_to_dist_config(self.config.job))
+
+        dist_config = map_job_config_to_dist_config(self.config.job)
+        distutils.setup(dist_config)
+        if self.config.job.graph_parallel_group_size > 0:
+            gp_utils.setup_graph_parallel_groups(
+                self.config.job.graph_parallel_group_size,
+                dist_config["distributed_backend"],
+            )
+
         self._init_logger()
         _set_seeds(self.config.job.seed)
         if self.config.job.deterministic:

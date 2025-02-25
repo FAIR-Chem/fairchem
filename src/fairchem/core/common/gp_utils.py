@@ -35,6 +35,42 @@ def divide_and_check_no_remainder(a: int, b: int) -> int:
     return a // b
 
 
+def setup_graph_parallel_groups(
+    graph_parallel_group_size: int, distributed_backend: str
+) -> None:
+    assert torch.distributed.is_initialized()
+    world_size = torch.distributed.get_world_size()
+    assert (
+        graph_parallel_group_size <= world_size
+    ), "graph parallel group size must be at most world size"
+
+    ensure_div(world_size, graph_parallel_group_size)
+    dp_size = world_size // graph_parallel_group_size
+    rank = dist.get_rank()
+
+    if rank == 0:
+        logging.info(
+            f"> initializing graph parallel with size {graph_parallel_group_size}"
+        )
+        logging.info(f"> initializing ddp with size {dp_size}")
+
+    groups = torch.arange(world_size).reshape(dp_size, graph_parallel_group_size)
+    found = [x.item() for x in torch.where(groups == rank)]
+
+    global _DATA_PARALLEL_GROUP
+    assert _DATA_PARALLEL_GROUP is None, "data parallel group is already initialized"
+    for j in range(graph_parallel_group_size):
+        group = dist.new_group(groups[:, j].tolist(), backend=distributed_backend)
+        if j == found[1]:
+            _DATA_PARALLEL_GROUP = group
+    global _GRAPH_PARALLEL_GROUP
+    assert _GRAPH_PARALLEL_GROUP is None, "graph parallel group is already initialized"
+    for i in range(dp_size):
+        group = dist.new_group(groups[i, :].tolist(), backend=distributed_backend)
+        if i == found[0]:
+            _GRAPH_PARALLEL_GROUP = group
+
+
 def setup_gp(config) -> None:
     gp_size = config["gp_gpus"]
     backend = config["distributed_backend"]
