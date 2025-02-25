@@ -36,9 +36,9 @@ class GraphData:
     edge_index: torch.Tensor
     edge_distance: torch.Tensor
     edge_distance_vec: torch.Tensor
-    cell_offsets: torch.Tensor
-    offset_distances: torch.Tensor
-    neighbors: torch.Tensor
+    cell_offsets: torch.Tensor | None
+    offset_distances: torch.Tensor | None
+    neighbors: torch.Tensor | None
     batch_full: torch.Tensor  # used for GP functionality
     atomic_numbers_full: torch.Tensor  # used for GP functionality
     node_offset: int = 0  # used for GP functionality
@@ -71,6 +71,11 @@ class GraphModelMixin:
         if not otf_graph:
             try:
                 edge_index = data.edge_index
+                edge_dist = data.distances
+                distance_vec = data.edge_distance_vec
+                cell_offsets = None
+                neighbors = None
+                cell_offset_distances = None
 
                 if use_pbc:
                     cell_offsets = data.cell_offsets
