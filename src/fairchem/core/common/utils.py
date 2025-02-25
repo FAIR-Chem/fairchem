@@ -620,10 +620,8 @@ def radius_graph_pbc(
     radius,
     max_num_neighbors_threshold,
     enforce_max_neighbors_strictly: bool = False,
-    pbc=None,
 ):
-    if pbc is None:
-        pbc = [True, True, True]
+    pbc = [True, True, True]
     device = data.pos.device
     batch_size = len(data.natoms)
 
