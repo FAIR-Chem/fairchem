@@ -23,7 +23,7 @@ class Runner(metaclass=ABCMeta):
         self._config = cfg
 
     @abstractmethod
-    def initialize(self, job_config: DictConfig):
+    def initialize(self, job_config: DictConfig) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -50,6 +50,9 @@ class MockRunner(Runner):
         if self.x * self.y > 1000:
             raise ValueError("sum is greater than 1000!")
         return self.x + self.y
+
+    def initialize(self, job_config: DictConfig) -> None:
+        pass
 
     def save_state(self) -> None:
         pass
