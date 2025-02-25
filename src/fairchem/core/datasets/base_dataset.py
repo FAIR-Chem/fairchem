@@ -76,6 +76,7 @@ class BaseDataset(Dataset[T_co], metaclass=ABCMeta):
     def _metadata(self) -> dict[str, ArrayLike]:
         # logic to read metadata file here
         metadata_npzs = []
+        breakpoint()
         if self.config.get("metadata_path", None) is not None:
             metadata_npzs.append(
                 np.load(self.config["metadata_path"], allow_pickle=True)

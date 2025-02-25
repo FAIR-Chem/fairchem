@@ -1517,12 +1517,16 @@ def get_subdirectories_sorted_by_time(directory: str) -> str:
     )
 
 
-def get_cluster_name() -> str:
-    return (
-        subprocess.check_output(
-            "scontrol show config | awk -F= '/ClusterName/ {print $2}' | xargs",
-            shell=True,
+def get_cluster_name() -> str | None:
+    try:
+        return (
+            subprocess.check_output(
+                "scontrol show config | awk -F= '/ClusterName/ {print $2}' | xargs",
+                shell=True,
+            )
+            .decode()
+            .strip()
         )
-        .decode()
-        .strip()
-    )
+    except subprocess.CalledProcessError as e:
+        logging.warning(e)
+        return None
