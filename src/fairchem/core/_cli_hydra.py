@@ -90,6 +90,7 @@ class Metadata:
     checkpoint_dir: str
     config_path: str
     preemption_checkpoint_dir: str
+    job_num: int = 1
 
 
 @dataclass
@@ -311,12 +312,9 @@ def main(
             jobs = []
             with executor.batch():
                 for job_number in range(scheduler_cfg.num_jobs):
-                    job = executor.submit(
-                        Submitit(),
-                        cfg,
-                        job_number=job_number,
-                        num_jobs=scheduler_cfg.num_jobs,
-                    )
+                    _cfg = cfg.copy()
+                    _cfg.job.metadata.job_num = job_number
+                    job = executor.submit(Submitit(), _cfg)
                     jobs.append(job)
             logging.info(f"Submitted {len(jobs)} jobs: {jobs[0].job_id.split('_')[0]}")
     else:
