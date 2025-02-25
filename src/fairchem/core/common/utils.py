@@ -1515,3 +1515,14 @@ def get_subdirectories_sorted_by_time(directory: str) -> str:
         ((str(d), d.stat().st_mtime) for d in directory.iterdir() if d.is_dir()),
         key=lambda x: x[1],
     )
+
+
+def get_cluster_name() -> str:
+    return (
+        subprocess.check_output(
+            "scontrol show config | awk -F= '/ClusterName/ {print $2}' | xargs",
+            shell=True,
+        )
+        .decode()
+        .strip()
+    )

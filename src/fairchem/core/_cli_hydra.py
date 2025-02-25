@@ -34,6 +34,7 @@ from submitit.helpers import Checkpointable, DelayedSubmission
 from fairchem.core.common import distutils
 from fairchem.core.common.logger import WandBSingletonLogger
 from fairchem.core.common.utils import (
+    get_cluster_name,
     get_commit_hash,
     get_subdirectories_sorted_by_time,
     get_timestamp_uid,
@@ -89,6 +90,7 @@ class Metadata:
     checkpoint_dir: str
     config_path: str
     preemption_checkpoint_dir: str
+    cluster_name: str
 
 
 @dataclass
@@ -122,6 +124,7 @@ class JobConfig:
                 CHECKPOINT_DIR_NAME,
                 PREEMPTION_STATE_DIR_NAME,
             ),
+            cluster_name=get_cluster_name(),
         )
 
 
