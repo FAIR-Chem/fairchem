@@ -23,6 +23,8 @@ import torch
 from omegaconf import OmegaConf
 from omegaconf.errors import InterpolationKeyError
 
+from fairchem.core.common import gp_utils
+
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
@@ -34,6 +36,7 @@ from submitit.helpers import Checkpointable, DelayedSubmission
 from fairchem.core.common import distutils
 from fairchem.core.common.logger import WandBSingletonLogger
 from fairchem.core.common.utils import (
+    get_cluster_name,
     get_commit_hash,
     get_subdirectories_sorted_by_time,
     get_timestamp_uid,
@@ -89,6 +92,7 @@ class Metadata:
     checkpoint_dir: str
     config_path: str
     preemption_checkpoint_dir: str
+    cluster_name: str
 
 
 @dataclass
@@ -107,6 +111,7 @@ class JobConfig:
     runner_state_path: Optional[str] = None  # noqa: UP007
     # read-only metadata about the job, not user inputs
     metadata: Optional[Metadata] = None  # noqa: UP007
+    graph_parallel_group_size: Optional[int] = None  # noqa: UP007 python 3.9 requires Optional still
 
     def __post_init__(self) -> None:
         self.metadata = Metadata(
@@ -122,6 +127,7 @@ class JobConfig:
                 CHECKPOINT_DIR_NAME,
                 PREEMPTION_STATE_DIR_NAME,
             ),
+            cluster_name=get_cluster_name(),
         )
 
 
@@ -151,7 +157,15 @@ class Submitit(Checkpointable):
         # TODO also load job config here
         setup_env_vars()
         setup_logging()
-        distutils.setup(map_job_config_to_dist_config(self.config.job))
+
+        dist_config = map_job_config_to_dist_config(self.config.job)
+        distutils.setup(dist_config)
+        if self.config.job.graph_parallel_group_size is not None:
+            gp_utils.setup_graph_parallel_groups(
+                self.config.job.graph_parallel_group_size,
+                dist_config["distributed_backend"],
+            )
+
         self._init_logger()
         _set_seeds(self.config.job.seed)
         if self.config.job.deterministic:
