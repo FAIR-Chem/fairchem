@@ -473,9 +473,7 @@ class AseDBDataset(AseAtomsDataset):
             filepaths = []
             for path in sorted(config["src"]):
                 if os.path.isdir(path):
-                    filepaths.extend(
-                        sorted(glob(f"{path}/*"))
-                    )
+                    filepaths.extend(sorted(glob(f"{path}/*")))
                 elif os.path.isfile(path):
                     filepaths.append(path)
                 else:
