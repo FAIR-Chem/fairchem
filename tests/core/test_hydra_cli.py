@@ -5,7 +5,11 @@ import sys
 import hydra
 import pytest
 
-from fairchem.core._cli_hydra import ALLOWED_TOP_LEVEL_KEYS, main
+from fairchem.core._cli_hydra import (
+    ALLOWED_TOP_LEVEL_KEYS,
+    get_hydra_config_from_yaml,
+    main,
+)
 from fairchem.core.common import distutils
 
 
@@ -58,3 +62,12 @@ def test_hydra_cli_throws_error_on_disallowed_top_level_keys():
     sys.argv[1:] = sys_args
     with pytest.raises(ValueError):
         main()
+
+
+def get_cfg_from_yaml():
+    yaml = "tests/core/test_hydra_cli.yml"
+    cfg = get_hydra_config_from_yaml(yaml)
+    # assert fields got initialized properly
+    assert cfg.job.run_name is not None
+    assert cfg.job.seed is not None
+    assert cfg.keys() == ALLOWED_TOP_LEVEL_KEYS

@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import random
 import tempfile
 import uuid
 from dataclasses import dataclass, field
@@ -17,26 +18,42 @@ from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
 import hydra
+import numpy as np
+import torch
 from omegaconf import OmegaConf
 from omegaconf.errors import InterpolationKeyError
+
+from fairchem.core.common import gp_utils
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
     from fairchem.core.components.runner import Runner
 
-
 from submitit import AutoExecutor
 from submitit.helpers import Checkpointable, DelayedSubmission
 
 from fairchem.core.common import distutils
-from fairchem.core.common.utils import get_timestamp_uid, setup_env_vars, setup_imports
+from fairchem.core.common.logger import WandBSingletonLogger
+from fairchem.core.common.utils import (
+    get_cluster_name,
+    get_commit_hash,
+    get_subdirectories_sorted_by_time,
+    get_timestamp_uid,
+    setup_env_vars,
+    setup_logging,
+)
 
 # this effects the cli only since the actual job will be run in subprocesses or remoe
 logging.basicConfig(level=logging.INFO)
 
 
 ALLOWED_TOP_LEVEL_KEYS = {"job", "runner"}
+
+LOG_DIR_NAME = "logs"
+CHECKPOINT_DIR_NAME = "checkpoints"
+CONFIG_FILE_NAME = "canonical_config.yaml"
+PREEMPTION_STATE_DIR_NAME = "preemption_state"
 
 
 class SchedulerType(str, Enum):
@@ -50,20 +67,32 @@ class DeviceType(str, Enum):
 
 
 @dataclass
+class SlurmConfig:
+    mem_gb: int = 80
+    timeout_hr: int = 168
+    cpus_per_task: int = 8
+    partition: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
+    qos: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
+    account: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
+
+
+@dataclass
 class SchedulerConfig:
     mode: SchedulerType = SchedulerType.LOCAL
     ranks_per_node: int = 1
     num_nodes: int = 1
-    slurm: dict = field(
-        default_factory=lambda: {
-            "mem_gb": 80,  # slurm mem in GB
-            "timeout_hr": 168,  # slurm timeout in hours, default to 7 days
-            "partition": None,
-            "cpus_per_task": 8,
-            "qos": None,
-            "account": None,
-        }
-    )
+    slurm: SlurmConfig = field(default_factory=lambda: SlurmConfig)
+
+
+@dataclass
+class Metadata:
+    # read-only metadata about the job, not user inputs
+    commit: str
+    log_dir: str
+    checkpoint_dir: str
+    config_path: str
+    preemption_checkpoint_dir: str
+    cluster_name: str
 
 
 @dataclass
@@ -76,65 +105,120 @@ class JobConfig:
     device_type: DeviceType = DeviceType.CUDA
     debug: bool = False
     scheduler: SchedulerConfig = field(default_factory=lambda: SchedulerConfig)
-    log_dir_name: str = "logs"
-    checkpoint_dir_name: str = "checkpoint"
-    config_file_name: str = "canonical_config.yaml"
     logger: Optional[dict] = None  # noqa: UP007 python 3.9 requires Optional still
+    seed: int = 0
+    deterministic: bool = False
+    runner_state_path: Optional[str] = None  # noqa: UP007
+    # read-only metadata about the job, not user inputs
+    metadata: Optional[Metadata] = None  # noqa: UP007
+    graph_parallel_group_size: Optional[int] = None  # noqa: UP007 python 3.9 requires Optional still
 
-    @property
-    def log_dir(self) -> str:
-        return os.path.join(self.run_dir, self.timestamp_id, self.log_dir_name)
+    def __post_init__(self) -> None:
+        self.metadata = Metadata(
+            commit=get_commit_hash(),
+            log_dir=os.path.join(self.run_dir, self.timestamp_id, LOG_DIR_NAME),
+            checkpoint_dir=os.path.join(
+                self.run_dir, self.timestamp_id, CHECKPOINT_DIR_NAME
+            ),
+            config_path=os.path.join(self.run_dir, self.timestamp_id, CONFIG_FILE_NAME),
+            preemption_checkpoint_dir=os.path.join(
+                self.run_dir,
+                self.timestamp_id,
+                CHECKPOINT_DIR_NAME,
+                PREEMPTION_STATE_DIR_NAME,
+            ),
+            cluster_name=get_cluster_name(),
+        )
 
-    @property
-    def checkpoint_dir(self) -> str:
-        return os.path.join(self.run_dir, self.timestamp_id, self.checkpoint_dir_name)
 
-    @property
-    def config_path(self) -> str:
-        return os.path.join(self.run_dir, self.timestamp_id, self.config_file_name)
+def _set_seeds(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+
+def _set_deterministic_mode() -> None:
+    # this is required for full cuda deterministic mode
+    logging.info("Setting deterministic mode!")
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.use_deterministic_algorithms(True)
 
 
 class Submitit(Checkpointable):
+    def __init__(self) -> None:
+        self.config = None
+        self.runner = None
+
     def __call__(self, dict_config: DictConfig) -> None:
         self.config = dict_config
-        self.job_config: JobConfig = OmegaConf.to_object(dict_config.job)
-        # TODO: setup_imports is not needed if we stop instantiating models with Registry.
-        setup_imports()
+        # TODO also load job config here
         setup_env_vars()
-        distutils.setup(map_job_config_to_dist_config(self.job_config))
+        setup_logging()
+
+        dist_config = map_job_config_to_dist_config(self.config.job)
+        distutils.setup(dist_config)
+        if self.config.job.graph_parallel_group_size is not None:
+            gp_utils.setup_graph_parallel_groups(
+                self.config.job.graph_parallel_group_size,
+                dist_config["distributed_backend"],
+            )
+
         self._init_logger()
-        runner: Runner = hydra.utils.instantiate(dict_config.runner)
-        runner.job_config = self.job_config
-        runner.load_state()
-        runner.run()
+        _set_seeds(self.config.job.seed)
+        if self.config.job.deterministic:
+            _set_deterministic_mode()
+
+        self.runner: Runner = hydra.utils.instantiate(dict_config.runner)
+        self.runner.config = self.config
+        # must call resume state AFTER the runner has been initialized
+        if self.config.job.runner_state_path:
+            self.runner.load_state(self.config.job.runner_state_path)
+        self.runner.run()
         distutils.cleanup()
 
     def _init_logger(self) -> None:
         if (
-            self.job_config.logger
+            self.config.job.logger
             and distutils.is_master()
-            and not self.job_config.debug
+            and not self.config.job.debug
         ):
             # get a partial function from the config and instantiate wandb with it
-            # currently this assume we use a wandb logger
-            logger_initializer = hydra.utils.instantiate(self.job_config.logger)
+            # currently code assumes that we only use the WandBSingletonLogger
+            logger_initializer = hydra.utils.instantiate(self.config.job.logger)
             simple_config = OmegaConf.to_container(
                 self.config, resolve=True, throw_on_missing=True
             )
             logger_initializer(
                 config=simple_config,
-                run_id=self.job_config.timestamp_id,
-                run_name=self.job_config.run_name,
-                log_dir=self.job_config.log_dir,
+                run_id=self.config.job.timestamp_id,
+                run_name=self.config.job.run_name,
+                log_dir=self.config.job.metadata.log_dir,
             )
 
     def checkpoint(self, *args, **kwargs) -> DelayedSubmission:
-        # TODO: this is yet to be tested properly
-        logging.info("Submitit checkpointing callback is triggered")
-        new_runner = Submitit()
-        self.runner.save_state()
+        logging.error("Submitit checkpointing callback is triggered")
+        # TODO: preemption state saving doesn't work with DCP because submitit only calls checkpoint
+        # on rank0, which will cause the system to deadlock.
+        # save_path = self.config.job.metadata.preemption_checkpoint_dir
+        # self.runner.save_state(save_path)
+        # For now, use the last found checkpoint
+        cfg_copy = self.config.copy()
+        ckpt_dirs_time = get_subdirectories_sorted_by_time(
+            self.config.job.metadata.checkpoint_dir
+        )
+        if len(ckpt_dirs_time) > 0:
+            # pick the lastest one
+            cfg_copy.job.runner_state_path = ckpt_dirs_time[-1][0]
+            logging.info(
+                f"Job will resume using the state found at: {cfg_copy.job.runner_state_path}"
+            )
+        if WandBSingletonLogger.initialized():
+            WandBSingletonLogger.get_instance().mark_preempting()
         logging.info("Submitit checkpointing callback is completed")
-        return DelayedSubmission(new_runner, self.config, self.cli_args)
+        return DelayedSubmission(Submitit(), cfg_copy)
 
 
 def map_job_config_to_dist_config(job_cfg: JobConfig) -> dict:
@@ -152,6 +236,10 @@ def map_job_config_to_dist_config(job_cfg: JobConfig) -> dict:
 
 
 def get_canonical_config(config: DictConfig) -> DictConfig:
+    # manually initialize metadata, because OmegaConf currently doesn't call __post_init__ on dataclasses
+    job = OmegaConf.to_object(config.job)
+    job.__post_init__()
+    config.job = job
     # check that each key other than the allowed top level keys are used in config
     # find all top level keys are not in the allowed set
     all_keys = set(config.keys()).difference(ALLOWED_TOP_LEVEL_KEYS)
@@ -186,7 +274,11 @@ def get_hydra_config_from_yaml(
     config_directory = os.path.dirname(os.path.abspath(config_yml))
     config_name = os.path.basename(config_yml)
     hydra.initialize_config_dir(config_directory, version_base="1.1")
-    return hydra.compose(config_name=config_name, overrides=overrides_args)
+    cfg = hydra.compose(config_name=config_name, overrides=overrides_args)
+    # merge default structured config with initialized job object
+    cfg = OmegaConf.merge({"job": OmegaConf.structured(JobConfig)}, cfg)
+    # canonicalize config (remove top level keys that just used replacing variables)
+    return get_canonical_config(cfg)
 
 
 def runner_wrapper(config: DictConfig):
@@ -202,24 +294,19 @@ def main(
         args, override_args = parser.parse_known_args()
 
     cfg = get_hydra_config_from_yaml(args.config, override_args)
-    # merge default structured config with initialized job object
-    cfg = OmegaConf.merge({"job": OmegaConf.structured(JobConfig)}, cfg)
-    # canonicalize config (remove top level keys that just used replacing variables)
-    cfg = get_canonical_config(cfg)
-    job_obj = OmegaConf.to_object(cfg.job)
-    log_dir = job_obj.log_dir
-    os.makedirs(job_obj.run_dir, exist_ok=True)
+    log_dir = cfg.job.metadata.log_dir
+    os.makedirs(cfg.job.run_dir, exist_ok=True)
     os.makedirs(log_dir, exist_ok=True)
 
-    OmegaConf.save(cfg, job_obj.config_path)
-    logging.info(f"saved canonical config to {job_obj.config_path}")
+    OmegaConf.save(cfg, cfg.job.metadata.config_path)
+    logging.info(f"saved canonical config to {cfg.job.metadata.config_path}")
 
-    scheduler_cfg = job_obj.scheduler
+    scheduler_cfg = cfg.job.scheduler
     logging.info(f"Running fairchemv2 cli with {cfg}")
     if scheduler_cfg.mode == SchedulerType.SLURM:  # Run on cluster
         executor = AutoExecutor(folder=log_dir, slurm_max_num_timeout=3)
         executor.update_parameters(
-            name=job_obj.run_name,
+            name=cfg.job.run_name,
             mem_gb=scheduler_cfg.slurm.mem_gb,
             timeout_min=scheduler_cfg.slurm.timeout_hr * 60,
             slurm_partition=scheduler_cfg.slurm.partition,
@@ -230,15 +317,17 @@ def main(
             slurm_qos=scheduler_cfg.slurm.qos,
             slurm_account=scheduler_cfg.slurm.account,
         )
-        job = executor.submit(runner_wrapper, cfg)
+        job = executor.submit(Submitit(), cfg)
         logging.info(
-            f"Submitted job id: {job_obj.timestamp_id}, slurm id: {job.job_id}, logs: {job_obj.log_dir}"
+            f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
         )
     else:
         from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
         if scheduler_cfg.ranks_per_node > 1:
-            logging.info(f"Running in local mode with {job_obj.ranks_per_node} ranks")
+            logging.info(
+                f"Running in local mode with {scheduler_cfg.ranks_per_node} ranks"
+            )
             launch_config = LaunchConfig(
                 min_nodes=1,
                 max_nodes=1,

@@ -23,7 +23,8 @@ dependencies = [
     "orjson",
     "tqdm",
     "submitit",
-    "hydra-core"
+    "hydra-core",
+    "torchtnt"
 ]
 
 [project.optional-dependencies]  # add optional dependencies to be installed as pip install fairchem.core[dev]
