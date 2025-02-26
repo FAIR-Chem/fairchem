@@ -53,7 +53,7 @@ loss_functions:
       coefficient: 5
   - stress_anisotropic:
       fn: mae
-      reduction: mean_all
+      reduction: mean
       coefficient: 5
 
 

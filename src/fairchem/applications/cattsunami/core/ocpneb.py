@@ -36,6 +36,7 @@ class OCPNEB(DyNEB):
         precon=None,
         cpu=False,
         batch_size=4,
+        trainer=None,
     ):
         """
         Subclass of NEB that allows for scaled and dynamic optimizations of
@@ -97,12 +98,15 @@ class OCPNEB(DyNEB):
         if "relax_dataset" in config["task"]:
             del config["task"]["relax_dataset"]
 
-        self.trainer = registry.get_trainer_class(config.get("trainer", "ocp"))(
+        if trainer is None:
+            trainer = config.get("trainer", "ocp")
+
+        self.trainer = registry.get_trainer_class(trainer)(
             task=config.get("task", {}),
             model=config["model"],
-            outputs={},
-            loss_functions={},
-            evaluation_metrics={},
+            outputs=config.get("outputs", {}),
+            loss_functions=config.get("loss_functions", {}),
+            evaluation_metrics=config.get("evaluation_metrics", {}),
             dataset=[config["dataset"]],
             optimizer=config["optim"],
             identifier="",

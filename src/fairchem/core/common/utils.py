@@ -18,13 +18,14 @@ import itertools
 import json
 import logging
 import os
+import pathlib
 import subprocess
 import sys
 import time
 from bisect import bisect
 from contextlib import contextmanager
 from dataclasses import dataclass
-from functools import wraps
+from functools import reduce, wraps
 from itertools import product
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -1488,3 +1489,44 @@ def get_checkpoint_format(config: dict) -> str:
         "dcp",
     ), f"checkpoint format can only be pt or dcp, found {format}"
     return format
+
+
+def get_deep(dictionary: dict, keys: str, default: str | None = None):
+    # given a nested dictionary and a dot separated query, retrieve the item
+    # example:
+    # get_deep(dictionary{"oc20":{"energy",1}}, keys="oc20.energy") -> 1
+    return reduce(
+        lambda d, key: d.get(key, default) if isinstance(d, dict) else default,
+        keys.split("."),
+        dictionary,
+    )
+
+
+def get_subdirectories_sorted_by_time(directory: str) -> str:
+    """
+    Get all subdirectories in a directory sorted by their last modification time.
+    Args:
+        directory (str): The path to the directory to search.
+    Returns:
+        list: A list of tuples containing the subdirectory path and its last modification time.
+    """
+    directory = pathlib.Path(directory)
+    return sorted(
+        ((str(d), d.stat().st_mtime) for d in directory.iterdir() if d.is_dir()),
+        key=lambda x: x[1],
+    )
+
+
+def get_cluster_name() -> str | None:
+    try:
+        return (
+            subprocess.check_output(
+                "scontrol show config | awk -F= '/ClusterName/ {print $2}' | xargs",
+                shell=True,
+            )
+            .decode()
+            .strip()
+        )
+    except subprocess.CalledProcessError as e:
+        logging.warning(e)
+        return None
