@@ -11,6 +11,7 @@ import argparse
 import logging
 import os
 import random
+import sys
 import tempfile
 import uuid
 from dataclasses import dataclass, field
@@ -304,6 +305,11 @@ def main(
     scheduler_cfg = cfg.job.scheduler
     logging.info(f"Running fairchemv2 cli with {cfg}")
     if scheduler_cfg.mode == SchedulerType.SLURM:  # Run on cluster
+        if os.getenv("SLURM_SUBMIT_HOST"):
+            logging.error(
+                "SLURM DID NOT SUBMIT JOB!! Please do not submit jobs from an active slurm job (srun or otherwise)"
+            )
+            sys.exit(1)
         executor = AutoExecutor(folder=log_dir, slurm_max_num_timeout=3)
         executor.update_parameters(
             name=cfg.job.run_name,
