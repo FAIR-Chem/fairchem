@@ -23,22 +23,27 @@ Module Contents
    This allows us to decouple away from a monolithic trainer class
 
 
+   .. py:property:: config
+      :type: omegaconf.DictConfig
+
+
+
    .. py:method:: run() -> Any
       :abstractmethod:
 
 
 
-   .. py:method:: save_state() -> None
+   .. py:method:: save_state(checkpoint_location: str) -> None
       :abstractmethod:
 
 
 
-   .. py:method:: load_state() -> None
+   .. py:method:: load_state(checkpoint_location: str) -> None
       :abstractmethod:
 
 
 
-.. py:class:: MockRunner(x: int, y: int)
+.. py:class:: MockRunner(x: int, y: int, z: int)
 
    Bases: :py:obj:`Runner`
 
@@ -52,6 +57,9 @@ Module Contents
 
 
    .. py:attribute:: y
+
+
+   .. py:attribute:: z
 
 
    .. py:method:: run() -> Any

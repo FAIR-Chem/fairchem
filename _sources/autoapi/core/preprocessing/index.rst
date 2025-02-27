@@ -32,7 +32,7 @@ Classes
 Package Contents
 ----------------
 
-.. py:class:: AtomsToGraphs(max_neigh: int = 200, radius: int = 6, r_energy: bool = False, r_forces: bool = False, r_distances: bool = False, r_edges: bool = True, r_fixed: bool = True, r_pbc: bool = False, r_stress: bool = False, r_data_keys: collections.abc.Sequence[str] | None = None)
+.. py:class:: AtomsToGraphs(max_neigh: int = 200, radius: int = 6, r_energy: bool = False, r_forces: bool = False, r_distances: bool = False, r_edges: bool = True, r_fixed: bool = True, r_pbc: bool = False, r_stress: bool = False, r_data_keys: collections.abc.Sequence[str] | None = None, molecule_cell_size: float | None = None)
 
    A class to help convert periodic atomic structures to graphs.
 
@@ -147,6 +147,14 @@ Package Contents
 
       
 
+   .. attribute:: molecule_cell_size
+
+      create a large molecular box with the atoms centered in the middle, units are Angstroms. This should be very large to make sure no atoms fall
+
+   .. attribute:: outside the box, otherwise it will lead to errors. There is no computational penalty for making this box super large.
+
+      
+
 
    .. py:attribute:: max_neigh
 
@@ -176,6 +184,9 @@ Package Contents
 
 
    .. py:attribute:: r_data_keys
+
+
+   .. py:attribute:: molecule_cell_size
 
 
    .. py:method:: _get_neighbors_pymatgen(atoms: ase.Atoms)

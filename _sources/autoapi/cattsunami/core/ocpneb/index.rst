@@ -15,7 +15,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: OCPNEB(images, checkpoint_path, k=0.1, fmax=0.05, climb=False, parallel=False, remove_rotation_and_translation=False, world=None, dynamic_relaxation=True, scale_fmax=0.0, method='aseneb', allow_shared_calculator=False, precon=None, cpu=False, batch_size=4)
+.. py:class:: OCPNEB(images, checkpoint_path, k=0.1, fmax=0.05, climb=False, parallel=False, remove_rotation_and_translation=False, world=None, dynamic_relaxation=True, scale_fmax=0.0, method='aseneb', allow_shared_calculator=False, precon=None, cpu=False, batch_size=4, trainer=None)
 
    Bases: :py:obj:`ase.neb.DyNEB`
 

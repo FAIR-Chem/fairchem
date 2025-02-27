@@ -9,11 +9,29 @@ Classes
 
 .. autoapisummary::
 
+   core.modules.scheduler.CosineLRLambda
    core.modules.scheduler.LRScheduler
 
 
 Module Contents
 ---------------
+
+.. py:class:: CosineLRLambda(warmup_epochs: int, warmup_factor: float, epochs: int, lr_min_factor: float)
+
+   .. py:attribute:: warmup_epochs
+
+
+   .. py:attribute:: lr_warmup_factor
+
+
+   .. py:attribute:: max_epochs
+
+
+   .. py:attribute:: lr_min_factor
+
+
+   .. py:method:: __call__(current_step: int) -> float
+
 
 .. py:class:: LRScheduler(optimizer, config)
 

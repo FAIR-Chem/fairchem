@@ -81,6 +81,9 @@ Functions
    core.common.utils.tensor_stats
    core.common.utils.get_weight_table
    core.common.utils.get_checkpoint_format
+   core.common.utils.get_deep
+   core.common.utils.get_subdirectories_sorted_by_time
+   core.common.utils.get_cluster_name
 
 
 Module Contents
@@ -308,4 +311,18 @@ Module Contents
 .. py:function:: get_weight_table(model: torch.nn.Module) -> tuple[list, list]
 
 .. py:function:: get_checkpoint_format(config: dict) -> str
+
+.. py:function:: get_deep(dictionary: dict, keys: str, default: str | None = None)
+
+.. py:function:: get_subdirectories_sorted_by_time(directory: str) -> str
+
+   Get all subdirectories in a directory sorted by their last modification time.
+   :param directory: The path to the directory to search.
+   :type directory: str
+
+   :returns: A list of tuples containing the subdirectory path and its last modification time.
+   :rtype: list
+
+
+.. py:function:: get_cluster_name() -> str | None
 

@@ -76,7 +76,7 @@ Module Contents
 
 .. py:function:: _ensure_supported(dataset: Any)
 
-.. py:class:: BalancedBatchSampler(dataset: torch.utils.data.Dataset, *, batch_size: int, num_replicas: int, rank: int, device: torch.device, seed: int, mode: bool | Literal['atoms'] = 'atoms', shuffle: bool = True, on_error: Literal['warn_and_balance', 'warn_and_no_balance', 'raise'] = 'raise', drop_last: bool = False)
+.. py:class:: BalancedBatchSampler(dataset: torch.utils.data.Dataset, *, batch_size: int, num_replicas: int, rank: int, device: torch.device | None = None, seed: int, mode: bool | Literal['atoms'] = 'atoms', shuffle: bool = True, on_error: Literal['warn_and_balance', 'warn_and_no_balance', 'raise'] = 'raise', drop_last: bool = False)
 
    Bases: :py:obj:`torch.utils.data.BatchSampler`
 

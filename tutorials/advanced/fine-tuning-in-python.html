@@ -16,22 +16,20 @@
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
   </script>
-  <!--
-    this give us a css class that will be invisible only if js is disabled
-  -->
-  <noscript>
-    <style>
-      .pst-js-only { display: none !important; }
-
-    </style>
-  </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
-<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
-    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=a3416100" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
     <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=13237357" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
@@ -39,11 +37,10 @@
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=fd3f3429" />
     <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
   
-  <!-- So that users can add custom icons -->
-  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
-<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
     <script src="../../_static/documentation_options.js?v=9eb32ce0"></script>
     <script src="../../_static/doctools.js?v=9a2dae69"></script>
@@ -68,7 +65,6 @@
     <link rel="prev" title="Advanced OCP usage" href="advanced_toc.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="" />
   </head>
   
   
@@ -84,8 +80,19 @@
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
   
-  <dialog id="pst-search-dialog">
-    
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
 <form class="bd-search d-flex align-items-center"
       action="../../search.html"
       method="get">
@@ -93,6 +100,7 @@
   <input type="search"
          class="form-control"
          name="q"
+         id="search-input"
          placeholder="Search this book..."
          aria-label="Search this book..."
          autocomplete="off"
@@ -100,8 +108,8 @@
          autocapitalize="off"
          spellcheck="false"/>
   <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
-</form>
-  </dialog>
+</form></div>
+  </div>
 
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
@@ -117,8 +125,7 @@
       
       
       
-      <dialog id="pst-primary-sidebar-modal"></dialog>
-      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+      <div class="bd-sidebar-primary bd-sidebar">
         
 
   
@@ -148,11 +155,15 @@
 </a></div>
         <div class="sidebar-primary-item">
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button></div>
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
         
@@ -431,14 +442,9 @@
   
   
   <div class="sidebar-primary-items__end sidebar-primary__section">
-      <div class="sidebar-primary-item">
-<div id="ethical-ad-placement"
-      class="flat"
-      data-ea-publisher="readthedocs"
-      data-ea-type="readthedocs-sidebar"
-      data-ea-manual="true">
-</div></div>
   </div>
+  
+  <div id="rtd-footer-container"></div>
 
 
       </div>
@@ -582,16 +588,24 @@
 
 
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button>
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
 
 
-<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <i class="fa-solid fa-magnifying-glass fa-lg"></i>
-</button>
+  </button>
+`);
+</script>
 <button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <span class="fa-solid fa-list"></span>
 </button>
@@ -676,26 +690,26 @@
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>id|age|user  |formula|calculator| energy|natoms| fmax|pbc| volume|charge|   mass
- 1|49m|runner|Sn2O4  |unknown   |-41.359|     6|0.045|TTT| 64.258| 0.000|301.416
- 2|49m|runner|Sn2O4  |unknown   |-41.853|     6|0.025|TTT| 66.526| 0.000|301.416
- 3|49m|runner|Sn2O4  |unknown   |-42.199|     6|0.010|TTT| 68.794| 0.000|301.416
- 4|49m|runner|Sn2O4  |unknown   |-42.419|     6|0.006|TTT| 71.062| 0.000|301.416
- 5|49m|runner|Sn2O4  |unknown   |-42.534|     6|0.011|TTT| 73.330| 0.000|301.416
- 6|49m|runner|Sn2O4  |unknown   |-42.562|     6|0.029|TTT| 75.598| 0.000|301.416
- 7|49m|runner|Sn2O4  |unknown   |-42.518|     6|0.033|TTT| 77.866| 0.000|301.416
- 8|49m|runner|Sn2O4  |unknown   |-42.415|     6|0.010|TTT| 80.134| 0.000|301.416
- 9|49m|runner|Sn2O4  |unknown   |-42.266|     6|0.006|TTT| 82.402| 0.000|301.416
-10|49m|runner|Sn2O4  |unknown   |-42.083|     6|0.017|TTT| 84.670| 0.000|301.416
-11|49m|runner|Sn4O8  |unknown   |-81.424|    12|0.012|TTT|117.473| 0.000|602.832
-12|49m|runner|Sn4O8  |unknown   |-82.437|    12|0.005|TTT|121.620| 0.000|602.832
-13|49m|runner|Sn4O8  |unknown   |-83.147|    12|0.015|TTT|125.766| 0.000|602.832
-14|49m|runner|Sn4O8  |unknown   |-83.599|    12|0.047|TTT|129.912| 0.000|602.832
-15|49m|runner|Sn4O8  |unknown   |-83.831|    12|0.081|TTT|134.058| 0.000|602.832
-16|49m|runner|Sn4O8  |unknown   |-83.898|    12|0.001|TTT|138.204| 0.000|602.832
-17|49m|runner|Sn4O8  |unknown   |-83.805|    12|0.001|TTT|142.350| 0.000|602.832
-18|49m|runner|Sn4O8  |unknown   |-83.586|    12|0.002|TTT|146.496| 0.000|602.832
-19|49m|runner|Sn4O8  |unknown   |-83.262|    12|0.002|TTT|150.642| 0.000|602.832
-20|49m|runner|Sn4O8  |unknown   |-82.851|    12|0.013|TTT|154.788| 0.000|602.832
+ 1|48m|runner|Sn2O4  |unknown   |-41.359|     6|0.045|TTT| 64.258| 0.000|301.416
+ 2|48m|runner|Sn2O4  |unknown   |-41.853|     6|0.025|TTT| 66.526| 0.000|301.416
+ 3|48m|runner|Sn2O4  |unknown   |-42.199|     6|0.010|TTT| 68.794| 0.000|301.416
+ 4|48m|runner|Sn2O4  |unknown   |-42.419|     6|0.006|TTT| 71.062| 0.000|301.416
+ 5|48m|runner|Sn2O4  |unknown   |-42.534|     6|0.011|TTT| 73.330| 0.000|301.416
+ 6|48m|runner|Sn2O4  |unknown   |-42.562|     6|0.029|TTT| 75.598| 0.000|301.416
+ 7|48m|runner|Sn2O4  |unknown   |-42.518|     6|0.033|TTT| 77.866| 0.000|301.416
+ 8|48m|runner|Sn2O4  |unknown   |-42.415|     6|0.010|TTT| 80.134| 0.000|301.416
+ 9|48m|runner|Sn2O4  |unknown   |-42.266|     6|0.006|TTT| 82.402| 0.000|301.416
+10|48m|runner|Sn2O4  |unknown   |-42.083|     6|0.017|TTT| 84.670| 0.000|301.416
+11|48m|runner|Sn4O8  |unknown   |-81.424|    12|0.012|TTT|117.473| 0.000|602.832
+12|48m|runner|Sn4O8  |unknown   |-82.437|    12|0.005|TTT|121.620| 0.000|602.832
+13|48m|runner|Sn4O8  |unknown   |-83.147|    12|0.015|TTT|125.766| 0.000|602.832
+14|48m|runner|Sn4O8  |unknown   |-83.599|    12|0.047|TTT|129.912| 0.000|602.832
+15|48m|runner|Sn4O8  |unknown   |-83.831|    12|0.081|TTT|134.058| 0.000|602.832
+16|48m|runner|Sn4O8  |unknown   |-83.898|    12|0.001|TTT|138.204| 0.000|602.832
+17|48m|runner|Sn4O8  |unknown   |-83.805|    12|0.001|TTT|142.350| 0.000|602.832
+18|48m|runner|Sn4O8  |unknown   |-83.586|    12|0.002|TTT|146.496| 0.000|602.832
+19|48m|runner|Sn4O8  |unknown   |-83.262|    12|0.002|TTT|150.642| 0.000|602.832
+20|48m|runner|Sn4O8  |unknown   |-82.851|    12|0.013|TTT|154.788| 0.000|602.832
 Rows: 295 (showing first 20)
 </pre></div>
 </div>
@@ -718,9 +732,7 @@ Rows: 295 (showing first 20)
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/escn/so3.py:23: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 </pre></div>
 </div>
@@ -814,7 +826,7 @@ Rows: 295 (showing first 20)
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(Namespace(mode=&#39;train&#39;, config_yml=PosixPath(&#39;config.yml&#39;), identifier=&#39;&#39;, debug=False, run_dir=&#39;/home/runner/work/fairchem/fairchem/docs/tutorials/advanced&#39;, print_every=10, seed=0, amp=False, checkpoint=&#39;/tmp/fairchem_checkpoints/gnoc_oc22_oc20_all_s2ef.pt&#39;, timestamp_id=None, sweep_yml=None, submit=False, summit=False, logdir=PosixPath(&#39;logs&#39;), slurm_partition=None, slurm_account=None, slurm_qos=None, slurm_mem=80, slurm_timeout=72, num_gpus=1, cpu=True, hydra=False, num_nodes=1, gp_gpus=None),
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(Namespace(mode=&#39;train&#39;, config_yml=PosixPath(&#39;config.yml&#39;), identifier=&#39;&#39;, debug=False, run_dir=&#39;/home/runner/work/fairchem/fairchem/docs/tutorials/advanced&#39;, print_every=10, seed=0, amp=False, checkpoint=&#39;/tmp/fairchem_checkpoints/gnoc_oc22_oc20_all_s2ef.pt&#39;, timestamp_id=None, sweep_yml=None, submit=False, summit=False, logdir=PosixPath(&#39;logs&#39;), slurm_partition=None, slurm_account=None, slurm_qos=None, slurm_mem=80, slurm_timeout=72, num_gpus=1, cpu=True, num_nodes=1, gp_gpus=None),
  [])
 </pre></div>
 </div>
@@ -979,28 +991,13 @@ Rows: 295 (showing first 20)
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:   0%|          | 0/2 [00:00&lt;?, ?it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.53s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.41s/it]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.24s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.18s/it]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.32s/it]
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:   0%|          | 0/2 [00:00&lt;?, ?it/s]
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.27s/it]
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.63s/it]
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.78s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.25s/it]
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
@@ -1009,13 +1006,13 @@ Rows: 295 (showing first 20)
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:   0%|          | 0/2 [00:00&lt;?, ?it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.52s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.17s/it]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.32s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.52s/it]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.40s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.68s/it]
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
@@ -1027,25 +1024,10 @@ Rows: 295 (showing first 20)
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.40s/it]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.63s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.17s/it]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.81s/it]
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:   0%|          | 0/2 [00:00&lt;?, ?it/s]
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.66s/it]
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.27s/it]
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.39s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.25s/it]
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
@@ -1054,28 +1036,13 @@ Rows: 295 (showing first 20)
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:   0%|          | 0/2 [00:00&lt;?, ?it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.38s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.20s/it]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.61s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.52s/it]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.79s/it]
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:   0%|          | 0/2 [00:00&lt;?, ?it/s]
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.46s/it]
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.24s/it]
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.34s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.68s/it]
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
@@ -1084,13 +1051,28 @@ Rows: 295 (showing first 20)
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:   0%|          | 0/2 [00:00&lt;?, ?it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.34s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.57s/it]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.19s/it]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.31s/it]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:   0%|          | 0/2 [00:00&lt;?, ?it/s]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.31s/it]
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.58s/it]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.76s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.75s/it]
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
@@ -1099,13 +1081,43 @@ Rows: 295 (showing first 20)
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:   0%|          | 0/2 [00:00&lt;?, ?it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.59s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.45s/it]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.26s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.17s/it]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.38s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.28s/it]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:   0%|          | 0/2 [00:00&lt;?, ?it/s]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.31s/it]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.53s/it]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:05&lt;00:00,  2.71s/it]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:   0%|          | 0/2 [00:00&lt;?, ?it/s]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0:  50%|█████     | 1/2 [00:03&lt;00:03,  3.51s/it]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.19s/it]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>device 0: 100%|██████████| 2/2 [00:06&lt;00:00,  3.30s/it]
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
@@ -1121,28 +1133,28 @@ Rows: 295 (showing first 20)
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2025-01-21 20:20:39 (WARNING): Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
-2025-01-21 20:20:39 (WARNING): Unrecognized arguments: [&#39;symmetric_edge_symmetrization&#39;]
-2025-01-21 20:20:41 (WARNING): No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
-2025-01-21 20:20:42 (WARNING): Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
-2025-01-21 20:20:42 (WARNING): Unrecognized arguments: [&#39;symmetric_edge_symmetrization&#39;]
-2025-01-21 20:20:44 (WARNING): No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
-2025-01-21 20:20:45 (WARNING): Unrecognized arguments: [&#39;symmetric_edge_symmetrization&#39;]
-2025-01-21 20:20:47 (WARNING): log_summary for Tensorboard not supported
-2025-01-21 20:20:47 (WARNING): Could not find dataset metadata.npz files in &#39;[PosixPath(&#39;train.db&#39;)]&#39;
-2025-01-21 20:20:47 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2025-02-27 00:23:48 (WARNING): Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
+2025-02-27 00:23:48 (WARNING): Unrecognized arguments: [&#39;symmetric_edge_symmetrization&#39;]
+2025-02-27 00:23:50 (WARNING): No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
+2025-02-27 00:23:51 (WARNING): Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
+2025-02-27 00:23:51 (WARNING): Unrecognized arguments: [&#39;symmetric_edge_symmetrization&#39;]
+2025-02-27 00:23:54 (WARNING): No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
+2025-02-27 00:23:54 (WARNING): Unrecognized arguments: [&#39;symmetric_edge_symmetrization&#39;]
+2025-02-27 00:23:56 (WARNING): log_summary for Tensorboard not supported
+2025-02-27 00:23:56 (WARNING): Could not find dataset metadata.npz files in &#39;[PosixPath(&#39;train.db&#39;)]&#39;
+2025-02-27 00:23:56 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2025-01-21 20:20:47 (WARNING): Could not find dataset metadata.npz files in &#39;[PosixPath(&#39;train.db&#39;)]&#39;
-2025-01-21 20:20:47 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
-2025-01-21 20:20:47 (WARNING): Failed to get data sizes, falling back to uniform partitioning. BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms.
-2025-01-21 20:20:47 (WARNING): Could not find dataset metadata.npz files in &#39;[PosixPath(&#39;val.db&#39;)]&#39;
-2025-01-21 20:20:47 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
-2025-01-21 20:20:47 (WARNING): Failed to get data sizes, falling back to uniform partitioning. BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms.
-2025-01-21 20:20:47 (WARNING): Could not find dataset metadata.npz files in &#39;[PosixPath(&#39;test.db&#39;)]&#39;
-2025-01-21 20:20:47 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
-2025-01-21 20:20:47 (WARNING): Failed to get data sizes, falling back to uniform partitioning. BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms.
-2025-01-21 20:20:47 (WARNING): Using `weight_decay` from `optim` instead of `optim.optimizer_params`.Please update your config to use `optim.optimizer_params.weight_decay`.`optim.weight_decay` will soon be deprecated.
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2025-02-27 00:23:56 (WARNING): Could not find dataset metadata.npz files in &#39;[PosixPath(&#39;train.db&#39;)]&#39;
+2025-02-27 00:23:56 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
+2025-02-27 00:23:56 (WARNING): Failed to get data sizes, falling back to uniform partitioning. BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms.
+2025-02-27 00:23:56 (WARNING): Could not find dataset metadata.npz files in &#39;[PosixPath(&#39;val.db&#39;)]&#39;
+2025-02-27 00:23:56 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
+2025-02-27 00:23:56 (WARNING): Failed to get data sizes, falling back to uniform partitioning. BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms.
+2025-02-27 00:23:56 (WARNING): Could not find dataset metadata.npz files in &#39;[PosixPath(&#39;test.db&#39;)]&#39;
+2025-02-27 00:23:56 (WARNING): Disabled BalancedBatchSampler because num_replicas=1.
+2025-02-27 00:23:56 (WARNING): Failed to get data sizes, falling back to uniform partitioning. BalancedBatchSampler requires a dataset that has a metadata attributed with number of atoms.
+2025-02-27 00:23:56 (WARNING): Using `weight_decay` from `optim` instead of `optim.optimizer_params`.Please update your config to use `optim.optimizer_params.weight_decay`.`optim.weight_decay` will soon be deprecated.
 </pre></div>
 </div>
 </div>
@@ -1205,8 +1217,7 @@ Rows: 295 (showing first 20)
             
             
               
-                <dialog id="pst-secondary-sidebar-modal"></dialog>
-                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
 
   <div class="sidebar-secondary-item">
@@ -1271,8 +1282,8 @@ By FAIR Chemistry & Collaborators
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
-<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
 
   <footer class="bd-footer">
   </footer>

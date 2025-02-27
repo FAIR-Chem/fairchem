@@ -201,9 +201,6 @@ Module Contents
 
    .. py:method:: train(disable_eval_tqdm=False)
 
-      Run model training iterations.
-
-
 
    .. py:method:: _compute_loss(out, batch)
 

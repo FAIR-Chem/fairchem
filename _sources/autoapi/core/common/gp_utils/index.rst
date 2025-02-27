@@ -39,6 +39,7 @@ Functions
 
    core.common.gp_utils.ensure_div
    core.common.gp_utils.divide_and_check_no_remainder
+   core.common.gp_utils.setup_graph_parallel_groups
    core.common.gp_utils.setup_gp
    core.common.gp_utils.cleanup_gp
    core.common.gp_utils.initialized
@@ -75,6 +76,8 @@ Module Contents
 .. py:function:: ensure_div(a: int, b: int) -> None
 
 .. py:function:: divide_and_check_no_remainder(a: int, b: int) -> int
+
+.. py:function:: setup_graph_parallel_groups(graph_parallel_group_size: int, distributed_backend: str) -> None
 
 .. py:function:: setup_gp(config) -> None
 

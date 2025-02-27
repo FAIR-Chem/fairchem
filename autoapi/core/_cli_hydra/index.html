@@ -16,22 +16,20 @@
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
   </script>
-  <!--
-    this give us a css class that will be invisible only if js is disabled
-  -->
-  <noscript>
-    <style>
-      .pst-js-only { display: none !important; }
-
-    </style>
-  </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=a3416100" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
     <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=13237357" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
@@ -39,11 +37,10 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=fd3f3429" />
     <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
   
-  <!-- So that users can add custom icons -->
-  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
     <script src="../../../_static/documentation_options.js?v=9eb32ce0"></script>
     <script src="../../../_static/doctools.js?v=9a2dae69"></script>
@@ -68,7 +65,6 @@
     <link rel="prev" title="core._cli" href="../_cli/index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="" />
   </head>
   
   
@@ -84,8 +80,19 @@
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
   
-  <dialog id="pst-search-dialog">
-    
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
 <form class="bd-search d-flex align-items-center"
       action="../../../search.html"
       method="get">
@@ -93,6 +100,7 @@
   <input type="search"
          class="form-control"
          name="q"
+         id="search-input"
          placeholder="Search this book..."
          aria-label="Search this book..."
          autocomplete="off"
@@ -100,8 +108,8 @@
          autocapitalize="off"
          spellcheck="false"/>
   <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
-</form>
-  </dialog>
+</form></div>
+  </div>
 
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
@@ -117,8 +125,7 @@
       
       
       
-      <dialog id="pst-primary-sidebar-modal"></dialog>
-      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+      <div class="bd-sidebar-primary bd-sidebar">
         
 
   
@@ -148,11 +155,15 @@
 </a></div>
         <div class="sidebar-primary-item">
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button></div>
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
         
@@ -431,14 +442,9 @@
   
   
   <div class="sidebar-primary-items__end sidebar-primary__section">
-      <div class="sidebar-primary-item">
-<div id="ethical-ad-placement"
-      class="flat"
-      data-ea-publisher="readthedocs"
-      data-ea-type="readthedocs-sidebar"
-      data-ea-manual="true">
-</div></div>
   </div>
+  
+  <div id="rtd-footer-container"></div>
 
 
       </div>
@@ -582,16 +588,24 @@
 
 
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button>
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
 
 
-<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <i class="fa-solid fa-magnifying-glass fa-lg"></i>
-</button>
+  </button>
+`);
+</script>
 <button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <span class="fa-solid fa-list"></span>
 </button>
@@ -619,14 +633,74 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.logger"><code class="docutils literal notranslate"><span class="pre">logger</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.ALLOWED_TOP_LEVEL_KEYS"><code class="docutils literal notranslate"><span class="pre">ALLOWED_TOP_LEVEL_KEYS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.LOG_DIR_NAME"><code class="docutils literal notranslate"><span class="pre">LOG_DIR_NAME</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.CHECKPOINT_DIR_NAME"><code class="docutils literal notranslate"><span class="pre">CHECKPOINT_DIR_NAME</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.CONFIG_FILE_NAME"><code class="docutils literal notranslate"><span class="pre">CONFIG_FILE_NAME</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.PREEMPTION_STATE_DIR_NAME"><code class="docutils literal notranslate"><span class="pre">PREEMPTION_STATE_DIR_NAME</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerType"><code class="docutils literal notranslate"><span class="pre">SchedulerType</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerType.LOCAL"><code class="docutils literal notranslate"><span class="pre">SchedulerType.LOCAL</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerType.SLURM"><code class="docutils literal notranslate"><span class="pre">SchedulerType.SLURM</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.DeviceType"><code class="docutils literal notranslate"><span class="pre">DeviceType</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.DeviceType.CPU"><code class="docutils literal notranslate"><span class="pre">DeviceType.CPU</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.DeviceType.CUDA"><code class="docutils literal notranslate"><span class="pre">DeviceType.CUDA</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmConfig"><code class="docutils literal notranslate"><span class="pre">SlurmConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmConfig.mem_gb"><code class="docutils literal notranslate"><span class="pre">SlurmConfig.mem_gb</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmConfig.timeout_hr"><code class="docutils literal notranslate"><span class="pre">SlurmConfig.timeout_hr</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmConfig.cpus_per_task"><code class="docutils literal notranslate"><span class="pre">SlurmConfig.cpus_per_task</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmConfig.partition"><code class="docutils literal notranslate"><span class="pre">SlurmConfig.partition</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmConfig.qos"><code class="docutils literal notranslate"><span class="pre">SlurmConfig.qos</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmConfig.account"><code class="docutils literal notranslate"><span class="pre">SlurmConfig.account</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.mode"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.mode</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.ranks_per_node"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.ranks_per_node</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.num_nodes"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.num_nodes</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.slurm"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.slurm</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata"><code class="docutils literal notranslate"><span class="pre">Metadata</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.commit"><code class="docutils literal notranslate"><span class="pre">Metadata.commit</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.log_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.log_dir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.checkpoint_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.checkpoint_dir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.config_path"><code class="docutils literal notranslate"><span class="pre">Metadata.config_path</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.preemption_checkpoint_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.preemption_checkpoint_dir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.cluster_name"><code class="docutils literal notranslate"><span class="pre">Metadata.cluster_name</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig"><code class="docutils literal notranslate"><span class="pre">JobConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.run_name"><code class="docutils literal notranslate"><span class="pre">JobConfig.run_name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.timestamp_id"><code class="docutils literal notranslate"><span class="pre">JobConfig.timestamp_id</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.run_dir"><code class="docutils literal notranslate"><span class="pre">JobConfig.run_dir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.device_type"><code class="docutils literal notranslate"><span class="pre">JobConfig.device_type</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.debug"><code class="docutils literal notranslate"><span class="pre">JobConfig.debug</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.scheduler"><code class="docutils literal notranslate"><span class="pre">JobConfig.scheduler</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.logger"><code class="docutils literal notranslate"><span class="pre">JobConfig.logger</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.seed"><code class="docutils literal notranslate"><span class="pre">JobConfig.seed</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.deterministic"><code class="docutils literal notranslate"><span class="pre">JobConfig.deterministic</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.runner_state_path"><code class="docutils literal notranslate"><span class="pre">JobConfig.runner_state_path</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.metadata"><code class="docutils literal notranslate"><span class="pre">JobConfig.metadata</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.graph_parallel_group_size"><code class="docutils literal notranslate"><span class="pre">JobConfig.graph_parallel_group_size</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.__post_init__"><code class="docutils literal notranslate"><span class="pre">JobConfig.__post_init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra._set_seeds"><code class="docutils literal notranslate"><span class="pre">_set_seeds()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra._set_deterministic_mode"><code class="docutils literal notranslate"><span class="pre">_set_deterministic_mode()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit"><code class="docutils literal notranslate"><span class="pre">Submitit</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.config"><code class="docutils literal notranslate"><span class="pre">Submitit.config</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.runner"><code class="docutils literal notranslate"><span class="pre">Submitit.runner</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.__call__"><code class="docutils literal notranslate"><span class="pre">Submitit.__call__()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit._init_logger"><code class="docutils literal notranslate"><span class="pre">Submitit._init_logger()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.checkpoint"><code class="docutils literal notranslate"><span class="pre">Submitit.checkpoint()</span></code></a></li>
 </ul>
 </li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.map_cli_args_to_dist_config"><code class="docutils literal notranslate"><span class="pre">map_cli_args_to_dist_config()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.map_job_config_to_dist_config"><code class="docutils literal notranslate"><span class="pre">map_job_config_to_dist_config()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.get_canonical_config"><code class="docutils literal notranslate"><span class="pre">get_canonical_config()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.get_hydra_config_from_yaml"><code class="docutils literal notranslate"><span class="pre">get_hydra_config_from_yaml()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.runner_wrapper"><code class="docutils literal notranslate"><span class="pre">runner_wrapper()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
@@ -652,7 +726,19 @@ LICENSE file in the root directory of this source tree.</p>
 <h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.logger" title="core._cli_hydra.logger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">logger</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.ALLOWED_TOP_LEVEL_KEYS" title="core._cli_hydra.ALLOWED_TOP_LEVEL_KEYS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ALLOWED_TOP_LEVEL_KEYS</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.LOG_DIR_NAME" title="core._cli_hydra.LOG_DIR_NAME"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LOG_DIR_NAME</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.CHECKPOINT_DIR_NAME" title="core._cli_hydra.CHECKPOINT_DIR_NAME"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CHECKPOINT_DIR_NAME</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.CONFIG_FILE_NAME" title="core._cli_hydra.CONFIG_FILE_NAME"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CONFIG_FILE_NAME</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.PREEMPTION_STATE_DIR_NAME" title="core._cli_hydra.PREEMPTION_STATE_DIR_NAME"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PREEMPTION_STATE_DIR_NAME</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -663,6 +749,24 @@ LICENSE file in the root directory of this source tree.</p>
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.SchedulerType" title="core._cli_hydra.SchedulerType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SchedulerType</span></code></a></p></td>
+<td><p>str(object='') -&gt; str</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.DeviceType" title="core._cli_hydra.DeviceType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DeviceType</span></code></a></p></td>
+<td><p>str(object='') -&gt; str</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.SlurmConfig" title="core._cli_hydra.SlurmConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SlurmConfig</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.SchedulerConfig" title="core._cli_hydra.SchedulerConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.Metadata" title="core._cli_hydra.Metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Metadata</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.JobConfig" title="core._cli_hydra.JobConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">JobConfig</span></code></a></p></td>
+<td><p></p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.Submitit" title="core._cli_hydra.Submitit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Submitit</span></code></a></p></td>
 <td><p>Derived callable classes are requeued after timeout with their current</p></td>
 </tr>
@@ -674,16 +778,25 @@ LICENSE file in the root directory of this source tree.</p>
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.map_cli_args_to_dist_config" title="core._cli_hydra.map_cli_args_to_dist_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">map_cli_args_to_dist_config</span></code></a>(→ dict)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra._set_seeds" title="core._cli_hydra._set_seeds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_set_seeds</span></code></a>(→ None)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.get_hydra_config_from_yaml" title="core._cli_hydra.get_hydra_config_from_yaml"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_hydra_config_from_yaml</span></code></a>(→ omegaconf.DictConfig)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra._set_deterministic_mode" title="core._cli_hydra._set_deterministic_mode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_set_deterministic_mode</span></code></a>(→ None)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.runner_wrapper" title="core._cli_hydra.runner_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">runner_wrapper</span></code></a>(config)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.map_job_config_to_dist_config" title="core._cli_hydra.map_job_config_to_dist_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">map_job_config_to_dist_config</span></code></a>(→ dict)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.main" title="core._cli_hydra.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>([args, override_args])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.get_canonical_config" title="core._cli_hydra.get_canonical_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_canonical_config</span></code></a>(→ omegaconf.DictConfig)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.get_hydra_config_from_yaml" title="core._cli_hydra.get_hydra_config_from_yaml"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_hydra_config_from_yaml</span></code></a>(→ omegaconf.DictConfig)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.runner_wrapper" title="core._cli_hydra.runner_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">runner_wrapper</span></code></a>(config)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.main" title="core._cli_hydra.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>([args, override_args])</p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -693,8 +806,253 @@ LICENSE file in the root directory of this source tree.</p>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
 <dl class="py data">
-<dt class="sig sig-object py" id="core._cli_hydra.logger">
-<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">logger</span></span><a class="headerlink" href="#core._cli_hydra.logger" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="core._cli_hydra.ALLOWED_TOP_LEVEL_KEYS">
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">ALLOWED_TOP_LEVEL_KEYS</span></span><a class="headerlink" href="#core._cli_hydra.ALLOWED_TOP_LEVEL_KEYS" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="core._cli_hydra.LOG_DIR_NAME">
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">LOG_DIR_NAME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'logs'</span></em><a class="headerlink" href="#core._cli_hydra.LOG_DIR_NAME" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="core._cli_hydra.CHECKPOINT_DIR_NAME">
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">CHECKPOINT_DIR_NAME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'checkpoints'</span></em><a class="headerlink" href="#core._cli_hydra.CHECKPOINT_DIR_NAME" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="core._cli_hydra.CONFIG_FILE_NAME">
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">CONFIG_FILE_NAME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'canonical_config.yaml'</span></em><a class="headerlink" href="#core._cli_hydra.CONFIG_FILE_NAME" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="core._cli_hydra.PREEMPTION_STATE_DIR_NAME">
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">PREEMPTION_STATE_DIR_NAME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'preemption_state'</span></em><a class="headerlink" href="#core._cli_hydra.PREEMPTION_STATE_DIR_NAME" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="core._cli_hydra.SchedulerType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">SchedulerType</span></span><a class="headerlink" href="#core._cli_hydra.SchedulerType" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>str(object=’’) -&gt; str
+str(bytes_or_buffer[, encoding[, errors]]) -&gt; str</p>
+<p>Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.__str__() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to ‘strict’.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SchedulerType.LOCAL">
+<span class="sig-name descname"><span class="pre">LOCAL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'local'</span></em><a class="headerlink" href="#core._cli_hydra.SchedulerType.LOCAL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SchedulerType.SLURM">
+<span class="sig-name descname"><span class="pre">SLURM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'slurm'</span></em><a class="headerlink" href="#core._cli_hydra.SchedulerType.SLURM" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="core._cli_hydra.DeviceType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">DeviceType</span></span><a class="headerlink" href="#core._cli_hydra.DeviceType" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>str(object=’’) -&gt; str
+str(bytes_or_buffer[, encoding[, errors]]) -&gt; str</p>
+<p>Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.__str__() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to ‘strict’.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.DeviceType.CPU">
+<span class="sig-name descname"><span class="pre">CPU</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'cpu'</span></em><a class="headerlink" href="#core._cli_hydra.DeviceType.CPU" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.DeviceType.CUDA">
+<span class="sig-name descname"><span class="pre">CUDA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'cuda'</span></em><a class="headerlink" href="#core._cli_hydra.DeviceType.CUDA" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="core._cli_hydra.SlurmConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">SlurmConfig</span></span><a class="headerlink" href="#core._cli_hydra.SlurmConfig" title="Link to this definition">#</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SlurmConfig.mem_gb">
+<span class="sig-name descname"><span class="pre">mem_gb</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">80</span></em><a class="headerlink" href="#core._cli_hydra.SlurmConfig.mem_gb" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SlurmConfig.timeout_hr">
+<span class="sig-name descname"><span class="pre">timeout_hr</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">168</span></em><a class="headerlink" href="#core._cli_hydra.SlurmConfig.timeout_hr" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SlurmConfig.cpus_per_task">
+<span class="sig-name descname"><span class="pre">cpus_per_task</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#core._cli_hydra.SlurmConfig.cpus_per_task" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SlurmConfig.partition">
+<span class="sig-name descname"><span class="pre">partition</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core._cli_hydra.SlurmConfig.partition" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SlurmConfig.qos">
+<span class="sig-name descname"><span class="pre">qos</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core._cli_hydra.SlurmConfig.qos" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SlurmConfig.account">
+<span class="sig-name descname"><span class="pre">account</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core._cli_hydra.SlurmConfig.account" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="core._cli_hydra.SchedulerConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">SchedulerConfig</span></span><a class="headerlink" href="#core._cli_hydra.SchedulerConfig" title="Link to this definition">#</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SchedulerConfig.mode">
+<span class="sig-name descname"><span class="pre">mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#core._cli_hydra.SchedulerType" title="core._cli_hydra.SchedulerType"><span class="pre">SchedulerType</span></a></em><a class="headerlink" href="#core._cli_hydra.SchedulerConfig.mode" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SchedulerConfig.ranks_per_node">
+<span class="sig-name descname"><span class="pre">ranks_per_node</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#core._cli_hydra.SchedulerConfig.ranks_per_node" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SchedulerConfig.num_nodes">
+<span class="sig-name descname"><span class="pre">num_nodes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#core._cli_hydra.SchedulerConfig.num_nodes" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SchedulerConfig.slurm">
+<span class="sig-name descname"><span class="pre">slurm</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#core._cli_hydra.SlurmConfig" title="core._cli_hydra.SlurmConfig"><span class="pre">SlurmConfig</span></a></em><a class="headerlink" href="#core._cli_hydra.SchedulerConfig.slurm" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="core._cli_hydra.Metadata">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">Metadata</span></span><a class="headerlink" href="#core._cli_hydra.Metadata" title="Link to this definition">#</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.Metadata.commit">
+<span class="sig-name descname"><span class="pre">commit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#core._cli_hydra.Metadata.commit" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.Metadata.log_dir">
+<span class="sig-name descname"><span class="pre">log_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#core._cli_hydra.Metadata.log_dir" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.Metadata.checkpoint_dir">
+<span class="sig-name descname"><span class="pre">checkpoint_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#core._cli_hydra.Metadata.checkpoint_dir" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.Metadata.config_path">
+<span class="sig-name descname"><span class="pre">config_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#core._cli_hydra.Metadata.config_path" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.Metadata.preemption_checkpoint_dir">
+<span class="sig-name descname"><span class="pre">preemption_checkpoint_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#core._cli_hydra.Metadata.preemption_checkpoint_dir" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.Metadata.cluster_name">
+<span class="sig-name descname"><span class="pre">cluster_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#core._cli_hydra.Metadata.cluster_name" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="core._cli_hydra.JobConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">JobConfig</span></span><a class="headerlink" href="#core._cli_hydra.JobConfig" title="Link to this definition">#</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.JobConfig.run_name">
+<span class="sig-name descname"><span class="pre">run_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#core._cli_hydra.JobConfig.run_name" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.JobConfig.timestamp_id">
+<span class="sig-name descname"><span class="pre">timestamp_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#core._cli_hydra.JobConfig.timestamp_id" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.JobConfig.run_dir">
+<span class="sig-name descname"><span class="pre">run_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#core._cli_hydra.JobConfig.run_dir" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.JobConfig.device_type">
+<span class="sig-name descname"><span class="pre">device_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#core._cli_hydra.DeviceType" title="core._cli_hydra.DeviceType"><span class="pre">DeviceType</span></a></em><a class="headerlink" href="#core._cli_hydra.JobConfig.device_type" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.JobConfig.debug">
+<span class="sig-name descname"><span class="pre">debug</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#core._cli_hydra.JobConfig.debug" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.JobConfig.scheduler">
+<span class="sig-name descname"><span class="pre">scheduler</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#core._cli_hydra.SchedulerConfig" title="core._cli_hydra.SchedulerConfig"><span class="pre">SchedulerConfig</span></a></em><a class="headerlink" href="#core._cli_hydra.JobConfig.scheduler" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.JobConfig.logger">
+<span class="sig-name descname"><span class="pre">logger</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core._cli_hydra.JobConfig.logger" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.JobConfig.seed">
+<span class="sig-name descname"><span class="pre">seed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#core._cli_hydra.JobConfig.seed" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.JobConfig.deterministic">
+<span class="sig-name descname"><span class="pre">deterministic</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#core._cli_hydra.JobConfig.deterministic" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.JobConfig.runner_state_path">
+<span class="sig-name descname"><span class="pre">runner_state_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core._cli_hydra.JobConfig.runner_state_path" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.JobConfig.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#core._cli_hydra.Metadata" title="core._cli_hydra.Metadata"><span class="pre">Metadata</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core._cli_hydra.JobConfig.metadata" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.JobConfig.graph_parallel_group_size">
+<span class="sig-name descname"><span class="pre">graph_parallel_group_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core._cli_hydra.JobConfig.graph_parallel_group_size" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core._cli_hydra.JobConfig.__post_init__">
+<span class="sig-name descname"><span class="pre">__post_init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core._cli_hydra.JobConfig.__post_init__" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="core._cli_hydra._set_seeds">
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">_set_seeds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core._cli_hydra._set_seeds" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="core._cli_hydra._set_deterministic_mode">
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">_set_deterministic_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core._cli_hydra._set_deterministic_mode" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py class">
@@ -711,6 +1069,16 @@ state of the callable (self) with the initial argument. You may want to replace 
 curate the state (dump a neural network to a standard format and remove it from
 the state so that not to pickle it) and change/remove the initial parameters.</p>
 </div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.Submitit.config">
+<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core._cli_hydra.Submitit.config" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.Submitit.runner">
+<span class="sig-name descname"><span class="pre">runner</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core._cli_hydra.Submitit.runner" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="core._cli_hydra.Submitit.__call__">
 <span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">omegaconf.DictConfig</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core._cli_hydra.Submitit.__call__" title="Link to this definition">#</a></dt>
@@ -730,8 +1098,13 @@ the state so that not to pickle it) and change/remove the initial parameters.</p
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="core._cli_hydra.map_cli_args_to_dist_config">
-<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">map_cli_args_to_dist_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cli_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">omegaconf.DictConfig</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#core._cli_hydra.map_cli_args_to_dist_config" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="core._cli_hydra.map_job_config_to_dist_config">
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">map_job_config_to_dist_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#core._cli_hydra.JobConfig" title="core._cli_hydra.JobConfig"><span class="pre">JobConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#core._cli_hydra.map_job_config_to_dist_config" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="core._cli_hydra.get_canonical_config">
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">get_canonical_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">omegaconf.DictConfig</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">omegaconf.DictConfig</span></span></span><a class="headerlink" href="#core._cli_hydra.get_canonical_config" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
@@ -807,8 +1180,7 @@ the state so that not to pickle it) and change/remove the initial parameters.</p
             
             
               
-                <dialog id="pst-secondary-sidebar-modal"></dialog>
-                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
 
   <div class="sidebar-secondary-item">
@@ -821,14 +1193,74 @@ the state so that not to pickle it) and change/remove the initial parameters.</p
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.logger"><code class="docutils literal notranslate"><span class="pre">logger</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.ALLOWED_TOP_LEVEL_KEYS"><code class="docutils literal notranslate"><span class="pre">ALLOWED_TOP_LEVEL_KEYS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.LOG_DIR_NAME"><code class="docutils literal notranslate"><span class="pre">LOG_DIR_NAME</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.CHECKPOINT_DIR_NAME"><code class="docutils literal notranslate"><span class="pre">CHECKPOINT_DIR_NAME</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.CONFIG_FILE_NAME"><code class="docutils literal notranslate"><span class="pre">CONFIG_FILE_NAME</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.PREEMPTION_STATE_DIR_NAME"><code class="docutils literal notranslate"><span class="pre">PREEMPTION_STATE_DIR_NAME</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerType"><code class="docutils literal notranslate"><span class="pre">SchedulerType</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerType.LOCAL"><code class="docutils literal notranslate"><span class="pre">SchedulerType.LOCAL</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerType.SLURM"><code class="docutils literal notranslate"><span class="pre">SchedulerType.SLURM</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.DeviceType"><code class="docutils literal notranslate"><span class="pre">DeviceType</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.DeviceType.CPU"><code class="docutils literal notranslate"><span class="pre">DeviceType.CPU</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.DeviceType.CUDA"><code class="docutils literal notranslate"><span class="pre">DeviceType.CUDA</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmConfig"><code class="docutils literal notranslate"><span class="pre">SlurmConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmConfig.mem_gb"><code class="docutils literal notranslate"><span class="pre">SlurmConfig.mem_gb</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmConfig.timeout_hr"><code class="docutils literal notranslate"><span class="pre">SlurmConfig.timeout_hr</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmConfig.cpus_per_task"><code class="docutils literal notranslate"><span class="pre">SlurmConfig.cpus_per_task</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmConfig.partition"><code class="docutils literal notranslate"><span class="pre">SlurmConfig.partition</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmConfig.qos"><code class="docutils literal notranslate"><span class="pre">SlurmConfig.qos</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmConfig.account"><code class="docutils literal notranslate"><span class="pre">SlurmConfig.account</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.mode"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.mode</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.ranks_per_node"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.ranks_per_node</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.num_nodes"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.num_nodes</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.slurm"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.slurm</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata"><code class="docutils literal notranslate"><span class="pre">Metadata</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.commit"><code class="docutils literal notranslate"><span class="pre">Metadata.commit</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.log_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.log_dir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.checkpoint_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.checkpoint_dir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.config_path"><code class="docutils literal notranslate"><span class="pre">Metadata.config_path</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.preemption_checkpoint_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.preemption_checkpoint_dir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.cluster_name"><code class="docutils literal notranslate"><span class="pre">Metadata.cluster_name</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig"><code class="docutils literal notranslate"><span class="pre">JobConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.run_name"><code class="docutils literal notranslate"><span class="pre">JobConfig.run_name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.timestamp_id"><code class="docutils literal notranslate"><span class="pre">JobConfig.timestamp_id</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.run_dir"><code class="docutils literal notranslate"><span class="pre">JobConfig.run_dir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.device_type"><code class="docutils literal notranslate"><span class="pre">JobConfig.device_type</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.debug"><code class="docutils literal notranslate"><span class="pre">JobConfig.debug</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.scheduler"><code class="docutils literal notranslate"><span class="pre">JobConfig.scheduler</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.logger"><code class="docutils literal notranslate"><span class="pre">JobConfig.logger</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.seed"><code class="docutils literal notranslate"><span class="pre">JobConfig.seed</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.deterministic"><code class="docutils literal notranslate"><span class="pre">JobConfig.deterministic</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.runner_state_path"><code class="docutils literal notranslate"><span class="pre">JobConfig.runner_state_path</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.metadata"><code class="docutils literal notranslate"><span class="pre">JobConfig.metadata</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.graph_parallel_group_size"><code class="docutils literal notranslate"><span class="pre">JobConfig.graph_parallel_group_size</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig.__post_init__"><code class="docutils literal notranslate"><span class="pre">JobConfig.__post_init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra._set_seeds"><code class="docutils literal notranslate"><span class="pre">_set_seeds()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra._set_deterministic_mode"><code class="docutils literal notranslate"><span class="pre">_set_deterministic_mode()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit"><code class="docutils literal notranslate"><span class="pre">Submitit</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.config"><code class="docutils literal notranslate"><span class="pre">Submitit.config</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.runner"><code class="docutils literal notranslate"><span class="pre">Submitit.runner</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.__call__"><code class="docutils literal notranslate"><span class="pre">Submitit.__call__()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit._init_logger"><code class="docutils literal notranslate"><span class="pre">Submitit._init_logger()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.checkpoint"><code class="docutils literal notranslate"><span class="pre">Submitit.checkpoint()</span></code></a></li>
 </ul>
 </li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.map_cli_args_to_dist_config"><code class="docutils literal notranslate"><span class="pre">map_cli_args_to_dist_config()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.map_job_config_to_dist_config"><code class="docutils literal notranslate"><span class="pre">map_job_config_to_dist_config()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.get_canonical_config"><code class="docutils literal notranslate"><span class="pre">get_canonical_config()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.get_hydra_config_from_yaml"><code class="docutils literal notranslate"><span class="pre">get_hydra_config_from_yaml()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.runner_wrapper"><code class="docutils literal notranslate"><span class="pre">runner_wrapper()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
@@ -882,8 +1314,8 @@ By FAIR Chemistry & Collaborators
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+  <script src="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
 
   <footer class="bd-footer">
   </footer>
