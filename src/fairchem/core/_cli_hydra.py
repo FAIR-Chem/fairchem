@@ -111,7 +111,7 @@ class JobConfig:
     runner_state_path: Optional[str] = None  # noqa: UP007
     # read-only metadata about the job, not user inputs
     metadata: Optional[Metadata] = None  # noqa: UP007
-    graph_parallel_group_size: Optional[int] = None  # noqa: UP007 python 3.9 requires Optional still
+    graph_parallel_group_size: Optional[int] = None  # noqa: UP007
 
     def __post_init__(self) -> None:
         self.metadata = Metadata(
@@ -304,6 +304,9 @@ def main(
     scheduler_cfg = cfg.job.scheduler
     logging.info(f"Running fairchemv2 cli with {cfg}")
     if scheduler_cfg.mode == SchedulerType.SLURM:  # Run on cluster
+        assert (
+            os.getenv("SLURM_SUBMIT_HOST") is None
+        ), "SLURM DID NOT SUBMIT JOB!! Please do not submit jobs from an active slurm job (srun or otherwise)"
         executor = AutoExecutor(folder=log_dir, slurm_max_num_timeout=3)
         executor.update_parameters(
             name=cfg.job.run_name,
