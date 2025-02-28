@@ -37,8 +37,6 @@ from fairchem.core.models.model_registry import model_name_to_local_file
 from fairchem.core.preprocessing import AtomsToGraphs
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from torch_geometric.data import Batch
 
 
