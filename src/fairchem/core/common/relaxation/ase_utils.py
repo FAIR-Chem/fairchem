@@ -125,6 +125,7 @@ class OCPCalculator(Calculator):
         cpu: bool = True,
         seed: int | None = None,
         only_output: list[str] | None = None,
+        disable_amp: bool = True
     ) -> None:
         """
         OCP-ASE Calculator
@@ -143,6 +144,13 @@ class OCPCalculator(Calculator):
                 OCP trainer to be used. "forces" for S2EF, "energy" for IS2RE.
             cpu (bool):
                 Whether to load and run the model on CPU. Set `False` for GPU.
+            seed (int):
+                Seed in the calculator to ensure reproducibility among instantiations
+            only_output (list):
+                A list of outputs to use from the model, rather than relying on the underlying task
+            disable_amp (bool):
+                Disable AMP in the calculator; AMP on is great for training, but often leads to headaches
+                during inference.
         """
         setup_imports()
         setup_logging()
@@ -251,6 +259,9 @@ class OCPCalculator(Calculator):
             )
         else:
             self.trainer.set_seed(seed)
+
+        if disable_amp:
+            self.trainer.scaler = None
 
         self.a2g = AtomsToGraphs(
             r_energy=False,
