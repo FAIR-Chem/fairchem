@@ -169,6 +169,8 @@ class OCPCalculator(Calculator):
                 model_name=model_name, local_cache=local_cache
             )
 
+        checkpoint_path = Path(checkpoint_path)
+
         # Either the config path or the checkpoint path needs to be provided
         assert config_yml or checkpoint_path is not None
 
