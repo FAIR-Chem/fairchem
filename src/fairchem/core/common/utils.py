@@ -1517,7 +1517,7 @@ def get_subdirectories_sorted_by_time(directory: str) -> str:
     )
 
 
-def get_cluster_name() -> str | None:
+def get_cluster_name() -> str:
     try:
         return (
             subprocess.check_output(
@@ -1528,5 +1528,7 @@ def get_cluster_name() -> str | None:
             .strip()
         )
     except subprocess.CalledProcessError as e:
-        logging.warning(e)
-        return None
+        logging.warning(
+            f"scontrol command failed, couldn't find cluster name, returning UNKOWN as cluster name {e!s}"
+        )
+        return "unknown"
