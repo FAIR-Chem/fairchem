@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import torch
+import torch.distributed.checkpoint as dcp
 from torch import nn
 from torch_geometric.nn import radius_graph
 
@@ -239,6 +240,7 @@ class HydraModel(nn.Module, GraphModelMixin):
         otf_graph: bool = True,
         pass_through_head_outputs: bool = False,
         freeze_backbone: bool = False,
+        tnt_finetune_config: dict | None = None,
     ):
         super().__init__()
         self.device = None
@@ -291,6 +293,18 @@ class HydraModel(nn.Module, GraphModelMixin):
         if freeze_backbone:
             for param in self.backbone.parameters():
                 param.requires_grad = False
+
+        # load after the backbone is loaded but before heads
+        if tnt_finetune_config is not None:
+            dcp.load(
+                state_dict={
+                    f"unit_state.model.{k}": v for k, v in self.state_dict().items()
+                },
+                checkpoint_id=tnt_finetune_config["starting_checkpoint"],
+            )
+            if "override" in tnt_finetune_config:
+                for key, value in tnt_finetune_config["override"].items():
+                    setattr(self.backbone, key, value)
 
         if heads is not None:
             heads = copy.deepcopy(heads)
