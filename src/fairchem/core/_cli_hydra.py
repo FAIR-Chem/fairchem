@@ -23,6 +23,8 @@ import torch
 from omegaconf import OmegaConf
 from omegaconf.errors import InterpolationKeyError
 
+from fairchem.core.common import gp_utils
+
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
@@ -34,6 +36,7 @@ from submitit.helpers import Checkpointable, DelayedSubmission
 from fairchem.core.common import distutils
 from fairchem.core.common.logger import WandBSingletonLogger
 from fairchem.core.common.utils import (
+    get_cluster_name,
     get_commit_hash,
     get_subdirectories_sorted_by_time,
     get_timestamp_uid,
@@ -49,6 +52,7 @@ ALLOWED_TOP_LEVEL_KEYS = {"job", "runner"}
 
 LOG_DIR_NAME = "logs"
 CHECKPOINT_DIR_NAME = "checkpoints"
+RESULTS_DIR = "results"
 CONFIG_FILE_NAME = "canonical_config.yaml"
 PREEMPTION_STATE_DIR_NAME = "preemption_state"
 
@@ -88,8 +92,10 @@ class Metadata:
     commit: str
     log_dir: str
     checkpoint_dir: str
+    results_dir: str
     config_path: str
     preemption_checkpoint_dir: str
+    cluster_name: str
     job_num: int = 1
 
 
@@ -109,6 +115,7 @@ class JobConfig:
     runner_state_path: Optional[str] = None  # noqa: UP007
     # read-only metadata about the job, not user inputs
     metadata: Optional[Metadata] = None  # noqa: UP007
+    graph_parallel_group_size: Optional[int] = None  # noqa: UP007
 
     def __post_init__(self) -> None:
         self.metadata = Metadata(
@@ -117,6 +124,7 @@ class JobConfig:
             checkpoint_dir=os.path.join(
                 self.run_dir, self.timestamp_id, CHECKPOINT_DIR_NAME
             ),
+            results_dir=os.path.join(self.run_dir, self.timestamp_id, RESULTS_DIR),
             config_path=os.path.join(self.run_dir, self.timestamp_id, CONFIG_FILE_NAME),
             preemption_checkpoint_dir=os.path.join(
                 self.run_dir,
@@ -124,6 +132,7 @@ class JobConfig:
                 CHECKPOINT_DIR_NAME,
                 PREEMPTION_STATE_DIR_NAME,
             ),
+            cluster_name=get_cluster_name(),
         )
 
 
@@ -153,18 +162,23 @@ class Submitit(Checkpointable):
         # TODO also load job config here
         setup_env_vars()
         setup_logging()
-        distutils.setup(map_job_config_to_dist_config(self.config.job))
+
+        dist_config = map_job_config_to_dist_config(self.config.job)
+        distutils.setup(dist_config)
+        if self.config.job.graph_parallel_group_size is not None:
+            gp_utils.setup_graph_parallel_groups(
+                self.config.job.graph_parallel_group_size,
+                dist_config["distributed_backend"],
+            )
+
         self._init_logger()
         _set_seeds(self.config.job.seed)
         if self.config.job.deterministic:
             _set_deterministic_mode()
 
         self.runner: Runner = hydra.utils.instantiate(dict_config.runner)
-        self.runner.config = (
-            self.config
-        )  # TODO which runners use the whole config? if needed lets move to initialize
-        self.runner.initialize(self.config.job)
-
+        # TODO which runners use the whole config? if needed lets move to initialize
+        self.runner.config = self.config
         # must call resume state AFTER the runner has been initialized
         if self.config.job.runner_state_path:
             self.runner.load_state(self.config.job.runner_state_path)
@@ -292,6 +306,9 @@ def main(
     scheduler_cfg = cfg.job.scheduler
     logging.info(f"Running fairchemv2 cli with {cfg}")
     if scheduler_cfg.mode == SchedulerType.SLURM:  # Run on cluster
+        assert (
+            os.getenv("SLURM_SUBMIT_HOST") is None
+        ), "SLURM DID NOT SUBMIT JOB!! Please do not submit jobs from an active slurm job (srun or otherwise)"
         executor = AutoExecutor(folder=log_dir, slurm_max_num_timeout=3)
         executor.update_parameters(
             name=cfg.job.run_name,
