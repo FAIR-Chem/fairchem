@@ -236,6 +236,7 @@ class AtomsToGraphs:
             data.edge_distance_vec = self.get_edge_distance_vec(
                 positions, edge_index, cell, cell_offsets
             )
+            data.nedges = edge_index.shape[1]
 
             del atoms_copy
         if self.r_energy:
