@@ -52,6 +52,7 @@ ALLOWED_TOP_LEVEL_KEYS = {"job", "runner"}
 
 LOG_DIR_NAME = "logs"
 CHECKPOINT_DIR_NAME = "checkpoints"
+RESULTS_DIR = "results"
 CONFIG_FILE_NAME = "canonical_config.yaml"
 PREEMPTION_STATE_DIR_NAME = "preemption_state"
 
@@ -90,6 +91,7 @@ class Metadata:
     commit: str
     log_dir: str
     checkpoint_dir: str
+    results_dir: str
     config_path: str
     preemption_checkpoint_dir: str
     cluster_name: str
@@ -111,7 +113,7 @@ class JobConfig:
     runner_state_path: Optional[str] = None  # noqa: UP007
     # read-only metadata about the job, not user inputs
     metadata: Optional[Metadata] = None  # noqa: UP007
-    graph_parallel_group_size: Optional[int] = None  # noqa: UP007 python 3.9 requires Optional still
+    graph_parallel_group_size: Optional[int] = None  # noqa: UP007
 
     def __post_init__(self) -> None:
         self.metadata = Metadata(
@@ -120,6 +122,7 @@ class JobConfig:
             checkpoint_dir=os.path.join(
                 self.run_dir, self.timestamp_id, CHECKPOINT_DIR_NAME
             ),
+            results_dir=os.path.join(self.run_dir, self.timestamp_id, RESULTS_DIR),
             config_path=os.path.join(self.run_dir, self.timestamp_id, CONFIG_FILE_NAME),
             preemption_checkpoint_dir=os.path.join(
                 self.run_dir,
@@ -304,6 +307,9 @@ def main(
     scheduler_cfg = cfg.job.scheduler
     logging.info(f"Running fairchemv2 cli with {cfg}")
     if scheduler_cfg.mode == SchedulerType.SLURM:  # Run on cluster
+        assert (
+            os.getenv("SLURM_SUBMIT_HOST") is None
+        ), "SLURM DID NOT SUBMIT JOB!! Please do not submit jobs from an active slurm job (srun or otherwise)"
         executor = AutoExecutor(folder=log_dir, slurm_max_num_timeout=3)
         executor.update_parameters(
             name=cfg.job.run_name,

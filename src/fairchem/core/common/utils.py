@@ -1458,11 +1458,11 @@ def get_timestamp_uid() -> str:
 @torch.no_grad()
 def tensor_stats(name: str, x: torch.Tensor) -> dict:
     return {
-        f"{name}.max": x.max(),
-        f"{name}.min": x.min(),
-        f"{name}.std": x.std(),
-        f"{name}.mean": x.mean(),
-        f"{name}.norm": torch.norm(x, p=2),
+        f"{name}.max": x.max().item(),
+        f"{name}.min": x.min().item(),
+        f"{name}.std": x.std().item(),
+        f"{name}.mean": x.mean().item(),
+        f"{name}.norm": torch.norm(x, p=2).item(),
         f"{name}.nonzero_fraction": torch.nonzero(x).shape[0] / float(x.numel()),
     }
 
@@ -1517,7 +1517,7 @@ def get_subdirectories_sorted_by_time(directory: str) -> str:
     )
 
 
-def get_cluster_name() -> str | None:
+def get_cluster_name() -> str:
     try:
         return (
             subprocess.check_output(
@@ -1528,5 +1528,7 @@ def get_cluster_name() -> str | None:
             .strip()
         )
     except subprocess.CalledProcessError as e:
-        logging.warning(e)
-        return None
+        logging.warning(
+            f"scontrol command failed, couldn't find cluster name, returning UNKOWN as cluster name {e!s}"
+        )
+        return "unknown"

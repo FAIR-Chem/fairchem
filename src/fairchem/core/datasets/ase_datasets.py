@@ -470,9 +470,9 @@ class AseDBDataset(AseAtomsDataset):
     def _load_dataset_get_ids(self, config: dict) -> list[int]:
         if isinstance(config["src"], list):
             filepaths = []
-            for path in config["src"]:
+            for path in sorted(config["src"]):
                 if os.path.isdir(path):
-                    filepaths.extend(glob(f"{path}/*"))
+                    filepaths.extend(sorted(glob(f"{path}/*")))
                 elif os.path.isfile(path):
                     filepaths.append(path)
                 else:
@@ -480,13 +480,13 @@ class AseDBDataset(AseAtomsDataset):
         elif os.path.isfile(config["src"]):
             filepaths = [config["src"]]
         elif os.path.isdir(config["src"]):
-            filepaths = glob(f'{config["src"]}/*')
+            filepaths = sorted(glob(f'{config["src"]}/*'))
         else:
-            filepaths = glob(config["src"])
+            filepaths = sorted(glob(config["src"]))
 
         self.dbs = []
 
-        for path in sorted(filepaths):
+        for path in filepaths:
             try:
                 self.dbs.append(
                     self.connect_db(
