@@ -1232,7 +1232,11 @@ def scatter_det(*args, **kwargs):
 
 
 def get_fairchem_and_experimental_commit_hash() -> str:
-    return f"core:{get_commit_hash(fairchem.core.__path__[0])},experimental:{get_commit_hash(fairchem.experimental.__path__[0])}"
+    try:
+        return f"core:{get_commit_hash(fairchem.core.__path__[0])},experimental:{get_commit_hash(fairchem.experimental.__path__[0])}"
+    except (NameError, AttributeError):
+        pass
+    return f"core:{get_commit_hash(fairchem.core.__path__[0])},experimental:NA"
 
 
 def get_commit_hash(
