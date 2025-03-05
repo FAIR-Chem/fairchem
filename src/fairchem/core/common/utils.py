@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from functools import reduce, wraps
 from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import uuid4
 
 import numpy as np
@@ -1231,11 +1231,17 @@ def scatter_det(*args, **kwargs):
     return out
 
 
-def get_commit_hash():
+def get_fairchem_and_experimental_commit_hash() -> str:
+    return f"core:{get_commit_hash(fairchem.core.__path__[0])},experimental:{get_commit_hash(fairchem.experimental.__path__[0])}"
+
+
+def get_commit_hash(
+    git_repo_path: str,
+) -> Optional[str]:  # noqa: UP007 python 3.9 requires Optional still
     try:
         commit_hash = (
             subprocess.check_output(
-                ["git", "-C", fairchem.core.__path__[0], "describe", "--always"],
+                ["git", "-C", git_repo_path, "describe", "--always"],
                 stderr=subprocess.DEVNULL,
             )
             .strip()
