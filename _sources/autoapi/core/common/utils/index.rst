@@ -324,5 +324,5 @@ Module Contents
    :rtype: list
 
 
-.. py:function:: get_cluster_name() -> str | None
+.. py:function:: get_cluster_name() -> str
 

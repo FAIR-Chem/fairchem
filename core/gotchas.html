@@ -701,15 +701,15 @@ document.write(`
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-02-26-23-40-48
-  commit: f57ec7e
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
+  commit: 3f1df40
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-02-26-23-40-48
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-02-26-23-40-48
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
   seed: null
-  timestamp_id: 2025-02-26-23-40-48
-  version: 1.5.0
+  timestamp_id: 2025-03-05-01-59-28
+  version: 1.5.1
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -935,8 +935,7 @@ val_dataset: {}
 <span class="g g-Whitespace">    </span><span class="mi">465</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
 <span class="g g-Whitespace">    </span><span class="mi">466</span>     <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
 <span class="g g-Whitespace">    </span><span class="mi">467</span>     <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
-   <span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">470</span>     <span class="n">disable</span><span class="o">=</span><span class="n">disable_tqdm</span><span class="p">,</span>
+   <span class="p">(</span><span class="o">...</span><span class="p">)</span>    <span class="mi">470</span>     <span class="n">disable</span><span class="o">=</span><span class="n">disable_tqdm</span><span class="p">,</span>
 <span class="g g-Whitespace">    </span><span class="mi">471</span> <span class="p">):</span>
 <span class="g g-Whitespace">    </span><span class="mi">472</span>     <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span> <span class="n">enabled</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scaler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
 <span class="ne">--&gt; </span><span class="mi">473</span>         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
@@ -973,8 +972,7 @@ val_dataset: {}
 <span class="g g-Whitespace">   </span><span class="mi">1196</span> <span class="p">(</span>
 <span class="g g-Whitespace">   </span><span class="mi">1197</span>     <span class="n">main_graph</span><span class="p">,</span>
 <span class="g g-Whitespace">   </span><span class="mi">1198</span>     <span class="n">a2a_graph</span><span class="p">,</span>
-   <span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1205</span>     <span class="n">quad_idx</span><span class="p">,</span>
+   <span class="p">(</span><span class="o">...</span><span class="p">)</span>   <span class="mi">1205</span>     <span class="n">quad_idx</span><span class="p">,</span>
 <span class="g g-Whitespace">   </span><span class="mi">1206</span> <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_graphs_and_indices</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1207</span> <span class="n">_</span><span class="p">,</span> <span class="n">idx_t</span> <span class="o">=</span> <span class="n">main_graph</span><span class="p">[</span><span class="s2">&quot;edge_index&quot;</span><span class="p">]</span>
 <span class="g g-Whitespace">   </span><span class="mi">1209</span> <span class="p">(</span>
@@ -1107,15 +1105,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-02-26-23-40-48
-  commit: f57ec7e
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
+  commit: 3f1df40
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-02-26-23-40-48
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-02-26-23-40-48
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
   seed: null
-  timestamp_id: 2025-02-26-23-40-48
-  version: 1.5.0
+  timestamp_id: 2025-03-05-01-59-28
+  version: 1.5.1
 dataset:
   format: trajectory_lmdb
   grad_target_mean: 0.0
@@ -1292,7 +1290,7 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3440/2356712572.py:11: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3422/2356712572.py:11: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
@@ -1327,15 +1325,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-02-26-23-40-48
-  commit: f57ec7e
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
+  commit: 3f1df40
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-02-26-23-40-48
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-02-26-23-40-48
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
   seed: null
-  timestamp_id: 2025-02-26-23-40-48
-  version: 1.5.0
+  timestamp_id: 2025-03-05-01-59-28
+  version: 1.5.1
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1500,7 +1498,7 @@ val_dataset: {}
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3440/2054440827.py:9: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3422/2054440827.py:9: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
@@ -1533,15 +1531,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-02-26-23-40-48
-  commit: f57ec7e
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
+  commit: 3f1df40
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-02-26-23-40-48
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-02-26-23-40-48
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
   seed: null
-  timestamp_id: 2025-02-26-23-40-48
-  version: 1.5.0
+  timestamp_id: 2025-03-05-01-59-28
+  version: 1.5.1
 dataset:
   format: trajectory_lmdb
   grad_target_mean: 0.0
@@ -1684,11 +1682,11 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3440/1817216860.py:7: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3422/1817216860.py:7: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.675478458404541
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.6665925979614258
 </pre></div>
 </div>
 </div>
@@ -1744,15 +1742,15 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-02-26-23-40-48
-  commit: f57ec7e
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
+  commit: 3f1df40
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-02-26-23-40-48
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-02-26-23-40-48
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
   seed: null
-  timestamp_id: 2025-02-26-23-40-48
-  version: 1.5.0
+  timestamp_id: 2025-03-05-01-59-28
+  version: 1.5.1
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1981,8 +1979,7 @@ val_dataset: {}
 <span class="g g-Whitespace">    </span><span class="mi">465</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
 <span class="g g-Whitespace">    </span><span class="mi">466</span>     <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
 <span class="g g-Whitespace">    </span><span class="mi">467</span>     <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
-   <span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">470</span>     <span class="n">disable</span><span class="o">=</span><span class="n">disable_tqdm</span><span class="p">,</span>
+   <span class="p">(</span><span class="o">...</span><span class="p">)</span>    <span class="mi">470</span>     <span class="n">disable</span><span class="o">=</span><span class="n">disable_tqdm</span><span class="p">,</span>
 <span class="g g-Whitespace">    </span><span class="mi">471</span> <span class="p">):</span>
 <span class="g g-Whitespace">    </span><span class="mi">472</span>     <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span> <span class="n">enabled</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scaler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
 <span class="ne">--&gt; </span><span class="mi">473</span>         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
@@ -2019,8 +2016,7 @@ val_dataset: {}
 <span class="g g-Whitespace">   </span><span class="mi">1196</span> <span class="p">(</span>
 <span class="g g-Whitespace">   </span><span class="mi">1197</span>     <span class="n">main_graph</span><span class="p">,</span>
 <span class="g g-Whitespace">   </span><span class="mi">1198</span>     <span class="n">a2a_graph</span><span class="p">,</span>
-   <span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1205</span>     <span class="n">quad_idx</span><span class="p">,</span>
+   <span class="p">(</span><span class="o">...</span><span class="p">)</span>   <span class="mi">1205</span>     <span class="n">quad_idx</span><span class="p">,</span>
 <span class="g g-Whitespace">   </span><span class="mi">1206</span> <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_graphs_and_indices</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1207</span> <span class="n">_</span><span class="p">,</span> <span class="n">idx_t</span> <span class="o">=</span> <span class="n">main_graph</span><span class="p">[</span><span class="s2">&quot;edge_index&quot;</span><span class="p">]</span>
 <span class="g g-Whitespace">   </span><span class="mi">1209</span> <span class="p">(</span>
@@ -2127,15 +2123,15 @@ val_dataset: {}
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-02-26-23-40-48
-  commit: f57ec7e
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
+  commit: 3f1df40
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-02-26-23-40-48
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-02-26-23-40-48
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
   seed: null
-  timestamp_id: 2025-02-26-23-40-48
-  version: 1.5.0
+  timestamp_id: 2025-03-05-01-59-28
+  version: 1.5.1
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -2360,8 +2356,7 @@ val_dataset: {}
 <span class="g g-Whitespace">    </span><span class="mi">465</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
 <span class="g g-Whitespace">    </span><span class="mi">466</span>     <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
 <span class="g g-Whitespace">    </span><span class="mi">467</span>     <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data_loader</span><span class="p">),</span>
-   <span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">470</span>     <span class="n">disable</span><span class="o">=</span><span class="n">disable_tqdm</span><span class="p">,</span>
+   <span class="p">(</span><span class="o">...</span><span class="p">)</span>    <span class="mi">470</span>     <span class="n">disable</span><span class="o">=</span><span class="n">disable_tqdm</span><span class="p">,</span>
 <span class="g g-Whitespace">    </span><span class="mi">471</span> <span class="p">):</span>
 <span class="g g-Whitespace">    </span><span class="mi">472</span>     <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span> <span class="n">enabled</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scaler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
 <span class="ne">--&gt; </span><span class="mi">473</span>         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
@@ -2398,8 +2393,7 @@ val_dataset: {}
 <span class="g g-Whitespace">   </span><span class="mi">1196</span> <span class="p">(</span>
 <span class="g g-Whitespace">   </span><span class="mi">1197</span>     <span class="n">main_graph</span><span class="p">,</span>
 <span class="g g-Whitespace">   </span><span class="mi">1198</span>     <span class="n">a2a_graph</span><span class="p">,</span>
-   <span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1205</span>     <span class="n">quad_idx</span><span class="p">,</span>
+   <span class="p">(</span><span class="o">...</span><span class="p">)</span>   <span class="mi">1205</span>     <span class="n">quad_idx</span><span class="p">,</span>
 <span class="g g-Whitespace">   </span><span class="mi">1206</span> <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_graphs_and_indices</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 <span class="g g-Whitespace">   </span><span class="mi">1207</span> <span class="n">_</span><span class="p">,</span> <span class="n">idx_t</span> <span class="o">=</span> <span class="n">main_graph</span><span class="p">[</span><span class="s2">&quot;edge_index&quot;</span><span class="p">]</span>
 <span class="g g-Whitespace">   </span><span class="mi">1209</span> <span class="p">(</span>
@@ -2491,7 +2485,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3440/3906293788.py:3: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3422/3906293788.py:3: FutureWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
 </pre></div>
 </div>
@@ -2524,15 +2518,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-02-26-23-40-48
-  commit: f57ec7e
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
+  commit: 3f1df40
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-02-26-23-40-48
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-02-26-23-40-48
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
   seed: null
-  timestamp_id: 2025-02-26-23-40-48
-  version: 1.5.0
+  timestamp_id: 2025-03-05-01-59-28
+  version: 1.5.1
 dataset:
   format: trajectory_lmdb_v2
   grad_target_mean: 0.0
@@ -2699,11 +2693,11 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3440/4094489779.py:3: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3422/4094489779.py:3: FutureWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
 </pre></div>
 </div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>-0.4297372102737427
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>-0.42973706126213074
 </pre></div>
 </div>
 </div>
@@ -2753,15 +2747,15 @@ This happens because a random selection of is made to sample edges, and a differ
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-02-26-23-40-48
-  commit: f57ec7e
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
+  commit: 3f1df40
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-02-26-23-40-48
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-02-26-23-40-48
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
   seed: null
-  timestamp_id: 2025-02-26-23-40-48
-  version: 1.5.0
+  timestamp_id: 2025-03-05-01-59-28
+  version: 1.5.1
 dataset:
   format: trajectory_lmdb_v2
   grad_target_mean: 0.0
@@ -2916,21 +2910,21 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3440/3396863997.py:11: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3422/3396863997.py:11: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.2127607822418214 1.2714664102528937e-06
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.2127606868743896 1.8863716549732668e-06
+1.2127625942230225
+1.2127594947814941
+1.2127625942230225
 1.212761402130127
-1.2127628326416016
-1.212759017944336
-1.2127602100372314
+1.2127599716186523
+1.2127585411071777
+1.2127575874328613
+1.212759256362915
 1.2127618789672852
-1.2127587795257568
-1.2127606868743896
-1.2127623558044434
-1.2127602100372314
-1.2127604484558105
+1.2127635478973389
 </pre></div>
 </div>
 </div>
@@ -2969,15 +2963,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-02-26-23-40-48
-  commit: f57ec7e
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
+  commit: 3f1df40
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-02-26-23-40-48
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-02-26-23-40-48
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
   seed: null
-  timestamp_id: 2025-02-26-23-40-48
-  version: 1.5.0
+  timestamp_id: 2025-03-05-01-59-28
+  version: 1.5.1
 dataset:
   format: trajectory_lmdb_v2
   grad_target_mean: 0.0
@@ -3132,11 +3126,11 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3440/4037009387.py:11: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3422/4037009387.py:11: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([ 0.01599053,  0.00170374, -0.07198012], dtype=float32)
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([ 0.01599104,  0.00170693, -0.07198048], dtype=float32)
 </pre></div>
 </div>
 </div>
@@ -3149,7 +3143,7 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([-1.6018748e-07, -1.9383151e-08,  1.1920929e-07], dtype=float32)
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([-8.0210157e-08, -1.0605436e-07,  2.3841858e-07], dtype=float32)
 </pre></div>
 </div>
 </div>

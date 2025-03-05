@@ -636,6 +636,7 @@ document.write(`
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.ALLOWED_TOP_LEVEL_KEYS"><code class="docutils literal notranslate"><span class="pre">ALLOWED_TOP_LEVEL_KEYS</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.LOG_DIR_NAME"><code class="docutils literal notranslate"><span class="pre">LOG_DIR_NAME</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.CHECKPOINT_DIR_NAME"><code class="docutils literal notranslate"><span class="pre">CHECKPOINT_DIR_NAME</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.RESULTS_DIR"><code class="docutils literal notranslate"><span class="pre">RESULTS_DIR</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.CONFIG_FILE_NAME"><code class="docutils literal notranslate"><span class="pre">CONFIG_FILE_NAME</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.PREEMPTION_STATE_DIR_NAME"><code class="docutils literal notranslate"><span class="pre">PREEMPTION_STATE_DIR_NAME</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerType"><code class="docutils literal notranslate"><span class="pre">SchedulerType</span></code></a><ul class="nav section-nav flex-column">
@@ -668,6 +669,7 @@ document.write(`
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.commit"><code class="docutils literal notranslate"><span class="pre">Metadata.commit</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.log_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.log_dir</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.checkpoint_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.checkpoint_dir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.results_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.results_dir</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.config_path"><code class="docutils literal notranslate"><span class="pre">Metadata.config_path</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.preemption_checkpoint_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.preemption_checkpoint_dir</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.cluster_name"><code class="docutils literal notranslate"><span class="pre">Metadata.cluster_name</span></code></a></li>
@@ -735,10 +737,13 @@ LICENSE file in the root directory of this source tree.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.CHECKPOINT_DIR_NAME" title="core._cli_hydra.CHECKPOINT_DIR_NAME"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CHECKPOINT_DIR_NAME</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.CONFIG_FILE_NAME" title="core._cli_hydra.CONFIG_FILE_NAME"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CONFIG_FILE_NAME</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.RESULTS_DIR" title="core._cli_hydra.RESULTS_DIR"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RESULTS_DIR</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.PREEMPTION_STATE_DIR_NAME" title="core._cli_hydra.PREEMPTION_STATE_DIR_NAME"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PREEMPTION_STATE_DIR_NAME</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.CONFIG_FILE_NAME" title="core._cli_hydra.CONFIG_FILE_NAME"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CONFIG_FILE_NAME</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.PREEMPTION_STATE_DIR_NAME" title="core._cli_hydra.PREEMPTION_STATE_DIR_NAME"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PREEMPTION_STATE_DIR_NAME</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -818,6 +823,11 @@ LICENSE file in the root directory of this source tree.</p>
 <dl class="py data">
 <dt class="sig sig-object py" id="core._cli_hydra.CHECKPOINT_DIR_NAME">
 <span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">CHECKPOINT_DIR_NAME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'checkpoints'</span></em><a class="headerlink" href="#core._cli_hydra.CHECKPOINT_DIR_NAME" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="core._cli_hydra.RESULTS_DIR">
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">RESULTS_DIR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'results'</span></em><a class="headerlink" href="#core._cli_hydra.RESULTS_DIR" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py data">
@@ -956,6 +966,11 @@ errors defaults to ‘strict’.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="core._cli_hydra.Metadata.checkpoint_dir">
 <span class="sig-name descname"><span class="pre">checkpoint_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#core._cli_hydra.Metadata.checkpoint_dir" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.Metadata.results_dir">
+<span class="sig-name descname"><span class="pre">results_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#core._cli_hydra.Metadata.results_dir" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1196,6 +1211,7 @@ the state so that not to pickle it) and change/remove the initial parameters.</p
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.ALLOWED_TOP_LEVEL_KEYS"><code class="docutils literal notranslate"><span class="pre">ALLOWED_TOP_LEVEL_KEYS</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.LOG_DIR_NAME"><code class="docutils literal notranslate"><span class="pre">LOG_DIR_NAME</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.CHECKPOINT_DIR_NAME"><code class="docutils literal notranslate"><span class="pre">CHECKPOINT_DIR_NAME</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.RESULTS_DIR"><code class="docutils literal notranslate"><span class="pre">RESULTS_DIR</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.CONFIG_FILE_NAME"><code class="docutils literal notranslate"><span class="pre">CONFIG_FILE_NAME</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.PREEMPTION_STATE_DIR_NAME"><code class="docutils literal notranslate"><span class="pre">PREEMPTION_STATE_DIR_NAME</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerType"><code class="docutils literal notranslate"><span class="pre">SchedulerType</span></code></a><ul class="nav section-nav flex-column">
@@ -1228,6 +1244,7 @@ the state so that not to pickle it) and change/remove the initial parameters.</p
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.commit"><code class="docutils literal notranslate"><span class="pre">Metadata.commit</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.log_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.log_dir</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.checkpoint_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.checkpoint_dir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.results_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.results_dir</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.config_path"><code class="docutils literal notranslate"><span class="pre">Metadata.config_path</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.preemption_checkpoint_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.preemption_checkpoint_dir</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.cluster_name"><code class="docutils literal notranslate"><span class="pre">Metadata.cluster_name</span></code></a></li>

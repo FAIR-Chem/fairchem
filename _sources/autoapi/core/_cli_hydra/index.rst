@@ -20,6 +20,7 @@ Attributes
    core._cli_hydra.ALLOWED_TOP_LEVEL_KEYS
    core._cli_hydra.LOG_DIR_NAME
    core._cli_hydra.CHECKPOINT_DIR_NAME
+   core._cli_hydra.RESULTS_DIR
    core._cli_hydra.CONFIG_FILE_NAME
    core._cli_hydra.PREEMPTION_STATE_DIR_NAME
 
@@ -63,6 +64,10 @@ Module Contents
 
 .. py:data:: CHECKPOINT_DIR_NAME
    :value: 'checkpoints'
+
+
+.. py:data:: RESULTS_DIR
+   :value: 'results'
 
 
 .. py:data:: CONFIG_FILE_NAME
@@ -198,6 +203,10 @@ Module Contents
 
 
    .. py:attribute:: checkpoint_dir
+      :type:  str
+
+
+   .. py:attribute:: results_dir
       :type:  str
 
 
