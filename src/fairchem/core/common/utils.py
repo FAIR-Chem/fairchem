@@ -1458,11 +1458,11 @@ def get_timestamp_uid() -> str:
 @torch.no_grad()
 def tensor_stats(name: str, x: torch.Tensor) -> dict:
     return {
-        f"{name}.max": x.max(),
-        f"{name}.min": x.min(),
-        f"{name}.std": x.std(),
-        f"{name}.mean": x.mean(),
-        f"{name}.norm": torch.norm(x, p=2),
+        f"{name}.max": x.max().item(),
+        f"{name}.min": x.min().item(),
+        f"{name}.std": x.std().item(),
+        f"{name}.mean": x.mean().item(),
+        f"{name}.norm": torch.norm(x, p=2).item(),
         f"{name}.nonzero_fraction": torch.nonzero(x).shape[0] / float(x.numel()),
     }
 
