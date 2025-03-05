@@ -124,7 +124,7 @@ class OCPCalculator(Calculator):
         cpu: bool = True,
         seed: int | None = None,
         only_output: list[str] | None = None,
-        disable_amp: bool = True
+        disable_amp: bool = True,
     ) -> None:
         """
         OCP-ASE Calculator
