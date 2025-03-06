@@ -71,7 +71,7 @@ def model_name_to_local_file(model_name: str, local_cache: str | Path) -> str:
         if not os.path.exists(local_cache):
             logging.error(f"Failed to create local cache folder '{local_cache}'")
             raise RuntimeError(f"Failed to create local cache folder '{local_cache}'")
-        model_url = MODEL_REGISTRY[model_name]
+        model_url = MODEL_REGISTRY.models[model_name].url
         local_path = os.path.join(local_cache, os.path.basename(model_url))
 
         # download the file
