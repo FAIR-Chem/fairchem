@@ -1231,17 +1231,17 @@ def scatter_det(*args, **kwargs):
     return out
 
 
-def get_fairchem_and_experimental_commit_hash() -> str:
-    core_hash = get_commit_hash(fairchem.core.__path__[0])
+def get_commit_hash() -> str:
+    core_hash = get_commit_hash_for_repo(fairchem.core.__path__[0])
     experimental_hash = None
     try:
-        experimental_hash = get_commit_hash(fairchem.experimental.__path__[0])
+        experimental_hash = get_commit_hash_for_repo(fairchem.experimental.__path__[0])
         return f"core:{core_hash},experimental:{experimental_hash}"
     except (NameError, AttributeError):
         return f"core:{core_hash},experimental:NA"
 
 
-def get_commit_hash(
+def get_commit_hash_for_repo(
     git_repo_path: str,
 ) -> Optional[str]:  # noqa: UP007 python 3.9 requires Optional still
     try:
