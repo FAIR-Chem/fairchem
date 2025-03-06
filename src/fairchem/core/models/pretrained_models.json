@@ -267,52 +267,52 @@
         "type": "url",
         "url": "https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Direct.pt"
     },
-    "EquiformerV2_153M_omat": {
+    "EquiformerV2-153M-OMAT24": {
         "type": "huggingface_hub",
         "repo_id": "fairchem/OMAT24",
         "filename": "eqV2_153M_omat.pt"
     },
-    "EquiformerV2_153M_omat_mp_salex": {
+    "EquiformerV2-153M-OMAT24-MP-sAlex": {
         "type": "huggingface_hub",
         "repo_id": "fairchem/OMAT24",
         "filename": "eqV2_153M_omat_mp_salex.pt"
     },
-    "EquiformerV2_31M_mp": {
+    "EquiformerV2-31M-MP": {
         "type": "huggingface_hub",
         "repo_id": "fairchem/OMAT24",
         "filename": "eqV2_31M_mp.pt"
     },
-    "EquiformerV2_31M_omat": {
+    "EquiformerV2-31M-OMAT24": {
         "type": "huggingface_hub",
         "repo_id": "fairchem/OMAT24",
         "filename": "eqV2_31M_omat.pt"
     },
-    "EquiformerV2_31M_omat_mp_salex": {
+    "EquiformerV2-31M-OMAT24-mp-salex": {
         "type": "huggingface_hub",
         "repo_id": "fairchem/OMAT24",
         "filename": "eqV2_31M_omat_mp_salex.pt"
     },
-    "EquiformerV2_86M_omat": {
+    "EquiformerV2-86M-OMAT24": {
         "type": "huggingface_hub",
         "repo_id": "fairchem/OMAT24",
         "filename": "eqV2_86M_omat.pt"
     },
-    "EquiformerV2_86M_omat_mp_salex": {
+    "EquiformerV2-86M-OMAT24-MP-sAlex": {
         "type": "huggingface_hub",
         "repo_id": "fairchem/OMAT24",
         "filename": "eqV2_86M_omat_mp_salex.pt"
     },
-    "EquiformerV2_dens_153M_mp": {
+    "EquiformerV2-DeNS-153M-MP": {
         "type": "huggingface_hub",
         "repo_id": "fairchem/OMAT24",
         "filename": "eqV2_dens_153M_mp.pt"
     },
-    "EquiformerV2_dens_86M_mp": {
+    "EquiformerV2-DeNS-86M-MP": {
         "type": "huggingface_hub",
         "repo_id": "fairchem/OMAT24",
         "filename": "eqV2_dens_86M_mp.pt"
     },
-    "EquiformerV2_dens_31M_mp": {
+    "EquiformerV2-DeNS-31M-MP": {
         "type": "huggingface_hub",
         "repo_id": "fairchem/OMAT24",
         "filename": "eqV2_dens_31M_mp.pt"

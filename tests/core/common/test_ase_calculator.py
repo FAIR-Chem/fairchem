@@ -39,7 +39,7 @@ def atoms() -> Atoms:
         "GemNet-OC-Large-S2EF-OC20-All+MD",
         "SCN-S2EF-OC20-All+MD",
         "PaiNN-IS2RE-OC20-All",
-        "EquiformerV2_31M_omat",
+        "EquiformerV2-31M-OMAT24",
         # Equiformer v2  # already tested in test_relaxation_final_energy
         # "EquiformerV2-153M-S2EF-OC20-All+MD"
         # eSCNm # already tested in test_random_seed_final_energy
