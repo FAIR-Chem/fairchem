@@ -82,7 +82,7 @@ class SchedulerConfig:
     mode: SchedulerType = SchedulerType.LOCAL
     ranks_per_node: int = 1
     num_nodes: int = 1
-    num_jobs: int = 1
+    num_array_jobs: int = 1
     slurm: SlurmConfig = field(default_factory=lambda: SlurmConfig)
 
 
@@ -96,7 +96,7 @@ class Metadata:
     config_path: str
     preemption_checkpoint_dir: str
     cluster_name: str
-    job_num: int = 1
+    array_job_num: int = 1
 
 
 @dataclass
@@ -322,19 +322,21 @@ def main(
             slurm_qos=scheduler_cfg.slurm.qos,
             slurm_account=scheduler_cfg.slurm.account,
         )
-        if scheduler_cfg.num_jobs == 1:
+        if scheduler_cfg.num_array_jobs == 1:
             job = executor.submit(Submitit(), cfg)
             logging.info(
                 f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
             )
-        elif scheduler_cfg.num_jobs > 1:
-            executor.update_parameters(slurm_array_parallelism=scheduler_cfg.num_jobs)
+        elif scheduler_cfg.num_array_jobs > 1:
+            executor.update_parameters(
+                slurm_array_parallelism=scheduler_cfg.num_array_jobs
+            )
 
             jobs = []
             with executor.batch():
-                for job_number in range(scheduler_cfg.num_jobs):
+                for job_number in range(scheduler_cfg.num_array_jobs):
                     _cfg = cfg.copy()
-                    _cfg.job.metadata.job_num = job_number
+                    _cfg.job.metadata.array_job_num = job_number
                     job = executor.submit(Submitit(), _cfg)
                     jobs.append(job)
             logging.info(f"Submitted {len(jobs)} jobs: {jobs[0].job_id.split('_')[0]}")
