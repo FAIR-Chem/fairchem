@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from functools import reduce, wraps
 from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 import numpy as np
@@ -1243,7 +1243,7 @@ def get_commit_hash() -> str:
 
 def get_commit_hash_for_repo(
     git_repo_path: str,
-) -> Optional[str]:  # noqa: UP007 python 3.9 requires Optional still
+) -> str | None:
     try:
         commit_hash = (
             subprocess.check_output(
