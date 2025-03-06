@@ -11,12 +11,12 @@ import json
 import logging
 import os
 import shutil
+from dataclasses import dataclass
 from importlib import resources
 from typing import TYPE_CHECKING, Literal
 
 import requests
 from huggingface_hub import hf_hub_download
-from pydantic import AnyUrl, BaseModel
 
 from fairchem.core import models
 
@@ -24,19 +24,22 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-class HuggingFaceModel(BaseModel):
+@dataclass
+class HuggingFaceModel:
     type: Literal["huggingface_hub"]
     repo_id: Literal["fairchem/OMAT24"]
     filename: str
 
 
-class URLModel(BaseModel):
+@dataclass
+class URLModel:
     url: str
     type: Literal["url"]
 
 
-class ModelRegistry(BaseModel):
-    models: dict[str, AnyUrl | HuggingFaceModel | URLModel]
+@dataclass
+class ModelRegistry:
+    models: dict[str, HuggingFaceModel | URLModel]
 
 
 with (resources.files(models) / "pretrained_models.json").open("rb") as f:
@@ -90,5 +93,7 @@ def model_name_to_local_file(model_name: str, local_cache: str | Path) -> str:
             repo_id=MODEL_REGISTRY.models[model_name].repo_id,
             filename=MODEL_REGISTRY.models[model_name].filename,
         )
-
-    return None
+    else:
+        raise NotImplementedError(
+            f"{type(MODEL_REGISTRY.models[model_name])} is an unknown registry type."
+        )
