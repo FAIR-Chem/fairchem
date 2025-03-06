@@ -31,7 +31,7 @@ class HuggingFaceModel(BaseModel):
 
 
 class URLModel(BaseModel):
-    url: str 
+    url: str
     type: Literal["url"]
 
 
