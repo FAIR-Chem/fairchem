@@ -38,7 +38,7 @@ from fairchem.core.common.slurm import (
 from fairchem.core.common.typing import assert_is_instance as aii
 from fairchem.core.common.typing import none_throws
 from fairchem.core.common.utils import (
-    get_fairchem_and_experimental_commit_hash,
+    get_commit_hash,
     get_weight_table,
     load_state_dict,
     match_state_dict,
@@ -120,7 +120,7 @@ class BaseTrainer(ABC):
 
         self.timestamp_id = none_throws(timestamp_id)
 
-        commit_hash = get_fairchem_and_experimental_commit_hash()
+        commit_hash = get_commit_hash()
 
         logger_name = logger if isinstance(logger, str) else logger["name"]
         self.config = {

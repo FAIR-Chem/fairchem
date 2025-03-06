@@ -37,7 +37,7 @@ from fairchem.core.common import distutils
 from fairchem.core.common.logger import WandBSingletonLogger
 from fairchem.core.common.utils import (
     get_cluster_name,
-    get_fairchem_and_experimental_commit_hash,
+    get_commit_hash,
     get_subdirectories_sorted_by_time,
     get_timestamp_uid,
     setup_env_vars,
@@ -117,7 +117,7 @@ class JobConfig:
 
     def __post_init__(self) -> None:
         self.metadata = Metadata(
-            commit=get_fairchem_and_experimental_commit_hash(),
+            commit=get_commit_hash(),
             log_dir=os.path.join(self.run_dir, self.timestamp_id, LOG_DIR_NAME),
             checkpoint_dir=os.path.join(
                 self.run_dir, self.timestamp_id, CHECKPOINT_DIR_NAME
