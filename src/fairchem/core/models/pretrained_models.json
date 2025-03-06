@@ -1,0 +1,320 @@
+{
+    "CGCNN-S2EF-OC20-200k": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/cgcnn_200k.pt"
+    },
+    "CGCNN-S2EF-OC20-2M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/cgcnn_2M.pt"
+    },
+    "CGCNN-S2EF-OC20-20M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/cgcnn_20M.pt"
+    },
+    "CGCNN-S2EF-OC20-All": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/cgcnn_all.pt"
+    },
+    "DimeNet-S2EF-OC20-200k": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/dimenet_200k.pt"
+    },
+    "DimeNet-S2EF-OC20-2M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/dimenet_2M.pt"
+    },
+    "SchNet-S2EF-OC20-200k": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/schnet_200k.pt"
+    },
+    "SchNet-S2EF-OC20-2M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/schnet_2M.pt"
+    },
+    "SchNet-S2EF-OC20-20M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/schnet_20M.pt"
+    },
+    "SchNet-S2EF-OC20-All": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/schnet_all_large.pt"
+    },
+    "DimeNet++-S2EF-OC20-200k": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/s2ef/dimenetpp_200k.pt"
+    },
+    "DimeNet++-S2EF-OC20-2M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/s2ef/dimenetpp_2M.pt"
+    },
+    "DimeNet++-S2EF-OC20-20M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/s2ef/dimenetpp_20M.pt"
+    },
+    "DimeNet++-S2EF-OC20-All": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/s2ef/dimenetpp_all.pt"
+    },
+    "SpinConv-S2EF-OC20-2M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_12/s2ef/spinconv_force_centric_2M.pt"
+    },
+    "SpinConv-S2EF-OC20-All": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_08/s2ef/spinconv_force_centric_all.pt"
+    },
+    "GemNet-dT-S2EF-OC20-2M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_12/s2ef/gemnet_t_direct_h512_2M.pt"
+    },
+    "GemNet-dT-S2EF-OC20-All": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_08/s2ef/gemnet_t_direct_h512_all.pt"
+    },
+    "PaiNN-S2EF-OC20-All": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_05/s2ef/painn_h512_s2ef_all.pt"
+    },
+    "GemNet-OC-S2EF-OC20-2M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_07/s2ef/gemnet_oc_base_s2ef_2M.pt"
+    },
+    "GemNet-OC-S2EF-OC20-All": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_07/s2ef/gemnet_oc_base_s2ef_all.pt"
+    },
+    "GemNet-OC-S2EF-OC20-All+MD": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/gemnet_oc_base_s2ef_all_md.pt"
+    },
+    "GemNet-OC-Large-S2EF-OC20-All+MD": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_07/s2ef/gemnet_oc_large_s2ef_all_md.pt"
+    },
+    "SCN-S2EF-OC20-2M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/scn_t1_b1_s2ef_2M.pt"
+    },
+    "SCN-t4-b2-S2EF-OC20-2M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/scn_t4_b2_s2ef_2M.pt"
+    },
+    "SCN-S2EF-OC20-All+MD": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/scn_all_md_s2ef.pt"
+    },
+    "eSCN-L4-M2-Lay12-S2EF-OC20-2M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/escn_l4_m2_lay12_2M_s2ef.pt"
+    },
+    "eSCN-L6-M2-Lay12-S2EF-OC20-2M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/escn_l6_m2_lay12_2M_s2ef.pt"
+    },
+    "eSCN-L6-M2-Lay12-S2EF-OC20-All+MD": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/escn_l6_m2_lay12_all_md_s2ef.pt"
+    },
+    "eSCN-L6-M3-Lay20-S2EF-OC20-All+MD": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_03/s2ef/escn_l6_m3_lay20_all_md_s2ef.pt"
+    },
+    "EquiformerV2-83M-S2EF-OC20-2M": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_83M_2M.pt"
+    },
+    "EquiformerV2-31M-S2EF-OC20-All+MD": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_31M_ec4_allmd.pt"
+    },
+    "EquiformerV2-153M-S2EF-OC20-All+MD": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_153M_ec4_allmd.pt"
+    },
+    "SchNet-S2EF-force-only-OC20-All": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/schnet_all_forceonly.pt"
+    },
+    "DimeNet++-force-only-OC20-All": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/s2ef/dimenetpp_all_forceonly.pt"
+    },
+    "DimeNet++-Large-S2EF-force-only-OC20-All": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/s2ef/dimenetpp_large_all_forceonly.pt"
+    },
+    "DimeNet++-S2EF-force-only-OC20-20M+Rattled": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/s2ef/dimenetpp_20M_rattled_forceonly.pt"
+    },
+    "DimeNet++-S2EF-force-only-OC20-20M+MD": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/s2ef/dimenetpp_20M_md_forceonly.pt"
+    },
+    "CGCNN-IS2RE-OC20-10k": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/cgcnn_10k.pt"
+    },
+    "CGCNN-IS2RE-OC20-100k": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/cgcnn_100k.pt"
+    },
+    "CGCNN-IS2RE-OC20-All": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/cgcnn_all.pt"
+    },
+    "DimeNet-IS2RE-OC20-10k": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/dimenet_10k.pt"
+    },
+    "DimeNet-IS2RE-OC20-100k": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/dimenet_100k.pt"
+    },
+    "DimeNet-IS2RE-OC20-all": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2020_11/is2re/dimenet_all.pt"
+    },
+    "SchNet-IS2RE-OC20-10k": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/schnet_10k.pt"
+    },
+    "SchNet-IS2RE-OC20-100k": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/schnet_100k.pt"
+    },
+    "SchNet-IS2RE-OC20-All": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/schnet_all.pt"
+    },
+    "DimeNet++-IS2RE-OC20-10k": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/dimenetpp_10k.pt"
+    },
+    "DimeNet++-IS2RE-OC20-100k": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/dimenetpp_100k.pt"
+    },
+    "DimeNet++-IS2RE-OC20-All": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2021_02/is2re/dimenetpp_all.pt"
+    },
+    "PaiNN-IS2RE-OC20-All": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_05/is2re/painn_h1024_bs4x8_is2re_all.pt"
+    },
+    "GemNet-dT-S2EFS-OC22": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_09/oc22/s2ef/gndt_oc22_all_s2ef.pt"
+    },
+    "GemNet-OC-S2EFS-OC22": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_09/oc22/s2ef/gnoc_oc22_all_s2ef.pt"
+    },
+    "GemNet-OC-S2EFS-OC20+OC22": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_09/oc22/s2ef/gnoc_oc22_oc20_all_s2ef.pt"
+    },
+    "GemNet-OC-S2EFS-nsn-OC20+OC22": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_05/oc22/s2ef/gnoc_oc22_oc20_all_s2ef.pt"
+    },
+    "GemNet-OC-S2EFS-OC20->OC22": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2022_09/oc22/s2ef/gnoc_finetune_all_s2ef.pt"
+    },
+    "EquiformerV2-lE4-lF100-S2EFS-OC22": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_10/oc22/s2ef/eq2_121M_e4_f100_oc22_s2ef.pt"
+    },
+    "SchNet-S2EF-ODAC": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Schnet.pt"
+    },
+    "DimeNet++-S2EF-ODAC": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/DimenetPP.pt"
+    },
+    "PaiNN-S2EF-ODAC": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/PaiNN.pt"
+    },
+    "GemNet-OC-S2EF-ODAC": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC.pt"
+    },
+    "eSCN-S2EF-ODAC": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN.pt"
+    },
+    "EquiformerV2-S2EF-ODAC": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/dac/checkpoints_20240709/eqv2_31M.pt"
+    },
+    "EquiformerV2-Large-S2EF-ODAC": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/dac/checkpoints_20240709/Equiformer_V2_Large.pt"
+    },
+    "Gemnet-OC-IS2RE-ODAC": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Gemnet-OC_Direct.pt"
+    },
+    "eSCN-IS2RE-ODAC": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/eSCN_Direct.pt"
+    },
+    "EquiformerV2-IS2RE-ODAC": {
+        "type": "url",
+        "url": "https://dl.fbaipublicfiles.com/dac/checkpoints_20231018/Equiformer_V2_Direct.pt"
+    },
+    "EquiformerV2-153M-OMAT24": {
+        "type": "huggingface_hub",
+        "repo_id": "fairchem/OMAT24",
+        "filename": "eqV2_153M_omat.pt"
+    },
+    "EquiformerV2-153M-OMAT24-MP-sAlex": {
+        "type": "huggingface_hub",
+        "repo_id": "fairchem/OMAT24",
+        "filename": "eqV2_153M_omat_mp_salex.pt"
+    },
+    "EquiformerV2-31M-MP": {
+        "type": "huggingface_hub",
+        "repo_id": "fairchem/OMAT24",
+        "filename": "eqV2_31M_mp.pt"
+    },
+    "EquiformerV2-31M-OMAT24": {
+        "type": "huggingface_hub",
+        "repo_id": "fairchem/OMAT24",
+        "filename": "eqV2_31M_omat.pt"
+    },
+    "EquiformerV2-31M-OMAT24-mp-salex": {
+        "type": "huggingface_hub",
+        "repo_id": "fairchem/OMAT24",
+        "filename": "eqV2_31M_omat_mp_salex.pt"
+    },
+    "EquiformerV2-86M-OMAT24": {
+        "type": "huggingface_hub",
+        "repo_id": "fairchem/OMAT24",
+        "filename": "eqV2_86M_omat.pt"
+    },
+    "EquiformerV2-86M-OMAT24-MP-sAlex": {
+        "type": "huggingface_hub",
+        "repo_id": "fairchem/OMAT24",
+        "filename": "eqV2_86M_omat_mp_salex.pt"
+    },
+    "EquiformerV2-DeNS-153M-MP": {
+        "type": "huggingface_hub",
+        "repo_id": "fairchem/OMAT24",
+        "filename": "eqV2_dens_153M_mp.pt"
+    },
+    "EquiformerV2-DeNS-86M-MP": {
+        "type": "huggingface_hub",
+        "repo_id": "fairchem/OMAT24",
+        "filename": "eqV2_dens_86M_mp.pt"
+    },
+    "EquiformerV2-DeNS-31M-MP": {
+        "type": "huggingface_hub",
+        "repo_id": "fairchem/OMAT24",
+        "filename": "eqV2_dens_31M_mp.pt"
+    }
+}

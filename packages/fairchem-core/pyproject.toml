@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fairchem-core"
-description = "Machine learning models for use in catalysis as part of the Open Catalyst Project"
+description = "Machine learning models for chemistry and materials science by the FAIR Chemistry team"
 license = {text = "MIT License"}
 dynamic = ["version", "readme"]
 requires-python = ">=3.9, <3.13"
@@ -24,7 +24,9 @@ dependencies = [
     "tqdm",
     "submitit",
     "hydra-core",
-    "torchtnt"
+    "torchtnt",
+    "huggingface_hub>=0.29.2",
+    "pydantic>=2.10.0"
 ]
 
 [project.optional-dependencies]  # add optional dependencies to be installed as pip install fairchem.core[dev]
