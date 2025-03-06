@@ -25,7 +25,8 @@ dependencies = [
     "submitit",
     "hydra-core",
     "torchtnt",
-    "huggingface_hub>=0.29.2"
+    "huggingface_hub>=0.29.2",
+    "pydantinc>=2.10.0"
 ]
 
 [project.optional-dependencies]  # add optional dependencies to be installed as pip install fairchem.core[dev]
