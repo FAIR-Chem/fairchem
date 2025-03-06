@@ -11,12 +11,12 @@ import json
 import logging
 import os
 import shutil
-from dataclasses import dataclass
 from importlib import resources
 from typing import TYPE_CHECKING, Literal
 
 import requests
 from huggingface_hub import hf_hub_download
+from pydantic import AnyUrl, BaseModel
 
 from fairchem.core import models
 
@@ -24,22 +24,19 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-@dataclass
-class HuggingFaceModel:
+class HuggingFaceModel(BaseModel):
     type: Literal["huggingface_hub"]
     repo_id: Literal["fairchem/OMAT24"]
     filename: str
 
 
-@dataclass
-class URLModel:
+class URLModel(BaseModel):
     url: str
     type: Literal["url"]
 
 
-@dataclass
-class ModelRegistry:
-    models: dict[str, HuggingFaceModel | URLModel]
+class ModelRegistry(BaseModel):
+    models: dict[str, AnyUrl | HuggingFaceModel | URLModel]
 
 
 with (resources.files(models) / "pretrained_models.json").open("rb") as f:
