@@ -26,12 +26,12 @@ if TYPE_CHECKING:
 
 class HuggingFaceModel(BaseModel):
     type: Literal["huggingface_hub"]
-    repo_id: Literal["fairchem/OMat24"]
-    filename: str | None
+    repo_id: Literal["fairchem/OMAT24"]
+    filename: str
 
 
 class URLModel(BaseModel):
-    url: str | None
+    url: str 
     type: Literal["url"]
 
 
