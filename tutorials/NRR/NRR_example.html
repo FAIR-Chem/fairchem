@@ -681,6 +681,12 @@ document.write(`
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.9/x64/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
+</pre></div>
+</div>
+</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -810,22 +816,22 @@ document.write(`
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/escn/so3.py:23: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
-/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/tutorials/NRR/checkpoints/2025-03-05-02-14-24
-  commit: 3f1df40
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/tutorials/NRR/checkpoints/2025-03-07-01-50-56
+  commit: core:6dc2238,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/tutorials/NRR/logs/wandb/2025-03-05-02-14-24
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/tutorials/NRR/logs/wandb/2025-03-07-01-50-56
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/tutorials/NRR/results/2025-03-05-02-14-24
+  results_dir: /home/runner/work/fairchem/fairchem/docs/tutorials/NRR/results/2025-03-07-01-50-56
   seed: null
-  timestamp_id: 2025-03-05-02-14-24
-  version: 1.5.1
+  timestamp_id: 2025-03-07-01-50-56
+  version: 1.6.0
 dataset:
   format: trajectory_lmdb_v2
   grad_target_mean: 0.0
@@ -998,49 +1004,49 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>      Step     Time          Energy          fmax
-BFGS:    0 02:14:37        0.193124        0.716220
+BFGS:    0 01:51:55        0.193124        0.716219
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    1 02:14:38        0.175033        0.673152
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    1 01:51:57        0.175033        0.673152
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    2 02:14:39        0.059609        0.388685
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    2 01:51:58        0.059609        0.388686
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    3 02:14:41        0.056407        0.223205
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    3 01:52:00        0.056406        0.223196
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    4 02:14:42        0.052641        0.171621
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    4 01:52:01        0.052641        0.171636
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    5 02:14:44        0.043569        0.134679
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    5 01:52:03        0.043569        0.134703
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    6 02:14:45        0.041664        0.118764
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    6 01:52:04        0.041664        0.118764
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    7 02:14:47        0.041300        0.080828
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    7 01:52:06        0.041299        0.080810
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    8 02:14:48        0.040333        0.065349
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    8 01:52:07        0.040332        0.065340
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    9 02:14:50        0.034360        0.081559
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    9 01:52:09        0.034362        0.081543
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   10 02:14:51        0.031855        0.078418
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   10 01:52:10        0.031855        0.078429
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   11 02:14:52        0.029978        0.070751
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   11 01:52:11        0.029979        0.070755
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   12 02:14:54        0.027736        0.059896
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   12 01:52:13        0.027738        0.059904
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   13 02:14:55        0.024115        0.037800
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   13 01:52:14        0.024115        0.037804
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time 20.2 seconds
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time 20.5 seconds
 </pre></div>
 </div>
 </div>
@@ -1170,42 +1176,42 @@ BFGS:    0 02:14:37        0.193124        0.716220
 Running data/oqmd-349719_H/0
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 26.8 seconds for data/oqmd-349719_H/0
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 27.5 seconds for data/oqmd-349719_H/0
 Running data/oqmd-349719_H/1
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 39.6 seconds for data/oqmd-349719_H/1
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 40.5 seconds for data/oqmd-349719_H/1
 Running data/oqmd-349719_H/2
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 18.3 seconds for data/oqmd-349719_H/2
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 18.6 seconds for data/oqmd-349719_H/2
 Running data/oqmd-349719_H/3
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 54.8 seconds for data/oqmd-349719_H/3
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 55.9 seconds for data/oqmd-349719_H/3
 Running data/oqmd-349719_NNH/0
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 135.9 seconds for data/oqmd-349719_NNH/0
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 138.2 seconds for data/oqmd-349719_NNH/0
 Running data/oqmd-349719_NNH/1
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 135.0 seconds for data/oqmd-349719_NNH/1
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 138.2 seconds for data/oqmd-349719_NNH/1
 Running data/oqmd-349719_NNH/2
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 134.6 seconds for data/oqmd-349719_NNH/2
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 138.0 seconds for data/oqmd-349719_NNH/2
 Running data/oqmd-349719_NNH/3
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>100%|██████████| 1/1 [11:21&lt;00:00, 681.50s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>100%|██████████| 1/1 [11:35&lt;00:00, 695.38s/it]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>100%|██████████| 1/1 [11:21&lt;00:00, 681.50s/it]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>100%|██████████| 1/1 [11:35&lt;00:00, 695.38s/it]
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 135.0 seconds for data/oqmd-349719_NNH/3
-Elapsed time: 681.5 seconds
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Elapsed time: 137.3 seconds for data/oqmd-349719_NNH/3
+Elapsed time: 695.4 seconds
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
@@ -1450,7 +1456,7 @@ Elapsed time: 681.5 seconds
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/4845c84dfb15e02eaf2830d465fbd2b0d0310f9a4c7abef2a08804f004bee8a6.png" src="../../_images/4845c84dfb15e02eaf2830d465fbd2b0d0310f9a4c7abef2a08804f004bee8a6.png" />
+<img alt="../../_images/ebc04301ad23b26ea848388a5b2447ec77c6dc3cc7199f9fd80c9e8b7395dec6.png" src="../../_images/ebc04301ad23b26ea848388a5b2447ec77c6dc3cc7199f9fd80c9e8b7395dec6.png" />
 </div>
 </div>
 </section>

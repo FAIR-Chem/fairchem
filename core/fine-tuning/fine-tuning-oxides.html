@@ -664,6 +664,12 @@ Mehta, P., Salvador, P. A., &amp; Kitchin, J. R. (2015). Identifying potential B
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.9/x64/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
+</pre></div>
+</div>
+</div>
 </div>
 <p>The data we need is provided in <code class="docutils literal notranslate"><span class="pre">supporting-information.json</span></code>. That file is embedded in the supporting information for the article, and is provided here in the tutorial. We load this data and explore it a little. The json file provides a dictionary with the structure:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>[oxide][polymorph][xc][EOS][configurations]
@@ -805,7 +811,7 @@ Mehta, P., Salvador, P. A., &amp; Kitchin, J. R. (2015). Identifying potential B
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/escn/so3.py:23: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
-/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 </pre></div>
 </div>
@@ -814,15 +820,15 @@ Mehta, P., Salvador, P. A., &amp; Kitchin, J. R. (2015). Identifying potential B
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2025-03-05-01-53-04
-  commit: 3f1df40
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2025-03-07-01-29-36
+  commit: core:6dc2238,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2025-03-05-01-53-04
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2025-03-07-01-29-36
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2025-03-05-01-53-04
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2025-03-07-01-29-36
   seed: null
-  timestamp_id: 2025-03-05-01-53-04
-  version: 1.5.1
+  timestamp_id: 2025-03-07-01-29-36
+  version: 1.6.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1027,7 +1033,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time 83.1 seconds.
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time 84.1 seconds.
 </pre></div>
 </div>
 <img alt="../../_images/37ed63864e58d86136865ea2e54cbd456f13057250fbe0ba461bc61ad93a4799.png" src="../../_images/37ed63864e58d86136865ea2e54cbd456f13057250fbe0ba461bc61ad93a4799.png" />
@@ -1106,7 +1112,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3057/1448814737.py:12: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3028/1448814737.py:12: FutureWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
 </pre></div>
 </div>
@@ -1210,22 +1216,22 @@ Rows: 295 (showing first 20)
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2025-03-05-01-53-04
-  commit: 3f1df40
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2025-03-07-01-29-36
+  commit: core:6dc2238,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2025-03-05-01-53-04
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2025-03-07-01-29-36
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2025-03-05-01-53-04
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2025-03-07-01-29-36
   seed: null
-  timestamp_id: 2025-03-05-01-53-04
-  version: 1.5.1
+  timestamp_id: 2025-03-07-01-29-36
+  version: 1.6.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1567,7 +1573,7 @@ trainer: ocp
 <span class="expanded">Hide code cell output</span>
 </summary>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time = 205.5 seconds
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time = 202.2 seconds
 </pre></div>
 </div>
 </div>
@@ -1583,7 +1589,7 @@ trainer: ocp
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;fine-tuning/checkpoints/2025-03-05-01-53-04-ft-oxides&#39;
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;fine-tuning/checkpoints/2025-03-07-01-29-36-ft-oxides&#39;
 </pre></div>
 </div>
 </div>
@@ -1598,21 +1604,21 @@ trainer: ocp
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: false
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2025-03-05-01-57-20
-  commit: 3f1df40
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2025-03-07-01-33-52
+  commit: core:6dc2238,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2025-03-05-01-57-20
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2025-03-07-01-33-52
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2025-03-05-01-57-20
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2025-03-07-01-33-52
   seed: null
-  timestamp_id: 2025-03-05-01-57-20
-  version: 1.5.1
+  timestamp_id: 2025-03-07-01-33-52
+  version: 1.6.0
 dataset:
   a2g_args:
     r_energy: true
@@ -1782,7 +1788,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/f34c1e481981036a8146450415eda67aa86e7ea63ce4e12bf7fd20f39f887f67.png" src="../../_images/f34c1e481981036a8146450415eda67aa86e7ea63ce4e12bf7fd20f39f887f67.png" />
+<img alt="../../_images/5308fb509e3a3af0d2fb109ae6de02dffe700bb59b8288148d29ba3933bc8ced.png" src="../../_images/5308fb509e3a3af0d2fb109ae6de02dffe700bb59b8288148d29ba3933bc8ced.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -1793,7 +1799,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>New MAE = 0.404 eV/atom
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>New MAE = 0.364 eV/atom
 </pre></div>
 </div>
 </div>
@@ -1812,7 +1818,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/aac3a6e71d55ab9c50103b6594a51755635a5a3f37f47fade60d8b8ff548e42b.png" src="../../_images/aac3a6e71d55ab9c50103b6594a51755635a5a3f37f47fade60d8b8ff548e42b.png" />
+<img alt="../../_images/f68a91fe135aca80fd0a1e571f98f6cc0b57efc88e0ec1034cad7c295de7cba1.png" src="../../_images/f68a91fe135aca80fd0a1e571f98f6cc0b57efc88e0ec1034cad7c295de7cba1.png" />
 </div>
 </div>
 <p>It is possible to continue refining the fit. The simple things to do are to use more epochs of training. Eventually the MAE will stabilize, and then it may be necessary to adjust other optimization parameters like the learning rate (usually you decrease it).</p>

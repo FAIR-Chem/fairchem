@@ -686,6 +686,7 @@ document.write(`
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.load_state_dict"><code class="docutils literal notranslate"><span class="pre">load_state_dict()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.scatter_det"><code class="docutils literal notranslate"><span class="pre">scatter_det()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.get_commit_hash"><code class="docutils literal notranslate"><span class="pre">get_commit_hash()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.get_commit_hash_for_repo"><code class="docutils literal notranslate"><span class="pre">get_commit_hash_for_repo()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.cg_change_mat"><code class="docutils literal notranslate"><span class="pre">cg_change_mat()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.irreps_sum"><code class="docutils literal notranslate"><span class="pre">irreps_sum()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.update_config"><code class="docutils literal notranslate"><span class="pre">update_config()</span></code></a></li>
@@ -858,40 +859,43 @@ LICENSE file in the root directory of this source tree.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.scatter_det" title="core.common.utils.scatter_det"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scatter_det</span></code></a>(*args, **kwargs)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.utils.get_commit_hash" title="core.common.utils.get_commit_hash"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_commit_hash</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.utils.get_commit_hash" title="core.common.utils.get_commit_hash"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_commit_hash</span></code></a>(→ str)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.cg_change_mat" title="core.common.utils.cg_change_mat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cg_change_mat</span></code></a>(→ torch.tensor)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.get_commit_hash_for_repo" title="core.common.utils.get_commit_hash_for_repo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_commit_hash_for_repo</span></code></a>(→ str | None)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.utils.irreps_sum" title="core.common.utils.irreps_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">irreps_sum</span></code></a>(→ int)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.utils.cg_change_mat" title="core.common.utils.cg_change_mat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cg_change_mat</span></code></a>(→ torch.tensor)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.irreps_sum" title="core.common.utils.irreps_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">irreps_sum</span></code></a>(→ int)</p></td>
 <td><p>Returns the sum of the dimensions of the irreps up to the specified angular momentum.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.update_config" title="core.common.utils.update_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_config</span></code></a>(base_config)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.utils.update_config" title="core.common.utils.update_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_config</span></code></a>(base_config)</p></td>
 <td><p>Configs created prior to FAIRChem/OCP 2.0 are organized a little different than they</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.utils.load_model_and_weights_from_checkpoint" title="core.common.utils.load_model_and_weights_from_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_model_and_weights_from_checkpoint</span></code></a>(→ torch.nn.Module)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.load_model_and_weights_from_checkpoint" title="core.common.utils.load_model_and_weights_from_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_model_and_weights_from_checkpoint</span></code></a>(→ torch.nn.Module)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.get_timestamp_uid" title="core.common.utils.get_timestamp_uid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_timestamp_uid</span></code></a>(→ str)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.utils.get_timestamp_uid" title="core.common.utils.get_timestamp_uid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_timestamp_uid</span></code></a>(→ str)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.utils.tensor_stats" title="core.common.utils.tensor_stats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tensor_stats</span></code></a>(→ dict)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.tensor_stats" title="core.common.utils.tensor_stats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tensor_stats</span></code></a>(→ dict)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.get_weight_table" title="core.common.utils.get_weight_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_weight_table</span></code></a>(→ tuple[list, list])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.utils.get_weight_table" title="core.common.utils.get_weight_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_weight_table</span></code></a>(→ tuple[list, list])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.utils.get_checkpoint_format" title="core.common.utils.get_checkpoint_format"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_checkpoint_format</span></code></a>(→ str)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.get_checkpoint_format" title="core.common.utils.get_checkpoint_format"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_checkpoint_format</span></code></a>(→ str)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.get_deep" title="core.common.utils.get_deep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_deep</span></code></a>(dictionary, keys[, default])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.utils.get_deep" title="core.common.utils.get_deep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_deep</span></code></a>(dictionary, keys[, default])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.utils.get_subdirectories_sorted_by_time" title="core.common.utils.get_subdirectories_sorted_by_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_subdirectories_sorted_by_time</span></code></a>(→ str)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.get_subdirectories_sorted_by_time" title="core.common.utils.get_subdirectories_sorted_by_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_subdirectories_sorted_by_time</span></code></a>(→ str)</p></td>
 <td><p>Get all subdirectories in a directory sorted by their last modification time.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#core.common.utils.get_cluster_name" title="core.common.utils.get_cluster_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_cluster_name</span></code></a>(→ str)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.utils.get_cluster_name" title="core.common.utils.get_cluster_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_cluster_name</span></code></a>(→ str)</p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -1207,7 +1211,12 @@ If deemed appropriate, the record may be modified in-place.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="core.common.utils.get_commit_hash">
-<span class="sig-prename descclassname"><span class="pre">core.common.utils.</span></span><span class="sig-name descname"><span class="pre">get_commit_hash</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#core.common.utils.get_commit_hash" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">core.common.utils.</span></span><span class="sig-name descname"><span class="pre">get_commit_hash</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#core.common.utils.get_commit_hash" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="core.common.utils.get_commit_hash_for_repo">
+<span class="sig-prename descclassname"><span class="pre">core.common.utils.</span></span><span class="sig-name descname"><span class="pre">get_commit_hash_for_repo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">git_repo_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#core.common.utils.get_commit_hash_for_repo" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
@@ -1408,6 +1417,7 @@ are now. Update old configs to fit the new expected structure.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.load_state_dict"><code class="docutils literal notranslate"><span class="pre">load_state_dict()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.scatter_det"><code class="docutils literal notranslate"><span class="pre">scatter_det()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.get_commit_hash"><code class="docutils literal notranslate"><span class="pre">get_commit_hash()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.get_commit_hash_for_repo"><code class="docutils literal notranslate"><span class="pre">get_commit_hash_for_repo()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.cg_change_mat"><code class="docutils literal notranslate"><span class="pre">cg_change_mat()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.irreps_sum"><code class="docutils literal notranslate"><span class="pre">irreps_sum()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.utils.update_config"><code class="docutils literal notranslate"><span class="pre">update_config()</span></code></a></li>

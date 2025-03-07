@@ -686,30 +686,32 @@ document.write(`
 </div>
 </div>
 <div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.9/x64/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
+</pre></div>
+</div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/models/scn/spherical_harmonics.py:23: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/equiformer_v2/wigner.py:10: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/escn/so3.py:23: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
-/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
+WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
-  commit: 3f1df40
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-07-01-36-00
+  commit: core:6dc2238,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-07-01-36-00
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-07-01-36-00
   seed: null
-  timestamp_id: 2025-03-05-01-59-28
-  version: 1.5.1
+  timestamp_id: 2025-03-07-01-36-00
+  version: 1.6.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -918,12 +920,12 @@ val_dataset: {}
 <span class="nn">    544         &#39;{} not present</span> in <span class="ni">this &#39; &#39;calculation&#39;.format</span><span class="nt">(name)</span>
 <span class="g g-Whitespace">    </span><span class="mi">545</span>     <span class="p">)</span>
 
-<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:292,</span> in <span class="ni">OCPCalculator.calculate</span><span class="nt">(self, atoms, properties, system_changes)</span>
-<span class="g g-Whitespace">    </span><span class="mi">289</span> <span class="k">else</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">290</span>     <span class="n">batch</span> <span class="o">=</span> <span class="n">atoms</span>
-<span class="ne">--&gt; </span><span class="mi">292</span> <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">per_image</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">disable_tqdm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">294</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">295</span>     <span class="n">_pred</span> <span class="o">=</span> <span class="n">predictions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:304,</span> in <span class="ni">OCPCalculator.calculate</span><span class="nt">(self, atoms, properties, system_changes)</span>
+<span class="g g-Whitespace">    </span><span class="mi">301</span> <span class="k">else</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">302</span>     <span class="n">batch</span> <span class="o">=</span> <span class="n">atoms</span>
+<span class="ne">--&gt; </span><span class="mi">304</span> <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">per_image</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">disable_tqdm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">306</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">307</span>     <span class="n">_pred</span> <span class="o">=</span> <span class="n">predictions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
 
 <span class="nn">File /opt/hostedtoolcache/Python/3.12.9/x64/lib/python3.12/site-packages/torch/utils/_contextlib.py:116,</span> in <span class="ni">context_decorator.&lt;locals&gt;.decorate_context</span><span class="nt">(*args, **kwargs)</span>
 <span class="g g-Whitespace">    </span><span class="mi">113</span> <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
@@ -1098,22 +1100,22 @@ val_dataset: {}
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Checking local cache: /tmp/fairchem_checkpoints/ for model GemNet-OC-S2EF-OC20-All
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
-  commit: 3f1df40
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-07-01-36-00
+  commit: core:6dc2238,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-07-01-36-00
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-07-01-36-00
   seed: null
-  timestamp_id: 2025-03-05-01-59-28
-  version: 1.5.1
+  timestamp_id: 2025-03-07-01-36-00
+  version: 1.6.0
 dataset:
   format: trajectory_lmdb
   grad_target_mean: 0.0
@@ -1290,7 +1292,7 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3422/2356712572.py:11: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3399/2356712572.py:11: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
@@ -1318,22 +1320,22 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Checking local cache: /tmp/fairchem_checkpoints/ for model GemNet-OC-S2EFS-OC20+OC22
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
-  commit: 3f1df40
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-07-01-36-00
+  commit: core:6dc2238,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-07-01-36-00
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-07-01-36-00
   seed: null
-  timestamp_id: 2025-03-05-01-59-28
-  version: 1.5.1
+  timestamp_id: 2025-03-07-01-36-00
+  version: 1.6.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1498,7 +1500,7 @@ val_dataset: {}
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3422/2054440827.py:9: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3399/2054440827.py:9: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
@@ -1524,22 +1526,22 @@ val_dataset: {}
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Checking local cache: /tmp/fairchem_checkpoints/ for model eSCN-L4-M2-Lay12-S2EF-OC20-2M
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
-  commit: 3f1df40
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-07-01-36-00
+  commit: core:6dc2238,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-07-01-36-00
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-07-01-36-00
   seed: null
-  timestamp_id: 2025-03-05-01-59-28
-  version: 1.5.1
+  timestamp_id: 2025-03-07-01-36-00
+  version: 1.6.0
 dataset:
   format: trajectory_lmdb
   grad_target_mean: 0.0
@@ -1682,11 +1684,11 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3422/1817216860.py:7: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3399/1817216860.py:7: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.6665925979614258
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.6880106925964355
 </pre></div>
 </div>
 </div>
@@ -1742,15 +1744,15 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
-  commit: 3f1df40
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-07-01-36-00
+  commit: core:6dc2238,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-07-01-36-00
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-07-01-36-00
   seed: null
-  timestamp_id: 2025-03-05-01-59-28
-  version: 1.5.1
+  timestamp_id: 2025-03-07-01-36-00
+  version: 1.6.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1962,12 +1964,12 @@ val_dataset: {}
 <span class="nn">    544         &#39;{} not present</span> in <span class="ni">this &#39; &#39;calculation&#39;.format</span><span class="nt">(name)</span>
 <span class="g g-Whitespace">    </span><span class="mi">545</span>     <span class="p">)</span>
 
-<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:292,</span> in <span class="ni">OCPCalculator.calculate</span><span class="nt">(self, atoms, properties, system_changes)</span>
-<span class="g g-Whitespace">    </span><span class="mi">289</span> <span class="k">else</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">290</span>     <span class="n">batch</span> <span class="o">=</span> <span class="n">atoms</span>
-<span class="ne">--&gt; </span><span class="mi">292</span> <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">per_image</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">disable_tqdm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">294</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">295</span>     <span class="n">_pred</span> <span class="o">=</span> <span class="n">predictions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:304,</span> in <span class="ni">OCPCalculator.calculate</span><span class="nt">(self, atoms, properties, system_changes)</span>
+<span class="g g-Whitespace">    </span><span class="mi">301</span> <span class="k">else</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">302</span>     <span class="n">batch</span> <span class="o">=</span> <span class="n">atoms</span>
+<span class="ne">--&gt; </span><span class="mi">304</span> <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">per_image</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">disable_tqdm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">306</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">307</span>     <span class="n">_pred</span> <span class="o">=</span> <span class="n">predictions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
 
 <span class="nn">File /opt/hostedtoolcache/Python/3.12.9/x64/lib/python3.12/site-packages/torch/utils/_contextlib.py:116,</span> in <span class="ni">context_decorator.&lt;locals&gt;.decorate_context</span><span class="nt">(*args, **kwargs)</span>
 <span class="g g-Whitespace">    </span><span class="mi">113</span> <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
@@ -2123,15 +2125,15 @@ val_dataset: {}
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
-  commit: 3f1df40
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-07-01-36-00
+  commit: core:6dc2238,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-07-01-36-00
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-07-01-36-00
   seed: null
-  timestamp_id: 2025-03-05-01-59-28
-  version: 1.5.1
+  timestamp_id: 2025-03-07-01-36-00
+  version: 1.6.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -2339,12 +2341,12 @@ val_dataset: {}
 <span class="nn">    544         &#39;{} not present</span> in <span class="ni">this &#39; &#39;calculation&#39;.format</span><span class="nt">(name)</span>
 <span class="g g-Whitespace">    </span><span class="mi">545</span>     <span class="p">)</span>
 
-<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:292,</span> in <span class="ni">OCPCalculator.calculate</span><span class="nt">(self, atoms, properties, system_changes)</span>
-<span class="g g-Whitespace">    </span><span class="mi">289</span> <span class="k">else</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">290</span>     <span class="n">batch</span> <span class="o">=</span> <span class="n">atoms</span>
-<span class="ne">--&gt; </span><span class="mi">292</span> <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">per_image</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">disable_tqdm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">294</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">295</span>     <span class="n">_pred</span> <span class="o">=</span> <span class="n">predictions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+<span class="nn">File ~/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:304,</span> in <span class="ni">OCPCalculator.calculate</span><span class="nt">(self, atoms, properties, system_changes)</span>
+<span class="g g-Whitespace">    </span><span class="mi">301</span> <span class="k">else</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">302</span>     <span class="n">batch</span> <span class="o">=</span> <span class="n">atoms</span>
+<span class="ne">--&gt; </span><span class="mi">304</span> <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">per_image</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">disable_tqdm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">306</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">307</span>     <span class="n">_pred</span> <span class="o">=</span> <span class="n">predictions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
 
 <span class="nn">File /opt/hostedtoolcache/Python/3.12.9/x64/lib/python3.12/site-packages/torch/utils/_contextlib.py:116,</span> in <span class="ni">context_decorator.&lt;locals&gt;.decorate_context</span><span class="nt">(*args, **kwargs)</span>
 <span class="g g-Whitespace">    </span><span class="mi">113</span> <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
@@ -2485,7 +2487,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3422/3906293788.py:3: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3399/3906293788.py:3: FutureWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
 </pre></div>
 </div>
@@ -2511,22 +2513,22 @@ val_dataset: {}
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Checking local cache: /tmp/fairchem_checkpoints/ for model EquiformerV2-31M-S2EF-OC20-All+MD
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
-  commit: 3f1df40
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-07-01-36-00
+  commit: core:6dc2238,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-07-01-36-00
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-07-01-36-00
   seed: null
-  timestamp_id: 2025-03-05-01-59-28
-  version: 1.5.1
+  timestamp_id: 2025-03-07-01-36-00
+  version: 1.6.0
 dataset:
   format: trajectory_lmdb_v2
   grad_target_mean: 0.0
@@ -2693,11 +2695,11 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3422/4094489779.py:3: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3399/4094489779.py:3: FutureWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
 </pre></div>
 </div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>-0.42973706126213074
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>-0.42973729968070984
 </pre></div>
 </div>
 </div>
@@ -2738,7 +2740,7 @@ This happens because a random selection of is made to sample edges, and a differ
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Checking local cache: /tmp/fairchem_checkpoints/ for model EquiformerV2-31M-S2EF-OC20-All+MD
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 </pre></div>
 </div>
@@ -2747,15 +2749,15 @@ This happens because a random selection of is made to sample edges, and a differ
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
-  commit: 3f1df40
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-07-01-36-00
+  commit: core:6dc2238,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-07-01-36-00
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-07-01-36-00
   seed: null
-  timestamp_id: 2025-03-05-01-59-28
-  version: 1.5.1
+  timestamp_id: 2025-03-07-01-36-00
+  version: 1.6.0
 dataset:
   format: trajectory_lmdb_v2
   grad_target_mean: 0.0
@@ -2910,21 +2912,21 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3422/3396863997.py:11: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3399/3396863997.py:11: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.2127606868743896 1.8863716549732668e-06
-1.2127625942230225
-1.2127594947814941
-1.2127625942230225
-1.212761402130127
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.2127607583999633 1.925294612238161e-06
+1.2127580642700195
+1.2127571105957031
+1.2127621173858643
+1.2127609252929688
 1.2127599716186523
-1.2127585411071777
-1.2127575874328613
-1.212759256362915
-1.2127618789672852
-1.2127635478973389
+1.2127621173858643
+1.2127630710601807
+1.2127630710601807
+1.2127597332000732
+1.212761402130127
 </pre></div>
 </div>
 </div>
@@ -2956,22 +2958,22 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Checking local cache: /tmp/fairchem_checkpoints/ for model EquiformerV2-31M-S2EF-OC20-All+MD
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:191: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-05-01-59-28
-  commit: 3f1df40
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-07-01-36-00
+  commit: core:6dc2238,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-05-01-59-28
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-07-01-36-00
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-05-01-59-28
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-07-01-36-00
   seed: null
-  timestamp_id: 2025-03-05-01-59-28
-  version: 1.5.1
+  timestamp_id: 2025-03-07-01-36-00
+  version: 1.6.0
 dataset:
   format: trajectory_lmdb_v2
   grad_target_mean: 0.0
@@ -3126,11 +3128,11 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3422/4037009387.py:11: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3399/4037009387.py:11: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([ 0.01599104,  0.00170693, -0.07198048], dtype=float32)
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([ 0.01599322,  0.00170575, -0.07197785], dtype=float32)
 </pre></div>
 </div>
 </div>
@@ -3143,7 +3145,7 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([-8.0210157e-08, -1.0605436e-07,  2.3841858e-07], dtype=float32)
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([-1.1274824e-07,  1.4202669e-08, -2.3841858e-07], dtype=float32)
 </pre></div>
 </div>
 </div>

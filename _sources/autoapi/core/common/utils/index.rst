@@ -73,6 +73,7 @@ Functions
    core.common.utils.load_state_dict
    core.common.utils.scatter_det
    core.common.utils.get_commit_hash
+   core.common.utils.get_commit_hash_for_repo
    core.common.utils.cg_change_mat
    core.common.utils.irreps_sum
    core.common.utils.update_config
@@ -285,7 +286,9 @@ Module Contents
 
 .. py:function:: scatter_det(*args, **kwargs)
 
-.. py:function:: get_commit_hash()
+.. py:function:: get_commit_hash() -> str
+
+.. py:function:: get_commit_hash_for_repo(git_repo_path: str) -> str | None
 
 .. py:function:: cg_change_mat(ang_mom: int, device: str = 'cpu') -> torch.tensor
 

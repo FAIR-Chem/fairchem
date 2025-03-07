@@ -630,8 +630,78 @@ document.write(`
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attributes">Attributes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__class_vars__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__class_vars__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__private_attributes__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__private_attributes__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__signature__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__signature__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_complete__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_complete__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_core_schema__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_core_schema__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_custom_init__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_custom_init__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_decorators__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_decorators__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_generic_metadata__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_generic_metadata__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_parent_namespace__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_parent_namespace__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_post_init__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_post_init__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_root_model__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_root_model__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_serializer__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_serializer__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_validator__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_validator__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_fields__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_fields__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_computed_fields__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_computed_fields__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_extra__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_extra__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_fields_set__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_fields_set__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_private__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_private__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.type"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.type</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.repo_id"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.repo_id</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.filename"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.filename</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel"><code class="docutils literal notranslate"><span class="pre">URLModel</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__class_vars__"><code class="docutils literal notranslate"><span class="pre">URLModel.__class_vars__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__private_attributes__"><code class="docutils literal notranslate"><span class="pre">URLModel.__private_attributes__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__signature__"><code class="docutils literal notranslate"><span class="pre">URLModel.__signature__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_complete__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_complete__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_core_schema__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_core_schema__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_custom_init__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_custom_init__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_decorators__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_decorators__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_generic_metadata__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_generic_metadata__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_parent_namespace__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_parent_namespace__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_post_init__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_post_init__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_root_model__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_root_model__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_serializer__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_serializer__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_validator__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_validator__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_fields__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_fields__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_computed_fields__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_computed_fields__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_extra__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_extra__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_fields_set__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_fields_set__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_private__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_private__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.url"><code class="docutils literal notranslate"><span class="pre">URLModel.url</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.type"><code class="docutils literal notranslate"><span class="pre">URLModel.type</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry"><code class="docutils literal notranslate"><span class="pre">ModelRegistry</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__class_vars__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__class_vars__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__private_attributes__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__private_attributes__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__signature__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__signature__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_complete__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_complete__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_core_schema__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_core_schema__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_custom_init__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_custom_init__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_decorators__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_decorators__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_generic_metadata__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_generic_metadata__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_parent_namespace__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_parent_namespace__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_post_init__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_post_init__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_root_model__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_root_model__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_serializer__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_serializer__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_validator__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_validator__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_fields__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_fields__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_computed_fields__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_computed_fields__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_extra__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_extra__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_fields_set__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_fields_set__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_private__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_private__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.models"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.models</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.MODEL_REGISTRY"><code class="docutils literal notranslate"><span class="pre">MODEL_REGISTRY</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.available_pretrained_models"><code class="docutils literal notranslate"><span class="pre">available_pretrained_models</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.model_name_to_local_file"><code class="docutils literal notranslate"><span class="pre">model_name_to_local_file()</span></code></a></li>
@@ -667,6 +737,23 @@ LICENSE file in the root directory of this source tree.</p>
 </table>
 </div>
 </section>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.models.model_registry.HuggingFaceModel" title="core.models.model_registry.HuggingFaceModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HuggingFaceModel</span></code></a></p></td>
+<td><p>Usage docs: <a class="reference external" href="https://docs.pydantic.dev/2.10/concepts/models/">https://docs.pydantic.dev/2.10/concepts/models/</a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core.models.model_registry.URLModel" title="core.models.model_registry.URLModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">URLModel</span></code></a></p></td>
+<td><p>Usage docs: <a class="reference external" href="https://docs.pydantic.dev/2.10/concepts/models/">https://docs.pydantic.dev/2.10/concepts/models/</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.models.model_registry.ModelRegistry" title="core.models.model_registry.ModelRegistry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ModelRegistry</span></code></a></p></td>
+<td><p>Usage docs: <a class="reference external" href="https://docs.pydantic.dev/2.10/concepts/models/">https://docs.pydantic.dev/2.10/concepts/models/</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 <section id="functions">
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
@@ -680,6 +767,393 @@ LICENSE file in the root directory of this source tree.</p>
 </section>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.models.model_registry.</span></span><span class="sig-name descname"><span class="pre">HuggingFaceModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**data:</span> <span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">pydantic.BaseModel</span></code></p>
+<p>Usage docs: <a class="reference external" href="https://docs.pydantic.dev/2.10/concepts/models/">https://docs.pydantic.dev/2.10/concepts/models/</a></p>
+<p>A base class for creating Pydantic models.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__class_vars__">
+<span class="sig-name descname"><span class="pre">__class_vars__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__class_vars__" title="Link to this definition">#</a></dt>
+<dd><p>The names of the class variables defined on the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__private_attributes__">
+<span class="sig-name descname"><span class="pre">__private_attributes__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__private_attributes__" title="Link to this definition">#</a></dt>
+<dd><p>Metadata about the private attributes of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__signature__">
+<span class="sig-name descname"><span class="pre">__signature__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__signature__" title="Link to this definition">#</a></dt>
+<dd><p>The synthesized <cite>__init__</cite> [<cite>Signature</cite>][inspect.Signature] of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_complete__">
+<span class="sig-name descname"><span class="pre">__pydantic_complete__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_complete__" title="Link to this definition">#</a></dt>
+<dd><p>Whether model building is completed, or if there are still undefined fields.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_core_schema__">
+<span class="sig-name descname"><span class="pre">__pydantic_core_schema__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_core_schema__" title="Link to this definition">#</a></dt>
+<dd><p>The core schema of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_custom_init__">
+<span class="sig-name descname"><span class="pre">__pydantic_custom_init__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_custom_init__" title="Link to this definition">#</a></dt>
+<dd><p>Whether the model has a custom <cite>__init__</cite> function.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_decorators__">
+<span class="sig-name descname"><span class="pre">__pydantic_decorators__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_decorators__" title="Link to this definition">#</a></dt>
+<dd><p>Metadata containing the decorators defined on the model.
+This replaces <cite>Model.__validators__</cite> and <cite>Model.__root_validators__</cite> from Pydantic V1.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_generic_metadata__">
+<span class="sig-name descname"><span class="pre">__pydantic_generic_metadata__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_generic_metadata__" title="Link to this definition">#</a></dt>
+<dd><p>Metadata for generic models; contains data used for a similar purpose to
+__args__, __origin__, __parameters__ in typing-module generics. May eventually be replaced by these.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_parent_namespace__">
+<span class="sig-name descname"><span class="pre">__pydantic_parent_namespace__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_parent_namespace__" title="Link to this definition">#</a></dt>
+<dd><p>Parent namespace of the model, used for automatic rebuilding of models.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_post_init__">
+<span class="sig-name descname"><span class="pre">__pydantic_post_init__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_post_init__" title="Link to this definition">#</a></dt>
+<dd><p>The name of the post-init method for the model, if defined.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_root_model__">
+<span class="sig-name descname"><span class="pre">__pydantic_root_model__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_root_model__" title="Link to this definition">#</a></dt>
+<dd><p>Whether the model is a [<cite>RootModel</cite>][pydantic.root_model.RootModel].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_serializer__">
+<span class="sig-name descname"><span class="pre">__pydantic_serializer__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_serializer__" title="Link to this definition">#</a></dt>
+<dd><p>The <cite>pydantic-core</cite> <cite>SchemaSerializer</cite> used to dump instances of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_validator__">
+<span class="sig-name descname"><span class="pre">__pydantic_validator__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_validator__" title="Link to this definition">#</a></dt>
+<dd><p>The <cite>pydantic-core</cite> <cite>SchemaValidator</cite> used to validate instances of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_fields__">
+<span class="sig-name descname"><span class="pre">__pydantic_fields__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_fields__" title="Link to this definition">#</a></dt>
+<dd><p>A dictionary of field names and their corresponding [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo] objects.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_computed_fields__">
+<span class="sig-name descname"><span class="pre">__pydantic_computed_fields__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_computed_fields__" title="Link to this definition">#</a></dt>
+<dd><p>A dictionary of computed field names and their corresponding [<cite>ComputedFieldInfo</cite>][pydantic.fields.ComputedFieldInfo] objects.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_extra__">
+<span class="sig-name descname"><span class="pre">__pydantic_extra__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_extra__" title="Link to this definition">#</a></dt>
+<dd><p>A dictionary containing extra values, if [<cite>extra</cite>][pydantic.config.ConfigDict.extra]
+is set to <cite>‘allow’</cite>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_fields_set__">
+<span class="sig-name descname"><span class="pre">__pydantic_fields_set__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_fields_set__" title="Link to this definition">#</a></dt>
+<dd><p>The names of fields explicitly set during instantiation.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.__pydantic_private__">
+<span class="sig-name descname"><span class="pre">__pydantic_private__</span></span><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.__pydantic_private__" title="Link to this definition">#</a></dt>
+<dd><p>Values of private attributes set on the model instance.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.type">
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'huggingface_hub'</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.type" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.repo_id">
+<span class="sig-name descname"><span class="pre">repo_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'fairchem/OMAT24'</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.repo_id" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.HuggingFaceModel.filename">
+<span class="sig-name descname"><span class="pre">filename</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#core.models.model_registry.HuggingFaceModel.filename" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.models.model_registry.</span></span><span class="sig-name descname"><span class="pre">URLModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**data:</span> <span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.model_registry.URLModel" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">pydantic.BaseModel</span></code></p>
+<p>Usage docs: <a class="reference external" href="https://docs.pydantic.dev/2.10/concepts/models/">https://docs.pydantic.dev/2.10/concepts/models/</a></p>
+<p>A base class for creating Pydantic models.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__class_vars__">
+<span class="sig-name descname"><span class="pre">__class_vars__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__class_vars__" title="Link to this definition">#</a></dt>
+<dd><p>The names of the class variables defined on the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__private_attributes__">
+<span class="sig-name descname"><span class="pre">__private_attributes__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__private_attributes__" title="Link to this definition">#</a></dt>
+<dd><p>Metadata about the private attributes of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__signature__">
+<span class="sig-name descname"><span class="pre">__signature__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__signature__" title="Link to this definition">#</a></dt>
+<dd><p>The synthesized <cite>__init__</cite> [<cite>Signature</cite>][inspect.Signature] of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_complete__">
+<span class="sig-name descname"><span class="pre">__pydantic_complete__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_complete__" title="Link to this definition">#</a></dt>
+<dd><p>Whether model building is completed, or if there are still undefined fields.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_core_schema__">
+<span class="sig-name descname"><span class="pre">__pydantic_core_schema__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_core_schema__" title="Link to this definition">#</a></dt>
+<dd><p>The core schema of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_custom_init__">
+<span class="sig-name descname"><span class="pre">__pydantic_custom_init__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_custom_init__" title="Link to this definition">#</a></dt>
+<dd><p>Whether the model has a custom <cite>__init__</cite> function.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_decorators__">
+<span class="sig-name descname"><span class="pre">__pydantic_decorators__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_decorators__" title="Link to this definition">#</a></dt>
+<dd><p>Metadata containing the decorators defined on the model.
+This replaces <cite>Model.__validators__</cite> and <cite>Model.__root_validators__</cite> from Pydantic V1.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_generic_metadata__">
+<span class="sig-name descname"><span class="pre">__pydantic_generic_metadata__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_generic_metadata__" title="Link to this definition">#</a></dt>
+<dd><p>Metadata for generic models; contains data used for a similar purpose to
+__args__, __origin__, __parameters__ in typing-module generics. May eventually be replaced by these.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_parent_namespace__">
+<span class="sig-name descname"><span class="pre">__pydantic_parent_namespace__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_parent_namespace__" title="Link to this definition">#</a></dt>
+<dd><p>Parent namespace of the model, used for automatic rebuilding of models.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_post_init__">
+<span class="sig-name descname"><span class="pre">__pydantic_post_init__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_post_init__" title="Link to this definition">#</a></dt>
+<dd><p>The name of the post-init method for the model, if defined.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_root_model__">
+<span class="sig-name descname"><span class="pre">__pydantic_root_model__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_root_model__" title="Link to this definition">#</a></dt>
+<dd><p>Whether the model is a [<cite>RootModel</cite>][pydantic.root_model.RootModel].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_serializer__">
+<span class="sig-name descname"><span class="pre">__pydantic_serializer__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_serializer__" title="Link to this definition">#</a></dt>
+<dd><p>The <cite>pydantic-core</cite> <cite>SchemaSerializer</cite> used to dump instances of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_validator__">
+<span class="sig-name descname"><span class="pre">__pydantic_validator__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_validator__" title="Link to this definition">#</a></dt>
+<dd><p>The <cite>pydantic-core</cite> <cite>SchemaValidator</cite> used to validate instances of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_fields__">
+<span class="sig-name descname"><span class="pre">__pydantic_fields__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_fields__" title="Link to this definition">#</a></dt>
+<dd><p>A dictionary of field names and their corresponding [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo] objects.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_computed_fields__">
+<span class="sig-name descname"><span class="pre">__pydantic_computed_fields__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_computed_fields__" title="Link to this definition">#</a></dt>
+<dd><p>A dictionary of computed field names and their corresponding [<cite>ComputedFieldInfo</cite>][pydantic.fields.ComputedFieldInfo] objects.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_extra__">
+<span class="sig-name descname"><span class="pre">__pydantic_extra__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_extra__" title="Link to this definition">#</a></dt>
+<dd><p>A dictionary containing extra values, if [<cite>extra</cite>][pydantic.config.ConfigDict.extra]
+is set to <cite>‘allow’</cite>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_fields_set__">
+<span class="sig-name descname"><span class="pre">__pydantic_fields_set__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_fields_set__" title="Link to this definition">#</a></dt>
+<dd><p>The names of fields explicitly set during instantiation.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.__pydantic_private__">
+<span class="sig-name descname"><span class="pre">__pydantic_private__</span></span><a class="headerlink" href="#core.models.model_registry.URLModel.__pydantic_private__" title="Link to this definition">#</a></dt>
+<dd><p>Values of private attributes set on the model instance.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.url">
+<span class="sig-name descname"><span class="pre">url</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#core.models.model_registry.URLModel.url" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.URLModel.type">
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'url'</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#core.models.model_registry.URLModel.type" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.models.model_registry.</span></span><span class="sig-name descname"><span class="pre">ModelRegistry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**data:</span> <span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.models.model_registry.ModelRegistry" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">pydantic.BaseModel</span></code></p>
+<p>Usage docs: <a class="reference external" href="https://docs.pydantic.dev/2.10/concepts/models/">https://docs.pydantic.dev/2.10/concepts/models/</a></p>
+<p>A base class for creating Pydantic models.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__class_vars__">
+<span class="sig-name descname"><span class="pre">__class_vars__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__class_vars__" title="Link to this definition">#</a></dt>
+<dd><p>The names of the class variables defined on the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__private_attributes__">
+<span class="sig-name descname"><span class="pre">__private_attributes__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__private_attributes__" title="Link to this definition">#</a></dt>
+<dd><p>Metadata about the private attributes of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__signature__">
+<span class="sig-name descname"><span class="pre">__signature__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__signature__" title="Link to this definition">#</a></dt>
+<dd><p>The synthesized <cite>__init__</cite> [<cite>Signature</cite>][inspect.Signature] of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_complete__">
+<span class="sig-name descname"><span class="pre">__pydantic_complete__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_complete__" title="Link to this definition">#</a></dt>
+<dd><p>Whether model building is completed, or if there are still undefined fields.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_core_schema__">
+<span class="sig-name descname"><span class="pre">__pydantic_core_schema__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_core_schema__" title="Link to this definition">#</a></dt>
+<dd><p>The core schema of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_custom_init__">
+<span class="sig-name descname"><span class="pre">__pydantic_custom_init__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_custom_init__" title="Link to this definition">#</a></dt>
+<dd><p>Whether the model has a custom <cite>__init__</cite> function.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_decorators__">
+<span class="sig-name descname"><span class="pre">__pydantic_decorators__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_decorators__" title="Link to this definition">#</a></dt>
+<dd><p>Metadata containing the decorators defined on the model.
+This replaces <cite>Model.__validators__</cite> and <cite>Model.__root_validators__</cite> from Pydantic V1.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_generic_metadata__">
+<span class="sig-name descname"><span class="pre">__pydantic_generic_metadata__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_generic_metadata__" title="Link to this definition">#</a></dt>
+<dd><p>Metadata for generic models; contains data used for a similar purpose to
+__args__, __origin__, __parameters__ in typing-module generics. May eventually be replaced by these.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_parent_namespace__">
+<span class="sig-name descname"><span class="pre">__pydantic_parent_namespace__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_parent_namespace__" title="Link to this definition">#</a></dt>
+<dd><p>Parent namespace of the model, used for automatic rebuilding of models.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_post_init__">
+<span class="sig-name descname"><span class="pre">__pydantic_post_init__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_post_init__" title="Link to this definition">#</a></dt>
+<dd><p>The name of the post-init method for the model, if defined.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_root_model__">
+<span class="sig-name descname"><span class="pre">__pydantic_root_model__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_root_model__" title="Link to this definition">#</a></dt>
+<dd><p>Whether the model is a [<cite>RootModel</cite>][pydantic.root_model.RootModel].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_serializer__">
+<span class="sig-name descname"><span class="pre">__pydantic_serializer__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_serializer__" title="Link to this definition">#</a></dt>
+<dd><p>The <cite>pydantic-core</cite> <cite>SchemaSerializer</cite> used to dump instances of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_validator__">
+<span class="sig-name descname"><span class="pre">__pydantic_validator__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_validator__" title="Link to this definition">#</a></dt>
+<dd><p>The <cite>pydantic-core</cite> <cite>SchemaValidator</cite> used to validate instances of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_fields__">
+<span class="sig-name descname"><span class="pre">__pydantic_fields__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_fields__" title="Link to this definition">#</a></dt>
+<dd><p>A dictionary of field names and their corresponding [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo] objects.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_computed_fields__">
+<span class="sig-name descname"><span class="pre">__pydantic_computed_fields__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_computed_fields__" title="Link to this definition">#</a></dt>
+<dd><p>A dictionary of computed field names and their corresponding [<cite>ComputedFieldInfo</cite>][pydantic.fields.ComputedFieldInfo] objects.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_extra__">
+<span class="sig-name descname"><span class="pre">__pydantic_extra__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_extra__" title="Link to this definition">#</a></dt>
+<dd><p>A dictionary containing extra values, if [<cite>extra</cite>][pydantic.config.ConfigDict.extra]
+is set to <cite>‘allow’</cite>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_fields_set__">
+<span class="sig-name descname"><span class="pre">__pydantic_fields_set__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_fields_set__" title="Link to this definition">#</a></dt>
+<dd><p>The names of fields explicitly set during instantiation.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.__pydantic_private__">
+<span class="sig-name descname"><span class="pre">__pydantic_private__</span></span><a class="headerlink" href="#core.models.model_registry.ModelRegistry.__pydantic_private__" title="Link to this definition">#</a></dt>
+<dd><p>Values of private attributes set on the model instance.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.models.model_registry.ModelRegistry.models">
+<span class="sig-name descname"><span class="pre">models</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pydantic.AnyUrl</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#core.models.model_registry.HuggingFaceModel" title="core.models.model_registry.HuggingFaceModel"><span class="pre">HuggingFaceModel</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#core.models.model_registry.URLModel" title="core.models.model_registry.URLModel"><span class="pre">URLModel</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#core.models.model_registry.ModelRegistry.models" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 <dl class="py data">
 <dt class="sig sig-object py" id="core.models.model_registry.MODEL_REGISTRY">
 <span class="sig-prename descclassname"><span class="pre">core.models.model_registry.</span></span><span class="sig-name descname"><span class="pre">MODEL_REGISTRY</span></span><a class="headerlink" href="#core.models.model_registry.MODEL_REGISTRY" title="Link to this definition">#</a></dt>
@@ -778,8 +1252,78 @@ LICENSE file in the root directory of this source tree.</p>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attributes">Attributes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__class_vars__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__class_vars__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__private_attributes__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__private_attributes__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__signature__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__signature__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_complete__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_complete__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_core_schema__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_core_schema__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_custom_init__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_custom_init__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_decorators__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_decorators__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_generic_metadata__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_generic_metadata__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_parent_namespace__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_parent_namespace__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_post_init__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_post_init__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_root_model__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_root_model__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_serializer__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_serializer__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_validator__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_validator__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_fields__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_fields__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_computed_fields__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_computed_fields__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_extra__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_extra__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_fields_set__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_fields_set__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.__pydantic_private__"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.__pydantic_private__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.type"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.type</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.repo_id"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.repo_id</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.HuggingFaceModel.filename"><code class="docutils literal notranslate"><span class="pre">HuggingFaceModel.filename</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel"><code class="docutils literal notranslate"><span class="pre">URLModel</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__class_vars__"><code class="docutils literal notranslate"><span class="pre">URLModel.__class_vars__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__private_attributes__"><code class="docutils literal notranslate"><span class="pre">URLModel.__private_attributes__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__signature__"><code class="docutils literal notranslate"><span class="pre">URLModel.__signature__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_complete__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_complete__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_core_schema__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_core_schema__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_custom_init__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_custom_init__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_decorators__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_decorators__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_generic_metadata__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_generic_metadata__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_parent_namespace__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_parent_namespace__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_post_init__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_post_init__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_root_model__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_root_model__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_serializer__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_serializer__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_validator__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_validator__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_fields__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_fields__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_computed_fields__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_computed_fields__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_extra__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_extra__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_fields_set__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_fields_set__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.__pydantic_private__"><code class="docutils literal notranslate"><span class="pre">URLModel.__pydantic_private__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.url"><code class="docutils literal notranslate"><span class="pre">URLModel.url</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.URLModel.type"><code class="docutils literal notranslate"><span class="pre">URLModel.type</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry"><code class="docutils literal notranslate"><span class="pre">ModelRegistry</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__class_vars__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__class_vars__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__private_attributes__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__private_attributes__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__signature__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__signature__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_complete__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_complete__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_core_schema__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_core_schema__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_custom_init__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_custom_init__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_decorators__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_decorators__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_generic_metadata__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_generic_metadata__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_parent_namespace__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_parent_namespace__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_post_init__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_post_init__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_root_model__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_root_model__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_serializer__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_serializer__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_validator__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_validator__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_fields__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_fields__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_computed_fields__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_computed_fields__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_extra__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_extra__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_fields_set__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_fields_set__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.__pydantic_private__"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.__pydantic_private__</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.ModelRegistry.models"><code class="docutils literal notranslate"><span class="pre">ModelRegistry.models</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.MODEL_REGISTRY"><code class="docutils literal notranslate"><span class="pre">MODEL_REGISTRY</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.available_pretrained_models"><code class="docutils literal notranslate"><span class="pre">available_pretrained_models</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.models.model_registry.model_name_to_local_file"><code class="docutils literal notranslate"><span class="pre">model_name_to_local_file()</span></code></a></li>
