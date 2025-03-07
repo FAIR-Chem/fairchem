@@ -710,24 +710,24 @@ document.write(`
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/escn/so3.py:23: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
+/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
-  checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
-WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-07-01-36-00
-  commit: core:6dc2238,experimental:NA
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-07-22-09-04
+  commit: core:38b60cd,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-07-01-36-00
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-07-22-09-04
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-07-01-36-00
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-07-22-09-04
   seed: null
-  timestamp_id: 2025-03-07-01-36-00
-  version: 1.6.0
+  timestamp_id: 2025-03-07-22-09-04
+  version: 1.7.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -892,60 +892,60 @@ val_dataset: {}
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3606/3462928393.py:13: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3782/3462928393.py:13: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>      Step     Time          Energy          fmax
-BFGS:    0 01:37:04     -110.400406        1.627233
+BFGS:    0 22:10:07     -110.400406        1.627233
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    1 01:37:05     -110.542839        0.924819
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    1 22:10:08     -110.542839        0.924819
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    2 01:37:05     -110.626541        0.568005
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    2 22:10:08     -110.626541        0.568005
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    3 01:37:05     -110.605003        0.585444
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    3 22:10:08     -110.605003        0.585444
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    4 01:37:06     -110.652641        0.443063
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    4 22:10:09     -110.652641        0.443063
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    5 01:37:06     -110.698265        0.369424
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    5 22:10:09     -110.698265        0.369424
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    6 01:37:07     -110.729652        0.604163
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    6 22:10:10     -110.729652        0.604163
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    7 01:37:07     -110.766403        0.711393
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    7 22:10:10     -110.766403        0.711393
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    8 01:37:08     -110.869637        0.512456
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    8 22:10:11     -110.869637        0.512456
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    9 01:37:08     -110.945900        0.158336
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:    9 22:10:11     -110.945900        0.158336
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   10 01:37:09     -110.976570        0.086625
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   10 22:10:12     -110.976570        0.086625
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   11 01:37:09     -110.992783        0.074964
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   11 22:10:12     -110.992783        0.074964
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   12 01:37:09     -111.000832        0.063625
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   12 22:10:12     -111.000832        0.063625
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   13 01:37:10     -111.000153        0.061604
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   13 22:10:13     -111.000153        0.061604
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   14 01:37:10     -111.009369        0.058362
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   14 22:10:13     -111.009369        0.058362
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   15 01:37:11     -111.015068        0.054439
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   15 22:10:14     -111.015068        0.054439
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   16 01:37:11     -111.019554        0.033223
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BFGS:   16 22:10:14     -111.019554        0.033223
 </pre></div>
 </div>
 <img alt="../_images/e332a2ee1840b32f1f61dfabd298768f573d6e029f159e0fea1111824a9e23b3.png" src="../_images/e332a2ee1840b32f1f61dfabd298768f573d6e029f159e0fea1111824a9e23b3.png" />
