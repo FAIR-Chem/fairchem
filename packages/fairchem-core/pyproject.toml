@@ -25,7 +25,7 @@ dependencies = [
     "submitit",
     "hydra-core",
     "torchtnt",
-    "huggingface_hub>=0.2.1",
+    "huggingface_hub>=0.27.1",
     "pydantic>=2.10.0"
 ]
 
