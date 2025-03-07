@@ -650,12 +650,17 @@ class TransBlockV2(torch.nn.Module):
         edge_distance,
         edge_index,
         batch,  # for GraphDropPath
+        cs_emb,
         node_offset: int = 0,
     ):
         output_embedding = x.clone()
 
         x_res = output_embedding.embedding
         output_embedding.embedding = self.norm_1(output_embedding.embedding)
+
+        # add charge and spin embedding
+        output_embedding.embedding[:, 0, :] = output_embedding.embedding[:, 0, :] + cs_emb
+
         output_embedding = self.ga(
             output_embedding, atomic_numbers, edge_distance, edge_index, node_offset
         )

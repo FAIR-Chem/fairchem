@@ -59,6 +59,68 @@ _AVG_NUM_NODES = 77.81317
 _AVG_DEGREE = 23.395238876342773  # IS2RE: 100k, max_radius = 5, max_neighbors = 100
 
 
+# default "rand_emb" grad=True
+class ChgSpinEmbedding(nn.Module):
+    def __init__(
+        self,
+        embedding_type,
+        embedding_target,
+        embedding_size,
+        grad,
+        scale=1.0,
+    ):
+        super().__init__()
+        assert embedding_type in ["pos_emb", "lin_emb", "rand_emb"]
+        self.embedding_type = embedding_type
+        assert embedding_target in ["charge", "spin"]
+        self.embedding_target = embedding_target
+
+        if self.embedding_target == "charge":
+            # 100 is a conservative upper bound
+            self.target_dict = {str(x): x + 100 for x in range(-100, 101)}
+        elif self.embedding_target == "spin":
+            # 100 is a conservative upper bound
+            self.target_dict = {str(x): x for x in range(0, 101)}
+
+        if self.embedding_type == "pos_emb":
+            # dividing by 2 because x_proj multiplies by 2
+            if not grad:
+                self.W = nn.Parameter(
+                    torch.randn(embedding_size // 2) * scale, requires_grad=False
+                )
+            else:
+                self.W = nn.Parameter(
+                    torch.randn(embedding_size // 2) * scale, requires_grad=True
+                )
+        elif self.embedding_type == "lin_emb":
+            self.lin_emb = nn.Linear(in_features=1, out_features=embedding_size)
+            if not grad:
+                for param in self.lin_emb.parameters():
+                    param.requires_grad = False
+        elif self.embedding_type == "rand_emb":
+            self.rand_emb = nn.Embedding(len(self.target_dict), embedding_size)
+            if not grad:
+                for param in self.rand_emb.parameters():
+                    param.requires_grad = False
+
+        else:
+            raise ValueError(f"embedding type {self.embedding_type} not implemented")
+
+    def forward(self, x):
+        if self.embedding_type == "pos_emb":
+            x_proj = x[:, None] * self.W[None, :] * 2 * torch.pi
+            return torch.cat([torch.sin(x_proj), torch.cos(x_proj)], dim=-1)
+        elif self.embedding_type == "lin_emb":
+            return self.lin_emb(x.unsqueeze(-1).float())
+        elif self.embedding_type == "rand_emb":
+            return self.rand_emb(
+                torch.tensor(
+                    [self.target_dict[str(i)] for i in x.tolist()],
+                    device=x.device,
+                    dtype=torch.long,
+                )
+            )
+
 @deprecated(
     "equiformer_v2_force_head (EquiformerV2ForceHead) class is deprecated in favor of equiformerV2_rank1_head  (EqV2Rank1Head)"
 )
@@ -187,6 +249,8 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
         use_energy_lin_ref: bool | None = False,
         load_energy_lin_ref: bool | None = False,
         activation_checkpoint: bool | None = False,
+        chg_spin_emb_type: str = "rand_emb",
+        cs_emb_grad: bool = True,
     ):
         if mmax_list is None:
             mmax_list = [2]
@@ -252,6 +316,9 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
         self.avg_num_nodes = avg_num_nodes or _AVG_NUM_NODES
         self.avg_degree = avg_degree or _AVG_DEGREE
 
+        self.chg_spin_emb_type = chg_spin_emb_type
+        self.cs_emb_grad = cs_emb_grad
+
         self.use_energy_lin_ref = use_energy_lin_ref
         self.load_energy_lin_ref = load_energy_lin_ref
         assert not (
@@ -273,6 +340,23 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
         self.sphere_embedding = nn.Embedding(
             self.max_num_elements, self.sphere_channels_all
         )
+
+        # charge / spin embedding
+        self.charge_embedding = ChgSpinEmbedding(
+            self.chg_spin_emb_type,
+            "charge",
+            self.sphere_channels,
+            grad=self.cs_emb_grad,
+        )
+        self.spin_embedding = ChgSpinEmbedding(
+            self.chg_spin_emb_type,
+            "spin",
+            self.sphere_channels,
+            grad=self.cs_emb_grad,
+        )
+
+        # mix charge and spin embeddings
+        self.mix_cs = nn.Linear(2 * self.sphere_channels, self.sphere_channels)
 
         # Initialize the function used to measure the distances between atoms
         assert self.distance_function in [
@@ -480,6 +564,14 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
             offset = offset + self.sphere_channels
             offset_res = offset_res + int((self.lmax_list[i] + 1) ** 2)
 
+        # Add charge and spin embeddings
+        chg_emb = self.charge_embedding(data["charge"])
+        spin_emb = self.spin_embedding(data["spin"])
+        cs_mixed_emb = torch.nn.SiLU()(
+            self.mix_csd(torch.cat((chg_emb, spin_emb), dim=1))
+        )
+        x.embedding[:, 0, :] = x.embedding[:, 0, :] + cs_mixed_emb[data["batch"]]
+        
         # Edge encoding (distance and atom edge)
         graph.edge_distance = self.distance_expansion(graph.edge_distance)
         if self.share_atom_edge_embedding and self.use_atom_edge_embedding:
@@ -522,12 +614,14 @@ class EquiformerV2Backbone(nn.Module, GraphModelMixin):
                     use_reentrant=not self.training,
                 )
             else:
+
                 x = self.blocks[i](
                     x,  # SO3_Embedding
                     graph.atomic_numbers_full,
                     graph.edge_distance,
                     graph.edge_index,
                     batch=data_batch,  # for GraphDropPath
+                    cs_emb=cs_mixed_emb[data["batch"]] 
                     node_offset=graph.node_offset,
                 )
 
