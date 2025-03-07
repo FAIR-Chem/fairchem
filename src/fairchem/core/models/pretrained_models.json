@@ -287,7 +287,7 @@
         "repo_id": "fairchem/OMAT24",
         "filename": "eqV2_31M_omat.pt"
     },
-    "EquiformerV2-31M-OMAT24-mp-salex": {
+    "EquiformerV2-31M-OMAT24-MP-sAlex": {
         "type": "huggingface_hub",
         "repo_id": "fairchem/OMAT24",
         "filename": "eqV2_31M_omat_mp_salex.pt"
