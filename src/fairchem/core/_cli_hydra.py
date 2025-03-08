@@ -176,9 +176,10 @@ class Submitit(Checkpointable):
 
         self.runner: Runner = hydra.utils.instantiate(dict_config.runner)
         self.runner.config = self.config
+
+        # Attempt to load runner state if there was previous state
         # must call resume state AFTER the runner has been initialized
-        if self.config.job.runner_state_path:
-            self.runner.load_state(self.config.job.runner_state_path)
+        self.runner.load_state(self.config.job.runner_state_path)
         self.runner.run()
         distutils.cleanup()
 
