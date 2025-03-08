@@ -31,7 +31,7 @@ class Runner(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def load_state(self, checkpoint_location: str) -> None:
+    def load_state(self, checkpoint_location: str | None) -> None:
         raise NotImplementedError
 
 
@@ -50,5 +50,5 @@ class MockRunner(Runner):
     def save_state(self, checkpoint_location: str) -> None:
         pass
 
-    def load_state(self, checkpoint_location: str) -> None:
+    def load_state(self, checkpoint_location: str | None) -> None:
         pass
