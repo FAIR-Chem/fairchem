@@ -1231,11 +1231,23 @@ def scatter_det(*args, **kwargs):
     return out
 
 
-def get_commit_hash():
+def get_commit_hash() -> str:
+    core_hash = get_commit_hash_for_repo(fairchem.core.__path__[0])
+    experimental_hash = None
+    try:
+        experimental_hash = get_commit_hash_for_repo(fairchem.experimental.__path__[0])
+        return f"core:{core_hash},experimental:{experimental_hash}"
+    except (NameError, AttributeError):
+        return f"core:{core_hash},experimental:NA"
+
+
+def get_commit_hash_for_repo(
+    git_repo_path: str,
+) -> str | None:
     try:
         commit_hash = (
             subprocess.check_output(
-                ["git", "-C", fairchem.core.__path__[0], "describe", "--always"],
+                ["git", "-C", git_repo_path, "describe", "--always"],
                 stderr=subprocess.DEVNULL,
             )
             .strip()
