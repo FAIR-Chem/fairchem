@@ -47,8 +47,8 @@ class MockRunner(Runner):
             raise ValueError("sum is greater than 1000!")
         return self.x + self.y
 
-    def save_state(self) -> None:
+    def save_state(self, checkpoint_location: str) -> None:
         pass
 
-    def load_state(self) -> None:
+    def load_state(self, checkpoint_location: str) -> None:
         pass
