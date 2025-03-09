@@ -1526,7 +1526,7 @@ def get_deep(dictionary: dict, keys: str, default: str | None = None):
     )
 
 
-def get_subdirectories_sorted_by_time(directory: str) -> str:
+def get_subdirectories_sorted_by_time(directory: str) -> list:
     """
     Get all subdirectories in a directory sorted by their last modification time.
     Args:
@@ -1534,6 +1534,9 @@ def get_subdirectories_sorted_by_time(directory: str) -> str:
     Returns:
         list: A list of tuples containing the subdirectory path and its last modification time.
     """
+    if not os.path.exists(directory):
+        return []
+
     directory = pathlib.Path(directory)
     return sorted(
         ((str(d), d.stat().st_mtime) for d in directory.iterdir() if d.is_dir()),
