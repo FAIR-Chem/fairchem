@@ -781,10 +781,21 @@ def radius_graph_pbc(
 
 
 def sum_partitions(x: torch.Tensor, partition_idxs: torch.Tensor) -> torch.Tensor:
-    sums = torch.zeros(partition_idxs.shape[0] - 1, device=x.device)
+    sums = torch.zeros(partition_idxs.shape[0] - 1, device=x.device, dtype=x.dtype)
     for idx in range(partition_idxs.shape[0] - 1):
         sums[idx] = x[partition_idxs[idx] : partition_idxs[idx + 1]].sum()
     return sums
+
+
+def get_counts(x: torch.Tensor, length: int):
+    dtype = x.dtype
+    device = x.device
+    return torch.zeros(length, device=device, dtype=dtype).scatter_reduce(
+        dim=0,
+        index=x,
+        src=torch.ones(x.shape[0], device=device, dtype=dtype),
+        reduce="sum",
+    )
 
 
 def get_max_neighbors_mask(
@@ -814,9 +825,8 @@ def get_max_neighbors_mask(
     num_atoms = natoms.sum()
 
     # Get number of neighbors
-    num_neighbors = torch.zeros(num_atoms, device=device).scatter_reduce(
-        dim=0, index=index, src=torch.ones(index.shape[0], device=device), reduce="sum"
-    )
+    num_neighbors = get_counts(index, num_atoms)
+
     max_num_neighbors = num_neighbors.max()
     num_neighbors_thresholded = num_neighbors.clamp(max=max_num_neighbors_threshold)
 
@@ -895,7 +905,6 @@ def get_max_neighbors_mask(
     # Create a mask to remove all pairs not in index_sort
     mask_num_neighbors = torch.zeros(len(index), device=device, dtype=bool)
     mask_num_neighbors.index_fill_(0, index_sort, True)
-
     return mask_num_neighbors, num_neighbors_image
 
 
@@ -1004,14 +1013,7 @@ def setup_logging() -> None:
 
 def compute_neighbors(data, edge_index):
     # Get number of neighbors
-    num_neighbors = torch.zeros(
-        data.natoms.sum(), device=edge_index[1].device
-    ).scatter_reduce(
-        dim=0,
-        index=edge_index[1],
-        src=torch.ones(edge_index[1].shape[0], device=edge_index[1].device),
-        reduce="sum",
-    )
+    num_neighbors = get_counts(edge_index[1], data.natoms.sum())
 
     # Get number of neighbors per image
     image_indptr = torch.zeros(
