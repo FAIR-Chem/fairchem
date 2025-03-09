@@ -780,7 +780,7 @@ def radius_graph_pbc(
     return edge_index, unit_cell, num_neighbors_image
 
 
-def sum_partitions(x: torch.Tensor, partition_idxs: torch.Tensor):
+def sum_partitions(x: torch.Tensor, partition_idxs: torch.Tensor) -> torch.Tensor:
     sums = torch.zeros(partition_idxs.shape[0] - 1, device=x.device)
     for idx in range(partition_idxs.shape[0] - 1):
         sums[idx] = x[partition_idxs[idx] : partition_idxs[idx + 1]].sum()
