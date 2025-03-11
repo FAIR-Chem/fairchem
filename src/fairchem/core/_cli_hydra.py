@@ -180,8 +180,7 @@ class Submitit(Checkpointable):
         self.runner.initialize(self.config.job)
 
         # must call resume state AFTER the runner has been initialized
-        if self.config.job.runner_state_path:
-            self.runner.load_state(self.config.job.runner_state_path)
+        self.runner.load_state(self.config.job.runner_state_path)
         self.runner.run()
         distutils.cleanup()
 

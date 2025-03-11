@@ -53,6 +53,8 @@ jobs:
           echo "$(readlink -f .)" >> $GITHUB_PATH
 
       - name: Test core with pytest
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN_OMAT_READONLY }}
         run: |
           pytest tests -vv --ignore=tests/demo/ocpapi/tests/integration/  --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml
 
