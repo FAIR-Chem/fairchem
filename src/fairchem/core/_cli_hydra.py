@@ -286,6 +286,12 @@ def get_hydra_config_from_yaml(
     return get_canonical_config(cfg)
 
 
+def _runner_wrapper(config: DictConfig):
+    # This is needed when using elastic_launch for local runs since it looks for
+    # the __name__ attribute of the function, Submitit.__call__ does not have one
+    Submitit()(config)
+
+
 def main(
     args: argparse.Namespace | None = None, override_args: list[str] | None = None
 ):
@@ -353,7 +359,8 @@ def main(
                 rdzv_backend="c10d",
                 max_restarts=0,
             )
-            elastic_launch(launch_config, Submitit())(cfg)
+
+            elastic_launch(launch_config, _runner_wrapper)(cfg)
         else:
             logging.info("Running in local mode without elastic launch")
             distutils.setup_env_local()
