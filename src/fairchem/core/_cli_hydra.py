@@ -177,8 +177,8 @@ class Submitit(Checkpointable):
             _set_deterministic_mode()
 
         self.runner: Runner = hydra.utils.instantiate(dict_config.runner)
-        # TODO which runners use the whole config? if needed lets move to initialize
-        self.runner.config = self.config
+        self.runner.initialize(self.config)
+
         # must call resume state AFTER the runner has been initialized
         if self.config.job.runner_state_path:
             self.runner.load_state(self.config.job.runner_state_path)

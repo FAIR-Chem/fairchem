@@ -14,14 +14,6 @@ class Runner(metaclass=ABCMeta):
     This allows us to decouple away from a monolithic trainer class
     """
 
-    @property
-    def config(self) -> DictConfig:
-        return self._config
-
-    @config.setter
-    def config(self, cfg: DictConfig):
-        self._config = cfg
-
     @abstractmethod
     def initialize(self, job_config: DictConfig) -> None:
         raise NotImplementedError
