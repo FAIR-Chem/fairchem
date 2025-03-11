@@ -39,7 +39,6 @@ from fairchem.core.common.logger import WandBSingletonLogger
 from fairchem.core.common.utils import (
     get_cluster_name,
     get_commit_hash,
-    get_subdirectories_sorted_by_time,
     get_timestamp_uid,
     setup_env_vars,
     setup_logging,
@@ -226,22 +225,15 @@ class Submitit(Checkpointable):
         logging.error("Submitit checkpointing callback is triggered")
         # TODO: preemption state saving doesn't work with DCP because submitit only calls checkpoint
         # on rank0, which will cause the system to deadlock.
-        # save_path = self.config.job.metadata.preemption_checkpoint_dir
-        # self.runner.save_state(save_path)
-        # For now, use the last found checkpoint
+        save_path = self.config.job.metadata.preemption_checkpoint_dir
+        self.runner.save_state(save_path, is_preemption=True)
         cfg_copy = self.config.copy()
-        ckpt_dirs_time = get_subdirectories_sorted_by_time(
-            self.config.job.metadata.checkpoint_dir
-        )
-        if len(ckpt_dirs_time) > 0:
-            # pick the lastest one
-            cfg_copy.job.runner_state_path = ckpt_dirs_time[-1][0]
-            logging.info(
-                f"Job will resume using the state found at: {cfg_copy.job.runner_state_path}"
-            )
+        cfg_copy.job.runner_state_path = save_path
         if WandBSingletonLogger.initialized():
             WandBSingletonLogger.get_instance().mark_preempting()
-        logging.info("Submitit checkpointing callback is completed")
+        logging.info(
+            f"Submitit checkpointing callback is completed, resuming with use the following state: {save_path}"
+        )
         return DelayedSubmission(Submitit(), cfg_copy)
 
 
@@ -352,6 +344,7 @@ def main(
         submission_obj = job.submission().load(job.paths.submitted_pickle)
         submission_obj.args[0].job.runner_state_path = None
         submission_obj.dump(job.paths.submitted_pickle)
+        breakpoint()
         logging.info(
             f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
         )
