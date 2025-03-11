@@ -19,7 +19,7 @@ class Runner(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def run(self, **kwargs) -> Any:
+    def run(self) -> Any:
         raise NotImplementedError
 
     @abstractmethod
