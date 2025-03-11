@@ -223,8 +223,6 @@ class Submitit(Checkpointable):
 
     def checkpoint(self, *args, **kwargs) -> DelayedSubmission:
         logging.error("Submitit checkpointing callback is triggered")
-        # TODO: preemption state saving doesn't work with DCP because submitit only calls checkpoint
-        # on rank0, which will cause the system to deadlock.
         save_path = self.config.job.metadata.preemption_checkpoint_dir
         self.runner.save_state(save_path, is_preemption=True)
         cfg_copy = self.config.copy()
