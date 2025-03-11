@@ -230,7 +230,6 @@ class Submitit(Checkpointable):
         # self.runner.save_state(save_path)
         # For now, use the last found checkpoint
         cfg_copy = self.config.copy()
-        # cfg_copy.job.metadata.slurm_env.starting_from_preempted = True
         ckpt_dirs_time = get_subdirectories_sorted_by_time(
             self.config.job.metadata.checkpoint_dir
         )
