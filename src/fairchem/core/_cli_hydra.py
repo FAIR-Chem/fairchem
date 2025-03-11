@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 
     from fairchem.core.components.runner import Runner
 
+
 from submitit import AutoExecutor
 from submitit.helpers import Checkpointable, DelayedSubmission
 
@@ -86,6 +87,14 @@ class SchedulerConfig:
 
 
 @dataclass
+class SlurmEnv:
+    # reflects the slurm job id SLURM_JOB_ID
+    slurm_id: Optional[str] = None  # noqa: UP007
+    # reflects SLURM_RESTART_COUNT env variable
+    restart_count: Optional[int] = None  # noqa: UP007
+
+
+@dataclass
 class Metadata:
     # read-only metadata about the job, not user inputs
     commit: str
@@ -95,6 +104,8 @@ class Metadata:
     config_path: str
     preemption_checkpoint_dir: str
     cluster_name: str
+    # can only be filled in after the job has started in slurm
+    slurm_env: SlurmEnv = field(default_factory=lambda: SlurmEnv())
 
 
 @dataclass
@@ -150,6 +161,13 @@ def _set_deterministic_mode() -> None:
     torch.use_deterministic_algorithms(True)
 
 
+def _maybe_get_slurm_env() -> SlurmEnv:
+    return SlurmEnv(
+        slurm_id=os.environ.get("SLURM_JOB_ID"),
+        restart_count=os.environ.get("SLURM_RESTART_COUNT"),
+    )
+
+
 class Submitit(Checkpointable):
     def __init__(self) -> None:
         self.config = None
@@ -157,7 +175,9 @@ class Submitit(Checkpointable):
 
     def __call__(self, dict_config: DictConfig) -> None:
         self.config = dict_config
-        # TODO also load job config here
+        # modify the config metadata to add slurm info, this should be only time we intentionally modify the metadata
+        self.config.job.metadata.slurm_env = _maybe_get_slurm_env()
+
         setup_env_vars()
         setup_logging()
 
@@ -210,6 +230,7 @@ class Submitit(Checkpointable):
         # self.runner.save_state(save_path)
         # For now, use the last found checkpoint
         cfg_copy = self.config.copy()
+        # cfg_copy.job.metadata.slurm_env.starting_from_preempted = True
         ckpt_dirs_time = get_subdirectories_sorted_by_time(
             self.config.job.metadata.checkpoint_dir
         )
@@ -325,6 +346,13 @@ def main(
             slurm_account=scheduler_cfg.slurm.account,
         )
         job = executor.submit(Submitit(), cfg)
+        # (HACK) Decouple the job from the runner state by manually modifying it
+        # this ensures the saved runner state is not re-submitted in the event of a node failure
+        # ie: if the job was started at state t=T, a requeue during node failure would resubmit the job
+        # starting at state t=T again without calling the checkpoint callback, losing all progress in between.
+        submission_obj = job.submission().load(job.paths.submitted_pickle)
+        submission_obj.args[0].job.runner_state_path = None
+        submission_obj.dump(job.paths.submitted_pickle)
         logging.info(
             f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
         )
