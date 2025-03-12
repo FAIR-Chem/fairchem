@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
 
 from submitit import AutoExecutor
+from submitit.core.utils import JobPaths, cloudpickle_dump
 from submitit.helpers import Checkpointable, DelayedSubmission
 
 from fairchem.core.common import distutils
@@ -160,11 +161,22 @@ def _set_deterministic_mode() -> None:
     torch.use_deterministic_algorithms(True)
 
 
-def _maybe_get_slurm_env() -> SlurmEnv:
+def get_slurm_env() -> SlurmEnv:
     return SlurmEnv(
         slurm_id=os.environ.get("SLURM_JOB_ID"),
         restart_count=os.environ.get("SLURM_RESTART_COUNT"),
     )
+
+
+def remove_runner_state_from_submission(log_folder: str, job_id: str) -> None:
+    # (HACK) Decouple the job from the runner state by manually modifying it
+    # this ensures the saved runner state is not re-submitted in the event of a node failure
+    # ie: if the job was started at state t=T, a requeue during node failure would resubmit the job
+    # starting at state t=T again without calling the checkpoint callback, losing all progress in between.
+    job_path = JobPaths(folder=log_folder, job_id=job_id)
+    submission_obj = DelayedSubmission.load(job_path.submitted_pickle)
+    submission_obj.args[0].job.runner_state_path = None
+    cloudpickle_dump(submission_obj, job_path.submitted_pickle)
 
 
 class Submitit(Checkpointable):
@@ -174,8 +186,13 @@ class Submitit(Checkpointable):
 
     def __call__(self, dict_config: DictConfig) -> None:
         self.config = dict_config
-        # modify the config metadata to add slurm info, this should be only time we intentionally modify the metadata
-        self.config.job.metadata.slurm_env = _maybe_get_slurm_env()
+        if self.config.job.scheduler.mode == SchedulerType.SLURM:
+            # modify the config metadata to add slurm info, this should be only time we intentionally modify the metadata
+            self.config.job.metadata.slurm_env = get_slurm_env()
+            remove_runner_state_from_submission(
+                dict_config.job.metadata.log_dir,
+                self.config.job.metadata.slurm_env.slurm_id,
+            )
 
         setup_env_vars()
         setup_logging()
@@ -196,7 +213,6 @@ class Submitit(Checkpointable):
         self.runner: Runner = hydra.utils.instantiate(dict_config.runner)
         self.runner.config = self.config
 
-        # Attempt to load runner state if there was previous state
         # must call resume state AFTER the runner has been initialized
         self.runner.load_state(self.config.job.runner_state_path)
         self.runner.run()
@@ -224,9 +240,10 @@ class Submitit(Checkpointable):
     def checkpoint(self, *args, **kwargs) -> DelayedSubmission:
         logging.error("Submitit checkpointing callback is triggered")
         save_path = self.config.job.metadata.preemption_checkpoint_dir
-        self.runner.save_state(save_path, is_preemption=True)
         cfg_copy = self.config.copy()
-        cfg_copy.job.runner_state_path = save_path
+        # only assign if the save was successful
+        if self.runner.save_state(save_path, is_preemption=True):
+            cfg_copy.job.runner_state_path = save_path
         if WandBSingletonLogger.initialized():
             WandBSingletonLogger.get_instance().mark_preempting()
         logging.info(
@@ -335,13 +352,6 @@ def main(
             slurm_account=scheduler_cfg.slurm.account,
         )
         job = executor.submit(Submitit(), cfg)
-        # (HACK) Decouple the job from the runner state by manually modifying it
-        # this ensures the saved runner state is not re-submitted in the event of a node failure
-        # ie: if the job was started at state t=T, a requeue during node failure would resubmit the job
-        # starting at state t=T again without calling the checkpoint callback, losing all progress in between.
-        submission_obj = job.submission().load(job.paths.submitted_pickle)
-        submission_obj.args[0].job.runner_state_path = None
-        submission_obj.dump(job.paths.submitted_pickle)
         breakpoint()
         logging.info(
             f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
