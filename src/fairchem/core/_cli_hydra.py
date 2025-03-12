@@ -83,6 +83,7 @@ class SchedulerConfig:
     mode: SchedulerType = SchedulerType.LOCAL
     ranks_per_node: int = 1
     num_nodes: int = 1
+    num_array_jobs: int = 1
     slurm: SlurmConfig = field(default_factory=lambda: SlurmConfig)
 
 
@@ -104,6 +105,7 @@ class Metadata:
     config_path: str
     preemption_checkpoint_dir: str
     cluster_name: str
+    array_job_num: int = 1
     # can only be filled in after the job has started in slurm
     slurm_env: SlurmEnv = field(default_factory=lambda: SlurmEnv())
 
@@ -211,7 +213,7 @@ class Submitit(Checkpointable):
             _set_deterministic_mode()
 
         self.runner: Runner = hydra.utils.instantiate(dict_config.runner)
-        self.runner.config = self.config
+        self.runner.initialize(self.config.job)
 
         # must call resume state AFTER the runner has been initialized
         self.runner.load_state(self.config.job.runner_state_path)
@@ -313,7 +315,9 @@ def get_hydra_config_from_yaml(
     return get_canonical_config(cfg)
 
 
-def runner_wrapper(config: DictConfig):
+def _runner_wrapper(config: DictConfig):
+    # This is needed when using elastic_launch for local runs since it looks for
+    # the __name__ attribute of the function, Submitit.__call__ does not have one
     Submitit()(config)
 
 
@@ -352,10 +356,24 @@ def main(
             slurm_qos=scheduler_cfg.slurm.qos,
             slurm_account=scheduler_cfg.slurm.account,
         )
-        job = executor.submit(Submitit(), cfg)
-        logging.info(
-            f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
-        )
+        if scheduler_cfg.num_array_jobs == 1:
+            job = executor.submit(Submitit(), cfg)
+            logging.info(
+                f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
+            )
+        elif scheduler_cfg.num_array_jobs > 1:
+            executor.update_parameters(
+                slurm_array_parallelism=scheduler_cfg.num_array_jobs
+            )
+
+            jobs = []
+            with executor.batch():
+                for job_number in range(scheduler_cfg.num_array_jobs):
+                    _cfg = cfg.copy()
+                    _cfg.job.metadata.array_job_num = job_number
+                    job = executor.submit(Submitit(), _cfg)
+                    jobs.append(job)
+            logging.info(f"Submitted {len(jobs)} jobs: {jobs[0].job_id.split('_')[0]}")
     else:
         from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
@@ -370,8 +388,9 @@ def main(
                 rdzv_backend="c10d",
                 max_restarts=0,
             )
-            elastic_launch(launch_config, runner_wrapper)(cfg)
+
+            elastic_launch(launch_config, _runner_wrapper)(cfg)
         else:
             logging.info("Running in local mode without elastic launch")
             distutils.setup_env_local()
-            runner_wrapper(cfg)
+            Submitit()(cfg)
