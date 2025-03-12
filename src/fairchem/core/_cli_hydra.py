@@ -242,6 +242,7 @@ class Submitit(Checkpointable):
         save_path = self.config.job.metadata.preemption_checkpoint_dir
         cfg_copy = self.config.copy()
         # only assign if the save was successful
+        cfg_copy.job.runner_state_path = None
         if self.runner.save_state(save_path, is_preemption=True):
             cfg_copy.job.runner_state_path = save_path
         if WandBSingletonLogger.initialized():
