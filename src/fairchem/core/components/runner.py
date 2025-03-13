@@ -23,7 +23,7 @@ class Runner(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def save_state(self, checkpoint_location: str) -> None:
+    def save_state(self, checkpoint_location: str, is_preemption: bool = False) -> bool:
         raise NotImplementedError
 
     @abstractmethod
@@ -46,7 +46,7 @@ class MockRunner(Runner):
     def initialize(self, job_config: DictConfig) -> None:
         pass
 
-    def save_state(self, checkpoint_location: str) -> None:
+    def save_state(self, checkpoint_location: str, is_preemption: bool = False) -> bool:
         pass
 
     def load_state(self, checkpoint_location: str | None) -> None:

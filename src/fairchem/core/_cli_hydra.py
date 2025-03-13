@@ -30,7 +30,9 @@ if TYPE_CHECKING:
 
     from fairchem.core.components.runner import Runner
 
+
 from submitit import AutoExecutor
+from submitit.core.utils import JobPaths, cloudpickle_dump
 from submitit.helpers import Checkpointable, DelayedSubmission
 
 from fairchem.core.common import distutils
@@ -38,7 +40,6 @@ from fairchem.core.common.logger import WandBSingletonLogger
 from fairchem.core.common.utils import (
     get_cluster_name,
     get_commit_hash,
-    get_subdirectories_sorted_by_time,
     get_timestamp_uid,
     setup_env_vars,
     setup_logging,
@@ -87,6 +88,14 @@ class SchedulerConfig:
 
 
 @dataclass
+class SlurmEnv:
+    # reflects the slurm job id SLURM_JOB_ID
+    slurm_id: Optional[str] = None  # noqa: UP007
+    # reflects SLURM_RESTART_COUNT env variable
+    restart_count: Optional[int] = None  # noqa: UP007
+
+
+@dataclass
 class Metadata:
     # read-only metadata about the job, not user inputs
     commit: str
@@ -97,6 +106,8 @@ class Metadata:
     preemption_checkpoint_dir: str
     cluster_name: str
     array_job_num: int = 1
+    # can only be filled in after the job has started in slurm
+    slurm_env: SlurmEnv = field(default_factory=lambda: SlurmEnv())
 
 
 @dataclass
@@ -152,6 +163,24 @@ def _set_deterministic_mode() -> None:
     torch.use_deterministic_algorithms(True)
 
 
+def get_slurm_env() -> SlurmEnv:
+    return SlurmEnv(
+        slurm_id=os.environ.get("SLURM_JOB_ID"),
+        restart_count=os.environ.get("SLURM_RESTART_COUNT"),
+    )
+
+
+def remove_runner_state_from_submission(log_folder: str, job_id: str) -> None:
+    # (HACK) Decouple the job from the runner state by manually modifying it
+    # this ensures the saved runner state is not re-submitted in the event of a node failure
+    # ie: if the job was started at state t=T, a requeue during node failure would resubmit the job
+    # starting at state t=T again without calling the checkpoint callback, losing all progress in between.
+    job_path = JobPaths(folder=log_folder, job_id=job_id)
+    submission_obj = DelayedSubmission.load(job_path.submitted_pickle)
+    submission_obj.args[0].job.runner_state_path = None
+    cloudpickle_dump(submission_obj, job_path.submitted_pickle)
+
+
 class Submitit(Checkpointable):
     def __init__(self) -> None:
         self.config = None
@@ -159,7 +188,14 @@ class Submitit(Checkpointable):
 
     def __call__(self, dict_config: DictConfig) -> None:
         self.config = dict_config
-        # TODO also load job config here
+        if self.config.job.scheduler.mode == SchedulerType.SLURM:
+            # modify the config metadata to add slurm info, this should be only time we intentionally modify the metadata
+            self.config.job.metadata.slurm_env = get_slurm_env()
+            remove_runner_state_from_submission(
+                dict_config.job.metadata.log_dir,
+                self.config.job.metadata.slurm_env.slurm_id,
+            )
+
         setup_env_vars()
         setup_logging()
 
@@ -205,24 +241,17 @@ class Submitit(Checkpointable):
 
     def checkpoint(self, *args, **kwargs) -> DelayedSubmission:
         logging.error("Submitit checkpointing callback is triggered")
-        # TODO: preemption state saving doesn't work with DCP because submitit only calls checkpoint
-        # on rank0, which will cause the system to deadlock.
-        # save_path = self.config.job.metadata.preemption_checkpoint_dir
-        # self.runner.save_state(save_path)
-        # For now, use the last found checkpoint
+        save_path = self.config.job.metadata.preemption_checkpoint_dir
         cfg_copy = self.config.copy()
-        ckpt_dirs_time = get_subdirectories_sorted_by_time(
-            self.config.job.metadata.checkpoint_dir
-        )
-        if len(ckpt_dirs_time) > 0:
-            # pick the lastest one
-            cfg_copy.job.runner_state_path = ckpt_dirs_time[-1][0]
-            logging.info(
-                f"Job will resume using the state found at: {cfg_copy.job.runner_state_path}"
-            )
+        # only assign if the save was successful
+        cfg_copy.job.runner_state_path = None
+        if self.runner.save_state(save_path, is_preemption=True):
+            cfg_copy.job.runner_state_path = save_path
         if WandBSingletonLogger.initialized():
             WandBSingletonLogger.get_instance().mark_preempting()
-        logging.info("Submitit checkpointing callback is completed")
+        logging.info(
+            f"Submitit checkpointing callback is completed, resuming with use the following state: {save_path}"
+        )
         return DelayedSubmission(Submitit(), cfg_copy)
 
 
