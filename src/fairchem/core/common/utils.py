@@ -40,7 +40,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from torch_geometric.data import Data
 from torch_geometric.utils import remove_self_loops
-from torch_scatter import scatter, segment_coo, segment_csr
+from torch_scatter import scatter
 
 import fairchem.core
 from fairchem.core.common.registry import registry
@@ -780,6 +780,24 @@ def radius_graph_pbc(
     return edge_index, unit_cell, num_neighbors_image
 
 
+def sum_partitions(x: torch.Tensor, partition_idxs: torch.Tensor) -> torch.Tensor:
+    sums = torch.zeros(partition_idxs.shape[0] - 1, device=x.device, dtype=x.dtype)
+    for idx in range(partition_idxs.shape[0] - 1):
+        sums[idx] = x[partition_idxs[idx] : partition_idxs[idx + 1]].sum()
+    return sums
+
+
+def get_counts(x: torch.Tensor, length: int):
+    dtype = x.dtype
+    device = x.device
+    return torch.zeros(length, device=device, dtype=dtype).scatter_reduce(
+        dim=0,
+        index=x,
+        src=torch.ones(x.shape[0], device=device, dtype=dtype),
+        reduce="sum",
+    )
+
+
 def get_max_neighbors_mask(
     natoms,
     index,
@@ -807,16 +825,15 @@ def get_max_neighbors_mask(
     num_atoms = natoms.sum()
 
     # Get number of neighbors
-    # segment_coo assumes sorted index
-    ones = index.new_ones(1).expand_as(index)
-    num_neighbors = segment_coo(ones, index, dim_size=num_atoms)
+    num_neighbors = get_counts(index, num_atoms)
+
     max_num_neighbors = num_neighbors.max()
     num_neighbors_thresholded = num_neighbors.clamp(max=max_num_neighbors_threshold)
 
     # Get number of (thresholded) neighbors per image
     image_indptr = torch.zeros(natoms.shape[0] + 1, device=device, dtype=torch.long)
     image_indptr[1:] = torch.cumsum(natoms, dim=0)
-    num_neighbors_image = segment_csr(num_neighbors_thresholded, image_indptr)
+    num_neighbors_image = sum_partitions(num_neighbors_thresholded, image_indptr)
 
     # If max_num_neighbors is below the threshold, return early
     if (
@@ -873,7 +890,7 @@ def get_max_neighbors_mask(
         # Recompute the number of neighbors
         num_neighbors_thresholded = num_neighbors.clamp(max=num_included_per_atom)
 
-        num_neighbors_image = segment_csr(num_neighbors_thresholded, image_indptr)
+        num_neighbors_image = sum_partitions(num_neighbors_thresholded, image_indptr)
 
     # Offset index_sort so that it indexes into index
     index_sort = index_sort + index_neighbor_offset.view(-1, 1).expand(
@@ -888,7 +905,6 @@ def get_max_neighbors_mask(
     # Create a mask to remove all pairs not in index_sort
     mask_num_neighbors = torch.zeros(len(index), device=device, dtype=bool)
     mask_num_neighbors.index_fill_(0, index_sort, True)
-
     return mask_num_neighbors, num_neighbors_image
 
 
@@ -997,16 +1013,14 @@ def setup_logging() -> None:
 
 def compute_neighbors(data, edge_index):
     # Get number of neighbors
-    # segment_coo assumes sorted index
-    ones = edge_index[1].new_ones(1).expand_as(edge_index[1])
-    num_neighbors = segment_coo(ones, edge_index[1], dim_size=data.natoms.sum())
+    num_neighbors = get_counts(edge_index[1], data.natoms.sum())
 
     # Get number of neighbors per image
     image_indptr = torch.zeros(
         data.natoms.shape[0] + 1, device=data.pos.device, dtype=torch.long
     )
     image_indptr[1:] = torch.cumsum(data.natoms, dim=0)
-    return segment_csr(num_neighbors, image_indptr)
+    return sum_partitions(num_neighbors, image_indptr)
 
 
 def check_traj_files(batch, traj_dir) -> bool:
