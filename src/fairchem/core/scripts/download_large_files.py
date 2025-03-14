@@ -53,7 +53,12 @@ def parse_args():
     return parser.parse_args()
 
 
-def change_path_for_pypi(files_to_download: list[Path], par_dir: str, install_dir: Path, test_par_dir: Path | None) -> list[Path]:
+def change_path_for_pypi(
+    files_to_download: list[Path],
+    par_dir: str,
+    install_dir: Path,
+    test_par_dir: Path | None,
+) -> list[Path]:
     """
     Modify or exclude files from download if running in a PyPi-installed
     build.
@@ -73,25 +78,33 @@ def change_path_for_pypi(files_to_download: list[Path], par_dir: str, install_di
     :param files_to_download: List of files to be downloaded
     :param par_dir: the parent directory of the PyPi build,
                     probably "site-packages"
+    :param install_dir: path to where fairchem.core was installed
+    :param test_par_dir: path to where tests have been downloaded
+                         (not necessarily the same as install_dir)
     :return: modified list of files to be downloaded
     """
     new_files = []
     for file in files_to_download:
-        top_level_name = str(file.parents[len(file.parents) - 2]) # no negative index in Python 3.9
+        top_level_name = str(
+            file.parents[len(file.parents) - 2]
+        )  # no negative index in Python 3.9
         if top_level_name == "tests" and test_par_dir is not None:
             new_files.append(test_par_dir / file)
-        elif top_level_name != "src":
-            continue
-        else:
+        elif top_level_name == "src":
             new_files.append(install_dir / Path(str(file).replace("src", par_dir, 1)))
+        else:
+            # Leave the undownloadable files so we report that they didn't download
+            new_files.append(install_dir / file)
     return new_files
 
 
-def download_file_group(file_group: str, test_par_dir: Path | None=None) -> None:
+def download_file_group(file_group: str, test_par_dir: Path | None = None) -> None:
     """
     Download the given file group.
 
     :param file_group: Name of group of files to download
+    :param test_par_dir: Parent directory where fairchem tests have been
+                         downloaded
     """
     if file_group in FILE_GROUPS:
         files_to_download = FILE_GROUPS[file_group]
@@ -106,7 +119,9 @@ def download_file_group(file_group: str, test_par_dir: Path | None=None) -> None
     install_dir = fc_root.parents[1]
     fc_parent = str(fc_root.parent.name)
     if fc_parent != "src":
-        files_to_download = change_path_for_pypi(files_to_download, fc_parent, install_dir, test_par_dir)
+        files_to_download = change_path_for_pypi(
+            files_to_download, fc_parent, install_dir, test_par_dir
+        )
     else:
         files_to_download = [install_dir / file for file in files_to_download]
 
