@@ -53,7 +53,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def change_path_for_pypi(files_to_download: list[Path], par_dir: str) -> list[Path]:
+def change_path_for_pypi(files_to_download: list[Path], par_dir: str, install_dir: Path, test_par_dir: Path | None) -> list[Path]:
     """
     Modify or exclude files from download if running in a PyPi-installed
     build.
@@ -64,6 +64,12 @@ def change_path_for_pypi(files_to_download: list[Path], par_dir: str) -> list[Pa
     `site-packages` directory. If a user wants these files, they must
     build from the git repo.
 
+    If the tests have been separately downloaded (e.g. from the git repo),
+    then we can download if we've been told where those tests have been
+    downloaded to. Note that we can't divine that location from anything
+    in fairchem.core because they would have to be somewhere "unexpected"
+    since we've built with PyPi which shouldn't have tests at all.
+
     :param files_to_download: List of files to be downloaded
     :param par_dir: the parent directory of the PyPi build,
                     probably "site-packages"
@@ -71,15 +77,16 @@ def change_path_for_pypi(files_to_download: list[Path], par_dir: str) -> list[Pa
     """
     new_files = []
     for file in files_to_download:
-        if (
-            str(file.parents[len(file.parents) - 2]) != "src"
-        ):  # no negative index in Python 3.9
+        top_level_name = str(file.parents[len(file.parents) - 2]) # no negative index in Python 3.9
+        if top_level_name == "test" and test_par_dir is not None:
+            new_files.append(test_par_dir / file)
+        elif top_level_name != "src":
             continue
-        new_files.append(Path(str(file).replace("src", par_dir, 1)))
+        new_files.append(install_dir / Path(str(file).replace("src", par_dir, 1)))
     return new_files
 
 
-def download_file_group(file_group: str) -> None:
+def download_file_group(file_group: str, test_par_dir = None: Path | None) -> None:
     """
     Download the given file group.
 
@@ -98,7 +105,9 @@ def download_file_group(file_group: str) -> None:
     install_dir = fc_root.parents[1]
     fc_parent = str(fc_root.parent.name)
     if fc_parent != "src":
-        files_to_download = change_path_for_pypi(files_to_download, fc_parent)
+        files_to_download = change_path_for_pypi(files_to_download, fc_parent, install_dir, test_par_dir)
+    else:
+        files_to_download = [install_dir / file for file in files_to_download]
 
     missing_path = False
     for file in files_to_download:
