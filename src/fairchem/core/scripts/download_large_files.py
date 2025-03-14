@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.request import urlretrieve
 
 from fairchem.core.common.tutorial_utils import fairchem_root
+from fairchem.data.oc.databases.pkls import BULK_PKL_PATH
 
 S3_ROOT = "https://dl.fbaipublicfiles.com/opencatalystproject/data/large_files/"
 
@@ -66,7 +67,11 @@ def download_file_group(file_group):
     fc_root = fairchem_root().parents[1]
     for file in files_to_download:
         if not (fc_root / file).exists():
-            print(f"Downloading {file}...")
+            print(f"BULK_PKL_PATH is: \t{BULK_PKL_PATH}")
+            print(f"fc_root / file is: \t{fc_root / file}")
+            print(f"fc_root is: \t\t{fc_root}")
+            print(f"file is: \t\t{file}\n")
+            # print(f"Downloading {file}...")
             urlretrieve(S3_ROOT + file.name, fc_root / file)
         else:
             print(f"{file} already exists")
