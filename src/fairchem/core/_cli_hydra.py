@@ -188,6 +188,8 @@ class Submitit(Checkpointable):
 
     def __call__(self, dict_config: DictConfig) -> None:
         self.config = dict_config
+        # modify the config metadata to add slurm info if they exist
+        self.config.job.metadata.slurm_env = get_slurm_env()
 
         setup_env_vars()
         setup_logging()
@@ -199,8 +201,6 @@ class Submitit(Checkpointable):
             distutils.is_master()
             and self.config.job.scheduler.mode == SchedulerType.SLURM
         ):
-            # modify the config metadata to add slurm info, this should be only time we intentionally modify the metadata
-            self.config.job.metadata.slurm_env = get_slurm_env()
             # this pickle file is shared across all processes so can only modify this on the main rank
             remove_runner_state_from_submission(
                 dict_config.job.metadata.log_dir,
