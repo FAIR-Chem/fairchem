@@ -78,15 +78,16 @@ def change_path_for_pypi(files_to_download: list[Path], par_dir: str, install_di
     new_files = []
     for file in files_to_download:
         top_level_name = str(file.parents[len(file.parents) - 2]) # no negative index in Python 3.9
-        if top_level_name == "test" and test_par_dir is not None:
+        if top_level_name == "tests" and test_par_dir is not None:
             new_files.append(test_par_dir / file)
         elif top_level_name != "src":
             continue
-        new_files.append(install_dir / Path(str(file).replace("src", par_dir, 1)))
+        else:
+            new_files.append(install_dir / Path(str(file).replace("src", par_dir, 1)))
     return new_files
 
 
-def download_file_group(file_group: str, test_par_dir = None: Path | None) -> None:
+def download_file_group(file_group: str, test_par_dir: Path | None=None) -> None:
     """
     Download the given file group.
 
@@ -111,12 +112,12 @@ def download_file_group(file_group: str, test_par_dir = None: Path | None) -> No
 
     missing_path = False
     for file in files_to_download:
-        if not (install_dir / file.parent).exists():
+        if not file.parent.exists():
             print(f"Cannot download {file}, the path does not exist.")
             missing_path = True
-        elif not (install_dir / file).exists():
+        elif not file.exists():
             print(f"Downloading {file}...")
-            urlretrieve(S3_ROOT + file.name, install_dir / file)
+            urlretrieve(S3_ROOT + file.name, file)
         else:
             print(f"{file} already exists")
 
