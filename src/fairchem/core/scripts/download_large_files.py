@@ -71,7 +71,9 @@ def change_path_for_pypi(files_to_download: list[Path], par_dir: str) -> list[Pa
     """
     new_files = []
     for file in files_to_download:
-        if str(file.parents[len(file.parents)-2]) != "src": # no negative index in Python 3.9
+        if (
+            str(file.parents[len(file.parents) - 2]) != "src"
+        ):  # no negative index in Python 3.9
             continue
         new_files.append(Path(str(file).replace("src", par_dir, 1)))
     return new_files
