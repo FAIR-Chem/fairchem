@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 from pathlib import Path
 from urllib.request import urlretrieve
 
@@ -134,7 +135,7 @@ def download_file_group(file_group: str, test_par_dir: Path | None = None) -> No
             print(f"{file} already exists")
 
     if missing_path:
-        print(
+        logging.error(
             "\n\nSome files could not be downloaded because their "
             "expected landing spot didn't exist. If you installed with "
             "PyPi perhaps additional packages like `fairchem-data-oc` "
