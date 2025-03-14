@@ -196,7 +196,7 @@ class Submitit(Checkpointable):
 
         dist_config = map_job_config_to_dist_config(self.config.job)
         distutils.setup(dist_config)
-        distutils.synchronzie()
+        distutils.synchronize()
         if (
             distutils.is_master()
             and self.config.job.scheduler.mode == SchedulerType.SLURM
