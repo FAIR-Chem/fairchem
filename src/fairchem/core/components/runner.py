@@ -14,20 +14,16 @@ class Runner(metaclass=ABCMeta):
     This allows us to decouple away from a monolithic trainer class
     """
 
-    @property
-    def config(self) -> DictConfig:
-        return self._config
-
-    @config.setter
-    def config(self, cfg: DictConfig):
-        self._config = cfg
+    @abstractmethod
+    def initialize(self, job_config: DictConfig) -> None:
+        raise NotImplementedError
 
     @abstractmethod
     def run(self) -> Any:
         raise NotImplementedError
 
     @abstractmethod
-    def save_state(self, checkpoint_location: str) -> None:
+    def save_state(self, checkpoint_location: str, is_preemption: bool = False) -> bool:
         raise NotImplementedError
 
     @abstractmethod
@@ -47,7 +43,10 @@ class MockRunner(Runner):
             raise ValueError("sum is greater than 1000!")
         return self.x + self.y
 
-    def save_state(self, checkpoint_location: str) -> None:
+    def initialize(self, job_config: DictConfig) -> None:
+        pass
+
+    def save_state(self, checkpoint_location: str, is_preemption: bool = False) -> bool:
         pass
 
     def load_state(self, checkpoint_location: str | None) -> None:
