@@ -14,6 +14,7 @@ import pytest
 import torch
 from ase.build import add_adsorbate, fcc111
 from ase.optimize import BFGS
+from huggingface_hub.utils._auth import get_token
 
 from fairchem.core.common.relaxation.ase_utils import OCPCalculator
 from fairchem.core.models.model_registry import model_name_to_local_file
@@ -29,9 +30,7 @@ def atoms() -> Atoms:
     add_adsorbate(atoms, "O", height=1.2, position="fcc")
     return atoms
 
-
-@pytest.fixture(
-    params=[
+available_models=[
         "SchNet-S2EF-OC20-All",
         "DimeNet++-S2EF-OC20-All",
         "GemNet-dT-S2EF-OC20-All",
@@ -39,12 +38,18 @@ def atoms() -> Atoms:
         "GemNet-OC-Large-S2EF-OC20-All+MD",
         "SCN-S2EF-OC20-All+MD",
         "PaiNN-IS2RE-OC20-All",
-        "EquiformerV2-31M-OMAT24",
-        # Equiformer v2  # already tested in test_relaxation_final_energy
-        # "EquiformerV2-153M-S2EF-OC20-All+MD"
+        # "EquiformerV2-153M-S2EF-OC20-All+MD" # Equiformer v2  # already tested in test_relaxation_final_energy
         # eSCNm # already tested in test_random_seed_final_energy
         # "eSCN-L4-M2-Lay12-S2EF-OC20-2M"
-    ]
+]
+
+if get_token():
+    # Only run OMAT if we have a huggingface token!
+    available_models.append("EquiformerV2-31M-OMAT24")
+        
+
+@pytest.fixture(
+    params=available_models
 )
 def checkpoint_path(request, tmp_path):
     return model_name_to_local_file(request.param, tmp_path)
