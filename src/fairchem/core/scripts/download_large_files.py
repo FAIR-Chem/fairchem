@@ -53,7 +53,36 @@ def parse_args():
     return parser.parse_args()
 
 
-def download_file_group(file_group):
+def change_path_for_pypi(files_to_download: list[Path], par_dir: str) -> list[Path]:
+    """
+    Modify or exclude files from download if running in a PyPi-installed
+    build.
+
+    Installation of FAIR-Chem with PyPi does not include the entire
+    directory structure of the fairchem repo. As such, files outside of
+    `src` can't be downloaded and those in `src` should actually be in the
+    `site-packages` directory. If a user wants these files, they must
+    build from the git repo.
+
+    :param files_to_download: List of files to be downloaded
+    :param par_dir: the parent directory of the PyPi build,
+                    probably "site-packages"
+    :return: modified list of files to be downloaded
+    """
+    new_files = []
+    for file in files_to_download:
+        if str(file.parents[-2]) != "src":
+            continue
+        new_files.append(Path(str(file).replace("src", par_dir, 1)))
+    return new_files
+
+
+def download_file_group(file_group: str) -> None:
+    """
+    Download the given file group.
+
+    :param file_group: Name of group of files to download
+    """
     if file_group in FILE_GROUPS:
         files_to_download = FILE_GROUPS[file_group]
     elif file_group == "ALL":
@@ -63,13 +92,32 @@ def download_file_group(file_group):
             f'Requested file group {file_group} not recognized. Please select one of {["ALL", *list(FILE_GROUPS)]}'
         )
 
-    fc_root = fairchem_root().parents[1]
+    fc_root = fairchem_root()
+    install_dir = fc_root.parents[1]
+    fc_parent = str(fc_root.parent.name)
+    if fc_parent != "src":
+        files_to_download = change_path_for_pypi(files_to_download, fc_parent)
+
+    missing_path = False
     for file in files_to_download:
-        if not (fc_root / file).exists():
+        if not (install_dir / file.parent).exists():
+            print(f"Cannot download {file}, the path does not exist.")
+            missing_path = True
+        elif not (install_dir / file).exists():
             print(f"Downloading {file}...")
-            urlretrieve(S3_ROOT + file.name, fc_root / file)
+            urlretrieve(S3_ROOT + file.name, install_dir / file)
         else:
             print(f"{file} already exists")
+
+    if missing_path:
+        print(
+            "\n\nSome files could not be downloaded because their "
+            "expected landing spot didn't exist. If you installed with "
+            "PyPi perhaps additional packages like `fairchem-data-oc` "
+            "are needed.\nIf all PyPi packages have been installed, you "
+            "may need to install from the git repo to have the full "
+            "fairchem contents."
+        )
 
 
 if __name__ == "__main__":
