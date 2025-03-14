@@ -92,9 +92,6 @@ def change_path_for_pypi(
             new_files.append(test_par_dir / file)
         elif top_level_name == "src":
             new_files.append(install_dir / Path(str(file).replace("src", par_dir, 1)))
-        else:
-            # Leave the undownloadable files so we report that they didn't download
-            new_files.append(install_dir / file)
     return new_files
 
 
