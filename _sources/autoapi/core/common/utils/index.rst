@@ -317,7 +317,7 @@ Module Contents
 
 .. py:function:: get_deep(dictionary: dict, keys: str, default: str | None = None)
 
-.. py:function:: get_subdirectories_sorted_by_time(directory: str) -> str
+.. py:function:: get_subdirectories_sorted_by_time(directory: str) -> list
 
    Get all subdirectories in a directory sorted by their last modification time.
    :param directory: The path to the directory to search.

@@ -34,6 +34,7 @@ Classes
    core._cli_hydra.DeviceType
    core._cli_hydra.SlurmConfig
    core._cli_hydra.SchedulerConfig
+   core._cli_hydra.SlurmEnv
    core._cli_hydra.Metadata
    core._cli_hydra.JobConfig
    core._cli_hydra.Submitit
@@ -46,10 +47,12 @@ Functions
 
    core._cli_hydra._set_seeds
    core._cli_hydra._set_deterministic_mode
+   core._cli_hydra.get_slurm_env
+   core._cli_hydra.remove_runner_state_from_submission
    core._cli_hydra.map_job_config_to_dist_config
    core._cli_hydra.get_canonical_config
    core._cli_hydra.get_hydra_config_from_yaml
-   core._cli_hydra.runner_wrapper
+   core._cli_hydra._runner_wrapper
    core._cli_hydra.main
 
 
@@ -188,8 +191,28 @@ Module Contents
 
 
 
+   .. py:attribute:: num_array_jobs
+      :type:  int
+      :value: 1
+
+
+
    .. py:attribute:: slurm
       :type:  SlurmConfig
+
+
+.. py:class:: SlurmEnv
+
+   .. py:attribute:: slurm_id
+      :type:  Optional[str]
+      :value: None
+
+
+
+   .. py:attribute:: restart_count
+      :type:  Optional[int]
+      :value: None
+
 
 
 .. py:class:: Metadata
@@ -220,6 +243,16 @@ Module Contents
 
    .. py:attribute:: cluster_name
       :type:  str
+
+
+   .. py:attribute:: array_job_num
+      :type:  int
+      :value: 1
+
+
+
+   .. py:attribute:: slurm_env
+      :type:  SlurmEnv
 
 
 .. py:class:: JobConfig
@@ -293,6 +326,10 @@ Module Contents
 
 .. py:function:: _set_deterministic_mode() -> None
 
+.. py:function:: get_slurm_env() -> SlurmEnv
+
+.. py:function:: remove_runner_state_from_submission(log_folder: str, job_id: str) -> None
+
 .. py:class:: Submitit
 
    Bases: :py:obj:`submitit.helpers.Checkpointable`
@@ -339,7 +376,7 @@ Module Contents
 
 .. py:function:: get_hydra_config_from_yaml(config_yml: str, overrides_args: list[str]) -> omegaconf.DictConfig
 
-.. py:function:: runner_wrapper(config: omegaconf.DictConfig)
+.. py:function:: _runner_wrapper(config: omegaconf.DictConfig)
 
 .. py:function:: main(args: argparse.Namespace | None = None, override_args: list[str] | None = None)
 

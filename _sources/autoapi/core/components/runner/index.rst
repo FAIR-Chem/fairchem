@@ -23,8 +23,8 @@ Module Contents
    This allows us to decouple away from a monolithic trainer class
 
 
-   .. py:property:: config
-      :type: omegaconf.DictConfig
+   .. py:method:: initialize(job_config: omegaconf.DictConfig) -> None
+      :abstractmethod:
 
 
 
@@ -33,12 +33,12 @@ Module Contents
 
 
 
-   .. py:method:: save_state(checkpoint_location: str) -> None
+   .. py:method:: save_state(checkpoint_location: str, is_preemption: bool = False) -> bool
       :abstractmethod:
 
 
 
-   .. py:method:: load_state(checkpoint_location: str) -> None
+   .. py:method:: load_state(checkpoint_location: str | None) -> None
       :abstractmethod:
 
 
@@ -65,9 +65,12 @@ Module Contents
    .. py:method:: run() -> Any
 
 
-   .. py:method:: save_state() -> None
+   .. py:method:: initialize(job_config: omegaconf.DictConfig) -> None
 
 
-   .. py:method:: load_state() -> None
+   .. py:method:: save_state(checkpoint_location: str, is_preemption: bool = False) -> bool
+
+
+   .. py:method:: load_state(checkpoint_location: str | None) -> None
 
 

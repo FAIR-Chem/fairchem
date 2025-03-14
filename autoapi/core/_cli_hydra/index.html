@@ -662,7 +662,13 @@ document.write(`
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.mode"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.mode</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.ranks_per_node"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.ranks_per_node</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.num_nodes"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.num_nodes</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.num_array_jobs"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.num_array_jobs</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.slurm"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.slurm</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmEnv"><code class="docutils literal notranslate"><span class="pre">SlurmEnv</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmEnv.slurm_id"><code class="docutils literal notranslate"><span class="pre">SlurmEnv.slurm_id</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmEnv.restart_count"><code class="docutils literal notranslate"><span class="pre">SlurmEnv.restart_count</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata"><code class="docutils literal notranslate"><span class="pre">Metadata</span></code></a><ul class="nav section-nav flex-column">
@@ -673,6 +679,8 @@ document.write(`
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.config_path"><code class="docutils literal notranslate"><span class="pre">Metadata.config_path</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.preemption_checkpoint_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.preemption_checkpoint_dir</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.cluster_name"><code class="docutils literal notranslate"><span class="pre">Metadata.cluster_name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.array_job_num"><code class="docutils literal notranslate"><span class="pre">Metadata.array_job_num</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.slurm_env"><code class="docutils literal notranslate"><span class="pre">Metadata.slurm_env</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig"><code class="docutils literal notranslate"><span class="pre">JobConfig</span></code></a><ul class="nav section-nav flex-column">
@@ -693,6 +701,8 @@ document.write(`
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra._set_seeds"><code class="docutils literal notranslate"><span class="pre">_set_seeds()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra._set_deterministic_mode"><code class="docutils literal notranslate"><span class="pre">_set_deterministic_mode()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.get_slurm_env"><code class="docutils literal notranslate"><span class="pre">get_slurm_env()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.remove_runner_state_from_submission"><code class="docutils literal notranslate"><span class="pre">remove_runner_state_from_submission()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit"><code class="docutils literal notranslate"><span class="pre">Submitit</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.config"><code class="docutils literal notranslate"><span class="pre">Submitit.config</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.runner"><code class="docutils literal notranslate"><span class="pre">Submitit.runner</span></code></a></li>
@@ -704,7 +714,7 @@ document.write(`
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.map_job_config_to_dist_config"><code class="docutils literal notranslate"><span class="pre">map_job_config_to_dist_config()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.get_canonical_config"><code class="docutils literal notranslate"><span class="pre">get_canonical_config()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.get_hydra_config_from_yaml"><code class="docutils literal notranslate"><span class="pre">get_hydra_config_from_yaml()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.runner_wrapper"><code class="docutils literal notranslate"><span class="pre">runner_wrapper()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra._runner_wrapper"><code class="docutils literal notranslate"><span class="pre">_runner_wrapper()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
 </ul>
 </li>
@@ -766,13 +776,16 @@ LICENSE file in the root directory of this source tree.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.SchedulerConfig" title="core._cli_hydra.SchedulerConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.Metadata" title="core._cli_hydra.Metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Metadata</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.SlurmEnv" title="core._cli_hydra.SlurmEnv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SlurmEnv</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.JobConfig" title="core._cli_hydra.JobConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">JobConfig</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.Metadata" title="core._cli_hydra.Metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Metadata</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.Submitit" title="core._cli_hydra.Submitit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Submitit</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.JobConfig" title="core._cli_hydra.JobConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">JobConfig</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.Submitit" title="core._cli_hydra.Submitit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Submitit</span></code></a></p></td>
 <td><p>Derived callable classes are requeued after timeout with their current</p></td>
 </tr>
 </tbody>
@@ -789,6 +802,12 @@ LICENSE file in the root directory of this source tree.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra._set_deterministic_mode" title="core._cli_hydra._set_deterministic_mode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_set_deterministic_mode</span></code></a>(→ None)</p></td>
 <td><p></p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.get_slurm_env" title="core._cli_hydra.get_slurm_env"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_slurm_env</span></code></a>(→ SlurmEnv)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.remove_runner_state_from_submission" title="core._cli_hydra.remove_runner_state_from_submission"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_runner_state_from_submission</span></code></a>(→ None)</p></td>
+<td><p></p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.map_job_config_to_dist_config" title="core._cli_hydra.map_job_config_to_dist_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">map_job_config_to_dist_config</span></code></a>(→ dict)</p></td>
 <td><p></p></td>
 </tr>
@@ -798,7 +817,7 @@ LICENSE file in the root directory of this source tree.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.get_hydra_config_from_yaml" title="core._cli_hydra.get_hydra_config_from_yaml"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_hydra_config_from_yaml</span></code></a>(→ omegaconf.DictConfig)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra.runner_wrapper" title="core._cli_hydra.runner_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">runner_wrapper</span></code></a>(config)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#core._cli_hydra._runner_wrapper" title="core._cli_hydra._runner_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_runner_wrapper</span></code></a>(config)</p></td>
 <td><p></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#core._cli_hydra.main" title="core._cli_hydra.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>([args, override_args])</p></td>
@@ -944,8 +963,28 @@ errors defaults to ‘strict’.</p>
 <dd></dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SchedulerConfig.num_array_jobs">
+<span class="sig-name descname"><span class="pre">num_array_jobs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#core._cli_hydra.SchedulerConfig.num_array_jobs" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="core._cli_hydra.SchedulerConfig.slurm">
 <span class="sig-name descname"><span class="pre">slurm</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#core._cli_hydra.SlurmConfig" title="core._cli_hydra.SlurmConfig"><span class="pre">SlurmConfig</span></a></em><a class="headerlink" href="#core._cli_hydra.SchedulerConfig.slurm" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="core._cli_hydra.SlurmEnv">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">SlurmEnv</span></span><a class="headerlink" href="#core._cli_hydra.SlurmEnv" title="Link to this definition">#</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SlurmEnv.slurm_id">
+<span class="sig-name descname"><span class="pre">slurm_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core._cli_hydra.SlurmEnv.slurm_id" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.SlurmEnv.restart_count">
+<span class="sig-name descname"><span class="pre">restart_count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#core._cli_hydra.SlurmEnv.restart_count" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -986,6 +1025,16 @@ errors defaults to ‘strict’.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="core._cli_hydra.Metadata.cluster_name">
 <span class="sig-name descname"><span class="pre">cluster_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#core._cli_hydra.Metadata.cluster_name" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.Metadata.array_job_num">
+<span class="sig-name descname"><span class="pre">array_job_num</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#core._cli_hydra.Metadata.array_job_num" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core._cli_hydra.Metadata.slurm_env">
+<span class="sig-name descname"><span class="pre">slurm_env</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#core._cli_hydra.SlurmEnv" title="core._cli_hydra.SlurmEnv"><span class="pre">SlurmEnv</span></a></em><a class="headerlink" href="#core._cli_hydra.Metadata.slurm_env" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1070,6 +1119,16 @@ errors defaults to ‘strict’.</p>
 <span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">_set_deterministic_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core._cli_hydra._set_deterministic_mode" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="core._cli_hydra.get_slurm_env">
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">get_slurm_env</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#core._cli_hydra.SlurmEnv" title="core._cli_hydra.SlurmEnv"><span class="pre">SlurmEnv</span></a></span></span><a class="headerlink" href="#core._cli_hydra.get_slurm_env" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="core._cli_hydra.remove_runner_state_from_submission">
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">remove_runner_state_from_submission</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_folder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core._cli_hydra.remove_runner_state_from_submission" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="core._cli_hydra.Submitit">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">Submitit</span></span><a class="headerlink" href="#core._cli_hydra.Submitit" title="Link to this definition">#</a></dt>
@@ -1128,8 +1187,8 @@ the state so that not to pickle it) and change/remove the initial parameters.</p
 <dd></dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="core._cli_hydra.runner_wrapper">
-<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">runner_wrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">omegaconf.DictConfig</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core._cli_hydra.runner_wrapper" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="core._cli_hydra._runner_wrapper">
+<span class="sig-prename descclassname"><span class="pre">core._cli_hydra.</span></span><span class="sig-name descname"><span class="pre">_runner_wrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">omegaconf.DictConfig</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core._cli_hydra._runner_wrapper" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
@@ -1237,7 +1296,13 @@ the state so that not to pickle it) and change/remove the initial parameters.</p
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.mode"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.mode</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.ranks_per_node"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.ranks_per_node</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.num_nodes"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.num_nodes</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.num_array_jobs"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.num_array_jobs</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SchedulerConfig.slurm"><code class="docutils literal notranslate"><span class="pre">SchedulerConfig.slurm</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmEnv"><code class="docutils literal notranslate"><span class="pre">SlurmEnv</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmEnv.slurm_id"><code class="docutils literal notranslate"><span class="pre">SlurmEnv.slurm_id</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.SlurmEnv.restart_count"><code class="docutils literal notranslate"><span class="pre">SlurmEnv.restart_count</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata"><code class="docutils literal notranslate"><span class="pre">Metadata</span></code></a><ul class="nav section-nav flex-column">
@@ -1248,6 +1313,8 @@ the state so that not to pickle it) and change/remove the initial parameters.</p
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.config_path"><code class="docutils literal notranslate"><span class="pre">Metadata.config_path</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.preemption_checkpoint_dir"><code class="docutils literal notranslate"><span class="pre">Metadata.preemption_checkpoint_dir</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.cluster_name"><code class="docutils literal notranslate"><span class="pre">Metadata.cluster_name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.array_job_num"><code class="docutils literal notranslate"><span class="pre">Metadata.array_job_num</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Metadata.slurm_env"><code class="docutils literal notranslate"><span class="pre">Metadata.slurm_env</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.JobConfig"><code class="docutils literal notranslate"><span class="pre">JobConfig</span></code></a><ul class="nav section-nav flex-column">
@@ -1268,6 +1335,8 @@ the state so that not to pickle it) and change/remove the initial parameters.</p
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra._set_seeds"><code class="docutils literal notranslate"><span class="pre">_set_seeds()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra._set_deterministic_mode"><code class="docutils literal notranslate"><span class="pre">_set_deterministic_mode()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.get_slurm_env"><code class="docutils literal notranslate"><span class="pre">get_slurm_env()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.remove_runner_state_from_submission"><code class="docutils literal notranslate"><span class="pre">remove_runner_state_from_submission()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit"><code class="docutils literal notranslate"><span class="pre">Submitit</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.config"><code class="docutils literal notranslate"><span class="pre">Submitit.config</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.Submitit.runner"><code class="docutils literal notranslate"><span class="pre">Submitit.runner</span></code></a></li>
@@ -1279,7 +1348,7 @@ the state so that not to pickle it) and change/remove the initial parameters.</p
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.map_job_config_to_dist_config"><code class="docutils literal notranslate"><span class="pre">map_job_config_to_dist_config()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.get_canonical_config"><code class="docutils literal notranslate"><span class="pre">get_canonical_config()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.get_hydra_config_from_yaml"><code class="docutils literal notranslate"><span class="pre">get_hydra_config_from_yaml()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.runner_wrapper"><code class="docutils literal notranslate"><span class="pre">runner_wrapper()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra._runner_wrapper"><code class="docutils literal notranslate"><span class="pre">_runner_wrapper()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core._cli_hydra.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
 </ul>
 </li>
