@@ -1558,6 +1558,6 @@ def get_cluster_name() -> str:
         )
     except subprocess.CalledProcessError as e:
         logging.warning(
-            f"scontrol command failed, couldn't find cluster name, returning UNKOWN as cluster name {e!s}"
+            f"scontrol command failed, couldn't find cluster name, returning empty str as cluster name {e!s}"
         )
-        return "unknown"
+        return ""
