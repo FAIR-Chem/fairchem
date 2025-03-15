@@ -86,12 +86,13 @@ def change_path_for_pypi(
     """
     new_files = []
     for file in files_to_download:
-        top_level_name = str(
-            file.parents[len(file.parents) - 2]
-        )  # no negative index in Python 3.9
+        # We check the top-level name of the file so we know if it has a
+        # home in PyPi builds
+        top_level_name = file.parts[0]
         if top_level_name == "tests" and test_par_dir is not None:
             new_files.append(test_par_dir / file)
         elif top_level_name == "src":
+            # turn `src` into `site-packages` or whatever the correct name is
             new_files.append(install_dir / Path(str(file).replace("src", par_dir, 1)))
     return new_files
 
@@ -114,7 +115,12 @@ def download_file_group(file_group: str, test_par_dir: Path | None = None) -> No
         )
 
     fc_root = fairchem_root()
-    install_dir = fc_root.parents[1]
+    # The grandparent of fairchem_root is the install location,
+    # this is the git repo top-level directory for dev builds, i.e. `fairchem`
+    install_dir = fc_root.parent.parent
+    # The parent of fairchem_root is `src` on git repo/dev builds and
+    # usually `site-packages` for PyPi builds (to be safe, we don't assume
+    # that name)
     fc_parent = str(fc_root.parent.name)
     if fc_parent != "src":
         files_to_download = change_path_for_pypi(
