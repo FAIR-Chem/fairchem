@@ -56,7 +56,6 @@ class Slab:
         oriented_bulk: Structure = None,
         min_ab: float = 8.0,
     ):
-        assert bulk is not None
         self.bulk = bulk
 
         self.atoms = slab_atoms
@@ -65,10 +64,11 @@ class Slab:
         self.top = top
         self.oriented_bulk = oriented_bulk
 
-        assert (
-            Composition(self.atoms.get_chemical_formula()).reduced_formula
-            == Composition(bulk.atoms.get_chemical_formula()).reduced_formula
-        ), "Mismatched bulk and surface"
+        if self.bulk:
+            assert (
+                Composition(self.atoms.get_chemical_formula()).reduced_formula
+                == Composition(bulk.atoms.get_chemical_formula()).reduced_formula
+            ), "Mismatched bulk and surface"
         assert np.linalg.norm(self.atoms.cell[0]) >= min_ab, "Slab not tiled"
         assert np.linalg.norm(self.atoms.cell[1]) >= min_ab, "Slab not tiled"
         assert self.has_surface_tagged(), "Slab not tagged"
@@ -197,7 +197,7 @@ class Slab:
         return {
             "slab_atomsobject": self.atoms,
             "slab_metadata": {
-                "bulk_id": self.bulk.src_id,
+                "bulk_id": self.bulk.src_id if self.bulk else None,
                 "millers": self.millers,
                 "shift": self.shift,
                 "top": self.top,
