@@ -73,16 +73,7 @@ def setup(config) -> None:
                 logging.info(
                     f"local rank: {config['local_rank']}, visible devices: {os.environ['CUDA_VISIBLE_DEVICES']}"
                 )
-
-                # In the new hydra runners, we setup the device for each rank as either cuda:0 or cpu
-                # after this point, the local rank should either be using "cpu" or "cuda"
-                if config.get("use_cuda_visibile_devices"):
-                    assign_device_for_local_rank(config["cpu"], config["local_rank"])
-                else:
-                    # in the old code, all ranks can see all devices but need to be assigned a device equal to their local rank
-                    # this is dangerous and should be deprecated, however, FSDP still requires backwards compatibility with
-                    # initializing this way for now so we need to keep it
-                    torch.cuda.set_device(config["local_rank"])
+                assign_device_for_local_rank(config["cpu"], config["local_rank"])
 
                 dist.init_process_group(
                     backend="nccl",
@@ -122,13 +113,7 @@ def setup(config) -> None:
             ), "Can only setup master address and port at this point for a single rank, otherwise we assume the processes and the comm addr/port have already been setup"
             setup_env_local()
         config["local_rank"] = int(os.environ.get("LOCAL_RANK"))
-        if config.get("use_cuda_visibile_devices"):
-            assign_device_for_local_rank(config["cpu"], config["local_rank"])
-        elif torch.cuda.is_available():
-            # in the old code, all ranks can see all devices but need to be assigned a device equal to their local rank
-            # this is dangerous and should be deprecated, however, FSDP still requires backwards compatibility with
-            # initializing this way for now so we need to keep it
-            torch.cuda.set_device(config["local_rank"])
+        assign_device_for_local_rank(config["cpu"], config["local_rank"])
         dist.init_process_group(
             backend=config["distributed_backend"],
             rank=int(os.environ.get("RANK")),
@@ -231,19 +216,18 @@ def assign_device_for_local_rank(cpu: bool, local_rank: int):
     if cpu:
         os.environ[CURRENT_DEVICE_STR] = "cpu"
     else:
-        # assert the cuda device to be the local rank
-        os.environ[CURRENT_DEVICE_STR] = "cuda"
-        os.environ["CUDA_VISIBLE_DEVICES"] = str(local_rank)
+        torch.cuda.set_device(local_rank)
+        os.environ[CURRENT_DEVICE_STR] = f"cuda:{local_rank}"
 
 
-def get_device_for_local_rank():
+def get_device_for_local_rank() -> torch.device:
     cur_dev_env = os.environ.get(CURRENT_DEVICE_STR)
     if cur_dev_env is not None:
         return cur_dev_env
     else:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         logging.warning(
-            f"{CURRENT_DEVICE_STR} env variable not found, defaulting to {device}"
+            f"CURRENT_DEVICE_STR env variable not found, defaulting to {device}"
         )
         return device
 
