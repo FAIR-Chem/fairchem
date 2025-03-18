@@ -324,17 +324,14 @@ class GatherFromModelParallelRegion(torch.autograd.Function):
 # we coud perform an extra round of all_reduce, but this would increase
 # communication overhead, instead we can just upscsale the gradient only and
 # avoid over head communication
-class FixGPGrad(torch.autograd.Function):
+class ScaleBackwardGrad(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input: torch.Tensor) -> torch.Tensor:
         return input
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
-        if initialized():
-            group = get_gp_group()
-            return dist.get_world_size(group) * grad_output
-        return grad_output
+        return dist.get_world_size(get_gp_group()) * grad_output
 
 
 def copy_to_model_parallel_region(input: torch.Tensor) -> torch.Tensor:
@@ -361,6 +358,6 @@ def gather_from_model_parallel_region(
     return GatherFromModelParallelRegion.apply(input, dim)
 
 
-def fix_gp_grad(input: torch.Tensor) -> torch.Tensor:
+def scale_backward_grad(input: torch.Tensor) -> torch.Tensor:
     assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
-    return FixGPGrad.apply(input)
+    return ScaleBackwardGrad.apply(input)
