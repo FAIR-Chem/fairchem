@@ -333,12 +333,6 @@ class FixGPGrad(torch.autograd.Function):
     def backward(ctx, grad_output: torch.Tensor):
         if initialized():
             group = get_gp_group()
-            print(
-                "MULTIPLY BY ",
-                dist.get_world_size(),
-                dist.get_world_size(group),
-                (dist.get_world_size() / dist.get_world_size(group)),
-            )
             return dist.get_world_size(group) * grad_output
         return grad_output
 
