@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import Any
 
@@ -104,8 +105,16 @@ def setup_gp(config) -> None:
 
 
 def cleanup_gp() -> None:
-    dist.destroy_process_group(_DATA_PARALLEL_GROUP)
-    dist.destroy_process_group(_GRAPH_PARALLEL_GROUP)
+    global _DATA_PARALLEL_GROUP
+    global _GRAPH_PARALLEL_GROUP
+    assert _GRAPH_PARALLEL_GROUP is not None
+    assert _DATA_PARALLEL_GROUP is not None
+    with contextlib.suppress(ValueError):
+        dist.destroy_process_group(_DATA_PARALLEL_GROUP)
+    with contextlib.suppress(ValueError):
+        dist.destroy_process_group(_GRAPH_PARALLEL_GROUP)
+    _DATA_PARALLEL_GROUP = None
+    _GRAPH_PARALLEL_GROUP = None
 
 
 def initialized() -> bool:
