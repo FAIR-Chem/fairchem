@@ -14,7 +14,7 @@ import random
 import tempfile
 import uuid
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import Enum, StrEnum, auto
 from typing import TYPE_CHECKING, Optional
 
 import hydra
@@ -28,8 +28,8 @@ from fairchem.core.common import gp_utils
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
+    from fairchem.core.components.reducer import Reducer
     from fairchem.core.components.runner import Runner
-
 
 from submitit import AutoExecutor
 from submitit.core.utils import JobPaths, cloudpickle_dump
@@ -66,6 +66,11 @@ class SchedulerType(str, Enum):
 class DeviceType(str, Enum):
     CPU = "cpu"
     CUDA = "cuda"
+
+
+class RunType(StrEnum):
+    RUN = auto()
+    REDUCE = auto()
 
 
 @dataclass
@@ -186,7 +191,9 @@ class Submitit(Checkpointable):
         self.config = None
         self.runner = None
 
-    def __call__(self, dict_config: DictConfig) -> None:
+    def __call__(
+        self, dict_config: DictConfig, run_type: RunType = RunType.RUN
+    ) -> None:
         self.config = dict_config
         # modify the config metadata to add slurm info if they exist
         self.config.job.metadata.slurm_env = get_slurm_env()
@@ -218,8 +225,14 @@ class Submitit(Checkpointable):
         if self.config.job.deterministic:
             _set_deterministic_mode()
 
-        self.runner: Runner = hydra.utils.instantiate(dict_config.runner)
-        self.runner.initialize(self.config.job)
+        if run_type == RunType.RUN:
+            self.runner: Runner = hydra.utils.instantiate(self.config.runner)
+            self.runner.initialize(self.config.job)
+        elif run_type == RunType.REDUCE:
+            self.runner: Reducer = hydra.utils.instantiate(self.config.reducer)
+            self.runner.initialize(self.config.job, self.config.runner)
+        else:
+            raise ValueError(f"run type {run_type} is not recognized!")
 
         # must call resume state AFTER the runner has been initialized
         self.runner.load_state(self.config.job.runner_state_path)
@@ -321,10 +334,10 @@ def get_hydra_config_from_yaml(
     return get_canonical_config(cfg)
 
 
-def _runner_wrapper(config: DictConfig):
+def _runner_wrapper(config: DictConfig, run_type: RunType = RunType.RUN):
     # This is needed when using elastic_launch for local runs since it looks for
     # the __name__ attribute of the function, Submitit.__call__ does not have one
-    Submitit()(config)
+    Submitit()(config, run_type)
 
 
 def main(
@@ -367,9 +380,10 @@ def main(
             logging.info(
                 f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
             )
+            jobs = [job]
         elif scheduler_cfg.num_array_jobs > 1:
             executor.update_parameters(
-                slurm_array_parallelism=scheduler_cfg.num_array_jobs
+                slurm_array_parallelism=scheduler_cfg.num_array_jobs,
             )
 
             jobs = []
@@ -380,6 +394,15 @@ def main(
                     job = executor.submit(Submitit(), _cfg)
                     jobs.append(job)
             logging.info(f"Submitted {len(jobs)} jobs: {jobs[0].job_id.split('_')[0]}")
+
+        if "reducer" in cfg:
+            executor.update_parameters(
+                name=f"{cfg.job.run_name}_reduce",
+                # set a single node, or do we want the same config as the Runner or a separate JobConfig
+                nodes=1,
+                dependency=f"afterok:{",".join(job.job_id for job in jobs)}",
+            )
+            executor.submit(Submitit, cfg, RunType.REDUCE)
     else:
         from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
@@ -394,9 +417,12 @@ def main(
                 rdzv_backend="c10d",
                 max_restarts=0,
             )
-
             elastic_launch(launch_config, _runner_wrapper)(cfg)
+            if "reducer" in cfg:
+                elastic_launch(launch_config, _runner_wrapper)(cfg, RunType.REDUCE)
         else:
             logging.info("Running in local mode without elastic launch")
             distutils.setup_env_local()
             Submitit()(cfg)
+            if "reducer" in cfg:
+                Submitit()(cfg, RunType.REDUCE)
