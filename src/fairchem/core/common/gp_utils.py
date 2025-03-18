@@ -287,9 +287,8 @@ class ScatterToModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
         (dim,) = ctx.saved_tensors
-        world_size = 1
         return (
-            _gather_with_padding(grad_output, dim.item()).div_(world_size),
+            _gather_with_padding(grad_output, dim.item()),
             None,
         )
 
@@ -307,25 +306,68 @@ class GatherFromModelParallelRegion(torch.autograd.Function):
         return result, None
 
 
+# Leave forward untouched but upscale the gradient by a factor of gp_group_size
+# DDP reduces a mean across the loss, if we have gp_group_size=2 and 6 ranks
+# that means we do (a_1+a_2+a_3+b_1+b_2+b_3)/6 in ddp mean. This gets us the
+# correct loss but the grad is wrong by a factor of gp_group_size
+# dL/d_a1 = 1/6 but it should be dL/da = 1/2 (for the equivalanet non GP run
+# with 2 ranks)
+# we coud perform an extra round of all_reduce, but this would increase
+# communication overhead, instead we can just upscsale the gradient only and
+# avoid over head communication
+class FixGPGrad(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input: torch.Tensor) -> torch.Tensor:
+        return input
+
+    @staticmethod
+    def backward(ctx, grad_output: torch.Tensor):
+        if initialized():
+            group = get_gp_group()
+            print(
+                "MULTIPLY BY ",
+                dist.get_world_size(),
+                dist.get_world_size(group),
+                (dist.get_world_size() / dist.get_world_size(group)),
+            )
+            return dist.get_world_size(group) * grad_output
+        return grad_output
+
+
 def copy_to_model_parallel_region(input: torch.Tensor) -> torch.Tensor:
-    assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
+    assert (
+        initialized()
+    ), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
     return CopyToModelParallelRegion.apply(input)
 
 
 def reduce_from_model_parallel_region(input: torch.Tensor) -> torch.Tensor:
-    assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
+    assert (
+        initialized()
+    ), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
     return ReduceFromModelParallelRegion.apply(input)
 
 
 def scatter_to_model_parallel_region(
     input: torch.Tensor, dim: int = -1
 ) -> torch.Tensor:
-    assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
+    assert (
+        initialized()
+    ), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
     return ScatterToModelParallelRegion.apply(input, dim)
 
 
 def gather_from_model_parallel_region(
     input: torch.Tensor, dim: int = -1
 ) -> torch.Tensor:
-    assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
+    assert (
+        initialized()
+    ), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
     return GatherFromModelParallelRegion.apply(input, dim)
+
+
+def fix_gp_grad(input: torch.Tensor) -> torch.Tensor:
+    assert (
+        initialized()
+    ), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
+    return FixGPGrad.apply(input)
