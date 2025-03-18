@@ -19,7 +19,7 @@ class Reducer(metaclass=ABCMeta):
     Represents an abstraction over things reduce the results written by a runner.
     """
 
-    file_pattern: ClassVar[str] = "*"
+    glob_pattern: ClassVar[str] = "*"
 
     def run(self) -> Any:
         self.reduce()
