@@ -8,7 +8,7 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
@@ -19,15 +19,19 @@ class Reducer(metaclass=ABCMeta):
     Represents an abstraction over things reduce the results written by a runner.
     """
 
+    file_pattern: ClassVar[str] = "*"
+
     def run(self) -> Any:
         self.reduce()
 
     @abstractmethod
     def initialize(self, job_config: DictConfig, runner_config: DictConfig) -> None:
+        """Initialize takes both the job config and a runner config assumed to have been run beforehand"""
         raise NotImplementedError
 
     @abstractmethod
     def reduce(self) -> Any:
+        """Use file pattern to reduce"""
         raise NotImplementedError
 
     @abstractmethod
