@@ -110,7 +110,7 @@ class Metadata:
     config_path: str
     preemption_checkpoint_dir: str
     cluster_name: str
-    array_job_num: int = 1
+    array_job_num: int = 0
     # can only be filled in after the job has started in slurm
     slurm_env: SlurmEnv = field(default_factory=lambda: SlurmEnv())
 
