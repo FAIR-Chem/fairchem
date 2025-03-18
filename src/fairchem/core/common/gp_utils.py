@@ -335,39 +335,29 @@ class FixGPGrad(torch.autograd.Function):
 
 
 def copy_to_model_parallel_region(input: torch.Tensor) -> torch.Tensor:
-    assert (
-        initialized()
-    ), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
+    assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
     return CopyToModelParallelRegion.apply(input)
 
 
 def reduce_from_model_parallel_region(input: torch.Tensor) -> torch.Tensor:
-    assert (
-        initialized()
-    ), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
+    assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
     return ReduceFromModelParallelRegion.apply(input)
 
 
 def scatter_to_model_parallel_region(
     input: torch.Tensor, dim: int = -1
 ) -> torch.Tensor:
-    assert (
-        initialized()
-    ), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
+    assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
     return ScatterToModelParallelRegion.apply(input, dim)
 
 
 def gather_from_model_parallel_region(
     input: torch.Tensor, dim: int = -1
 ) -> torch.Tensor:
-    assert (
-        initialized()
-    ), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
+    assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
     return GatherFromModelParallelRegion.apply(input, dim)
 
 
 def fix_gp_grad(input: torch.Tensor) -> torch.Tensor:
-    assert (
-        initialized()
-    ), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
+    assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
     return FixGPGrad.apply(input)
