@@ -14,7 +14,7 @@ import random
 import tempfile
 import uuid
 from dataclasses import dataclass, field
-from enum import Enum, StrEnum, auto
+from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
 import hydra
@@ -68,9 +68,9 @@ class DeviceType(str, Enum):
     CUDA = "cuda"
 
 
-class RunType(StrEnum):
-    RUN = auto()
-    REDUCE = auto()
+class RunType(str, Enum):
+    RUN = "run"
+    REDUCE = "reduce"
 
 
 @dataclass
