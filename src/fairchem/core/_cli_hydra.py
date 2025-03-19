@@ -30,7 +30,9 @@ if TYPE_CHECKING:
 
     from fairchem.core.components.runner import Runner
 
+
 from submitit import AutoExecutor
+from submitit.core.utils import JobPaths, cloudpickle_dump
 from submitit.helpers import Checkpointable, DelayedSubmission
 
 from fairchem.core.common import distutils
@@ -38,7 +40,6 @@ from fairchem.core.common.logger import WandBSingletonLogger
 from fairchem.core.common.utils import (
     get_cluster_name,
     get_commit_hash,
-    get_subdirectories_sorted_by_time,
     get_timestamp_uid,
     setup_env_vars,
     setup_logging,
@@ -52,6 +53,7 @@ ALLOWED_TOP_LEVEL_KEYS = {"job", "runner"}
 
 LOG_DIR_NAME = "logs"
 CHECKPOINT_DIR_NAME = "checkpoints"
+RESULTS_DIR = "results"
 CONFIG_FILE_NAME = "canonical_config.yaml"
 PREEMPTION_STATE_DIR_NAME = "preemption_state"
 
@@ -81,7 +83,16 @@ class SchedulerConfig:
     mode: SchedulerType = SchedulerType.LOCAL
     ranks_per_node: int = 1
     num_nodes: int = 1
+    num_array_jobs: int = 1
     slurm: SlurmConfig = field(default_factory=lambda: SlurmConfig)
+
+
+@dataclass
+class SlurmEnv:
+    # reflects the slurm job id SLURM_JOB_ID
+    slurm_id: Optional[str] = None  # noqa: UP007
+    # reflects SLURM_RESTART_COUNT env variable
+    restart_count: Optional[int] = None  # noqa: UP007
 
 
 @dataclass
@@ -90,9 +101,13 @@ class Metadata:
     commit: str
     log_dir: str
     checkpoint_dir: str
+    results_dir: str
     config_path: str
     preemption_checkpoint_dir: str
     cluster_name: str
+    array_job_num: int = 1
+    # can only be filled in after the job has started in slurm
+    slurm_env: SlurmEnv = field(default_factory=lambda: SlurmEnv())
 
 
 @dataclass
@@ -111,7 +126,7 @@ class JobConfig:
     runner_state_path: Optional[str] = None  # noqa: UP007
     # read-only metadata about the job, not user inputs
     metadata: Optional[Metadata] = None  # noqa: UP007
-    graph_parallel_group_size: Optional[int] = None  # noqa: UP007 python 3.9 requires Optional still
+    graph_parallel_group_size: Optional[int] = None  # noqa: UP007
 
     def __post_init__(self) -> None:
         self.metadata = Metadata(
@@ -120,6 +135,7 @@ class JobConfig:
             checkpoint_dir=os.path.join(
                 self.run_dir, self.timestamp_id, CHECKPOINT_DIR_NAME
             ),
+            results_dir=os.path.join(self.run_dir, self.timestamp_id, RESULTS_DIR),
             config_path=os.path.join(self.run_dir, self.timestamp_id, CONFIG_FILE_NAME),
             preemption_checkpoint_dir=os.path.join(
                 self.run_dir,
@@ -147,6 +163,24 @@ def _set_deterministic_mode() -> None:
     torch.use_deterministic_algorithms(True)
 
 
+def get_slurm_env() -> SlurmEnv:
+    return SlurmEnv(
+        slurm_id=os.environ.get("SLURM_JOB_ID"),
+        restart_count=os.environ.get("SLURM_RESTART_COUNT"),
+    )
+
+
+def remove_runner_state_from_submission(log_folder: str, job_id: str) -> None:
+    # (HACK) Decouple the job from the runner state by manually modifying it
+    # this ensures the saved runner state is not re-submitted in the event of a node failure
+    # ie: if the job was started at state t=T, a requeue during node failure would resubmit the job
+    # starting at state t=T again without calling the checkpoint callback, losing all progress in between.
+    job_path = JobPaths(folder=log_folder, job_id=job_id)
+    submission_obj = DelayedSubmission.load(job_path.submitted_pickle)
+    submission_obj.args[0].job.runner_state_path = None
+    cloudpickle_dump(submission_obj, job_path.submitted_pickle)
+
+
 class Submitit(Checkpointable):
     def __init__(self) -> None:
         self.config = None
@@ -154,12 +188,25 @@ class Submitit(Checkpointable):
 
     def __call__(self, dict_config: DictConfig) -> None:
         self.config = dict_config
-        # TODO also load job config here
+        # modify the config metadata to add slurm info if they exist
+        self.config.job.metadata.slurm_env = get_slurm_env()
+
         setup_env_vars()
         setup_logging()
 
         dist_config = map_job_config_to_dist_config(self.config.job)
         distutils.setup(dist_config)
+        distutils.synchronize()
+        if (
+            distutils.is_master()
+            and self.config.job.scheduler.mode == SchedulerType.SLURM
+        ):
+            # this pickle file is shared across all processes so can only modify this on the main rank
+            remove_runner_state_from_submission(
+                dict_config.job.metadata.log_dir,
+                self.config.job.metadata.slurm_env.slurm_id,
+            )
+
         if self.config.job.graph_parallel_group_size is not None:
             gp_utils.setup_graph_parallel_groups(
                 self.config.job.graph_parallel_group_size,
@@ -172,10 +219,10 @@ class Submitit(Checkpointable):
             _set_deterministic_mode()
 
         self.runner: Runner = hydra.utils.instantiate(dict_config.runner)
-        self.runner.config = self.config
+        self.runner.initialize(self.config.job)
+
         # must call resume state AFTER the runner has been initialized
-        if self.config.job.runner_state_path:
-            self.runner.load_state(self.config.job.runner_state_path)
+        self.runner.load_state(self.config.job.runner_state_path)
         self.runner.run()
         distutils.cleanup()
 
@@ -200,24 +247,17 @@ class Submitit(Checkpointable):
 
     def checkpoint(self, *args, **kwargs) -> DelayedSubmission:
         logging.error("Submitit checkpointing callback is triggered")
-        # TODO: preemption state saving doesn't work with DCP because submitit only calls checkpoint
-        # on rank0, which will cause the system to deadlock.
-        # save_path = self.config.job.metadata.preemption_checkpoint_dir
-        # self.runner.save_state(save_path)
-        # For now, use the last found checkpoint
+        save_path = self.config.job.metadata.preemption_checkpoint_dir
         cfg_copy = self.config.copy()
-        ckpt_dirs_time = get_subdirectories_sorted_by_time(
-            self.config.job.metadata.checkpoint_dir
-        )
-        if len(ckpt_dirs_time) > 0:
-            # pick the lastest one
-            cfg_copy.job.runner_state_path = ckpt_dirs_time[-1][0]
-            logging.info(
-                f"Job will resume using the state found at: {cfg_copy.job.runner_state_path}"
-            )
+        # only assign if the save was successful
+        cfg_copy.job.runner_state_path = None
+        if self.runner.save_state(save_path, is_preemption=True):
+            cfg_copy.job.runner_state_path = save_path
         if WandBSingletonLogger.initialized():
             WandBSingletonLogger.get_instance().mark_preempting()
-        logging.info("Submitit checkpointing callback is completed")
+        logging.info(
+            f"Submitit checkpointing callback is completed, resuming with use the following state: {save_path}"
+        )
         return DelayedSubmission(Submitit(), cfg_copy)
 
 
@@ -281,7 +321,9 @@ def get_hydra_config_from_yaml(
     return get_canonical_config(cfg)
 
 
-def runner_wrapper(config: DictConfig):
+def _runner_wrapper(config: DictConfig):
+    # This is needed when using elastic_launch for local runs since it looks for
+    # the __name__ attribute of the function, Submitit.__call__ does not have one
     Submitit()(config)
 
 
@@ -304,6 +346,9 @@ def main(
     scheduler_cfg = cfg.job.scheduler
     logging.info(f"Running fairchemv2 cli with {cfg}")
     if scheduler_cfg.mode == SchedulerType.SLURM:  # Run on cluster
+        assert (
+            os.getenv("SLURM_SUBMIT_HOST") is None
+        ), "SLURM DID NOT SUBMIT JOB!! Please do not submit jobs from an active slurm job (srun or otherwise)"
         executor = AutoExecutor(folder=log_dir, slurm_max_num_timeout=3)
         executor.update_parameters(
             name=cfg.job.run_name,
@@ -317,10 +362,24 @@ def main(
             slurm_qos=scheduler_cfg.slurm.qos,
             slurm_account=scheduler_cfg.slurm.account,
         )
-        job = executor.submit(Submitit(), cfg)
-        logging.info(
-            f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
-        )
+        if scheduler_cfg.num_array_jobs == 1:
+            job = executor.submit(Submitit(), cfg)
+            logging.info(
+                f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
+            )
+        elif scheduler_cfg.num_array_jobs > 1:
+            executor.update_parameters(
+                slurm_array_parallelism=scheduler_cfg.num_array_jobs
+            )
+
+            jobs = []
+            with executor.batch():
+                for job_number in range(scheduler_cfg.num_array_jobs):
+                    _cfg = cfg.copy()
+                    _cfg.job.metadata.array_job_num = job_number
+                    job = executor.submit(Submitit(), _cfg)
+                    jobs.append(job)
+            logging.info(f"Submitted {len(jobs)} jobs: {jobs[0].job_id.split('_')[0]}")
     else:
         from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
@@ -335,8 +394,9 @@ def main(
                 rdzv_backend="c10d",
                 max_restarts=0,
             )
-            elastic_launch(launch_config, runner_wrapper)(cfg)
+
+            elastic_launch(launch_config, _runner_wrapper)(cfg)
         else:
             logging.info("Running in local mode without elastic launch")
             distutils.setup_env_local()
-            runner_wrapper(cfg)
+            Submitit()(cfg)

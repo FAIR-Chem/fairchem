@@ -1231,11 +1231,23 @@ def scatter_det(*args, **kwargs):
     return out
 
 
-def get_commit_hash():
+def get_commit_hash() -> str:
+    core_hash = get_commit_hash_for_repo(fairchem.core.__path__[0])
+    experimental_hash = None
+    try:
+        experimental_hash = get_commit_hash_for_repo(fairchem.experimental.__path__[0])
+        return f"core:{core_hash},experimental:{experimental_hash}"
+    except (NameError, AttributeError):
+        return f"core:{core_hash},experimental:NA"
+
+
+def get_commit_hash_for_repo(
+    git_repo_path: str,
+) -> str | None:
     try:
         commit_hash = (
             subprocess.check_output(
-                ["git", "-C", fairchem.core.__path__[0], "describe", "--always"],
+                ["git", "-C", git_repo_path, "describe", "--always"],
                 stderr=subprocess.DEVNULL,
             )
             .strip()
@@ -1458,11 +1470,11 @@ def get_timestamp_uid() -> str:
 @torch.no_grad()
 def tensor_stats(name: str, x: torch.Tensor) -> dict:
     return {
-        f"{name}.max": x.max(),
-        f"{name}.min": x.min(),
-        f"{name}.std": x.std(),
-        f"{name}.mean": x.mean(),
-        f"{name}.norm": torch.norm(x, p=2),
+        f"{name}.max": x.max().item(),
+        f"{name}.min": x.min().item(),
+        f"{name}.std": x.std().item(),
+        f"{name}.mean": x.mean().item(),
+        f"{name}.norm": torch.norm(x, p=2).item(),
         f"{name}.nonzero_fraction": torch.nonzero(x).shape[0] / float(x.numel()),
     }
 
@@ -1502,7 +1514,7 @@ def get_deep(dictionary: dict, keys: str, default: str | None = None):
     )
 
 
-def get_subdirectories_sorted_by_time(directory: str) -> str:
+def get_subdirectories_sorted_by_time(directory: str) -> list:
     """
     Get all subdirectories in a directory sorted by their last modification time.
     Args:
@@ -1510,6 +1522,9 @@ def get_subdirectories_sorted_by_time(directory: str) -> str:
     Returns:
         list: A list of tuples containing the subdirectory path and its last modification time.
     """
+    if not os.path.exists(directory):
+        return []
+
     directory = pathlib.Path(directory)
     return sorted(
         ((str(d), d.stat().st_mtime) for d in directory.iterdir() if d.is_dir()),
@@ -1517,7 +1532,7 @@ def get_subdirectories_sorted_by_time(directory: str) -> str:
     )
 
 
-def get_cluster_name() -> str | None:
+def get_cluster_name() -> str:
     try:
         return (
             subprocess.check_output(
@@ -1528,5 +1543,7 @@ def get_cluster_name() -> str | None:
             .strip()
         )
     except subprocess.CalledProcessError as e:
-        logging.warning(e)
-        return None
+        logging.warning(
+            f"scontrol command failed, couldn't find cluster name, returning empty str as cluster name {e!s}"
+        )
+        return ""
