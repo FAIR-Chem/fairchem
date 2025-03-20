@@ -15,7 +15,7 @@ import tempfile
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import hydra
 import numpy as np
@@ -78,9 +78,9 @@ class SlurmConfig:
     mem_gb: int = 80
     timeout_hr: int = 168
     cpus_per_task: int = 8
-    partition: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
-    qos: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
-    account: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
+    partition: str | None = None
+    qos: str | None = None
+    account: str | None = None
 
 
 @dataclass
@@ -94,10 +94,9 @@ class SchedulerConfig:
 
 @dataclass
 class SlurmEnv:
-    # reflects the slurm job id SLURM_JOB_ID
-    slurm_id: Optional[str] = None  # noqa: UP007
+    job_env: SlurmEnv | None = None
     # reflects SLURM_RESTART_COUNT env variable
-    restart_count: Optional[int] = None  # noqa: UP007
+    restart_count: int | None = None
 
 
 @dataclass
@@ -125,13 +124,13 @@ class JobConfig:
     device_type: DeviceType = DeviceType.CUDA
     debug: bool = False
     scheduler: SchedulerConfig = field(default_factory=lambda: SchedulerConfig)
-    logger: Optional[dict] = None  # noqa: UP007 python 3.9 requires Optional still
+    logger: dict | None = None
     seed: int = 0
     deterministic: bool = False
-    runner_state_path: Optional[str] = None  # noqa: UP007
+    runner_state_path: str | None = None
     # read-only metadata about the job, not user inputs
-    metadata: Optional[Metadata] = None  # noqa: UP007
-    graph_parallel_group_size: Optional[int] = None  # noqa: UP007
+    metadata: Metadata | None = None
+    graph_parallel_group_size: int | None = None
 
     def __post_init__(self) -> None:
         self.metadata = Metadata(
