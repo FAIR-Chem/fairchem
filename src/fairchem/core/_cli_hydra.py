@@ -15,7 +15,7 @@ import tempfile
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import hydra
 import numpy as np
@@ -79,9 +79,9 @@ class SlurmConfig:
     mem_gb: int = 80
     timeout_hr: int = 168
     cpus_per_task: int = 8
-    partition: str | None = None
-    qos: str | None = None
-    account: str | None = None
+    partition: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
+    qos: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
+    account: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
 
 
 @dataclass
@@ -96,15 +96,15 @@ class SchedulerConfig:
 @dataclass
 class SlurmEnv:
     # reflects the job_id given by submitit (slurm id with array job id and array task id if they exist)
-    job_id: str | None = None
+    job_id: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
     # reflects SLURM_JOB_ID only
-    raw_job_id: str | None = None
+    raw_job_id: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
     # SLURM_ARRAY_JOB_ID
-    array_job_id: str | None = None
+    array_job_id: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
     # SLURM_ARRAY_TASK_ID
-    array_task_id: str | None = None
+    array_task_id: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
     # reflects SLURM_RESTART_COUNT env variable
-    restart_count: int | None = None
+    restart_count: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
 
 
 @dataclass
@@ -131,13 +131,13 @@ class JobConfig:
     device_type: DeviceType = DeviceType.CUDA
     debug: bool = False
     scheduler: SchedulerConfig = field(default_factory=lambda: SchedulerConfig)
-    logger: dict | None = None
+    logger: Optional[dict] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
     seed: int = 0
     deterministic: bool = False
-    runner_state_path: str | None = None
+    runner_state_path: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
     # read-only metadata about the job, not user inputs
-    metadata: Metadata | None = None
-    graph_parallel_group_size: int | None = None
+    metadata: Optional[Metadata] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
+    graph_parallel_group_size: Optional[int] = None  # noqa: UP007
 
     def __post_init__(self) -> None:
         self.metadata = Metadata(
