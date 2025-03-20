@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.16.7
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -37,9 +37,9 @@ We're going to start simple here - let's run a local relaxation (optimize the un
 1. It's a relatively small (31M) parameter model
 2. It was pre-trained on the OMat24 dataset, and then fine-tuned on the MPtrj and Alexandria datasets, so it should emit energies and forces that are consistent with the MP GGA (PBE/PBE+U) level of theory
 
-This code will download the appropriate checkpoint from huggingface_hub automatically; if you don't have the right access token specified, you'll hit an permission or 401 error. 
+This code will download the appropriate checkpoint from huggingface_hub automatically; if you don't have the right access token specified, you'll hit an permission or 401 error.
 
-```{code-cell} ipython3
+```{code-cell}
 import pprint
 
 from ase.build import bulk
@@ -59,7 +59,7 @@ result = relax_job(
 )
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 pprint.pprint(result)
 ```
 
@@ -77,7 +77,7 @@ We don't have to change much code from above, we just use a built-in recipe to c
 
 For more documentation, see the quacc docs for [quacc.recipes.mlp.elastic_tensor_flow](https://quantum-accelerators.github.io/quacc/reference/quacc/recipes/mlp/elastic.html#quacc.recipes.mlp.elastic.elastic_tensor_flow)
 
-```{code-cell} ipython3
+```{code-cell}
 from ase.build import bulk
 from quacc.recipes.mlp.elastic import elastic_tensor_flow
 
@@ -97,7 +97,7 @@ result = elastic_tensor_flow(
 )
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 result["elasticity_doc"].bulk_modulus
 ```
 
@@ -121,8 +121,7 @@ We can run a similarly straightforward calculation that
 
 Note that this analysis assumes that all vibrational modes are harmonic, which is a pretty reasonable approximately for low/moderate temperature materials, but becomes less realistic at high temperatures.
 
-
-```{code-cell} ipython3
+```{code-cell}
 from ase.build import bulk
 from quacc.recipes.mlp.phonons import phonon_flow
 
@@ -142,7 +141,7 @@ result = phonon_flow(
 )
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 print(
     f'The entropy at { result["results"]["thermal_properties"]["temperatures"][-1]:.0f} K is { result["results"]["thermal_properties"]["entropy"][-1]:.2f} kJ/mol'
 )
@@ -152,4 +151,4 @@ Congratulations, you ran your first phonon calculation!
 
 ## Parallelizing these calculations
 
-These calculations are super straightforward to parallelize because of how `quacc` is written. Simply choose a workflow manager like `parssl` or `prefect` in `quacc`, and run the same code! There are many ways to run these calculations in parallel. The FAIR chemistry team regularly runs hundreds of thousands of calculations in some of these packages at scale. 
+These calculations are super straightforward to parallelize because of how `quacc` is written. Simply choose a workflow manager like `parssl` or `prefect` in `quacc`, and run the same code! There are many ways to run these calculations in parallel. The FAIR chemistry team regularly runs hundreds of thousands of calculations in some of these packages at scale.
