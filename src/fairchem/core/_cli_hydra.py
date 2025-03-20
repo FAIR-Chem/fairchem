@@ -15,12 +15,12 @@ import tempfile
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 import hydra
 import numpy as np
 import torch
-from omegaconf import OmegaConf
+from omegaconf import MISSING, OmegaConf
 from omegaconf.errors import InterpolationKeyError
 
 from fairchem.core.common import gp_utils
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 from submitit import AutoExecutor
 from submitit.core.utils import JobPaths, cloudpickle_dump
 from submitit.helpers import Checkpointable, DelayedSubmission
-from submitit.slurm.slurm import SlurmJobEnvironment as _SlurmJobEnvironment
+from submitit.slurm.slurm import SlurmJobEnvironment
 
 from fairchem.core.common import distutils
 from fairchem.core.common.logger import WandBSingletonLogger
@@ -93,24 +93,18 @@ class SchedulerConfig:
     slurm: SlurmConfig = field(default_factory=lambda: SlurmConfig)
 
 
-class SlurmJobEnvironment(_SlurmJobEnvironment):
-    _env: ClassVar[dict[str, str]] = {
-        "job_id": "SLURM_JOB_ID",
-        "num_tasks": "SLURM_NTASKS",
-        "num_nodes": "SLURM_JOB_NUM_NODES",
-        "node": "SLURM_NODEID",
-        "nodes": "SLURM_JOB_NODELIST",
-        "global_rank": "SLURM_PROCID",
-        "local_rank": "SLURM_LOCALID",
-        "array_job_id": "SLURM_ARRAY_JOB_ID",
-        "array_task_id": "SLURM_ARRAY_TASK_ID",
-        "restart_count": "SLURM_RESTART_COUNT",
-    }
-
-    @property
-    def restart_count(self) -> int:
-        """Number of times the job has been restarted"""
-        return int(os.environ.get(self._env["restart_count"], 0))
+@dataclass
+class SlurmEnv:
+    # reflects the job_id given by submitit (slurm id with array job id and array task id if they exist)
+    job_id: str = MISSING
+    # reflects SLURM_JOB_ID only
+    raw_job_id: str = MISSING
+    # SLURM_ARRAY_JOB_ID
+    array_job_id: str | None = None
+    # SLURM_ARRAY_TASK_ID
+    array_task_id: str | None = None
+    # reflects SLURM_RESTART_COUNT env variable
+    restart_count: int | None = None
 
 
 @dataclass
@@ -124,10 +118,7 @@ class Metadata:
     preemption_checkpoint_dir: str
     cluster_name: str
     array_job_num: int = 0
-    # this can only be accessed after the job has started in slurm
-    slurm_env: SlurmJobEnvironment = field(
-        default_factory=lambda: SlurmJobEnvironment()
-    )
+    slurm_env: SlurmEnv = field(default_factory=lambda: SlurmEnv)
 
 
 @dataclass
@@ -183,6 +174,17 @@ def _set_deterministic_mode() -> None:
     torch.use_deterministic_algorithms(True)
 
 
+def _get_slurm_env() -> SlurmEnv:
+    slurm_job_env = SlurmJobEnvironment()
+    return SlurmEnv(
+        job_id=slurm_job_env.job_id,
+        raw_job_id=slurm_job_env.raw_job_id,
+        array_job_id=slurm_job_env.array_job_id,
+        array_task_id=slurm_job_env.array_task_id,
+        restart_count=int(os.environ.get("SLURM_RESTART_COUNT"), 0),
+    )
+
+
 def remove_runner_state_from_submission(log_folder: str, job_id: str) -> None:
     # (HACK) Decouple the job from the runner state by manually modifying it
     # this ensures the saved runner state is not re-submitted in the event of a node failure
@@ -203,6 +205,9 @@ class Submitit(Checkpointable):
         self, dict_config: DictConfig, run_type: RunType = RunType.RUN
     ) -> None:
         self.config = dict_config
+        # modify the config metadata to add slurm info if they exist
+        self.config.job.metadata.slurm_env = _get_slurm_env()
+
         setup_env_vars()
         setup_logging()
 
