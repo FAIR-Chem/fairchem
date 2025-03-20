@@ -181,7 +181,7 @@ def _get_slurm_env() -> SlurmEnv:
         raw_job_id=slurm_job_env.raw_job_id,
         array_job_id=slurm_job_env.array_job_id,
         array_task_id=slurm_job_env.array_task_id,
-        restart_count=int(os.environ.get("SLURM_RESTART_COUNT"), 0),
+        restart_count=os.environ.get("SLURM_RESTART_COUNT"),
     )
 
 
