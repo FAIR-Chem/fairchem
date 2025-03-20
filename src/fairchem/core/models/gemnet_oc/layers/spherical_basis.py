@@ -109,11 +109,11 @@ class SphericalBasisLayer(torch.nn.Module):
             self.spherical_basis = get_sph_harm_basis(num_spherical, zero_m_only=False)
 
         elif sbf_name == "legendre_outer":
-            circular_basis = get_sph_harm_basis(num_spherical, zero_m_only=True)
+            self.circular_basis = get_sph_harm_basis(num_spherical, zero_m_only=True)
             self.spherical_basis = lambda cosφ, ϑ: (
-                circular_basis(cosφ)[:, :, None]
-                * circular_basis(torch.cos(ϑ))[:, None, :]
-            ).reshape(cosφ.shape[0], -1)
+                self.circular_basis(cosφ)[:, :, None]
+                * self.circular_basis(torch.cos(ϑ))[:, None, :]
+            ).reshape(cosφ.shape[0], num_spherical**2)
 
         elif sbf_name == "gaussian_outer":
             self.circular_basis = GaussianBasis(
@@ -122,7 +122,7 @@ class SphericalBasisLayer(torch.nn.Module):
             self.spherical_basis = lambda cosφ, ϑ: (
                 self.circular_basis(cosφ)[:, :, None]
                 * self.circular_basis(torch.cos(ϑ))[:, None, :]
-            ).reshape(cosφ.shape[0], -1)
+            ).reshape(cosφ.shape[0], num_spherical**2)
 
         else:
             raise ValueError(f"Unknown spherical basis function '{sbf_name}'.")
