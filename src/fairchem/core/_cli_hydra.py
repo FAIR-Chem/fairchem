@@ -176,13 +176,19 @@ def _set_deterministic_mode() -> None:
 
 def _get_slurm_env() -> SlurmEnv:
     slurm_job_env = SlurmJobEnvironment()
-    return SlurmEnv(
-        job_id=slurm_job_env.job_id,
-        raw_job_id=slurm_job_env.raw_job_id,
-        array_job_id=slurm_job_env.array_job_id,
-        array_task_id=slurm_job_env.array_task_id,
-        restart_count=os.environ.get("SLURM_RESTART_COUNT"),
-    )
+    try:
+        slurm_env = SlurmEnv(
+            job_id=slurm_job_env.job_id,
+            raw_job_id=slurm_job_env.raw_job_id,
+            array_job_id=slurm_job_env.array_job_id,
+            array_task_id=slurm_job_env.array_task_id,
+            restart_count=os.environ.get("SLURM_RESTART_COUNT"),
+        )
+    except KeyError:
+        # slurm environment variables are undefined, running locally
+        slurm_env = SlurmEnv()
+
+    return slurm_env
 
 
 def remove_runner_state_from_submission(log_folder: str, job_id: str) -> None:
