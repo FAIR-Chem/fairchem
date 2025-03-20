@@ -1,4 +1,19 @@
-# Using FAIR chemistry models and workflow tools like quacc for inorganic materials science
+---
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.16.1
+kernelspec:
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
+---
+
+Using FAIR chemistry models and workflow tools like quacc for inorganic materials science
+------------------
+
 
 We're going to use [`quacc`](https://quantum-accelerators.github.io/quacc/index.html) along with FAIR chem calculators for some simple recipes to calculate elastic and phonon properties. `quacc` has the nice property that you can also use many different workflow managers like jobflow, dask, or prefect to scale and parallelize many calculations, including both ML and DFT calculations. 
 
@@ -24,7 +39,7 @@ We're going to start simple here - let's run a local relaxation (optimize the un
 
 This code will download the appropriate checkpoint from huggingface_hub automatically; if you don't have the right access token specified, you'll hit an permission or 401 error. 
 
-```{code-cell}
+```{code-cell} ipython3
 import pprint
 
 from ase.build import bulk
@@ -44,7 +59,7 @@ result = relax_job(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 pprint.pprint(result)
 ```
 
@@ -62,7 +77,7 @@ We don't have to change much code from above, we just use a built-in recipe to c
 
 For more documentation, see the quacc docs for [quacc.recipes.mlp.elastic_tensor_flow](https://quantum-accelerators.github.io/quacc/reference/quacc/recipes/mlp/elastic.html#quacc.recipes.mlp.elastic.elastic_tensor_flow)
 
-```{code-cell}
+```{code-cell} ipython3
 from ase.build import bulk
 from quacc.recipes.mlp.elastic import elastic_tensor_flow
 
@@ -82,7 +97,7 @@ result = elastic_tensor_flow(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 result["elasticity_doc"].bulk_modulus
 ```
 
@@ -107,7 +122,7 @@ We can run a similarly straightforward calculation that
 Note that this analysis assumes that all vibrational modes are harmonic, which is a pretty reasonable approximately for low/moderate temperature materials, but becomes less realistic at high temperatures.
 
 
-```{code-cell}
+```{code-cell} ipython3
 from ase.build import bulk
 from quacc.recipes.mlp.phonons import phonon_flow
 
@@ -127,7 +142,7 @@ result = phonon_flow(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 print(
     f'The entropy at { result["results"]["thermal_properties"]["temperatures"][-1]:.0f} K is { result["results"]["thermal_properties"]["entropy"][-1]:.2f} kJ/mol'
 )
