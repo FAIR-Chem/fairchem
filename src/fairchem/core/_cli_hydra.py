@@ -416,7 +416,7 @@ def main(
                     "kill-on-invalid-dep": "yes"
                 },  # kill the reducer if run fails
             )
-            executor.submit(Submitit, cfg, RunType.REDUCE)
+            executor.submit(Submitit(), cfg, RunType.REDUCE)
     else:
         from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
