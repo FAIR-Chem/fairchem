@@ -936,7 +936,10 @@ class BaseTrainer(ABC):
         if self.scaler:
             self.scaler.unscale_(self.optimizer)
             # log unscaled weights and grads
-            log_weight_frequency = self.config["logger"].get("log_weight_table", -1)
+            if isinstance(self.config["logger"], dict):
+                log_weight_frequency = self.config["logger"].get("log_weight_table", -1)
+            else:
+                log_weight_frequency = -1  # not wandb
             if (
                 self.logger is not None
                 and distutils.is_master()
