@@ -188,19 +188,25 @@ class Submitit(Checkpointable):
 
     def __call__(self, dict_config: DictConfig) -> None:
         self.config = dict_config
-        if self.config.job.scheduler.mode == SchedulerType.SLURM:
-            # modify the config metadata to add slurm info, this should be only time we intentionally modify the metadata
-            self.config.job.metadata.slurm_env = get_slurm_env()
-            remove_runner_state_from_submission(
-                dict_config.job.metadata.log_dir,
-                self.config.job.metadata.slurm_env.slurm_id,
-            )
+        # modify the config metadata to add slurm info if they exist
+        self.config.job.metadata.slurm_env = get_slurm_env()
 
         setup_env_vars()
         setup_logging()
 
         dist_config = map_job_config_to_dist_config(self.config.job)
         distutils.setup(dist_config)
+        distutils.synchronize()
+        if (
+            distutils.is_master()
+            and self.config.job.scheduler.mode == SchedulerType.SLURM
+        ):
+            # this pickle file is shared across all processes so can only modify this on the main rank
+            remove_runner_state_from_submission(
+                dict_config.job.metadata.log_dir,
+                self.config.job.metadata.slurm_env.slurm_id,
+            )
+
         if self.config.job.graph_parallel_group_size is not None:
             gp_utils.setup_graph_parallel_groups(
                 self.config.job.graph_parallel_group_size,
