@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 import hydra
 import numpy as np
 import torch
-from omegaconf import MISSING, OmegaConf
+from omegaconf import OmegaConf
 from omegaconf.errors import InterpolationKeyError
 
 from fairchem.core.common import gp_utils
@@ -96,9 +96,9 @@ class SchedulerConfig:
 @dataclass
 class SlurmEnv:
     # reflects the job_id given by submitit (slurm id with array job id and array task id if they exist)
-    job_id: str = MISSING
+    job_id: str | None = None
     # reflects SLURM_JOB_ID only
-    raw_job_id: str = MISSING
+    raw_job_id: str | None = None
     # SLURM_ARRAY_JOB_ID
     array_job_id: str | None = None
     # SLURM_ARRAY_TASK_ID
@@ -118,7 +118,7 @@ class Metadata:
     preemption_checkpoint_dir: str
     cluster_name: str
     array_job_num: int = 0
-    slurm_env: SlurmEnv = field(default_factory=lambda: SlurmEnv)
+    slurm_env: SlurmEnv = field(default_factory=lambda: SlurmEnv())
 
 
 @dataclass
