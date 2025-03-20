@@ -49,7 +49,7 @@ from fairchem.core.common.utils import (
 logging.basicConfig(level=logging.INFO)
 
 
-ALLOWED_TOP_LEVEL_KEYS = {"job", "runner"}
+ALLOWED_TOP_LEVEL_KEYS = {"job", "runner", "reducer"}
 
 LOG_DIR_NAME = "logs"
 CHECKPOINT_DIR_NAME = "checkpoints"
