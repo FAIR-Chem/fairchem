@@ -36,3 +36,27 @@ class Reducer(metaclass=ABCMeta):
     @abstractmethod
     def load_state(self, checkpoint_location: str | None) -> None:
         raise NotImplementedError
+
+
+class MockReducer(Reducer):
+    """Used for testing"""
+
+    def __init__(self):
+        self.calling_runner_config = None
+
+    def initialize(self, job_config: DictConfig, runner_config: DictConfig) -> None:
+        """Initialize takes both the job config and a runner config assumed to have been run beforehand"""
+        self.calling_runner_config = runner_config
+
+    def reduce(self) -> Any:
+        runner_path = self.calling_runner_config.pop("_target_")
+        print(
+            f"Reducing results from runner {runner_path} with args: "
+            f"{', '.join(f'{k}: {v}' for k, v in self.calling_runner_config.items())}"
+        )
+
+    def save_state(self, checkpoint_location: str, is_preemption: bool = False) -> bool:
+        pass
+
+    def load_state(self, checkpoint_location: str | None) -> None:
+        pass

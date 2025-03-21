@@ -38,15 +38,16 @@ class Runner(metaclass=ABCMeta):
         raise NotImplementedError
 
 
-# Used for testing
 class MockRunner(Runner):
+    """Used for testing"""
+
     def __init__(self, x: int, y: int, z: int):
         self.x = x
         self.y = y
         self.z = z
 
     def run(self) -> Any:
-        if self.x * self.y > 1000:
+        if self.x + self.y > 1000:
             raise ValueError("sum is greater than 1000!")
         return self.x + self.y
 
