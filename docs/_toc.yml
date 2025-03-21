@@ -10,6 +10,7 @@ parts:
   - file: core/quickstart
   - file: core/gotchas
   - file: core/license
+  - file: core/inorganic_materials
 - caption: Learn More
   chapters:
   - file: core/intro_series

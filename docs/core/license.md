@@ -1,5 +1,10 @@
 # License
 
+## Repository software
+
+The software in this repo is licensed under an MIT license unless otherwise specified. 
+
+```
 MIT License
 
 Copyright (c) Meta, Inc. and its affiliates.
@@ -21,3 +26,8 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+## Model checkpoints
+
+The Open Catalyst Project and OpenDAC checkpoints are licensed under a CC-by license. The OMat24-trained checkpoints are available for use under a custom license available at https://huggingface.co/fairchem/OMAT24
