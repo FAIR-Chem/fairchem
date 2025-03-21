@@ -244,15 +244,18 @@ class Submitit(Checkpointable):
         if run_type == RunType.RUN:
             self.runner: Runner = hydra.utils.instantiate(self.config.runner)
             self.runner.initialize(self.config.job)
+            # must call resume state AFTER the runner has been initialized
+            self.runner.load_state(self.config.job.runner_state_path)
+            self.runner.run()
         elif run_type == RunType.REDUCE:
-            self.runner: Reducer = hydra.utils.instantiate(self.config.reducer)
-            self.runner.initialize(self.config.job, self.config.runner)
+            self.reducer: Reducer = hydra.utils.instantiate(self.config.reducer)
+            self.reducer.initialize(self.config.job, self.config.runner)
+            # must call resume state AFTER the runner has been initialized
+            self.reducer.load_state(self.config.job.runner_state_path)
+            self.reducer.reduce()
         else:
             raise ValueError(f"run type {run_type} is not recognized!")
 
-        # must call resume state AFTER the runner has been initialized
-        self.runner.load_state(self.config.job.runner_state_path)
-        self.runner.run()
         distutils.cleanup()
 
     def _init_logger(self) -> None:

@@ -8,7 +8,7 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
@@ -18,11 +18,6 @@ class Reducer(metaclass=ABCMeta):
     """
     Represents an abstraction over things reduce the results written by a runner.
     """
-
-    glob_pattern: ClassVar[str] = "*"
-
-    def run(self) -> Any:
-        self.reduce()
 
     @abstractmethod
     def initialize(self, job_config: DictConfig, runner_config: DictConfig) -> None:
