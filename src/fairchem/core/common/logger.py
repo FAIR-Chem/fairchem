@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 import wandb
@@ -18,6 +18,9 @@ from torch.utils.tensorboard import SummaryWriter
 from fairchem.core.common import distutils
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import tensor_stats
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
 
 
 class Logger(ABC):
@@ -107,11 +110,26 @@ class WandBLogger(Logger):
         wandb.log({"data": plots})
 
     def log_table(
-        self, name: str, cols: list, data: list, step: int | None = None, commit=False
+        self,
+        name: str,
+        cols: list,
+        data: list,
+        step: int | None = None,
+        commit: bool = False,
     ) -> None:
         # cols are 1D list of N elements, data must be NxK where the number of cols must match cols
         # see https://docs.wandb.ai/guides/tables
         table = wandb.Table(columns=cols, data=data)
+        wandb.log({name: table}, step=step, commit=commit)
+
+    def log_dataframe(
+        self,
+        name: str,
+        dataframe: DataFrame,
+        step: int | None = None,
+        commit: bool = False,
+    ):
+        table = wandb.Table(dataframe=dataframe)
         wandb.log({name: table}, step=step, commit=commit)
 
     def log_summary(self, summary_dict: dict[str, Any]):
