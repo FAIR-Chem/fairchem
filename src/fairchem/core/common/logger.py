@@ -258,6 +258,16 @@ class WandBSingletonLogger:
         table = wandb.Table(columns=cols, data=data)
         wandb.log({name: table}, step=step, commit=commit)
 
+    def log_dataframe(
+        self,
+        name: str,
+        dataframe: DataFrame,
+        step: int | None = None,
+        commit: bool = False,
+    ):
+        table = wandb.Table(dataframe=dataframe)
+        wandb.log({name: table}, step=step, commit=commit)
+
     def log_summary(self, summary_dict: dict[str, Any]):
         for k, v in summary_dict.items():
             wandb.run.summary[k] = v
