@@ -1,5 +1,5 @@
 includes:
-- configs/is2re/all/base.yml
+- configs/oc20/is2re/all/base.yml
 
 model:
   name: schnet

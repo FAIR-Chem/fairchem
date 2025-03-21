@@ -1,5 +1,5 @@
 includes:
-- configs/s2ef/20M/base.yml
+- configs/oc20/s2ef/20M/base.yml
 
 model:
   name: gemnet_t

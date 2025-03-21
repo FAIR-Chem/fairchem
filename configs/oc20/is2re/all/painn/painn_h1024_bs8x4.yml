@@ -1,7 +1,7 @@
 # Run this on 4 GPUs -- so with an effective batch size of 32.
 
 includes:
-  - configs/is2re/all/base.yml
+  - configs/oc20/is2re/all/base.yml
 
 model:
   name: painn
