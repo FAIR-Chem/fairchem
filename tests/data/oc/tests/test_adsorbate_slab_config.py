@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import random
 
 import numpy as np
 import pytest
-
 from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig, Bulk, Slab
 from fairchem.data.oc.core.adsorbate_slab_config import get_interstitial_distances
 
@@ -20,6 +21,36 @@ class TestAdslab:
         np.random.seed(1)
 
         slab = Slab.from_bulk_get_random_slab(self.bulk)
+        adslab = AdsorbateSlabConfig(slab, self.adsorbate, num_sites=100)
+        assert (
+            len(adslab.atoms_list) == 100
+        ), f"Insufficient number of structures. Expected 100, got {len(adslab.atoms_list)}"
+
+        sites = ["%.04f_%.04f_%.04f" % (i[0], i[1], i[2]) for i in adslab.sites]
+        assert (
+            len(set(sites)) == 100
+        ), f"Insufficient number of sites. Expected 100, got {len(set(sites))}"
+
+        assert np.all(
+            np.isclose(
+                adslab.atoms_list[0].get_positions().mean(0),
+                np.array([6.2668884, 4.22961421, 16.47458617]),
+            )
+        )
+        assert np.all(
+            np.isclose(
+                adslab.atoms_list[1].get_positions().mean(0),
+                np.array([6.1967168, 4.73603662, 16.46990669]),
+            )
+        )
+
+    def test_adslab_init_slab_only(self):
+        random.seed(1)
+        np.random.seed(1)
+
+        _slab = Slab.from_bulk_get_random_slab(self.bulk)
+        slab_atoms = _slab.atoms
+        slab = Slab(slab_atoms=slab_atoms)
         adslab = AdsorbateSlabConfig(slab, self.adsorbate, num_sites=100)
         assert (
             len(adslab.atoms_list) == 100
