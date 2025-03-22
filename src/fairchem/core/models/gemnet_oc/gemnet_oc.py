@@ -804,7 +804,6 @@ class GemNetOC(nn.Module, GraphModelMixin):
         new_graph["vector"] = self.select_symmetric_edges(
             graph["vector"], mask, edge_reorder_idx, True
         )
-
         # Indices for swapping c->a and a->c (for symmetric MP)
         # To obtain these efficiently and without any index assumptions,
         # we get order the counter-edge IDs and then
@@ -863,7 +862,7 @@ class GemNetOC(nn.Module, GraphModelMixin):
 
         empty_image = subgraph["num_neighbors"] == 0
         if torch.any(empty_image):
-            raise ValueError(f"An image has no neighbors: sid={data.sid[empty_image]}")
+            logging.warning(f"An image has no neighbors: {data[empty_image]}")
         return subgraph
 
     def generate_graph_dict(self, data, cutoff, max_neighbors):
