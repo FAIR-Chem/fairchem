@@ -28,12 +28,13 @@ from fairchem.core.common import gp_utils
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
+    from fairchem.core.components.reducer import Reducer
     from fairchem.core.components.runner import Runner
-
 
 from submitit import AutoExecutor
 from submitit.core.utils import JobPaths, cloudpickle_dump
 from submitit.helpers import Checkpointable, DelayedSubmission
+from submitit.slurm.slurm import SlurmJobEnvironment
 
 from fairchem.core.common import distutils
 from fairchem.core.common.logger import WandBSingletonLogger
@@ -49,7 +50,7 @@ from fairchem.core.common.utils import (
 logging.basicConfig(level=logging.INFO)
 
 
-ALLOWED_TOP_LEVEL_KEYS = {"job", "runner"}
+ALLOWED_TOP_LEVEL_KEYS = {"job", "runner", "reducer"}
 
 LOG_DIR_NAME = "logs"
 CHECKPOINT_DIR_NAME = "checkpoints"
@@ -68,14 +69,19 @@ class DeviceType(str, Enum):
     CUDA = "cuda"
 
 
+class RunType(str, Enum):
+    RUN = "run"
+    REDUCE = "reduce"
+
+
 @dataclass
 class SlurmConfig:
     mem_gb: int = 80
     timeout_hr: int = 168
     cpus_per_task: int = 8
-    partition: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
-    qos: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
-    account: Optional[str] = None  # noqa: UP007 python 3.9 requires Optional still
+    partition: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
+    qos: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
+    account: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
 
 
 @dataclass
@@ -89,10 +95,16 @@ class SchedulerConfig:
 
 @dataclass
 class SlurmEnv:
-    # reflects the slurm job id SLURM_JOB_ID
-    slurm_id: Optional[str] = None  # noqa: UP007
+    # reflects the job_id given by submitit (slurm id with array job id and array task id if they exist)
+    job_id: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
+    # reflects SLURM_JOB_ID only
+    raw_job_id: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
+    # SLURM_ARRAY_JOB_ID
+    array_job_id: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
+    # SLURM_ARRAY_TASK_ID
+    array_task_id: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
     # reflects SLURM_RESTART_COUNT env variable
-    restart_count: Optional[int] = None  # noqa: UP007
+    restart_count: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
 
 
 @dataclass
@@ -105,8 +117,7 @@ class Metadata:
     config_path: str
     preemption_checkpoint_dir: str
     cluster_name: str
-    array_job_num: int = 1
-    # can only be filled in after the job has started in slurm
+    array_job_num: int = 0
     slurm_env: SlurmEnv = field(default_factory=lambda: SlurmEnv())
 
 
@@ -120,12 +131,12 @@ class JobConfig:
     device_type: DeviceType = DeviceType.CUDA
     debug: bool = False
     scheduler: SchedulerConfig = field(default_factory=lambda: SchedulerConfig)
-    logger: Optional[dict] = None  # noqa: UP007 python 3.9 requires Optional still
+    logger: Optional[dict] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
     seed: int = 0
     deterministic: bool = False
-    runner_state_path: Optional[str] = None  # noqa: UP007
+    runner_state_path: Optional[str] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
     # read-only metadata about the job, not user inputs
-    metadata: Optional[Metadata] = None  # noqa: UP007
+    metadata: Optional[Metadata] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
     graph_parallel_group_size: Optional[int] = None  # noqa: UP007
 
     def __post_init__(self) -> None:
@@ -163,11 +174,21 @@ def _set_deterministic_mode() -> None:
     torch.use_deterministic_algorithms(True)
 
 
-def get_slurm_env() -> SlurmEnv:
-    return SlurmEnv(
-        slurm_id=os.environ.get("SLURM_JOB_ID"),
-        restart_count=os.environ.get("SLURM_RESTART_COUNT"),
-    )
+def _get_slurm_env() -> SlurmEnv:
+    slurm_job_env = SlurmJobEnvironment()
+    try:
+        slurm_env = SlurmEnv(
+            job_id=slurm_job_env.job_id,
+            raw_job_id=slurm_job_env.raw_job_id,
+            array_job_id=slurm_job_env.array_job_id,
+            array_task_id=slurm_job_env.array_task_id,
+            restart_count=os.environ.get("SLURM_RESTART_COUNT"),
+        )
+    except KeyError:
+        # slurm environment variables are undefined, running locally
+        slurm_env = SlurmEnv()
+
+    return slurm_env
 
 
 def remove_runner_state_from_submission(log_folder: str, job_id: str) -> None:
@@ -186,10 +207,13 @@ class Submitit(Checkpointable):
         self.config = None
         self.runner = None
 
-    def __call__(self, dict_config: DictConfig) -> None:
+    def __call__(
+        self, dict_config: DictConfig, run_type: RunType = RunType.RUN
+    ) -> None:
         self.config = dict_config
+        self.run_type = run_type
         # modify the config metadata to add slurm info if they exist
-        self.config.job.metadata.slurm_env = get_slurm_env()
+        self.config.job.metadata.slurm_env = _get_slurm_env()
 
         setup_env_vars()
         setup_logging()
@@ -204,7 +228,7 @@ class Submitit(Checkpointable):
             # this pickle file is shared across all processes so can only modify this on the main rank
             remove_runner_state_from_submission(
                 dict_config.job.metadata.log_dir,
-                self.config.job.metadata.slurm_env.slurm_id,
+                self.config.job.metadata.slurm_env.job_id,
             )
 
         if self.config.job.graph_parallel_group_size is not None:
@@ -218,12 +242,21 @@ class Submitit(Checkpointable):
         if self.config.job.deterministic:
             _set_deterministic_mode()
 
-        self.runner: Runner = hydra.utils.instantiate(dict_config.runner)
-        self.runner.initialize(self.config.job)
+        if run_type == RunType.RUN:
+            self.runner: Runner = hydra.utils.instantiate(self.config.runner)
+            self.runner.initialize(self.config.job)
+            # must call resume state AFTER the runner has been initialized
+            self.runner.load_state(self.config.job.runner_state_path)
+            self.runner.run()
+        elif run_type == RunType.REDUCE:
+            self.reducer: Reducer = hydra.utils.instantiate(self.config.reducer)
+            self.reducer.initialize(self.config.job, self.config.runner)
+            # must call resume state AFTER the runner has been initialized
+            self.reducer.load_state(self.config.job.runner_state_path)
+            self.reducer.reduce()
+        else:
+            raise ValueError(f"run type {run_type} is not recognized!")
 
-        # must call resume state AFTER the runner has been initialized
-        self.runner.load_state(self.config.job.runner_state_path)
-        self.runner.run()
         distutils.cleanup()
 
     def _init_logger(self) -> None:
@@ -251,8 +284,16 @@ class Submitit(Checkpointable):
         cfg_copy = self.config.copy()
         # only assign if the save was successful
         cfg_copy.job.runner_state_path = None
-        if self.runner.save_state(save_path, is_preemption=True):
+
+        if (
+            self.run_type == RunType.RUN
+            and self.runner.save_state(save_path, is_preemption=True)
+        ) or (
+            self.run_type == RunType.REDUCE
+            and self.reducer.save_state(save_path, is_preemption=True)
+        ):
             cfg_copy.job.runner_state_path = save_path
+
         if WandBSingletonLogger.initialized():
             WandBSingletonLogger.get_instance().mark_preempting()
         logging.info(
@@ -321,10 +362,10 @@ def get_hydra_config_from_yaml(
     return get_canonical_config(cfg)
 
 
-def _runner_wrapper(config: DictConfig):
+def _runner_wrapper(config: DictConfig, run_type: RunType = RunType.RUN):
     # This is needed when using elastic_launch for local runs since it looks for
     # the __name__ attribute of the function, Submitit.__call__ does not have one
-    Submitit()(config)
+    Submitit()(config, run_type)
 
 
 def main(
@@ -367,9 +408,10 @@ def main(
             logging.info(
                 f"Submitted job id: {cfg.job.timestamp_id}, slurm id: {job.job_id}, logs: {cfg.job.metadata.log_dir}"
             )
+            jobs = [job]
         elif scheduler_cfg.num_array_jobs > 1:
             executor.update_parameters(
-                slurm_array_parallelism=scheduler_cfg.num_array_jobs
+                slurm_array_parallelism=scheduler_cfg.num_array_jobs,
             )
 
             jobs = []
@@ -380,6 +422,19 @@ def main(
                     job = executor.submit(Submitit(), _cfg)
                     jobs.append(job)
             logging.info(f"Submitted {len(jobs)} jobs: {jobs[0].job_id.split('_')[0]}")
+
+        if "reducer" in cfg:
+            # TODO if a run is pre-empted/queued and resubmitted we need to update the dependency of the reduce job
+            executor.update_parameters(
+                name=f"{cfg.job.run_name}_reduce",
+                # set a single node, or do we want the same config as the Runner or a separate JobConfig
+                nodes=1,
+                slurm_dependency=f"afterok:{','.join(job.job_id for job in jobs)}",
+                slurm_additional_parameters={
+                    "kill-on-invalid-dep": "yes"
+                },  # kill the reducer if run fails
+            )
+            executor.submit(Submitit(), cfg, RunType.REDUCE)
     else:
         from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
@@ -394,9 +449,12 @@ def main(
                 rdzv_backend="c10d",
                 max_restarts=0,
             )
-
             elastic_launch(launch_config, _runner_wrapper)(cfg)
+            if "reducer" in cfg:
+                elastic_launch(launch_config, _runner_wrapper)(cfg, RunType.REDUCE)
         else:
             logging.info("Running in local mode without elastic launch")
             distutils.setup_env_local()
             Submitit()(cfg)
+            if "reducer" in cfg:
+                Submitit()(cfg, RunType.REDUCE)

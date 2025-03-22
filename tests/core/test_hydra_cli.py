@@ -21,6 +21,14 @@ def test_hydra_cli():
     main()
 
 
+def test_hydra_cli_run_reduce():
+    distutils.cleanup()
+    hydra.core.global_hydra.GlobalHydra.instance().clear()
+    sys_args = ["--config", "tests/core/test_hydra_cli_run_reduce.yml"]
+    sys.argv[1:] = sys_args
+    main()
+
+
 def test_hydra_cli_throws_error():
     distutils.cleanup()
     hydra.core.global_hydra.GlobalHydra.instance().clear()
