@@ -288,7 +288,8 @@ class Submitit(Checkpointable):
         if (
             self.run_type == RunType.RUN
             and self.runner.save_state(save_path, is_preemption=True)
-            or self.run_type == RunType.REDUCE
+        ) or (
+            self.run_type == RunType.REDUCE
             and self.reducer.save_state(save_path, is_preemption=True)
         ):
             cfg_copy.job.runner_state_path = save_path
