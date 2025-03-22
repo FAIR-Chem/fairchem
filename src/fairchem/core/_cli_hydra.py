@@ -211,6 +211,7 @@ class Submitit(Checkpointable):
         self, dict_config: DictConfig, run_type: RunType = RunType.RUN
     ) -> None:
         self.config = dict_config
+        self.run_type = run_type
         # modify the config metadata to add slurm info if they exist
         self.config.job.metadata.slurm_env = _get_slurm_env()
 
@@ -283,8 +284,15 @@ class Submitit(Checkpointable):
         cfg_copy = self.config.copy()
         # only assign if the save was successful
         cfg_copy.job.runner_state_path = None
-        if self.runner.save_state(save_path, is_preemption=True):
+
+        if (
+            self.run_type == RunType.RUN
+            and self.runner.save_state(save_path, is_preemption=True)
+            or self.run_type == RunType.REDUCE
+            and self.reducer.save_state(save_path, is_preemption=True)
+        ):
             cfg_copy.job.runner_state_path = save_path
+
         if WandBSingletonLogger.initialized():
             WandBSingletonLogger.get_instance().mark_preempting()
         logging.info(
