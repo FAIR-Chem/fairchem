@@ -61,19 +61,21 @@ To test if your setup is correct, try the following:
 ```python
 from fairchem.core.datasets import OC22LmdbDataset
 
-dset = OC22LmdbDataset({
-    "src": "path/to/oc20/lmdb/folder/",
-    "train_on_oc20_total_energies": True,
-    "oc20_ref": "path/to/oc20_ref.pkl",
-})
+dset = OC22LmdbDataset(
+    {
+        "src": "path/to/oc20/lmdb/folder/",
+        "train_on_oc20_total_energies": True,
+        "oc20_ref": "path/to/oc20_ref.pkl",
+    }
+)
 
 print(dset[0])
 # Data(y=-181.54722937, ...) -- total DFT energies are usually quite high!
 ```
 
 Another option that might be useful for training on total energies is passing
-precomputed per-element average energies with [`lin_ref`](https://github.com/FAIR-Chem/fairchem/blob/faq/configs/s2ef/example.yml#L94-L97). If you use this option, make sure to recompute the
-[normalizer statistics (for energies)](https://github.com/FAIR-Chem/fairchem/blob/faq/configs/s2ef/example.yml#L82-L83)
+precomputed per-element average energies with [`lin_ref`](https://github.com/FAIR-Chem/fairchem/blob/faq/configs/oc20/s2ef/example.yml#L94-L97). If you use this option, make sure to recompute the
+[normalizer statistics (for energies)](https://github.com/FAIR-Chem/fairchem/blob/faq/configs/oc20/s2ef/example.yml#L82-L83)
 _after_ linear referencing.
 
 ### I'm trying to run GemNet-OC / GemNet-dT, but it throws an error that scaling factors are not fitted. What should I do?
@@ -85,8 +87,8 @@ for more details on this.
 
 We provide some set of scaling factors as part of the `fairchem` codebase that you
 can reuse by passing the `scale_file` parameter in the YAML config. For example:
-* GemNet-dT [scaling factors](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json) and [config](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/gemnet-dT.yml#L32)
-* GemNet-OC [scaling factors](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt) and [config](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/gemnet-oc.yml#L45)
+* GemNet-dT [scaling factors](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/oc20/s2ef/all/gemnet/scaling_factors/gemnet-dT.json) and [config](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/oc20/s2ef/all/gemnet/gemnet-dT.yml#L32)
+* GemNet-OC [scaling factors](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/oc20/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt) and [config](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/oc20/s2ef/all/gemnet/gemnet-oc.yml#L45)
 
 If you change any of the model architecture hyperparameters or the dataset, you
 should refit these scaling factors:
