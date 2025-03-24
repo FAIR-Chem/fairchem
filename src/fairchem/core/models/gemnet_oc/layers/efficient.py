@@ -224,7 +224,7 @@ class EfficientInteractionBilinear(torch.nn.Module):
         num_edges = sph.shape[0]
 
         # Create (zero-padded) dense matrix of the neighboring edge embeddings.
-        Kmax = torch.max(idx_agg_inner) + 1
+        Kmax = 0 if idx_agg_inner.shape[0] == 0 else torch.max(idx_agg_inner) + 1
         m_padded = m.new_zeros(num_edges, Kmax, self.emb_size_in)
         m_padded[idx_agg_outer, idx_agg_inner] = m
         # (num_quadruplets/num_triplets, emb_size_in) -> (num_edges, Kmax, emb_size_in)
