@@ -38,6 +38,7 @@ jobs:
     - name: Build the book
       env:
         QUACC_CONFIG_FILE: docs/.quacc.yml
+        HF_TOKEN: ${{ secrets.HF_TOKEN_OMAT_READONLY }}
       run: |
         jupyter-book build docs
 
