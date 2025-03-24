@@ -1,0 +1,15 @@
+job:
+  device_type: CPU
+  scheduler:
+    mode: LOCAL
+
+replacement_var: 5
+
+runner:
+  _target_: fairchem.core.components.runner.MockRunner
+  x: 10
+  y: 23
+  z: ${replacement_var}
+
+reducer:
+  _target_: fairchem.core.components.reducer.MockReducer

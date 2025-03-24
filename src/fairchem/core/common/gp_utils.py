@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import Any
 
@@ -104,8 +105,16 @@ def setup_gp(config) -> None:
 
 
 def cleanup_gp() -> None:
-    dist.destroy_process_group(_DATA_PARALLEL_GROUP)
-    dist.destroy_process_group(_GRAPH_PARALLEL_GROUP)
+    global _DATA_PARALLEL_GROUP
+    global _GRAPH_PARALLEL_GROUP
+    assert _GRAPH_PARALLEL_GROUP is not None
+    assert _DATA_PARALLEL_GROUP is not None
+    with contextlib.suppress(ValueError):
+        dist.destroy_process_group(_DATA_PARALLEL_GROUP)
+    with contextlib.suppress(ValueError):
+        dist.destroy_process_group(_GRAPH_PARALLEL_GROUP)
+    _DATA_PARALLEL_GROUP = None
+    _GRAPH_PARALLEL_GROUP = None
 
 
 def initialized() -> bool:
@@ -287,9 +296,8 @@ class ScatterToModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
         (dim,) = ctx.saved_tensors
-        world_size = 1
         return (
-            _gather_with_padding(grad_output, dim.item()).div_(world_size),
+            _gather_with_padding(grad_output, dim.item()),
             None,
         )
 
@@ -305,6 +313,25 @@ class GatherFromModelParallelRegion(torch.autograd.Function):
         (dim,) = ctx.saved_tensors
         result = _split(grad_output, dim.item())
         return result, None
+
+
+# Leave forward untouched but upscale the gradient by a factor of gp_group_size
+# DDP reduces a mean across the loss, if we have gp_group_size=2 and 6 ranks
+# that means we do (a_1+a_2+a_3+b_1+b_2+b_3)/6 in ddp mean. This gets us the
+# correct loss but the grad is wrong by a factor of gp_group_size
+# dL/d_a1 = 1/6 but it should be dL/da = 1/2 (for the equivalanet non GP run
+# with 2 ranks)
+# we coud perform an extra round of all_reduce, but this would increase
+# communication overhead, instead we can just upscsale the gradient only and
+# avoid over head communication
+class ScaleBackwardGrad(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input: torch.Tensor) -> torch.Tensor:
+        return input
+
+    @staticmethod
+    def backward(ctx, grad_output: torch.Tensor):
+        return dist.get_world_size(get_gp_group()) * grad_output
 
 
 def copy_to_model_parallel_region(input: torch.Tensor) -> torch.Tensor:
@@ -329,3 +356,8 @@ def gather_from_model_parallel_region(
 ) -> torch.Tensor:
     assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
     return GatherFromModelParallelRegion.apply(input, dim)
+
+
+def scale_backward_grad(input: torch.Tensor) -> torch.Tensor:
+    assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
+    return ScaleBackwardGrad.apply(input)
