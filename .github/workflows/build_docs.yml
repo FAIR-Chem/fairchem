@@ -36,6 +36,8 @@ jobs:
 
     # Build the book
     - name: Build the book
+      env:
+        QUACC_CONFIG_FILE: docs/.quacc.yml
       run: |
         jupyter-book build docs
 
