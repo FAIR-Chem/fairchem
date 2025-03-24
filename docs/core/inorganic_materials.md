@@ -39,7 +39,7 @@ We're going to start simple here - let's run a local relaxation (optimize the un
 
 This code will download the appropriate checkpoint from huggingface_hub automatically; if you don't have the right access token specified, you'll hit an permission or 401 error.
 
-```{code-cell}
+```{code-cell} ipython3
 import pprint
 
 from ase.build import bulk
@@ -59,7 +59,7 @@ result = relax_job(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 pprint.pprint(result)
 ```
 
@@ -77,7 +77,7 @@ We don't have to change much code from above, we just use a built-in recipe to c
 
 For more documentation, see the quacc docs for [quacc.recipes.mlp.elastic_tensor_flow](https://quantum-accelerators.github.io/quacc/reference/quacc/recipes/mlp/elastic.html#quacc.recipes.mlp.elastic.elastic_tensor_flow)
 
-```{code-cell}
+```{code-cell} ipython3
 from ase.build import bulk
 from quacc.recipes.mlp.elastic import elastic_tensor_flow
 
@@ -97,7 +97,7 @@ result = elastic_tensor_flow(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 result["elasticity_doc"].bulk_modulus
 ```
 
@@ -121,7 +121,7 @@ We can run a similarly straightforward calculation that
 
 Note that this analysis assumes that all vibrational modes are harmonic, which is a pretty reasonable approximately for low/moderate temperature materials, but becomes less realistic at high temperatures.
 
-```{code-cell}
+```{code-cell} ipython3
 from ase.build import bulk
 from quacc.recipes.mlp.phonons import phonon_flow
 
@@ -138,10 +138,11 @@ result = phonon_flow(
             local_cache="./fairchem_checkpoint_cache/",
         ),
     },
+    min_lengths=10.0, # set the minimum unit cell size smaller to be compatible with limited github runner ram
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 print(
     f'The entropy at { result["results"]["thermal_properties"]["temperatures"][-1]:.0f} K is { result["results"]["thermal_properties"]["entropy"][-1]:.2f} kJ/mol'
 )
