@@ -28,6 +28,8 @@ We're going to use [`quacc`](https://quantum-accelerators.github.io/quacc/index.
         c. type OMat24 in the Repositories permissions field
         d. Click create token
         e. Type the token into the CLI, or alternatively you can run `huggingface-cli login --token YOUR_TOKEN_HERE`. You can also set the environment variable `HF_TOKEN=YOUR_TOKEN_HERE` if that's more convenient.
+3. Set up quacc to use your favorite workflow tool (dask, prefect, etc) by setting your [quacc configuration](https://quantum-accelerators.github.io/quacc/user/basics/wflow_overview.html#__tabbed_1_4). 
+    a. Tip: If you just want to run like this tutorial is, write a simple file with `WORKFLOW_ENGINE: null` in `~/.quacc.yaml`. This is by far the easiest way to get started if you don't want to worry about parallelization/etc
 
 ## Example of a simple relaxation
 
