@@ -3,6 +3,7 @@ from functools import partial
 
 import pytest
 import torch
+import torch.nn as nn
 
 from fairchem.core.common.gp_utils import (
     gather_from_model_parallel_region,
@@ -299,3 +300,153 @@ def test_gather_fwd_bwd_bwd():
         )
         # for output_tensor in output:
         #    assert torch.isclose(output_tensor, expected_output).all()
+
+
+def embeddings_and_graph_init(atomic_numbers, edge_index):
+    if gp_utils.initialized():
+        node_partition = gp_utils.scatter_to_model_parallel_region(
+            torch.arange(len(atomic_numbers)).to(atomic_numbers.device)
+        )
+        assert (
+            node_partition.numel() > 0
+        ), "Looks like there is no atoms in this graph paralell partition. Cannot proceed"
+        edge_partition = torch.where(
+            torch.logical_and(
+                edge_index[1] >= node_partition.min(),
+                edge_index[1] <= node_partition.max(),  # TODO: 0 or 1?
+            )
+        )[0]
+
+        graph_dict = {
+            "node_offset": node_partition.min().item(),
+            "edge_index": edge_index[:, edge_partition],
+        }
+        node_embeddings = atomic_numbers[node_partition]
+    else:
+        graph_dict = {
+            "node_offset": 0,
+            "edge_index": edge_index,
+        }
+        node_embeddings = atomic_numbers
+
+    return node_embeddings, graph_dict
+
+
+# test for one rank to return a product and rest return 0
+def simple_layer(x, edge_index, node_offset, n=3):
+
+    if gp_utils.initialized():
+        x_full = gp_utils.gather_from_model_parallel_region(x, dim=0)
+        x_source = x_full[edge_index[0]]
+        x_target = x_full[edge_index[1]]
+        rank = gp_utils.get_gp_rank()
+    else:
+        x_source = x[edge_index[0]]
+        x_target = x[edge_index[1]]
+        rank = 0
+
+    edge_embeddings = x_source.pow(n) * x_target.pow(n)
+
+    new_node_embedding = torch.zeros(
+        (x.shape[0],) + edge_embeddings.shape[1:],
+        dtype=edge_embeddings.dtype,
+        device=edge_embeddings.device,
+    )
+    print(f"{rank}:simple_layer:edge_embedding", edge_embeddings)
+    print(f"{rank}:simple_layer:new_node_embedding", new_node_embedding)
+    print(f"{rank}:simple_layer:edge_index node_offset", edge_index[1], node_offset)
+
+    new_node_embedding.index_add_(0, edge_index[1] - node_offset, edge_embeddings)
+
+    return new_node_embedding
+
+
+class SimpleNet(nn.Module):
+    def __init__(self, nlayers, n=3):
+        super().__init__()
+        self.nlayers = nlayers
+        self.n = n
+
+    def forward(self, atomic_numbers, edge_index):
+
+        if gp_utils.initialized():
+            gp_rank = gp_utils.get_gp_rank()
+        else:
+            gp_rank = 0
+
+        node_embeddings, graph_dict = embeddings_and_graph_init(
+            atomic_numbers, edge_index
+        )
+
+        all_node_embeddings = [node_embeddings]  # store for debugging
+        for layer_idx in range(self.nlayers):
+            print(f"{gp_rank}:Running layer", layer_idx)
+            all_node_embeddings.append(
+                simple_layer(
+                    all_node_embeddings[-1],
+                    graph_dict["edge_index"],
+                    node_offset=graph_dict["node_offset"],
+                )
+            )
+
+        final_node_embeddings = all_node_embeddings[-1]
+
+        # only 1 system
+        energy_part = torch.zeros(
+            1, device=atomic_numbers.device, dtype=atomic_numbers.dtype
+        )
+
+        energy_part.index_add_(
+            0,
+            torch.zeros(
+                final_node_embeddings.shape[0],
+                dtype=torch.int,
+                device=edge_index.device,
+            ),
+            final_node_embeddings,
+        )
+        print(f"{gp_rank}:Energy part", energy_part)
+
+        forces_part = torch.autograd.grad(
+            [energy_part.sum()],
+            [atomic_numbers],
+            create_graph=self.training,
+        )[0]
+
+        print(f"{gp_rank}:Forces part", forces_part)
+
+        if gp_utils.initialized():
+            energy = gp_utils.reduce_from_model_parallel_region(energy_part)
+        else:
+            energy = energy_part
+        print(f"{gp_rank}:Energy", energy)
+
+        # if gp_utils.initialized():
+        #     grads = (
+        #         gp_utils.reduce_from_model_parallel_region(grads[0]),
+        #         gp_utils.reduce_from_model_parallel_region(grads[1]),
+        #     )
+
+        breakpoint()
+        a = 1
+
+
+def fwd_bwd_on_simplenet(atomic_numbers, edge_index, nlayers=1):
+    sn = SimpleNet(1)
+    sn(atomic_numbers, edge_index)
+
+
+def test_simple_energy():
+    # torch.autograd.set_detect_anomaly(True)
+    atomic_numbers = torch.tensor([2.0, 3.0, 4.0], requires_grad=True)
+    edge_index = torch.tensor([[1, 1, 1], [0, 2, 1]])
+
+    # breakpoint()
+    config = PGConfig(backend="gloo", world_size=2, gp_group_size=2, use_gp=True)
+    output = spawn_multi_process(
+        config,
+        fwd_bwd_on_simplenet,
+        init_pg_and_rank_and_launch_test,
+        atomic_numbers,
+        edge_index,
+    )

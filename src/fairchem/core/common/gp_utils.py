@@ -326,18 +326,21 @@ class ReduceFromModelParallelRegion(torch.autograd.Function):
 class ScatterToModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor:
+        assert input.ndim == 1
         rank = get_gp_rank()
         # if world_size == 1:
         #    return input
         input_list = _split_tensor(input, dim=dim)
-        ctx.save_for_backward(torch.tensor(dim), *input_list)
+        ctx.save_for_backward(input)
         print("ScatterToModel:Forward:1", input_list[rank].clone().contiguous())
         return input_list[rank].clone().contiguous()
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
-        dim = ctx.saved_tensors[0]
-        input_list = ctx.saved_tensors[1:]
+        input = ctx.saved_tensors
+        grad_output_gathered = torch.empty_like(input)
+        group = get_gp_group()
+        dist.all_gather_into_tensor(grad_output_gathered, grad_output, group=group)
 
         group = get_gp_group()
         rank = get_gp_rank()
