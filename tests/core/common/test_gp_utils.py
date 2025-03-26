@@ -432,7 +432,7 @@ class SimpleNet(nn.Module):
 
 
 def fwd_bwd_on_simplenet(atomic_numbers, edge_index, nlayers=1):
-    sn = SimpleNet(1)
+    sn = SimpleNet(2)
     sn(atomic_numbers, edge_index)
 
 
@@ -440,6 +440,8 @@ def test_simple_energy():
     # torch.autograd.set_detect_anomaly(True)
     atomic_numbers = torch.tensor([2.0, 3.0, 4.0], requires_grad=True)
     edge_index = torch.tensor([[1, 1, 1], [0, 2, 1]])
+
+    fwd_bwd_on_simplenet(atomic_numbers, edge_index)
 
     # breakpoint()
     config = PGConfig(backend="gloo", world_size=2, gp_group_size=2, use_gp=True)
