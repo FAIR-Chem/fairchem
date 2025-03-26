@@ -345,18 +345,18 @@ def simple_layer(x, edge_index, node_offset, n=3):
         x_target = x[edge_index[1]]
         rank = 0
 
-    edge_embeddings = x_source.pow(n) * x_target.pow(n)
+    edge_embeddings = (x_source + 1).pow(n) * (x_target + 1).pow(n)
 
     new_node_embedding = torch.zeros(
         (x.shape[0],) + edge_embeddings.shape[1:],
         dtype=edge_embeddings.dtype,
         device=edge_embeddings.device,
     )
+
+    new_node_embedding.index_add_(0, edge_index[1] - node_offset, edge_embeddings)
     print(f"{rank}:simple_layer:edge_embedding", edge_embeddings)
     print(f"{rank}:simple_layer:new_node_embedding", new_node_embedding)
     print(f"{rank}:simple_layer:edge_index node_offset", edge_index[1], node_offset)
-
-    new_node_embedding.index_add_(0, edge_index[1] - node_offset, edge_embeddings)
 
     return new_node_embedding
 
@@ -428,36 +428,63 @@ class SimpleNet(nn.Module):
 
         print(f"{gp_rank}:FORCES", forces)
 
-        dforces_dinput = torch.autograd.grad(
-            [forces.sum()],
-            [atomic_numbers],
-            create_graph=self.training,
-        )[0]
+        # dforces_dinput_part = torch.autograd.grad(
+        #     [forces.sum()],
+        #     [atomic_numbers],
+        #     create_graph=self.training,
+        # )[0]
 
-        print(f"{gp_rank}:dforces_dinput", dforces_dinput)
+        # if gp_utils.initialized():
+        #     dforces_dinput = gp_utils.reduce_from_model_parallel_region(
+        #         dforces_dinput_part
+        #     )
+        # else:
+        #     dforces_dinput = dforces_dinput_part
 
-        breakpoint()
-        a = 1
+        # print(f"{gp_rank}:dforces_dinput", dforces_dinput)
+
+        return {"energy": energy, "forces": forces}
 
 
 def fwd_bwd_on_simplenet(atomic_numbers, edge_index, nlayers=1):
     sn = SimpleNet(2)
-    sn(atomic_numbers, edge_index)
+    energy_and_forces = sn(atomic_numbers, edge_index)
+
+    dforces_dinput_part = torch.autograd.grad(
+        [energy_and_forces["forces"].sum()],
+        [atomic_numbers],
+        create_graph=True,
+    )[0]
+
+    if gp_utils.initialized():
+        dforces_dinput = gp_utils.reduce_from_model_parallel_region(dforces_dinput_part)
+    else:
+        dforces_dinput = dforces_dinput_part
+
+    energy_and_forces.update({"dforces_dinput": dforces_dinput})
+
+    return {k: v.detach() for k, v in energy_and_forces.items()}
 
 
-def test_simple_energy():
+@pytest.mark.parametrize("nlayers", [1, 2, 3])  # noqa: PT006
+def test_simple_energy(nlayers):
     # torch.autograd.set_detect_anomaly(True)
     atomic_numbers = torch.tensor([2.0, 3.0, 4.0], requires_grad=True)
-    edge_index = torch.tensor([[1, 1, 1], [0, 2, 1]])
+    # edge_index = torch.tensor([[1, 1, 1], [0, 2, 1]])
+    edge_index = torch.tensor([[0, 1], [0, 2]])
 
-    fwd_bwd_on_simplenet(atomic_numbers, edge_index)
+    non_gp_results = fwd_bwd_on_simplenet(atomic_numbers, edge_index)
 
-    # breakpoint()
     config = PGConfig(backend="gloo", world_size=2, gp_group_size=2, use_gp=True)
-    output = spawn_multi_process(
+    all_rank_results = spawn_multi_process(
         config,
         fwd_bwd_on_simplenet,
         init_pg_and_rank_and_launch_test,
         atomic_numbers,
         edge_index,
+        nlayers,
     )
+
+    for rank_results in all_rank_results:
+        for result_key in non_gp_results:
+            assert non_gp_results[result_key].isclose(rank_results[result_key]).all()
