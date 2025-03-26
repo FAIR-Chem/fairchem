@@ -10,6 +10,8 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING, Any
 
+from fairchem.core.components.utils import DictConfigAccess
+
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
@@ -19,10 +21,8 @@ class Reducer(metaclass=ABCMeta):
     Represents an abstraction over things reduce the results written by a runner.
     """
 
-    @abstractmethod
-    def initialize(self, job_config: DictConfig, runner_config: DictConfig) -> None:
-        """Initialize takes both the job config and a runner config assumed to have been run beforehand"""
-        raise NotImplementedError
+    job_config = DictConfigAccess()
+    runner_config = DictConfigAccess()
 
     @abstractmethod
     def reduce(self) -> Any:

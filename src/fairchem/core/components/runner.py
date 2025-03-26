@@ -10,6 +10,8 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING, Any
 
+from fairchem.core.components.utils import DictConfigAccess
+
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
@@ -21,9 +23,7 @@ class Runner(metaclass=ABCMeta):
     This allows us to decouple away from a monolithic trainer class
     """
 
-    @abstractmethod
-    def initialize(self, job_config: DictConfig) -> None:
-        raise NotImplementedError
+    job_config = DictConfigAccess()
 
     @abstractmethod
     def run(self) -> Any:
