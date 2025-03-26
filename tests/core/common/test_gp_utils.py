@@ -421,11 +421,20 @@ class SimpleNet(nn.Module):
             energy = energy_part
         print(f"{gp_rank}:Energy", energy)
 
-        # if gp_utils.initialized():
-        #     grads = (
-        #         gp_utils.reduce_from_model_parallel_region(grads[0]),
-        #         gp_utils.reduce_from_model_parallel_region(grads[1]),
-        #     )
+        if gp_utils.initialized():
+            forces = gp_utils.reduce_from_model_parallel_region(forces_part)
+        else:
+            forces = forces_part
+
+        print(f"{gp_rank}:FORCES", forces)
+
+        dforces_dinput = torch.autograd.grad(
+            [forces.sum()],
+            [atomic_numbers],
+            create_graph=self.training,
+        )[0]
+
+        print(f"{gp_rank}:dforces_dinput", dforces_dinput)
 
         breakpoint()
         a = 1
