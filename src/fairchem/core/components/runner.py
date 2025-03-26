@@ -50,9 +50,6 @@ class MockRunner(Runner):
             raise ValueError("sum is greater than 1000!")
         return self.x + self.y
 
-    def initialize(self, job_config: DictConfig) -> None:
-        pass
-
     def save_state(self, checkpoint_location: str, is_preemption: bool = False) -> bool:
         pass
 
