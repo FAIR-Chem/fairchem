@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 class Reducer(metaclass=ABCMeta):
     """
-    Represents an abstraction over things reduce the results written by a runner.
+    Represents an abstraction over things that reduce the results written by a set of runner.
     """
 
     job_config = DictConfigAccess()
