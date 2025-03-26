@@ -8,12 +8,11 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from fairchem.core.components.utils import DictConfigAccess
+from omegaconf import DictConfig
 
-if TYPE_CHECKING:
-    from omegaconf import DictConfig
+from fairchem.core.components.utils import ManagedAttribute
 
 
 class Runner(metaclass=ABCMeta):
@@ -23,7 +22,7 @@ class Runner(metaclass=ABCMeta):
     This allows us to decouple away from a monolithic trainer class
     """
 
-    job_config = DictConfigAccess()
+    job_config = ManagedAttribute(enforced_type=DictConfig)
 
     @abstractmethod
     def run(self) -> Any:

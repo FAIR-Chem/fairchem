@@ -8,12 +8,11 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from fairchem.core.components.utils import DictConfigAccess
+from omegaconf import DictConfig
 
-if TYPE_CHECKING:
-    from omegaconf import DictConfig
+from fairchem.core.components.utils import ManagedAttribute
 
 
 class Reducer(metaclass=ABCMeta):
@@ -21,8 +20,8 @@ class Reducer(metaclass=ABCMeta):
     Represents an abstraction over things that reduce the results written by a set of runner.
     """
 
-    job_config = DictConfigAccess()
-    runner_config = DictConfigAccess()
+    job_config = ManagedAttribute(enforced_type=DictConfig)
+    runner_config = ManagedAttribute(enforced_type=DictConfig)
 
     @abstractmethod
     def reduce(self) -> Any:
