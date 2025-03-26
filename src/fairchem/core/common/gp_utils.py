@@ -15,6 +15,8 @@ import numpy as np
 import torch
 from torch import distributed as dist
 
+from torch.distributed.nn.functional import all_reduce
+
 """
 Functions to support graph parallel training.
 This is based on the Megatron-LM implementation:
@@ -182,39 +184,54 @@ def trim_tensor(tensor: torch.Tensor, sizes: torch.Tensor | None = None, dim: in
     return tensor, sizes
 
 
+def _tensor_to_split_partitions(tensor: torch.Tensor, dim: int = -1):
+    group = get_gp_group()
+    num_parts = dist.get_world_size(group=group)
+    return [len(part) for part in np.array_split(np.zeros(tensor.size(dim)), num_parts)]
+
+
 def _split_tensor(
     tensor: torch.Tensor,
-    num_parts: int,
     dim: int = -1,
     contiguous_chunks: bool = False,
 ):
-    part_sizes = [
-        len(part) for part in np.array_split(np.zeros(tensor.size(dim)), num_parts)
-    ]
-    tensor_list = torch.split(tensor, part_sizes, dim=dim)
+    tensor_list = torch.split(tensor, _tensor_to_split_partitions(tensor, dim), dim=dim)
     if contiguous_chunks:
         return tuple(chunk.contiguous() for chunk in tensor_list)
     return tensor_list
+
+
+def _reduce2(ctx: Any, input: torch.Tensor) -> torch.Tensor:
+    print("REDUCE2", input.shape, input)
+    group = get_gp_group()
+    rank = get_gp_rank()
+    world_size = dist.get_world_size(group=group)
+    if world_size == 1:
+        return input
+    tensor_list = [torch.empty_like(input) for _ in range(world_size)]
+    tensor_list[rank] = input
+    dist.all_gather(tensor_list, input, group=group)
+    gathered = torch.concatenate([t.unsqueeze(0) for t in tensor_list]).sum(dim=0)
+    print("GATHERED", gathered)
+    return gathered
 
 
 def _reduce(ctx: Any, input: torch.Tensor) -> torch.Tensor:
     group = get_gp_group()
     if ctx:
         ctx.mark_dirty(input)
-    if dist.get_world_size(group) == 1:
-        return input
+    # if dist.get_world_size(group) == 1:
+    #    return input
     dist.all_reduce(input, group=group)
     return input
 
 
 def _split(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
-    group = get_gp_group()
     rank = get_gp_rank()
-    world_size = dist.get_world_size(group=group)
-    if world_size == 1:
-        return input
-    input_list = _split_tensor(input, world_size, dim=dim)
-    return input_list[rank].contiguous()
+    # if world_size == 1:
+    #    return input
+    input_list = _split_tensor(input, dim=dim)
+    return input_list[rank].clone().contiguous()
 
 
 def _gather(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
@@ -230,6 +247,7 @@ def _gather(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
 
 
 def _gather_with_padding(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
+    # assert 1 == 0
     group = get_gp_group()
     rank = get_gp_rank()
     world_size = dist.get_world_size(group=group)
@@ -256,16 +274,25 @@ def _gather_with_padding(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
         torch.empty(shape, device=input.device, dtype=input.dtype)
         for _ in range(world_size)
     ]
-    tensor_list[rank] = input
+    # tensor_list[rank] = input
     # print("tensor list", group, rank, world_size, tensor_list)
     dist.all_gather(tensor_list, input, group=group)
+    tensor_list[rank] = input
     # print("tensor list 2", group, rank, world_size, tensor_list)
 
     # Trim and cat
-    tensor_list = [
-        tensor.narrow(dim, 0, size) for tensor, size in zip(tensor_list, size_list)
-    ]
-    ret = torch.cat(tensor_list, dim=dim).contiguous()
+    # tensor_list = [
+    #     tensor.narrow(dim, 0, size) for tensor, size in zip(tensor_list, size_list)
+    # ]
+    # ret = torch.cat(tensor_list, dim=dim).contiguous()
+
+    if dim == 0:
+        tensor_list = [tensor[:size] for tensor, size in zip(tensor_list, size_list)]
+    elif dim == 1:
+        tensor_list = [tensor[:, :size] for tensor, size in zip(tensor_list, size_list)]
+    else:
+        raise ValueError
+    return torch.cat(tensor_list, dim=dim).contiguous()
     # print("RETURN THIS ", ret)
     return ret
 
@@ -285,6 +312,8 @@ class CopyToModelParallelRegion(torch.autograd.Function):
 class ReduceFromModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input: torch.Tensor) -> torch.Tensor:
+        # $return _reduce2(ctx, input)
+        print("REDUCE FWD", input.shape, input)
         return _reduce(ctx, input)
 
     @staticmethod
@@ -297,23 +326,32 @@ class ReduceFromModelParallelRegion(torch.autograd.Function):
 class ScatterToModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor:
-        result = _split(input, dim)
-        ctx.save_for_backward(torch.tensor(dim))
-        return result
+        rank = get_gp_rank()
+        # if world_size == 1:
+        #    return input
+        input_list = _split_tensor(input, dim=dim)
+        ctx.save_for_backward(torch.tensor(dim), *input_list)
+        print("ScatterToModel:Forward:1", input_list[rank].clone().contiguous())
+        return input_list[rank].clone().contiguous()
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
-        (dim,) = ctx.saved_tensors
-        print("SCATTER BACKWARD")
-        print("dim item", dim.item())
-        print("grad output", grad_output)
-        # TODO do we need to clone before gather?
-        ret = (
-            _gather_with_padding(grad_output, dim.item()),
-            None,
-        )
-        print("grad output ret", ret)
-        return ret
+        dim = ctx.saved_tensors[0]
+        input_list = ctx.saved_tensors[1:]
+
+        group = get_gp_group()
+        rank = get_gp_rank()
+        world_size = dist.get_world_size(group=group)
+        print("ScatterToModel:Backward:1", rank, grad_output, input_list)
+        # if world_size == 1:
+        #    return grad_output, None
+        grad_output_tensor_list = [torch.empty_like(input) for input in input_list]
+
+        print("ScatterToModel:Backward:2", grad_output_tensor_list)
+        dist.all_gather(grad_output_tensor_list, grad_output, group=group)
+        grad_output_tensor_list[rank] = grad_output
+        print("ScatterToModel:Backward:3", grad_output_tensor_list)
+        return torch.cat(grad_output_tensor_list, dim=dim).contiguous(), None
 
 
 class GatherFromModelParallelRegion(torch.autograd.Function):
@@ -331,11 +369,12 @@ class GatherFromModelParallelRegion(torch.autograd.Function):
         gp_rank = get_gp_rank()
         print("GATHERFROM,BACKWARD", gp_rank, grad_output)
         if world_size > 1:
-            reduced_grad_output = grad_output.clone()
-            dist.all_reduce(
-                reduced_grad_output, group=group
-            )  # This is an inplace operation
-            grad_output = reduced_grad_output
+            # reduced_grad_output = grad_output.clone()
+            # dist.all_reduce(
+            #    reduced_grad_output, group=group
+            # )  # This is an inplace operation
+            grad_output = all_reduce(grad_output, group=group)
+            # grad_output = reduced_grad_output
         print("GATHERFROM,BACKWARD", gp_rank, grad_output)
         result = _split(grad_output, dim.item())
         return result, None

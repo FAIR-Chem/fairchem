@@ -207,3 +207,95 @@ def test_gather_fwd_bwd():
         )
         for output_tensor in output:
             assert torch.isclose(output_tensor, expected_output).all()
+
+
+# test for one rank to return a product and rest return 0
+def gather_prod_rank_grad(all_inputs, target_rank=0):
+
+    from torchviz import make_dot
+
+    rank = dist.get_rank()
+    x = scatter_to_model_parallel_region(all_inputs, dim=0).clone()
+    # if rank == 0:
+    #    x = all_inputs[:2]
+    # else:
+    #    x = all_inputs[2:]
+    # x_full = x
+    x_full = gather_from_model_parallel_region(x, 0)
+    # x = None
+    # x_full = all_inputs + 0.0
+    loss = x_full.prod()  # ** 2
+    print("x,x_full,rank,loss", x, x_full, rank, loss)
+    # adding 0.0 makes it out of place for reduce with respect to
+    # saved tensors in above operation
+    loss.retain_grad()
+    energy = loss  # gp_utils.reduce_from_model_parallel_region(loss)
+    energy.retain_grad()
+    grads = torch.autograd.grad(
+        [energy],
+        [all_inputs],
+        create_graph=True,
+    )
+    print("denergy/dinput", rank, grads)
+    forces_1d = grads[0]  # gp_utils.reduce_from_model_parallel_region(grads[0])
+    forces_1d.retain_grad()
+    print("Forces 1d", rank, forces_1d)
+    forces_loss = forces_1d.sum()
+    forces_loss.retain_grad()
+
+    # grads = torch.autograd.grad(
+    #     [forces_loss],
+    #     [all_inputs],
+    #     create_graph=True,
+    # )
+
+    def print_grad_hook(grad):
+        print(f"Gradient: {grad}")
+
+    x.register_hook(print_grad_hook)
+    x_full.register_hook(print_grad_hook)
+    loss.register_hook(print_grad_hook)
+    energy.register_hook(print_grad_hook)
+    forces_1d.register_hook(print_grad_hook)
+    forces_loss.register_hook(print_grad_hook)
+    print("force_loss", rank, forces_loss)
+    forces_loss.backward(retain_graph=True)
+    print("all_inputs.grad", rank, all_inputs.grad)
+    print("forces1d_grads, ", forces_1d.grad)
+    print("forces_loss grad, ", forces_loss.grad)
+    print("energy grad ", energy.grad)
+    print("loss grad", loss.grad)
+    params = {
+        "all_inputs": all_inputs,
+        "x": x,
+        "x_full": x_full,
+        "loss": loss,
+        "energy": energy,
+        "forces_1d": forces_1d,
+        "forces_loss": forces_loss,
+    }
+    dot = make_dot(
+        (x, x_full, energy, forces_1d, forces_loss),
+        params=params,
+        show_attrs=True,
+        show_saved=True,
+    )
+    dot.render(filename=f"model_graph_{rank}.png", format="png")
+    # loss.backward()
+    return  # grads.detach()
+
+
+def test_gather_fwd_bwd_bwd():
+    # torch.autograd.set_detect_anomaly(True)
+    input = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0], requires_grad=True)
+    expected_output = torch.tensor([6.0, 3.0, 2.0])
+    for target_rank in [0]:
+        config = PGConfig(backend="gloo", world_size=2, gp_group_size=2, use_gp=True)
+        output = spawn_multi_process(
+            config,
+            partial(gather_prod_rank_grad, target_rank=target_rank),
+            init_pg_and_rank_and_launch_test,
+            input,
+        )
+        # for output_tensor in output:
+        #    assert torch.isclose(output_tensor, expected_output).all()
