@@ -189,6 +189,12 @@
 
 
 <li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inorganic_materials.html">Using FAIR chemistry models and workflow tools like quacc for inorganic materials science</a></li>
+
+
+
+
+
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Learn More</span></p>
 <ul class="nav bd-sidenav">
@@ -701,19 +707,21 @@ here</a>.</p>
 <p>To test if your setup is correct, try the following:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fairchem.core.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">OC22LmdbDataset</span>
 
-<span class="n">dset</span> <span class="o">=</span> <span class="n">OC22LmdbDataset</span><span class="p">({</span>
-    <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="s2">&quot;path/to/oc20/lmdb/folder/&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;train_on_oc20_total_energies&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="s2">&quot;oc20_ref&quot;</span><span class="p">:</span> <span class="s2">&quot;path/to/oc20_ref.pkl&quot;</span><span class="p">,</span>
-<span class="p">})</span>
+<span class="n">dset</span> <span class="o">=</span> <span class="n">OC22LmdbDataset</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="s2">&quot;path/to/oc20/lmdb/folder/&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;train_on_oc20_total_energies&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;oc20_ref&quot;</span><span class="p">:</span> <span class="s2">&quot;path/to/oc20_ref.pkl&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">dset</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 <span class="c1"># Data(y=-181.54722937, ...) -- total DFT energies are usually quite high!</span>
 </pre></div>
 </div>
 <p>Another option that might be useful for training on total energies is passing
-precomputed per-element average energies with <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/faq/configs/s2ef/example.yml#L94-L97"><code class="docutils literal notranslate"><span class="pre">lin_ref</span></code></a>. If you use this option, make sure to recompute the
-<a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/faq/configs/s2ef/example.yml#L82-L83">normalizer statistics (for energies)</a>
+precomputed per-element average energies with <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/faq/configs/oc20/s2ef/example.yml#L94-L97"><code class="docutils literal notranslate"><span class="pre">lin_ref</span></code></a>. If you use this option, make sure to recompute the
+<a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/faq/configs/oc20/s2ef/example.yml#L82-L83">normalizer statistics (for energies)</a>
 <em>after</em> linear referencing.</p>
 </section>
 <section id="i-m-trying-to-run-gemnet-oc-gemnet-dt-but-it-throws-an-error-that-scaling-factors-are-not-fitted-what-should-i-do">
@@ -725,8 +733,8 @@ for more details on this.</p>
 <p>We provide some set of scaling factors as part of the <code class="docutils literal notranslate"><span class="pre">fairchem</span></code> codebase that you
 can reuse by passing the <code class="docutils literal notranslate"><span class="pre">scale_file</span></code> parameter in the YAML config. For example:</p>
 <ul class="simple">
-<li><p>GemNet-dT <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json">scaling factors</a> and <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/gemnet-dT.yml#L32">config</a></p></li>
-<li><p>GemNet-OC <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt">scaling factors</a> and <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/all/gemnet/gemnet-oc.yml#L45">config</a></p></li>
+<li><p>GemNet-dT <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/oc20/s2ef/all/gemnet/scaling_factors/gemnet-dT.json">scaling factors</a> and <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/oc20/s2ef/all/gemnet/gemnet-dT.yml#L32">config</a></p></li>
+<li><p>GemNet-OC <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/oc20/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt">scaling factors</a> and <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/oc20/s2ef/all/gemnet/gemnet-oc.yml#L45">config</a></p></li>
 </ul>
 <p>If you change any of the model architecture hyperparameters or the dataset, you
 should refit these scaling factors:</p>

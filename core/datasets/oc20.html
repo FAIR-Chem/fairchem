@@ -189,6 +189,12 @@
 
 
 <li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../inorganic_materials.html">Using FAIR chemistry models and workflow tools like quacc for inorganic materials science</a></li>
+
+
+
+
+
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Learn More</span></p>
 <ul class="nav bd-sidenav">
@@ -677,7 +683,7 @@ document.write(`
 <h2>Download and preprocess the dataset<a class="headerlink" href="#download-and-preprocess-the-dataset" title="Link to this heading">#</a></h2>
 <p>IS2* datasets are stored as LMDB files and are ready to be used upon download.
 S2EF train+val datasets require an additional preprocessing step.</p>
-<p>For convenience, a self-contained script can be found <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/scripts/download_data.py">here</a> to download, preprocess, and organize the data directories to be readily usable by the existing <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/core/configs">configs</a>.</p>
+<p>For convenience, a self-contained script can be found <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/scripts/download_data.py">here</a> to download, preprocess, and organize the data directories to be readily usable by the existing <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/tree/main/configs/oc20">configs</a>.</p>
 <p>For IS2*, run the script as:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">scripts</span><span class="o">/</span><span class="n">download_data</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">task</span> <span class="n">is2re</span>
 </pre></div>
@@ -697,7 +703,7 @@ S2EF train+val datasets require an additional preprocessing step.</p>
 </pre></div>
 </div>
 <p>To download and process the dataset in a directory other than your local <code class="docutils literal notranslate"><span class="pre">fairchem/data</span></code> folder, add the following command line argument <code class="docutils literal notranslate"><span class="pre">--data-path</span></code>.</p>
-<p>Note that the baseline <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/core/configs">configs</a>
+<p>Note that the baseline <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/tree/main/configs/oc20">configs</a>.
 expect the data to be found in <code class="docutils literal notranslate"><span class="pre">fairchem/data</span></code>, make sure you symlink your directory or
 modify the paths in the configs accordingly.</p>
 <p>The following sections list dataset download links and sizes for various S2EF
@@ -1368,7 +1374,7 @@ download and preprocess the data, you are good to go and can stop reading here!<
 <li><p>3 - surface reconstruction</p></li>
 <li><p>4 - incorrect CHCOH placement, appears to be CHCO with a lone, uninteracting, H far off in the unit cell</p></li>
 </ul>
-<p>Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl (MD5 checksum: <code class="docutils literal notranslate"><span class="pre">01c879067a05b4288055a1fdf821e068</span></code>)</p>
+<p>Downloadable link: https://dl.fbaipublicfiles.com/opencatalystproject/data/oc20_data_mapping.pkl (MD5 checksum: <code class="docutils literal notranslate"><span class="pre">6b5d485019861f6e7efca38338375b61</span></code>)</p>
 <p>An example entry is</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;random2181546&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;bulk_id&#39;</span><span class="p">:</span> <span class="mi">6510</span><span class="p">,</span>
   <span class="s1">&#39;ads_id&#39;</span><span class="p">:</span> <span class="mi">69</span><span class="p">,</span>

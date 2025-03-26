@@ -104,7 +104,10 @@ Module Contents
    .. py:method:: log_plots(plots, caption: str = '') -> None
 
 
-   .. py:method:: log_table(name: str, cols: list, data: list, step: int | None = None, commit=False) -> None
+   .. py:method:: log_table(name: str, cols: list, data: list, step: int | None = None, commit: bool = False) -> None
+
+
+   .. py:method:: log_dataframe(name: str, dataframe: pandas.DataFrame, step: int | None = None, commit: bool = False)
 
 
    .. py:method:: log_summary(summary_dict: dict[str, Any])
@@ -195,6 +198,9 @@ Module Contents
 
 
    .. py:method:: log_table(name: str, cols: list, data: list, step: int | None = None, commit=False) -> None
+
+
+   .. py:method:: log_dataframe(name: str, dataframe: pandas.DataFrame, step: int | None = None, commit: bool = False)
 
 
    .. py:method:: log_summary(summary_dict: dict[str, Any])

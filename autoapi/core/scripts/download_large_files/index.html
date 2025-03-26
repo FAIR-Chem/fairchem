@@ -189,6 +189,12 @@
 
 
 <li class="toctree-l1"><a class="reference internal" href="../../../../core/license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../core/inorganic_materials.html">Using FAIR chemistry models and workflow tools like quacc for inorganic materials science</a></li>
+
+
+
+
+
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Learn More</span></p>
 <ul class="nav bd-sidenav">
@@ -635,6 +641,7 @@ document.write(`
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.scripts.download_large_files.S3_ROOT"><code class="docutils literal notranslate"><span class="pre">S3_ROOT</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.scripts.download_large_files.FILE_GROUPS"><code class="docutils literal notranslate"><span class="pre">FILE_GROUPS</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.scripts.download_large_files.parse_args"><code class="docutils literal notranslate"><span class="pre">parse_args()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.scripts.download_large_files.change_path_for_pypi"><code class="docutils literal notranslate"><span class="pre">change_path_for_pypi()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.scripts.download_large_files.download_file_group"><code class="docutils literal notranslate"><span class="pre">download_file_group()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.scripts.download_large_files.args"><code class="docutils literal notranslate"><span class="pre">args</span></code></a></li>
 </ul>
@@ -676,8 +683,11 @@ document.write(`
 <tr class="row-odd"><td><p><a class="reference internal" href="#core.scripts.download_large_files.parse_args" title="core.scripts.download_large_files.parse_args"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_args</span></code></a>()</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#core.scripts.download_large_files.download_file_group" title="core.scripts.download_large_files.download_file_group"><code class="xref py py-obj docutils literal notranslate"><span class="pre">download_file_group</span></code></a>(file_group)</p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#core.scripts.download_large_files.change_path_for_pypi" title="core.scripts.download_large_files.change_path_for_pypi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">change_path_for_pypi</span></code></a>(→ list[pathlib.Path])</p></td>
+<td><p>Modify or exclude files from download if running in a PyPi-installed</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.scripts.download_large_files.download_file_group" title="core.scripts.download_large_files.download_file_group"><code class="xref py py-obj docutils literal notranslate"><span class="pre">download_file_group</span></code></a>(→ None)</p></td>
+<td><p>Download the given file group.</p></td>
 </tr>
 </tbody>
 </table>
@@ -701,9 +711,51 @@ document.write(`
 <dd></dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="core.scripts.download_large_files.change_path_for_pypi">
+<span class="sig-prename descclassname"><span class="pre">core.scripts.download_large_files.</span></span><span class="sig-name descname"><span class="pre">change_path_for_pypi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files_to_download</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">install_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_par_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#core.scripts.download_large_files.change_path_for_pypi" title="Link to this definition">#</a></dt>
+<dd><p>Modify or exclude files from download if running in a PyPi-installed
+build.</p>
+<p>Installation of FAIR-Chem with PyPi does not include the entire
+directory structure of the fairchem repo. As such, files outside of
+<cite>src</cite> can’t be downloaded and those in <cite>src</cite> should actually be in the
+<cite>site-packages</cite> directory. If a user wants these files, they must
+build from the git repo.</p>
+<p>If the tests have been separately downloaded (e.g. from the git repo),
+then we can download if we’ve been told where those tests have been
+downloaded to. Note that we can’t divine that location from anything
+in fairchem.core because they would have to be somewhere “unexpected”
+since we’ve built with PyPi which shouldn’t have tests at all.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>files_to_download</strong> – List of files to be downloaded</p></li>
+<li><p><strong>par_dir</strong> – the parent directory of the PyPi build,
+probably “site-packages”</p></li>
+<li><p><strong>install_dir</strong> – path to where fairchem.core was installed</p></li>
+<li><p><strong>test_par_dir</strong> – path to where tests have been downloaded
+(not necessarily the same as install_dir)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>modified list of files to be downloaded</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="core.scripts.download_large_files.download_file_group">
-<span class="sig-prename descclassname"><span class="pre">core.scripts.download_large_files.</span></span><span class="sig-name descname"><span class="pre">download_file_group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_group</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.scripts.download_large_files.download_file_group" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-prename descclassname"><span class="pre">core.scripts.download_large_files.</span></span><span class="sig-name descname"><span class="pre">download_file_group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_par_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.scripts.download_large_files.download_file_group" title="Link to this definition">#</a></dt>
+<dd><p>Download the given file group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_group</strong> – Name of group of files to download</p></li>
+<li><p><strong>test_par_dir</strong> – Parent directory where fairchem tests have been
+downloaded</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="core.scripts.download_large_files.args">
@@ -783,6 +835,7 @@ document.write(`
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.scripts.download_large_files.S3_ROOT"><code class="docutils literal notranslate"><span class="pre">S3_ROOT</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.scripts.download_large_files.FILE_GROUPS"><code class="docutils literal notranslate"><span class="pre">FILE_GROUPS</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.scripts.download_large_files.parse_args"><code class="docutils literal notranslate"><span class="pre">parse_args()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.scripts.download_large_files.change_path_for_pypi"><code class="docutils literal notranslate"><span class="pre">change_path_for_pypi()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.scripts.download_large_files.download_file_group"><code class="docutils literal notranslate"><span class="pre">download_file_group()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.scripts.download_large_files.args"><code class="docutils literal notranslate"><span class="pre">args</span></code></a></li>
 </ul>

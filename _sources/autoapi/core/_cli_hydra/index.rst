@@ -32,6 +32,7 @@ Classes
 
    core._cli_hydra.SchedulerType
    core._cli_hydra.DeviceType
+   core._cli_hydra.RunType
    core._cli_hydra.SlurmConfig
    core._cli_hydra.SchedulerConfig
    core._cli_hydra.SlurmEnv
@@ -47,7 +48,7 @@ Functions
 
    core._cli_hydra._set_seeds
    core._cli_hydra._set_deterministic_mode
-   core._cli_hydra.get_slurm_env
+   core._cli_hydra._get_slurm_env
    core._cli_hydra.remove_runner_state_from_submission
    core._cli_hydra.map_job_config_to_dist_config
    core._cli_hydra.get_canonical_config
@@ -135,6 +136,33 @@ Module Contents
 
 
 
+.. py:class:: RunType
+
+   Bases: :py:obj:`str`, :py:obj:`enum.Enum`
+
+
+   str(object='') -> str
+   str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+   Create a new string object from the given object. If encoding or
+   errors is specified, then the object must expose a data buffer
+   that will be decoded using the given encoding and error handler.
+   Otherwise, returns the result of object.__str__() (if defined)
+   or repr(object).
+   encoding defaults to sys.getdefaultencoding().
+   errors defaults to 'strict'.
+
+
+   .. py:attribute:: RUN
+      :value: 'run'
+
+
+
+   .. py:attribute:: REDUCE
+      :value: 'reduce'
+
+
+
 .. py:class:: SlurmConfig
 
    .. py:attribute:: mem_gb
@@ -203,14 +231,32 @@ Module Contents
 
 .. py:class:: SlurmEnv
 
-   .. py:attribute:: slurm_id
+   .. py:attribute:: job_id
+      :type:  Optional[str]
+      :value: None
+
+
+
+   .. py:attribute:: raw_job_id
+      :type:  Optional[str]
+      :value: None
+
+
+
+   .. py:attribute:: array_job_id
+      :type:  Optional[str]
+      :value: None
+
+
+
+   .. py:attribute:: array_task_id
       :type:  Optional[str]
       :value: None
 
 
 
    .. py:attribute:: restart_count
-      :type:  Optional[int]
+      :type:  Optional[str]
       :value: None
 
 
@@ -247,7 +293,7 @@ Module Contents
 
    .. py:attribute:: array_job_num
       :type:  int
-      :value: 1
+      :value: 0
 
 
 
@@ -326,7 +372,7 @@ Module Contents
 
 .. py:function:: _set_deterministic_mode() -> None
 
-.. py:function:: get_slurm_env() -> SlurmEnv
+.. py:function:: _get_slurm_env() -> SlurmEnv
 
 .. py:function:: remove_runner_state_from_submission(log_folder: str, job_id: str) -> None
 
@@ -358,7 +404,7 @@ Module Contents
 
 
 
-   .. py:method:: __call__(dict_config: omegaconf.DictConfig) -> None
+   .. py:method:: __call__(dict_config: omegaconf.DictConfig, run_type: RunType = RunType.RUN) -> None
 
 
    .. py:method:: _init_logger() -> None
@@ -376,7 +422,7 @@ Module Contents
 
 .. py:function:: get_hydra_config_from_yaml(config_yml: str, overrides_args: list[str]) -> omegaconf.DictConfig
 
-.. py:function:: _runner_wrapper(config: omegaconf.DictConfig)
+.. py:function:: _runner_wrapper(config: omegaconf.DictConfig, run_type: RunType = RunType.RUN)
 
 .. py:function:: main(args: argparse.Namespace | None = None, override_args: list[str] | None = None)
 

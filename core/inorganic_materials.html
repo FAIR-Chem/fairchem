@@ -1,0 +1,1427 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Using FAIR chemistry models and workflow tools like quacc for inorganic materials science</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'core/inorganic_materials';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Why model atoms for climate?" href="intro_series.html" />
+    <link rel="prev" title="License" href="license.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title"></p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../index.html">
+                    FAIR-Chem overview
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Quickstart &amp; Installation</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Using pre-trained models in ASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gotchas.html">Common gotchas with fairchem</a></li>
+
+
+
+
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Using FAIR chemistry models and workflow tools like quacc for inorganic materials science</a></li>
+
+
+
+
+
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Learn More</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="intro_series.html">Why model atoms for climate?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../videos/technical_talks.html">Technical presentations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="papers_using_models.html">Studies leveraging pre-trained or fine-tuned FAIR-Chem models</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">OCP API &amp; Demo</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://open-catalyst.metademolab.com/">OCP Demo (no install required!)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ocpapi.html">ocpapi</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Released Datasets &amp; Models</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="datasets/oc20.html">Open Catalyst 2020 (OC20)</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="datasets/oc22.html">Open Catalyst 2022 (OC22)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/odac.html">Open Direct Air Capture 2023 (ODAC23)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/oc20dense.html">Open Catalyst 2020 Dense (OC20Dense)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/oc20neb.html">Open Catalyst 2020 Nudged Elastic Band (OC20NEB)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/omat24.html">Open Materials 2024 (OMat24)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasets/ocx24.html">Open Catalyst Experiments 2024 (OCx24): Bridging Experiments and Computational Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_checkpoints.html">Pretrained FAIRChem models</a></li>
+
+
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Making your own datasets</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ase_dataset_creation.html">Making and using ASE datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lmdb_dataset_creation.html">Making LMDB Datasets (original format, deprecated for ASE LMDBs)</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Model development, training, inference, finetuning</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="model_training.html">Training and evaluating custom models on OCP datasets</a></li>
+
+
+<li class="toctree-l1"><a class="reference internal" href="inference.html">Fast batched inference</a></li>
+
+
+<li class="toctree-l1"><a class="reference internal" href="fine-tuning/fine-tuning-oxides.html">Fine tuning a model</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="model_faq.html">Model FAQ</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Catalysis Case Studies &amp; Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/intro.html">Intro and background on OCP and DFT</a></li>
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/OCP-introduction.html">Simple simulations using the OCP ASE calculator</a></li>
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/adsorbml_walkthrough.html">AdsorbML tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/cattsunami_tutorial.html">CatTSunami Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/fairchem_models_for_nebs.html">Tutorial for using Fair Chemistry models to relax NEBs</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tutorials/NRR/NRR_toc.html">Screening catalysts with OCP</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/NRR/NRR_example.html">Using OCP to enumerate adsorbates on alloy catalyst surfaces</a></li>
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tutorials/advanced/advanced_toc.html">Advanced OCP usage</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/advanced/fine-tuning-in-python.html">Fine-tuning with Python</a></li>
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/advanced/embeddings.html">Working with embeddings</a></li>
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../legacy_tutorials/legacy_tutorials.html">Legacy [deprecated] Tutorials</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../legacy_tutorials/OCP_Tutorial.html">Open Catalyst Project Tutorial Notebook</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="../legacy_tutorials/data_preprocessing.html">OCP Data Preprocessing Tutorial</a></li>
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="../legacy_tutorials/data_visualization.html">OCP Data Visualization</a></li>
+
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">fairchem documentation</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../autoapi/index.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/core/index.html">core</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/core/_cli/index.html">core._cli</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/core/_cli_hydra/index.html">core._cli_hydra</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/common/index.html">core.common</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/data_parallel/index.html">core.common.data_parallel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/distutils/index.html">core.common.distutils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/flags/index.html">core.common.flags</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/gp_utils/index.html">core.common.gp_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/hpo_utils/index.html">core.common.hpo_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/logger/index.html">core.common.logger</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/profiler_utils/index.html">core.common.profiler_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/registry/index.html">core.common.registry</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/relaxation/index.html">core.common.relaxation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/slurm/index.html">core.common.slurm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/test_utils/index.html">core.common.test_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/transforms/index.html">core.common.transforms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/tutorial_utils/index.html">core.common.tutorial_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/typing/index.html">core.common.typing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/common/utils/index.html">core.common.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/datasets/index.html">core.datasets</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/_utils/index.html">core.datasets._utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/ase_datasets/index.html">core.datasets.ase_datasets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/base_dataset/index.html">core.datasets.base_dataset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/embeddings/index.html">core.datasets.embeddings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/lmdb_database/index.html">core.datasets.lmdb_database</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/lmdb_dataset/index.html">core.datasets.lmdb_dataset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/oc22_lmdb_dataset/index.html">core.datasets.oc22_lmdb_dataset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/datasets/target_metadata_guesser/index.html">core.datasets.target_metadata_guesser</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/models/index.html">core.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/base/index.html">core.models.base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/dimenet_plus_plus/index.html">core.models.dimenet_plus_plus</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/equiformer_v2/index.html">core.models.equiformer_v2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/escn/index.html">core.models.escn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/gemnet/index.html">core.models.gemnet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/gemnet_gp/index.html">core.models.gemnet_gp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/gemnet_oc/index.html">core.models.gemnet_oc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/model_registry/index.html">core.models.model_registry</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/painn/index.html">core.models.painn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/schnet/index.html">core.models.schnet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/scn/index.html">core.models.scn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/models/utils/index.html">core.models.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/modules/index.html">core.modules</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/modules/evaluator/index.html">core.modules.evaluator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/modules/exponential_moving_average/index.html">core.modules.exponential_moving_average</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/modules/loss/index.html">core.modules.loss</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/modules/normalization/index.html">core.modules.normalization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/modules/scaling/index.html">core.modules.scaling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/modules/scheduler/index.html">core.modules.scheduler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/modules/transforms/index.html">core.modules.transforms</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/preprocessing/index.html">core.preprocessing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/preprocessing/atoms_to_graphs/index.html">core.preprocessing.atoms_to_graphs</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/scripts/index.html">core.scripts</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/convert_hydra_to_release/index.html">core.scripts.convert_hydra_to_release</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/download_data/index.html">core.scripts.download_data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/download_large_files/index.html">core.scripts.download_large_files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/eqv2_to_hydra_eqv2/index.html">core.scripts.eqv2_to_hydra_eqv2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/fit_normalizers/index.html">core.scripts.fit_normalizers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/fit_references/index.html">core.scripts.fit_references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/gif_maker_parallelized/index.html">core.scripts.gif_maker_parallelized</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/hpo/index.html">core.scripts.hpo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/make_challenge_submission_file/index.html">core.scripts.make_challenge_submission_file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/make_lmdb_sizes/index.html">core.scripts.make_lmdb_sizes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/make_submission_file/index.html">core.scripts.make_submission_file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/preprocess_ef/index.html">core.scripts.preprocess_ef</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/preprocess_relaxed/index.html">core.scripts.preprocess_relaxed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/scripts/uncompress/index.html">core.scripts.uncompress</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/tasks/index.html">core.tasks</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/tasks/task/index.html">core.tasks.task</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/core/trainers/index.html">core.trainers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/trainers/base_trainer/index.html">core.trainers.base_trainer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/core/trainers/ocp_trainer/index.html">core.trainers.ocp_trainer</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/data/index.html">data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/data/oc/index.html">data.oc</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/data/oc/core/index.html">data.oc.core</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/data/oc/databases/index.html">data.oc.databases</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/data/oc/structure_generator/index.html">data.oc.structure_generator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/data/oc/utils/index.html">data.oc.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/data/odac/index.html">data.odac</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/data/odac/setup_vasp/index.html">data.odac.setup_vasp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/data/om/index.html">data.om</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/ocpapi/index.html">ocpapi</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/ocpapi/client/index.html">ocpapi.client</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/client/client/index.html">ocpapi.client.client</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/client/models/index.html">ocpapi.client.models</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/client/ui/index.html">ocpapi.client.ui</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/ocpapi/version/index.html">ocpapi.version</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/ocpapi/workflows/index.html">ocpapi.workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/workflows/adsorbates/index.html">ocpapi.workflows.adsorbates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/workflows/context/index.html">ocpapi.workflows.context</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/workflows/filter/index.html">ocpapi.workflows.filter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/workflows/log/index.html">ocpapi.workflows.log</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/ocpapi/workflows/retry/index.html">ocpapi.workflows.retry</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/cattsunami/index.html">cattsunami</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../autoapi/cattsunami/core/index.html">cattsunami.core</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/cattsunami/core/autoframe/index.html">cattsunami.core.autoframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/cattsunami/core/ocpneb/index.html">cattsunami.core.ocpneb</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../autoapi/cattsunami/core/reaction/index.html">cattsunami.core.reaction</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/cattsunami/databases/index.html">cattsunami.databases</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Notebook execution times</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../execution_time.html">Notebook execution times</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/FAIR-Chem/fairchem" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/FAIR-Chem/fairchem/issues/new?title=Issue%20on%20page%20%2Fcore/inorganic_materials.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/core/inorganic_materials.md" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.md</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Using FAIR chemistry models and workflow tools like quacc for inorganic materials science</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Using FAIR chemistry models and workflow tools like quacc for inorganic materials science</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-setup-without-a-workflow-backend">Quick setup (without a workflow backend)</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#example-of-a-simple-relaxation">Example of a simple relaxation</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#example-of-an-elastic-property-calculation">Example of an elastic property calculation</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#example-of-a-phonon-calculation">Example of a phonon calculation</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#parallelizing-these-calculations">Parallelizing these calculations</a></li>
+</ul>
+
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="using-fair-chemistry-models-and-workflow-tools-like-quacc-for-inorganic-materials-science">
+<h1>Using FAIR chemistry models and workflow tools like quacc for inorganic materials science<a class="headerlink" href="#using-fair-chemistry-models-and-workflow-tools-like-quacc-for-inorganic-materials-science" title="Link to this heading">#</a></h1>
+<p>We’re going to use <a class="reference external" href="https://quantum-accelerators.github.io/quacc/index.html"><code class="docutils literal notranslate"><span class="pre">quacc</span></code></a> along with FAIR chem calculators for some simple recipes to calculate elastic and phonon properties. <code class="docutils literal notranslate"><span class="pre">quacc</span></code> has the nice property that you can also use many different workflow managers like jobflow, dask, or prefect to scale and parallelize many calculations, including both ML and DFT calculations.</p>
+</section>
+<section id="quick-setup-without-a-workflow-backend">
+<h1>Quick setup (without a workflow backend)<a class="headerlink" href="#quick-setup-without-a-workflow-backend" title="Link to this heading">#</a></h1>
+<ol class="arabic simple">
+<li><p>First, make sure you installed <code class="docutils literal notranslate"><span class="pre">fairchem[quacc]</span></code> to pick up an appropriate version of quacc and the phonon dependencies.</p></li>
+<li><p>We’re going to use OMat24 machine learning interatomic potentials (MLIPs), which require approval and a license agreement.</p>
+<ol class="arabic simple">
+<li><p>Navigate to the <a class="reference external" href="https://huggingface.co/fairchem/OMAT24">OMat24 model repo</a>, login with your HuggingFace account, and request access to the gated models if you haven’t already</p></li>
+<li><p>Make sure <code class="docutils literal notranslate"><span class="pre">huggingface_hub</span></code> has access to the repo by running <code class="docutils literal notranslate"><span class="pre">huggingface-cli</span> <span class="pre">login</span></code> and following the instructions:
+a. Navigate to <a class="reference external" href="https://huggingface.co/settings/tokens">HuggingFace tokens</a>
+b. Click “+Create new token”
+c. type OMat24 in the Repositories permissions field
+d. Click create token
+e. Type the token into the CLI, or alternatively you can run <code class="docutils literal notranslate"><span class="pre">huggingface-cli</span> <span class="pre">login</span> <span class="pre">--token</span> <span class="pre">YOUR_TOKEN_HERE</span></code>. You can also set the environment variable <code class="docutils literal notranslate"><span class="pre">HF_TOKEN=YOUR_TOKEN_HERE</span></code> if that’s more convenient.</p></li>
+</ol>
+</li>
+<li><p>Set up quacc to use your favorite workflow tool (dask, prefect, etc) by setting your <a class="reference external" href="https://quantum-accelerators.github.io/quacc/user/basics/wflow_overview.html#__tabbed_1_4">quacc configuration</a>.
+a. Tip: If you just want to run like this tutorial is, write a simple file with <code class="docutils literal notranslate"><span class="pre">WORKFLOW_ENGINE:</span> <span class="pre">null</span></code> in <code class="docutils literal notranslate"><span class="pre">~/.quacc.yaml</span></code>. This is by far the easiest way to get started if you don’t want to worry about parallelization/etc</p></li>
+</ol>
+</section>
+<section id="example-of-a-simple-relaxation">
+<h1>Example of a simple relaxation<a class="headerlink" href="#example-of-a-simple-relaxation" title="Link to this heading">#</a></h1>
+<p>In <code class="docutils literal notranslate"><span class="pre">quacc</span></code>, a job is a fundamental block of work that can be run in parallel with other jobs. A flow is a sequence of jobs that need to be run to accomplish a goal. See the <a class="reference external" href="https://quantum-accelerators.github.io/quacc/user/basics/wflow_decorators.html">quacc docs</a> for more information about how this works!</p>
+<p>We’re going to start simple here - let’s run a local relaxation (optimize the unit cell and positions) using a pre-trained EquiformerV2-31M-OMAT24-MP-sAlex checkpoint. This checkpoint has a few fun properties</p>
+<ol class="arabic simple">
+<li><p>It’s a relatively small (31M) parameter model</p></li>
+<li><p>It was pre-trained on the OMat24 dataset, and then fine-tuned on the MPtrj and Alexandria datasets, so it should emit energies and forces that are consistent with the MP GGA (PBE/PBE+U) level of theory</p></li>
+</ol>
+<p>This code will download the appropriate checkpoint from huggingface_hub automatically; if you don’t have the right access token specified, you’ll hit an permission or 401 error.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pprint</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">ase.build</span><span class="w"> </span><span class="kn">import</span> <span class="n">bulk</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ase.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">LBFGS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">quacc.recipes.mlp.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">relax_job</span>
+
+<span class="c1"># Make an Atoms object of a bulk Cu structure</span>
+<span class="n">atoms</span> <span class="o">=</span> <span class="n">bulk</span><span class="p">(</span><span class="s2">&quot;Cu&quot;</span><span class="p">)</span>
+
+<span class="c1"># Run a structure relaxation</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">relax_job</span><span class="p">(</span>
+    <span class="n">atoms</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;fairchem&quot;</span><span class="p">,</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;EquiformerV2-31M-OMAT24-MP-sAlex&quot;</span><span class="p">,</span>
+    <span class="n">local_cache</span><span class="o">=</span><span class="s2">&quot;./fairchem_checkpoint_cache/&quot;</span><span class="p">,</span>
+    <span class="n">opt_params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;fmax&quot;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">,</span> <span class="s2">&quot;optimizer&quot;</span><span class="p">:</span> <span class="n">LBFGS</span><span class="p">},</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.9/x64/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:quacc.recipes.mlp._base:CUDA is not available to PyTorch. Calculations will be slow.
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Project root: /home/runner/work/fairchem/fairchem/src/fairchem
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/models/scn/spherical_harmonics.py:23: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
+/home/runner/work/fairchem/fairchem/src/fairchem/core/models/equiformer_v2/wigner.py:10: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
+/home/runner/work/fairchem/fairchem/src/fairchem/core/models/escn/so3.py:23: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
+INFO:root:Checking local cache: ./fairchem_checkpoint_cache/ for model EquiformerV2-31M-OMAT24-MP-sAlex
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
+cmd:
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-26-21-39-12
+  commit: core:a65177b,experimental:NA
+  identifier: &#39;&#39;
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-26-21-39-12
+  print_every: 100
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-26-21-39-12
+  seed: null
+  timestamp_id: 2025-03-26-21-39-12
+  version: 0.1.dev1+ga65177b
+dataset:
+  a2g_args:
+    r_energy: true
+    r_forces: true
+    r_stress: true
+  format: ase_db
+  transforms:
+    decompose_tensor:
+      decomposition:
+        stress_anisotropic:
+          irrep_dim: 2
+        stress_isotropic:
+          irrep_dim: 0
+      rank: 2
+      tensor: stress
+    element_references:
+      file: /fsx-ocp-med/shared/alex-10M/alex-mp-norms-refs/element_references.pt
+    normalizer:
+      file: /fsx-ocp-med/shared/alex-10M/alex-mp-norms-refs/normalizers.pt
+evaluation_metrics:
+  metrics:
+    energy:
+    - mae
+    - mae_density
+    forces:
+    - mae
+    - forcesx_mae
+    - forcesy_mae
+    - forcesz_mae
+    - cosine_similarity
+    stress:
+    - mae
+    - mae_density
+    stress_anisotropic:
+    - mae
+    stress_isotropic:
+    - mae
+  primary_metric: energy_mae
+gp_gpus: null
+gpus: 0
+logger: wandb
+loss_functions:
+- energy:
+    coefficient: 20
+    fn: mae_density
+- forces:
+    coefficient: 10
+    fn: l2mae
+- stress_isotropic:
+    coefficient: 1
+    fn: mae
+- stress_anisotropic:
+    coefficient: 1
+    fn: mae
+    reduction: mean_all
+model:
+  backbone:
+    alpha_drop: 0.1
+    attn_activation: silu
+    attn_alpha_channels: 64
+    attn_hidden_channels: 64
+    attn_value_channels: 16
+    avg_degree: 61.94676351484548
+    avg_num_nodes: 31.16592360068011
+    distance_function: gaussian
+    drop_path_rate: 0.1
+    edge_channels: 128
+    enforce_max_neighbors_strictly: false
+    ffn_activation: silu
+    ffn_hidden_channels: 128
+    grid_resolution: 18
+    lmax_list:
+    - 4
+    max_neighbors: 20
+    max_num_elements: 96
+    max_radius: 12.0
+    mmax_list:
+    - 2
+    model: equiformer_v2_backbone
+    norm_type: layer_norm_sh
+    num_distance_basis: 512
+    num_heads: 8
+    num_layers: 8
+    num_sphere_samples: 128
+    otf_graph: true
+    proj_drop: 0.0
+    share_atom_edge_embedding: false
+    sphere_channels: 128
+    use_atom_edge_embedding: true
+    use_attn_renorm: true
+    use_gate_act: false
+    use_grid_mlp: true
+    use_m_share_rad: false
+    use_pbc: true
+    use_pbc_single: true
+    use_s2_act_attn: false
+    use_sep_s2_act: true
+    weight_init: uniform
+  heads:
+    energy:
+      module: fairchem.core.models.equiformer_v2.heads.EqV2ScalarHead
+    forces:
+      module: fairchem.core.models.equiformer_v2.heads.EqV2VectorHead
+    stress:
+      decompose: true
+      module: fairchem.core.models.equiformer_v2.heads.Rank2SymmetricTensorHead
+      output_name: stress
+      use_source_target_embedding: true
+  name: hydra
+  otf_graph: true
+  pass_through_head_outputs: true
+optim:
+  batch_size: 8
+  clip_grad_norm: 100
+  ema_decay: 0.999
+  eval_batch_size: 12
+  eval_every: 3000
+  load_balancing: atoms
+  lr_initial: 0.0002
+  max_epochs: 16
+  num_workers: 8
+  optimizer: AdamW
+  optimizer_params:
+    weight_decay: 0.001
+  scheduler: LambdaLR
+  scheduler_params:
+    epochs: 741904
+    lambda_type: cosine
+    lr: 0.0002
+    lr_min_factor: 0.01
+    warmup_epochs: 463
+    warmup_factor: 0.2
+outputs:
+  energy:
+    level: system
+    property: energy
+  forces:
+    eval_on_free_atoms: true
+    level: atom
+    property: forces
+    train_on_free_atoms: true
+  stress:
+    decomposition:
+      stress_anisotropic:
+        eval_on_free_atoms: true
+        irrep_dim: 2
+        level: system
+        parent: stress
+        train_on_free_atoms: true
+      stress_isotropic:
+        eval_on_free_atoms: true
+        irrep_dim: 0
+        level: system
+        parent: stress
+        train_on_free_atoms: true
+    level: system
+    property: stress
+relax_dataset: {}
+slurm:
+  account: ocp
+  cpus_per_task: 9
+  folder: /fsx-ocp-med/lbluque/logs/omat-alex-mp/S2EFS/train/4478177
+  gpus_per_node: 8
+  job_id: &#39;4478177&#39;
+  job_name: eqV2_31M_ft_alexmptraj_e20_f10_s1_cos16
+  mem: 480GB
+  nodes: 4
+  ntasks_per_node: 8
+  partition: learn
+  qos: ocp_high
+  time: 4320
+task: {}
+test_dataset: {}
+trainer: ocp
+val_dataset: {}
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Loading model: hydra
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Loaded HydraModel with 31207434 parameters.
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:Loading checkpoint in inference-only mode, not loading keys associated with trainer state!
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-07-923338-66251
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-07-923338-66251
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{&#39;atoms&#39;: Atoms(symbols=&#39;Cu&#39;, pbc=True, cell=[[0.0, 1.805, 1.805], [1.805, 0.0, 1.805], [1.805, 1.805, 0.0]]),
+ &#39;converged&#39;: True,
+ &#39;dir_name&#39;: &#39;/home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-07-923338-66251&#39;,
+ &#39;input_atoms&#39;: {&#39;atoms&#39;: Atoms(symbols=&#39;Cu&#39;, pbc=True, cell=[[0.0, 1.805, 1.805], [1.805, 0.0, 1.805], [1.805, 1.805, 0.0]]),
+                 &#39;structure_metadata&#39;: {&#39;builder_meta&#39;: {&#39;build_date&#39;: datetime.datetime(2025, 3, 26, 21, 39, 8, 429805, tzinfo=datetime.timezone.utc),
+                                                         &#39;emmet_version&#39;: &#39;0.84.6rc6&#39;,
+                                                         &#39;pymatgen_version&#39;: &#39;2025.1.9&#39;},
+                                        &#39;chemsys&#39;: &#39;Cu&#39;,
+                                        &#39;composition&#39;: Composition(&#39;Cu1&#39;),
+                                        &#39;composition_reduced&#39;: Composition(&#39;Cu1&#39;),
+                                        &#39;density&#39;: 8.971719813140734,
+                                        &#39;density_atomic&#39;: 11.761470249999999,
+                                        &#39;elements&#39;: [Element Cu],
+                                        &#39;formula_anonymous&#39;: &#39;A&#39;,
+                                        &#39;formula_pretty&#39;: &#39;Cu&#39;,
+                                        &#39;nelements&#39;: 1,
+                                        &#39;nsites&#39;: 1,
+                                        &#39;symmetry&#39;: {&#39;angle_tolerance&#39;: 5.0,
+                                                     &#39;crystal_system&#39;: &lt;CrystalSystem.cubic: &#39;Cubic&#39;&gt;,
+                                                     &#39;number&#39;: 225,
+                                                     &#39;point_group&#39;: &#39;m-3m&#39;,
+                                                     &#39;symbol&#39;: &#39;Fm-3m&#39;,
+                                                     &#39;symprec&#39;: 0.1,
+                                                     &#39;version&#39;: &#39;2.6.0&#39;},
+                                        &#39;volume&#39;: 11.761470249999999}},
+ &#39;name&#39;: &#39;fairchem Relax&#39;,
+ &#39;nid&#39;: &#39;fv-az1660-407.qcwxoje0g1iujdwyioltluxobh.ex.internal.cloudapp.net&#39;,
+ &#39;parameters&#39;: {&#39;version&#39;: &#39;0.1.dev1+ga65177b&#39;},
+ &#39;parameters_opt&#39;: {&#39;fmax&#39;: 0.001,
+                    &#39;max_steps&#39;: 1000,
+                    &#39;maxstep&#39;: 0.2,
+                    &#39;optimizer&#39;: &#39;LBFGS&#39;,
+                    &#39;type&#39;: &#39;optimization&#39;},
+ &#39;quacc_version&#39;: &#39;0.13.0&#39;,
+ &#39;results&#39;: {&#39;energy&#39;: -4.098316669464111,
+             &#39;forces&#39;: array([[4.6385322e-09, 9.6653685e-11, 3.4673249e-09]], dtype=float32),
+             &#39;stress&#39;: array([[-1.1523021e-02, -1.4118191e-08, -1.4952947e-08],
+       [-1.4118191e-08, -1.1515912e-02, -1.5038481e-08],
+       [-1.4952947e-08, -1.5038481e-08, -1.1517841e-02]], dtype=float32)},
+ &#39;structure_metadata&#39;: {&#39;builder_meta&#39;: {&#39;build_date&#39;: datetime.datetime(2025, 3, 26, 21, 39, 8, 541292, tzinfo=datetime.timezone.utc),
+                                         &#39;emmet_version&#39;: &#39;0.84.6rc6&#39;,
+                                         &#39;pymatgen_version&#39;: &#39;2025.1.9&#39;},
+                        &#39;chemsys&#39;: &#39;Cu&#39;,
+                        &#39;composition&#39;: Composition(&#39;Cu1&#39;),
+                        &#39;composition_reduced&#39;: Composition(&#39;Cu1&#39;),
+                        &#39;density&#39;: 8.971719813140734,
+                        &#39;density_atomic&#39;: 11.761470249999999,
+                        &#39;elements&#39;: [Element Cu],
+                        &#39;formula_anonymous&#39;: &#39;A&#39;,
+                        &#39;formula_pretty&#39;: &#39;Cu&#39;,
+                        &#39;nelements&#39;: 1,
+                        &#39;nsites&#39;: 1,
+                        &#39;symmetry&#39;: {&#39;angle_tolerance&#39;: 5.0,
+                                     &#39;crystal_system&#39;: &lt;CrystalSystem.cubic: &#39;Cubic&#39;&gt;,
+                                     &#39;number&#39;: 225,
+                                     &#39;point_group&#39;: &#39;m-3m&#39;,
+                                     &#39;symbol&#39;: &#39;Fm-3m&#39;,
+                                     &#39;symprec&#39;: 0.1,
+                                     &#39;version&#39;: &#39;2.6.0&#39;},
+                        &#39;volume&#39;: 11.761470249999999},
+ &#39;trajectory&#39;: [Atoms(symbols=&#39;Cu&#39;, pbc=True, cell=[[0.0, 1.805, 1.805], [1.805, 0.0, 1.805], [1.805, 1.805, 0.0]], calculator=SinglePointCalculator(...))],
+ &#39;trajectory_results&#39;: [{&#39;energy&#39;: -4.098316669464111,
+                         &#39;forces&#39;: array([[4.63853222e-09, 9.66536851e-11, 3.46732487e-09]]),
+                         &#39;stress&#39;: array([[-1.15230214e-02, -1.41181911e-08, -1.49529473e-08],
+       [-1.41181911e-08, -1.15159117e-02, -1.50384807e-08],
+       [-1.49529473e-08, -1.50384807e-08, -1.15178414e-02]])}]}
+</pre></div>
+</div>
+</div>
+</div>
+<p>Congratulations; you ran your first relaxation using an OMat24-trained checkpoint and <code class="docutils literal notranslate"><span class="pre">quacc</span></code>!</p>
+</section>
+<section id="example-of-an-elastic-property-calculation">
+<h1>Example of an elastic property calculation<a class="headerlink" href="#example-of-an-elastic-property-calculation" title="Link to this heading">#</a></h1>
+<p>Let’s do something more interesting that normally takes quite a bit of work in DFT: calculating an elastic constant! Elastic properties are important to understand how strong or easy to deform a material is, or how a material might change if compressed or expanded in specific directions (i.e. the Poisson ratio!).</p>
+<p>We don’t have to change much code from above, we just use a built-in recipe to calculate the elastic tensor from <code class="docutils literal notranslate"><span class="pre">quacc</span></code>. This recipe</p>
+<ol class="arabic simple">
+<li><p>(optionally) Relaxes the unit cell using the MLIP</p></li>
+<li><p>Generates a number of deformed unit cells by applying strains</p></li>
+<li><p>For each deformation, a relaxation using the MLIP and (optionally) a single point calculation is run</p></li>
+<li><p>Finally, all of the above calculations are used to calculate the elastic properties of the material</p></li>
+</ol>
+<p>For more documentation, see the quacc docs for <a class="reference external" href="https://quantum-accelerators.github.io/quacc/reference/quacc/recipes/mlp/elastic.html#quacc.recipes.mlp.elastic.elastic_tensor_flow">quacc.recipes.mlp.elastic_tensor_flow</a></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ase.build</span><span class="w"> </span><span class="kn">import</span> <span class="n">bulk</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">quacc.recipes.mlp.elastic</span><span class="w"> </span><span class="kn">import</span> <span class="n">elastic_tensor_flow</span>
+
+<span class="c1"># Make an Atoms object of a bulk Cu structure</span>
+<span class="n">atoms</span> <span class="o">=</span> <span class="n">bulk</span><span class="p">(</span><span class="s2">&quot;Cu&quot;</span><span class="p">)</span>
+
+<span class="c1"># Run an elastic property calculation with our favorite MLP potential</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">elastic_tensor_flow</span><span class="p">(</span>
+    <span class="n">atoms</span><span class="p">,</span>
+    <span class="n">job_params</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;all&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">method</span><span class="o">=</span><span class="s2">&quot;fairchem&quot;</span><span class="p">,</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;EquiformerV2-31M-OMAT24-MP-sAlex&quot;</span><span class="p">,</span>
+            <span class="n">local_cache</span><span class="o">=</span><span class="s2">&quot;./fairchem_checkpoint_cache/&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-08-750792-44185
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-08-750792-44185
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-09-317502-19600
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-09-317502-19600
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-09-595249-12922
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-09-595249-12922
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-09-870029-58870
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-09-870029-58870
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-10-152540-66294
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-10-152540-66294
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-10-446286-45156
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-10-446286-45156
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-10-723335-13292
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-10-723335-13292
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-11-237520-94862
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-11-237520-94862
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-11-502908-40970
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-11-502908-40970
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-11-763641-84285
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-11-763641-84285
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-12-034594-37508
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-12-034594-37508
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-12-291252-96210
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-12-291252-96210
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-12-559039-11733
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-12-559039-11733
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-12-812728-24950
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-12-812728-24950
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-13-064996-95605
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-13-064996-95605
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-13-334208-12477
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-13-334208-12477
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-13-620939-90390
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-13-620939-90390
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-13-888897-67289
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-13-888897-67289
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-14-165109-21237
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-14-165109-21237
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-14-685868-34501
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-14-685868-34501
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-14-931413-80765
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-14-931413-80765
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-15-175513-74414
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-15-175513-74414
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-15-416820-37386
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-15-416820-37386
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-15-668467-94890
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-15-668467-94890
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-15-911600-30501
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-15-911600-30501
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;elasticity_doc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">bulk_modulus</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>BulkModulus(voigt=188.064, reuss=188.064, vrh=188.064)
+</pre></div>
+</div>
+</div>
+</div>
+<p>Congratulations, you ran your first elastic tensor calculation!</p>
+</section>
+<section id="example-of-a-phonon-calculation">
+<h1>Example of a phonon calculation<a class="headerlink" href="#example-of-a-phonon-calculation" title="Link to this heading">#</a></h1>
+<p>Phonon calculations are very important for inorganic materials science to</p>
+<ul class="simple">
+<li><p>Calculate thermal conductivity</p></li>
+<li><p>Understand the vibrational modes, and thus entropy and free energy, of a material</p></li>
+<li><p>Predict the stability of a material at finite temperature (e.g. 300 K)
+among many others!
+We can run a similarly straightforward calculation that</p></li>
+</ul>
+<ol class="arabic simple">
+<li><p>Runs a relaxation on the unit cell and atoms</p></li>
+<li><p>Repeats the unit cell a number of times to make it sufficiently large to capture many interesting vibrational models</p></li>
+<li><p>Generatives a number of finite displacement structures by moving each atom of the unit cell a little bit in each direction</p></li>
+<li><p>Running single point calculations on each of (3)</p></li>
+<li><p>Gathering all of the calculations and calculating second derivatives (the hessian matrix!)</p></li>
+<li><p>Calculating the eigenvalues/eigenvectors of the hessian matrix to find the vibrational modes of the material</p></li>
+<li><p>Analyzing the thermodynamic properties of the vibrational modes.</p></li>
+</ol>
+<p>Note that this analysis assumes that all vibrational modes are harmonic, which is a pretty reasonable approximately for low/moderate temperature materials, but becomes less realistic at high temperatures.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ase.build</span><span class="w"> </span><span class="kn">import</span> <span class="n">bulk</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">quacc.recipes.mlp.phonons</span><span class="w"> </span><span class="kn">import</span> <span class="n">phonon_flow</span>
+
+<span class="c1"># Make an Atoms object of a bulk Cu structure</span>
+<span class="n">atoms</span> <span class="o">=</span> <span class="n">bulk</span><span class="p">(</span><span class="s2">&quot;Cu&quot;</span><span class="p">)</span>
+
+<span class="c1"># Run a phonon (hessian) calculation with our favorite MLP potential</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">phonon_flow</span><span class="p">(</span>
+    <span class="n">atoms</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;fairchem&quot;</span><span class="p">,</span>
+    <span class="n">job_params</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;all&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;EquiformerV2-31M-OMAT24-MP-sAlex&quot;</span><span class="p">,</span>
+            <span class="n">local_cache</span><span class="o">=</span><span class="s2">&quot;./fairchem_checkpoint_cache/&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">},</span>
+    <span class="n">min_lengths</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="c1"># set the minimum unit cell size smaller to be compatible with limited github runner ram</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-21-672092-43583
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-21-672092-43583
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:quacc.runners.prep:Calculation will run at /home/runner/work/fairchem/fairchem/docs/core/tmp-quacc-2025-03-26-21-39-26-363354-87570
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.9/x64/lib/python3.12/site-packages/seekpath/hpkot/__init__.py:172: DeprecationWarning: dict interface is deprecated. Use attribute interface instead
+  conv_lattice = dataset[&quot;std_lattice&quot;]
+INFO:quacc.runners.prep:Calculation results stored at /home/runner/work/fairchem/fairchem/docs/core/quacc-2025-03-26-21-39-26-363354-87570
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s1">&#39;The entropy at </span><span class="si">{</span><span class="w"> </span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">][</span><span class="s2">&quot;thermal_properties&quot;</span><span class="p">][</span><span class="s2">&quot;temperatures&quot;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> K is </span><span class="si">{</span><span class="w"> </span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">][</span><span class="s2">&quot;thermal_properties&quot;</span><span class="p">][</span><span class="s2">&quot;entropy&quot;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> kJ/mol&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The entropy at 1000 K is 64.56 kJ/mol
+</pre></div>
+</div>
+</div>
+</div>
+<p>Congratulations, you ran your first phonon calculation!</p>
+</section>
+<section id="parallelizing-these-calculations">
+<h1>Parallelizing these calculations<a class="headerlink" href="#parallelizing-these-calculations" title="Link to this heading">#</a></h1>
+<p>These calculations are super straightforward to parallelize because of how <code class="docutils literal notranslate"><span class="pre">quacc</span></code> is written. Simply choose a workflow manager like <code class="docutils literal notranslate"><span class="pre">parssl</span></code> or <code class="docutils literal notranslate"><span class="pre">prefect</span></code> in <code class="docutils literal notranslate"><span class="pre">quacc</span></code>, and run the same code! There are many ways to run these calculations in parallel. The FAIR chemistry team regularly runs hundreds of thousands of calculations in some of these packages at scale.</p>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./core"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="license.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">License</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="intro_series.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Why model atoms for climate?</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Using FAIR chemistry models and workflow tools like quacc for inorganic materials science</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-setup-without-a-workflow-backend">Quick setup (without a workflow backend)</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#example-of-a-simple-relaxation">Example of a simple relaxation</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#example-of-an-elastic-property-calculation">Example of an elastic property calculation</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#example-of-a-phonon-calculation">Example of a phonon calculation</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#parallelizing-these-calculations">Parallelizing these calculations</a></li>
+</ul>
+
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By FAIR Chemistry & Collaborators
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2024.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

@@ -189,6 +189,12 @@
 
 
 <li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inorganic_materials.html">Using FAIR chemistry models and workflow tools like quacc for inorganic materials science</a></li>
+
+
+
+
+
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Learn More</span></p>
 <ul class="nav bd-sidenav">
@@ -746,7 +752,7 @@ in the relaxed state. To train a model for the IS2RE task, you can use the follo
 </div>
 <p>You can find examples configuration files in <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/core/configs/is2re"><code class="docutils literal notranslate"><span class="pre">configs/is2re</span></code></a>.</p>
 <p>To train a SchNet model for the IS2RE task on the 10k split, run:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--mode<span class="w"> </span>train<span class="w"> </span>--config-yml<span class="w"> </span>configs/is2re/10k/schnet/schnet.yml
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--mode<span class="w"> </span>train<span class="w"> </span>--config-yml<span class="w"> </span>configs/oc20/is2re/10k/schnet/schnet.yml
 </pre></div>
 </div>
 <p>Training logs are stored in <code class="docutils literal notranslate"><span class="pre">logs/tensorboard/[TIMESTAMP]</span></code> where <code class="docutils literal notranslate"><span class="pre">[TIMESTAMP]</span></code> is
@@ -756,7 +762,7 @@ the starting time-stamp of the run. You can monitor the training process by runn
 </div>
 <p>At the end of training, the model checkpoint is stored in <code class="docutils literal notranslate"><span class="pre">checkpoints/[TIMESTAMP]/checkpoint.pt</span></code>.</p>
 <p>Next, run this model on the test data:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--mode<span class="w"> </span>predict<span class="w"> </span>--config-yml<span class="w"> </span>configs/is2re/10k/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--mode<span class="w"> </span>predict<span class="w"> </span>--config-yml<span class="w"> </span>configs/oc20/is2re/10k/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--checkpoint<span class="w"> </span>checkpoints/<span class="o">[</span>TIMESTAMP<span class="o">]</span>/checkpoint.pt
 </pre></div>
 </div>
@@ -768,7 +774,7 @@ the starting time-stamp of the run. You can monitor the training process by runn
 <li><p>Single Model: Relaxed energy predictions are extracted from relaxed structures generated via ML relaxations from a single model.</p>
 <ol class="arabic">
 <li><p>Train a S2EF model on both energy and forces as described <a class="reference internal" href="#"><span class="std std-doc">here</span></a></p></li>
-<li><p>Using the trained S2EF model, run ML relaxations as described <a class="reference internal" href="#"><span class="std std-doc">here</span></a>. Ensure <code class="docutils literal notranslate"><span class="pre">traj_dir</span></code> is uniquely specified in the config as to save out the full trajectory. A sample config can be found <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/2M/dimenet_plus_plus/dpp_relax.yml">here</a>. ** Note ** Relaxations on the complete val/test set may take upwards of 8hrs depending on your available hardware.</p></li>
+<li><p>Using the trained S2EF model, run ML relaxations as described <a class="reference internal" href="#"><span class="std std-doc">here</span></a>. Ensure <code class="docutils literal notranslate"><span class="pre">traj_dir</span></code> is uniquely specified in the config as to save out the full trajectory. A sample config can be found <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/oc20/s2ef/2M/dimenet_plus_plus/dpp_relax.yml">here</a>. ** Note ** Relaxations on the complete val/test set may take upwards of 8hrs depending on your available hardware.</p></li>
 <li><p>Prepare a submission file by running the following command:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">scripts</span><span class="o">/</span><span class="n">make_submission_file</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="nb">id</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="nb">id</span><span class="o">/</span><span class="n">traj_dir</span> \
         <span class="o">--</span><span class="n">ood</span><span class="o">-</span><span class="n">ads</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">ood_ads</span><span class="o">/</span><span class="n">traj_dir</span> <span class="o">--</span><span class="n">ood</span><span class="o">-</span><span class="n">cat</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">ood_cat</span><span class="o">/</span><span class="n">traj_dir</span> \
@@ -833,13 +839,13 @@ and <code class="docutils literal notranslate"><span class="pre">TrajectoryLmdb<
 <p>You can find examples configuration files in <a class="reference external" href="https://github.com/FAIR-Chem/fairchem/tree/main/src/fairchem/core/configs/s2ef"><code class="docutils literal notranslate"><span class="pre">configs/s2ef</span></code></a>.</p>
 <p>To train a SchNet model for the S2EF task on the 2M split using 2 GPUs, run:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>torchrun<span class="w"> </span>--standalone<span class="w"> </span>--nproc_per_node<span class="o">=</span><span class="m">2</span><span class="w"> </span>main.py<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--mode<span class="w"> </span>train<span class="w"> </span>--config-yml<span class="w"> </span>configs/s2ef/2M/schnet/schnet.yml<span class="w"> </span>--num-gpus<span class="w"> </span><span class="m">2</span><span class="w"> </span>--distributed
+<span class="w">        </span>--mode<span class="w"> </span>train<span class="w"> </span>--config-yml<span class="w"> </span>configs/oc20/s2ef/2M/schnet/schnet.yml<span class="w"> </span>--num-gpus<span class="w"> </span><span class="m">2</span><span class="w"> </span>--distributed
 </pre></div>
 </div>
 <p>Similar to the IS2RE task, tensorboard logs are stored in <code class="docutils literal notranslate"><span class="pre">logs/tensorboard/[TIMESTAMP]</span></code> and the
 checkpoint is stored in <code class="docutils literal notranslate"><span class="pre">checkpoints/[TIMESTAMP]/checkpoint.pt</span></code>.</p>
 <p>Next, run this model on the test data:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--mode<span class="w"> </span>predict<span class="w"> </span>--config-yml<span class="w"> </span>configs/s2ef/2M/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--mode<span class="w"> </span>predict<span class="w"> </span>--config-yml<span class="w"> </span>configs/oc20/s2ef/2M/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--checkpoint<span class="w"> </span>checkpoints/<span class="o">[</span>TIMESTAMP<span class="o">]</span>/checkpoint.pt
 </pre></div>
 </div>
@@ -879,14 +885,14 @@ separator</a>.</p>
 <p>For example, to override the training dataset path via a command line argument:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--mode<span class="w"> </span>train
-<span class="w">    </span>--config-yml<span class="w"> </span>configs/s2ef/2M/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--config-yml<span class="w"> </span>configs/oc20/s2ef/2M/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--dataset.train.src<span class="o">=</span>path/to/my/dataset/
 </pre></div>
 </div>
 <p>Or to update the initial learning rate:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--mode<span class="w"> </span>train
-<span class="w">    </span>--config-yml<span class="w"> </span>configs/s2ef/2M/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--config-yml<span class="w"> </span>configs/oc20/s2ef/2M/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--optim.lr_initial<span class="o">=</span>3e-4
 </pre></div>
 </div>
@@ -911,7 +917,7 @@ task and then running an iterative relaxation. Although we present an iterative 
 </pre></div>
 </div>
 <p>After training, relaxations can be run by:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--mode<span class="w"> </span>run-relaxations<span class="w"> </span>--config-yml<span class="w"> </span>configs/s2ef/2M/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>main.py<span class="w"> </span>--mode<span class="w"> </span>run-relaxations<span class="w"> </span>--config-yml<span class="w"> </span>configs/oc20/s2ef/2M/schnet/schnet.yml<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--checkpoint<span class="w"> </span>checkpoints/<span class="o">[</span>TIMESTAMP<span class="o">]</span>/checkpoint.pt
 </pre></div>
 </div>

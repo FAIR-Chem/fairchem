@@ -189,6 +189,12 @@
 
 
 <li class="toctree-l1"><a class="reference internal" href="../../../../core/license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../core/inorganic_materials.html">Using FAIR chemistry models and workflow tools like quacc for inorganic materials science</a></li>
+
+
+
+
+
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Learn More</span></p>
 <ul class="nav bd-sidenav">
@@ -674,10 +680,16 @@ document.write(`
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.GatherFromModelParallelRegion.backward"><code class="docutils literal notranslate"><span class="pre">GatherFromModelParallelRegion.backward()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.ScaleBackwardGrad"><code class="docutils literal notranslate"><span class="pre">ScaleBackwardGrad</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.ScaleBackwardGrad.forward"><code class="docutils literal notranslate"><span class="pre">ScaleBackwardGrad.forward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.ScaleBackwardGrad.backward"><code class="docutils literal notranslate"><span class="pre">ScaleBackwardGrad.backward()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.copy_to_model_parallel_region"><code class="docutils literal notranslate"><span class="pre">copy_to_model_parallel_region()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.reduce_from_model_parallel_region"><code class="docutils literal notranslate"><span class="pre">reduce_from_model_parallel_region()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.scatter_to_model_parallel_region"><code class="docutils literal notranslate"><span class="pre">scatter_to_model_parallel_region()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.gather_from_model_parallel_region"><code class="docutils literal notranslate"><span class="pre">gather_from_model_parallel_region()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.scale_backward_grad"><code class="docutils literal notranslate"><span class="pre">scale_backward_grad()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -724,6 +736,9 @@ LICENSE file in the root directory of this source tree.</p>
 <td><p>Base class to create custom <cite>autograd.Function</cite>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#core.common.gp_utils.GatherFromModelParallelRegion" title="core.common.gp_utils.GatherFromModelParallelRegion"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GatherFromModelParallelRegion</span></code></a></p></td>
+<td><p>Base class to create custom <cite>autograd.Function</cite>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#core.common.gp_utils.ScaleBackwardGrad" title="core.common.gp_utils.ScaleBackwardGrad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScaleBackwardGrad</span></code></a></p></td>
 <td><p>Base class to create custom <cite>autograd.Function</cite>.</p></td>
 </tr>
 </tbody>
@@ -801,6 +816,9 @@ LICENSE file in the root directory of this source tree.</p>
 <td><p></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#core.common.gp_utils.gather_from_model_parallel_region" title="core.common.gp_utils.gather_from_model_parallel_region"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gather_from_model_parallel_region</span></code></a>(→ torch.Tensor)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#core.common.gp_utils.scale_backward_grad" title="core.common.gp_utils.scale_backward_grad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scale_backward_grad</span></code></a>(→ torch.Tensor)</p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -1314,6 +1332,106 @@ output.</p>
 
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="core.common.gp_utils.ScaleBackwardGrad">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.common.gp_utils.</span></span><span class="sig-name descname"><span class="pre">ScaleBackwardGrad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.common.gp_utils.ScaleBackwardGrad" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.autograd.Function</span></code></p>
+<p>Base class to create custom <cite>autograd.Function</cite>.</p>
+<p>To create a custom <cite>autograd.Function</cite>, subclass this class and implement
+the <a class="reference internal" href="#core.common.gp_utils.ScaleBackwardGrad.forward" title="core.common.gp_utils.ScaleBackwardGrad.forward"><code class="xref py py-meth docutils literal notranslate"><span class="pre">forward()</span></code></a> and <a class="reference internal" href="#core.common.gp_utils.ScaleBackwardGrad.backward" title="core.common.gp_utils.ScaleBackwardGrad.backward"><code class="xref py py-meth docutils literal notranslate"><span class="pre">backward()</span></code></a> static methods. Then, to use your custom
+op in the forward pass, call the class method <code class="docutils literal notranslate"><span class="pre">apply</span></code>. Do not call
+<a class="reference internal" href="#core.common.gp_utils.ScaleBackwardGrad.forward" title="core.common.gp_utils.ScaleBackwardGrad.forward"><code class="xref py py-meth docutils literal notranslate"><span class="pre">forward()</span></code></a> directly.</p>
+<p>To ensure correctness and best performance, make sure you are calling the
+correct methods on <code class="docutils literal notranslate"><span class="pre">ctx</span></code> and validating your backward function using
+<code class="xref py py-func docutils literal notranslate"><span class="pre">torch.autograd.gradcheck()</span></code>.</p>
+<p>See <span class="xref std std-ref">extending-autograd</span> for more details on how to use this class.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># xdoctest: +REQUIRES(env:TORCH_DOCTEST_AUTOGRAD)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span><span class="w"> </span><span class="nc">Exp</span><span class="p">(</span><span class="n">Function</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="nd">@staticmethod</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">result</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">ctx</span><span class="o">.</span><span class="n">save_for_backward</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="k">return</span> <span class="n">result</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="nd">@staticmethod</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">def</span><span class="w"> </span><span class="nf">backward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">result</span><span class="p">,</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">saved_tensors</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="k">return</span> <span class="n">grad_output</span> <span class="o">*</span> <span class="n">result</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Use it by calling the apply method:</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># xdoctest: +SKIP</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">output</span> <span class="o">=</span> <span class="n">Exp</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="core.common.gp_utils.ScaleBackwardGrad.forward">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="headerlink" href="#core.common.gp_utils.ScaleBackwardGrad.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the forward of the custom autograd Function.</p>
+<p>This function is to be overridden by all subclasses.
+There are two ways to define forward:</p>
+<p>Usage 1 (Combined forward and ctx):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@staticmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>It must accept a context ctx as the first argument, followed by any
+number of arguments (tensors or other types).</p></li>
+<li><p>See <span class="xref std std-ref">combining-forward-context</span> for more details</p></li>
+</ul>
+<p>Usage 2 (Separate forward and ctx):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@staticmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="nd">@staticmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">setup_context</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">output</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>The forward no longer accepts a ctx argument.</p></li>
+<li><p>Instead, you must also override the <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.autograd.Function.setup_context()</span></code>
+staticmethod to handle setting up the <code class="docutils literal notranslate"><span class="pre">ctx</span></code> object.
+<code class="docutils literal notranslate"><span class="pre">output</span></code> is the output of the forward, <code class="docutils literal notranslate"><span class="pre">inputs</span></code> are a Tuple of inputs
+to the forward.</p></li>
+<li><p>See <span class="xref std std-ref">extending-autograd</span> for more details</p></li>
+</ul>
+<p>The context can be used to store arbitrary data that can be then
+retrieved during the backward pass. Tensors should not be stored
+directly on <cite>ctx</cite> (though this is not currently enforced for
+backward compatibility). Instead, tensors should be saved either with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">ctx.save_for_backward()</span></code> if they are intended to be used in
+<code class="docutils literal notranslate"><span class="pre">backward</span></code> (equivalently, <code class="docutils literal notranslate"><span class="pre">vjp</span></code>) or <code class="xref py py-func docutils literal notranslate"><span class="pre">ctx.save_for_forward()</span></code>
+if they are intended to be used for in <code class="docutils literal notranslate"><span class="pre">jvp</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="core.common.gp_utils.ScaleBackwardGrad.backward">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grad_output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.common.gp_utils.ScaleBackwardGrad.backward" title="Link to this definition">#</a></dt>
+<dd><p>Define a formula for differentiating the operation with backward mode automatic differentiation.</p>
+<p>This function is to be overridden by all subclasses.
+(Defining this function is equivalent to defining the <code class="docutils literal notranslate"><span class="pre">vjp</span></code> function.)</p>
+<p>It must accept a context <code class="xref py py-attr docutils literal notranslate"><span class="pre">ctx</span></code> as the first argument, followed by
+as many outputs as the <a class="reference internal" href="#core.common.gp_utils.ScaleBackwardGrad.forward" title="core.common.gp_utils.ScaleBackwardGrad.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> returned (None will be passed in
+for non tensor outputs of the forward function),
+and it should return as many tensors, as there were inputs to
+<a class="reference internal" href="#core.common.gp_utils.ScaleBackwardGrad.forward" title="core.common.gp_utils.ScaleBackwardGrad.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a>. Each argument is the gradient w.r.t the given output,
+and each returned value should be the gradient w.r.t. the
+corresponding input. If an input is not a Tensor or is a Tensor not
+requiring grads, you can just pass None as a gradient for that input.</p>
+<p>The context can be used to retrieve tensors saved during the forward
+pass. It also has an attribute <code class="xref py py-attr docutils literal notranslate"><span class="pre">ctx.needs_input_grad</span></code> as a tuple
+of booleans representing whether each input needs gradient. E.g.,
+<a class="reference internal" href="#core.common.gp_utils.ScaleBackwardGrad.backward" title="core.common.gp_utils.ScaleBackwardGrad.backward"><code class="xref py py-func docutils literal notranslate"><span class="pre">backward()</span></code></a> will have <code class="docutils literal notranslate"><span class="pre">ctx.needs_input_grad[0]</span> <span class="pre">=</span> <span class="pre">True</span></code> if the
+first input to <a class="reference internal" href="#core.common.gp_utils.ScaleBackwardGrad.forward" title="core.common.gp_utils.ScaleBackwardGrad.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> needs gradient computed w.r.t. the
+output.</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="core.common.gp_utils.copy_to_model_parallel_region">
 <span class="sig-prename descclassname"><span class="pre">core.common.gp_utils.</span></span><span class="sig-name descname"><span class="pre">copy_to_model_parallel_region</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="headerlink" href="#core.common.gp_utils.copy_to_model_parallel_region" title="Link to this definition">#</a></dt>
@@ -1332,6 +1450,11 @@ output.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="core.common.gp_utils.gather_from_model_parallel_region">
 <span class="sig-prename descclassname"><span class="pre">core.common.gp_utils.</span></span><span class="sig-name descname"><span class="pre">gather_from_model_parallel_region</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="headerlink" href="#core.common.gp_utils.gather_from_model_parallel_region" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="core.common.gp_utils.scale_backward_grad">
+<span class="sig-prename descclassname"><span class="pre">core.common.gp_utils.</span></span><span class="sig-name descname"><span class="pre">scale_backward_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="headerlink" href="#core.common.gp_utils.scale_backward_grad" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </section>
@@ -1446,10 +1569,16 @@ output.</p>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.GatherFromModelParallelRegion.backward"><code class="docutils literal notranslate"><span class="pre">GatherFromModelParallelRegion.backward()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.ScaleBackwardGrad"><code class="docutils literal notranslate"><span class="pre">ScaleBackwardGrad</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.ScaleBackwardGrad.forward"><code class="docutils literal notranslate"><span class="pre">ScaleBackwardGrad.forward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.ScaleBackwardGrad.backward"><code class="docutils literal notranslate"><span class="pre">ScaleBackwardGrad.backward()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.copy_to_model_parallel_region"><code class="docutils literal notranslate"><span class="pre">copy_to_model_parallel_region()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.reduce_from_model_parallel_region"><code class="docutils literal notranslate"><span class="pre">reduce_from_model_parallel_region()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.scatter_to_model_parallel_region"><code class="docutils literal notranslate"><span class="pre">scatter_to_model_parallel_region()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.gather_from_model_parallel_region"><code class="docutils literal notranslate"><span class="pre">gather_from_model_parallel_region()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.common.gp_utils.scale_backward_grad"><code class="docutils literal notranslate"><span class="pre">scale_backward_grad()</span></code></a></li>
 </ul>
 </li>
 </ul>

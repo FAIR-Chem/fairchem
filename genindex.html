@@ -188,6 +188,12 @@
 
 
 <li class="toctree-l1"><a class="reference internal" href="core/license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/inorganic_materials.html">Using FAIR chemistry models and workflow tools like quacc for inorganic materials science</a></li>
+
+
+
+
+
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Learn More</span></p>
 <ul class="nav bd-sidenav">
@@ -1220,6 +1226,8 @@ document.write(`
       </ul></li>
       <li><a href="autoapi/ocpapi/workflows/adsorbates/index.html#ocpapi.workflows.adsorbates._get_slabs">_get_slabs() (in module ocpapi.workflows.adsorbates)</a>
 </li>
+      <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra._get_slurm_env">_get_slurm_env() (in module core._cli_hydra)</a>
+</li>
       <li><a href="autoapi/core/trainers/base_trainer/index.html#core.trainers.base_trainer.BaseTrainer._get_timestamp">_get_timestamp() (core.trainers.base_trainer.BaseTrainer static method)</a>
 
       <ul>
@@ -1931,7 +1939,11 @@ document.write(`
         <li><a href="autoapi/data/oc/structure_generator/index.html#data.oc.structure_generator.args">(in module data.oc.structure_generator)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.SlurmEnv.array_job_id">array_job_id (core._cli_hydra.SlurmEnv attribute)</a>
+</li>
       <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.Metadata.array_job_num">array_job_num (core._cli_hydra.Metadata attribute)</a>
+</li>
+      <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.SlurmEnv.array_task_id">array_task_id (core._cli_hydra.SlurmEnv attribute)</a>
 </li>
       <li><a href="autoapi/core/common/relaxation/ase_utils/index.html#core.common.relaxation.ase_utils.ASE_PROP_RESHAPE">ASE_PROP_RESHAPE (in module core.common.relaxation.ase_utils)</a>
 </li>
@@ -2175,6 +2187,8 @@ document.write(`
         <li><a href="autoapi/core/common/gp_utils/index.html#core.common.gp_utils.GatherFromModelParallelRegion.backward">(core.common.gp_utils.GatherFromModelParallelRegion static method)</a>
 </li>
         <li><a href="autoapi/core/common/gp_utils/index.html#core.common.gp_utils.ReduceFromModelParallelRegion.backward">(core.common.gp_utils.ReduceFromModelParallelRegion static method)</a>
+</li>
+        <li><a href="autoapi/core/common/gp_utils/index.html#core.common.gp_utils.ScaleBackwardGrad.backward">(core.common.gp_utils.ScaleBackwardGrad static method)</a>
 </li>
         <li><a href="autoapi/core/common/gp_utils/index.html#core.common.gp_utils.ScatterToModelParallelRegion.backward">(core.common.gp_utils.ScatterToModelParallelRegion static method)</a>
 </li>
@@ -2431,6 +2445,8 @@ document.write(`
       </ul></li>
       <li><a href="autoapi/data/oc/utils/vasp/index.html#data.oc.utils.vasp.calculate_surface_k_points">calculate_surface_k_points() (in module data.oc.utils.vasp)</a>
 </li>
+      <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.MockReducer.calling_runner_config">calling_runner_config (core.components.reducer.MockReducer attribute)</a>
+</li>
       <li>
     cattsunami
 
@@ -2521,6 +2537,8 @@ document.write(`
       <li><a href="autoapi/core/common/utils/index.html#core.common.utils.cg_change_mat">cg_change_mat() (in module core.common.utils)</a>
 </li>
       <li><a href="autoapi/core/models/equiformer_v2/heads/rank2/index.html#core.models.equiformer_v2.heads.rank2.Rank2DecompositionEdgeBlock.change_mat">change_mat (core.models.equiformer_v2.heads.rank2.Rank2DecompositionEdgeBlock attribute)</a>
+</li>
+      <li><a href="autoapi/core/scripts/download_large_files/index.html#core.scripts.download_large_files.change_path_for_pypi">change_path_for_pypi() (in module core.scripts.download_large_files)</a>
 </li>
       <li><a href="autoapi/core/common/relaxation/optimizable/index.html#core.common.relaxation.optimizable.OptimizableBatch.check_state">check_state() (core.common.relaxation.optimizable.OptimizableBatch method)</a>
 
@@ -2971,6 +2989,13 @@ document.write(`
 </li>
       </ul></li>
       <li>
+    core.components.reducer
+
+      <ul>
+        <li><a href="autoapi/core/components/reducer/index.html#module-core.components.reducer">module</a>
+</li>
+      </ul></li>
+      <li>
     core.components.runner
 
       <ul>
@@ -3173,6 +3198,8 @@ document.write(`
         <li><a href="autoapi/core/models/equiformer_v2/heads/scalar/index.html#module-core.models.equiformer_v2.heads.scalar">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     core.models.equiformer_v2.heads.vector
 
@@ -3180,8 +3207,6 @@ document.write(`
         <li><a href="autoapi/core/models/equiformer_v2/heads/vector/index.html#module-core.models.equiformer_v2.heads.vector">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     core.models.equiformer_v2.input_block
 
@@ -5509,6 +5534,8 @@ document.write(`
 </li>
         <li><a href="autoapi/core/common/gp_utils/index.html#core.common.gp_utils.ReduceFromModelParallelRegion.forward">(core.common.gp_utils.ReduceFromModelParallelRegion static method)</a>
 </li>
+        <li><a href="autoapi/core/common/gp_utils/index.html#core.common.gp_utils.ScaleBackwardGrad.forward">(core.common.gp_utils.ScaleBackwardGrad static method)</a>
+</li>
         <li><a href="autoapi/core/common/gp_utils/index.html#core.common.gp_utils.ScatterToModelParallelRegion.forward">(core.common.gp_utils.ScatterToModelParallelRegion static method)</a>
 </li>
         <li><a href="autoapi/core/models/base/index.html#core.models.base.BackboneInterface.forward">(core.models.base.BackboneInterface method)</a>
@@ -6428,8 +6455,6 @@ document.write(`
         <li><a href="autoapi/ocpapi/client/client/index.html#ocpapi.client.client.Client.get_slabs">(ocpapi.client.client.Client method)</a>
 </li>
       </ul></li>
-      <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.get_slurm_env">get_slurm_env() (in module core._cli_hydra)</a>
-</li>
       <li><a href="autoapi/core/models/gemnet_oc/layers/basis_utils/index.html#core.models.gemnet_oc.layers.basis_utils.get_sph_harm_basis">get_sph_harm_basis() (in module core.models.gemnet_oc.layers.basis_utils)</a>
 </li>
       <li><a href="autoapi/core/common/utils/index.html#core.common.utils.get_subdirectories_sorted_by_time">get_subdirectories_sorted_by_time() (in module core.common.utils)</a>
@@ -6718,9 +6743,13 @@ document.write(`
       </ul></li>
       <li><a href="autoapi/core/common/logger/index.html#core.common.logger.WandBSingletonLogger.init_wandb">init_wandb() (core.common.logger.WandBSingletonLogger class method)</a>
 </li>
-      <li><a href="autoapi/core/components/runner/index.html#core.components.runner.MockRunner.initialize">initialize() (core.components.runner.MockRunner method)</a>
+      <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.MockReducer.initialize">initialize() (core.components.reducer.MockReducer method)</a>
 
       <ul>
+        <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.Reducer.initialize">(core.components.reducer.Reducer method)</a>
+</li>
+        <li><a href="autoapi/core/components/runner/index.html#core.components.runner.MockRunner.initialize">(core.components.runner.MockRunner method)</a>
+</li>
         <li><a href="autoapi/core/components/runner/index.html#core.components.runner.Runner.initialize">(core.components.runner.Runner method)</a>
 </li>
       </ul></li>
@@ -6976,8 +7005,6 @@ document.write(`
         <li><a href="autoapi/core/models/gemnet_oc/layers/basis_utils/index.html#core.models.gemnet_oc.layers.basis_utils.Jn">(in module core.models.gemnet_oc.layers.basis_utils)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="autoapi/core/models/gemnet/layers/basis_utils/index.html#core.models.gemnet.layers.basis_utils.Jn_zeros">Jn_zeros() (in module core.models.gemnet.layers.basis_utils)</a>
 
       <ul>
@@ -6986,6 +7013,10 @@ document.write(`
         <li><a href="autoapi/core/models/gemnet_oc/layers/basis_utils/index.html#core.models.gemnet_oc.layers.basis_utils.Jn_zeros">(in module core.models.gemnet_oc.layers.basis_utils)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.SlurmEnv.job_id">job_id (core._cli_hydra.SlurmEnv attribute)</a>
+</li>
       <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.JobConfig">JobConfig (class in core._cli_hydra)</a>
 </li>
   </ul></td>
@@ -7250,14 +7281,14 @@ document.write(`
         <li><a href="autoapi/core/models/escn/so3_exportable/index.html#core.models.escn.so3_exportable.CoefficientMapping.lmax_list">(core.models.escn.so3_exportable.CoefficientMapping attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="autoapi/core/datasets/index.html#core.datasets.LMDBDatabase">LMDBDatabase (class in core.datasets)</a>
 
       <ul>
         <li><a href="autoapi/core/datasets/lmdb_database/index.html#core.datasets.lmdb_database.LMDBDatabase">(class in core.datasets.lmdb_database)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="autoapi/core/datasets/index.html#core.datasets.LmdbDataset">LmdbDataset (class in core.datasets)</a>
 
       <ul>
@@ -7352,9 +7383,13 @@ document.write(`
         <li><a href="autoapi/core/trainers/index.html#core.trainers.BaseTrainer.load_seed_from_config">(core.trainers.BaseTrainer method)</a>
 </li>
       </ul></li>
-      <li><a href="autoapi/core/components/runner/index.html#core.components.runner.MockRunner.load_state">load_state() (core.components.runner.MockRunner method)</a>
+      <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.MockReducer.load_state">load_state() (core.components.reducer.MockReducer method)</a>
 
       <ul>
+        <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.Reducer.load_state">(core.components.reducer.Reducer method)</a>
+</li>
+        <li><a href="autoapi/core/components/runner/index.html#core.components.runner.MockRunner.load_state">(core.components.runner.MockRunner method)</a>
+</li>
         <li><a href="autoapi/core/components/runner/index.html#core.components.runner.Runner.load_state">(core.components.runner.Runner method)</a>
 </li>
       </ul></li>
@@ -7394,6 +7429,12 @@ document.write(`
         <li><a href="autoapi/core/common/logger/index.html#core.common.logger.WandBLogger.log_artifact">(core.common.logger.WandBLogger method)</a>
 </li>
         <li><a href="autoapi/core/common/logger/index.html#core.common.logger.WandBSingletonLogger.log_artifact">(core.common.logger.WandBSingletonLogger method)</a>
+</li>
+      </ul></li>
+      <li><a href="autoapi/core/common/logger/index.html#core.common.logger.WandBLogger.log_dataframe">log_dataframe() (core.common.logger.WandBLogger method)</a>
+
+      <ul>
+        <li><a href="autoapi/core/common/logger/index.html#core.common.logger.WandBSingletonLogger.log_dataframe">(core.common.logger.WandBSingletonLogger method)</a>
 </li>
       </ul></li>
       <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.Metadata.log_dir">log_dir (core._cli_hydra.Metadata attribute)</a>
@@ -7962,6 +8003,8 @@ document.write(`
         <li><a href="autoapi/core/models/escn/so3_exportable/index.html#core.models.escn.so3_exportable.CoefficientMapping.mmax_list">(core.models.escn.so3_exportable.CoefficientMapping attribute)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.MockReducer">MockReducer (class in core.components.reducer)</a>
+</li>
       <li><a href="autoapi/core/components/runner/index.html#core.components.runner.MockRunner">MockRunner (class in core.components.runner)</a>
 </li>
       <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.SchedulerConfig.mode">mode (core._cli_hydra.SchedulerConfig attribute)</a>
@@ -8101,6 +8144,8 @@ document.write(`
         <li><a href="autoapi/core/common/typing/index.html#module-core.common.typing">core.common.typing</a>
 </li>
         <li><a href="autoapi/core/common/utils/index.html#module-core.common.utils">core.common.utils</a>
+</li>
+        <li><a href="autoapi/core/components/reducer/index.html#module-core.components.reducer">core.components.reducer</a>
 </li>
         <li><a href="autoapi/core/components/runner/index.html#module-core.components.runner">core.components.runner</a>
 </li>
@@ -9851,6 +9896,8 @@ document.write(`
       </ul></li>
       <li><a href="autoapi/data/odac/promising_mof/promising_mof_energies/energy/index.html#data.odac.promising_mof.promising_mof_energies.energy.raw_ads_energy_data">raw_ads_energy_data (in module data.odac.promising_mof.promising_mof_energies.energy)</a>
 </li>
+      <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.SlurmEnv.raw_job_id">raw_job_id (core._cli_hydra.SlurmEnv attribute)</a>
+</li>
       <li><a href="autoapi/core/models/dimenet_plus_plus/index.html#core.models.dimenet_plus_plus.DimeNetPlusPlus.rbf">rbf (core.models.dimenet_plus_plus.DimeNetPlusPlus attribute)</a>
 </li>
       <li><a href="autoapi/core/models/painn/painn/index.html#core.models.painn.painn.PaiNNMessage.rbf_proj">rbf_proj (core.models.painn.painn.PaiNNMessage attribute)</a>
@@ -9905,6 +9952,8 @@ document.write(`
         <li><a href="autoapi/core/models/gemnet_oc/layers/basis_utils/index.html#core.models.gemnet_oc.layers.basis_utils.real_sph_harm">(in module core.models.gemnet_oc.layers.basis_utils)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.RunType.REDUCE">REDUCE (core._cli_hydra.RunType attribute)</a>
+</li>
       <li><a href="autoapi/core/models/equiformer_v2/equiformer_v2_dens/index.html#core.models.equiformer_v2.equiformer_v2_dens.DeNSScalarHead.reduce">reduce (core.models.equiformer_v2.equiformer_v2_dens.DeNSScalarHead attribute)</a>
 
       <ul>
@@ -9917,9 +9966,17 @@ document.write(`
         <li><a href="autoapi/core/models/schnet/index.html#core.models.schnet.SchNetWrap.reduce">(core.models.schnet.SchNetWrap attribute)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.MockReducer.reduce">reduce() (core.components.reducer.MockReducer method)</a>
+
+      <ul>
+        <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.Reducer.reduce">(core.components.reducer.Reducer method)</a>
+</li>
+      </ul></li>
       <li><a href="autoapi/core/common/gp_utils/index.html#core.common.gp_utils.reduce_from_model_parallel_region">reduce_from_model_parallel_region() (in module core.common.gp_utils)</a>
 </li>
       <li><a href="autoapi/core/common/gp_utils/index.html#core.common.gp_utils.ReduceFromModelParallelRegion">ReduceFromModelParallelRegion (class in core.common.gp_utils)</a>
+</li>
+      <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.Reducer">Reducer (class in core.components.reducer)</a>
 </li>
       <li><a href="autoapi/core/modules/loss/index.html#core.modules.loss.DDPLoss.reduction">reduction (core.modules.loss.DDPLoss attribute)</a>
 </li>
@@ -10173,6 +10230,8 @@ document.write(`
         <li><a href="autoapi/core/models/scn/spherical_harmonics/index.html#core.models.scn.spherical_harmonics.SphericalHarmonicsHelper.RotationToWignerDMatrix">(core.models.scn.spherical_harmonics.SphericalHarmonicsHelper method)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.RunType.RUN">RUN (core._cli_hydra.RunType attribute)</a>
+</li>
       <li><a href="autoapi/core/common/relaxation/optimizers/index.html#core.common.relaxation.optimizers.LBFGS.run">run() (core.common.relaxation.optimizers.LBFGS method)</a>
 
       <ul>
@@ -10232,6 +10291,8 @@ document.write(`
       <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.JobConfig.runner_state_path">runner_state_path (core._cli_hydra.JobConfig attribute)</a>
 </li>
       <li><a href="autoapi/core/_cli/index.html#core._cli.runner_wrapper">runner_wrapper() (in module core._cli)</a>
+</li>
+      <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.RunType">RunType (class in core._cli_hydra)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -10297,9 +10358,13 @@ document.write(`
         <li><a href="autoapi/core/trainers/index.html#core.trainers.BaseTrainer.save_results">(core.trainers.BaseTrainer method)</a>
 </li>
       </ul></li>
-      <li><a href="autoapi/core/components/runner/index.html#core.components.runner.MockRunner.save_state">save_state() (core.components.runner.MockRunner method)</a>
+      <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.MockReducer.save_state">save_state() (core.components.reducer.MockReducer method)</a>
 
       <ul>
+        <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.Reducer.save_state">(core.components.reducer.Reducer method)</a>
+</li>
+        <li><a href="autoapi/core/components/runner/index.html#core.components.runner.MockRunner.save_state">(core.components.runner.MockRunner method)</a>
+</li>
         <li><a href="autoapi/core/components/runner/index.html#core.components.runner.Runner.save_state">(core.components.runner.Runner method)</a>
 </li>
       </ul></li>
@@ -10322,6 +10387,8 @@ document.write(`
 </li>
       </ul></li>
       <li><a href="autoapi/core/models/gemnet_oc/layers/force_scaler/index.html#core.models.gemnet_oc.layers.force_scaler.ForceScaler.scale">scale() (core.models.gemnet_oc.layers.force_scaler.ForceScaler method)</a>
+</li>
+      <li><a href="autoapi/core/common/gp_utils/index.html#core.common.gp_utils.scale_backward_grad">scale_backward_grad() (in module core.common.gp_utils)</a>
 </li>
       <li><a href="autoapi/core/models/gemnet_oc/layers/radial_basis/index.html#core.models.gemnet_oc.layers.radial_basis.RadialBasis.scale_basis">scale_basis (core.models.gemnet_oc.layers.radial_basis.RadialBasis attribute)</a>
 
@@ -10391,6 +10458,8 @@ document.write(`
         <li><a href="autoapi/core/models/gemnet_oc/layers/atom_update_block/index.html#core.models.gemnet_oc.layers.atom_update_block.AtomUpdateBlock.scale_sum">(core.models.gemnet_oc.layers.atom_update_block.AtomUpdateBlock attribute)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/core/common/gp_utils/index.html#core.common.gp_utils.ScaleBackwardGrad">ScaleBackwardGrad (class in core.common.gp_utils)</a>
+</li>
       <li><a href="autoapi/core/modules/scaling/compat/index.html#core.modules.scaling.compat.ScaleDict">ScaleDict (in module core.modules.scaling.compat)</a>
 </li>
       <li><a href="autoapi/core/models/equiformer_v2/activation/index.html#core.models.equiformer_v2.activation.ScaledSigmoid">ScaledSigmoid (class in core.models.equiformer_v2.activation)</a>
@@ -10753,8 +10822,6 @@ document.write(`
 </li>
       <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.Metadata.slurm_env">slurm_env (core._cli_hydra.Metadata attribute)</a>
 </li>
-      <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.SlurmEnv.slurm_id">slurm_id (core._cli_hydra.SlurmEnv attribute)</a>
-</li>
       <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.SlurmConfig">SlurmConfig (class in core._cli_hydra)</a>
 </li>
       <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.SlurmEnv">SlurmEnv (class in core._cli_hydra)</a>
@@ -10763,14 +10830,14 @@ document.write(`
 </li>
       <li><a href="autoapi/core/models/equiformer_v2/activation/index.html#core.models.equiformer_v2.activation.SmoothLeakyReLU">SmoothLeakyReLU (class in core.models.equiformer_v2.activation)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="autoapi/core/models/escn/escn/index.html#core.models.escn.escn.MessageBlock.so2_block_source">so2_block_source (core.models.escn.escn.MessageBlock attribute)</a>
 
       <ul>
         <li><a href="autoapi/core/models/escn/escn_exportable/index.html#core.models.escn.escn_exportable.MessageBlock.so2_block_source">(core.models.escn.escn_exportable.MessageBlock attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="autoapi/core/models/escn/escn/index.html#core.models.escn.escn.MessageBlock.so2_block_target">so2_block_target (core.models.escn.escn.MessageBlock attribute)</a>
 
       <ul>

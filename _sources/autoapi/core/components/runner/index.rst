@@ -3,6 +3,14 @@ core.components.runner
 
 .. py:module:: core.components.runner
 
+.. autoapi-nested-parse::
+
+   Copyright (c) Meta, Inc. and its affiliates.
+
+   This source code is licensed under the MIT license found in the
+   LICENSE file in the root directory of this source tree.
+
+
 
 Classes
 -------
@@ -48,9 +56,7 @@ Module Contents
    Bases: :py:obj:`Runner`
 
 
-   Represents an abstraction over things that run in a loop and can save/load state.
-   ie: Trainers, Validators, Relaxation all fall in this category.
-   This allows us to decouple away from a monolithic trainer class
+   Used for testing
 
 
    .. py:attribute:: x

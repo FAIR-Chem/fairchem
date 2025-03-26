@@ -189,6 +189,12 @@
 
 
 <li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="inorganic_materials.html">Using FAIR chemistry models and workflow tools like quacc for inorganic materials science</a></li>
+
+
+
+
+
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Learn More</span></p>
 <ul class="nav bd-sidenav">
@@ -658,13 +664,13 @@ document.write(`
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.9/x64/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
-  from .autonotebook import tqdm as notebook_tqdm
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/docs/tutorials/NRR/NRR_example_bulks.pkl already exists
+/home/runner/work/fairchem/fairchem/docs/core/fine-tuning/supporting-information.json already exists
+/home/runner/work/fairchem/fairchem/docs/core/data.db already exists
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>docs/tutorials/NRR/NRR_example_bulks.pkl already exists
-docs/core/fine-tuning/supporting-information.json already exists
-docs/core/data.db already exists
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.9/x64/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
 </pre></div>
 </div>
 </div>
@@ -707,28 +713,28 @@ Comment or skip this block to use the whole dataset!</p>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>id|age|user  |formula|calculator|  energy|natoms| fmax|pbc|  volume|charge|     mass
- 1| 0s|runner|Au37   |unknown   | -97.007|    37|0.101|TTT|5771.976| 0.000| 7287.763
- 2| 0s|runner|Au22   |unknown   | -54.282|    22|0.208|TTT|4335.494| 0.000| 4333.265
- 3| 0s|runner|Au36   |unknown   | -92.665|    36|0.246|TTT|5663.627| 0.000| 7090.796
- 4| 0s|runner|Au21   |unknown   | -52.332|    21|0.196|TTT|4395.170| 0.000| 4136.298
- 5| 0s|runner|Au20   |unknown   | -48.961|    20|0.186|TTT|4413.396| 0.000| 3939.331
- 6| 0s|runner|Au87   |vasp      |-265.138|    87|0.338|TTT|7342.481| 0.000|17136.092
- 7| 0s|runner|Au45   |unknown   |-114.424|    45|0.563|TTT|6185.400| 0.000| 8863.496
- 8| 0s|runner|Au10   |unknown   | -21.951|    10|0.469|TTT|3066.950| 0.000| 1969.666
- 9| 0s|runner|Au54   |unknown   |-138.177|    54|0.980|TTT|6906.090| 0.000|10636.195
-10| 0s|runner|Au48   |unknown   |-121.714|    48|0.615|TTT|6440.631| 0.000| 9454.395
-11| 0s|runner|Au4    |unknown   | -11.522|     4|1.191|TTT| 156.940| 0.000|  787.866
-12| 0s|runner|Au29   |unknown   | -73.521|    29|0.083|TTT|5184.740| 0.000| 5712.031
-13| 0s|runner|Au55   |unknown   |-135.215|    55|0.151|TTT|7703.754| 0.000|10833.161
-14| 0s|runner|Au4    |unknown   | -11.911|     4|0.133|TTT| 156.940| 0.000|  787.866
-15| 0s|runner|Au31   |unknown   | -75.505|    31|0.669|TTT|5304.824| 0.000| 6105.964
-16| 0s|runner|Au12   |unknown   | -25.961|    12|1.000|TTT|3571.095| 0.000| 2363.599
-17| 0s|runner|Au8    |unknown   | -16.238|     8|0.401|TTT|2863.348| 0.000| 1575.733
-18| 0s|runner|Au20   |unknown   | -48.399|    20|0.595|TTT|4413.396| 0.000| 3939.331
-19| 0s|runner|Au53   |unknown   |-139.344|    53|0.563|TTT|6796.009| 0.000|10439.228
-20| 0s|runner|Au13   |unknown   | -29.394|    13|0.209|TTT|5639.752| 0.000| 2560.565
+ 1| 0s|runner|Au2    |unknown   |  -3.526|     2|0.000|TTT|  69.918| 0.000|  393.933
+ 2| 0s|runner|Au2    |unknown   |  -5.978|     2|0.000|TTT|  43.809| 0.000|  393.933
+ 3| 0s|runner|Au12   |unknown   | -28.072|    12|0.079|TTT|5639.752| 0.000| 2363.599
+ 4| 0s|runner|Au26   |unknown   | -64.799|    26|0.291|TTT|4932.626| 0.000| 5121.131
+ 5| 0s|runner|Au26   |unknown   | -64.128|    26|0.179|TTT|4932.626| 0.000| 5121.131
+ 6| 0s|runner|Au55   |unknown   |-134.315|    55|0.231|TTT|7703.754| 0.000|10833.161
+ 7| 0s|runner|Au10   |unknown   | -20.728|    10|0.351|TTT|4112.512| 0.000| 1969.666
+ 8| 0s|runner|Au20   |unknown   | -48.801|    20|0.307|TTT|4413.396| 0.000| 3939.331
+ 9| 0s|runner|Au47   |unknown   |-122.544|    47|0.242|TTT|6374.410| 0.000| 9257.429
+10| 0s|runner|Au19   |unknown   | -46.153|    19|0.179|TTT|3746.637| 0.000| 3742.365
+11| 0s|runner|Au22   |unknown   | -54.383|    22|0.084|TTT|4335.494| 0.000| 4333.265
+12| 0s|runner|Au2    |unknown   |  -5.882|     2|0.000|TTT|  44.472| 0.000|  393.933
+13| 0s|runner|Au25   |unknown   | -61.909|    25|0.088|TTT|4771.343| 0.000| 4924.164
+14| 0s|runner|Au2    |unknown   |  -5.919|     2|0.000|TTT|  44.426| 0.000|  393.933
+15| 0s|runner|Au55   |unknown   |-143.778|    55|0.261|TTT|6865.782| 0.000|10833.161
+16| 0s|runner|Au28   |unknown   | -69.444|    28|0.622|TTT|5068.935| 0.000| 5515.064
+17| 0s|runner|Au73   |unknown   |-197.238|    73|0.145|TTT|9247.570| 0.000|14378.560
+18| 0s|runner|Au19   |unknown   | -45.212|    19|0.557|TTT|4101.856| 0.000| 3742.365
+19| 0s|runner|Au38   |unknown   | -96.632|    38|0.410|TTT|5846.048| 0.000| 7484.730
+20| 0s|runner|Au15   |unknown   | -29.217|    15|2.175|TTT|3809.068| 0.000| 2954.499
 Rows: 50 (showing first 20)
-Keys: NEB, calc_time, cluster, config, diffusion, ediffg, encut, fermi, gga, group, identity, image, kpt1, kpt2, kpt3, miller, neural_energy, reax_energy, structure, surf, tag, train_set, traj, vacuum, volume, xc
+Keys: bulk, calc_time, cluster, config, ediff, ediffg, encut, factor, fermi, gga, group, kpt1, kpt2, kpt3, neural_energy, reax_energy, strain, structure, train_set, traj, vacuum, volume, xc
 </pre></div>
 </div>
 </div>
@@ -792,24 +798,22 @@ Keys: NEB, calc_time, cluster, config, diffusion, ediffg, encut, fermi, gga, gro
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
 /home/runner/work/fairchem/fairchem/src/fairchem/core/models/escn/so3.py:23: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+/home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
 WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-14-23-38-40
-  commit: core:4914e7e,experimental:NA
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-26-21-39-12
+  commit: core:a65177b,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-14-23-38-40
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-26-21-39-12
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-14-23-38-40
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-26-21-39-12
   seed: null
-  timestamp_id: 2025-03-14-23-38-40
-  version: 1.8.1
+  timestamp_id: 2025-03-26-21-39-12
+  version: 0.1.dev1+ga65177b
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -979,7 +983,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2025-03-14 23:39:48 /home/runner/work/fairchem/fairchem/src/fairchem/core/common/utils.py:1113: (INFO): Total time taken: 8.152684688568115
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2025-03-26 21:38:43 /home/runner/work/fairchem/fairchem/src/fairchem/core/common/utils.py:1113: (INFO): Total time taken: 8.265475749969482
 </pre></div>
 </div>
 </div>
@@ -1048,7 +1052,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/38e44b76ea6b1efc126559ca95126ff89c11b90dad424cb6912d89cf100a16cd.png" src="../_images/38e44b76ea6b1efc126559ca95126ff89c11b90dad424cb6912d89cf100a16cd.png" />
+<img alt="../_images/ff4d79cc999083c6b599196bf3e8c75466c4870419f4f11a0b9627cb9cf7c71f.png" src="../_images/ff4d79cc999083c6b599196bf3e8c75466c4870419f4f11a0b9627cb9cf7c71f.png" />
 </div>
 </div>
 </section>
@@ -1074,15 +1078,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-14-23-40-48
-  commit: core:4914e7e,experimental:NA
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-26-21-39-12
+  commit: core:a65177b,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-14-23-40-48
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-26-21-39-12
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-14-23-40-48
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-26-21-39-12
   seed: null
-  timestamp_id: 2025-03-14-23-40-48
-  version: 1.8.1
+  timestamp_id: 2025-03-26-21-39-12
+  version: 0.1.dev1+ga65177b
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1239,128 +1243,130 @@ val_dataset: {}
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>0it [00:00, ?it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3679/402181013.py:7: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3647/402181013.py:7: FutureWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
+
+1it [00:00,  6.33it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1it [00:00,  3.49it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2it [00:00,  4.75it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2it [00:00,  4.48it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>3it [00:00,  4.81it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>3it [00:00,  4.44it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>4it [00:00,  3.73it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>4it [00:00,  5.30it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>5it [00:01,  4.78it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>5it [00:00,  6.02it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>6it [00:01,  5.34it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>6it [00:01,  4.43it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>7it [00:01,  4.13it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>8it [00:01,  4.52it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>8it [00:01,  4.79it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>9it [00:02,  3.76it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>9it [00:01,  4.96it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>10it [00:02,  3.90it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>10it [00:02,  4.91it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>11it [00:02,  3.52it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>11it [00:02,  3.59it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>12it [00:02,  3.69it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>12it [00:02,  3.67it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>13it [00:03,  4.38it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>13it [00:03,  2.72it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>15it [00:03,  5.48it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>14it [00:03,  3.28it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>16it [00:03,  4.28it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>15it [00:03,  3.32it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>17it [00:03,  4.89it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>16it [00:03,  3.98it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>18it [00:03,  5.52it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>17it [00:04,  3.95it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>19it [00:04,  4.85it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>18it [00:04,  3.91it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>20it [00:04,  4.92it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>19it [00:04,  3.83it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>21it [00:04,  5.33it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>20it [00:05,  3.81it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>22it [00:05,  2.71it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>21it [00:05,  3.76it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>23it [00:05,  3.06it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>22it [00:05,  3.14it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>24it [00:05,  3.84it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>23it [00:06,  3.28it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>25it [00:05,  3.90it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>24it [00:06,  3.31it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>26it [00:06,  4.07it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>25it [00:06,  3.22it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>27it [00:06,  3.78it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>26it [00:07,  2.06it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>28it [00:06,  4.11it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>27it [00:07,  2.37it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>29it [00:06,  4.28it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>28it [00:08,  2.73it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>30it [00:07,  3.96it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>29it [00:08,  3.16it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>31it [00:07,  2.90it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>30it [00:08,  3.13it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>32it [00:07,  3.35it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>32it [00:08,  4.87it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>33it [00:08,  3.52it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>33it [00:08,  4.58it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>35it [00:08,  4.99it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>34it [00:09,  3.96it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>36it [00:08,  5.49it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>36it [00:09,  5.70it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>37it [00:08,  4.50it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>37it [00:09,  5.06it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>38it [00:09,  4.15it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>38it [00:09,  5.72it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>39it [00:09,  4.13it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>39it [00:09,  6.27it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>40it [00:09,  3.70it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>40it [00:10,  5.63it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>41it [00:09,  4.39it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>41it [00:10,  4.97it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>42it [00:10,  4.17it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>42it [00:10,  4.68it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>42it [00:10,  4.15it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>42it [00:10,  3.92it/s]
 </pre></div>
 </div>
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time 1e+01 seconds
@@ -1381,7 +1387,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/2f06d782878abc29597c62f0dfcdc85d966d76c6fba112b5a03c12842c486ec2.png" src="../_images/2f06d782878abc29597c62f0dfcdc85d966d76c6fba112b5a03c12842c486ec2.png" />
+<img alt="../_images/8e820d77a67b11a87dca970338eb63528ff8f6081efe9f068de1c7476e009588.png" src="../_images/8e820d77a67b11a87dca970338eb63528ff8f6081efe9f068de1c7476e009588.png" />
 </div>
 </div>
 </section>
@@ -1397,7 +1403,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>50.52533105819944
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>56.53155070800089
 </pre></div>
 </div>
 </div>
@@ -1409,7 +1415,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(-191.66928672790527, 191.66928672790527)
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(-280.0291500091553, 280.0291500091553)
 </pre></div>
 </div>
 </div>
@@ -1421,7 +1427,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/a28a2352d19229a8323e4b72a757bcf3c1c91e63d9ea2bb7be961e054f4fd0e3.png" src="../_images/a28a2352d19229a8323e4b72a757bcf3c1c91e63d9ea2bb7be961e054f4fd0e3.png" />
+<img alt="../_images/454e05e10cefd4d2d7b41429efe4ea0998d37f91bf24810cc5ebb148eccb6728.png" src="../_images/454e05e10cefd4d2d7b41429efe4ea0998d37f91bf24810cc5ebb148eccb6728.png" />
 </div>
 </div>
 <p>Here we see many of the differences are very small. 0.0078125 = 1 / 128, and these errors strongly suggest some kind of mixed precision is responsible for these differences. It is an open issue to remove them and identify where the cause is.</p>
@@ -1432,19 +1438,19 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([[ 0.00000000e+00, -4.37229614e+01, -3.34896851e+00, ...,
-         1.74409180e+01, -7.31570282e+01, -6.88742065e+00],
-       [ 4.37229614e+01,  0.00000000e+00,  4.03739929e+01, ...,
-         6.11638794e+01, -2.94340668e+01,  3.68355408e+01],
-       [ 3.34896851e+00, -4.03739929e+01,  0.00000000e+00, ...,
-         2.07898865e+01, -6.98080597e+01, -3.53845215e+00],
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([[ 0.00000000e+00,  3.97238503e+01,  3.93073921e+01, ...,
+         5.46988792e+01,  6.57638512e+01,  3.72898750e+01],
+       [-3.97238503e+01,  0.00000000e+00, -4.16458130e-01, ...,
+         1.49750290e+01,  2.60400009e+01, -2.43397522e+00],
+       [-3.93073921e+01,  4.16458130e-01,  0.00000000e+00, ...,
+         1.53914871e+01,  2.64564590e+01, -2.01751709e+00],
        ...,
-       [-1.74409256e+01, -6.11638870e+01, -2.07898941e+01, ...,
-        -7.62939453e-06, -9.05979538e+01, -2.43283463e+01],
-       [ 7.31570282e+01,  2.94340668e+01,  6.98080597e+01, ...,
-         9.05979462e+01,  0.00000000e+00,  6.62696075e+01],
-       [ 6.88742828e+00, -3.68355331e+01,  3.53845978e+00, ...,
-         2.43283463e+01, -6.62695999e+01,  7.62939453e-06]])
+       [-5.46988792e+01, -1.49750290e+01, -1.53914871e+01, ...,
+         0.00000000e+00,  1.10649719e+01, -1.74090042e+01],
+       [-6.57638435e+01, -2.60399933e+01, -2.64564514e+01, ...,
+        -1.10649643e+01,  7.62939453e-06, -2.84739685e+01],
+       [-3.72898750e+01,  2.43397522e+00,  2.01751709e+00, ...,
+         1.74090042e+01,  2.84739761e+01,  0.00000000e+00]])
 </pre></div>
 </div>
 </div>

@@ -189,6 +189,12 @@
 
 
 <li class="toctree-l1"><a class="reference internal" href="../../../../core/license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../core/inorganic_materials.html">Using FAIR chemistry models and workflow tools like quacc for inorganic materials science</a></li>
+
+
+
+
+
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Learn More</span></p>
 <ul class="nav bd-sidenav">
@@ -663,6 +669,9 @@ document.write(`
                   
   <section id="module-core.components.runner">
 <span id="core-components-runner"></span><h1>core.components.runner<a class="headerlink" href="#module-core.components.runner" title="Link to this heading">#</a></h1>
+<p>Copyright (c) Meta, Inc. and its affiliates.</p>
+<p>This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.</p>
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
@@ -671,7 +680,7 @@ document.write(`
 <td><p>Represents an abstraction over things that run in a loop and can save/load state.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#core.components.runner.MockRunner" title="core.components.runner.MockRunner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MockRunner</span></code></a></p></td>
-<td><p>Represents an abstraction over things that run in a loop and can save/load state.</p></td>
+<td><p>Used for testing</p></td>
 </tr>
 </tbody>
 </table>
@@ -711,9 +720,7 @@ This allows us to decouple away from a monolithic trainer class</p>
 <dt class="sig sig-object py" id="core.components.runner.MockRunner">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.components.runner.</span></span><span class="sig-name descname"><span class="pre">MockRunner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#core.components.runner.MockRunner" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#core.components.runner.Runner" title="core.components.runner.Runner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Runner</span></code></a></p>
-<p>Represents an abstraction over things that run in a loop and can save/load state.
-ie: Trainers, Validators, Relaxation all fall in this category.
-This allows us to decouple away from a monolithic trainer class</p>
+<p>Used for testing</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="core.components.runner.MockRunner.x">
 <span class="sig-name descname"><span class="pre">x</span></span><a class="headerlink" href="#core.components.runner.MockRunner.x" title="Link to this definition">#</a></dt>
