@@ -8,11 +8,14 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from omegaconf import DictConfig
 
 from fairchem.core.components.utils import ManagedAttribute
+
+if TYPE_CHECKING:
+    from fairchem.core.components.runner import Runner
 
 
 class Reducer(metaclass=ABCMeta):
@@ -22,6 +25,12 @@ class Reducer(metaclass=ABCMeta):
 
     job_config = ManagedAttribute(enforced_type=DictConfig)
     runner_config = ManagedAttribute(enforced_type=DictConfig)
+
+    @property
+    @abstractmethod
+    def runner_type(self) -> Runner:
+        """The runner type this reducer is associated with."""
+        raise NotImplementedError
 
     @abstractmethod
     def reduce(self) -> Any:
@@ -39,6 +48,12 @@ class Reducer(metaclass=ABCMeta):
 
 class MockReducer(Reducer):
     """Used for testing"""
+
+    @property
+    def runner_type(self):
+        from fairchem.core.components.runner import MockRunner
+
+        return MockRunner
 
     def reduce(self) -> Any:
         runner_path = self.runner_config.pop("_target_")
