@@ -14,13 +14,16 @@ parts:
   - file: core/supervised_gnns
   - file: core/common_tasks
     sections:
-    - file: core/dataset_creation
+    - file: core/ase_dataset_creation
     - file: core/model_finetuning
     - file: core/batch_inference
-  - file: core/workflows
+    - file: tutorials/advanced/embeddings
+    - file: core/workflows
   - file: core/generative_models
 - caption: Heterogeneous Catalysis
   chapters:
+  - url: https://opencatalystproject.org
+    title: OCP Leaderboard
   - url: https://open-catalyst.metademolab.com/
     title: OCP Demo (no install required!)
   - file: core/catalysts/calculations
@@ -43,7 +46,7 @@ parts:
     - file: tutorials/adsorbml_walkthrough
     - file: tutorials/cattsunami_tutorial
     - file: tutorials/fairchem_models_for_nebs
-    - file: tutorials/NRR/NRR_toc
+    - file: tutorials/NRR/NRR_example
   - file: core/catalysts/FAQ
 - caption: Inorganic Materials
   chapters:
@@ -71,35 +74,6 @@ parts:
   - file: core/intro_series
   - file: videos/technical_talks
   - file: core/papers_using_models
-- caption: Making your own datasets
-  chapters:
-  - file: core/ase_dataset_creation
-  - file: core/lmdb_dataset_creation
-- caption: Model development, training, inference, finetuning
-  chapters:
-  - file: core/model_training
-  - file: core/inference
-  - file: core/fine-tuning/fine-tuning-oxides
-  - file: core/model_faq
-- caption: Catalysis Case Studies & Tutorials
-  chapters:
-  - file: tutorials/intro
-  - file: tutorials/OCP-introduction
-  - file: tutorials/adsorbml_walkthrough
-  - file: tutorials/cattsunami_tutorial
-  - file: tutorials/fairchem_models_for_nebs
-  - file: tutorials/NRR/NRR_toc
-    sections:
-    - file: tutorials/NRR/NRR_example
-  - file: tutorials/advanced/advanced_toc
-    sections:
-    - file: tutorials/advanced/fine-tuning-in-python
-    - file: tutorials/advanced/embeddings
-  - file: legacy_tutorials/legacy_tutorials
-    sections:
-    - file: legacy_tutorials/OCP_Tutorial
-    - file: legacy_tutorials/data_preprocessing
-    - file: legacy_tutorials/data_visualization
 - caption: fairchem documentation
   chapters:
   - file: autoapi/index
