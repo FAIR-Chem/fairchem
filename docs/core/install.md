@@ -7,6 +7,29 @@ and then either install `fairchem-core` package [directly](#Install-fairchem-cor
 
 You can install the environment using either conda or pip
 
+
+### PyPi
+1. Make a clean conda environment, or virtualenv, or 
+2. You can install `pytorch` and `torch_geometric` dependencies from PyPI. A one-line install that works well and will install everything needed to build the docs and show the examples in the documentation is:
+```
+pip install --upgrade --force-reinstall torch==2.4.1 torchvision torchaudio -f https://download.pytorch.org/whl/cu121 \
+            pyg_lib torch_spline_conv torch_geometric torch_scatter torch_sparse torch_cluster -f https://data.pyg.org/whl/torch-2.4.1+cu121.html \ 
+            fairchem-core[docs,adsorbml,quacc] fairchem-demo-ocpapi fairchem-data-oc
+```
+If you're operating in an environment alongside other packages, then you should probably run the command above with `--dry-run` first to make sure what it's about to do makes sense!
+
+If you need other versions of python/cuda/pytorch/etc (untested, be careful!):
+1. Install `pytorch` by selecting your installer, OS and CPU or CUDA version following the official
+[Pytorch docs](https://pytorch.org/get-started/locally/)
+2. Install `torch_geometric` and the `torch_scatter`, `torch_sparse`, and `torch_cluster` optional dependencies
+   similarly by selecting the appropriate versions in the official
+   [PyG docs](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html)
+3. pip install the fairchem packages with the selections you need
+```bash
+pip install fairchem-core
+```
+
+
 ### Conda
 
 We do not have official conda recipes (yet!); in the meantime you can use the
@@ -34,21 +57,10 @@ following environment yaml files to setup on CPU or GPU. If conda is too slow fo
    conda activate fair-chem
    ```
 
-### PyPi
-You can also install `pytorch` and `torch_geometric` dependencies from PyPI to select specific CPU or CUDA versions.
-
-1. Install `pytorch` by selecting your installer, OS and CPU or CUDA version following the official
-[Pytorch docs](https://pytorch.org/get-started/locally/)
-
-2. Install `torch_geometric` and the `torch_scatter`, `torch_sparse`, and `torch_cluster` optional dependencies
-   similarly by selecting the appropriate versions in the official
-   [PyG docs](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html)
 
 ## Standard installation of fairchem-core
 Install `fairchem-core` from PyPi
-```bash
-pip install fairchem-core
-```
+
 
 ### Additional packages
 `fairchem` is a namespace package, meaning all packages are installed seperately. If you need
