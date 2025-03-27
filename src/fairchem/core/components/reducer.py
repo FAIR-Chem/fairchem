@@ -28,7 +28,7 @@ class Reducer(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def runner_type(self) -> Runner:
+    def runner_type(self) -> type[Runner]:
         """The runner type this reducer is associated with."""
         raise NotImplementedError
 
