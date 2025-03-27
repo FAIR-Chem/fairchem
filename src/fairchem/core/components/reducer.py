@@ -19,8 +19,15 @@ if TYPE_CHECKING:
 
 
 class Reducer(metaclass=ABCMeta):
-    """
-    Represents an abstraction over things that reduce the results written by a set of runner.
+    """Represents an abstraction over things that reduce the results written by a set of runner.
+
+    Note:
+        When running with the `fairchemv2` cli, the `job_config` and `runner_config` attributes are set at
+        runtime to those given in the config file.
+
+    Attributes:
+        job_config (DictConfig): a managed attribute that gives access to the job config
+        runner_config (DictConfig): a managed attributed that gives access to the calling runner config
     """
 
     job_config = ManagedAttribute(enforced_type=DictConfig)
