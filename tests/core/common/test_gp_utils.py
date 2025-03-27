@@ -4,7 +4,9 @@ from functools import partial
 import pytest
 import torch
 import torch.nn as nn
+from torch.distributed.nn.functional import all_reduce
 
+from torchviz import make_dot
 from fairchem.core.common.gp_utils import (
     gather_from_model_parallel_region,
     scatter_to_model_parallel_region,
@@ -125,20 +127,76 @@ def test_gather_tensors(
 
 
 # test for one rank to return a product and rest return 0
-def gather_prod_rank(all_inputs, target_rank=0):
+def scatter_prod_reduce(all_inputs, nlayers):
     rank = dist.get_rank()
-    x = scatter_to_model_parallel_region(all_inputs) + 0
-    x_full = gather_from_model_parallel_region(x, 0)
-    if rank == target_rank:
-        loss = x_full.prod()
-    else:
-        loss = x_full.sum() * 0
-    # adding 0.0 makes it out of place for reduce with respect to
+
+    x_full = all_inputs.clone()
+
+    for layer_idx in range(1):
+        x = scatter_to_model_parallel_region(x_full, dim=0) + 0
+        # BE VERY CAREFUL, inside of this context do not use any variables
+        # in other partitions, their gradient will not propagate!
+        if rank == 0:
+            x = x + x.prod()  # x.prod() * 0  # first two nodes bi-directed
+        else:
+            x = x + x.prod() ** 2
     # saved tensors in above operation
-    print("RANK", rank, loss, x_full, x)
-    loss = gp_utils.reduce_from_model_parallel_region(loss + 0.0)
-    loss.backward()
-    return all_inputs.grad
+    energy_part = x.sum()
+    energy = gp_utils.reduce_from_model_parallel_region(energy_part.clone())
+    energy.backward()
+
+    print(f"{rank} all inputs grad", all_inputs.grad)
+    return {"energy": energy.detach(), "forces": all_inputs.grad.detach()}
+
+
+def test_scatter_prod_reduce_1layer():
+    torch.autograd.set_detect_anomaly(True)
+    input = torch.tensor([2.0, 3.0, 5.0], requires_grad=True)
+    expected_output = {
+        "energy": torch.tensor(47.0),
+        "forces": torch.tensor([7.0, 5.0, 11.0]),
+    }
+    # A | B      C
+    # A+AB | B+AB   C+C*C
+    #  E = A+B+2AB   + C+C*C = 47
+    # dE/dA = 1+2B = 7, dE/dB = 1 + 2A = 5 , dE/dC = 1+2C = 11
+
+    config = PGConfig(backend="gloo", world_size=2, gp_group_size=2, use_gp=True)
+    output = spawn_multi_process(
+        config, scatter_prod_reduce, init_pg_and_rank_and_launch_test, input, 1
+    )
+    for output_tensor in output:
+        for key in expected_output:
+            assert torch.isclose(
+                output_tensor[key], expected_output[key]
+            ).all(), f"Failed closeness check for {key}"
+
+
+def test_scatter_prod_reduce_2layer():
+    torch.autograd.set_detect_anomaly(True)
+    input = torch.tensor([2.0, 3.0, 5.0], requires_grad=True)
+    expected_output = {
+        "energy": torch.tensor(17.0),
+        "forces": torch.tensor([7.0, 5.0, 1.0]),
+    }
+    # A | B      C
+    # A+AB | B+AB    C
+    #  E = A+B+2AB   , C
+    # dE/dA = 1+2B , dE/dB = 1 + 2A , dE/dC = 1
+
+    for target_rank in [0]:
+        config = PGConfig(backend="gloo", world_size=2, gp_group_size=2, use_gp=True)
+        output = spawn_multi_process(
+            config,
+            partial(scatter_prod_reduce, target_rank=target_rank),
+            init_pg_and_rank_and_launch_test,
+            input,
+        )
+        for output_tensor in output:
+            for key in expected_output:
+                assert torch.isclose(
+                    output_tensor[key], expected_output[key]
+                ).all(), f"Failed closeness check for {key}"
 
 
 def layer(x, target_rank):
@@ -192,22 +250,6 @@ def test_gather_fwd_bwd_multilayer():
 
     # for output_tensor in output:
     #    assert torch.isclose(output_tensor, expected_output).all()
-
-
-def test_gather_fwd_bwd():
-    torch.autograd.set_detect_anomaly(True)
-    input = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
-    expected_output = torch.tensor([6.0, 3.0, 2.0])
-    for target_rank in [0]:
-        config = PGConfig(backend="gloo", world_size=2, gp_group_size=2, use_gp=True)
-        output = spawn_multi_process(
-            config,
-            partial(gather_prod_rank, target_rank=target_rank),
-            init_pg_and_rank_and_launch_test,
-            input,
-        )
-        for output_tensor in output:
-            assert torch.isclose(output_tensor, expected_output).all()
 
 
 # test for one rank to return a product and rest return 0
@@ -334,16 +376,13 @@ def embeddings_and_graph_init(atomic_numbers, edge_index):
 
 # test for one rank to return a product and rest return 0
 def simple_layer(x, edge_index, node_offset, n=3):
-
     if gp_utils.initialized():
-        x_full = gp_utils.gather_from_model_parallel_region(x, dim=0)
+        x_full = gp_utils.gather_from_model_parallel_region_sum_grad(x, dim=0)
         x_source = x_full[edge_index[0]]
         x_target = x_full[edge_index[1]]
-        rank = gp_utils.get_gp_rank()
     else:
         x_source = x[edge_index[0]]
         x_target = x[edge_index[1]]
-        rank = 0
 
     edge_embeddings = (x_source + 1).pow(n) * (x_target + 1).pow(n)
 
@@ -354,9 +393,6 @@ def simple_layer(x, edge_index, node_offset, n=3):
     )
 
     new_node_embedding.index_add_(0, edge_index[1] - node_offset, edge_embeddings)
-    print(f"{rank}:simple_layer:edge_embedding", edge_embeddings)
-    print(f"{rank}:simple_layer:new_node_embedding", new_node_embedding)
-    print(f"{rank}:simple_layer:edge_index node_offset", edge_index[1], node_offset)
 
     return new_node_embedding
 
@@ -368,19 +404,12 @@ class SimpleNet(nn.Module):
         self.n = n
 
     def forward(self, atomic_numbers, edge_index):
-
-        if gp_utils.initialized():
-            gp_rank = gp_utils.get_gp_rank()
-        else:
-            gp_rank = 0
-
         node_embeddings, graph_dict = embeddings_and_graph_init(
             atomic_numbers, edge_index
         )
 
         all_node_embeddings = [node_embeddings]  # store for debugging
         for layer_idx in range(self.nlayers):
-            print(f"{gp_rank}:Running layer", layer_idx)
             all_node_embeddings.append(
                 simple_layer(
                     all_node_embeddings[-1],
@@ -405,7 +434,6 @@ class SimpleNet(nn.Module):
             ),
             final_node_embeddings,
         )
-        print(f"{gp_rank}:Energy part", energy_part)
 
         forces_part = torch.autograd.grad(
             [energy_part.sum()],
@@ -413,35 +441,12 @@ class SimpleNet(nn.Module):
             create_graph=self.training,
         )[0]
 
-        print(f"{gp_rank}:Forces part", forces_part)
-
         if gp_utils.initialized():
             energy = gp_utils.reduce_from_model_parallel_region(energy_part)
-        else:
-            energy = energy_part
-        print(f"{gp_rank}:Energy", energy)
-
-        if gp_utils.initialized():
             forces = gp_utils.reduce_from_model_parallel_region(forces_part)
         else:
+            energy = energy_part
             forces = forces_part
-
-        print(f"{gp_rank}:FORCES", forces)
-
-        # dforces_dinput_part = torch.autograd.grad(
-        #     [forces.sum()],
-        #     [atomic_numbers],
-        #     create_graph=self.training,
-        # )[0]
-
-        # if gp_utils.initialized():
-        #     dforces_dinput = gp_utils.reduce_from_model_parallel_region(
-        #         dforces_dinput_part
-        #     )
-        # else:
-        #     dforces_dinput = dforces_dinput_part
-
-        # print(f"{gp_rank}:dforces_dinput", dforces_dinput)
 
         return {"energy": energy, "forces": forces}
 
@@ -487,4 +492,6 @@ def test_simple_energy(nlayers):
 
     for rank_results in all_rank_results:
         for result_key in non_gp_results:
-            assert non_gp_results[result_key].isclose(rank_results[result_key]).all()
+            assert (
+                non_gp_results[result_key].isclose(rank_results[result_key]).all()
+            ), f"{result_key} failed closeness test"
