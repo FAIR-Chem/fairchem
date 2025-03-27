@@ -268,9 +268,7 @@ def _gather_with_padding(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
     ]
 
     dist.all_gather(tensor_list, input, group=group)
-    print("GATHER WITH PAD", tensor_list)
     tensor_list[rank] = input  # pop back in our local copy (requires grad)
-    print("GATHER WITH PAD", tensor_list)
 
     # Trim and cat
     return torch.cat(
@@ -312,6 +310,11 @@ class ScatterToModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
         (dim,) = ctx.saved_tensors
+        # print("BACKWARD SCATTER")
+        # return (
+        #     GatherFromModelParallelRegion.apply(grad_output.clone(), dim.item()),
+        #     None,
+        # )
         print("scatter backward first", grad_output)
         ret = _gather_with_padding(grad_output.clone(), dim.item())
         print("scatter backward out", ret)
@@ -321,11 +324,13 @@ class ScatterToModelParallelRegion(torch.autograd.Function):
 class GatherFromModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor:
+        print("GATHER FORWARD?")
         ctx.save_for_backward(torch.tensor(dim))
         return _gather_with_padding(input, dim)
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
+        print("GATHER BACKWARD")
         (dim,) = ctx.saved_tensors
         result = _split(grad_output, dim.item())
         return result, None
@@ -343,7 +348,7 @@ class GatherFromModelParallelRegionSumGrad(torch.autograd.Function):
         gp_rank = get_gp_rank()
         (dim,) = ctx.saved_tensors
         group = get_gp_group()
-        print("GATHERFROM,BACKWARD", gp_rank, grad_output)
+        print("xGATHERFROM,BACKWARD", gp_rank, grad_output)
         # use dist internal # does not work
         # reduced_grad_output = grad_output.clone()
         # dist.all_reduce(
