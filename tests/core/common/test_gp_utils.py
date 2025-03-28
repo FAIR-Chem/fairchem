@@ -19,6 +19,8 @@ from torch import distributed as dist
 
 from fairchem.core.common import gp_utils
 
+from torchviz import make_dot
+
 
 def _dummy_call(x):
     return x
@@ -209,6 +211,13 @@ def gather_bwd_test():
         create_graph=True,
     )[0]
 
+    print("DFORCES/DPART")
+    dforces_dinput_part = torch.autograd.grad(
+        [forces_part],
+        [x],
+        create_graph=True,
+    )[0]
+
     return {
         "gp_rank": rank,
         "energy": energy_part.detach(),
@@ -247,18 +256,92 @@ def test_gather_bwd():
         compare_and_assert_dict(expected_output[results["gp_rank"]], results)
 
 
+def standalone_example():
+    x0 = torch.tensor([2.0], requires_grad=True)
+    x1 = torch.tensor([3.0], requires_grad=True)
+    x_full = torch.cat([x0, x1])
+    e0 = (x_full.prod() + 1) ** 2  # rank 0
+    e1 = (x_full.prod() + 2) ** 2  # rank 1
+
+    dot = make_dot(
+        e0,
+        params={"x": x0, "x_full": x_full, "energy_part": e0},
+        show_attrs=True,
+        show_saved=True,
+    )
+    dot.render(filename=f"nongp_e0_energy_graph", format="png")
+    dot = make_dot(
+        e1,
+        params={"x": x1, "x_full": x_full, "energy_part": e1},
+        show_attrs=True,
+        show_saved=True,
+    )
+    dot.render(filename=f"nongp_e1_energy_graph", format="png")
+
+    f0 = torch.autograd.grad(
+        [e0],
+        [x0],
+        create_graph=True,
+    )[0]
+    dot = make_dot(
+        f0,
+        params={
+            "x_full": x_full,
+            "forces_part": f0,
+        },
+        show_attrs=True,
+        show_saved=True,
+    )
+    dot.render(filename=f"nongp_f0_forces_graph", format="png")
+
+    f1 = torch.autograd.grad(
+        [e1],
+        [x1],
+        create_graph=True,
+    )[0]
+    dot = make_dot(
+        f1,
+        params={
+            "x_full": x_full,
+            "forces_part": f1,
+        },
+        show_attrs=True,
+        show_saved=True,
+    )
+    dot.render(filename=f"nongp_f1_forces_graph", format="png")
+
+
 def gather_sum_bwd_test():
     rank = dist.get_rank()
-    x = torch.tensor([rank + 2], requires_grad=True, dtype=torch.float)
-    x_full = gather_from_model_parallel_region_sum_grad(x, 0)
+    x = torch.tensor([rank + 2], requires_grad=True, dtype=torch.float)  # [2] ,[3]
+    x_full = gather_from_model_parallel_region_sum_grad(x, 0)  # [2,3]
 
     energy_part = (x_full.prod() + rank + 1) ** 2
+    dot = make_dot(
+        energy_part,
+        params={"x": x, "x_full": x_full, "energy_part": energy_part},
+        show_attrs=True,
+        show_saved=True,
+    )
+    dot.render(filename=f"{rank}_energy_graph", format="png")
 
     forces_part = torch.autograd.grad(
         [energy_part],
         [x],
         create_graph=True,
     )[0]
+    dot = make_dot(
+        forces_part,
+        params={
+            "x": x,
+            "x_full": x_full,
+            "energy_part": energy_part,
+            "forces_part": forces_part,
+        },
+        show_attrs=True,
+        show_saved=True,
+    )
+    dot.render(filename=f"{rank}_forces_graph", format="png")
 
     print("DFORCES/DPART")
     dforces_dinput_part = torch.autograd.grad(
@@ -266,6 +349,20 @@ def gather_sum_bwd_test():
         [x],
         create_graph=True,
     )[0]
+    dot = make_dot(
+        dforces_dinput_part,
+        params={
+            "x": x,
+            "x_full": x_full,
+            "energy_part": energy_part,
+            "forces_part": forces_part,
+            "dforces_dinput_part": dforces_dinput_part,
+        },
+        show_attrs=True,
+        show_saved=True,
+    )
+    dot.render(filename=f"{rank}_dforces_graph", format="png")
+    print_grad_fn_and_saved_tensors(forces_part.grad_fn)
 
     return {
         "gp_rank": rank,
@@ -273,6 +370,23 @@ def gather_sum_bwd_test():
         "forces": forces_part.detach(),
         "dforces_dinput_part": dforces_dinput_part.detach(),
     }
+
+
+def print_grad_fn_and_saved_tensors(gfn, indent=0):
+    rank = dist.get_rank()
+    if gfn is not None:
+        print("  " * indent, rank, str(gfn))
+        saved_names = ["_saved_self", "_saved", "_saved_other"]
+        for save_name in saved_names:
+            if hasattr(gfn, save_name):
+                print("  " * indent, rank, save_name, getattr(gfn, save_name))
+        for _gfn, _ in gfn.next_functions:
+            print_grad_fn_and_saved_tensors(_gfn, indent + 1)
+
+        # if hasattr(tensor.grad_fn, "saved_tensors") and tensor.grad_fn.saved_tensors:
+        #     for saved_tensor in tensor.grad_fn.saved_tensors:
+        #         print("  " * (indent + 1) + str(saved_tensor))
+        #         print_grad_fn_and_saved_tensors(saved_tensor, indent + 2)
 
 
 def test_gather_sum_bwd():
@@ -290,16 +404,23 @@ def test_gather_sum_bwd():
         },
     }
     # A(2) | B(3)
-    # E_0 = (A*B +1)^2 , E_1 = (A*B+2)^2
+
+    # L_0 = (A*B +1)^2 , L_1 = (A*B+2)^2
     #     = 49               = 64
-    # dL_0/dA = 2*A*B^2+2*B = 42
-    # dL_0/dB = 2*A^2*B+2*A = 28
-    # dL_1/dA = 2*A*B^2+4*B = 48
-    # dL_1/dB = 2*A^2*B+4*A = 32
+
+    # dL_0/dA = 2*A*B^2+2*B = 42 = 2*(AB+1)*B
+    # dL_0/dB = 2*A^2*B+2*A = 28 = 2*(AB+1)*A
+    # dL_1/dA = 2*A*B^2+4*B = 48 = 2*(AB+2)*B
+    # dL_1/dB = 2*A^2*B+4*A = 32 = 2*(AB+2)*A
+
     # dL/dA = dL_0/dA + dL_1/dA = 90
     # dL/dB = dL_0/dB + dL_1/dB = 60
-    # d^2L/dA^2 = 4*B^2 = 36
-    # d^2L/dB^2 = 4*A^2 = 32
+
+    # d^2L/dA^2 = 4*B^2 = 36 # 90
+    # d^2L/dB^2 = 4*A^2 = 32 # 70
+
+    # ceh
+    standalone_example()
 
     config = PGConfig(backend="gloo", world_size=2, gp_group_size=2, use_gp=True)
     all_rank_results = spawn_multi_process(

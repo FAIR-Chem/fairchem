@@ -12,6 +12,8 @@ import logging
 from typing import Any
 
 import numpy as np
+
+from torch.distributed import group, ReduceOp
 import torch
 from torch import distributed as dist
 
@@ -336,6 +338,22 @@ class GatherFromModelParallelRegion(torch.autograd.Function):
         return result, None
 
 
+class XReduce(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, op, group, tensor):
+        ctx.group = group
+        ctx.op = op
+        tensor = tensor.clone()
+        dist.all_reduce(tensor, op=op, group=group)
+        print("CALLED _ALL FORWARD", tensor)
+        return tensor
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        print("WTF CALLING BACKWARD!!!", grad_output)
+        return (None, None) + (XReduce.apply(ctx.op, ctx.group, grad_output),)
+
+
 class GatherFromModelParallelRegionSumGrad(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor:
@@ -348,7 +366,7 @@ class GatherFromModelParallelRegionSumGrad(torch.autograd.Function):
         gp_rank = get_gp_rank()
         (dim,) = ctx.saved_tensors
         group = get_gp_group()
-        print("xGATHERFROM,BACKWARD", gp_rank, grad_output)
+        print("xGATHERFROM,xxxBACKWARD", gp_rank, grad_output)
         # use dist internal # does not work
         # reduced_grad_output = grad_output.clone()
         # dist.all_reduce(
@@ -357,8 +375,9 @@ class GatherFromModelParallelRegionSumGrad(torch.autograd.Function):
         # grad_output = reduced_grad_output
 
         # use functional ,
-        grad_output = all_reduce(grad_output, group=group)
+        grad_output = XReduce.apply(ReduceOp.SUM, group, grad_output)
         print("GATHERFROM,BACKWARD", gp_rank, grad_output)
+        # save TODOgrad_output , then undo
         result = _split(grad_output, dim.item())
         return result, None
 
