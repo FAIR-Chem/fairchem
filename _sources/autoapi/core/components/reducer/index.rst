@@ -26,15 +26,39 @@ Module Contents
 
 .. py:class:: Reducer
 
-   Represents an abstraction over things reduce the results written by a runner.
+   Represents an abstraction over things that reduce the results written by a set of runner.
+
+   .. note::
+
+      When running with the `fairchemv2` cli, the `job_config` and `runner_config` attributes are set at
+      runtime to those given in the config file.
+
+   .. attribute:: job_config
+
+      a managed attribute that gives access to the job config
+
+      :type: DictConfig
+
+   .. attribute:: runner_config
+
+      a managed attributed that gives access to the calling runner config
+
+      :type: DictConfig
 
 
-   .. py:method:: initialize(job_config: omegaconf.DictConfig, runner_config: omegaconf.DictConfig) -> None
+   .. py:attribute:: job_config
+
+
+   .. py:attribute:: runner_config
+
+
+   .. py:property:: runner_type
+      :type: type[fairchem.core.components.runner.Runner]
+
       :abstractmethod:
 
 
-      Initialize takes both the job config and a runner config assumed to have been run beforehand
-
+      The runner type this reducer is associated with.
 
 
    .. py:method:: reduce() -> Any
@@ -63,15 +87,9 @@ Module Contents
    Used for testing
 
 
-   .. py:attribute:: calling_runner_config
-      :value: None
+   .. py:property:: runner_type
 
-
-
-   .. py:method:: initialize(job_config: omegaconf.DictConfig, runner_config: omegaconf.DictConfig) -> None
-
-      Initialize takes both the job config and a runner config assumed to have been run beforehand
-
+      The runner type this reducer is associated with.
 
 
    .. py:method:: reduce() -> Any

@@ -714,6 +714,8 @@ document.write(`
         <li><a href="autoapi/core/datasets/index.html#core.datasets.LMDBDatabase.__exit__">(core.datasets.LMDBDatabase method)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/core/components/utils/index.html#core.components.utils.ManagedAttribute.__get__">__get__() (core.components.utils.ManagedAttribute method)</a>
+</li>
       <li><a href="autoapi/core/datasets/ase_datasets/index.html#core.datasets.ase_datasets.AseAtomsDataset.__getitem__">__getitem__() (core.datasets.ase_datasets.AseAtomsDataset method)</a>
 
       <ul>
@@ -938,6 +940,10 @@ document.write(`
         <li><a href="autoapi/data/oc/utils/geometry/index.html#data.oc.utils.geometry.BoxGeometry.__repr__">(data.oc.utils.geometry.BoxGeometry method)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/core/components/utils/index.html#core.components.utils.ManagedAttribute.__set__">__set__() (core.components.utils.ManagedAttribute method)</a>
+</li>
+      <li><a href="autoapi/core/components/utils/index.html#core.components.utils.ManagedAttribute.__set_name__">__set_name__() (core.components.utils.ManagedAttribute method)</a>
+</li>
       <li><a href="autoapi/core/models/model_registry/index.html#core.models.model_registry.HuggingFaceModel.__signature__">__signature__ (core.models.model_registry.HuggingFaceModel attribute)</a>
 
       <ul>
@@ -1108,6 +1114,8 @@ document.write(`
         <li><a href="autoapi/core/modules/scaling/index.html#core.modules.scaling.ScaleFactor._enforce_consistency">(core.modules.scaling.ScaleFactor method)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/core/components/utils/index.html#core.components.utils.ManagedAttribute._enforced_type">_enforced_type (core.components.utils.ManagedAttribute attribute)</a>
+</li>
       <li><a href="autoapi/ocpapi/workflows/adsorbates/index.html#ocpapi.workflows.adsorbates._ensure_adsorbate_supported">_ensure_adsorbate_supported() (in module ocpapi.workflows.adsorbates)</a>
 </li>
       <li><a href="autoapi/ocpapi/workflows/adsorbates/index.html#ocpapi.workflows.adsorbates._ensure_model_supported">_ensure_model_supported() (in module ocpapi.workflows.adsorbates)</a>
@@ -2445,8 +2453,6 @@ document.write(`
       </ul></li>
       <li><a href="autoapi/data/oc/utils/vasp/index.html#data.oc.utils.vasp.calculate_surface_k_points">calculate_surface_k_points() (in module data.oc.utils.vasp)</a>
 </li>
-      <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.MockReducer.calling_runner_config">calling_runner_config (core.components.reducer.MockReducer attribute)</a>
-</li>
       <li>
     cattsunami
 
@@ -3000,6 +3006,13 @@ document.write(`
 
       <ul>
         <li><a href="autoapi/core/components/runner/index.html#module-core.components.runner">module</a>
+</li>
+      </ul></li>
+      <li>
+    core.components.utils
+
+      <ul>
+        <li><a href="autoapi/core/components/utils/index.html#module-core.components.utils">module</a>
 </li>
       </ul></li>
       <li>
@@ -6743,16 +6756,6 @@ document.write(`
       </ul></li>
       <li><a href="autoapi/core/common/logger/index.html#core.common.logger.WandBSingletonLogger.init_wandb">init_wandb() (core.common.logger.WandBSingletonLogger class method)</a>
 </li>
-      <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.MockReducer.initialize">initialize() (core.components.reducer.MockReducer method)</a>
-
-      <ul>
-        <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.Reducer.initialize">(core.components.reducer.Reducer method)</a>
-</li>
-        <li><a href="autoapi/core/components/runner/index.html#core.components.runner.MockRunner.initialize">(core.components.runner.MockRunner method)</a>
-</li>
-        <li><a href="autoapi/core/components/runner/index.html#core.components.runner.Runner.initialize">(core.components.runner.Runner method)</a>
-</li>
-      </ul></li>
       <li><a href="autoapi/core/modules/scaling/scale_factor/index.html#core.modules.scaling.scale_factor.ScaleFactor.initialize_">initialize_() (core.modules.scaling.scale_factor.ScaleFactor method)</a>
 
       <ul>
@@ -6819,14 +6822,14 @@ document.write(`
         <li><a href="autoapi/data/oc/core/interface_config/index.html#data.oc.core.interface_config.InterfaceConfig">(class in data.oc.core.interface_config)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="autoapi/cattsunami/core/index.html#cattsunami.core.OCPNEB.intermediate_energies">intermediate_energies (cattsunami.core.OCPNEB attribute)</a>
 
       <ul>
         <li><a href="autoapi/cattsunami/core/ocpneb/index.html#cattsunami.core.ocpneb.OCPNEB.intermediate_energies">(cattsunami.core.ocpneb.OCPNEB attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="autoapi/cattsunami/core/index.html#cattsunami.core.OCPNEB.intermediate_forces">intermediate_forces (cattsunami.core.OCPNEB attribute)</a>
 
       <ul>
@@ -7015,6 +7018,12 @@ document.write(`
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.Reducer.job_config">job_config (core.components.reducer.Reducer attribute)</a>, <a href="autoapi/core/components/reducer/index.html#id0">[1]</a>
+
+      <ul>
+        <li><a href="autoapi/core/components/runner/index.html#core.components.runner.Runner.job_config">(core.components.runner.Runner attribute)</a>, <a href="autoapi/core/components/runner/index.html#id0">[1]</a>
+</li>
+      </ul></li>
       <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.SlurmEnv.job_id">job_id (core._cli_hydra.SlurmEnv attribute)</a>
 </li>
       <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.JobConfig">JobConfig (class in core._cli_hydra)</a>
@@ -7611,6 +7620,8 @@ document.write(`
       </ul></li>
       <li><a href="autoapi/core/scripts/make_lmdb_sizes/index.html#core.scripts.make_lmdb_sizes.make_lmdb_sizes">make_lmdb_sizes() (in module core.scripts.make_lmdb_sizes)</a>
 </li>
+      <li><a href="autoapi/core/components/utils/index.html#core.components.utils.ManagedAttribute">ManagedAttribute (class in core.components.utils)</a>
+</li>
       <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.map_job_config_to_dist_config">map_job_config_to_dist_config() (in module core._cli_hydra)</a>
 </li>
       <li><a href="autoapi/core/common/registry/index.html#core.common.registry.Registry.mapping">mapping (core.common.registry.Registry attribute)</a>
@@ -8148,6 +8159,8 @@ document.write(`
         <li><a href="autoapi/core/components/reducer/index.html#module-core.components.reducer">core.components.reducer</a>
 </li>
         <li><a href="autoapi/core/components/runner/index.html#module-core.components.runner">core.components.runner</a>
+</li>
+        <li><a href="autoapi/core/components/utils/index.html#module-core.components.utils">core.components.utils</a>
 </li>
         <li><a href="autoapi/core/datasets/index.html#module-core.datasets">core.datasets</a>
 </li>
@@ -10288,8 +10301,16 @@ document.write(`
       </ul></li>
       <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.Submitit.runner">runner (core._cli_hydra.Submitit attribute)</a>
 </li>
+      <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.Reducer.runner_config">runner_config (core.components.reducer.Reducer attribute)</a>, <a href="autoapi/core/components/reducer/index.html#id1">[1]</a>
+</li>
       <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.JobConfig.runner_state_path">runner_state_path (core._cli_hydra.JobConfig attribute)</a>
 </li>
+      <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.MockReducer.runner_type">runner_type (core.components.reducer.MockReducer property)</a>
+
+      <ul>
+        <li><a href="autoapi/core/components/reducer/index.html#core.components.reducer.Reducer.runner_type">(core.components.reducer.Reducer property)</a>
+</li>
+      </ul></li>
       <li><a href="autoapi/core/_cli/index.html#core._cli.runner_wrapper">runner_wrapper() (in module core._cli)</a>
 </li>
       <li><a href="autoapi/core/_cli_hydra/index.html#core._cli_hydra.RunType">RunType (class in core._cli_hydra)</a>

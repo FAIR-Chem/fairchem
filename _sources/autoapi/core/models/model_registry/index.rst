@@ -47,7 +47,8 @@ Module Contents
    Bases: :py:obj:`pydantic.BaseModel`
 
 
-   Usage docs: https://docs.pydantic.dev/2.10/concepts/models/
+   !!! abstract "Usage Documentation"
+       [Models](../concepts/models.md)
 
    A base class for creating Pydantic models.
 
@@ -144,7 +145,8 @@ Module Contents
    Bases: :py:obj:`pydantic.BaseModel`
 
 
-   Usage docs: https://docs.pydantic.dev/2.10/concepts/models/
+   !!! abstract "Usage Documentation"
+       [Models](../concepts/models.md)
 
    A base class for creating Pydantic models.
 
@@ -237,7 +239,8 @@ Module Contents
    Bases: :py:obj:`pydantic.BaseModel`
 
 
-   Usage docs: https://docs.pydantic.dev/2.10/concepts/models/
+   !!! abstract "Usage Documentation"
+       [Models](../concepts/models.md)
 
    A base class for creating Pydantic models.
 

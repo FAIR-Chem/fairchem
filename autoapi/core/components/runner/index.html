@@ -638,7 +638,8 @@ document.write(`
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.Runner"><code class="docutils literal notranslate"><span class="pre">Runner</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.Runner.initialize"><code class="docutils literal notranslate"><span class="pre">Runner.initialize()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.Runner.job_config"><code class="docutils literal notranslate"><span class="pre">Runner.job_config</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id0"><code class="docutils literal notranslate"><span class="pre">Runner.job_config</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.Runner.run"><code class="docutils literal notranslate"><span class="pre">Runner.run()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.Runner.save_state"><code class="docutils literal notranslate"><span class="pre">Runner.save_state()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.Runner.load_state"><code class="docutils literal notranslate"><span class="pre">Runner.load_state()</span></code></a></li>
@@ -649,7 +650,6 @@ document.write(`
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.MockRunner.y"><code class="docutils literal notranslate"><span class="pre">MockRunner.y</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.MockRunner.z"><code class="docutils literal notranslate"><span class="pre">MockRunner.z</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.MockRunner.run"><code class="docutils literal notranslate"><span class="pre">MockRunner.run()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.MockRunner.initialize"><code class="docutils literal notranslate"><span class="pre">MockRunner.initialize()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.MockRunner.save_state"><code class="docutils literal notranslate"><span class="pre">MockRunner.save_state()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.MockRunner.load_state"><code class="docutils literal notranslate"><span class="pre">MockRunner.load_state()</span></code></a></li>
 </ul>
@@ -691,12 +691,27 @@ LICENSE file in the root directory of this source tree.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="core.components.runner.Runner">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">core.components.runner.</span></span><span class="sig-name descname"><span class="pre">Runner</span></span><a class="headerlink" href="#core.components.runner.Runner" title="Link to this definition">#</a></dt>
-<dd><p>Represents an abstraction over things that run in a loop and can save/load state.
-ie: Trainers, Validators, Relaxation all fall in this category.
-This allows us to decouple away from a monolithic trainer class</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="core.components.runner.Runner.initialize">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">omegaconf.DictConfig</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.components.runner.Runner.initialize" title="Link to this definition">#</a></dt>
+<dd><p>Represents an abstraction over things that run in a loop and can save/load state.</p>
+<p>ie: Trainers, Validators, Relaxation all fall in this category.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When running with the <cite>fairchemv2</cite> cli, the <cite>job_config</cite> and attribute is set at
+runtime to those given in the config file.</p>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="core.components.runner.Runner.job_config">
+<span class="sig-name descname"><span class="pre">job_config</span></span><a class="headerlink" href="#core.components.runner.Runner.job_config" title="Link to this definition">#</a></dt>
+<dd><p>a managed attribute that gives access to the job config</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DictConfig</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">job_config</span></span><a class="headerlink" href="#id0" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -739,11 +754,6 @@ This allows us to decouple away from a monolithic trainer class</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="core.components.runner.MockRunner.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#core.components.runner.MockRunner.run" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="core.components.runner.MockRunner.initialize">
-<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">omegaconf.DictConfig</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#core.components.runner.MockRunner.initialize" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -810,7 +820,8 @@ This allows us to decouple away from a monolithic trainer class</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.Runner"><code class="docutils literal notranslate"><span class="pre">Runner</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.Runner.initialize"><code class="docutils literal notranslate"><span class="pre">Runner.initialize()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.Runner.job_config"><code class="docutils literal notranslate"><span class="pre">Runner.job_config</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id0"><code class="docutils literal notranslate"><span class="pre">Runner.job_config</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.Runner.run"><code class="docutils literal notranslate"><span class="pre">Runner.run()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.Runner.save_state"><code class="docutils literal notranslate"><span class="pre">Runner.save_state()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.Runner.load_state"><code class="docutils literal notranslate"><span class="pre">Runner.load_state()</span></code></a></li>
@@ -821,7 +832,6 @@ This allows us to decouple away from a monolithic trainer class</p>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.MockRunner.y"><code class="docutils literal notranslate"><span class="pre">MockRunner.y</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.MockRunner.z"><code class="docutils literal notranslate"><span class="pre">MockRunner.z</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.MockRunner.run"><code class="docutils literal notranslate"><span class="pre">MockRunner.run()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.MockRunner.initialize"><code class="docutils literal notranslate"><span class="pre">MockRunner.initialize()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.MockRunner.save_state"><code class="docutils literal notranslate"><span class="pre">MockRunner.save_state()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#core.components.runner.MockRunner.load_state"><code class="docutils literal notranslate"><span class="pre">MockRunner.load_state()</span></code></a></li>
 </ul>

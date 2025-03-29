@@ -700,20 +700,22 @@ document.write(`
   _Jd = torch.load(os.path.join(os.path.dirname(__file__), &quot;Jd.pt&quot;))
 /home/runner/work/fairchem/fairchem/src/fairchem/core/common/relaxation/ase_utils.py:200: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don&#39;t have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
   checkpoint = torch.load(checkpoint_path, map_location=torch.device(&quot;cpu&quot;))
-WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:root:Detected old config, converting to new format. Consider updating to avoid potential incompatibilities.
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-27-03-14-08
-  commit: core:6a780ac,experimental:NA
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-29-04-41-36
+  commit: core:b88b66e,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-27-03-14-08
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-29-04-41-36
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-27-03-14-08
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-29-04-41-36
   seed: null
-  timestamp_id: 2025-03-27-03-14-08
-  version: 0.1.dev1+g6a780ac
+  timestamp_id: 2025-03-29-04-41-36
+  version: 1.9.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1098,15 +1100,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-27-03-14-08
-  commit: core:6a780ac,experimental:NA
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-29-04-41-36
+  commit: core:b88b66e,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-27-03-14-08
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-29-04-41-36
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-27-03-14-08
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-29-04-41-36
   seed: null
-  timestamp_id: 2025-03-27-03-14-08
-  version: 0.1.dev1+g6a780ac
+  timestamp_id: 2025-03-29-04-41-36
+  version: 1.9.0
 dataset:
   format: trajectory_lmdb
   grad_target_mean: 0.0
@@ -1283,7 +1285,7 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3639/2356712572.py:11: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3682/2356712572.py:11: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
@@ -1318,15 +1320,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-27-03-14-08
-  commit: core:6a780ac,experimental:NA
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-29-04-41-36
+  commit: core:b88b66e,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-27-03-14-08
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-29-04-41-36
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-27-03-14-08
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-29-04-41-36
   seed: null
-  timestamp_id: 2025-03-27-03-14-08
-  version: 0.1.dev1+g6a780ac
+  timestamp_id: 2025-03-29-04-41-36
+  version: 1.9.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1491,7 +1493,7 @@ val_dataset: {}
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3639/2054440827.py:9: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3682/2054440827.py:9: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
@@ -1524,15 +1526,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-27-03-14-08
-  commit: core:6a780ac,experimental:NA
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-29-04-41-36
+  commit: core:b88b66e,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-27-03-14-08
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-29-04-41-36
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-27-03-14-08
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-29-04-41-36
   seed: null
-  timestamp_id: 2025-03-27-03-14-08
-  version: 0.1.dev1+g6a780ac
+  timestamp_id: 2025-03-29-04-41-36
+  version: 1.9.0
 dataset:
   format: trajectory_lmdb
   grad_target_mean: 0.0
@@ -1675,11 +1677,11 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3639/1817216860.py:7: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3682/1817216860.py:7: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.686577558517456
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.6788575649261475
 </pre></div>
 </div>
 </div>
@@ -1735,15 +1737,15 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-27-03-14-08
-  commit: core:6a780ac,experimental:NA
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-29-04-41-36
+  commit: core:b88b66e,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-27-03-14-08
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-29-04-41-36
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-27-03-14-08
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-29-04-41-36
   seed: null
-  timestamp_id: 2025-03-27-03-14-08
-  version: 0.1.dev1+g6a780ac
+  timestamp_id: 2025-03-29-04-41-36
+  version: 1.9.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1949,15 +1951,15 @@ val_dataset: {}
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-27-03-14-08
-  commit: core:6a780ac,experimental:NA
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-29-04-41-36
+  commit: core:b88b66e,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-27-03-14-08
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-29-04-41-36
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-27-03-14-08
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-29-04-41-36
   seed: null
-  timestamp_id: 2025-03-27-03-14-08
-  version: 0.1.dev1+g6a780ac
+  timestamp_id: 2025-03-29-04-41-36
+  version: 1.9.0
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -2300,7 +2302,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3639/3906293788.py:3: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3682/3906293788.py:3: FutureWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
 </pre></div>
 </div>
@@ -2333,15 +2335,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-27-03-14-08
-  commit: core:6a780ac,experimental:NA
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-29-04-41-36
+  commit: core:b88b66e,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-27-03-14-08
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-29-04-41-36
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-27-03-14-08
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-29-04-41-36
   seed: null
-  timestamp_id: 2025-03-27-03-14-08
-  version: 0.1.dev1+g6a780ac
+  timestamp_id: 2025-03-29-04-41-36
+  version: 1.9.0
 dataset:
   format: trajectory_lmdb_v2
   grad_target_mean: 0.0
@@ -2508,11 +2510,11 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3639/4094489779.py:3: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3682/4094489779.py:3: FutureWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
 </pre></div>
 </div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>-0.42973750829696655
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>-0.42973729968070984
 </pre></div>
 </div>
 </div>
@@ -2562,15 +2564,15 @@ This happens because a random selection of is made to sample edges, and a differ
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-27-03-14-08
-  commit: core:6a780ac,experimental:NA
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-29-04-41-36
+  commit: core:b88b66e,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-27-03-14-08
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-29-04-41-36
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-27-03-14-08
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-29-04-41-36
   seed: null
-  timestamp_id: 2025-03-27-03-14-08
-  version: 0.1.dev1+g6a780ac
+  timestamp_id: 2025-03-29-04-41-36
+  version: 1.9.0
 dataset:
   format: trajectory_lmdb_v2
   grad_target_mean: 0.0
@@ -2725,21 +2727,21 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3639/3396863997.py:11: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3682/3396863997.py:11: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.2127591848373414 1.3614932570714218e-06
-1.2127580642700195
-1.212759256362915
-1.2127575874328613
-1.2127604484558105
-1.2127575874328613
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.2127613782882691 1.387956579001225e-06
+1.2127628326416016
 1.212761640548706
-1.2127575874328613
-1.2127604484558105
-1.2127594947814941
-1.2127597332000732
+1.212761640548706
+1.2127625942230225
+1.2127580642700195
+1.2127628326416016
+1.2127618789672852
+1.212761402130127
+1.2127599716186523
+1.2127609252929688
 </pre></div>
 </div>
 </div>
@@ -2778,15 +2780,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-27-03-14-08
-  commit: core:6a780ac,experimental:NA
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/checkpoints/2025-03-29-04-41-36
+  commit: core:b88b66e,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-27-03-14-08
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/logs/wandb/2025-03-29-04-41-36
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-27-03-14-08
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/results/2025-03-29-04-41-36
   seed: null
-  timestamp_id: 2025-03-27-03-14-08
-  version: 0.1.dev1+g6a780ac
+  timestamp_id: 2025-03-29-04-41-36
+  version: 1.9.0
 dataset:
   format: trajectory_lmdb_v2
   grad_target_mean: 0.0
@@ -2941,11 +2943,11 @@ val_dataset: {}
 WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results may not be reproducible on re-run
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3639/4037009387.py:11: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3682/4037009387.py:11: FutureWarning: Please use atoms.calc = calc
   slab.set_calculator(calc)
 </pre></div>
 </div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([ 0.01599229,  0.0017032 , -0.07197869], dtype=float32)
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([ 0.01599019,  0.00170719, -0.07198012], dtype=float32)
 </pre></div>
 </div>
 </div>
@@ -2958,7 +2960,7 @@ WARNING:root:No seed has been set in modelcheckpoint or OCPCalculator! Results m
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([3.731111e-08, 9.179348e-08, 0.000000e+00], dtype=float32)
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([ 1.4697434e-07, -1.1554221e-07,  0.0000000e+00], dtype=float32)
 </pre></div>
 </div>
 </div>

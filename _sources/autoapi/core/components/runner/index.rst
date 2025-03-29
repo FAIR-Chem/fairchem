@@ -27,13 +27,22 @@ Module Contents
 .. py:class:: Runner
 
    Represents an abstraction over things that run in a loop and can save/load state.
+
    ie: Trainers, Validators, Relaxation all fall in this category.
-   This allows us to decouple away from a monolithic trainer class
+
+   .. note::
+
+      When running with the `fairchemv2` cli, the `job_config` and attribute is set at
+      runtime to those given in the config file.
+
+   .. attribute:: job_config
+
+      a managed attribute that gives access to the job config
+
+      :type: DictConfig
 
 
-   .. py:method:: initialize(job_config: omegaconf.DictConfig) -> None
-      :abstractmethod:
-
+   .. py:attribute:: job_config
 
 
    .. py:method:: run() -> Any
@@ -69,9 +78,6 @@ Module Contents
 
 
    .. py:method:: run() -> Any
-
-
-   .. py:method:: initialize(job_config: omegaconf.DictConfig) -> None
 
 
    .. py:method:: save_state(checkpoint_location: str, is_preemption: bool = False) -> bool
