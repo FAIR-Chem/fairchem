@@ -19,8 +19,6 @@ from torch import distributed as dist
 
 from fairchem.core.common import gp_utils
 
-from torchviz import make_dot
-
 
 def _dummy_call(x):
     return x
