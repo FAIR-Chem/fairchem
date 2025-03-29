@@ -203,21 +203,6 @@ def _split_tensor(
     return tensor_list
 
 
-def _reduce2(ctx: Any, input: torch.Tensor) -> torch.Tensor:
-    print("REDUCE2", input.shape, input)
-    group = get_gp_group()
-    rank = get_gp_rank()
-    world_size = dist.get_world_size(group=group)
-    if world_size == 1:
-        return input
-    tensor_list = [torch.empty_like(input) for _ in range(world_size)]
-    tensor_list[rank] = input
-    dist.all_gather(tensor_list, input, group=group)
-    gathered = torch.concatenate([t.unsqueeze(0) for t in tensor_list]).sum(dim=0)
-    print("GATHERED", gathered)
-    return gathered
-
-
 def _reduce(ctx: Any, input: torch.Tensor) -> torch.Tensor:
     group = get_gp_group()
     if ctx:
@@ -297,7 +282,6 @@ class ReduceFromModelParallelRegion(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor) -> torch.Tensor:
-        print("reduce backward", grad_output)
         return grad_output
 
 
@@ -312,53 +296,27 @@ class ScatterToModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
         (dim,) = ctx.saved_tensors
-        # print("BACKWARD SCATTER")
-        # return (
-        #     GatherFromModelParallelRegion.apply(grad_output.clone(), dim.item()),
-        #     None,
-        # )
-        print("scatter backward first", grad_output)
         ret = _gather_with_padding(grad_output.clone(), dim.item())
-        print("scatter backward out", ret)
         return ret, None
 
 
 class GatherFromModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor:
-        print("GATHER FORWARD?")
         ctx.save_for_backward(torch.tensor(dim))
         return _gather_with_padding(input, dim)
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
-        print("GATHER BACKWARD")
         (dim,) = ctx.saved_tensors
         result = _split(grad_output, dim.item())
         return result, None
-
-
-class XReduce(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, op, group, tensor):
-        ctx.group = group
-        ctx.op = op
-        tensor = tensor.clone()
-        dist.all_reduce(tensor, op=op, group=group)
-        print("CALLED _ALL FORWARD", tensor)
-        return tensor
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        print("WTF CALLING BACKWARD!!!", grad_output)
-        return (None, None) + (XReduce.apply(ctx.op, ctx.group, grad_output),)
 
 
 class GatherFromModelParallelRegionSumGrad(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor:
         ctx.save_for_backward(torch.tensor(dim))
-        print("GATHERFROM,FORWARD")
         return _gather_with_padding(input, dim)
 
     @staticmethod
@@ -366,7 +324,6 @@ class GatherFromModelParallelRegionSumGrad(torch.autograd.Function):
         gp_rank = get_gp_rank()
         (dim,) = ctx.saved_tensors
         group = get_gp_group()
-        print("xGATHERFROM,xxxBACKWARD", gp_rank, grad_output)
         # use dist internal # does not work
         # reduced_grad_output = grad_output.clone()
         # dist.all_reduce(
@@ -374,10 +331,9 @@ class GatherFromModelParallelRegionSumGrad(torch.autograd.Function):
         # )  # This is an inplace operation
         # grad_output = reduced_grad_output
 
-        # use functional ,
-        grad_output = XReduce.apply(ReduceOp.SUM, group, grad_output)
-        print("GATHERFROM,BACKWARD", gp_rank, grad_output)
-        # save TODOgrad_output , then undo
+        # use functional version instead
+        grad_output = all_reduce(grad_output, group=group)
+
         result = _split(grad_output, dim.item())
         return result, None
 

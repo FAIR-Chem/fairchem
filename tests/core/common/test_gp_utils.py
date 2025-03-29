@@ -198,10 +198,15 @@ def test_scatter_bwd():
         compare_and_assert_dict(expected_output[results["gp_rank"]], results)
 
 
-def gather_bwd_test():
-    rank = dist.get_rank()
-    x = torch.tensor([rank + 2], requires_grad=True, dtype=torch.float)
-    x_full = gather_from_model_parallel_region(x, 0)
+def gather_bwd_test(rank=-1):
+    if rank < 0:
+        rank = dist.get_rank()
+        x = torch.tensor([rank + 2], requires_grad=True, dtype=torch.float)
+        x_full = gather_from_model_parallel_region(x, 0)
+    else:
+        x = torch.tensor([rank + 2], requires_grad=True, dtype=torch.float)
+        x_other = torch.tensor([(1 - rank) + 2], requires_grad=True, dtype=torch.float)
+        x_full = torch.cat([x, x_other]) if rank == 0 else torch.cat([x_other, x])
 
     energy_part = (x_full.prod() + rank + 1) ** 2
 
@@ -211,7 +216,6 @@ def gather_bwd_test():
         create_graph=True,
     )[0]
 
-    print("DFORCES/DPART")
     dforces_dinput_part = torch.autograd.grad(
         [forces_part],
         [x],
@@ -222,29 +226,21 @@ def gather_bwd_test():
         "gp_rank": rank,
         "energy": energy_part.detach(),
         "forces": forces_part.detach(),
+        "dforces_dinput": dforces_dinput_part.detach(),
     }
 
 
 def test_gather_bwd():
-    torch.autograd.set_detect_anomaly(True)
-    expected_output = {
-        0: {
-            "gp_rank": 0,
-            "energy": torch.tensor(49.0),
-            "forces": torch.tensor(42.0),
-        },
-        1: {
-            "gp_rank": 1,
-            "energy": torch.tensor(64.0),
-            "forces": torch.tensor(32.0),
-        },
-    }
     # A | B
     # E_0 = (A*B +1)^2 , E_1 = (A*B+2)^2
     #     = 49               = 64
     # dL_0/dA = 2*A*B^2+2*B = 42
     # dL_1/dB = 2*A^2*B+4*A = 32
     # dL_0/dB and dL_1/dA are not used! see test_gather_sum_bwd!!
+    # d^2L_1/dA^2 = 2*B^2 = 18
+    # d^2L_1/dB^2 = 2*A^2 = 8
+
+    non_gp_results_by_gp_rank = {0: gather_bwd_test(0), 1: gather_bwd_test(1)}
 
     config = PGConfig(backend="gloo", world_size=2, gp_group_size=2, use_gp=True)
     all_rank_results = spawn_multi_process(
@@ -252,157 +248,63 @@ def test_gather_bwd():
         gather_bwd_test,
         init_pg_and_rank_and_launch_test,
     )
-    for results in all_rank_results:
-        compare_and_assert_dict(expected_output[results["gp_rank"]], results)
+
+    for rank_results in all_rank_results:
+        compare_and_assert_dict(
+            non_gp_results_by_gp_rank[rank_results["gp_rank"]], rank_results
+        )
 
 
-def standalone_example():
-    x0 = torch.tensor([2.0], requires_grad=True)
-    x1 = torch.tensor([3.0], requires_grad=True)
-    x_full = torch.cat([x0, x1])
-    e0 = (x_full.prod() + 1) ** 2  # rank 0
-    e1 = (x_full.prod() + 2) ** 2  # rank 1
+def gather_sum_bwd_test(rank=-1):
+    if rank < 0:
+        rank = dist.get_rank()
+        x = torch.tensor([rank + 2], requires_grad=True, dtype=torch.float)
+        x_full = gather_from_model_parallel_region_sum_grad(x, 0)
+        energy = (x_full.prod() + rank + 1) ** 2
+        # sum
+        energy = gp_utils.reduce_from_model_parallel_region(energy)
+        # forces
+        forces_part = torch.autograd.grad(
+            [energy],
+            [x],
+            create_graph=True,
+        )[0]
+        #
+        dforces_dinput_part = torch.autograd.grad(
+            [forces_part],
+            [x],
+            create_graph=True,
+        )[0]
 
-    dot = make_dot(
-        e0,
-        params={"x": x0, "x_full": x_full, "energy_part": e0},
-        show_attrs=True,
-        show_saved=True,
-    )
-    dot.render(filename=f"nongp_e0_energy_graph", format="png")
-    dot = make_dot(
-        e1,
-        params={"x": x1, "x_full": x_full, "energy_part": e1},
-        show_attrs=True,
-        show_saved=True,
-    )
-    dot.render(filename=f"nongp_e1_energy_graph", format="png")
-
-    f0 = torch.autograd.grad(
-        [e0],
-        [x0],
-        create_graph=True,
-    )[0]
-    dot = make_dot(
-        f0,
-        params={
-            "x_full": x_full,
-            "forces_part": f0,
-        },
-        show_attrs=True,
-        show_saved=True,
-    )
-    dot.render(filename=f"nongp_f0_forces_graph", format="png")
-
-    f1 = torch.autograd.grad(
-        [e1],
-        [x1],
-        create_graph=True,
-    )[0]
-    dot = make_dot(
-        f1,
-        params={
-            "x_full": x_full,
-            "forces_part": f1,
-        },
-        show_attrs=True,
-        show_saved=True,
-    )
-    dot.render(filename=f"nongp_f1_forces_graph", format="png")
-
-
-def gather_sum_bwd_test():
-    rank = dist.get_rank()
-    x = torch.tensor([rank + 2], requires_grad=True, dtype=torch.float)  # [2] ,[3]
-    x_full = gather_from_model_parallel_region_sum_grad(x, 0)  # [2,3]
-
-    energy_part = (x_full.prod() + rank + 1) ** 2
-    dot = make_dot(
-        energy_part,
-        params={"x": x, "x_full": x_full, "energy_part": energy_part},
-        show_attrs=True,
-        show_saved=True,
-    )
-    dot.render(filename=f"{rank}_energy_graph", format="png")
-
-    forces_part = torch.autograd.grad(
-        [energy_part],
-        [x],
-        create_graph=True,
-    )[0]
-    dot = make_dot(
-        forces_part,
-        params={
-            "x": x,
-            "x_full": x_full,
-            "energy_part": energy_part,
-            "forces_part": forces_part,
-        },
-        show_attrs=True,
-        show_saved=True,
-    )
-    dot.render(filename=f"{rank}_forces_graph", format="png")
-
-    print("DFORCES/DPART")
-    dforces_dinput_part = torch.autograd.grad(
-        [forces_part],
-        [x],
-        create_graph=True,
-    )[0]
-    dot = make_dot(
-        dforces_dinput_part,
-        params={
-            "x": x,
-            "x_full": x_full,
-            "energy_part": energy_part,
-            "forces_part": forces_part,
-            "dforces_dinput_part": dforces_dinput_part,
-        },
-        show_attrs=True,
-        show_saved=True,
-    )
-    dot.render(filename=f"{rank}_dforces_graph", format="png")
-    print_grad_fn_and_saved_tensors(forces_part.grad_fn)
+    else:
+        x = torch.tensor([rank + 2], requires_grad=True, dtype=torch.float)
+        x_other = torch.tensor([(1 - rank) + 2], requires_grad=True, dtype=torch.float)
+        x_full = torch.cat([x, x_other]) if rank == 0 else torch.cat([x_other, x])
+        # sum
+        energy = (x_full.prod() + rank + 1) ** 2 + (x_full.prod() + (1 - rank) + 1) ** 2
+        # forces
+        forces = torch.autograd.grad(
+            [energy],
+            [x_full],
+            create_graph=True,
+        )[0]
+        forces_part = forces[rank]
+        #
+        dforces_dinput_part = torch.autograd.grad(
+            [forces.sum()],  # critical
+            [x],
+            create_graph=True,
+        )[0]
 
     return {
         "gp_rank": rank,
-        "energy": energy_part.detach(),
+        "energy": energy.detach(),
         "forces": forces_part.detach(),
         "dforces_dinput_part": dforces_dinput_part.detach(),
     }
 
 
-def print_grad_fn_and_saved_tensors(gfn, indent=0):
-    rank = dist.get_rank()
-    if gfn is not None:
-        print("  " * indent, rank, str(gfn))
-        saved_names = ["_saved_self", "_saved", "_saved_other"]
-        for save_name in saved_names:
-            if hasattr(gfn, save_name):
-                print("  " * indent, rank, save_name, getattr(gfn, save_name))
-        for _gfn, _ in gfn.next_functions:
-            print_grad_fn_and_saved_tensors(_gfn, indent + 1)
-
-        # if hasattr(tensor.grad_fn, "saved_tensors") and tensor.grad_fn.saved_tensors:
-        #     for saved_tensor in tensor.grad_fn.saved_tensors:
-        #         print("  " * (indent + 1) + str(saved_tensor))
-        #         print_grad_fn_and_saved_tensors(saved_tensor, indent + 2)
-
-
 def test_gather_sum_bwd():
-    torch.autograd.set_detect_anomaly(True)
-    expected_output = {
-        0: {
-            "gp_rank": 0,
-            "energy": torch.tensor(49.0),
-            "forces": torch.tensor(90.0),
-        },
-        1: {
-            "gp_rank": 1,
-            "energy": torch.tensor(64.0),
-            "forces": torch.tensor(60.0),
-        },
-    }
     # A(2) | B(3)
 
     # L_0 = (A*B +1)^2 , L_1 = (A*B+2)^2
@@ -416,11 +318,10 @@ def test_gather_sum_bwd():
     # dL/dA = dL_0/dA + dL_1/dA = 90
     # dL/dB = dL_0/dB + dL_1/dB = 60
 
-    # d^2L/dA^2 = 4*B^2 = 36 # 90
-    # d^2L/dB^2 = 4*A^2 = 32 # 70
+    # d^2L/dA^2 = 4*B^2 = 36
+    # d^2L/dB^2 = 4*A^2 = 16
 
-    # ceh
-    standalone_example()
+    non_gp_results_by_gp_rank = {0: gather_sum_bwd_test(0), 1: gather_sum_bwd_test(1)}
 
     config = PGConfig(backend="gloo", world_size=2, gp_group_size=2, use_gp=True)
     all_rank_results = spawn_multi_process(
@@ -428,9 +329,10 @@ def test_gather_sum_bwd():
         gather_sum_bwd_test,
         init_pg_and_rank_and_launch_test,
     )
-    breakpoint()
-    for results in all_rank_results:
-        compare_and_assert_dict(expected_output[results["gp_rank"]], results)
+    for rank_results in all_rank_results:
+        compare_and_assert_dict(
+            non_gp_results_by_gp_rank[rank_results["gp_rank"]], rank_results
+        )
 
 
 # test for one rank to return a product and rest return 0
@@ -451,7 +353,6 @@ def scatter_prod_reduce(all_inputs):
     energy = gp_utils.reduce_from_model_parallel_region(energy_part.clone())
     energy.backward()
 
-    print(f"{rank} all inputs grad", all_inputs.grad)
     return {"energy": energy.detach(), "forces": all_inputs.grad.detach()}
 
 
@@ -490,7 +391,6 @@ def layer(x, target_rank):
         x = x * 0 + x_prod
     else:
         x = x * 0 + x_prod * 0.0 + (rank + 1)
-    print("LAYERxx", x_full, rank, x)
     return x
 
 
@@ -710,7 +610,6 @@ def test_simple_energy_ddp(nlayers):
         edge_index,
         nlayers,
     )
-
     for rank_results in all_rank_results:
         compare_and_assert_dict(
             non_gp_results_by_dp_rank[rank_results["dp_rank"]], rank_results
