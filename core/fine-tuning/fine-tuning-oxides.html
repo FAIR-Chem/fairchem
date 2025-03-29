@@ -828,7 +828,7 @@ cmd:
   results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2025-03-29-04-35-12
   seed: null
   timestamp_id: 2025-03-29-04-35-12
-  version: 1.9.0
+  version: 0.1.dev1+gb88b66e
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1033,7 +1033,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time 83.1 seconds.
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time 82.7 seconds.
 </pre></div>
 </div>
 <img alt="../../_images/37ed63864e58d86136865ea2e54cbd456f13057250fbe0ba461bc61ad93a4799.png" src="../../_images/37ed63864e58d86136865ea2e54cbd456f13057250fbe0ba461bc61ad93a4799.png" />
@@ -1112,7 +1112,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3188/1448814737.py:12: FutureWarning: Please use atoms.calc = calc
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3214/1448814737.py:12: FutureWarning: Please use atoms.calc = calc
   atoms.set_calculator(calc)
 </pre></div>
 </div>
@@ -1223,15 +1223,15 @@ WARNING:root:Detected old config, converting to new format. Consider updating to
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>INFO:root:amp: true
 cmd:
-  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2025-03-29-04-37-20
+  checkpoint_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/checkpoints/2025-03-29-04-35-12
   commit: core:b88b66e,experimental:NA
   identifier: &#39;&#39;
-  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2025-03-29-04-37-20
+  logs_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/logs/wandb/2025-03-29-04-35-12
   print_every: 100
-  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2025-03-29-04-37-20
+  results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2025-03-29-04-35-12
   seed: null
-  timestamp_id: 2025-03-29-04-37-20
-  version: 1.9.0
+  timestamp_id: 2025-03-29-04-35-12
+  version: 0.1.dev1+gb88b66e
 dataset:
   format: oc22_lmdb
   key_mapping:
@@ -1573,7 +1573,7 @@ trainer: ocp
 <span class="expanded">Hide code cell output</span>
 </summary>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time = 207.9 seconds
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Elapsed time = 205.6 seconds
 </pre></div>
 </div>
 </div>
@@ -1618,7 +1618,7 @@ cmd:
   results_dir: /home/runner/work/fairchem/fairchem/docs/core/fine-tuning/results/2025-03-29-04-39-28
   seed: null
   timestamp_id: 2025-03-29-04-39-28
-  version: 1.9.0
+  version: 0.1.dev1+gb88b66e
 dataset:
   a2g_args:
     r_energy: true
@@ -1788,7 +1788,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/38e3e5d6042120afce13060008d330fab586ed6305e17ab9e9a2bb46cb726919.png" src="../../_images/38e3e5d6042120afce13060008d330fab586ed6305e17ab9e9a2bb46cb726919.png" />
+<img alt="../../_images/fffd8c4e5686d4462dfaa268649d6d47d2b341369c6a13946d8e7c4d5c887600.png" src="../../_images/fffd8c4e5686d4462dfaa268649d6d47d2b341369c6a13946d8e7c4d5c887600.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -1799,7 +1799,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>New MAE = 0.215 eV/atom
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>New MAE = 0.241 eV/atom
 </pre></div>
 </div>
 </div>
@@ -1818,7 +1818,7 @@ val_dataset: {}
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/2f95dd32552eb313fc122d0941a2c1b05cb5c852dae2bf8349ffd09bce3d2b2e.png" src="../../_images/2f95dd32552eb313fc122d0941a2c1b05cb5c852dae2bf8349ffd09bce3d2b2e.png" />
+<img alt="../../_images/157e5a9edef2092f0556c7eee4b03474c8c5086d257cc733ab3c0de730a5b1e8.png" src="../../_images/157e5a9edef2092f0556c7eee4b03474c8c5086d257cc733ab3c0de730a5b1e8.png" />
 </div>
 </div>
 <p>It is possible to continue refining the fit. The simple things to do are to use more epochs of training. Eventually the MAE will stabilize, and then it may be necessary to adjust other optimization parameters like the learning rate (usually you decrease it).</p>
