@@ -4,6 +4,7 @@ Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
 from __future__ import annotations
 
 import math
@@ -104,9 +105,7 @@ class EnvelopedBesselBasis(torch.nn.Module):
         super().__init__()
         self.inv_cutoff = 1 / cutoff
         self.envelope = PolynomialEnvelope()
-        self.rbf = SphericalBesselBasis(
-            num_radial=num_radial, cutoff=cutoff
-        )
+        self.rbf = SphericalBesselBasis(num_radial=num_radial, cutoff=cutoff)
 
     def forward(self, d):
         d_scaled = d * self.inv_cutoff

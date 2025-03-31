@@ -4,6 +4,7 @@ Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
 from __future__ import annotations
 
 import logging
@@ -146,7 +147,9 @@ def rotation_to_wigner(
         beta_detach = beta_detach[~mask]
 
     size = int((end_lmax + 1) ** 2) - int((start_lmax) ** 2)
-    wigner = torch.zeros(len(alpha), size, size, device=edge_rot_mat.device, dtype=edge_rot_mat.dtype)
+    wigner = torch.zeros(
+        len(alpha), size, size, device=edge_rot_mat.device, dtype=edge_rot_mat.dtype
+    )
     start = 0
     for lmax in range(start_lmax, end_lmax + 1):
         if rot_clip:

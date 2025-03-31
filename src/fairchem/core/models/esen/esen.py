@@ -4,6 +4,7 @@ Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
 from __future__ import annotations
 
 import os
@@ -276,9 +277,7 @@ class eSEN_Backbone(nn.Module, GraphModelMixin):
                 + shifts
             )
             # pylint: disable=E1102
-            edge_distance = torch.linalg.norm(
-                edge_distance_vec, dim=-1, keepdim=False
-            )
+            edge_distance = torch.linalg.norm(edge_distance_vec, dim=-1, keepdim=False)
             graph_dict = {
                 "atomic_numbers_full": data_dict["atomic_numbers_full"],
                 "batch_full": data_dict["batch_full"],
@@ -291,7 +290,6 @@ class eSEN_Backbone(nn.Module, GraphModelMixin):
         _, wigner, wigner_inv = self.get_rotmat_and_wigner(
             graph_dict["edge_distance_vec"]
         )
-
 
         ###############################################################
         # Initialize node embeddings
@@ -307,9 +305,7 @@ class eSEN_Backbone(nn.Module, GraphModelMixin):
         x_message[:, 0, :] = self.sphere_embedding(data_dict["atomic_numbers"])
 
         # edge degree embedding
-        edge_distance_embedding = self.distance_expansion(
-            graph_dict["edge_distance"]
-        )
+        edge_distance_embedding = self.distance_expansion(graph_dict["edge_distance"])
         source_embedding = self.source_embedding(
             data_dict["atomic_numbers"][graph_dict["edge_index"][0]]
         )
@@ -433,7 +429,9 @@ class MLP_EFS_Head(nn.Module, HeadInterface):
             emb["node_embedding"].narrow(1, 0, 1).squeeze()
         ).view(-1, 1, 1)
 
-        energy = torch.zeros(len(data["natoms"]), device=data["pos"].device, dtype=node_energy.dtype)
+        energy = torch.zeros(
+            len(data["natoms"]), device=data["pos"].device, dtype=node_energy.dtype
+        )
         energy.index_add_(0, data["batch"], node_energy.view(-1))
         outputs[energy_key] = energy
 
@@ -449,9 +447,7 @@ class MLP_EFS_Head(nn.Module, HeadInterface):
             stress = virial / volume.view(-1, 1, 1)
             virial = torch.neg(virial)
             outputs[forces_key] = forces
-            outputs[stress_key] = stress.view(
-                -1, 9
-            )
+            outputs[stress_key] = stress.view(-1, 9)
             data["cell"] = emb["orig_cell"]
         elif self.regress_forces:
             forces = (
@@ -462,6 +458,7 @@ class MLP_EFS_Head(nn.Module, HeadInterface):
             )
             outputs[forces_key] = forces
         return outputs
+
 
 @registry.register_model("esen_mlp_energy_head")
 class MLP_Energy_Head(nn.Module, HeadInterface):

@@ -4,6 +4,7 @@ Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
 from __future__ import annotations
 
 import copy
@@ -48,7 +49,9 @@ class SO2_m_Conv(torch.nn.Module):
         num_coefficents = self.lmax - m + 1
         num_channels = num_coefficents * self.sphere_channels
 
-        self.out_channels_half = self.m_output_channels * (num_channels // self.sphere_channels)
+        self.out_channels_half = self.m_output_channels * (
+            num_channels // self.sphere_channels
+        )
         self.fc = Linear(
             num_channels,
             2 * self.out_channels_half,

@@ -183,15 +183,23 @@ class Rank2DecompositionEdgeBlock(nn.Module):
             )  # (nEdges, 5, emb_size)
             edge_irrep2 = self.irrep2_MLP(edge_irrep2)
 
-            node_scalar = scatter(edge_scalar, edge_index, dim=0, reduce="mean", dim_size=data.num_nodes)
-            node_irrep2 = scatter(edge_irrep2, edge_index, dim=0, reduce="mean", dim_size=data.num_nodes)
+            node_scalar = scatter(
+                edge_scalar, edge_index, dim=0, reduce="mean", dim_size=data.num_nodes
+            )
+            node_irrep2 = scatter(
+                edge_irrep2, edge_index, dim=0, reduce="mean", dim_size=data.num_nodes
+            )
         else:
             edge_irrep2 = (
                 sphere_irrep2[:, :, None] * x_edge[:, None, :]
             )  # (nAtoms, 5, emb_size)
 
-            node_scalar = scatter(x_edge, edge_index, dim=0, reduce="mean", dim_size=data.num_nodes)
-            node_irrep2 = scatter(edge_irrep2, edge_index, dim=0, reduce="mean", dim_size=data.num_nodes)
+            node_scalar = scatter(
+                x_edge, edge_index, dim=0, reduce="mean", dim_size=data.num_nodes
+            )
+            node_irrep2 = scatter(
+                edge_irrep2, edge_index, dim=0, reduce="mean", dim_size=data.num_nodes
+            )
 
             # Irrep 0 prediction
             for module in self.scalar_MLP:
@@ -221,6 +229,7 @@ class Rank2DecompositionEdgeBlock(nn.Module):
         # Instead, we should combine the predictions after the normalizers.
 
         return scalar.reshape(-1), irrep2
+
 
 @registry.register_model("esen_rank2_head")
 class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
@@ -337,13 +346,14 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
                 tensor_0 = tensor_0 / self.avg_num_nodes
                 tensor_2 = tensor_2 / self.avg_num_nodes
 
-
             # TODO this is bypassing the decomposition-reconstruction formal process.
             pred_irreps = torch.zeros(
                 (tensor_0.shape[0], irreps_sum(2)), device=tensor_0.device
             )
-            pred_irreps[:, 0:irreps_sum(0)] = tensor_0.view(tensor_0.shape[0], -1)
-            pred_irreps[:, irreps_sum(1) : irreps_sum(2)] = tensor_2.view(tensor_0.shape[0], -1)
+            pred_irreps[:, 0 : irreps_sum(0)] = tensor_0.view(tensor_0.shape[0], -1)
+            pred_irreps[:, irreps_sum(1) : irreps_sum(2)] = tensor_2.view(
+                tensor_0.shape[0], -1
+            )
 
             pred = torch.einsum(
                 "ba, cb->ca",

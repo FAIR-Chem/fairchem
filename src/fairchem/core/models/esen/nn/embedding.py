@@ -4,6 +4,7 @@ Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
 from __future__ import annotations
 
 import copy
@@ -115,5 +116,7 @@ class EdgeDegreeEmbedding(torch.nn.Module):
         else:
             x_edge_embedding = x_edge_embedding.to(x.dtype)
 
-        x.index_add_(0, edge_index[1] - node_offset, x_edge_embedding / self.rescale_factor)
+        x.index_add_(
+            0, edge_index[1] - node_offset, x_edge_embedding / self.rescale_factor
+        )
         return x

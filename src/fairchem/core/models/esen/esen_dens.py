@@ -4,6 +4,7 @@ Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
 from __future__ import annotations
 
 import math
@@ -191,9 +192,7 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
 
         self.irreps_sh = o3.Irreps.spherical_harmonics(lmax=self.lmax, p=1)
         self.force_embedding = SO3_Linear(
-            in_features=1,
-            out_features=self.sphere_channels,
-            lmax=self.lmax
+            in_features=1, out_features=self.sphere_channels, lmax=self.lmax
         )
 
     def get_rotmat_and_wigner(self, edge_distance_vecs):
@@ -285,9 +284,7 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
                 + shifts
             )
             # pylint: disable=E1102
-            edge_distance = torch.linalg.norm(
-                edge_distance_vec, dim=-1, keepdim=False
-            )
+            edge_distance = torch.linalg.norm(edge_distance_vec, dim=-1, keepdim=False)
             graph_dict = {
                 "atomic_numbers_full": data_dict["atomic_numbers_full"],
                 "batch_full": data_dict["batch_full"],
@@ -300,7 +297,6 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
         _, wigner, wigner_inv = self.get_rotmat_and_wigner(
             graph_dict["edge_distance_vec"]
         )
-
 
         ###############################################################
         # Initialize node embeddings
@@ -315,21 +311,23 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
         )
         x_message[:, 0, :] = self.sphere_embedding(data_dict["atomic_numbers"])
 
-
         ##################
         ### DeNS Start ###
         ##################
 
         num_atoms = len(data_dict.atomic_numbers)
         # Node-wise force encoding during denoising positions
-        if hasattr(data_dict, "denoising_pos_forward") and data_dict.denoising_pos_forward:
+        if (
+            hasattr(data_dict, "denoising_pos_forward")
+            and data_dict.denoising_pos_forward
+        ):
             assert hasattr(data_dict, "forces")
             force_data = data_dict.forces
             force_sh = o3.spherical_harmonics(
                 l=self.irreps_sh,
                 x=force_data,
                 normalize=True,
-                normalization="component"
+                normalization="component",
             )
             force_sh = force_sh.view(num_atoms, (self.lmax + 1) ** 2, 1)
             force_norm = force_data.norm(dim=-1, keepdim=True)
@@ -337,11 +335,19 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
                 noise_mask_tensor = data_dict.noise_mask.view(-1, 1, 1)
                 force_sh = force_sh * noise_mask_tensor
         else:
-            force_sh = torch.zeros((num_atoms, (self.lmax + 1) ** 2, 1), dtype=data_dict.pos.dtype, device=data_dict.pos.device)
-            force_norm = torch.zeros((num_atoms, 1), dtype=data_dict.pos.dtype, device=data_dict.pos.device)
+            force_sh = torch.zeros(
+                (num_atoms, (self.lmax + 1) ** 2, 1),
+                dtype=data_dict.pos.dtype,
+                device=data_dict.pos.device,
+            )
+            force_norm = torch.zeros(
+                (num_atoms, 1), dtype=data_dict.pos.dtype, device=data_dict.pos.device
+            )
 
         force_norm = force_norm.view(-1, 1, 1)
-        force_norm = force_norm / math.sqrt(3.0)  # since we use `component` normalization
+        force_norm = force_norm / math.sqrt(
+            3.0
+        )  # since we use `component` normalization
         force_embedding = force_sh * force_norm
 
         force_embedding = self.force_embedding(force_embedding)
@@ -352,9 +358,7 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
         ##################
 
         # edge degree embedding
-        edge_distance_embedding = self.distance_expansion(
-            graph_dict["edge_distance"]
-        )
+        edge_distance_embedding = self.distance_expansion(graph_dict["edge_distance"])
         source_embedding = self.source_embedding(
             data_dict["atomic_numbers"][graph_dict["edge_index"][0]]
         )
@@ -444,6 +448,7 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
 
         return set(no_wd_list)
 
+
 @registry.register_model("esen_mlp_efs_head_dens")
 class MLP_EFS_Head(nn.Module, HeadInterface):
     def __init__(self, backbone):
@@ -484,7 +489,9 @@ class MLP_EFS_Head(nn.Module, HeadInterface):
             emb["node_embedding"].narrow(1, 0, 1).squeeze()
         ).view(-1, 1, 1)
 
-        energy = torch.zeros(len(data["natoms"]), device=data["pos"].device, dtype=node_energy.dtype)
+        energy = torch.zeros(
+            len(data["natoms"]), device=data["pos"].device, dtype=node_energy.dtype
+        )
         energy.index_add_(0, data["batch"], node_energy.view(-1))
 
         # no train on noisy energy for conserved
@@ -518,14 +525,18 @@ class MLP_EFS_Head(nn.Module, HeadInterface):
             )
 
         if self.denoising_pos:
-            denoising_pos_vec = self.denoising_linear(emb["node_embedding"].narrow(1, 0, 4))
+            denoising_pos_vec = self.denoising_linear(
+                emb["node_embedding"].narrow(1, 0, 4)
+            )
             denoising_pos_vec = denoising_pos_vec.narrow(1, 1, 3)
             denoising_pos_vec = denoising_pos_vec.view(-1, 3).contiguous()
 
             if hasattr(data, "denoising_pos_forward") and data.denoising_pos_forward:
                 if hasattr(data, "noise_mask"):
                     noise_mask_tensor = data.noise_mask.view(-1, 1)
-                    forces = denoising_pos_vec * noise_mask_tensor + forces * (~noise_mask_tensor)
+                    forces = denoising_pos_vec * noise_mask_tensor + forces * (
+                        ~noise_mask_tensor
+                    )
                 else:
                     forces = denoising_pos_vec + 0 * forces
             else:
@@ -534,6 +545,7 @@ class MLP_EFS_Head(nn.Module, HeadInterface):
         outputs[forces_key] = forces
 
         return outputs
+
 
 @registry.register_model("esen_linear_force_head_dens")
 class Linear_Force_Head_DeNS(nn.Module, HeadInterface):
@@ -550,10 +562,15 @@ class Linear_Force_Head_DeNS(nn.Module, HeadInterface):
         denoising_pos_vec = denoising_pos_vec.narrow(1, 1, 3)
         denoising_pos_vec = denoising_pos_vec.view(-1, 3).contiguous()
 
-        if hasattr(data_dict, "denoising_pos_forward") and data_dict.denoising_pos_forward:
+        if (
+            hasattr(data_dict, "denoising_pos_forward")
+            and data_dict.denoising_pos_forward
+        ):
             if hasattr(data_dict, "noise_mask"):
                 noise_mask_tensor = data_dict.noise_mask.view(-1, 1)
-                forces = denoising_pos_vec * noise_mask_tensor + forces * (~noise_mask_tensor)
+                forces = denoising_pos_vec * noise_mask_tensor + forces * (
+                    ~noise_mask_tensor
+                )
             else:
                 forces = denoising_pos_vec + 0 * forces
         else:

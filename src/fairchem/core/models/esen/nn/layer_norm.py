@@ -225,6 +225,7 @@ class EquivariantLayerNormArraySphericalHarmonics(nn.Module):
 
         return torch.cat(out, dim=1)
 
+
 class EquivariantRMSNormArraySphericalHarmonicsV2(nn.Module):
     """
     1. Normalize across all m components from degrees L >= 0.

@@ -4,6 +4,7 @@ Copyright (c) Meta, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
+
 from __future__ import annotations
 
 import copy
@@ -130,6 +131,7 @@ class Edgewise(torch.nn.Module):
 
         return new_embedding
 
+
 class SpectralAtomwise(torch.nn.Module):
     def __init__(
         self,
@@ -171,6 +173,7 @@ class SpectralAtomwise(torch.nn.Module):
         x = self.act(gating_scalars, x)
         return self.so3_linear_2(x)
 
+
 class GridAtomwise(torch.nn.Module):
     def __init__(
         self,
@@ -202,7 +205,6 @@ class GridAtomwise(torch.nn.Module):
         x_grid = self.grid_mlp(x_grid)
         # Project back to spherical harmonic coefficients
         return self.SO3_grid["lmax_lmax"].from_grid(x_grid, self.lmax, self.lmax)
-
 
 
 class eSEN_Block(torch.nn.Module):
