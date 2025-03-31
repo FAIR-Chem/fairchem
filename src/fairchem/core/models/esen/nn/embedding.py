@@ -72,7 +72,7 @@ class EdgeDegreeEmbedding(torch.nn.Module):
         if self.use_envelope:
             self.cutoff = cutoff
             self.envelope = PolynomialEnvelope(exponent=5)
-            
+
         self.out_mask = out_mask
 
     def forward(
@@ -113,7 +113,7 @@ class EdgeDegreeEmbedding(torch.nn.Module):
             env = self.envelope(dist_scaled)
             x_edge_embedding = x_edge_embedding * env.view(-1, 1, 1)
         else:
-            x_edge_embedding = x_edge_embedding.to(x.dtype)        
-            
+            x_edge_embedding = x_edge_embedding.to(x.dtype)
+
         x.index_add_(0, edge_index[1] - node_offset, x_edge_embedding / self.rescale_factor)
         return x

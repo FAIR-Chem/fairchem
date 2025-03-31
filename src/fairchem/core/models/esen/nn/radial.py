@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import math
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -57,7 +58,7 @@ class GaussianSmearing(torch.nn.Module):
     def forward(self, dist) -> torch.Tensor:
         dist = dist.view(-1, 1) - self.offset.view(1, -1)
         return torch.exp(self.coeff * torch.pow(dist, 2))
-    
+
 
 class SphericalBesselBasis(torch.nn.Module):
     """
@@ -106,13 +107,13 @@ class EnvelopedBesselBasis(torch.nn.Module):
         self.rbf = SphericalBesselBasis(
             num_radial=num_radial, cutoff=cutoff
         )
-        
+
     def forward(self, d):
         d_scaled = d * self.inv_cutoff
         env = self.envelope(d_scaled)
         return env[:, None] * self.rbf(d_scaled)
-    
-    
+
+
 class RadialMLP(nn.Module):
     """
     Contruct a radial function (linear layers + layer normalization + SiLU) given a list of channels

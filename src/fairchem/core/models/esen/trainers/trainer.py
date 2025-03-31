@@ -21,15 +21,16 @@ from tqdm import tqdm
 from fairchem.core.common import distutils
 from fairchem.core.common.registry import registry
 from fairchem.core.modules.evaluator import mae
+from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.modules.normalization.normalizer import Normalizer
 from fairchem.core.modules.scaling.util import ensure_fitted
-from fairchem.core.modules.exponential_moving_average import ExponentialMovingAverage
 from fairchem.core.trainers import OCPTrainer
 
 if TYPE_CHECKING:
     from fairchem.core.modules.evaluator import Evaluator
-    
+
 from .lr_scheduler import LRScheduler
+
 
 @registry.register_trainer("mlip_trainer")
 class MLIPTrainer(OCPTrainer):

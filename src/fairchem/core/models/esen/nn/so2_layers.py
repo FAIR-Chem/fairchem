@@ -316,5 +316,4 @@ class SO2_Linear(torch.nn.Module):
         out = torch.cat(out, dim=1)
 
         # Reshape the spherical harmonics based on l (degree)
-        out = torch.einsum("nac,ab->nbc", out, self.mappingReduced.to_m)
-        return out
+        return torch.einsum("nac,ab->nbc", out, self.mappingReduced.to_m)

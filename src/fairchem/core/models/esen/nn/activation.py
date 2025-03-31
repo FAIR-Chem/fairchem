@@ -7,8 +7,7 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
+
 
 class GateActivation(torch.nn.Module):
     def __init__(self, lmax: int, mmax: int, num_channels: int) -> None:

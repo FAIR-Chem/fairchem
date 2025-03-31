@@ -7,17 +7,15 @@ LICENSE file in the root directory of this source tree.
 
 from __future__ import annotations
 
-from functools import partial
-
 import torch
 from e3nn import o3
 from torch import nn
 from torch_scatter import scatter
 
 from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import cg_change_mat, irreps_sum
 from fairchem.core.models.base import BackboneInterface, HeadInterface
 from fairchem.core.models.equiformer_v2.layer_norm import get_normalization_layer
-from fairchem.core.common.utils import cg_change_mat, irreps_sum
 
 
 class Rank2Block(nn.Module):
@@ -209,7 +207,7 @@ class Rank2DecompositionEdgeBlock(nn.Module):
             dim=0,
             reduce="sum" if self.extensive else "mean",
         )
-                    
+
         irrep2 = scatter(
             node_irrep2.view(-1, 5),
             data.batch,
@@ -346,13 +344,13 @@ class Rank2SymmetricTensorHead(nn.Module, HeadInterface):
             )
             pred_irreps[:, 0:irreps_sum(0)] = tensor_0.view(tensor_0.shape[0], -1)
             pred_irreps[:, irreps_sum(1) : irreps_sum(2)] = tensor_2.view(tensor_0.shape[0], -1)
-            
+
             pred = torch.einsum(
                 "ba, cb->ca",
                 cg_change_mat(2, tensor_0.device),
                 pred_irreps,
             )
-            
+
             output = {
                 f"{self.output_name}_isotropic": tensor_0.unsqueeze(1),
                 f"{self.output_name}_anisotropic": tensor_2,

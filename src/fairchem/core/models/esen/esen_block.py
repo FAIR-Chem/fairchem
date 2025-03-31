@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import copy
+
 import torch
 import torch.nn as nn
 
@@ -42,7 +43,7 @@ class Edgewise(torch.nn.Module):
         self.SO3_grid = SO3_grid
         self.edge_channels_list = copy.deepcopy(edge_channels_list)
         self.act_type = act_type
-        
+
         if self.act_type == "gate":
             self.act = GateActivation(
                 lmax=self.lmax, mmax=self.mmax, num_channels=self.hidden_channels
@@ -55,7 +56,7 @@ class Edgewise(torch.nn.Module):
             extra_m0_output_channels = self.hidden_channels
         else:
             raise ValueError(f"Unknown activation type {self.act_type}")
-        
+
         self.so2_conv_1 = SO2_Convolution(
             2 * self.sphere_channels,
             self.hidden_channels,
@@ -82,7 +83,7 @@ class Edgewise(torch.nn.Module):
         if self.use_envelope:
             self.cutoff = cutoff
             self.envelope = PolynomialEnvelope(exponent=5)
-        
+
         self.out_mask = self.SO3_grid["lmax_lmax"].mapping.coefficient_idx(
             self.lmax, self.mmax
         )
@@ -103,12 +104,12 @@ class Edgewise(torch.nn.Module):
 
         # Rotate the irreps to align with the edge
         x_message = torch.bmm(wigner[:, self.out_mask, :], x_message)
-        
+
         # SO2 convolution
         x_message, x_0_gating = self.so2_conv_1(x_message, x_edge)
         x_message = self.act(x_0_gating, x_message)
         x_message = self.so2_conv_2(x_message, x_edge)
-        
+
         # envelope
         if self.use_envelope:
             dist_scaled = edge_distance / self.cutoff
@@ -124,7 +125,7 @@ class Edgewise(torch.nn.Module):
             dtype=x_message.dtype,
             device=x_message.device,
         )
-        
+
         new_embedding.index_add_(0, edge_index[1] - node_offset, x_message)
 
         return new_embedding
@@ -144,7 +145,7 @@ class SpectralAtomwise(torch.nn.Module):
         self.lmax = lmax
         self.mmax = mmax
         self.SO3_grid = SO3_grid
-        
+
         self.scalar_mlp = nn.Sequential(
             nn.Linear(
                 self.sphere_channels,
@@ -153,23 +154,22 @@ class SpectralAtomwise(torch.nn.Module):
             ),
             nn.SiLU(),
         )
-        
+
         self.so3_linear_1 = SO3_Linear(
             self.sphere_channels, self.hidden_channels, lmax=self.lmax
-        ) 
+        )
         self.act = GateActivation(
             lmax=self.lmax, mmax=self.lmax, num_channels=self.hidden_channels
         )
         self.so3_linear_2 = SO3_Linear(
             self.hidden_channels, self.sphere_channels, lmax=self.lmax
         )
-        
+
     def forward(self, x):
         gating_scalars = self.scalar_mlp(x.narrow(1, 0, 1))
         x = self.so3_linear_1(x)
         x = self.act(gating_scalars, x)
-        x = self.so3_linear_2(x)
-        return x
+        return self.so3_linear_2(x)
 
 class GridAtomwise(torch.nn.Module):
     def __init__(
@@ -186,7 +186,7 @@ class GridAtomwise(torch.nn.Module):
         self.lmax = lmax
         self.mmax = mmax
         self.SO3_grid = SO3_grid
-        
+
         self.grid_mlp = nn.Sequential(
             nn.Linear(self.sphere_channels, self.hidden_channels, bias=False),
             nn.SiLU(),
@@ -196,13 +196,13 @@ class GridAtomwise(torch.nn.Module):
         )
 
     def forward(self, x):
-        # Project to grid        
+        # Project to grid
         x_grid = self.SO3_grid["lmax_lmax"].to_grid(x, self.lmax, self.lmax)
         # Perform point-wise operations
         x_grid = self.grid_mlp(x_grid)
         # Project back to spherical harmonic coefficients
-        x = self.SO3_grid["lmax_lmax"].from_grid(x_grid, self.lmax, self.lmax)
-        return x
+        return self.SO3_grid["lmax_lmax"].from_grid(x_grid, self.lmax, self.lmax)
+
 
 
 class eSEN_Block(torch.nn.Module):
@@ -232,7 +232,7 @@ class eSEN_Block(torch.nn.Module):
         )
 
         self.use_envelope = use_envelope
-        
+
         self.edge_wise = Edgewise(
             sphere_channels=sphere_channels,
             hidden_channels=hidden_channels,
@@ -295,8 +295,6 @@ class eSEN_Block(torch.nn.Module):
 
         x_res = x
         x = self.norm_2(x)
-        
-        x = self.atom_wise(x)
-        x = x + x_res
 
-        return x
+        x = self.atom_wise(x)
+        return x + x_res

@@ -11,8 +11,11 @@ import os
 
 import torch
 import torch.nn as nn
-
 from e3nn import o3
+
+from fairchem.core.common.registry import registry
+from fairchem.core.common.utils import conditional_grad
+from fairchem.core.models.base import GraphModelMixin, HeadInterface
 
 from .common.rotation import (
     init_edge_rot_mat,
@@ -22,22 +25,16 @@ from .common.so3 import (
     CoefficientMapping,
     SO3_Grid,
 )
+from .esen_block import eSEN_Block
+from .nn.embedding import EdgeDegreeEmbedding
 from .nn.layer_norm import (
     EquivariantLayerNormArray,
     EquivariantLayerNormArraySphericalHarmonics,
     EquivariantRMSNormArraySphericalHarmonicsV2,
     get_normalization_layer,
 )
+from .nn.radial import EnvelopedBesselBasis, GaussianSmearing
 from .nn.so3_layers import SO3_Linear
-from .nn.embedding import EdgeDegreeEmbedding
-
-from .nn.radial import GaussianSmearing, EnvelopedBesselBasis
-
-from fairchem.core.common.registry import registry
-from fairchem.core.common.utils import conditional_grad
-from fairchem.core.models.base import GraphModelMixin, HeadInterface
-
-from .esen_block import eSEN_Block
 
 
 @registry.register_model("esen_backbone_dens")
@@ -87,7 +84,7 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
         self.use_pbc_single = use_pbc_single
         self.enforce_max_neighbors_strictly = False
         self.activation_checkpointing = activation_checkpointing
-        
+
         self.mlp_type = mlp_type
         self.use_envelope = use_envelope
 
@@ -191,7 +188,7 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
             lmax=self.lmax,
             num_channels=self.sphere_channels,
         )
-        
+
         self.irreps_sh = o3.Irreps.spherical_harmonics(lmax=self.lmax, p=1)
         self.force_embedding = SO3_Linear(
             in_features=1,
@@ -222,17 +219,17 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
 
     def generate_graph(self, *args, **kwargs):
         graph = super().generate_graph(*args, **kwargs)
-        return dict(
-            edge_index=graph.edge_index,
-            edge_distance=graph.edge_distance,
-            edge_distance_vec=graph.edge_distance_vec,
-            cell_offsets=graph.cell_offsets,
-            offset_distances=None,
-            neighbors=None,
-            node_offset=0,
-            batch_full=graph.batch_full,
-            atomic_numbers_full=graph.atomic_numbers_full,
-        )
+        return {
+            "edge_index": graph.edge_index,
+            "edge_distance": graph.edge_distance,
+            "edge_distance_vec": graph.edge_distance_vec,
+            "cell_offsets": graph.cell_offsets,
+            "offset_distances": None,
+            "neighbors": None,
+            "node_offset": 0,
+            "batch_full": graph.batch_full,
+            "atomic_numbers_full": graph.atomic_numbers_full,
+        }
 
     @conditional_grad(torch.enable_grad())
     def forward(self, data_dict) -> dict[str, torch.Tensor]:
@@ -250,7 +247,7 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
                 device=data_dict["pos"].device,
             )
             # num_batch = data_dict["num_graphs"]
-            num_batch = data_dict.get('num_graphs', len(data_dict['natoms']))
+            num_batch = data_dict.get("num_graphs", len(data_dict["natoms"]))
             displacement = displacement.view(-1, 3, 3).expand(num_batch, 3, 3)
             displacement.requires_grad = True
             symmetric_displacement = 0.5 * (
@@ -299,7 +296,7 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
                 "edge_distance_vec": edge_distance_vec,
                 "node_offset": 0,
             }
-        
+
         _, wigner, wigner_inv = self.get_rotmat_and_wigner(
             graph_dict["edge_distance_vec"]
         )
@@ -318,11 +315,11 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
         )
         x_message[:, 0, :] = self.sphere_embedding(data_dict["atomic_numbers"])
 
-        
+
         ##################
         ### DeNS Start ###
         ##################
-        
+
         num_atoms = len(data_dict.atomic_numbers)
         # Node-wise force encoding during denoising positions
         if hasattr(data_dict, "denoising_pos_forward") and data_dict.denoising_pos_forward:
@@ -332,7 +329,7 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
                 l=self.irreps_sh,
                 x=force_data,
                 normalize=True,
-                normalization='component'
+                normalization="component"
             )
             force_sh = force_sh.view(num_atoms, (self.lmax + 1) ** 2, 1)
             force_norm = force_data.norm(dim=-1, keepdim=True)
@@ -349,11 +346,11 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
 
         force_embedding = self.force_embedding(force_embedding)
         x_message = x_message + force_embedding
-        
+
         ##################
         ###  DeNS End  ###
         ##################
-        
+
         # edge degree embedding
         edge_distance_embedding = self.distance_expansion(
             graph_dict["edge_distance"]
@@ -385,22 +382,22 @@ class eSEN_DeNS_Backbone(nn.Module, GraphModelMixin):
                         self.blocks[i],
                         x_message,
                         x_edge,
-                        graph_dict['edge_distance'],
-                        graph_dict['edge_index'],
+                        graph_dict["edge_distance"],
+                        graph_dict["edge_index"],
                         wigner,
                         wigner_inv,
-                        graph_dict['node_offset'],
+                        graph_dict["node_offset"],
                         use_reentrant=False,
                     )
                 else:
                     x_message = self.blocks[i](
                         x_message,
                         x_edge,
-                        graph_dict['edge_distance'],
-                        graph_dict['edge_index'],
+                        graph_dict["edge_distance"],
+                        graph_dict["edge_index"],
                         wigner,
                         wigner_inv,
-                        node_offset=graph_dict['node_offset'],
+                        node_offset=graph_dict["node_offset"],
                     )
 
         # Final layer norm
@@ -456,7 +453,7 @@ class MLP_EFS_Head(nn.Module, HeadInterface):
         self.regress_stress = backbone.regress_stress
         self.regress_forces = backbone.regress_forces
         self.denoising_pos = True
-        
+
         self.sphere_channels = backbone.sphere_channels
         self.hidden_channels = backbone.hidden_channels
         self.energy_block = nn.Sequential(
@@ -466,11 +463,11 @@ class MLP_EFS_Head(nn.Module, HeadInterface):
             nn.SiLU(),
             nn.Linear(self.hidden_channels, 1, bias=True),
         )
-        
+
         self.denoising_linear = SO3_Linear(backbone.sphere_channels, 1, lmax=1)
-        
+
         backbone.direct_forces = False
-        
+
     def delete_denoising_head(self):
         self.denoising_linear = None
         self.denoising_pos = False
@@ -486,14 +483,14 @@ class MLP_EFS_Head(nn.Module, HeadInterface):
         node_energy = self.energy_block(
             emb["node_embedding"].narrow(1, 0, 1).squeeze()
         ).view(-1, 1, 1)
-            
+
         energy = torch.zeros(len(data["natoms"]), device=data["pos"].device, dtype=node_energy.dtype)
         energy.index_add_(0, data["batch"], node_energy.view(-1))
 
-        # no train on noisy energy for conserved        
+        # no train on noisy energy for conserved
         if hasattr(data, "denoising_pos_forward") and data.denoising_pos_forward:
             energy = energy * 0.0
-        
+
         outputs[energy_key] = energy
 
         if self.regress_stress:
@@ -519,12 +516,12 @@ class MLP_EFS_Head(nn.Module, HeadInterface):
                     energy.sum(), data["pos"], create_graph=self.training
                 )[0]
             )
-            
+
         if self.denoising_pos:
             denoising_pos_vec = self.denoising_linear(emb["node_embedding"].narrow(1, 0, 4))
             denoising_pos_vec = denoising_pos_vec.narrow(1, 1, 3)
             denoising_pos_vec = denoising_pos_vec.view(-1, 3).contiguous()
-        
+
             if hasattr(data, "denoising_pos_forward") and data.denoising_pos_forward:
                 if hasattr(data, "noise_mask"):
                     noise_mask_tensor = data.noise_mask.view(-1, 1)
@@ -533,11 +530,11 @@ class MLP_EFS_Head(nn.Module, HeadInterface):
                     forces = denoising_pos_vec + 0 * forces
             else:
                 forces = 0 * denoising_pos_vec + forces
-                
+
         outputs[forces_key] = forces
-            
+
         return outputs
-    
+
 @registry.register_model("esen_linear_force_head_dens")
 class Linear_Force_Head_DeNS(nn.Module, HeadInterface):
     def __init__(self, backbone):
@@ -552,7 +549,7 @@ class Linear_Force_Head_DeNS(nn.Module, HeadInterface):
         forces = forces.view(-1, 3).contiguous()
         denoising_pos_vec = denoising_pos_vec.narrow(1, 1, 3)
         denoising_pos_vec = denoising_pos_vec.view(-1, 3).contiguous()
-        
+
         if hasattr(data_dict, "denoising_pos_forward") and data_dict.denoising_pos_forward:
             if hasattr(data_dict, "noise_mask"):
                 noise_mask_tensor = data_dict.noise_mask.view(-1, 1)
@@ -561,5 +558,5 @@ class Linear_Force_Head_DeNS(nn.Module, HeadInterface):
                 forces = denoising_pos_vec + 0 * forces
         else:
             forces = 0 * denoising_pos_vec + forces
-            
+
         return {"forces": forces}
