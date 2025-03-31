@@ -304,9 +304,6 @@ class TestRadiusGraphPBC:
 def test_simple_systems_nopbc(
     atoms, expected_edge_index, max_neighbors, enforce_max_neighbors_strictly
 ):
-    # this is what the result should be, but we currently are off by one
-    # in our code, so n neighbors really means n+1 neighbors
-    # expected_edge_index = torch.tensor([[1, 2, 0, 0, 3, 2], [0, 0, 1, 2, 2, 3]])
 
     a2g = AtomsToGraphs(
         r_energy=False,
