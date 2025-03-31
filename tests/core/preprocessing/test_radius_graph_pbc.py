@@ -20,6 +20,11 @@ from torch_geometric.utils import sort_edge_index
 from fairchem.core.common.utils import radius_graph_pbc
 from fairchem.core.datasets import data_list_collater
 from fairchem.core.preprocessing import AtomsToGraphs
+from ase import Atoms
+from fairchem.core.datasets import data_list_collater
+
+from fairchem.core.common.utils import radius_graph_pbc
+from fairchem.core.preprocessing import AtomsToGraphs
 
 
 @pytest.fixture(scope="class")
@@ -66,7 +71,6 @@ class TestRadiusGraphPBC:
     def test_radius_graph_pbc(self) -> None:
         data = self.data
         batch = data_list_collater([data] * 5)
-
         edge_index, cell_offsets, neighbors = radius_graph_pbc(
             batch,
             radius=6,
@@ -239,3 +243,89 @@ class TestRadiusGraphPBC:
         )
 
         assert check_features_match(data.edge_index, data.cell_offsets, out[0], out[1])
+
+
+@pytest.mark.parametrize(
+    ("atoms,expected_edge_index,max_neighbors,enforce_max_neighbors_strictly"),
+    [
+        (
+            Atoms("HCCC", positions=[(0, 0, 0), (-1, 0, 0), (1, 0, 0), (2, 0, 0)]),
+            # we currently have an off by one in our code, the answer should be this
+            # but for now lets just stay consistent
+            # tensor([[1, 2, 0, 0, 3, 2], [0, 0, 1, 2, 2, 3]]) # [ with fix ]
+            torch.tensor([[1, 2, 0, 2, 0, 3, 0, 2], [0, 0, 1, 1, 2, 2, 3, 3]]),
+            1,
+            False,
+        ),
+        (
+            Atoms("HCCC", positions=[(0, 0, 0), (-1, 0, 0), (1, 0, 0), (2, 0, 0)]),
+            # this could change since tie breaking order is undefined
+            torch.tensor([[1, 0, 0, 2], [0, 1, 2, 3]]),
+            1,
+            True,
+        ),
+        (
+            Atoms(
+                "HCCCC",
+                positions=[
+                    (0, 0, 0),
+                    (0, -1.0 / 20, 0),
+                    (0, 1.0 / 5, 0),
+                    (-1, 0, 0),
+                    (1, 0, 0),
+                ],
+            ),
+            # we currently have an off by one in our code, the answer should be this
+            # but for now lets just stay consistent
+            # tensor([[1, 0, 0, 0, 1, 0, 1],[0, 1, 2, 3, 3, 4, 4]])
+            torch.tensor(
+                [[1, 2, 0, 2, 0, 1, 0, 1, 0, 1], [0, 0, 1, 1, 2, 2, 3, 3, 4, 4]]
+            ),
+            1,
+            False,
+        ),
+        (
+            Atoms(
+                "HCCCC",
+                positions=[
+                    (0, 0, 0),
+                    (0, -1.0 / 20, 0),
+                    (0, 1.0 / 5, 0),
+                    (-1, 0, 0),
+                    (1, 0, 0),
+                ],
+            ),
+            torch.tensor([[1, 0, 0, 0, 0], [0, 1, 2, 3, 4]]),
+            1,
+            True,
+        ),
+    ],
+)
+def test_simple_systems_nopbc(
+    atoms, expected_edge_index, max_neighbors, enforce_max_neighbors_strictly
+):
+    # this is what the result should be, but we currently are off by one
+    # in our code, so n neighbors really means n+1 neighbors
+    # expected_edge_index = torch.tensor([[1, 2, 0, 0, 3, 2], [0, 0, 1, 2, 2, 3]])
+
+    a2g = AtomsToGraphs(
+        r_energy=False,
+        r_forces=False,
+        r_distances=False,
+        r_pbc=True,
+        r_edges=False,  # otf graph should not be a property of the model...
+    )
+
+    data = a2g.convert(atoms)
+
+    batch = data_list_collater([data])
+
+    edge_index, _, _ = radius_graph_pbc(
+        batch,
+        radius=6,
+        max_num_neighbors_threshold=max_neighbors,
+        enforce_max_neighbors_strictly=enforce_max_neighbors_strictly,
+        pbc=[False, False, False],
+    )
+
+    assert (edge_index == expected_edge_index).all()
