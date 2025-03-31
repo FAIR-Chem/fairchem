@@ -77,7 +77,7 @@ You can find examples configuration files in [`configs/is2re`](https://github.co
 
 To train a SchNet model for the IS2RE task on the 10k split, run:
 ```bash
-python main.py --mode train --config-yml configs/is2re/10k/schnet/schnet.yml
+python main.py --mode train --config-yml configs/oc20/is2re/10k/schnet/schnet.yml
 ```
 
 Training logs are stored in `logs/tensorboard/[TIMESTAMP]` where `[TIMESTAMP]` is
@@ -89,7 +89,7 @@ At the end of training, the model checkpoint is stored in `checkpoints/[TIMESTAM
 
 Next, run this model on the test data:
 ```bash
-python main.py --mode predict --config-yml configs/is2re/10k/schnet/schnet.yml \
+python main.py --mode predict --config-yml configs/oc20/is2re/10k/schnet/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
 The predictions are stored in `[RESULTS_DIR]/is2re_predictions.npz` and later used to create a submission file to be uploaded to EvalAI.
@@ -101,7 +101,7 @@ Alternatively, the IS2RE task may be approached by 2 methods as described in our
 - Single Model: Relaxed energy predictions are extracted from relaxed structures generated via ML relaxations from a single model.
 
     1. Train a S2EF model on both energy and forces as described [here](../core/model_training.md)
-    2. Using the trained S2EF model, run ML relaxations as described [here](../core/model_training.md). Ensure `traj_dir` is uniquely specified in the config as to save out the full trajectory. A sample config can be found [here](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/s2ef/2M/dimenet_plus_plus/dpp_relax.yml). ** Note ** Relaxations on the complete val/test set may take upwards of 8hrs depending on your available hardware.
+    2. Using the trained S2EF model, run ML relaxations as described [here](../core/model_training.md). Ensure `traj_dir` is uniquely specified in the config as to save out the full trajectory. A sample config can be found [here](https://github.com/FAIR-Chem/fairchem/blob/main/src/fairchem/core/configs/oc20/s2ef/2M/dimenet_plus_plus/dpp_relax.yml). ** Note ** Relaxations on the complete val/test set may take upwards of 8hrs depending on your available hardware.
     3. Prepare a submission file by running the following command:
         ```
         python scripts/make_submission_file.py --id path/to/id/traj_dir \
@@ -159,7 +159,7 @@ To train a SchNet model for the S2EF task on the 2M split using 2 GPUs, run:
 
 ```bash
 torchrun --standalone --nproc_per_node=2 main.py \
-        --mode train --config-yml configs/s2ef/2M/schnet/schnet.yml --num-gpus 2 --distributed
+        --mode train --config-yml configs/oc20/s2ef/2M/schnet/schnet.yml --num-gpus 2 --distributed
 ```
 Similar to the IS2RE task, tensorboard logs are stored in `logs/tensorboard/[TIMESTAMP]` and the
 checkpoint is stored in `checkpoints/[TIMESTAMP]/checkpoint.pt`.
@@ -167,7 +167,7 @@ checkpoint is stored in `checkpoints/[TIMESTAMP]/checkpoint.pt`.
 Next, run this model on the test data:
 
 ```bash
-python main.py --mode predict --config-yml configs/s2ef/2M/schnet/schnet.yml \
+python main.py --mode predict --config-yml configs/oc20/s2ef/2M/schnet/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
 The predictions are stored in `[RESULTS_DIR]/ocp_predictions.npz` and later used to create a submission file to be uploaded to EvalAI.
@@ -210,7 +210,7 @@ For example, to override the training dataset path via a command line argument:
 ```bash
 python main.py \
     --mode train
-    --config-yml configs/s2ef/2M/schnet/schnet.yml \
+    --config-yml configs/oc20/s2ef/2M/schnet/schnet.yml \
     --dataset.train.src=path/to/my/dataset/
 ```
 
@@ -219,7 +219,7 @@ Or to update the initial learning rate:
 ```bash
 python main.py \
     --mode train
-    --config-yml configs/s2ef/2M/schnet/schnet.yml \
+    --config-yml configs/oc20/s2ef/2M/schnet/schnet.yml \
     --optim.lr_initial=3e-4
 ```
 
@@ -246,7 +246,7 @@ relax_opt:
 
 After training, relaxations can be run by:
 ```bash
-python main.py --mode run-relaxations --config-yml configs/s2ef/2M/schnet/schnet.yml \
+python main.py --mode run-relaxations --config-yml configs/oc20/s2ef/2M/schnet/schnet.yml \
         --checkpoint checkpoints/[TIMESTAMP]/checkpoint.pt
 ```
 The relaxed structure positions are stored in `[RESULTS_DIR]/relaxed_positions.npz` and later used to create a submission file to be uploaded to EvalAI. Predicted trajectories are stored in `trajectories` directory for those interested in analyzing the complete relaxation trajectory.
