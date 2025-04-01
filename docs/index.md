@@ -24,8 +24,7 @@ this repo:
 * [Open Direct Air Capture (OpenDAC)](https://open-dac.github.io/)
 
 ```{note}
-We re-organized and rebranded the repository in 2024 (previously the `fairchem` repo) to reflect the increasingly
-general usability of these models beyond catalysis, including things like direct air capture.
+We re-organized and rebranded the repository in 2024 (previously the `ocp` repo in the [Open-Catalyst-Project](https://github.com/Open-Catalyst-Project/) organization) to reflect the increasingly general usability of these models beyond catalysis, including things like direct air capture.
 ```
 
 #### Datasets in `fairchem`:
