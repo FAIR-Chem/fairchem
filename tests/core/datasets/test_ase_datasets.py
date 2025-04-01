@@ -70,14 +70,6 @@ def ase_dataset(request, structures, tmp_path_factory):
                 "a2g_args": a2g_args,
             }
         )
-    elif request.param == "lmdb_dataset":
-        with connect(str(tmp_path / "asedb.aselmdb")) as database:
-            for _i, atoms in enumerate(structures):
-                database.write(atoms, data=atoms.info)
-
-        dataset = AseDBDataset(
-            config={"src": str(tmp_path / "asedb.aselmdb"), "a2g_args": a2g_args}
-        )
     else:  # "aselmbd_dataset" with .aselmdb file extension
         with connect(str(tmp_path / "asedb.aselmdb")) as database:
             for _i, atoms in enumerate(structures):

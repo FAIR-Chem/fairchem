@@ -214,7 +214,6 @@ def dummy_binary_dataset_path(tmpdir_factory, dummy_element_refs):
                     "stress": rng.random((3, 3)),
                 },
             )
-            print("writing!")
 
     return tmpdir / "dummy.aselmdb"
 
