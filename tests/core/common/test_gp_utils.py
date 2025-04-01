@@ -576,12 +576,9 @@ def test_simple_energy(nlayers):
 
 @pytest.mark.parametrize("nlayers", [1])  # noqa: PT006
 def test_simple_energy_ddp(nlayers):
-    # torch.autograd.set_detect_anomaly(True)
     atomic_numbers = torch.tensor([2.0, 3.0, 4.0], requires_grad=True)
-    # edge_index = torch.tensor([[1, 1, 1], [0, 2, 1]])
     edge_index = torch.tensor([[0, 1], [0, 2]])
 
-    # non_gp_results = fwd_bwd_on_simplenet(atomic_numbers, edge_index)
     config = PGConfig(backend="gloo", world_size=2, gp_group_size=1, use_gp=False)
     non_gp_results = spawn_multi_process(
         config,
