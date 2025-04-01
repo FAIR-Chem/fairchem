@@ -12,7 +12,8 @@ dependencies = [
     "torch~=2.4.0",
     "numpy >=1.26.0, <2.0.0",
     "lmdb",
-    "ase",
+    "ase@git+https://gitlab.com/ase/ase",
+    "ase-db-backends@git+https://gitlab.com/ase/ase-db-backends",
     "pymatgen>=2023.10.3",
     "pyyaml",
     "tensorboard",
@@ -62,6 +63,9 @@ only-include = ["src/fairchem/core", "src/fairchem/experimental"]
 [tool.hatch.build.targets.wheel]
 sources = ["src"]
 only-include = ["src/fairchem/core", "src/fairchem/experimental"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.metadata.hooks.fancy-pypi-readme]
 content-type = "text/markdown"

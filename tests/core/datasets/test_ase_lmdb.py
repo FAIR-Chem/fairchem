@@ -6,8 +6,7 @@ from ase import build
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms
 from ase.db.row import AtomsRow
-
-from fairchem.core.datasets.lmdb_database import LMDBDatabase
+from ase_db_backends.aselmdb import LMDBDatabase
 
 N_WRITES = 100
 N_READS = 200

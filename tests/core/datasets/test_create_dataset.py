@@ -5,8 +5,9 @@ import tempfile
 
 import numpy as np
 import pytest
+from ase_db_backends.aselmdb import LMDBDatabase
 
-from fairchem.core.datasets import LMDBDatabase, create_dataset
+from fairchem.core.datasets import create_dataset
 from fairchem.core.datasets.base_dataset import BaseDataset
 from fairchem.core.trainers.base_trainer import BaseTrainer
 

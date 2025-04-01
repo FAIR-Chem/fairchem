@@ -7,13 +7,13 @@ import pytest
 from ase import build, db
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.io import Trajectory, write
+from ase_db_backends.aselmdb import LMDBDatabase
 
 from fairchem.core.datasets import (
     AseDBDataset,
     AseReadDataset,
     AseReadMultiStructureDataset,
 )
-from fairchem.core.datasets.lmdb_database import LMDBDatabase
 
 
 @pytest.fixture(
