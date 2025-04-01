@@ -293,8 +293,7 @@ class ScatterToModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
         (dim,) = ctx.saved_tensors
-        ret = _gather_with_padding(grad_output.clone(), dim.item())
-        return ret, None
+        return _gather_with_padding(grad_output.clone(), dim.item()), None
 
 
 class GatherFromModelParallelRegion(torch.autograd.Function):
