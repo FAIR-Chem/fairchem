@@ -790,14 +790,14 @@ the following [build_config](https://github.com/FAIR-Chem/fairchem/blob/61730294
 utility. Loading a yaml config is preferable when launching jobs from the command line. We have included a set of
 default configs for our best models' [here](https://github.com/FAIR-Chem/fairchem/tree/master/configs).
 
-We will also use a scaling files found [here](https://github.com/FAIR-Chem/fairchem/tree/master/configs/s2ef/all/gemnet/scaling_factors").
+We will also use a scaling files found [here](https://github.com/FAIR-Chem/fairchem/tree/master/configs/oc20/s2ef/all/gemnet/scaling_factors").
 Lets download it locally,
 
 ```{code-cell} ipython3
 %%bash
-wget https://github.com/FAIR-Chem/fairchem/raw/main/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc-large.pt
-wget https://github.com/FAIR-Chem/fairchem/raw/main/configs/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
-wget https://github.com/FAIR-Chem/fairchem/raw/main/configs/s2ef/all/gemnet/scaling_factors/gemnet-dT.json
+wget https://github.com/FAIR-Chem/fairchem/raw/main/configs/oc20/s2ef/all/gemnet/scaling_factors/gemnet-oc-large.pt
+wget https://github.com/FAIR-Chem/fairchem/raw/main/configs/oc20/s2ef/all/gemnet/scaling_factors/gemnet-oc.pt
+wget https://github.com/FAIR-Chem/fairchem/raw/main/configs/oc20/s2ef/all/gemnet/scaling_factors/gemnet-dT.json
 ```
 
 
@@ -1410,7 +1410,7 @@ Running an iterative S2EF model for the IS2RS task can be run from any S2EF conf
   * *traj_dir* - If specified, directory to save out the full ML relaxation as an ASE trajectory. Useful for debugging or visualizing results.
 * *num_relaxation_batches* - If specified, relaxations will only be run for a subset of the relaxation dataset. Useful for debugging or wanting to visualize a few systems.
 
-A sample relaxation config can be found [here](https://github.com/FAIR-Chem/fairchem/blob/1044e311182c1120c6e6d137ce6db3f445148973/configs/s2ef/2M/dimenet_plus_plus/dpp_relax.yml#L24-L33).
+A sample relaxation config can be found [here](https://github.com/FAIR-Chem/fairchem/blob/1044e311182c1120c6e6d137ce6db3f445148973/configs/oc20/s2ef/2M/dimenet_plus_plus/dpp_relax.yml#L24-L33).
 
 
 ```{code-cell} ipython3
@@ -2303,17 +2303,17 @@ The previous sections of this notebook are intended to demonstrate the inner wor
 
 +++ {"id": "lAdwlMNOKwYj"}
 
-3. In the config file, modify the path of the data [train](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/base.yml#L4) [val](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/base.yml#L8), [normalization parameters](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/base.yml#L5-L7)  as well as any other [model](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/dimenet_plus_plus/dpp.yml#L4-L16) or [training](https://github.com/FAIR-Chem/fairchem/blob/master/configs/is2re/10k/dimenet_plus_plus/dpp.yml#L23-L35) args.
+3. In the config file, modify the path of the data [train](https://github.com/FAIR-Chem/fairchem/blob/master/configs/oc20/is2re/10k/base.yml#L4) [val](https://github.com/FAIR-Chem/fairchem/blob/master/configs/oc20/is2re/10k/base.yml#L8), [normalization parameters](https://github.com/FAIR-Chem/fairchem/blob/master/configs/oc20/is2re/10k/base.yml#L5-L7)  as well as any other [model](https://github.com/FAIR-Chem/fairchem/blob/master/configs/oc20/is2re/10k/dimenet_plus_plus/dpp.yml#L4-L16) or [training](https://github.com/FAIR-Chem/fairchem/blob/master/configs/oc20/is2re/10k/dimenet_plus_plus/dpp.yml#L23-L35) args.
 
 For a simple example, we'll train DimeNet++ on IS2RE demo data: \
-a. Modify the train data path in `/contents/ocp/configs/is2re/10k/base.yml` in
+a. Modify the train data path in `/contents/ocp/configs/oc20/is2re/10k/base.yml` in
 Line 4 to `/contents/ocp/data/is2re/train_10k/data.lmdb` and val data path in Line 8 to `/contents/ocp/data/is2re/val_2k/data.lmdb`. \
 b. Calculate the mean and std for train data and modify Lines 6-7 respectively \
-c. We can change the model parameters in `/contents/ocp/configs/is2re/10k/dimenet_plus_plus/dpp.yml` and we suggest you to change the lr_milestones and warmup_steps as the data here is smaller (these need to be tuned for every dataset).
+c. We can change the model parameters in `/contents/ocp/configs/oc20/is2re/10k/dimenet_plus_plus/dpp.yml` and we suggest you to change the lr_milestones and warmup_steps as the data here is smaller (these need to be tuned for every dataset).
 
 +++ {"id": "HjWsAaojKzpH"}
 
-4. Train: `python main.py --mode train --config-yml configs/is2re/10k/dimenet_plus_plus/dpp.yml --identifier dpp_is2re_sample`
+4. Train: `python main.py --mode train --config-yml configs/oc20/is2re/10k/dimenet_plus_plus/dpp.yml --identifier dpp_is2re_sample`
 
 ```{code-cell} ipython3
 :id: mCgs4eGSO-HM
@@ -2324,9 +2324,9 @@ c. We can change the model parameters in `/contents/ocp/configs/is2re/10k/dimene
 
 +++ {"id": "q1xRtYWTO8Xb"}
 
-5. Add a data path as a test set to `configs/is2re/10k/base.yml`
+5. Add a data path as a test set to `configs/oc20/is2re/10k/base.yml`
 6. Run predictions with the trained model:
-`python main.py --mode predict --config-yml configs/is2re/10k/dimenet_plus_plus/dpp.yml --checkpoint checkpoints/[datetime]-dpp_is2re_sample/checkpoint.pt`
+`python main.py --mode predict --config-yml configs/oc20/is2re/10k/dimenet_plus_plus/dpp.yml --checkpoint checkpoints/[datetime]-dpp_is2re_sample/checkpoint.pt`
 7. View energy predictions at `results/[datetime]/is2re_predictions.npz`
 
 For more information on how to train and evaluate, see [this readme](../core/model_training.md). For checkpoints of publicly available trained models, see [MODELS.md](../core/model_checkpoints.md).

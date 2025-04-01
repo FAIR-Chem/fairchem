@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import copy
 import logging
+from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 
@@ -36,8 +37,6 @@ from fairchem.core.models.model_registry import model_name_to_local_file
 from fairchem.core.preprocessing import AtomsToGraphs
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from torch_geometric.data import Batch
 
 
@@ -125,6 +124,7 @@ class OCPCalculator(Calculator):
         cpu: bool = True,
         seed: int | None = None,
         only_output: list[str] | None = None,
+        disable_amp: bool = True,
     ) -> None:
         """
         OCP-ASE Calculator
@@ -143,6 +143,13 @@ class OCPCalculator(Calculator):
                 OCP trainer to be used. "forces" for S2EF, "energy" for IS2RE.
             cpu (bool):
                 Whether to load and run the model on CPU. Set `False` for GPU.
+            seed (int):
+                Seed in the calculator to ensure reproducibility among instantiations
+            only_output (list):
+                A list of outputs to use from the model, rather than relying on the underlying task
+            disable_amp (bool):
+                Disable AMP in the calculator; AMP on is great for training, but often leads to headaches
+                during inference.
         """
         setup_imports()
         setup_logging()
@@ -160,6 +167,8 @@ class OCPCalculator(Calculator):
             checkpoint_path = model_name_to_local_file(
                 model_name=model_name, local_cache=local_cache
             )
+
+        checkpoint_path = Path(checkpoint_path)
 
         # Either the config path or the checkpoint path needs to be provided
         assert config_yml or checkpoint_path is not None
@@ -252,12 +261,15 @@ class OCPCalculator(Calculator):
         else:
             self.trainer.set_seed(seed)
 
+        if disable_amp:
+            self.trainer.scaler = None
+
         self.a2g = AtomsToGraphs(
             r_energy=False,
             r_forces=False,
             r_distances=False,
             r_pbc=True,
-            r_edges=not self.trainer.model.otf_graph,  # otf graph should not be a property of the model...
+            r_edges=not config["model"]["otf_graph"],
         )
         self.implemented_properties = list(self.config["outputs"].keys())
 

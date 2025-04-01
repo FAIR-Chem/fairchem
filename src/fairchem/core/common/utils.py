@@ -1231,11 +1231,23 @@ def scatter_det(*args, **kwargs):
     return out
 
 
-def get_commit_hash():
+def get_commit_hash() -> str:
+    core_hash = get_commit_hash_for_repo(fairchem.core.__path__[0])
+    experimental_hash = None
+    try:
+        experimental_hash = get_commit_hash_for_repo(fairchem.experimental.__path__[0])
+        return f"core:{core_hash},experimental:{experimental_hash}"
+    except (NameError, AttributeError):
+        return f"core:{core_hash},experimental:NA"
+
+
+def get_commit_hash_for_repo(
+    git_repo_path: str,
+) -> str | None:
     try:
         commit_hash = (
             subprocess.check_output(
-                ["git", "-C", fairchem.core.__path__[0], "describe", "--always"],
+                ["git", "-C", git_repo_path, "describe", "--always"],
                 stderr=subprocess.DEVNULL,
             )
             .strip()
@@ -1502,7 +1514,7 @@ def get_deep(dictionary: dict, keys: str, default: str | None = None):
     )
 
 
-def get_subdirectories_sorted_by_time(directory: str) -> str:
+def get_subdirectories_sorted_by_time(directory: str) -> list:
     """
     Get all subdirectories in a directory sorted by their last modification time.
     Args:
@@ -1510,6 +1522,9 @@ def get_subdirectories_sorted_by_time(directory: str) -> str:
     Returns:
         list: A list of tuples containing the subdirectory path and its last modification time.
     """
+    if not os.path.exists(directory):
+        return []
+
     directory = pathlib.Path(directory)
     return sorted(
         ((str(d), d.stat().st_mtime) for d in directory.iterdir() if d.is_dir()),
@@ -1529,6 +1544,6 @@ def get_cluster_name() -> str:
         )
     except subprocess.CalledProcessError as e:
         logging.warning(
-            f"scontrol command failed, couldn't find cluster name, returning UNKOWN as cluster name {e!s}"
+            f"scontrol command failed, couldn't find cluster name, returning empty str as cluster name {e!s}"
         )
-        return "unknown"
+        return ""
