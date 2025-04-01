@@ -38,7 +38,7 @@ jobs:
         if: ${{ matrix.pip_develop}}
         run: |
           python -m pip install --upgrade pip
-          pip install -r packages/requirements.txt -r packages/requirements-optional.txt -e packages/fairchem-core[docs,adsorbml,quacc] -e packages/fairchem-data-oc[dev] -e packages/fairchem-demo-ocpapi[dev] -e packages/fairchem-applications-cattsunami      
+          pip install -r packages/requirements.txt -r packages/requirements-optional.txt -e packages/fairchem-core[dev,docs,adsorbml,quacc] -e packages/fairchem-data-oc[dev] -e packages/fairchem-demo-ocpapi[dev] -e packages/fairchem-applications-cattsunami      
 
       - name: Install additional dependencies
         run: |
