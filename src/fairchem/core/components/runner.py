@@ -8,22 +8,27 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from omegaconf import DictConfig
+from omegaconf import DictConfig
+
+from fairchem.core.components.utils import ManagedAttribute
 
 
 class Runner(metaclass=ABCMeta):
-    """
-    Represents an abstraction over things that run in a loop and can save/load state.
+    """Represents an abstraction over things that run in a loop and can save/load state.
+
     ie: Trainers, Validators, Relaxation all fall in this category.
-    This allows us to decouple away from a monolithic trainer class
+
+    Note:
+        When running with the `fairchemv2` cli, the `job_config` and attribute is set at
+        runtime to those given in the config file.
+
+    Attributes:
+        job_config (DictConfig): a managed attribute that gives access to the job config
     """
 
-    @abstractmethod
-    def initialize(self, job_config: DictConfig) -> None:
-        raise NotImplementedError
+    job_config = ManagedAttribute(enforced_type=DictConfig)
 
     @abstractmethod
     def run(self) -> Any:
@@ -50,9 +55,6 @@ class MockRunner(Runner):
         if self.x + self.y > 1000:
             raise ValueError("sum is greater than 1000!")
         return self.x + self.y
-
-    def initialize(self, job_config: DictConfig) -> None:
-        pass
 
     def save_state(self, checkpoint_location: str, is_preemption: bool = False) -> bool:
         pass
