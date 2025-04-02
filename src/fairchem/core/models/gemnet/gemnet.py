@@ -544,15 +544,14 @@ class GemNetT(nn.Module, GraphModelMixin):
             F_st += F
             E_t += E
 
-        nMolecules = torch.max(batch) + 1
         if self.extensive:
-            E_t = scatter(
-                E_t, batch, dim=0, dim_size=nMolecules, reduce="add"
-            )  # (nMolecules, 1)
+            E_t = E_t.new_zeros(batch.max() + 1).scatter_reduce_(
+                0, batch, E_t[:, 0], reduce="sum"
+            )[:, None]
         else:
-            E_t = scatter(
-                E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
-            )  # (nMolecules, 1)
+            E_t = E_t.new_zeros(batch.max() + 1).scatter_reduce_(
+                0, batch, E_t[:, 0], reduce="mean"
+            )[:, None]
 
         outputs = {"energy": E_t}
 
@@ -561,13 +560,12 @@ class GemNetT(nn.Module, GraphModelMixin):
                 # map forces in edge directions
                 F_st_vec = F_st[:, :, None] * V_st[:, None, :]
                 # (nEdges, 1, 3)
-                F_t = scatter(
-                    F_st_vec,
-                    idx_t,
-                    dim=0,
-                    dim_size=data.atomic_numbers.size(0),
-                    reduce="add",
-                )  # (nAtoms, 1, 3)
+                F_t = F_st_vec.new_zeros(
+                    data.atomic_numbers.size(0), *F_st_vec.shape[1:]
+                ).scatter_reduce_(
+                    0, idx_t[:, None, None].expand_as(F_st_vec), F_st_vec, reduce="sum"
+                )
+
                 F_t = F_t.squeeze(1)  # (nAtoms, 3)
             else:
                 F_t = -torch.autograd.grad(E_t.sum(), pos, create_graph=True)[0]
@@ -668,13 +666,13 @@ class GemNetTEnergyAndGradForceHead(nn.Module, HeadInterface):
     ) -> dict[str, torch.Tensor]:
         nMolecules = torch.max(data.batch) + 1
         if self.extensive:
-            E_t = scatter(
-                emb["E_t"], data.batch, dim=0, dim_size=nMolecules, reduce="add"
-            )  # (nMolecules, 1)
+            E_t = emb["E_t"].new_zeros(data.batch.max() + 1).scatter_reduce_(
+                0, data.batch, emb["E_t"][:, 0], reduce="sum"
+            )[:, None]
         else:
-            E_t = scatter(
-                emb["E_t"], data.batch, dim=0, dim_size=nMolecules, reduce="mean"
-            )  # (nMolecules, 1)
+            E_t = emb["E_t"].new_zeros(data.batch.max() + 1).scatter_reduce_(
+                0, data.batch, emb["E_t"][:, 0], reduce="mean"
+            )[:, None]
 
         outputs = {"energy": E_t}
 

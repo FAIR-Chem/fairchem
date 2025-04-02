@@ -8,7 +8,7 @@ except ImportError:
 
 import torch
 import pytest
-
+from torch_scatter import scatter as  torch_scatter_scatter
 from fairchem.core.common.utils import sum_partitions
 
 
@@ -37,3 +37,17 @@ def test_segment_csr():
     indptr = torch.sort(torch.randperm(100)[:5])[0]
 
     assert sum_partitions(src, indptr).isclose(segment_csr(src, indptr)).all()
+
+def test_torch_scatter_scatter_vs_torch_scatter():
+    n=128
+    dim=0
+    for k in [n//32,n,10*n,100*n]:
+        index=torch.randint(0,n,(k,))
+        src=torch.rand(k)
+
+        out_a=torch.zeros(n).scatter_reduce_(dim,index,src,reduce='sum')
+
+        out_b=torch.zeros(n)
+        torch_scatter_scatter(src,index,dim,out_b)
+
+        assert out_a.isclose(out_b).all()
