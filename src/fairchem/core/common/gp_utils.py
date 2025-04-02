@@ -14,6 +14,7 @@ from typing import Any
 import numpy as np
 import torch
 from torch import distributed as dist
+from torch.distributed.nn.functional import all_reduce
 
 """
 Functions to support graph parallel training.
@@ -182,16 +183,18 @@ def trim_tensor(tensor: torch.Tensor, sizes: torch.Tensor | None = None, dim: in
     return tensor, sizes
 
 
+def _tensor_to_split_partitions(tensor: torch.Tensor, dim: int = -1):
+    group = get_gp_group()
+    num_parts = dist.get_world_size(group=group)
+    return [len(part) for part in np.array_split(np.zeros(tensor.size(dim)), num_parts)]
+
+
 def _split_tensor(
     tensor: torch.Tensor,
-    num_parts: int,
     dim: int = -1,
     contiguous_chunks: bool = False,
 ):
-    part_sizes = [
-        len(part) for part in np.array_split(np.zeros(tensor.size(dim)), num_parts)
-    ]
-    tensor_list = torch.split(tensor, part_sizes, dim=dim)
+    tensor_list = torch.split(tensor, _tensor_to_split_partitions(tensor, dim), dim=dim)
     if contiguous_chunks:
         return tuple(chunk.contiguous() for chunk in tensor_list)
     return tensor_list
@@ -201,20 +204,14 @@ def _reduce(ctx: Any, input: torch.Tensor) -> torch.Tensor:
     group = get_gp_group()
     if ctx:
         ctx.mark_dirty(input)
-    if dist.get_world_size(group) == 1:
-        return input
     dist.all_reduce(input, group=group)
     return input
 
 
 def _split(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
-    group = get_gp_group()
     rank = get_gp_rank()
-    world_size = dist.get_world_size(group=group)
-    if world_size == 1:
-        return input
-    input_list = _split_tensor(input, world_size, dim=dim)
-    return input_list[rank].contiguous()
+    input_list = _split_tensor(input, dim=dim)
+    return input_list[rank].clone().contiguous()
 
 
 def _gather(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
@@ -253,17 +250,15 @@ def _gather_with_padding(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
         torch.empty(shape, device=input.device, dtype=input.dtype)
         for _ in range(world_size)
     ]
-    tensor_list[rank] = input
+
     dist.all_gather(tensor_list, input, group=group)
+    tensor_list[rank] = input  # pop back in our local copy (requires grad)
 
     # Trim and cat
-    if dim == 0:
-        tensor_list = [tensor[:size] for tensor, size in zip(tensor_list, size_list)]
-    elif dim == 1:
-        tensor_list = [tensor[:, :size] for tensor, size in zip(tensor_list, size_list)]
-    else:
-        raise ValueError
-    return torch.cat(tensor_list, dim=dim).contiguous()
+    return torch.cat(
+        [tensor.narrow(dim, 0, size) for tensor, size in zip(tensor_list, size_list)],
+        dim=dim,
+    ).contiguous()
 
 
 class CopyToModelParallelRegion(torch.autograd.Function):
@@ -279,13 +274,15 @@ class CopyToModelParallelRegion(torch.autograd.Function):
 class ReduceFromModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input: torch.Tensor) -> torch.Tensor:
-        return _reduce(ctx, input)
+        # return _reduce(ctx, input) # this operates in place
+        return all_reduce(input, group=get_gp_group())  # this operats out of place
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor) -> torch.Tensor:
         return grad_output
 
 
+# this returns the values in place
 class ScatterToModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor:
@@ -296,10 +293,7 @@ class ScatterToModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
         (dim,) = ctx.saved_tensors
-        return (
-            _gather_with_padding(grad_output, dim.item()),
-            None,
-        )
+        return _gather_with_padding(grad_output.clone(), dim.item()), None
 
 
 class GatherFromModelParallelRegion(torch.autograd.Function):
@@ -311,6 +305,30 @@ class GatherFromModelParallelRegion(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
         (dim,) = ctx.saved_tensors
+        result = _split(grad_output, dim.item())
+        return result, None
+
+
+class GatherFromModelParallelRegionSumGrad(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input: torch.Tensor, dim: int = -1) -> torch.Tensor:
+        ctx.save_for_backward(torch.tensor(dim))
+        return _gather_with_padding(input, dim)
+
+    @staticmethod
+    def backward(ctx, grad_output: torch.Tensor):
+        (dim,) = ctx.saved_tensors
+        group = get_gp_group()
+        # use dist internal # does not work
+        # reduced_grad_output = grad_output.clone()
+        # dist.all_reduce(
+        #    reduced_grad_output, group=group
+        # )  # This is an inplace operation
+        # grad_output = reduced_grad_output
+
+        # use functional version instead
+        grad_output = all_reduce(grad_output, group=group)
+
         result = _split(grad_output, dim.item())
         return result, None
 
@@ -356,6 +374,13 @@ def gather_from_model_parallel_region(
 ) -> torch.Tensor:
     assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
     return GatherFromModelParallelRegion.apply(input, dim)
+
+
+def gather_from_model_parallel_region_sum_grad(
+    input: torch.Tensor, dim: int = -1
+) -> torch.Tensor:
+    assert initialized(), "Cannot use graph parallel with initializing gp group, must call setup_gp from gp_utils.py!"
+    return GatherFromModelParallelRegionSumGrad.apply(input, dim)
 
 
 def scale_backward_grad(input: torch.Tensor) -> torch.Tensor:
