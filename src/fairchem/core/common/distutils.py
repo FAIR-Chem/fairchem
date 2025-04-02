@@ -43,7 +43,10 @@ def setup(config) -> None:
                 )
                 config["init_method"] = "tcp://{host}:{port}".format(
                     host=hostnames.split()[0].decode("utf-8"),
-                    port=DISTRIBUTED_PORT,
+                    # a fixed DISTRIBUTED_PORT works if a full node is used, otherwise we can get port clashes
+                    port=get_free_port()
+                    if config["world_size"] == 1
+                    else DISTRIBUTED_PORT,
                 )
                 nnodes = int(os_environ_get_or_throw("SLURM_NNODES"))
                 ntasks_per_node = os.environ.get("SLURM_NTASKS_PER_NODE")
