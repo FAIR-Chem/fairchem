@@ -664,20 +664,15 @@ class GemNetTEnergyAndGradForceHead(nn.Module, HeadInterface):
     def forward(
         self, data: Batch, emb: dict[str, torch.Tensor]
     ) -> dict[str, torch.Tensor]:
+        nMolecules = torch.max(data.batch) + 1
         if self.extensive:
-            E_t = (
-                emb["E_t"]
-                .new_zeros(data.batch.max() + 1)
-                .scatter_reduce_(0, data.batch, emb["E_t"][:, 0], reduce="sum")[:, None]
-            )
+            E_t = emb["E_t"].new_zeros(data.batch.max() + 1).scatter_reduce_(
+                0, data.batch, emb["E_t"][:, 0], reduce="sum"
+            )[:, None]
         else:
-            E_t = (
-                emb["E_t"]
-                .new_zeros(data.batch.max() + 1)
-                .scatter_reduce_(0, data.batch, emb["E_t"][:, 0], reduce="mean")[
-                    :, None
-                ]
-            )
+            E_t = emb["E_t"].new_zeros(data.batch.max() + 1).scatter_reduce_(
+                0, data.batch, emb["E_t"][:, 0], reduce="mean"
+            )[:, None]
 
         outputs = {"energy": E_t}
 

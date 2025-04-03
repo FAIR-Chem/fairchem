@@ -8,9 +8,8 @@ from __future__ import annotations
 
 import numpy as np
 import torch
+from torch_scatter import segment_coo, segment_csr
 from torch_sparse import SparseTensor
-
-from fairchem.core.common.utils import sum_partitions
 
 
 def ragged_range(sizes):
@@ -132,10 +131,11 @@ def repeat_blocks(
         indptr = torch.cat((sizes.new_zeros(1), diffs.cumsum(0)))
         if continuous_indexing:
             # If a group was skipped (repeats=0) we need to add its size
-            insert_val += sum_partitions(sizes[: r1[-1]], indptr)
+            insert_val += segment_csr(sizes[: r1[-1]], indptr, reduce="sum")
+
         # Add block increments
         if isinstance(block_inc, torch.Tensor):
-            insert_val += sum_partitions(block_inc[: r1[-1]], indptr)
+            insert_val += segment_csr(block_inc[: r1[-1]], indptr, reduce="sum")
         else:
             insert_val += block_inc * (indptr[1:] - indptr[:-1])
             if insert_dummy:
@@ -324,7 +324,7 @@ def get_projected_angle(R_ab, P_n, eps: float = 1e-4) -> torch.Tensor:
 def mask_neighbors(neighbors, edge_mask):
     neighbors_old_indptr = torch.cat([neighbors.new_zeros(1), neighbors])
     neighbors_old_indptr = torch.cumsum(neighbors_old_indptr, dim=0)
-    return sum_partitions(edge_mask.long(), neighbors_old_indptr)
+    return segment_csr(edge_mask.long(), neighbors_old_indptr)
 
 
 def get_neighbor_order(num_atoms: int, index, atom_distance) -> torch.Tensor:
@@ -341,9 +341,7 @@ def get_neighbor_order(num_atoms: int, index, atom_distance) -> torch.Tensor:
 
     # Get number of neighbors
     ones = index_sorted.new_ones(1).expand_as(index_sorted)
-    num_neighbors = ones.new_zeros(num_atoms).scatter_reduce(
-        dim=0, index=index_sorted, src=ones, reduce="sum"
-    )
+    num_neighbors = segment_coo(ones, index_sorted, dim_size=num_atoms)
     max_num_neighbors = num_neighbors.max()
 
     # Create a tensor of size [num_atoms, max_num_neighbors] to sort the distances of the neighbors.
@@ -395,9 +393,7 @@ def get_inner_idx(idx, dim_size):
     idx has to be sorted for this to work.
     """
     ones = idx.new_ones(1).expand_as(idx)
-    num_neighbors = ones.new_zeros(dim_size).scatter_reduce(
-        dim=0, index=idx, src=ones, reduce="sum"
-    )
+    num_neighbors = segment_coo(ones, idx, dim_size=dim_size)
     return ragged_range(num_neighbors)
 
 

@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 from __future__ import annotations
 
 import torch
+from torch_scatter import segment_coo
 from torch_sparse import SparseTensor
 
 from .utils import get_inner_idx, masked_select_sparsetensor_flat
@@ -240,8 +241,8 @@ def get_quadruplets(
     # Repeat indices by counting the number of input triplets per
     # intermediate edge ba. segment_coo assumes sorted idx['triplet_in']['out']
     ones = idx["triplet_in"]["out"].new_ones(1).expand_as(idx["triplet_in"]["out"])
-    num_trip_in_per_inter = ones.new_zeros(idx_qint_s.size(0)).scatter_reduce(
-        dim=0, index=idx["triplet_in"]["out"], src=ones, reduce="sum"
+    num_trip_in_per_inter = segment_coo(
+        ones, idx["triplet_in"]["out"], dim_size=idx_qint_s.size(0)
     )
 
     num_trip_out_per_inter = num_trip_in_per_inter[idx["triplet_out"]["in"]]

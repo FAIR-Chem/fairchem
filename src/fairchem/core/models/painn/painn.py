@@ -40,7 +40,7 @@ from torch import nn
 if typing.TYPE_CHECKING:
     from torch_geometric.data.batch import Batch
 from torch_geometric.nn import MessagePassing
-from torch_scatter import scatter
+from torch_scatter import scatter, segment_coo
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
@@ -221,11 +221,11 @@ class PaiNN(nn.Module, GraphModelMixin):
             # Count edges per image
             # segment_coo assumes sorted edge_index_new[1] and batch_idx
             ones = edge_index_new.new_ones(1).expand_as(edge_index_new[1])
-            neighbors_per_atom = edge_index_new.new_zeros(num_atoms).scatter_reduce(
-                dim=0, index=edge_index_new[1], src=ones, reduce="sum"
+            neighbors_per_atom = segment_coo(
+                ones, edge_index_new[1], dim_size=num_atoms
             )
-            neighbors_per_image = edge_index_new.new_zeros(num_atoms).scatter_reduce(
-                dim=0, index=batch_idx, src=neighbors_per_atom, reduce="sum"
+            neighbors_per_image = segment_coo(
+                neighbors_per_atom, batch_idx, dim_size=neighbors.shape[0]
             )
         else:
             # Generate mask
@@ -262,9 +262,9 @@ class PaiNN(nn.Module, GraphModelMixin):
             # segment_coo assumes sorted batch_edge
             # Factor 2 since this is only one half of the edges
             ones = batch_edge.new_ones(1).expand_as(batch_edge)
-            neighbors_per_image = 2 * batch_edge.new_zeros(
-                neighbors.size(0)
-            ).scatter_reduce(dim=0, index=batch_edge, src=ones, reduce="sum")
+            neighbors_per_image = 2 * segment_coo(
+                ones, batch_edge, dim_size=neighbors.size(0)
+            )
 
             # Create indexing array
             edge_reorder_idx = repeat_blocks(
