@@ -425,13 +425,11 @@ def main(
             logging.info(f"Submitted {len(jobs)} jobs: {jobs[0].job_id.split('_')[0]}")
 
         if "reducer" in cfg:
-            # TODO if a run is pre-empted/queued and resubmitted we need to update the dependency of the reduce job
-            job_ids = sorted(job.job_id for job in jobs)
             executor.update_parameters(
                 name=f"{cfg.job.run_name}_reduce",
                 # set a single node, or do we want the same config as the Runner or a separate JobConfig
                 nodes=1,
-                slurm_dependency=f"afterok:{job_ids[0]}:{job_ids[-1]}",
+                slurm_dependency=f"afterok:{min(job.job_id for job in jobs)}:{max(job.job_id for job in jobs)}",
                 slurm_additional_parameters={
                     "kill-on-invalid-dep": "yes"
                 },  # kill the reducer if run fails
