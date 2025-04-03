@@ -220,6 +220,7 @@ class Submitit(Checkpointable):
         setup_logging()
 
         dist_config = map_job_config_to_dist_config(self.config.job)
+        logging.info("Setting up distributed backend...")
         distutils.setup(dist_config)
         distutils.synchronize()
         if (
@@ -233,6 +234,7 @@ class Submitit(Checkpointable):
             )
 
         if self.config.job.graph_parallel_group_size is not None:
+            logging.info("Setting up graph parallel...")
             gp_utils.setup_graph_parallel_groups(
                 self.config.job.graph_parallel_group_size,
                 dist_config["distributed_backend"],
@@ -243,6 +245,7 @@ class Submitit(Checkpointable):
         if self.config.job.deterministic:
             _set_deterministic_mode()
 
+        logging.info("Calling runner.run() ...")
         if run_type == RunType.RUN:
             self.runner: Runner = hydra.utils.instantiate(self.config.runner)
             self.runner.job_config = self.config.job
@@ -440,6 +443,9 @@ def main(
     else:
         from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
+        assert (
+            (scheduler_cfg.num_nodes) <= 1
+        ), f"You cannot use more than one node (scheduler_cfg.num_nodes={scheduler_cfg.num_nodes}) in LOCAL mode"
         if scheduler_cfg.ranks_per_node > 1:
             logging.info(
                 f"Running in local mode with {scheduler_cfg.ranks_per_node} ranks"
