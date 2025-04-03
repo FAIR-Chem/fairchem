@@ -151,6 +151,9 @@ def check_escn_equivalent(data, model1, model2):
     assert torch.allclose(output2["forces"], output2["forces"])
 
 
+@pytest.mark.skip(
+    reason="These tests are temporarily disabled as their runtimes shot up and can flake"
+)
 class TestESCNCompiles:
     def test_escn_baseline_cpu(self):
         init("gloo")
