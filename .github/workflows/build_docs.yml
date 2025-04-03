@@ -27,12 +27,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        if [ -f packages/requirements.txt ]; then pip install -r packages/requirements.txt; fi
-        if [ -f packages/requirements-optional.txt ]; then pip install -r packages/requirements-optional.txt; fi
-        pip install -e packages/fairchem-core[docs,adsorbml,quacc]
-        pip install -e packages/fairchem-data-oc[dev]
-        pip install -e packages/fairchem-demo-ocpapi[dev]
-        pip install -e packages/fairchem-applications-cattsunami
+        pip install -r packages/requirements.txt 
+        pip install -r packages/requirements-optional.txt 
+        pip install -e packages/fairchem-core[docs,adsorbml,quacc] -e packages/fairchem-data-oc[dev] -e packages/fairchem-demo-ocpapi[dev] -e packages/fairchem-applications-cattsunami
 
     # Build the book
     - name: Build the book
