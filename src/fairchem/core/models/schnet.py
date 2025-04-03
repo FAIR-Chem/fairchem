@@ -102,7 +102,7 @@ class SchNetWrap(SchNet, GraphModelMixin):
 
             batch = torch.zeros_like(z) if batch is None else batch
             energy = h.new_zeros(batch.max() + 1).scatter_reduce_(
-                0, batch, h[:, 0], reduce=self.reduce
+                0, batch, h[:, 0], reduce=self.reduce, include_self=False
             )[:, None]
         else:
             energy = super().forward(z, pos, batch)
