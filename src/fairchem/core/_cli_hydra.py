@@ -140,6 +140,7 @@ class JobConfig:
     graph_parallel_group_size: Optional[int] = None  # noqa: UP007
 
     def __post_init__(self) -> None:
+        self.run_dir = os.path.abspath(self.run_dir)
         self.metadata = Metadata(
             commit=get_commit_hash(),
             log_dir=os.path.join(self.run_dir, self.timestamp_id, LOG_DIR_NAME),
