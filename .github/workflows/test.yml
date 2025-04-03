@@ -44,7 +44,7 @@ jobs:
           pip install -e packages/fairchem-data-oc[dev]
           pip install -e packages/fairchem-demo-ocpapi[dev]
           pip install -e packages/fairchem-applications-cattsunami
-      
+
       - name: Install core dependencies and package
         if: ${{ !matrix.pip_develop}}
         run: |
@@ -69,7 +69,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN_OMAT_READONLY }}
         run: |
-          pytest tests -vv --ignore=tests/demo/ocpapi/tests/integration/  --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml
+          pytest tests --durations=0 -vv --ignore=tests/demo/ocpapi/tests/integration/  --cov-report=xml --cov=fairchem -c ./packages/fairchem-core/pyproject.toml
 
       - if: ${{ matrix.python_version == '3.12' }}
         name: codecov-report

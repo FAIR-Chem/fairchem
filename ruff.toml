@@ -50,6 +50,7 @@ ignore = [
   "PERF203",  # `try`-`except` within a loop incurs performance overhead (no overhead in Py 3.11+)
   "EXE002",  # The file is executable but no shebang is present (not sure why some files come up as this)
   "PLC2401", # non ASCII characters
+  "RET504",  # Unnecessary assignment before `return` statement
 ]
 unfixable = [
   "T20",  # Removes print statements
