@@ -12,13 +12,11 @@ import typing
 import numpy as np
 import torch
 import torch.nn as nn
-from torch_scatter import segment_coo
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import (
     conditional_grad,
     get_max_neighbors_mask,
-    scatter_det,
 )
 from fairchem.core.models.base import BackboneInterface, GraphModelMixin, HeadInterface
 from fairchem.core.modules.scaling.compat import load_scales_compat
@@ -780,9 +778,10 @@ class GemNetOC(nn.Module, GraphModelMixin):
         batch_edge = batch_edge[mask]
         # segment_coo assumes sorted batch_edge
         # Factor 2 since this is only one half of the edges
-        ones = batch_edge.new_ones(1).expand_as(batch_edge)
-        new_graph["num_neighbors"] = 2 * segment_coo(
-            ones, batch_edge, dim_size=graph["num_neighbors"].size(0)
+        new_graph["num_neighbors"] = 2 * batch_edge.new_zeros(
+            graph["num_neighbors"].size(0)
+        ).scatter_reduce_(
+            dim=0, index=batch_edge, src=torch.ones_like(batch_edge), reduce="sum"
         )
 
         # Create indexing array
@@ -1271,15 +1270,14 @@ class GemNetOC(nn.Module, GraphModelMixin):
             if self.direct_forces:
                 F_st = self.out_forces(x_F.float())
 
-        nMolecules = torch.max(batch) + 1
         if self.extensive:
-            E_t = scatter_det(
-                E_t, batch, dim=0, dim_size=nMolecules, reduce="add"
-            )  # (nMolecules, 1)
+            E_t = E_t.new_zeros(batch.max() + 1).scatter_reduce_(
+                0, batch, E_t[:, 0], reduce="sum"
+            )[:, None]
         else:
-            E_t = scatter_det(
-                E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
-            )  # (nMolecules, 1)
+            E_t = E_t.new_zeros(batch.max() + 1).scatter_reduce_(
+                0, batch, E_t[:, 0], reduce="mean"
+            )[:, None]
 
         E_t = E_t.squeeze(1)  # (num_molecules)
         outputs = {"energy": E_t}
@@ -1292,25 +1290,22 @@ class GemNetOC(nn.Module, GraphModelMixin):
                         repeats=2,
                         continuous_indexing=True,
                     )
-                    F_st = scatter_det(
-                        F_st,
-                        id_undir,
-                        dim=0,
-                        dim_size=int(nEdges / 2),
-                        reduce="mean",
-                    )  # (nEdges/2, 1)
+                    F_st = (
+                        F_st.new_zeros(int(nEdges / 2), 1).scatter_reduce_(
+                            0, id_undir[:, None], F_st, reduce="mean", include_self=False
+                        )
+                    )
                     F_st = F_st[id_undir]  # (nEdges, 1)
 
                 # map forces in edge directions
                 F_st_vec = F_st[:, :, None] * main_graph["vector"][:, None, :]
                 # (nEdges, 1, 3)
-                F_t = scatter_det(
-                    F_st_vec,
-                    idx_t,
-                    dim=0,
-                    dim_size=num_atoms,
-                    reduce="add",
-                )  # (nAtoms, 1, 3)
+
+                F_t = F_st_vec.new_zeros(
+                    data.atomic_numbers.size(0), *F_st_vec.shape[1:]
+                ).scatter_reduce_(
+                    0, idx_t[:, None, None].expand_as(F_st_vec), F_st_vec, reduce="sum"
+                )
             else:
                 F_t = self.force_scaler.calc_forces_and_update(E_t, pos)
 
@@ -1467,15 +1462,14 @@ class GemNetOCEnergyAndGradForceHead(nn.Module, HeadInterface):
         with torch.autocast("cuda", enabled=False):
             E_t = self.out_energy(x_E.float())
 
-        nMolecules = torch.max(data.batch) + 1
         if self.extensive:
-            E_t = scatter_det(
-                E_t, data.batch, dim=0, dim_size=nMolecules, reduce="add"
-            )  # (nMolecules, 1)
+            E_t = E_t.new_zeros(data.batch.max() + 1).scatter_reduce_(
+                0, data.batch, E_t[:, 0], reduce="sum"
+            )[:, None]
         else:
-            E_t = scatter_det(
-                E_t, data.batch, dim=0, dim_size=nMolecules, reduce="mean"
-            )  # (nMolecules, 1)
+            E_t = E_t.new_zeros(data.batch.max() + 1).scatter_reduce_(
+                0, data.batch, E_t[:, 0], reduce="mean"
+            )[:, None]
 
         outputs = {"energy": E_t.squeeze(1)}  # (num_molecules)
 
@@ -1540,24 +1534,20 @@ class GemNetOCForceHead(nn.Module, HeadInterface):
                     repeats=2,
                     continuous_indexing=True,
                 )
-                F_st = scatter_det(
-                    F_st,
-                    id_undir,
-                    dim=0,
-                    dim_size=int(nEdges / 2),
-                    reduce="mean",
-                )  # (nEdges/2, 1)
+                F_st = (
+                        F_st.new_zeros(int(nEdges / 2), 1).scatter_reduce_(
+                            0, id_undir[:, None], F_st, reduce="mean", include_self=False
+                        )
+                    ) # (nEdges/2, 1)
                 F_st = F_st[id_undir]  # (nEdges, 1)
 
             # map forces in edge directions
             F_st_vec = F_st[:, :, None] * emb["edge_vec"][:, None, :]
             # (nEdges, 1, 3)
-            F_t = scatter_det(
-                F_st_vec,
-                emb["edge_idx"],
-                dim=0,
-                dim_size=data.atomic_numbers.long().shape[0],
-                reduce="add",
-            )  # (nAtoms, 1, 3)
+            F_t = F_st_vec.new_zeros(
+                    data.atomic_numbers.size(0), *F_st_vec.shape[1:]
+                ).scatter_reduce_(
+                    0, emb["edge_idx"][:, None, None].expand_as(F_st_vec), F_st_vec, reduce="sum"
+                ) # (nAtoms, 1, 3)
             return {"forces": F_t.squeeze(1)}  # (num_atoms, 3)
         return {}
