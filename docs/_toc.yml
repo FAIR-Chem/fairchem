@@ -15,11 +15,11 @@ parts:
     sections:
     - file: core/common_tasks/ase_dataset_creation
     - file: core/common_tasks/training
-    - file: core/common_tasks/evaluation
+#    - file: core/common_tasks/evaluation
     - file: core/common_tasks/fine-tuning/fine-tuning
     - file: core/common_tasks/inference
     - file: core/common_tasks/embeddings/embeddings
-    - file: core/common_tasks/workflows
+#    - file: core/common_tasks/workflows
   - file: core/model_faq
   - file: core/generative_models
 - caption: Heterogeneous Catalysis
