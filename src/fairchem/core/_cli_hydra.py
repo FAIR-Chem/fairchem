@@ -140,6 +140,7 @@ class JobConfig:
     graph_parallel_group_size: Optional[int] = None  # noqa: UP007
 
     def __post_init__(self) -> None:
+        self.run_dir = os.path.abspath(self.run_dir)
         self.metadata = Metadata(
             commit=get_commit_hash(),
             log_dir=os.path.join(self.run_dir, self.timestamp_id, LOG_DIR_NAME),
@@ -220,6 +221,7 @@ class Submitit(Checkpointable):
         setup_logging()
 
         dist_config = map_job_config_to_dist_config(self.config.job)
+        logging.info("Setting up distributed backend...")
         distutils.setup(dist_config)
         distutils.synchronize()
         if (
@@ -233,6 +235,7 @@ class Submitit(Checkpointable):
             )
 
         if self.config.job.graph_parallel_group_size is not None:
+            logging.info("Setting up graph parallel...")
             gp_utils.setup_graph_parallel_groups(
                 self.config.job.graph_parallel_group_size,
                 dist_config["distributed_backend"],
@@ -243,15 +246,17 @@ class Submitit(Checkpointable):
         if self.config.job.deterministic:
             _set_deterministic_mode()
 
+        logging.info("Calling runner.run() ...")
         if run_type == RunType.RUN:
             self.runner: Runner = hydra.utils.instantiate(self.config.runner)
-            self.runner.initialize(self.config.job)
+            self.runner.job_config = self.config.job
             # must call resume state AFTER the runner has been initialized
             self.runner.load_state(self.config.job.runner_state_path)
             self.runner.run()
         elif run_type == RunType.REDUCE:
             self.reducer: Reducer = hydra.utils.instantiate(self.config.reducer)
-            self.reducer.initialize(self.config.job, self.config.runner)
+            self.reducer.job_config = self.config.job
+            self.reducer.runner_config = self.config.runner
             # must call resume state AFTER the runner has been initialized
             self.reducer.load_state(self.config.job.runner_state_path)
             self.reducer.reduce()
@@ -439,6 +444,9 @@ def main(
     else:
         from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 
+        assert (
+            (scheduler_cfg.num_nodes) <= 1
+        ), f"You cannot use more than one node (scheduler_cfg.num_nodes={scheduler_cfg.num_nodes}) in LOCAL mode"
         if scheduler_cfg.ranks_per_node > 1:
             logging.info(
                 f"Running in local mode with {scheduler_cfg.ranks_per_node} ranks"
