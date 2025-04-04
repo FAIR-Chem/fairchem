@@ -125,6 +125,8 @@ docs/legacy_tutorials/videos/
 *.txt
 *.pkl
 *.lmdb-lock
+*.aselmdb
+*.aselmdb-lock
 out.txt
 config.yml
 
