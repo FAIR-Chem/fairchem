@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import torch
 from torch_geometric.nn import SchNet
-from torch_scatter import scatter
 
 from fairchem.core.common.registry import registry
 from fairchem.core.common.utils import conditional_grad
@@ -46,8 +45,8 @@ class SchNetWrap(SchNet, GraphModelMixin):
             (default: :obj:`50`)
         cutoff (float, optional): Cutoff distance for interatomic interactions.
             (default: :obj:`10.0`)
-        readout (string, optional): Whether to apply :obj:`"add"` or
-            :obj:`"mean"` global aggregation. (default: :obj:`"add"`)
+        readout (string, optional): Whether to apply :obj:`"sum"` or
+            :obj:`"mean"` global aggregation. (default: :obj:`"sum"`)
     """
 
     def __init__(
@@ -61,7 +60,7 @@ class SchNetWrap(SchNet, GraphModelMixin):
         num_interactions: int = 6,
         num_gaussians: int = 50,
         cutoff: float = 10.0,
-        readout: str = "add",
+        readout: str = "sum",
     ) -> None:
         self.num_targets = 1
         self.regress_forces = regress_forces
@@ -102,7 +101,9 @@ class SchNetWrap(SchNet, GraphModelMixin):
             h = self.lin2(h)
 
             batch = torch.zeros_like(z) if batch is None else batch
-            energy = scatter(h, batch, dim=0, reduce=self.reduce)
+            energy = h.new_zeros(batch.max() + 1).scatter_reduce_(
+                0, batch, h[:, 0], reduce=self.reduce, include_self=False
+            )[:, None]
         else:
             energy = super().forward(z, pos, batch)
         return energy
