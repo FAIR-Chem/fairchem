@@ -429,7 +429,7 @@ def main(
                 name=f"{cfg.job.run_name}_reduce",
                 # set a single node, or do we want the same config as the Runner or a separate JobConfig
                 nodes=1,
-                slurm_dependency=f"afterok:{min(job.job_id for job in jobs)}:{max(job.job_id for job in jobs)}",
+                slurm_dependency=",".join(f"afterok:{job.job_id}" for job in jobs),
                 slurm_additional_parameters={
                     "kill-on-invalid-dep": "yes"
                 },  # kill the reducer if run fails
