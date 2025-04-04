@@ -4,62 +4,75 @@
 format: jb-book
 root: index
 parts:
-- caption: Quickstart & Installation
+- caption: Quickstart
   chapters:
   - file: core/install
   - file: core/quickstart
-  - file: core/gotchas
-  - file: core/license
-  - file: core/inorganic_materials
+- caption: AI/ML models & usage
+  chapters:
+  - file: core/intro
+  - file: core/common_tasks/summary
+    sections:
+    - file: core/common_tasks/ase_dataset_creation
+    - file: core/common_tasks/training
+#    - file: core/common_tasks/evaluation
+    - file: core/common_tasks/fine-tuning/fine-tuning
+    - file: core/common_tasks/inference
+    - file: core/common_tasks/embeddings/embeddings
+#    - file: core/common_tasks/workflows
+  - file: core/model_faq
+  - file: core/generative_models
+- caption: Heterogeneous Catalysis
+  chapters:
+  - url: https://opencatalystproject.org
+    title: OCP Leaderboard
+  - url: https://open-catalyst.metademolab.com/
+    title: OCP Demo (no install required!)
+  - file: catalysts/datasets/summary
+    sections:
+      - file: catalysts/datasets/oc20
+      - file: catalysts/datasets/oc22
+      - file: catalysts/datasets/oc20dense
+      - file: catalysts/datasets/oc20neb
+      - file: catalysts/datasets/ocx24
+  - file: catalysts/models
+  - file: catalysts/examples_tutorials/summary
+    sections:
+    - file: catalysts/examples_tutorials/adsorption_energies/adsorption_energies
+    - file: catalysts/examples_tutorials/fairchem_models_for_nebs
+    - file: catalysts/examples_tutorials/molecular_dynamics
+    - file: catalysts/examples_tutorials/intro
+    - file: catalysts/examples_tutorials/OCP-introduction
+    - file: catalysts/examples_tutorials/adsorbml_walkthrough
+    - file: catalysts/examples_tutorials/cattsunami_tutorial
+    - file: catalysts/examples_tutorials/ocpapi
+  - file: catalysts/FAQ
+- caption: Inorganic Materials
+  chapters:
+  - file: inorganic_materials/datasets/summary
+    sections:
+    - file: inorganic_materials/datasets/omat24
+  - file: inorganic_materials/models
+  - file: inorganic_materials/examples_tutorials/summary
+    sections: 
+    - file: inorganic_materials/examples_tutorials/bulk_stability
+    - file: inorganic_materials/examples_tutorials/phonons
+    - file: inorganic_materials/examples_tutorials/elastic
+  - file: inorganic_materials/FAQ
+- caption: MOFs for Direct Air Capture
+  chapters:
+  - file: dac/datasets/summary
+    sections:
+    - file: dac/datasets/odac
+  - file: dac/models
+  - file: dac/examples_tutorials/summary
+    sections:
+    - file: dac/examples_tutorials/adsorption_energies
 - caption: Learn More
   chapters:
   - file: core/intro_series
   - file: videos/technical_talks
   - file: core/papers_using_models
-- caption: OCP API & Demo
-  chapters:
-  - url: https://open-catalyst.metademolab.com/
-    title: OCP Demo (no install required!)
-  - file: core/ocpapi
-- caption: Released Datasets & Models
-  chapters:
-  - file: core/datasets/oc20
-  - file: core/datasets/oc22
-  - file: core/datasets/odac
-  - file: core/datasets/oc20dense
-  - file: core/datasets/oc20neb
-  - file: core/datasets/omat24
-  - file: core/datasets/ocx24
-  - file: core/model_checkpoints
-- caption: Making your own datasets
-  chapters:
-  - file: core/ase_dataset_creation
-  - file: core/lmdb_dataset_creation
-- caption: Model development, training, inference, finetuning
-  chapters:
-  - file: core/model_training
-  - file: core/inference
-  - file: core/fine-tuning/fine-tuning-oxides
-  - file: core/model_faq
-- caption: Catalysis Case Studies & Tutorials
-  chapters:
-  - file: tutorials/intro
-  - file: tutorials/OCP-introduction
-  - file: tutorials/adsorbml_walkthrough
-  - file: tutorials/cattsunami_tutorial
-  - file: tutorials/fairchem_models_for_nebs
-  - file: tutorials/NRR/NRR_toc
-    sections:
-    - file: tutorials/NRR/NRR_example
-  - file: tutorials/advanced/advanced_toc
-    sections:
-    - file: tutorials/advanced/fine-tuning-in-python
-    - file: tutorials/advanced/embeddings
-  - file: legacy_tutorials/legacy_tutorials
-    sections:
-    - file: legacy_tutorials/OCP_Tutorial
-    - file: legacy_tutorials/data_preprocessing
-    - file: legacy_tutorials/data_visualization
 - caption: fairchem documentation
   chapters:
   - file: autoapi/index
