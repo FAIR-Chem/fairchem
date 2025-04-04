@@ -74,6 +74,11 @@ class RunType(str, Enum):
     REDUCE = "reduce"
 
 
+class DistributedInitMethod(str, Enum):
+    TCP = "tcp"
+    FILE = "file"
+
+
 @dataclass
 class SlurmConfig:
     mem_gb: int = 80
@@ -138,6 +143,7 @@ class JobConfig:
     # read-only metadata about the job, not user inputs
     metadata: Optional[Metadata] = None  # noqa: UP007 omegaconf in python 3.9 does not backport annotations
     graph_parallel_group_size: Optional[int] = None  # noqa: UP007
+    distributed_init_method: DistributedInitMethod = DistributedInitMethod.TCP
 
     def __post_init__(self) -> None:
         self.run_dir = os.path.abspath(self.run_dir)
@@ -319,6 +325,8 @@ def map_job_config_to_dist_config(job_cfg: JobConfig) -> dict:
         "summit": None,
         "cpu": job_cfg.device_type == DeviceType.CPU,
         "use_cuda_visibile_devices": True,
+        "init_method": job_cfg.distributed_init_method,
+        "run_dir": job_cfg.run_dir,  # for distributed shared file initialization
     }
 
 
