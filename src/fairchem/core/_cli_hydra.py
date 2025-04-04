@@ -198,9 +198,10 @@ def remove_runner_state_from_submission(log_folder: str, job_id: str) -> None:
     # ie: if the job was started at state t=T, a requeue during node failure would resubmit the job
     # starting at state t=T again without calling the checkpoint callback, losing all progress in between.
     job_path = JobPaths(folder=log_folder, job_id=job_id)
-    submission_obj = DelayedSubmission.load(job_path.submitted_pickle)
-    submission_obj.args[0].job.runner_state_path = None
-    cloudpickle_dump(submission_obj, job_path.submitted_pickle)
+    if os.path.isfile(job_path.submitted_pickle):
+        submission_obj = DelayedSubmission.load(job_path.submitted_pickle)
+        submission_obj.args[0].job.runner_state_path = None
+        cloudpickle_dump(submission_obj, job_path.submitted_pickle)
 
 
 class Submitit(Checkpointable):
@@ -241,6 +242,7 @@ class Submitit(Checkpointable):
             )
 
         self._init_logger()
+
         _set_seeds(self.config.job.seed)
         if self.config.job.deterministic:
             _set_deterministic_mode()
@@ -269,6 +271,7 @@ class Submitit(Checkpointable):
             self.config.job.logger
             and distutils.is_master()
             and not self.config.job.debug
+            and self.config.job.metadata.array_job_num == 0
         ):
             # get a partial function from the config and instantiate wandb with it
             # currently code assumes that we only use the WandBSingletonLogger
@@ -429,12 +432,12 @@ def main(
             logging.info(f"Submitted {len(jobs)} jobs: {jobs[0].job_id.split('_')[0]}")
 
         if "reducer" in cfg:
-            # TODO if a run is pre-empted/queued and resubmitted we need to update the dependency of the reduce job
+            job_id = jobs[0].job_id.split("_")[0]
             executor.update_parameters(
                 name=f"{cfg.job.run_name}_reduce",
                 # set a single node, or do we want the same config as the Runner or a separate JobConfig
                 nodes=1,
-                slurm_dependency=f"afterok:{','.join(job.job_id for job in jobs)}",
+                slurm_dependency=f"afterok:{job_id}",
                 slurm_additional_parameters={
                     "kill-on-invalid-dep": "yes"
                 },  # kill the reducer if run fails
