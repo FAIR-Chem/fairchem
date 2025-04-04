@@ -198,9 +198,10 @@ def remove_runner_state_from_submission(log_folder: str, job_id: str) -> None:
     # ie: if the job was started at state t=T, a requeue during node failure would resubmit the job
     # starting at state t=T again without calling the checkpoint callback, losing all progress in between.
     job_path = JobPaths(folder=log_folder, job_id=job_id)
-    submission_obj = DelayedSubmission.load(job_path.submitted_pickle)
-    submission_obj.args[0].job.runner_state_path = None
-    cloudpickle_dump(submission_obj, job_path.submitted_pickle)
+    if os.path.isfile(job_path.submitted_pickle):
+        submission_obj = DelayedSubmission.load(job_path.submitted_pickle)
+        submission_obj.args[0].job.runner_state_path = None
+        cloudpickle_dump(submission_obj, job_path.submitted_pickle)
 
 
 class Submitit(Checkpointable):
