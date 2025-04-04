@@ -242,6 +242,7 @@ class Submitit(Checkpointable):
             )
 
         self._init_logger()
+
         _set_seeds(self.config.job.seed)
         if self.config.job.deterministic:
             _set_deterministic_mode()
@@ -270,6 +271,7 @@ class Submitit(Checkpointable):
             self.config.job.logger
             and distutils.is_master()
             and not self.config.job.debug
+            and self.config.job.metadata.array_job_num == 0
         ):
             # get a partial function from the config and instantiate wandb with it
             # currently code assumes that we only use the WandBSingletonLogger
