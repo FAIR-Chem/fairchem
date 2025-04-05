@@ -91,4 +91,5 @@ MD_FLAGS = {
     "smass": 0,
     "tebeg": 1000,
     "potim": 2,
+    "isym": 0,
 }
