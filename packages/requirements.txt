@@ -1,4 +1,4 @@
-torch==2.4.1
+torch==2.6.0
 numpy==1.26.4
 ase @ git+https://gitlab.com/ase/ase.git@4a5e1f69979f9f5463a82001245e5471364adcf1
 ase-db-backends @ git+https://gitlab.com/ase/ase-db-backends.git@2fda57e952c0d1cd2fd511eee5a2659f85ebe64a
