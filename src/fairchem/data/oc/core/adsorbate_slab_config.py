@@ -489,7 +489,7 @@ def custom_tile_atoms(atoms: ase.Atoms):
     return new_atoms
 
 
-def get_interstitial_distances(adsorbate_slab_config: ase.Atoms, overlap_tag: int):
+def get_interstitial_distances(adsorbate_slab_config: ase.Atoms, overlap_tag: int = 2):
     """
     Check to see if there is any atomic overlap between surface atoms
     and adsorbate atoms.
