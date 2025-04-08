@@ -32,9 +32,10 @@ dependencies = [
 
 [project.optional-dependencies]  # add optional dependencies, e.g. to be installed as pip install fairchem.core[dev]
 dev = ["pre-commit", "pytest", "pytest-cov", "coverage", "syrupy", "ruff==0.5.1"]
-docs = ["jupyter-book", "jupytext", "sphinx","sphinx-autoapi==3.3.3", "astroid<4", "umap-learn", "vdict"]
+docs = ["jupyter-book", "jupytext", "sphinx","sphinx-autoapi==3.3.3", "astroid<4", "umap-learn", "vdict", "ipywidgets"]
 adsorbml = ["dscribe","x3dase","scikit-image"]
 torch_extras = ["torch_scatter", "torch_sparse", "torch_cluster"]
+quacc = ["quacc[phonons]>=0.13.0"]
 
 [project.scripts]
 fairchem = "fairchem.core._cli:main"

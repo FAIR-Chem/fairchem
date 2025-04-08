@@ -121,8 +121,13 @@ docs/legacy_tutorials/videos/
 /*.pt
 *.lmdb
 *.lmdb-lock
+*.aselmdb
+*.aselmdb-lock
 out.txt
 config.yml
 
 docs/autoapi/
 docs/tutorial/advanced/*.db
+docs/core/fine-tuning/*.db
+docs/core/quacc*/*
+
