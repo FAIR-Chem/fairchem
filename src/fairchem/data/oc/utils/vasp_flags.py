@@ -59,6 +59,7 @@ SOLVENT_BASE_FLAGS = {
     "lreal": "Auto",
     "ncore": 100,  # VASP will scale this down to whatever ncores are available.
     "dipol": [0.5, 0.5, 0.5],
+    "amin": 0.01,
 }
 
 SOLVENT_BULK_VASP_FLAGS = {
