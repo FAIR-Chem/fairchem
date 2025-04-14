@@ -88,7 +88,7 @@ RELAX_FLAGS = {"ibrion": 2, "nsw": 5}
 
 MD_FLAGS = {
     "ibrion": 0,
-    "nsw": 10,
+    "nsw": 50,
     "smass": 0,
     "tebeg": 1000,
     "potim": 2,
