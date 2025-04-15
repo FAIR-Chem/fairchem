@@ -269,52 +269,67 @@
     },
     "EquiformerV2-153M-OMAT24": {
         "type": "huggingface_hub",
-        "repo_id": "fairchem/OMAT24",
+        "repo_id": "facebook/OMAT24",
         "filename": "eqV2_153M_omat.pt"
     },
     "EquiformerV2-153M-OMAT24-MP-sAlex": {
         "type": "huggingface_hub",
-        "repo_id": "fairchem/OMAT24",
+        "repo_id": "facebook/OMAT24",
         "filename": "eqV2_153M_omat_mp_salex.pt"
     },
     "EquiformerV2-31M-MP": {
         "type": "huggingface_hub",
-        "repo_id": "fairchem/OMAT24",
+        "repo_id": "facebook/OMAT24",
         "filename": "eqV2_31M_mp.pt"
     },
     "EquiformerV2-31M-OMAT24": {
         "type": "huggingface_hub",
-        "repo_id": "fairchem/OMAT24",
+        "repo_id": "facebook/OMAT24",
         "filename": "eqV2_31M_omat.pt"
     },
     "EquiformerV2-31M-OMAT24-MP-sAlex": {
         "type": "huggingface_hub",
-        "repo_id": "fairchem/OMAT24",
+        "repo_id": "facebook/OMAT24",
         "filename": "eqV2_31M_omat_mp_salex.pt"
     },
     "EquiformerV2-86M-OMAT24": {
         "type": "huggingface_hub",
-        "repo_id": "fairchem/OMAT24",
+        "repo_id": "facebook/OMAT24",
         "filename": "eqV2_86M_omat.pt"
     },
     "EquiformerV2-86M-OMAT24-MP-sAlex": {
         "type": "huggingface_hub",
-        "repo_id": "fairchem/OMAT24",
+        "repo_id": "facebook/OMAT24",
         "filename": "eqV2_86M_omat_mp_salex.pt"
     },
     "EquiformerV2-DeNS-153M-MP": {
         "type": "huggingface_hub",
-        "repo_id": "fairchem/OMAT24",
+        "repo_id": "facebook/OMAT24",
         "filename": "eqV2_dens_153M_mp.pt"
     },
     "EquiformerV2-DeNS-86M-MP": {
         "type": "huggingface_hub",
-        "repo_id": "fairchem/OMAT24",
+        "repo_id": "facebook/OMAT24",
         "filename": "eqV2_dens_86M_mp.pt"
     },
     "EquiformerV2-DeNS-31M-MP": {
         "type": "huggingface_hub",
-        "repo_id": "fairchem/OMAT24",
+        "repo_id": "facebook/OMAT24",
         "filename": "eqV2_dens_31M_mp.pt"
+    },
+    "eSEN-30M-OMAT24": {
+        "type": "huggingface_hub",
+        "repo_id": "facebook/OMAT24",
+        "filename": "esen_30m_omat.pt"
+    },
+    "eSEN-30M-OAM": {
+        "type": "huggingface_hub",
+        "repo_id": "facebook/OMAT24",
+        "filename": "esen_30m_oam.pt"
+    },
+    "eSEN-30M-MP": {
+        "type": "huggingface_hub",
+        "repo_id": "facebook/OMAT24",
+        "filename": "esen_30m_mptrj.pt"
     }
 }
