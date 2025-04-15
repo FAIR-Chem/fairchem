@@ -130,4 +130,7 @@ docs/autoapi/
 docs/tutorial/advanced/*.db
 docs/core/fine-tuning/*.db
 docs/core/quacc*/*
+docs/legacy_tutorials/data/*.extxyz
+docs/**.json
+
 

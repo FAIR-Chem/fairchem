@@ -59,4 +59,4 @@ axs[0].set_axis_off()
 axs[1].set_axis_off()
 ```
 
-To learn more about what this simulation means and how it fits into catalysis, see the [catalysis tutorial](../tutorials/intro)!
+To learn more about what this simulation means and how it fits into catalysis, see the [catalysis tutorial](../catalysts/tutorials/intro)!
