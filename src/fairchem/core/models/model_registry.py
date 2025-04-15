@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 class HuggingFaceModel(BaseModel):
     type: Literal["huggingface_hub"]
-    repo_id: Literal["fairchem/OMAT24"]
+    repo_id: Literal["facebook/OMAT24"]
     filename: str
 
 
