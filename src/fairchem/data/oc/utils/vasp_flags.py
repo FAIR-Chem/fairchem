@@ -49,9 +49,9 @@ SOLVENT_BASE_FLAGS = {
     "ismear": 0,
     "sigma": 0.1,
     "lcharg": True,
-    "lwave": True,
+    "lwave": False,
     "isif": 0,
-    "ispin": 2,
+    "ispin": 1,
     "algo": "All",
     "idipol": 3,
     "ldipol": True,
@@ -59,6 +59,7 @@ SOLVENT_BASE_FLAGS = {
     "lreal": "Auto",
     "ncore": 100,  # VASP will scale this down to whatever ncores are available.
     "dipol": [0.5, 0.5, 0.5],
+    "amin": 0.01,
 }
 
 SOLVENT_BULK_VASP_FLAGS = {
@@ -67,7 +68,7 @@ SOLVENT_BULK_VASP_FLAGS = {
     "isif": 3,
     "ivdw": 11,
     "lasph": True,
-    "ispin": 2,
+    "ispin": 1,
     "ismear": 0,
     "ediff": 1e-6,
     "ediffg": -0.02,
@@ -87,8 +88,9 @@ RELAX_FLAGS = {"ibrion": 2, "nsw": 5}
 
 MD_FLAGS = {
     "ibrion": 0,
-    "nsw": 10,
+    "nsw": 50,
     "smass": 0,
     "tebeg": 1000,
     "potim": 2,
+    "isym": 0,
 }
