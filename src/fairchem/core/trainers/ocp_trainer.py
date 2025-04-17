@@ -161,7 +161,11 @@ class OCPTrainer(BaseTrainer):
                 # Get a batch.
                 batch = next(train_loader_iter)
                 # Forward, loss, backward.
-                with torch.autocast("cuda", enabled=self.scaler is not None):
+                with torch.autocast(
+                    "cuda",
+                    enabled=self.autocast_enabled,
+                    dtype=self.autocast_dtype,
+                ):
                     out = self._forward(batch)
                     loss = self._compute_loss(out, batch)
 
